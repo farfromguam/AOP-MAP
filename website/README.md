@@ -14,6 +14,10 @@ The viewer looks for a local GeoJSON file at:
 
 The file should contain a GeoJSON FeatureCollection with publishable features.
 
+## Local setup
+
+This viewer now uses local vendor MapLibre assets in `website/vendor/`, so it can run as a local preview without relying on the CDN for the map runtime.
+
 ## Layers
 
 The viewer currently renders:

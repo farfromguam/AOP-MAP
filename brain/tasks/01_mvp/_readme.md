@@ -36,8 +36,8 @@ This MVP scaffold is the first practical step toward the build card:
 2. [ ] Confirm `mvp/init_db.sql` created the database schema
 3. [ ] Connect QGIS to `localhost:5432` and inspect source/feature tables
 4. [X] Load a placeholder `publish.geojson` into `website/`
-5. [ ] Preview `website/index.html`
-6. [ ] Replace placeholders with actual AOP parcel/trail/observation data as available
+5. [X] Preview `website/index.html`
+6. [ ] Replace placeholders with actual AOP parcel/trail/observation data and verify the live viewer shows real map data
 
 ## Files added
 - `mvp/docker-compose.yml`

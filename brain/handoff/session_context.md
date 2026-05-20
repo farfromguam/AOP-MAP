@@ -17,12 +17,13 @@ This session is now continuing MVP work with context after invoking the CWC flow
 
 ## What the next session should do
 
-1. Read `brain/northstar/validation_loop.md` as the loop contract.
-2. Execute the first round of observation review, promotion, and verification in the MVP environment.
-3. Capture one observation, attach it to a source, and document the review outcome.
-4. Confirm the observation promotion path is traceable from evidence to map update.
-5. If the MVP stack is not ready, record the exact failure mode and update this handoff immediately.
-6. Keep session-only notes in this folder; move stable promises to `northstar/` and source facts to `research/`.
+1. Replace the demo sample publish data with real AOP parcel/trail/observation map data in the MVP database.
+2. Attach each feature to a source row in `source_register.sources` and preserve confidence/permission metadata.
+3. Export the `publish` views to `website/data/publish.geojson` and verify the viewer renders the actual AOP map.
+4. Execute the first round of observation review, promotion, and verification in the MVP environment.
+5. Confirm the observation promotion path is traceable from evidence to map update.
+6. If the MVP stack is not ready, record the exact failure mode and update this handoff immediately.
+7. Keep session-only notes in this folder; move stable promises to `northstar/` and source facts to `research/`.
 
 ## Session note
 
