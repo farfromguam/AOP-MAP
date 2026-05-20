@@ -1,0 +1,30 @@
+{
+  "message_text": "3 publish features loaded.",
+  "publish_source_features": [],
+  "layers_present": [
+    {
+      "id": "publish-trails",
+      "present": true,
+      "visibility": "visible"
+    },
+    {
+      "id": "publish-boundaries",
+      "present": true,
+      "visibility": "visible"
+    },
+    {
+      "id": "publish-boundary-fill",
+      "present": true,
+      "visibility": "visible"
+    },
+    {
+      "id": "publish-trailheads",
+      "present": true,
+      "visibility": "visible"
+    }
+  ],
+  "trails_rendered": 2,
+  "boundaries_rendered": 2,
+  "trailheads_rendered": 0,
+  "console_errors": []
+}

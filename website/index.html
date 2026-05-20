@@ -21,6 +21,7 @@
     <h1>AOP MVP viewer</h1>
     <label><input type="checkbox" id="showSatellite" /> Satellite imagery (TNMap 2022)</label>
     <label><input type="checkbox" id="showNinePatch" /> 9-patch acquisition AOI</label>
+    <label><input type="checkbox" id="showLidarTiles" /> Lidar tile index (USGS 3DEP)</label>
     <label><input type="checkbox" id="showTrails" checked /> Publishable trails</label>
     <label><input type="checkbox" id="showBoundaries" checked /> Publishable boundaries</label>
     <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
@@ -51,6 +52,7 @@
     const message = document.getElementById('message');
     const satelliteToggle = document.getElementById('showSatellite');
     const ninePatchToggle = document.getElementById('showNinePatch');
+    const lidarTilesToggle = document.getElementById('showLidarTiles');
     const trailToggle = document.getElementById('showTrails');
     const boundaryToggle = document.getElementById('showBoundaries');
     const trailheadToggle = document.getElementById('showTrailheads');
@@ -66,6 +68,9 @@
       setLayerVisibility('nine-patch-fill', ninePatchToggle.checked);
       setLayerVisibility('nine-patch-outline', ninePatchToggle.checked);
       setLayerVisibility('nine-patch-labels', ninePatchToggle.checked);
+      setLayerVisibility('lidar-tiles-fill', lidarTilesToggle.checked);
+      setLayerVisibility('lidar-tiles-outline', lidarTilesToggle.checked);
+      setLayerVisibility('lidar-tiles-labels', lidarTilesToggle.checked);
       setLayerVisibility('publish-trails', trailToggle.checked);
       setLayerVisibility('publish-boundary-fill', boundaryToggle.checked);
       setLayerVisibility('publish-boundaries', boundaryToggle.checked);
@@ -131,8 +136,9 @@
           'https://tnmap.tn.gov/arcgis/rest/services/BASEMAPS/IMAGERY_WEB_MERCATOR/MapServer/tile/{z}/{y}/{x}'
         ],
         tileSize: 256,
-        minzoom: 0,
+        minzoom: 11,
         maxzoom: 22,
+        bounds: [-85.782935283, 35.067164188, -85.717154097, 35.117928496],
         attribution: 'Imagery: TDOT Aerial Surveys / TNMap'
       });
 
@@ -182,6 +188,50 @@
           },
           paint: {
             'text-color': '#664400',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 1.5
+          }
+        });
+      }
+
+      let lidarTileData;
+      try {
+        const lidarTileResponse = await fetch('./data/aop_lidar_tiles.geojson');
+        if (lidarTileResponse.ok) {
+          lidarTileData = await lidarTileResponse.json();
+        }
+      } catch (error) {
+        console.warn('Lidar tile index missing:', error);
+      }
+
+      if (lidarTileData) {
+        map.addSource('lidar-tiles', { type: 'geojson', data: lidarTileData });
+        map.addLayer({
+          id: 'lidar-tiles-fill',
+          type: 'fill',
+          source: 'lidar-tiles',
+          layout: { visibility: 'none' },
+          paint: { 'fill-color': '#6a5acd', 'fill-opacity': 0.08 }
+        });
+        map.addLayer({
+          id: 'lidar-tiles-outline',
+          type: 'line',
+          source: 'lidar-tiles',
+          layout: { visibility: 'none' },
+          paint: { 'line-color': '#4b3f9a', 'line-width': 1.25 }
+        });
+        map.addLayer({
+          id: 'lidar-tiles-labels',
+          type: 'symbol',
+          source: 'lidar-tiles',
+          layout: {
+            visibility: 'none',
+            'text-field': ['get', 'tile_code'],
+            'text-size': 11,
+            'text-anchor': 'center'
+          },
+          paint: {
+            'text-color': '#2c2466',
             'text-halo-color': '#ffffff',
             'text-halo-width': 1.5
           }
@@ -264,6 +314,22 @@
         new maplibregl.Popup().setLngLat(coordinates).setHTML(description).addTo(map);
       });
 
+      map.on('click', 'lidar-tiles-fill', (event) => {
+        const props = event.features?.[0]?.properties || {};
+        const coordinates = event.lngLat;
+        const downloadUrl = props.download_url || '';
+        const downloadLink = downloadUrl
+          ? `<a href="${escapeHtml(downloadUrl)}" target="_blank" rel="noopener">Download LAZ</a>`
+          : '';
+        const description = `<strong>Lidar tile</strong><br/>${detailRows([
+          ['Tile', props.tile_code || 'unknown'],
+          ['Project', props.project || 'unknown'],
+          ['Published', props.publication_date || 'unknown'],
+          ['Size (MB)', props.size_mb ?? 'unknown']
+        ])}${downloadLink ? '<br/>' + downloadLink : ''}`;
+        new maplibregl.Popup().setLngLat(coordinates).setHTML(description).addTo(map);
+      });
+
       map.on('click', 'publish-trailheads', (event) => {
         const props = event.features?.[0]?.properties || {};
         const coordinates = event.lngLat;
@@ -283,6 +349,7 @@
 
     satelliteToggle.addEventListener('change', updateLayerVisibility);
     ninePatchToggle.addEventListener('change', updateLayerVisibility);
+    lidarTilesToggle.addEventListener('change', updateLayerVisibility);
     trailToggle.addEventListener('change', updateLayerVisibility);
     boundaryToggle.addEventListener('change', updateLayerVisibility);
     trailheadToggle.addEventListener('change', updateLayerVisibility);
