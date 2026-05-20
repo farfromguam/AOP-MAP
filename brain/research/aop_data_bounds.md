@@ -122,3 +122,25 @@ Recorded on 2026-05-20:
 - Raw lidar is available from USGS as 24 LAZ tiles totaling about 2.79 GB. Use it only if the 1-meter DEM and derived hillshade are not enough.
 - USGS contour GeoPackage `ELEV_Chattanooga_W_TN_1X1_GPKG.zip` covers the AOI.
 - Current US Topo GeoPDF coverage crosses the Orme, TN and South Pittsburg, TN quadrangles.
+
+## Lidar Tile Index Layer
+
+Recorded on 2026-05-20:
+
+- The 24 USGS 3DEP LAZ tile footprints are now a viewer overlay at `website/data/aop_lidar_tiles.geojson`.
+- Source: TNM products API query `datasets=Lidar Point Cloud (LPC)&prodFormats=LAZ&bbox=<9-patch>`.
+- Each feature carries `tile_code`, `title`, `project`, `publication_date`, `size_bytes`, `size_mb`, `download_url`, `meta_url`, `source_name`, and `source_id`.
+- Footprints come straight from each tile's `boundingBox`; they are inventory metadata, not measured coverage envelopes.
+- The static viewer exposes the layer behind a toggle labeled `Lidar tile index (USGS 3DEP)` with fill, outline, and `tile_code` labels, plus a popup that links the LAZ download.
+
+## Lidar Hillshade and 3D Terrain Layers
+
+Recorded on 2026-05-20:
+
+- The viewer now renders a lidar-derived hillshade and a 3D terrain view directly from AWS Terrain Tiles (Terrarium-encoded raster-DEM). In the AOP block the upstream elevation is USGS 3DEP, which is lidar-derived; that is the closest "see the lidar" the viewer can show without downloading the LAZ tiles.
+- Source: `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png`, `encoding: 'terrarium'`, `maxzoom: 15`.
+- 2D shading: MapLibre `hillshade` layer `lidar-hillshade`, toggle `Lidar hillshade (USGS 3DEP)`.
+- 3D terrain: `map.setTerrain` with exaggeration 1.4 plus `map.setSky` atmosphere, toggle `3D terrain (AWS Terrarium / USGS 3DEP)`. Drag with right-click / two-finger to tilt and rotate.
+- Attribution shown in the viewer credits AWS Terrain Tiles (USGS 3DEP, SRTM, GMTED, ETOPO1).
+- Verified with `mvp/scripts/playwright_verify_lidar_tiles.py` on 2026-05-20: 21 of 21 checks PASS, 109 AWS Terrarium tile requests during the run, 0 console errors. Screenshots: `brain/output/playwright_lidar_initial.png`, `playwright_lidar_tiles_on.png`, `playwright_lidar_hillshade_on.png`, `playwright_lidar_hillshade_plus_tiles.png`, `playwright_lidar_terrain_3d.png`, `playwright_lidar_all_off.png`.
+- The hillshade and 3D terrain are global-DEM derivatives, not the locally-derived 1-meter DEM lidar product. For lidar-grade contour lines clipped to the 9-patch, install a GDAL toolchain (Docker `osgeo/gdal` or `brew install gdal`) and clip/contour `USGS_one_meter_x61y389_TN_27County_blk4_2015.tif`; that path remains open.

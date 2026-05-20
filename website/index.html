@@ -19,12 +19,15 @@
   <div id="map"></div>
   <div class="panel">
     <h1>AOP MVP viewer</h1>
+    <label><input type="checkbox" id="showTerrain" /> 3D terrain (AWS Terrarium / USGS 3DEP)</label>
+    <label><input type="checkbox" id="showHillshade" /> Lidar hillshade (USGS 3DEP)</label>
     <label><input type="checkbox" id="showSatellite" /> Satellite imagery (TNMap 2022)</label>
     <label><input type="checkbox" id="showNinePatch" /> 9-patch acquisition AOI</label>
     <label><input type="checkbox" id="showLidarTiles" /> Lidar tile index (USGS 3DEP)</label>
     <label><input type="checkbox" id="showTrails" checked /> Publishable trails</label>
     <label><input type="checkbox" id="showBoundaries" checked /> Publishable boundaries</label>
     <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
+    <small>Terrain: AWS Terrain Tiles, derived from USGS 3DEP. Drag with right-click (or two-finger drag) to tilt and rotate.</small>
     <small>Satellite tiles served by TDOT/TNMap — inspection use only, not for redistribution.</small>
     <small>Place a publishable GeoJSON file at <code>website/data/publish.geojson</code> and reload.</small>
   </div>
@@ -50,6 +53,8 @@
     });
 
     const message = document.getElementById('message');
+    const terrainToggle = document.getElementById('showTerrain');
+    const hillshadeToggle = document.getElementById('showHillshade');
     const satelliteToggle = document.getElementById('showSatellite');
     const ninePatchToggle = document.getElementById('showNinePatch');
     const lidarTilesToggle = document.getElementById('showLidarTiles');
@@ -63,7 +68,30 @@
       }
     }
 
+    const SKY_ATMOSPHERE = {
+      'sky-color': '#7AB3FF',
+      'horizon-color': '#BCDFFE',
+      'fog-color': '#FFFFFF',
+      'sky-horizon-blend': 0.5,
+      'horizon-fog-blend': 0.5,
+      'fog-ground-blend': 0.5
+    };
+
+    function setTerrainEnabled(enabled) {
+      if (!map.getSource('aws-terrain-dem')) return;
+      if (enabled) {
+        map.setTerrain({ source: 'aws-terrain-dem', exaggeration: 1.4 });
+        if (map.setSky) map.setSky(SKY_ATMOSPHERE);
+        map.easeTo({ pitch: 60, duration: 800 });
+      } else {
+        map.setTerrain(null);
+        if (map.setSky) map.setSky(undefined);
+        map.easeTo({ pitch: 0, duration: 600 });
+      }
+    }
+
     function updateLayerVisibility() {
+      setLayerVisibility('lidar-hillshade', hillshadeToggle.checked);
       setLayerVisibility('tnmap-satellite', satelliteToggle.checked);
       setLayerVisibility('nine-patch-fill', ninePatchToggle.checked);
       setLayerVisibility('nine-patch-outline', ninePatchToggle.checked);
@@ -130,6 +158,31 @@
     }
 
     map.on('load', async () => {
+      map.addSource('aws-terrain-dem', {
+        type: 'raster-dem',
+        tiles: [
+          'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
+        ],
+        tileSize: 256,
+        encoding: 'terrarium',
+        minzoom: 0,
+        maxzoom: 15,
+        attribution: 'Terrain: AWS Terrain Tiles (USGS 3DEP, SRTM, GMTED, ETOPO1)'
+      });
+
+      map.addLayer({
+        id: 'lidar-hillshade',
+        type: 'hillshade',
+        source: 'aws-terrain-dem',
+        layout: { visibility: 'none' },
+        paint: {
+          'hillshade-exaggeration': 0.6,
+          'hillshade-shadow-color': '#23231f',
+          'hillshade-highlight-color': '#ffffff',
+          'hillshade-accent-color': '#5a4a3a'
+        }
+      });
+
       map.addSource('tnmap-imagery', {
         type: 'raster',
         tiles: [
@@ -211,14 +264,14 @@
           type: 'fill',
           source: 'lidar-tiles',
           layout: { visibility: 'none' },
-          paint: { 'fill-color': '#6a5acd', 'fill-opacity': 0.08 }
+          paint: { 'fill-color': '#9b30ff', 'fill-opacity': 0.16 }
         });
         map.addLayer({
           id: 'lidar-tiles-outline',
           type: 'line',
           source: 'lidar-tiles',
           layout: { visibility: 'none' },
-          paint: { 'line-color': '#4b3f9a', 'line-width': 1.25 }
+          paint: { 'line-color': '#9b30ff', 'line-width': 2.5, 'line-dasharray': [4, 2] }
         });
         map.addLayer({
           id: 'lidar-tiles-labels',
@@ -227,13 +280,13 @@
           layout: {
             visibility: 'none',
             'text-field': ['get', 'tile_code'],
-            'text-size': 11,
+            'text-size': 13,
             'text-anchor': 'center'
           },
           paint: {
-            'text-color': '#2c2466',
+            'text-color': '#6a1bff',
             'text-halo-color': '#ffffff',
-            'text-halo-width': 1.5
+            'text-halo-width': 2
           }
         });
       }
@@ -347,6 +400,8 @@
       message.textContent = `${publishData.features.length} publish feature${publishData.features.length === 1 ? '' : 's'} loaded.`;
     });
 
+    terrainToggle.addEventListener('change', () => setTerrainEnabled(terrainToggle.checked));
+    hillshadeToggle.addEventListener('change', updateLayerVisibility);
     satelliteToggle.addEventListener('change', updateLayerVisibility);
     ninePatchToggle.addEventListener('change', updateLayerVisibility);
     lidarTilesToggle.addEventListener('change', updateLayerVisibility);

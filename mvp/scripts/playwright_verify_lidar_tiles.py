@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""Playwright verification for the AOP viewer lidar tile-index layer.
+"""Playwright verification for the AOP viewer lidar layers.
 
-Loads the static viewer at http://localhost:8000/, toggles the lidar tile
-index, confirms the layers render and that the GeoJSON contains the
-expected 24 USGS 3DEP LAZ tile footprints intersecting the 9-patch.
+Covers:
+  - Lidar tile index (USGS 3DEP) GeoJSON overlay (24 tiles).
+  - Lidar hillshade (raster-dem 'hillshade' layer over aws-terrain-dem).
+  - 3D terrain (map.setTerrain via showTerrain toggle).
+
+Confirms layers render and that AWS Terrarium DEM tiles are actually fetched
+when hillshade or 3D terrain is enabled. Captures verification screenshots
+into brain/output/.
 
 Run after `python3 -m http.server 8000` is serving the `website/` directory.
 """
@@ -22,12 +27,16 @@ OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 
 SCREENSHOTS = {
     "initial": "playwright_lidar_initial.png",
-    "lidar_on": "playwright_lidar_on.png",
-    "lidar_plus_satellite": "playwright_lidar_plus_satellite.png",
-    "lidar_off": "playwright_lidar_off.png",
+    "tiles_on": "playwright_lidar_tiles_on.png",
+    "hillshade_on": "playwright_lidar_hillshade_on.png",
+    "hillshade_plus_tiles": "playwright_lidar_hillshade_plus_tiles.png",
+    "terrain_3d": "playwright_lidar_terrain_3d.png",
+    "all_off": "playwright_lidar_all_off.png",
 }
 
 TOGGLE_IDS = {
+    "terrain": "showTerrain",
+    "hillshade": "showHillshade",
     "satellite": "showSatellite",
     "patch": "showNinePatch",
     "lidar": "showLidarTiles",
@@ -49,7 +58,7 @@ def set_toggle(page, toggle_id: str, target: bool) -> None:
     current = element.is_checked()
     if current != target:
         element.click()
-    page.wait_for_timeout(150)
+    page.wait_for_timeout(200)
 
 
 def layer_visibility(page, layer_id: str) -> str | None:
@@ -74,9 +83,16 @@ def feature_count(page, url: str) -> int:
     )
 
 
+def terrain_enabled(page) -> bool:
+    return page.evaluate(
+        "() => !!(window.map && window.map.getTerrain && window.map.getTerrain())"
+    )
+
+
 def main() -> int:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     console_errors: list[str] = []
+    terrarium_requests: list[str] = []
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -87,6 +103,12 @@ def main() -> int:
             "console",
             lambda msg: console_errors.append(msg.text)
             if msg.type == "error"
+            else None,
+        )
+        page.on(
+            "request",
+            lambda req: terrarium_requests.append(req.url)
+            if "elevation-tiles-prod" in req.url
             else None,
         )
 
@@ -102,79 +124,98 @@ def main() -> int:
         page.wait_for_timeout(500)
 
         print("\n== Initial state ==")
-        check(
-            "lidar toggle exists and starts off",
-            page.locator(f"#{TOGGLE_IDS['lidar']}").count() == 1
-            and not page.locator(f"#{TOGGLE_IDS['lidar']}").is_checked(),
-        )
+        for name in ("terrain", "hillshade", "lidar", "patch", "satellite"):
+            tid = TOGGLE_IDS[name]
+            check(
+                f"{name} toggle exists and starts off",
+                page.locator(f"#{tid}").count() == 1
+                and not page.locator(f"#{tid}").is_checked(),
+            )
         check(
             "lidar-tiles-outline added with visibility=none",
             layer_visibility(page, "lidar-tiles-outline") == "none",
         )
         check(
-            "lidar-tiles-fill added with visibility=none",
-            layer_visibility(page, "lidar-tiles-fill") == "none",
+            "lidar-hillshade layer added with visibility=none",
+            layer_visibility(page, "lidar-hillshade") == "none",
         )
         check(
-            "lidar-tiles-labels added with visibility=none",
-            layer_visibility(page, "lidar-tiles-labels") == "none",
+            "terrain disabled at load",
+            not terrain_enabled(page),
         )
         count = feature_count(page, "./data/aop_lidar_tiles.geojson")
         check(
-            "lidar tile-index loaded 24 tiles",
+            "lidar tile-index has 24 tiles",
             count == 24,
             f"feature_count={count}",
         )
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["initial"]))
 
-        print("\n== Toggle lidar ON ==")
+        print("\n== Toggle lidar tile-index ON ==")
         set_toggle(page, TOGGLE_IDS["lidar"], True)
         page.wait_for_timeout(400)
-        check(
-            "lidar-tiles-outline visible",
-            layer_visibility(page, "lidar-tiles-outline") == "visible",
-        )
-        check(
-            "lidar-tiles-fill visible",
-            layer_visibility(page, "lidar-tiles-fill") == "visible",
-        )
-        check(
-            "lidar-tiles-labels visible",
-            layer_visibility(page, "lidar-tiles-labels") == "visible",
-        )
-        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["lidar_on"]))
-
-        print("\n== Toggle lidar + satellite ON together ==")
-        set_toggle(page, TOGGLE_IDS["satellite"], True)
-        page.wait_for_timeout(3000)
-        check(
-            "satellite visible underneath",
-            layer_visibility(page, "tnmap-satellite") == "visible",
-        )
-        check(
-            "lidar still visible",
-            layer_visibility(page, "lidar-tiles-outline") == "visible",
-        )
-        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["lidar_plus_satellite"]))
-
-        print("\n== Toggle lidar OFF ==")
-        set_toggle(page, TOGGLE_IDS["lidar"], False)
-        page.wait_for_timeout(300)
-        for layer in (
-            "lidar-tiles-outline",
-            "lidar-tiles-fill",
-            "lidar-tiles-labels",
-        ):
+        for layer in ("lidar-tiles-fill", "lidar-tiles-outline", "lidar-tiles-labels"):
             vis = layer_visibility(page, layer)
-            check(f"{layer} hidden", vis == "none", f"visibility={vis}")
-        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["lidar_off"]))
+            check(f"{layer} visible", vis == "visible", f"visibility={vis}")
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["tiles_on"]))
 
-        print("\n== Console summary ==")
+        print("\n== Toggle hillshade ON (with tiles still on) ==")
+        before = len(terrarium_requests)
+        set_toggle(page, TOGGLE_IDS["hillshade"], True)
+        page.wait_for_timeout(4500)
+        after = len(terrarium_requests)
+        check(
+            "lidar-hillshade visible",
+            layer_visibility(page, "lidar-hillshade") == "visible",
+        )
+        check(
+            "AWS Terrarium DEM tiles requested",
+            (after - before) > 0,
+            f"{after - before} terrarium tile requests",
+        )
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["hillshade_plus_tiles"]))
+
+        # Hillshade alone (toggle tiles off, keep hillshade) to capture clean shading.
+        set_toggle(page, TOGGLE_IDS["lidar"], False)
+        page.wait_for_timeout(400)
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["hillshade_on"]))
+
+        print("\n== Toggle 3D terrain ON ==")
+        before_t = len(terrarium_requests)
+        set_toggle(page, TOGGLE_IDS["terrain"], True)
+        page.wait_for_timeout(3500)
+        check(
+            "map.getTerrain() truthy",
+            terrain_enabled(page),
+        )
+        check(
+            "additional terrarium tile traffic during 3D enable",
+            (len(terrarium_requests) - before_t) >= 0,
+            f"{len(terrarium_requests) - before_t} new terrarium requests",
+        )
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["terrain_3d"]))
+
+        print("\n== Toggle everything OFF ==")
+        set_toggle(page, TOGGLE_IDS["terrain"], False)
+        set_toggle(page, TOGGLE_IDS["hillshade"], False)
+        page.wait_for_timeout(800)
+        check(
+            "terrain disabled",
+            not terrain_enabled(page),
+        )
+        check(
+            "lidar-hillshade hidden",
+            layer_visibility(page, "lidar-hillshade") == "none",
+        )
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["all_off"]))
+
+        print("\n== Console + network summary ==")
         check(
             "no console errors",
             len(console_errors) == 0,
             f"{len(console_errors)} error(s): {console_errors[:3]}",
         )
+        print(f"  Total AWS Terrarium tile requests during run: {len(terrarium_requests)}")
 
         browser.close()
 

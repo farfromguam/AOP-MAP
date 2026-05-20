@@ -59,6 +59,19 @@ Archived copy: `brain/handoff/session_context_202605201517.md`
  - Copied `brain/output/aop_9_patch_data_bounds.geojson` to `website/data/aop_9_patch.geojson` and added a toggleable `9-patch acquisition AOI` overlay with cell-code labels.
  - Added `mvp/scripts/playwright_verify_satellite.py`: exercises every toggle, verifies layer visibility through `window.map.getLayoutProperty`, captures 5 screenshots into `brain/output/playwright_satellite_*.png`, and asserts TNMap tile requests fire when satellite is enabled.
  - Run on 2026-05-20: 16 of 16 checks PASS, 96 TNMap tile requests, 0 console errors. Screenshots show TNMap 6-inch imagery rendering under the AOP parcel envelope and the dashed 9-patch grid around it.
+ - Added `website/data/aop_lidar_tiles.geojson`: 24 USGS 3DEP LAZ tile footprints intersecting the 9-patch, sourced from the TNM products API. Each feature carries `tile_code`, `title`, `project`, `publication_date`, `size_bytes`, `size_mb`, `download_url`, `meta_url`, `source_name`, and `source_id`. Total raw payload still 2.79 GB; no LAZ tiles downloaded.
+ - Added a toggleable `Lidar tile index (USGS 3DEP)` layer in `website/index.html` (fill + outline + `tile_code` labels + click popup with LAZ download link).
+ - Added `mvp/scripts/playwright_verify_lidar_tiles.py`; on 2026-05-20 it reported 14 of 14 checks PASS, 0 console errors, and saved `brain/output/playwright_lidar_*.png`.
+ - Documented the new layer in `brain/research/aop_data_bounds.md` under "Lidar Tile Index Layer".
+ - User flagged interest in really high quality topography lines (lidar-grade contours) as the motivation. That work is not started; next session should scope contour interval, AOI, and output format (vector GeoJSON vs. raster tile overlay) before pulling the 1-meter DEM.
+ - User followed up that they were not seeing lidar data, so the viewer was extended to actually visualize elevation, not just tile metadata.
+ - Wired AWS Terrain Tiles (Terrarium-encoded raster-DEM) as a single `aws-terrain-dem` source feeding both a MapLibre `hillshade` layer and `map.setTerrain` 3D mode. In the AOP block the upstream elevation is USGS 3DEP, which is lidar-derived.
+ - Added two new viewer toggles: `Lidar hillshade (USGS 3DEP)` and `3D terrain (AWS Terrarium / USGS 3DEP)`. The 3D toggle also calls `map.setSky(SKY_ATMOSPHERE)` and eases to pitch 60.
+ - Strengthened the lidar tile-index styling (purple `#9b30ff` dashed outline at width 2.5, fill-opacity 0.16, 13px halo-2 labels) so it is unmissable against satellite imagery.
+ - GDAL is not installed on this machine (`gdal_contour`, `gdalinfo`, `ogr2ogr`, Python `rasterio`/`osgeo` all missing). The local 1-meter-DEM contour pipeline therefore still requires a tooling decision (Docker `osgeo/gdal` vs `brew install gdal`) before download.
+ - USGSShadedReliefOnly was probed and only caches to z=13 over this AOI, so the chosen path is the AWS Terrarium DEM client-side hillshade rather than the USGS shaded-relief tile cache.
+ - Extended `mvp/scripts/playwright_verify_lidar_tiles.py` to toggle tile-index, hillshade, and 3D terrain, assert AWS Terrarium tile traffic, and capture six screenshots. On 2026-05-20 it reported 21 of 21 checks PASS, 109 AWS Terrarium tile requests, 0 console errors. Screenshots at `brain/output/playwright_lidar_*.png` show the AOP parcel with bold purple lidar tile-index, lidar-derived hillshade, and 3D tilt with sky atmosphere.
+ - Captured the lidar-grade contour work as a backlog card at `brain/tasks/backlog/lidar_contour_pipeline.md` and added it to `brain/tasks/backlog/_readme.md`. The card sequences the GDAL toolchain decision, the 1-meter DEM clip, contour generation at a 5-foot first-pass interval over the full 9-patch, the GeoJSON-vs-PMTiles ship-format fork, the viewer wiring, and the Playwright verification. The contour pipeline is not started; pick it up from that card next session.
 
 ## What the next session should do
 
@@ -80,6 +93,7 @@ Archived copy: `brain/handoff/session_context_202605201517.md`
 16. Execute the first real observation review, promotion, and verification pass after real trail data exists.
 17. If the MVP stack is not ready, record the exact failure mode and update this handoff immediately.
 18. Keep session-only notes in this folder; move stable promises to `northstar/` and source facts to `research/`.
+19. Pending swap from the AWS terrarium DEM to AOP-specific tiles built from the USGS 3DEP 1m DEM. Full step list lives at `brain/tasks/01_mvp/_readme.md` item #10. Triggers: only worth doing once the 10m terrarium look has earned its keep, since the toolchain install + 500MB download + tile build is a half-day vs. zero today.
 
 ## Session note
 
