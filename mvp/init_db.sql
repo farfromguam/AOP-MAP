@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS core.hazards (
   status text,
   confidence text,
   permission text,
+  publish_status text,
   source_id integer REFERENCES source_register.sources(id),
   notes text,
   geom geometry(Point,4326),
@@ -117,6 +118,7 @@ CREATE TABLE IF NOT EXISTS core.trailheads (
   status text,
   confidence text,
   permission text,
+  publish_status text,
   source_id integer REFERENCES source_register.sources(id),
   notes text,
   geom geometry(Point,4326),
@@ -135,25 +137,25 @@ CREATE TABLE IF NOT EXISTS core.print_annotations (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE VIEW IF NOT EXISTS publish.trail_centerlines AS
+CREATE OR REPLACE VIEW publish.trail_centerlines AS
   SELECT id, name, difficulty, status, confidence, permission, geom
   FROM core.trail_centerlines
   WHERE permission = 'publish'
     AND publish_status = 'publish';
 
-CREATE VIEW IF NOT EXISTS publish.park_boundaries AS
+CREATE OR REPLACE VIEW publish.park_boundaries AS
   SELECT id, name, status, confidence, permission, geom
   FROM core.park_boundaries
   WHERE permission = 'publish'
     AND publish_status = 'publish';
 
-CREATE VIEW IF NOT EXISTS publish.trailheads AS
+CREATE OR REPLACE VIEW publish.trailheads AS
   SELECT id, name, status, confidence, permission, geom
   FROM core.trailheads
   WHERE permission = 'publish'
     AND publish_status = 'publish';
 
-CREATE VIEW IF NOT EXISTS publish.hazards AS
+CREATE OR REPLACE VIEW publish.hazards AS
   SELECT id, hazard_type, severity, status, confidence, permission, geom
   FROM core.hazards
   WHERE permission = 'publish'

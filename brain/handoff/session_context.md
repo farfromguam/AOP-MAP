@@ -1,0 +1,27 @@
+# Session Handoff: MVP validation loop
+
+Date: 2026-05-20
+
+This session is now continuing MVP work with context after the CWC command executed successfully.
+
+## What happened
+
+- The user asked to continue MVP work and begin testing the loop.
+- I executed `./cwc` and confirmed the CWC task is now active.
+- The current northstar promise is in `aop_brain/northstar/map_northstar.md`.
+- The current build card is `aop_brain/tasks/aop_south_pittsburg_map_build_card.md`.
+- The MVP environment was launched successfully with `mvp/docker compose up -d`.
+- The next step is to verify the MVP validation loop rather than pausing at this juncture.
+
+## What the next session should do
+
+1. Read `aop_brain/northstar/validation_loop.md` as the loop contract.
+2. Execute the first round of observation review, promotion, and verification in the MVP environment.
+3. Capture one observation, attach it to a source, and document the review outcome.
+4. Confirm the observation promotion path is traceable from evidence to map update.
+5. If the MVP stack is not ready, record the exact failure mode and update this handoff immediately.
+6. Keep session-only notes in this folder; move stable promises to `northstar/` and source facts to `research/`.
+
+## Session note
+
+This file is handoff context, not a durable policy document. Keep it live until the next session has read and acted on it.

@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# VS Code workspace settings and local extensions
+.vscode/
+
+# Postgres data directories for local MVP development
+/mvp/db-data/
+/mvp/db-data-broken-*/
+
+# Temporary files
+*.swp
+*~
