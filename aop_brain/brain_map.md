@@ -24,6 +24,7 @@ aop_brain/
 ├── flows/          reusable work flows
 ├── voice/          how docs should read and be shaped
 ├── ai_rules/       how the assistant collaborates here
+├── handoff/        session-specific handoff and onboarding notes
 └── output/         future scratch artifacts
 ```
 

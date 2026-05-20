@@ -16,8 +16,7 @@ It starts inside `brain/output/` because the AOP work was born there. When the n
 The first pass is conservative:
 
 - Copy the AOP South Pittsburg research and build card.
-- Add a small map northstar so the project has a source of truth above the task card.
-- Carry over project-agnostic working habits from the Soka brain: voice, task shape, AAF, triangulation, and andon.
+- Add a small map northstar so the project has a source of truth above the task card.- Create a handoff branch for session-only context and onboarding the next session.- Carry over project-agnostic working habits from the Soka brain: voice, task shape, AAF, triangulation, and andon.
 - Leave Soka implementation docs behind.
 
 What did not come over: Soka runtime architecture, zettel docs, sprint history, semantic layers, dojo material, prose corpus, and Soka backlog. Those are project-specific to Soka.
