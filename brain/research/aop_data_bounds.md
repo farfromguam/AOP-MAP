@@ -111,3 +111,14 @@ The concept cells are also written as GeoJSON at `brain/output/aop_9_patch_data_
 - `notes`
 
 Use WGS84 bbox coordinates for service queries and downloads. Use a projected CRS in QGIS for measurement, raster processing, buffering, or print layout.
+
+## Data Acquisition Findings
+
+Recorded on 2026-05-20:
+
+- Concrete imagery, DEM, lidar, contour, and US Topo products for the full 9-patch are listed in `brain/output/aop_9_patch_data_acquisition_manifest.md`.
+- Best immediate imagery source: TDOT / TNMap `IMAGERY_WEB_MERCATOR`; the AOP point query returned Marion County `TN_Ortho_Year = 2022`.
+- Best immediate elevation source: USGS 3DEP 1-meter DEM tile `USGS_one_meter_x61y389_TN_27County_blk4_2015.tif`, which covers the full 9-patch.
+- Raw lidar is available from USGS as 24 LAZ tiles totaling about 2.79 GB. Use it only if the 1-meter DEM and derived hillshade are not enough.
+- USGS contour GeoPackage `ELEV_Chattanooga_W_TN_1X1_GPKG.zip` covers the AOI.
+- Current US Topo GeoPDF coverage crosses the Orme, TN and South Pittsburg, TN quadrangles.

@@ -1,8 +1,8 @@
 # Session Handoff: MVP validation loop
 
-Date: 202605201517
+Date: 202605201645
 
-This session is now continuing MVP work with context after invoking the CWC flow (`~~cwc`).
+This session is continuing MVP work with context after invoking the CWC flow (`~~cwc`).
 
 Archived copy: `brain/handoff/session_context_202605201517.md`
 
@@ -34,6 +34,19 @@ Archived copy: `brain/handoff/session_context_202605201517.md`
  - The parcel importer now fetches both `ELLIS COVE RD 1040` and `093 030.01`, upserts both into `core.parcels`, and publishes the working envelope as `AOP working parcel envelope - included parcel candidates` with `MultiPolygon` geometry.
  - The imported candidate parcels total `592.31840466` calculated acres and `573.46` deed acres. `website/data/publish.geojson` was refreshed and now contains one publishable boundary feature whose bounds include the connected parcel.
  - Documented the current working bounds in `brain/research/aop_data_bounds.md` and `brain/output/aop_9_patch_data_bounds.geojson`: the center bounds are the exported bbox of the two-parcel candidate envelope, and the proposed 9-patch acquisition bounds expand that center cell one full cell in every direction for satellite/orthoimagery, topo, DEM, and lidar pulls. Trails stay inside the park working envelope unless AOP confirms otherwise.
+ - User asked what the 9-patch means. Answer: it is a 3-by-3 data acquisition AOI around the current two-parcel working envelope; it is for raster/terrain/topo context only, not trail expansion or legal boundary claims.
+ - User then asked to find lidar, satellite/imagery, and topographic data for the 9-patch.
+ - Public GIS sources were queried against the full 9-patch bbox `-85.782935283, 35.067164188, -85.717154097, 35.117928496`.
+ - Added `brain/output/aop_9_patch_data_acquisition_manifest.md` with concrete source links, query results, and recommended acquisition order.
+ - Updated `brain/research/aop_data_bounds.md` with a short data acquisition findings section pointing to that manifest.
+ - Best immediate imagery source found: TDOT / TNMap `https://tnmap.tn.gov/arcgis/rest/services/BASEMAPS/IMAGERY_WEB_MERCATOR/MapServer`; AOP point query returned Marion County `TN_Ortho_Year = 2022` and `NAIP_Year = 2021`. Treat exported imagery/licensing separately before publishing.
+ - Best immediate elevation source found: USGS 3DEP 1-meter DEM `USGS_one_meter_x61y389_TN_27County_blk4_2015.tif`, about `499,956,299` bytes, covering the full 9-patch.
+ - Raw lidar source found: USGS 3DEP LAZ point cloud project `USGS_LPC_TN_27County_blk4_2015_LAS_2018`; 24 intersecting LAZ tiles totaling about `2,788,061,014` bytes. Use only if the 1-meter DEM/hillshade is not enough.
+ - Topographic sources found: USGS contour GeoPackage `ELEV_Chattanooga_W_TN_1X1_GPKG.zip`, plus US Topo GeoPDFs for Orme, TN and South Pittsburg, TN from 2010, 2013, and 2016.
+ - NAIP sources found: USGS NAIP ImageServer returned two 2021 downloadable 0.6 m, 4-band quarter-quads; USDA 2023 Tennessee image-date polygons intersect the AOI with acquisition date `2023-06-09`, but direct 2023 imagery download paths were not resolved in this pass.
+ - USDA Geospatial Data Gateway was checked and is now retired as of 2026-03-31; USDA points many direct data downloads to Box paths including `https://nrcs.app.box.com/v/gateway/` and `https://nrcs.app.box.com/v/naip`.
+ - No raster/lidar/topo products were downloaded locally in this pass; this was discovery and manifesting only.
+ - Working tree at this CWC dump includes the new/modified acquisition docs plus pre-existing or unrelated untracked items visible in status: `brain/output/diagnose_viewer.png` and `brain/tasks/backlog/`. Do not assume those untracked items came from this dump.
 
 ## What the next session should do
 
@@ -41,12 +54,19 @@ Archived copy: `brain/handoff/session_context_202605201517.md`
 2. Connect QGIS to `localhost:5432` and inspect `raw.arcgis_feature_captures`, `core.parcels`, `core.park_boundaries`, and `source_register.feature_sources`.
 3. Verify the `110 008.00` plus `093 030.01` envelope in QGIS and keep it labeled as parcel-reference context, not a legal survey.
 4. Use `brain/research/aop_data_bounds.md` and `brain/output/aop_9_patch_data_bounds.geojson` for the 9-patch satellite/orthoimagery, topo, DEM, and lidar acquisition AOI.
-5. Replace demo/smoke trail and trailhead placeholders with actual AOP trail/observation data.
-6. Attach each real feature to a source row in `source_register.sources` and preserve confidence/permission metadata.
-7. Export the `publish` views to `website/data/publish.geojson` and verify the viewer renders the actual AOP map.
-8. Execute the first real observation review, promotion, and verification pass after real trail data exists.
-9. If the MVP stack is not ready, record the exact failure mode and update this handoff immediately.
-10. Keep session-only notes in this folder; move stable promises to `northstar/` and source facts to `research/`.
+5. Use `brain/output/aop_9_patch_data_acquisition_manifest.md` as the source list for data pulls.
+6. In QGIS, add TNMap 2022 orthoimagery as an ArcGIS REST/WMTS inspection basemap.
+7. Download the USGS 3DEP 1-meter DEM first, clip it to the 9-patch, then generate hillshade, slope, and print-friendly relief products.
+8. Download the USGS contour GeoPackage and clip/filter it to the 9-patch.
+9. Pull USGS US Topo GeoPDFs for Orme and South Pittsburg as archived references.
+10. Hold raw LAZ downloads until the DEM-derived products are inspected; the full LAZ set is about 2.79 GB.
+11. If newer NAIP than 2021 is needed, resolve 2023 NAIP direct download through USDA Box/AWS or another official USDA/USGS path; do not treat the 2023 date index as the imagery itself.
+12. Replace demo/smoke trail and trailhead placeholders with actual AOP trail/observation data.
+13. Attach each real feature to a source row in `source_register.sources` and preserve confidence/permission metadata.
+14. Export the `publish` views to `website/data/publish.geojson` and verify the viewer renders the actual AOP map.
+15. Execute the first real observation review, promotion, and verification pass after real trail data exists.
+16. If the MVP stack is not ready, record the exact failure mode and update this handoff immediately.
+17. Keep session-only notes in this folder; move stable promises to `northstar/` and source facts to `research/`.
 
 ## Session note
 
