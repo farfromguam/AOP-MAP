@@ -11,7 +11,9 @@ This session is now continuing MVP work with context after invoking the CWC flow
  - The current northstar promise is in `brain/northstar/map_northstar.md`.
  - The current build card is `brain/tasks/aop_south_pittsburg_map_build_card.md`.
 - The MVP environment was launched successfully with `mvp/docker compose up -d`.
-- The next step is to verify the MVP validation loop rather than pausing at this juncture.
+ - The database schema is initialized and the project tables exist, but all core tables were empty before this session.
+ - A demo source and publishable sample features were inserted into `core.trail_centerlines`, `core.park_boundaries`, and `core.trailheads`.
+ - `website/data/publish.geojson` was exported from the `publish` views and now contains visible sample GeoJSON for the static viewer.
 
 ## What the next session should do
 

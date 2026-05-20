@@ -1,4 +1,1 @@
-{
-  "type": "FeatureCollection",
-  "features": []
-}
+{"type" : "FeatureCollection", "features" : [{"type" : "Feature", "geometry" : {"type":"LineString","coordinates":[[-85.858,35.031],[-85.851,35.034],[-85.845,35.039]]}, "properties" : {"id" : 1, "layer" : "trail_centerlines", "name" : "Demo Ridge Trail", "difficulty" : "intermediate", "status" : "verified", "confidence" : "high"}}, {"type" : "Feature", "geometry" : {"type":"Polygon","coordinates":[[[-85.864,35.028],[-85.864,35.042],[-85.846,35.042],[-85.846,35.028],[-85.864,35.028]]]}, "properties" : {"id" : 1, "layer" : "park_boundaries", "name" : "Demo Park Boundary", "status" : "verified", "confidence" : "high"}}, {"type" : "Feature", "geometry" : {"type":"Point","coordinates":[-85.858,35.031]}, "properties" : {"id" : 1, "layer" : "trailheads", "name" : "Demo Trailhead", "status" : "verified", "confidence" : "high"}}]}
