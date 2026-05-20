@@ -8,10 +8,10 @@ Prove the loop that turns observations into trustable map updates before buildin
 
 ## Sources
 
-- `aop_brain/northstar/validation_loop.md`
-- `aop_brain/northstar/map_northstar.md`
-- `aop_brain/tasks/aop_south_pittsburg_map_build_card.md`
-- `aop_brain/handoff/session_context.md`
+ - `brain/northstar/validation_loop.md`
+ - `brain/northstar/map_northstar.md`
+ - `brain/tasks/aop_south_pittsburg_map_build_card.md`
+ - `brain/handoff/session_context.md`
 
 ## Scope
 
@@ -31,7 +31,7 @@ Prove the loop that turns observations into trustable map updates before buildin
 
 - Confirm the observation can answer: what, source, confidence, publishable, last checked.
 - Confirm the promotion path from evidence to map update is documented.
-- Confirm the next session can continue from `aop_brain/handoff/session_context.md`.
+ - Confirm the next session can continue from `brain/handoff/session_context.md`.
 
 ## Notes
 

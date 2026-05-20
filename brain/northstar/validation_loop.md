@@ -26,8 +26,8 @@ This is the difference between a living map and a rumor collector. Without the l
 ## Next session
 
 - Continue testing this loop in the MVP environment.
-- Use `aop_brain/handoff/session_context.md` for the current session context.
-- Keep the loop contract in `aop_brain/northstar/validation_loop.md`.
+- Use `brain/handoff/session_context.md` for the current session context.
+- Keep the loop contract in `brain/northstar/validation_loop.md`.
 - If the next session discovers a failure in the MVP stack, record it as a session note and only promote stable process changes into `northstar/`.
 
 #northstar #validation #mvp #handoff
