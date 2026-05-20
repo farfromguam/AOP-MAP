@@ -7,10 +7,9 @@ This flow is the brain-level anchor for continuing the MVP without losing the se
 ## Use
 
 - Invoke as `~~cwc` in conversation.
- - Invoke as `~~cwc` in conversation.
  - Follow the current session handoff in `brain/handoff/session_context.md`.
  - Respect the validation loop in `brain/northstar/validation_loop.md`.
- - Use the current build card in `brain/tasks/aop_south_pittsburg_map_build_card.md`.
+ - Use the current build card in `brain/tasks/01_mvp/aop_south_pittsburg_map_build_card.md`.
 
 ## Purpose
 

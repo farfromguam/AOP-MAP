@@ -43,6 +43,7 @@ Deliverables:
 - QGIS project connected to PostGIS.
 - TNMap imagery, USGS topo, parcel data, DEM hillshade, slope, contours, and hydro/drainage layers.
 - Candidate park boundary from Comptroller parcels, with the 600+ acre mismatch called out instead of papered over.
+- 9-patch data acquisition AOI around the current two-parcel working envelope for satellite/orthoimagery, topo, DEM, and lidar pulls.
 - Trail candidates from official material, SFWDA, RiderPlanet/app checks, imagery, hillshade, and field GPX when available.
 - Source-confidence styling so unverified data is visibly unverified.
 
@@ -138,10 +139,11 @@ Phoenix is future stack, not V1 stack. The V1 website should be static unless th
 2. Add source register tables before any map feature tables.
 3. Load the AOP AOI, Marion County parcels, TNMap imagery reference, USGS topo reference, DEM, hillshade, slope, contours, and drainage.
 4. Resolve the parcel / acreage mismatch enough to draw a clearly labeled working envelope.
-5. Add empty candidate trail, observation, hazard, trailhead, and print annotation layers.
-6. Wire QGIS styles around confidence, status, and permission.
-7. Export `publish` views to GeoJSON / PMTiles input, plus a GeoPackage snapshot.
-8. Build the first print layout before the static web viewer, because the whiteboard loop is the data product.
+5. Create the 9-patch data acquisition bounds around the working envelope; use it for raster/terrain context, while keeping trails inside the park working envelope.
+6. Add empty candidate trail, observation, hazard, trailhead, and print annotation layers.
+7. Wire QGIS styles around confidence, status, and permission.
+8. Export `publish` views to GeoJSON / PMTiles input, plus a GeoPackage snapshot.
+9. Build the first print layout before the static web viewer, because the whiteboard loop is the data product.
 
 
 ## Out of Scope For V1

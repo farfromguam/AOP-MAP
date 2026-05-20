@@ -7,8 +7,11 @@ This repository contains the Adventure Off Road Park map brain and a minimal MVP
 - [X] Scaffold PostGIS container and init SQL
 - [X] Add static MapLibre viewer skeleton
 - [X] Add root README and website README
-- [ ] Confirm Docker container startup
+- [X] Confirm Docker container startup
+- [X] Prove observation capture, review, promotion, provenance, and export with a smoke test
+- [X] Import the first real source-backed AOP boundary slice from the Tennessee Comptroller Marion County parcel layer
 - [ ] Connect QGIS and verify schema
+- [ ] Reconcile the official 600+ acre AOP claim against parcel data and any related parcels
 
 ## Spinup instructions
 
@@ -59,7 +62,7 @@ Then inspect these schemas:
 
 ### 5. Preview the viewer
 
-Open `website/index.html` in a browser, or use a simple local web server from the repository root:
+Use a simple local web server from the repository root:
 
 ```bash
 cd website
@@ -67,6 +70,20 @@ python3 -m http.server 8000
 ```
 
 Then browse to `http://localhost:8000`.
+
+The viewer fetches `website/data/publish.geojson`, so serving over HTTP is preferred over opening `index.html` directly.
+
+### 6. Refresh the current AOP boundary slice
+
+From the repository root:
+
+```bash
+cd mvp
+./scripts/import_aop_parcel_boundary.sh
+./scripts/export_publish_geojson.sh
+```
+
+This refreshes the parcel-derived candidate boundary for `ELLIS COVE RD 1040` and writes the publishable viewer data to `website/data/publish.geojson`.
 
 ## Troubleshooting
 
@@ -85,5 +102,8 @@ docker compose logs db
 
 - `mvp/docker-compose.yml` — PostGIS container definition
 - `mvp/init_db.sql` — initial database schema for sources, park boundaries, parcels, trails, observations, hazards, trailheads, and publish views
+- `mvp/scripts/import_aop_parcel_boundary.sh` — imports the current source-backed AOP parcel boundary slice
+- `mvp/scripts/run_validation_loop_smoke.sh` — proves observation-to-promotion plumbing with demo rows
+- `mvp/scripts/export_publish_geojson.sh` — exports publish views to the static viewer
 - `website/index.html` — static MapLibre viewer skeleton
-- `website/data/publish.geojson` — placeholder publish layer data
+- `website/data/publish.geojson` — current publish layer export

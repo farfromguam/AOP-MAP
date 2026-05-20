@@ -14,7 +14,7 @@ TL;DR:
 | Source | New path | Notes |
 |---|---|---|
 | `brain/output/aop_south_pittsburg_research.md` | `research/aop_south_pittsburg_sources.md` | Source stack and open questions. |
-| `brain/output/aop_south_pittsburg_map_build_card.md` | `tasks/aop_south_pittsburg_map_build_card.md` | Build card. Source link retargeted to local research path. |
+| `brain/output/aop_south_pittsburg_map_build_card.md` | `tasks/01_mvp/aop_south_pittsburg_map_build_card.md` | Build card. Source link retargeted to local research path. |
 
 ## Copied or adapted project-agnostic docs
 

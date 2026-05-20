@@ -10,7 +10,7 @@ Prove the loop that turns observations into trustable map updates before buildin
 
  - `brain/northstar/validation_loop.md`
  - `brain/northstar/map_northstar.md`
- - `brain/tasks/aop_south_pittsburg_map_build_card.md`
+ - `brain/tasks/01_mvp/aop_south_pittsburg_map_build_card.md`
  - `brain/handoff/session_context.md`
 
 ## Scope
@@ -36,3 +36,13 @@ Prove the loop that turns observations into trustable map updates before buildin
 ## Notes
 
 If `mvp/docker compose up -d` fails again, capture the error and update the handoff notes instead of guessing the fix.
+
+## Smoke test result
+
+2026-05-20 CWC pass:
+- `mvp/scripts/run_validation_loop_smoke.sh` captured one demo board-review observation.
+- The observation was reviewed as `verified`, then promoted into `core.trail_centerlines` as `MVP Smoke: Board-Validated Connector`.
+- `source_register.feature_sources` links now trace the smoke observation, promoted trail, and original demo publish features back to source rows.
+- `mvp/scripts/export_publish_geojson.sh` refreshed `website/data/publish.geojson` from the live `publish` views.
+
+This proves the MVP plumbing for capture, review, promotion, provenance, and export. It does not replace the remaining need for real AOP parcel, trail, and field-observation data.

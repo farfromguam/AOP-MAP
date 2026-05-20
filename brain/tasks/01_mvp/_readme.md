@@ -32,12 +32,15 @@ This MVP scaffold is the first practical step toward the build card:
 
 ## Immediate next work
 
-1. [ ] Launch the PostGIS container in `mvp/`
-2. [ ] Confirm `mvp/init_db.sql` created the database schema
+1. [X] Launch the PostGIS container in `mvp/`
+2. [X] Confirm `mvp/init_db.sql` created the database schema
 3. [ ] Connect QGIS to `localhost:5432` and inspect source/feature tables
 4. [X] Load a placeholder `publish.geojson` into `website/`
 5. [X] Preview `website/index.html`
-6. [ ] Replace placeholders with actual AOP parcel/trail/observation data and verify the live viewer shows real map data
+6. [X] Run a demo validation-loop smoke test from observation capture to promoted publish export
+7. [X] Replace the demo publish boundary with a source-backed AOP parcel-derived candidate boundary
+8. [ ] Reconcile the 600+ acre official AOP claim against related parcels or current holdings
+9. [ ] Replace demo/smoke trail and trailhead placeholders with actual AOP trail/observation data and verify the live viewer shows real map data
 
 ## Files added
 - `mvp/docker-compose.yml`

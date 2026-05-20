@@ -100,6 +100,42 @@ Working lead:
 - A nearby LoopNet record also shows a 482.26-acre figure for 1040 Ellis Cove Road.
 - Official AOP says 600+ acres. That mismatch may mean multiple parcels, changed holdings, marketing acreage, or stale third-party data. Verify with Comptroller data before drawing the park boundary.
 
+Current MVP import result, 2026-05-20:
+- Source layer: Tennessee Comptroller `TN_County_Parcel_Map` ArcGIS FeatureServer layer `35` / `Marion_Parcels`.
+- Query used: `Assessment_Data_58_ADDRESS = 'ELLIS COVE RD 1040' OR Assessment_Data_58_ID = '093 030.01'`.
+- Returned two parcel features.
+- Parcel 1 assessment ID: `110 008.00`.
+- Parcel 1 assessment parcel ID: `058 110    00800 000 2023`.
+- Parcel 1 object ID: `20707`.
+- Parcel 1 global ID: `d1d093ee-9995-42a8-8676-da5570950697`.
+- Parcel 1 address field: `ELLIS COVE RD 1040`.
+- Parcel 1 class: `12 FOREST`.
+- Parcel 1 land use: `81 - AGRICULTURE AND RELATED ACTIVITIES`.
+- Parcel 1 calculated acres: `502.49725246`.
+- Parcel 1 deed acres: `483.46`.
+- Parcel 2 was added from the user-provided connected parcel lead `058 093 03001 000 2026`; the current ArcGIS parcel layer identifies it as assessment ID `093 030.01` and assessment parcel ID `058 093    03001 000 2023`.
+- Parcel 2 object ID: `18788`.
+- Parcel 2 global ID: `593a88f0-ab87-4f64-ab54-12c29c2a41e2`.
+- Parcel 2 address field: `ELLIS RD`.
+- Parcel 2 class: `12 FOREST`.
+- Parcel 2 calculated acres: `89.8211522`.
+- Parcel 2 deed acres: `90`.
+- Imported candidate parcel calculated acres total: `592.31840466`.
+- Imported candidate parcel deed acres total: `573.46`.
+
+Interpretation:
+- This gives a real source-backed parcel envelope for the MVP viewer and includes the connected `093 030.01` parcel in the published mapping extent.
+- It gets closer to, but still does not fully reconcile, the official 600+ acre AOP claim.
+- Treat the imported boundary as a candidate working envelope, not as a legal survey or confirmed complete park boundary.
+- Next parcel pass should inspect adjacent or related parcels around Ellis Cove Road and South Pittsburg Mountain Road.
+
+Working data bounds:
+- Stable bounds note: `brain/research/aop_data_bounds.md`.
+- GIS concept artifact: `brain/output/aop_9_patch_data_bounds.geojson`.
+- The current center data bounds are the exported bbox of the two-parcel candidate envelope: `-85.761008221, 35.084085624, -85.739081159, 35.101007060`.
+- The 9-patch acquisition bounds expand that center cell one full cell in every direction: `-85.782935283, 35.067164188, -85.717154097, 35.117928496`.
+- Use the 9-patch for satellite/orthoimagery, topo, DEM, hillshade, contours, and lidar acquisition. Trails stay inside the park working envelope unless AOP confirms otherwise.
+
 **TNMap services**
 
 Useful for base layers, roads, historical imagery, public safety layers, administrative boundaries, and environmental overlays.

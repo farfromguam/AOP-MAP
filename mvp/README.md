@@ -57,9 +57,37 @@ Once connected, inspect schemas:
 
 `publish` contains views for safe exported layers.
 
+## Validation-loop smoke test
+
+After the database is running, use this to prove the MVP observation review and promotion path:
+
+```bash
+./scripts/run_validation_loop_smoke.sh
+./scripts/export_publish_geojson.sh
+```
+
+The smoke test inserts demo-only rows named `MVP smoke...`, links them through `source_register.feature_sources`, promotes one reviewed observation into a publishable trail, and refreshes `../website/data/publish.geojson`.
+
+## Import the first real AOP boundary slice
+
+```bash
+./scripts/import_aop_parcel_boundary.sh
+./scripts/export_publish_geojson.sh
+```
+
+This imports the Tennessee Comptroller Marion County parcel features for `ELLIS COVE RD 1040` and the connected `093 030.01` / `058 093 03001 000` parcel lead, stores the raw captures, upserts `core.parcels`, creates a publishable candidate multipolygon boundary in `core.park_boundaries`, and archives demo publish rows. The boundary is a parcel-reference working envelope, not a legal survey or complete confirmed park boundary.
+
+## Import field GPX evidence
+
+```bash
+./scripts/import_gpx_track.sh ../brain/import/Saturday_Afternoon_Activity.gpx
+```
+
+This stores the GPX raw XML and parsed track segments as `core.field_tracks`. It remains unpromoted until review.
+
 ## Next steps
 
-1. Load AOP parcel and boundary data into `core.parcels` and `core.park_boundaries`.
+1. Verify the imported `ELLIS COVE RD 1040` and `093 030.01` / `058 093 03001 000` parcels in QGIS and identify any additional related parcels needed to reconcile the official 600+ acre claim.
 2. Load candidate trail lines into `core.trail_centerlines`.
 3. Add source rows for each imported dataset.
 4. Use QGIS to style by `confidence`, `permission`, and `status`.

@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS core.park_boundaries (
   permission text,
   publish_status text,
   source_id integer REFERENCES source_register.sources(id),
-  geom geometry(Polygon,4326),
+  geom geometry(MultiPolygon,4326),
   notes text,
   last_verified timestamptz,
   created_at timestamptz DEFAULT now(),
@@ -58,13 +58,25 @@ CREATE TABLE IF NOT EXISTS core.parcels (
   parcel_id text,
   owner text,
   land_area numeric,
+  status text,
+  confidence text,
+  permission text,
+  publish_status text,
   source_id integer REFERENCES source_register.sources(id),
   geom geometry(Polygon,4326),
   metadata jsonb,
   notes text,
+  last_verified timestamptz,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
+
+ALTER TABLE core.parcels
+  ADD COLUMN IF NOT EXISTS status text,
+  ADD COLUMN IF NOT EXISTS confidence text,
+  ADD COLUMN IF NOT EXISTS permission text,
+  ADD COLUMN IF NOT EXISTS publish_status text,
+  ADD COLUMN IF NOT EXISTS last_verified timestamptz;
 
 CREATE TABLE IF NOT EXISTS core.trail_centerlines (
   id serial PRIMARY KEY,
@@ -91,7 +103,7 @@ CREATE TABLE IF NOT EXISTS core.observations (
   review_status text,
   measured_at timestamptz,
   notes text,
-  geom geometry(Point,4326),
+  geom geometry(Geometry,4326),
   metadata jsonb,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
@@ -137,6 +149,41 @@ CREATE TABLE IF NOT EXISTS core.print_annotations (
   updated_at timestamptz DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS core.field_tracks (
+  id serial PRIMARY KEY,
+  track_name text,
+  segment_index integer,
+  point_count integer,
+  recorded_start timestamptz,
+  recorded_end timestamptz,
+  status text,
+  confidence text,
+  permission text,
+  publish_status text,
+  source_id integer REFERENCES source_register.sources(id),
+  geom geometry(LineString,4326),
+  metadata jsonb,
+  notes text,
+  last_verified timestamptz,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS raw.gpx_captures (
+  id serial PRIMARY KEY,
+  source_id integer REFERENCES source_register.sources(id),
+  file_name text NOT NULL,
+  track_name text,
+  creator text,
+  recorded_at timestamptz,
+  segment_count integer,
+  point_count integer,
+  raw_xml text NOT NULL,
+  captured_at timestamptz DEFAULT now(),
+  notes text,
+  UNIQUE (file_name, recorded_at)
+);
+
 CREATE OR REPLACE VIEW publish.trail_centerlines AS
   SELECT id, name, difficulty, status, confidence, permission, geom
   FROM core.trail_centerlines
@@ -146,6 +193,12 @@ CREATE OR REPLACE VIEW publish.trail_centerlines AS
 CREATE OR REPLACE VIEW publish.park_boundaries AS
   SELECT id, name, status, confidence, permission, geom
   FROM core.park_boundaries
+  WHERE permission = 'publish'
+    AND publish_status = 'publish';
+
+CREATE OR REPLACE VIEW publish.parcels AS
+  SELECT id, parcel_id, status, confidence, permission, land_area, geom
+  FROM core.parcels
   WHERE permission = 'publish'
     AND publish_status = 'publish';
 

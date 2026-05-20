@@ -36,7 +36,9 @@ aop_brain/
 
 `research/aop_south_pittsburg_sources.md` is the current source stack for Adventure Off Road Park in South Pittsburg, Tennessee.
 
-`tasks/aop_south_pittsburg_map_build_card.md` is the current build card. It is direction, not gospel; update it as the map learns.
+`research/aop_data_bounds.md` records the current two-parcel working envelope and the 9-patch data acquisition AOI for imagery, topo, DEM, and lidar pulls.
+
+`tasks/01_mvp/aop_south_pittsburg_map_build_card.md` is the current build card. It is direction, not gospel; update it as the map learns.
 
 `voice/voice_guide.md` and `voice/style_guide.md` govern docs.
 

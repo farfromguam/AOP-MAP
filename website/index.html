@@ -51,23 +51,102 @@
     const boundaryToggle = document.getElementById('showBoundaries');
     const trailheadToggle = document.getElementById('showTrailheads');
 
-    function updateLayerVisibility() {
-      map.setLayoutProperty('publish-trails', 'visibility', trailToggle.checked ? 'visible' : 'none');
-      map.setLayoutProperty('publish-boundaries', 'visibility', boundaryToggle.checked ? 'visible' : 'none');
-      map.setLayoutProperty('publish-trailheads', 'visibility', trailheadToggle.checked ? 'visible' : 'none');
+    function setLayerVisibility(layerId, visible) {
+      if (map.getLayer(layerId)) {
+        map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
+      }
     }
 
-    map.on('load', () => {
+    function updateLayerVisibility() {
+      setLayerVisibility('publish-trails', trailToggle.checked);
+      setLayerVisibility('publish-boundary-fill', boundaryToggle.checked);
+      setLayerVisibility('publish-boundaries', boundaryToggle.checked);
+      setLayerVisibility('publish-trailheads', trailheadToggle.checked);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function detailRows(rows) {
+      return rows
+        .filter(([, value]) => value !== undefined && value !== null && value !== '')
+        .map(([label, value]) => `${escapeHtml(label)}: ${escapeHtml(value)}`)
+        .join('<br/>');
+    }
+
+    function extendBounds(bounds, coordinates) {
+      if (typeof coordinates[0] === 'number') {
+        const [lng, lat] = coordinates;
+        bounds.minLng = Math.min(bounds.minLng, lng);
+        bounds.minLat = Math.min(bounds.minLat, lat);
+        bounds.maxLng = Math.max(bounds.maxLng, lng);
+        bounds.maxLat = Math.max(bounds.maxLat, lat);
+        return;
+      }
+
+      coordinates.forEach((child) => extendBounds(bounds, child));
+    }
+
+    function fitToDataBounds(data) {
+      const bounds = {
+        minLng: Infinity,
+        minLat: Infinity,
+        maxLng: -Infinity,
+        maxLat: -Infinity
+      };
+
+      data.features
+        .filter((feature) => feature.geometry?.coordinates)
+        .forEach((feature) => extendBounds(bounds, feature.geometry.coordinates));
+
+      if (Number.isFinite(bounds.minLng)) {
+        map.fitBounds(
+          [
+            [bounds.minLng, bounds.minLat],
+            [bounds.maxLng, bounds.maxLat]
+          ],
+          { padding: 60, duration: 0, maxZoom: 14 }
+        );
+      }
+    }
+
+    map.on('load', async () => {
+      let publishData;
+
+      try {
+        const response = await fetch('./data/publish.geojson');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        publishData = await response.json();
+      } catch (error) {
+        console.error(error);
+        message.textContent = 'Publish layer failed to load.';
+        return;
+      }
+
       map.addSource('publish-data', {
         type: 'geojson',
-        data: './data/publish.geojson'
+        data: publishData
+      });
+
+      map.addLayer({
+        id: 'publish-boundary-fill',
+        type: 'fill',
+        source: 'publish-data',
+        filter: ['==', ['get', 'layer'], 'park_boundaries'],
+        paint: { 'fill-color': '#4d8ac8', 'fill-opacity': 0.16 }
       });
 
       map.addLayer({
         id: 'publish-boundaries',
         type: 'line',
         source: 'publish-data',
-        filter: ['==', ['geometry-type'], 'Polygon'],
+        filter: ['==', ['get', 'layer'], 'park_boundaries'],
         paint: { 'line-color': '#0055aa', 'line-width': 3 }
       });
 
@@ -75,7 +154,7 @@
         id: 'publish-trails',
         type: 'line',
         source: 'publish-data',
-        filter: ['==', ['geometry-type'], 'LineString'],
+        filter: ['==', ['get', 'layer'], 'trail_centerlines'],
         paint: { 'line-color': '#f16624', 'line-width': 4 }
       });
 
@@ -83,23 +162,44 @@
         id: 'publish-trailheads',
         type: 'circle',
         source: 'publish-data',
-        filter: ['==', ['geometry-type'], 'Point'],
+        filter: ['==', ['get', 'layer'], 'trailheads'],
         paint: { 'circle-radius': 6, 'circle-color': '#009688', 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 }
       });
 
       updateLayerVisibility();
+      fitToDataBounds(publishData);
 
       map.on('click', 'publish-trails', (event) => {
         const props = event.features?.[0]?.properties || {};
         const coordinates = event.lngLat;
-        const description = `<strong>Trail</strong><br/>${props.name || 'Unnamed'}<br/>Difficulty: ${props.difficulty || 'unknown'}<br/>Confidence: ${props.confidence || 'unknown'}<br/>Status: ${props.status || 'unknown'}`;
+        const description = `<strong>Trail</strong><br/>${detailRows([
+          ['Name', props.name || 'Unnamed'],
+          ['Difficulty', props.difficulty || 'unknown'],
+          ['Confidence', props.confidence || 'unknown'],
+          ['Status', props.status || 'unknown']
+        ])}`;
+        new maplibregl.Popup().setLngLat(coordinates).setHTML(description).addTo(map);
+      });
+
+      map.on('click', 'publish-boundaries', (event) => {
+        const props = event.features?.[0]?.properties || {};
+        const coordinates = event.lngLat;
+        const description = `<strong>Boundary</strong><br/>${detailRows([
+          ['Name', props.name || 'Unnamed'],
+          ['Confidence', props.confidence || 'unknown'],
+          ['Status', props.status || 'unknown'],
+          ['Permission', props.permission || 'unknown']
+        ])}`;
         new maplibregl.Popup().setLngLat(coordinates).setHTML(description).addTo(map);
       });
 
       map.on('click', 'publish-trailheads', (event) => {
         const props = event.features?.[0]?.properties || {};
         const coordinates = event.lngLat;
-        const description = `<strong>Trailhead</strong><br/>${props.name || 'Unnamed'}<br/>Status: ${props.status || 'unknown'}`;
+        const description = `<strong>Trailhead</strong><br/>${detailRows([
+          ['Name', props.name || 'Unnamed'],
+          ['Status', props.status || 'unknown']
+        ])}`;
         new maplibregl.Popup().setLngLat(coordinates).setHTML(description).addTo(map);
       });
 
@@ -107,7 +207,7 @@
         console.error(e.error || e);
       });
 
-      message.textContent = 'Publish layer loaded. Use the toggles to show/hide features.';
+      message.textContent = `${publishData.features.length} publish feature${publishData.features.length === 1 ? '' : 's'} loaded.`;
     });
 
     trailToggle.addEventListener('change', updateLayerVisibility);
