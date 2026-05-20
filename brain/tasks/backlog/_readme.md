@@ -16,3 +16,12 @@ Each card here should answer: what is the idea, where did it come from, and what
 When an item gets picked up, move the card into the active phase folder and update its shape to a real build card (`tasks/_extend.md`).
 
 Items that fail the northstar test should still get written down. The point is to remember why we said no.
+
+## Current cards
+
+- `scribblemaps_feature_review.md` -- generic map-drawing tool, used as a feature checklist not a peer.
+- `rcmap_feature_review.md` -- the place-catalog peer for RC scale trucking.
+- `scaletra_feature_review.md` -- the activity-recording peer for RC scale trucking; sits upstream of our map.
+- `rc_event_mapping_backlog.md` -- event-layer requirements pulled from Recon G6, Pro-Line By The Fire, and comp-class formats.
+
+All cards use the same fit tags: **V1 fit**, **V2 fit**, **Internal fit**, **Out**.

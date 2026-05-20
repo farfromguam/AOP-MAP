@@ -22,6 +22,7 @@ aop_brain/
 ├── tasks/          work cards and execution notes
 ├── practices/      portable methods from the Soka brain
 ├── flows/          reusable work flows
+├── spinup/         local startup, runbooks, and troubleshooting
 ├── voice/          how docs should read and be shaped
 ├── ai_rules/       how the assistant collaborates here
 ├── handoff/        session-specific handoff and onboarding notes
@@ -32,11 +33,15 @@ aop_brain/
 
 `northstar/map_northstar.md` is the project promise. If a task card drifts from it, pull andon.
 
+`northstar/whats_this_for.md` is the hobby and event-context briefing. Read it before drawing layers, picking difficulty language, or sizing course features -- AOP is a scale RC park, not an OHV park, and the wrong mental model produces the wrong map.
+
 `northstar/source_register.md` is the data-integrity contract. It decides how source, confidence, permission, and publishability are carried through the map.
 
 `research/aop_south_pittsburg_sources.md` is the current source stack for Adventure Off Road Park in South Pittsburg, Tennessee.
 
 `research/aop_data_bounds.md` records the current two-parcel working envelope and the 9-patch data acquisition AOI for imagery, topo, DEM, and lidar pulls.
+
+`spinup/mvp_runbook.md` is the durable local MVP runbook. Use it for CWC checks, Docker/PostGIS startup, QGIS connection settings, port collisions, publish export checks, and viewer spinup.
 
 `tasks/01_mvp/aop_south_pittsburg_map_build_card.md` is the current build card. It is direction, not gospel; update it as the map learns.
 

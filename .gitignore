@@ -2,7 +2,8 @@
 .DS_Store
 
 # VS Code workspace settings and local extensions
-.vscode/
+.vscode/*
+!.vscode/tasks.json
 
 # Postgres data directories for local MVP development
 /mvp/db-data/

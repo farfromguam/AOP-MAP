@@ -47,26 +47,39 @@ Archived copy: `brain/handoff/session_context_202605201517.md`
  - USDA Geospatial Data Gateway was checked and is now retired as of 2026-03-31; USDA points many direct data downloads to Box paths including `https://nrcs.app.box.com/v/gateway/` and `https://nrcs.app.box.com/v/naip`.
  - No raster/lidar/topo products were downloaded locally in this pass; this was discovery and manifesting only.
  - Working tree at this CWC dump includes the new/modified acquisition docs plus pre-existing or unrelated untracked items visible in status: `brain/output/diagnose_viewer.png` and `brain/tasks/backlog/`. Do not assume those untracked items came from this dump.
+ - Continued CWC on 2026-05-20 and found the host PostGIS connection docs were unsafe on this machine: local Postgres was already listening on `127.0.0.1:5432`, so `localhost:5432` reached the host database instead of `mvp-db-1`.
+ - Updated the MVP Compose host port to default to `55432` via `AOP_DB_HOST_PORT`, while leaving the container-internal database port at `5432`.
+ - Updated root/MVP spinup docs and QGIS notes to use `localhost:55432`.
+ - Added a root `./cwc` helper and VS Code task for a non-mutating continuation check of Docker, Postgres, and `website/data/publish.geojson`.
+ - Added durable runbook documentation at `brain/spinup/mvp_runbook.md` and routed related keywords through `brain/search_map.md`.
+ - Current local static preview listener found during this pass is `http://localhost:8000/`.
+ - Wired TNMap 2022 orthoimagery into the static viewer as a raster XYZ source: `https://tnmap.tn.gov/arcgis/rest/services/BASEMAPS/IMAGERY_WEB_MERCATOR/MapServer/tile/{z}/{y}/{x}`. Cached service (singleFusedMapCache) in Web Mercator with standard LODs, so XYZ access works directly with MapLibre.
+ - Confirmed a 6-inch AOP tile fetch returns `image/jpeg` 200; treat as inspection-only and do not republish tiles.
+ - Added a toggleable `Satellite imagery (TNMap 2022)` layer in `website/index.html`, initially hidden so the static viewer still opens cleanly without network.
+ - Copied `brain/output/aop_9_patch_data_bounds.geojson` to `website/data/aop_9_patch.geojson` and added a toggleable `9-patch acquisition AOI` overlay with cell-code labels.
+ - Added `mvp/scripts/playwright_verify_satellite.py`: exercises every toggle, verifies layer visibility through `window.map.getLayoutProperty`, captures 5 screenshots into `brain/output/playwright_satellite_*.png`, and asserts TNMap tile requests fire when satellite is enabled.
+ - Run on 2026-05-20: 16 of 16 checks PASS, 96 TNMap tile requests, 0 console errors. Screenshots show TNMap 6-inch imagery rendering under the AOP parcel envelope and the dashed 9-patch grid around it.
 
 ## What the next session should do
 
-1. Open the viewer at `http://localhost:8001/` and inspect the expanded candidate parcel boundary.
-2. Connect QGIS to `localhost:5432` and inspect `raw.arcgis_feature_captures`, `core.parcels`, `core.park_boundaries`, and `source_register.feature_sources`.
-3. Verify the `110 008.00` plus `093 030.01` envelope in QGIS and keep it labeled as parcel-reference context, not a legal survey.
-4. Use `brain/research/aop_data_bounds.md` and `brain/output/aop_9_patch_data_bounds.geojson` for the 9-patch satellite/orthoimagery, topo, DEM, and lidar acquisition AOI.
-5. Use `brain/output/aop_9_patch_data_acquisition_manifest.md` as the source list for data pulls.
-6. In QGIS, add TNMap 2022 orthoimagery as an ArcGIS REST/WMTS inspection basemap.
-7. Download the USGS 3DEP 1-meter DEM first, clip it to the 9-patch, then generate hillshade, slope, and print-friendly relief products.
-8. Download the USGS contour GeoPackage and clip/filter it to the 9-patch.
-9. Pull USGS US Topo GeoPDFs for Orme and South Pittsburg as archived references.
-10. Hold raw LAZ downloads until the DEM-derived products are inspected; the full LAZ set is about 2.79 GB.
-11. If newer NAIP than 2021 is needed, resolve 2023 NAIP direct download through USDA Box/AWS or another official USDA/USGS path; do not treat the 2023 date index as the imagery itself.
-12. Replace demo/smoke trail and trailhead placeholders with actual AOP trail/observation data.
-13. Attach each real feature to a source row in `source_register.sources` and preserve confidence/permission metadata.
-14. Export the `publish` views to `website/data/publish.geojson` and verify the viewer renders the actual AOP map.
-15. Execute the first real observation review, promotion, and verification pass after real trail data exists.
-16. If the MVP stack is not ready, record the exact failure mode and update this handoff immediately.
-17. Keep session-only notes in this folder; move stable promises to `northstar/` and source facts to `research/`.
+1. Open the viewer at `http://localhost:8000/` and inspect the expanded candidate parcel boundary.
+2. Optionally run `./cwc` from the repo root to verify Docker, Postgres, and the current publish export.
+3. Connect QGIS to `localhost:55432` and inspect `raw.arcgis_feature_captures`, `core.parcels`, `core.park_boundaries`, and `source_register.feature_sources`.
+4. Verify the `110 008.00` plus `093 030.01` envelope in QGIS and keep it labeled as parcel-reference context, not a legal survey.
+5. Use `brain/research/aop_data_bounds.md` and `brain/output/aop_9_patch_data_bounds.geojson` for the 9-patch satellite/orthoimagery, topo, DEM, and lidar acquisition AOI.
+6. Use `brain/output/aop_9_patch_data_acquisition_manifest.md` as the source list for data pulls.
+7. In QGIS, add TNMap 2022 orthoimagery as an ArcGIS REST/WMTS inspection basemap.
+8. Download the USGS 3DEP 1-meter DEM first, clip it to the 9-patch, then generate hillshade, slope, and print-friendly relief products.
+9. Download the USGS contour GeoPackage and clip/filter it to the 9-patch.
+10. Pull USGS US Topo GeoPDFs for Orme and South Pittsburg as archived references.
+11. Hold raw LAZ downloads until the DEM-derived products are inspected; the full LAZ set is about 2.79 GB.
+12. If newer NAIP than 2021 is needed, resolve 2023 NAIP direct download through USDA Box/AWS or another official USDA/USGS path; do not treat the 2023 date index as the imagery itself.
+13. Replace demo/smoke trail and trailhead placeholders with actual AOP trail/observation data.
+14. Attach each real feature to a source row in `source_register.sources` and preserve confidence/permission metadata.
+15. Export the `publish` views to `website/data/publish.geojson` and verify the viewer renders the actual AOP map.
+16. Execute the first real observation review, promotion, and verification pass after real trail data exists.
+17. If the MVP stack is not ready, record the exact failure mode and update this handoff immediately.
+18. Keep session-only notes in this folder; move stable promises to `northstar/` and source facts to `research/`.
 
 ## Session note
 

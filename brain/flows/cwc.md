@@ -7,9 +7,11 @@ This flow is the brain-level anchor for continuing the MVP without losing the se
 ## Use
 
 - Invoke as `~~cwc` in conversation.
- - Follow the current session handoff in `brain/handoff/session_context.md`.
- - Respect the validation loop in `brain/northstar/validation_loop.md`.
- - Use the current build card in `brain/tasks/01_mvp/aop_south_pittsburg_map_build_card.md`.
+- Optional local helper: run `./cwc` from the repo root for a non-mutating MVP continuation check.
+- For local spinup and troubleshooting, use `brain/spinup/mvp_runbook.md`.
+- Follow the current session handoff in `brain/handoff/session_context.md`.
+- Respect the validation loop in `brain/northstar/validation_loop.md`.
+- Use the current build card in `brain/tasks/01_mvp/aop_south_pittsburg_map_build_card.md`.
 
 ## Purpose
 

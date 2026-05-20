@@ -49,7 +49,8 @@ The importer parses the GPX track, stores the raw XML in `raw.gpx_captures`, ins
 
 Requirements:
 - `ogr2ogr` (GDAL) installed on the host.
-- Database accessible at `localhost:5432` with user `aop` / password `aop` (adjust in script if needed).
+- Database accessible at `localhost:55432` with user `aop` / password `aop`.
+  Override `PGHOST`, `PGPORT`, `PGUSER`, `PGDATABASE`, or `PGPASSWORD` if needed.
 
 Example:
 

@@ -14,7 +14,8 @@ docker compose up -d
 docker compose ps
 ```
 
-The running database container is currently `mvp-db-1` on `localhost:5432`.
+The running database container is currently `mvp-db-1` and should be exposed on
+`localhost:55432` by default.
 
 ## Current documented spinup sources
 
@@ -26,18 +27,18 @@ Both root `README.md` and `mvp/README.md` include PostGIS startup instructions a
 
 ## Issues discovered
 
-- There is no executable `./cwc` script in the repository root.
-- The `.vscode/tasks.json` file exists but is currently empty.
-- The `brain/flows/cwc.md` flow references a `~~cwc` invocation and the task label "CWC: Continue MVP work with context," but the working script is missing.
+- The `brain/flows/cwc.md` flow references a `~~cwc` invocation and the task label
+  "CWC: Continue MVP work with context." A root `./cwc` helper and VS Code task
+  now exist for a non-mutating local continuation check.
 
 ## Relevant current status
 
-- The database container is up and mapped to `localhost:5432`.
+- The database container is up and should be mapped to `localhost:55432`.
 - The MVP environment startup appears to have been attempted successfully in previous session commands.
-- No `cwc` entrypoint is available to satisfy the VS Code task or the handoff flow semantics.
+- The root `./cwc` helper is available for a non-mutating continuation check.
 
 ## Recommended next action
 
-1. Restore or add the missing `cwc` script at repository root, or update the task and docs to point to the correct handoff entrypoint.
-2. Keep this note until the missing script/task mismatch is resolved.
+1. Run `./cwc` from the repo root when a local continuation check is useful.
+2. Keep this note until the task/helper shape has been validated in normal use.
 3. Continue by verifying `website/data/publish.geojson` against the `publish` views and the `brain/handoff/session_context.md` guidance.

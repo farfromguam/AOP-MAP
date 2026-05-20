@@ -13,8 +13,13 @@ fi
 GEOJSON_FILE="$1"
 TARGET_TABLE="$2"
 
-# Connection string — adjust if your DB is not exposed on localhost:5432
-PG_CONN="PG:host=localhost port=5432 user=aop dbname=aop_map password=aop"
+PGHOST="${PGHOST:-localhost}"
+PGPORT="${PGPORT:-55432}"
+PGUSER="${PGUSER:-aop}"
+PGDATABASE="${PGDATABASE:-aop_map}"
+PGPASSWORD="${PGPASSWORD:-aop}"
+
+PG_CONN="PG:host=$PGHOST port=$PGPORT user=$PGUSER dbname=$PGDATABASE password=$PGPASSWORD"
 
 if [ ! -f "$GEOJSON_FILE" ]; then
   echo "GeoJSON file not found: $GEOJSON_FILE"

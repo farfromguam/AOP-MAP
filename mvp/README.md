@@ -10,12 +10,19 @@ From `/Users/christopherfryman/Documents/code/AOP MAP/mvp`:
 docker compose up -d
 ```
 
-The container will launch a PostGIS database on `localhost:5432` with:
+The container will launch a PostGIS database on `localhost:55432` with:
 - user: `aop`
 - password: `aop`
 - database: `aop_map`
 
 The schema is initialized by `init_db.sql`.
+
+The database still listens on `5432` inside the container. The Compose host
+port defaults to `55432` so a local Postgres service can continue using
+`localhost:5432`. Override it with `AOP_DB_HOST_PORT` if needed.
+
+For the full continuation and troubleshooting path, see
+`../brain/spinup/mvp_runbook.md`.
 
 > Note: On macOS, the container entrypoint may fail to read a bind-mounted `init_db.sql` file with "Operation not permitted." If that happens, verify Docker Desktop is running, then manually apply the SQL with:
 >
@@ -30,7 +37,7 @@ The schema is initialized by `init_db.sql`.
 
 Use the following connection settings:
 - Host: `localhost`
-- Port: `5432`
+- Port: `55432`
 - Database: `aop_map`
 - Username: `aop`
 - Password: `aop`

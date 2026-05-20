@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MVP_DIR="$ROOT_DIR/mvp"
+DB_PORT="${AOP_DB_HOST_PORT:-55432}"
+DB_URL="postgresql://aop:aop@localhost:${DB_PORT}/aop_map"
+
+echo "CWC: AOP MVP continuation check"
+echo
+echo "Context:"
+echo "  - brain/handoff/session_context.md"
+echo "  - brain/northstar/validation_loop.md"
+echo "  - brain/tasks/01_mvp/aop_south_pittsburg_map_build_card.md"
+echo
+
+echo "Docker:"
+if command -v docker >/dev/null 2>&1; then
+  if (cd "$MVP_DIR" && docker compose ps); then
+    :
+  else
+    echo "  Docker is installed, but the MVP Compose status check failed."
+  fi
+else
+  echo "  Docker is not available on PATH."
+fi
+echo
+
+echo "Database:"
+if command -v psql >/dev/null 2>&1; then
+  if psql "$DB_URL" -At -c "select current_user || '|' || current_database();" >/dev/null 2>&1; then
+    echo "  Connected to localhost:${DB_PORT}/aop_map as aop."
+    relations=(
+      "source_register.sources"
+      "source_register.feature_sources"
+      "raw.arcgis_feature_captures"
+      "core.parcels"
+      "core.park_boundaries"
+      "core.trail_centerlines"
+      "core.observations"
+      "core.trailheads"
+      "publish.park_boundaries"
+      "publish.trail_centerlines"
+      "publish.trailheads"
+    )
+    printf "  %-34s %s\n" "relation" "count"
+    for relation in "${relations[@]}"; do
+      exists="$(psql "$DB_URL" -At -c "select to_regclass('$relation') is not null;")"
+      if [ "$exists" = "t" ]; then
+        count="$(psql "$DB_URL" -At -c "select count(*) from $relation;")"
+        printf "  %-34s %s\n" "$relation" "$count"
+      else
+        printf "  %-34s %s\n" "$relation" "missing"
+      fi
+    done
+  else
+    echo "  Could not connect to localhost:${DB_PORT}/aop_map as aop."
+    echo "  Start the stack with: cd mvp && docker compose up -d"
+  fi
+else
+  echo "  psql is not available on PATH."
+fi
+echo
+
+echo "Publish export:"
+if command -v node >/dev/null 2>&1; then
+  node -e '
+    const fs = require("fs");
+    const path = "website/data/publish.geojson";
+    const data = JSON.parse(fs.readFileSync(path, "utf8"));
+    const counts = {};
+    for (const feature of data.features || []) {
+      const layer = feature.properties && feature.properties.layer || "unknown";
+      counts[layer] = (counts[layer] || 0) + 1;
+    }
+    console.log(`  ${path}: ${data.features.length} feature(s)`);
+    console.log(`  layers: ${JSON.stringify(counts)}`);
+  '
+else
+  echo "  Node is not available on PATH."
+fi

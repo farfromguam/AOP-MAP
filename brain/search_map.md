@@ -14,6 +14,7 @@ TL;DR:
 - AOP, Adventure Off Road Park, South Pittsburg, Ellis Cove Road: `research/aop_south_pittsburg_sources.md`
 - bounds, AOI, 9-patch, satellite, topography, lidar, current parcel envelope: `research/aop_data_bounds.md`, then `research/aop_south_pittsburg_sources.md`
 - map build, PostGIS, QGIS, MapLibre, PMTiles, Cloudflare, Phoenix: `tasks/01_mvp/aop_south_pittsburg_map_build_card.md`
+- spinup, runbook, CWC, database port, PostGIS connection, QGIS connection, Docker, `localhost:55432`, port collision: `spinup/mvp_runbook.md`, then `spinup/discovery.md`
 - source ledger, permission, confidence, provenance, publishable: `northstar/source_register.md`
 - print map, wall map, whiteboard validation, board markup: `northstar/map_northstar.md`, then `tasks/01_mvp/aop_south_pittsburg_map_build_card.md`
 

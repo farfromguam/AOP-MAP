@@ -33,8 +33,8 @@ Each idea gets one tag:
 ### Hazard / wash-out / blowdown / maintenance pin layer
 **Fit:** V1 fit, with a caveat. The build card has a hazard/obstacle layer. Treat hazard pins like observations -- raw until reviewed -- so an "obstacle here" mark doesn't auto-publish a closure that isn't real.
 
-### Event footprint overlays (race courses, registration, aid stations, parking)
-**Fit:** Out for now. AOP is private trail riding, not a 5K venue. If AOP runs events, this becomes a thin separate layer driven by AOP-supplied data. Don't build event tooling speculatively.
+### Event footprint overlays (courses, gates, registration, staging, parking)
+**Fit:** V1 fit. Earlier draft of this card had this as Out under the wrong assumption that AOP doesn't host events. AOP hosts RC crawling events -- G6-style stage rallies, Pro-Line By The Fire-style multi-day adventures, and gate-based comp courses. The print board and public viewer both need an event-overlay layer. See `./rc_event_mapping_backlog.md` for the full shape.
 
 ### Highlight / fill polygons inside the park (zones)
 **Fit:** V1 fit. Useful for sectors, staging, closure zones, and print legend regions. QGIS already does this; the work is naming the zone vocabulary so it stays consistent on the print board.
@@ -137,7 +137,7 @@ Each idea gets one tag:
 
 - A "Scribblemaps clone" surface. We are not building a generic map drawing tool.
 - A login system. V1 has no accounts. V2 will, when the loop earns it.
-- An events module. AOP is a trail park, not an event venue.
+- A generic events module. AOP hosts RC events, but the map's job is to draw event courses, gates, and staging on the same data spine -- not to be an event ticketing or registration platform. See `./rc_event_mapping_backlog.md`.
 - Calorie counters. The map is not a fitness tracker.
 
 

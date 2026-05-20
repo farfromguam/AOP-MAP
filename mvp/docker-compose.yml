@@ -11,4 +11,4 @@ services:
       - ./db-data:/var/lib/postgresql/data
       - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
     ports:
-      - "5432:5432"
+      - "${AOP_DB_HOST_PORT:-55432}:5432"

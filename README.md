@@ -31,10 +31,14 @@ docker compose up -d
 
 This will launch a PostGIS container with the following settings:
 - Host: `localhost`
-- Port: `5432`
+- Port: `55432`
 - Database: `aop_map`
 - Username: `aop`
 - Password: `aop`
+
+The container still listens on `5432` internally. The host port defaults to
+`55432` so local Postgres installations can keep using `localhost:5432`.
+Override it with `AOP_DB_HOST_PORT` if needed.
 
 ### 3. Verify the container
 
@@ -46,11 +50,17 @@ docker compose ps
 
 If the container is running, you should see the `db` service listed.
 
+From the repository root, `./cwc` also runs a non-mutating continuation check
+against Docker, Postgres, and the current publish GeoJSON.
+
+If QGIS or `psql` appears to connect to the wrong database, use
+`brain/spinup/mvp_runbook.md` before changing Docker volumes.
+
 ### 4. Connect QGIS
 
 In QGIS, create a new PostGIS connection using:
 - Host: `localhost`
-- Port: `5432`
+- Port: `55432`
 - Database: `aop_map`
 - Username: `aop`
 - Password: `aop`

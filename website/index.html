@@ -19,11 +19,13 @@
   <div id="map"></div>
   <div class="panel">
     <h1>AOP MVP viewer</h1>
+    <label><input type="checkbox" id="showSatellite" /> Satellite imagery (TNMap 2022)</label>
+    <label><input type="checkbox" id="showNinePatch" /> 9-patch acquisition AOI</label>
     <label><input type="checkbox" id="showTrails" checked /> Publishable trails</label>
     <label><input type="checkbox" id="showBoundaries" checked /> Publishable boundaries</label>
     <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
+    <small>Satellite tiles served by TDOT/TNMap — inspection use only, not for redistribution.</small>
     <small>Place a publishable GeoJSON file at <code>website/data/publish.geojson</code> and reload.</small>
-    <small>Future step: swap the source for PMTiles or hosted vector tiles.</small>
   </div>
   <div class="message" id="message">Loading publish layer...</div>
 
@@ -47,6 +49,8 @@
     });
 
     const message = document.getElementById('message');
+    const satelliteToggle = document.getElementById('showSatellite');
+    const ninePatchToggle = document.getElementById('showNinePatch');
     const trailToggle = document.getElementById('showTrails');
     const boundaryToggle = document.getElementById('showBoundaries');
     const trailheadToggle = document.getElementById('showTrailheads');
@@ -58,6 +62,10 @@
     }
 
     function updateLayerVisibility() {
+      setLayerVisibility('tnmap-satellite', satelliteToggle.checked);
+      setLayerVisibility('nine-patch-fill', ninePatchToggle.checked);
+      setLayerVisibility('nine-patch-outline', ninePatchToggle.checked);
+      setLayerVisibility('nine-patch-labels', ninePatchToggle.checked);
       setLayerVisibility('publish-trails', trailToggle.checked);
       setLayerVisibility('publish-boundary-fill', boundaryToggle.checked);
       setLayerVisibility('publish-boundaries', boundaryToggle.checked);
@@ -117,6 +125,69 @@
     }
 
     map.on('load', async () => {
+      map.addSource('tnmap-imagery', {
+        type: 'raster',
+        tiles: [
+          'https://tnmap.tn.gov/arcgis/rest/services/BASEMAPS/IMAGERY_WEB_MERCATOR/MapServer/tile/{z}/{y}/{x}'
+        ],
+        tileSize: 256,
+        minzoom: 0,
+        maxzoom: 22,
+        attribution: 'Imagery: TDOT Aerial Surveys / TNMap'
+      });
+
+      map.addLayer({
+        id: 'tnmap-satellite',
+        type: 'raster',
+        source: 'tnmap-imagery',
+        layout: { visibility: 'none' },
+        paint: { 'raster-opacity': 1 }
+      });
+
+      let ninePatchData;
+      try {
+        const ninePatchResponse = await fetch('./data/aop_9_patch.geojson');
+        if (ninePatchResponse.ok) {
+          ninePatchData = await ninePatchResponse.json();
+        }
+      } catch (error) {
+        console.warn('9-patch overlay missing:', error);
+      }
+
+      if (ninePatchData) {
+        map.addSource('nine-patch', { type: 'geojson', data: ninePatchData });
+        map.addLayer({
+          id: 'nine-patch-fill',
+          type: 'fill',
+          source: 'nine-patch',
+          layout: { visibility: 'none' },
+          paint: { 'fill-color': '#ffcc33', 'fill-opacity': 0.06 }
+        });
+        map.addLayer({
+          id: 'nine-patch-outline',
+          type: 'line',
+          source: 'nine-patch',
+          layout: { visibility: 'none' },
+          paint: { 'line-color': '#cc8800', 'line-width': 1.5, 'line-dasharray': [2, 2] }
+        });
+        map.addLayer({
+          id: 'nine-patch-labels',
+          type: 'symbol',
+          source: 'nine-patch',
+          layout: {
+            visibility: 'none',
+            'text-field': ['get', 'cell_code'],
+            'text-size': 12,
+            'text-anchor': 'center'
+          },
+          paint: {
+            'text-color': '#664400',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 1.5
+          }
+        });
+      }
+
       let publishData;
 
       try {
@@ -210,6 +281,8 @@
       message.textContent = `${publishData.features.length} publish feature${publishData.features.length === 1 ? '' : 's'} loaded.`;
     });
 
+    satelliteToggle.addEventListener('change', updateLayerVisibility);
+    ninePatchToggle.addEventListener('change', updateLayerVisibility);
     trailToggle.addEventListener('change', updateLayerVisibility);
     boundaryToggle.addEventListener('change', updateLayerVisibility);
     trailheadToggle.addEventListener('change', updateLayerVisibility);
