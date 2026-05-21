@@ -145,6 +145,47 @@ Recorded on 2026-05-20:
 - Verified with `mvp/scripts/playwright_verify_lidar_tiles.py` on 2026-05-20: 21 of 21 checks PASS, 109 AWS Terrarium tile requests during the run, 0 console errors. Screenshots: `brain/output/playwright_lidar_initial.png`, `playwright_lidar_tiles_on.png`, `playwright_lidar_hillshade_on.png`, `playwright_lidar_hillshade_plus_tiles.png`, `playwright_lidar_terrain_3d.png`, `playwright_lidar_all_off.png`.
 - The hillshade and 3D terrain are global-DEM derivatives, not the locally-derived 1-meter DEM lidar product. For lidar-grade contour lines clipped to the 9-patch, install a GDAL toolchain (Docker `osgeo/gdal` or `brew install gdal`) and clip/contour `USGS_one_meter_x61y389_TN_27County_blk4_2015.tif`; that path remains open.
 
+## Lidar Contour Layer
+
+Recorded on 2026-05-20:
+
+- The viewer now has lidar-grade contour lines at `website/data/aop_contours.geojson`,
+  generated from the USGS 3DEP 1-meter DEM (lidar-derived bare-earth elevation).
+- Build pipeline: `mvp/scripts/build_contours.sh`. It caches the DEM, clips it to
+  the 9-patch, low-pass smooths the DEM, runs `gdal_contour` at a 5-foot interval,
+  attributes each line, thins with Douglas-Peucker, applies Chaikin corner-cutting,
+  and exports a WGS84 GeoJSON. GDAL runs via Docker `ghcr.io/osgeo/gdal:ubuntu-small-latest`
+  (see `brain/spinup/mvp_runbook.md` for the toolchain and the macOS file-access constraint).
+- Source DEM: `USGS_one_meter_x61y389_TN_27County_blk4_2015.tif`, native CRS
+  `NAD83 / UTM zone 16N` (EPSG:26916), 1 m pixels. Clipped to the full 9-patch bbox
+  `-85.782935283, 35.067164188, -85.717154097, 35.117928496`; the clipped DEM is
+  cached at `mvp/cache/dem/dem_9patch.tif`.
+- Contour interval: 5 ft (1.524 m). Indexed (major) contour every 25 ft.
+- Smoothing (2026-05-20): raw 1 m lidar contours were jagged — angular DP corners
+  joined by straight chords, plus crinkle from lidar micro-noise. Two passes fix it:
+  (1) the DEM is low-pass smoothed by resampling 1 m → 2 m with a cubic-spline kernel
+  (`gdalwarp -r cubicspline`), which strips the micro-noise before contouring; the
+  smoothed DEM is cached at `mvp/cache/dem/dem_9patch_smooth.tif`. (2) after a 2 m
+  Douglas-Peucker thin, `mvp/scripts/chaikin_smooth.py` runs 2 Chaikin corner-cutting
+  passes (converges to a quadratic B-spline), then drops vertices within 0.5 m of
+  straight so the file stays small. Result: median segment length dropped ~24 m → ~12 m
+  and median vertex turn angle is ~12°. Sampling a *finer* interval would worsen this,
+  not help — smoothing the surface and curve-fitting the lines is the lever.
+- Features: 2,831 LineStrings spanning 605–1820 ft (501 indexed). Each carries
+  `elev_m` (metres), `elev_ft` (whole feet), and `idx` (1 = indexed/25-ft, 0 = minor/5-ft).
+  The feature count is lower than the pre-smoothing 6,376 because the DEM low-pass
+  erased noise-speckle micro-loops; elevation coverage is unchanged.
+- Ship format: smoothed GeoJSON, ~8.9 MB. This is under the ~25 MB threshold, so the
+  layer ships as GeoJSON rather than PMTiles. The full-resolution attributed
+  GeoPackage is cached at `mvp/cache/contours/aop_contours.gpkg` (gitignored,
+  archival / QGIS use).
+- Viewer: toggle `Lidar contours (5 ft, 1m DEM)`, default OFF. Layers `contours-minor`
+  (thin), `contours-index` (bold 25-ft), and `contours-labels` (elevation labels on
+  index lines). Clicking any contour shows its elevation.
+- Verified with `mvp/scripts/playwright_verify_lidar_tiles.py` on 2026-05-20: all
+  checks PASS, 0 console errors, 2,343 contours rendered in-viewport. Smoothness
+  spot-checked at z16 — `brain/output/playwright_lidar_contours_z16.png`.
+
 ## Asphalt Roads Layer
 
 Recorded on 2026-05-20:
@@ -157,3 +198,18 @@ Recorded on 2026-05-20:
 - Viewer: toggle `Asphalt roads (USGS National Map)`, default-on. Stacked layers `roads-local-casing` + `roads-local`, `roads-connecting-casing` + `roads-connecting`, `roads-controlled-casing` + `roads-controlled`, plus a `roads-labels` symbol layer along the line. Click any class for a popup with name, MTFCC, and route designators.
 - Notable named features in-AOI: I-24, Ellis Cove Rd (the AOP access road), Ellis Rd, Battlecreek Rd, Fiery Gizzard Rd, Sweetens Cove Rd.
 - Picked over TNMap MAJOR_ROADS (too sparse — interstates and state highways only, misses county/park-access roads) and Overpass/OSM (would require per-way `surface=*` filtering and local TN ways are not reliably tagged for surface).
+
+## Hydrography / Water Layer
+
+Recorded on 2026-05-20:
+
+- Source: USGS National Hydrography Dataset (NHD) `https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer`.
+- Large-scale (high-resolution) NHD layers queried over the 9-patch bbox: `6` Flowline (85 features), `9` Area (1), `12` Waterbody (3), `0` Point (5). Total `94` water features.
+- Importer: `mvp/scripts/import_usgs_hydrography.sh` (curl + jq, atomic write).
+- Output: `website/data/aop_water.geojson` — each feature tagged with `water_kind` (`flowline`, `water_area`, `waterbody`, `point`) and `water_class`, plus `name` (GNIS), `gnis_id`, `fcode`, `ftype`, `lengthkm`/`areasqkm`/`elevation`, `permanent_identifier`, and `nhd_layer_id`/`nhd_layer_name`.
+- Class breakdown: `55` stream, `30` artificial_path (flow paths through wide water), `1` stream_river_area, `3` lake_pond, `4` spring, `1` gage.
+- Named streams in-AOI: Battle Creek (the main creek through the AOP block, mostly modeled as artificial paths inside a 0.63 km² stream/river area polygon), Big Fiery Gizzard Creek, Kelly Cove Branch, Rogers Cove Branch, Sweden Creek, Tate Cove Creek. Named springs: Gilliam Spring, Bible Spring, Fish Trap Spring.
+- Viewer: two toggles in `website/index.html`, both default-off. `Streams & waterbodies (USGS NHD)` drives `streams` + `stream-labels` + `waterbody-fill`/`waterbody-outline` + `water-area-fill`; `Springs & gages (USGS NHD)` drives `water-points` + `water-point-labels`. Click any stream/waterbody/point for a popup with class, NHD ftype/fcode, and length or area.
+- Verified with `mvp/scripts/playwright_verify_water.py` on 2026-05-20: 28 of 28 checks PASS, 0 console errors. Screenshots: `brain/output/playwright_water_initial.png`, `playwright_water_streams_on.png`, `playwright_water_springs_on.png`, `playwright_water_over_satellite.png`, `playwright_water_all_off.png`.
+- All NHD water features are raw-zone context. Before any are promoted into publish layers, attach a row in `source_register.sources` per `northstar/source_register.md` (USGS NHD is public domain; confidence: high for named perennial streams, lower for unnamed/intermittent; permission: public).
+- The 1m-DEM lidar contour pipeline (`brain/tasks/backlog/lidar_contour_pipeline.md`) is the natural cross-check: where NHD flowlines and lidar drainage scars disagree, trust the lidar for micro-terrain.

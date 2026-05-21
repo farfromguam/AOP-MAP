@@ -6,11 +6,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+MVP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUTPUT_FILE="$ROOT_DIR/website/data/publish.geojson"
-
-PG_CONTAINER="mvp-db-1"
-PG_USER="aop"
-PG_DB="aop_map"
 
 # Construct SQL that produces a valid GeoJSON FeatureCollection.
 SQL=$(cat <<'EOF'
@@ -49,8 +46,11 @@ trap 'rm -f "$OUTPUT_TMP"' EXIT
 
 echo "Exporting publish views to $OUTPUT_FILE"
 
-docker exec "$PG_CONTAINER" bash -lc "psql -U $PG_USER -d $PG_DB -At -c \"$SQL\"" > "$OUTPUT_TMP"
+# Same docker compose connection style as the import scripts.
+cd "$MVP_DIR"
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U aop -d aop_map -At -c "$SQL" > "$OUTPUT_TMP"
 mv "$OUTPUT_TMP" "$OUTPUT_FILE"
+chmod 644 "$OUTPUT_FILE"
 trap - EXIT
 
 echo "Export complete: $OUTPUT_FILE"

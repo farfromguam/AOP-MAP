@@ -23,6 +23,5 @@ Items that fail the northstar test should still get written down. The point is t
 - `rcmap_feature_review.md` -- the place-catalog peer for RC scale trucking.
 - `scaletra_feature_review.md` -- the activity-recording peer for RC scale trucking; sits upstream of our map.
 - `rc_event_mapping_backlog.md` -- event-layer requirements pulled from Recon G6, Pro-Line By The Fire, and comp-class formats.
-- `lidar_contour_pipeline.md` -- generate lidar-grade contour lines for the 9-patch from the USGS 1m DEM; sequences the GDAL toolchain decision and ship-format fork.
 
 All cards use the same fit tags: **V1 fit**, **V2 fit**, **Internal fit**, **Out**.

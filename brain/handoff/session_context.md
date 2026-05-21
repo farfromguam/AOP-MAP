@@ -105,6 +105,70 @@ Archived copy: `brain/handoff/session_context_202605201517.md`
 21. Decide whether the SFWDA raster needs true georeferencing (GDAL/QGIS, with ground control points and an affine/projective transform) before any of its trail content is promoted into `core.trail_centerlines`. The current image source is a 4-corner quadrilateral warp — fine for inspection, not for survey-grade work.
 22. The OSM 9-patch features (47 tracks, 19 service, named landmarks) live in `raw zone` semantics only. Before any of them are promoted into publish layers, attach a row in `source_register.sources` per the rules in `northstar/source_register.md` (license: ODbL; confidence: medium; permission: community).
 
+## Update: lidar contour pipeline (2026-05-20)
+
+Continued this session and completed the backlog lidar contour card.
+
+ - The card moved from `brain/tasks/backlog/` to `brain/tasks/01_mvp/lidar_contour_pipeline.md` and is marked DONE; its Outcome section has the full detail.
+ - GDAL toolchain: Docker `ghcr.io/osgeo/gdal:ubuntu-small-latest`. Docker Hub `osgeo/gdal` is stale; `alpine-small` lacks GEOS (needed for `-simplify`). macOS blocks Docker from reading the repo under `~/Documents`, so GDAL work stages in `/private/tmp`. Pattern recorded in `brain/spinup/mvp_runbook.md`.
+ - `mvp/scripts/build_contours.sh` is the reproducible pipeline: cache the 1m DEM, clip to the 9-patch, `gdal_contour` at 5 ft, attribute (`elev_ft` + `idx`), simplify, export.
+ - `website/data/aop_contours.geojson` -- 6,376 contour lines, 605-1820 ft, ~5.0 MB. Shipped as GeoJSON (3 m Douglas-Peucker simplified); PMTiles not needed.
+ - `website/index.html` has a `Lidar contours (5 ft, 1m DEM)` toggle (default OFF) with minor/index/label layers and a click popup.
+ - Large derived artifacts are gitignored under `mvp/cache/` (full DEM, clipped `dem_9patch.tif`, full-res `aop_contours.gpkg`).
+ - Verified: `mvp/scripts/playwright_verify_lidar_tiles.py` extended to cover contours; all checks PASS on 2026-05-20, 0 console errors.
+ - Open follow-up: revisit a 2 ft interval only if 5 ft proves too coarse for RC-scale micro-terrain.
+
+## Update: water / hydrography layer (2026-05-20)
+
+User asked to review the 9-patch and find data for water/river layers.
+
+ - Source: USGS National Hydrography Dataset (NHD) MapServer `https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer`, large-scale (high-resolution) layers 6/9/12/0.
+ - `mvp/scripts/import_usgs_hydrography.sh` (mirrors `import_usgs_roads.sh`) writes `website/data/aop_water.geojson` — 94 water features: 55 streams, 30 artificial paths, 1 stream/river area, 3 lake/pond, 4 springs, 1 gage. Each feature tagged `water_kind` + `water_class` + NHD `ftype`/`fcode`.
+ - Named streams in-AOI: Battle Creek (the main creek), Big Fiery Gizzard Creek, Kelly Cove Branch, Rogers Cove Branch, Sweden Creek, Tate Cove Creek. Named springs: Gilliam, Bible, Fish Trap.
+ - `website/index.html` got two default-OFF toggles: `Streams & waterbodies (USGS NHD)` and `Springs & gages (USGS NHD)`, with popups carrying class, NHD ftype/fcode, length/area.
+ - `mvp/scripts/playwright_verify_water.py` added: 28 of 28 checks PASS, 0 console errors. Screenshots `brain/output/playwright_water_*.png`.
+ - Documented in `brain/research/aop_data_bounds.md` ("Hydrography / Water Layer") and `brain/output/aop_9_patch_data_acquisition_manifest.md` ("Hydrography / Water").
+ - Not pulled: NHDPlus HR HUC4 `0602` geodatabase (bulk alternative) and USGS Watershed Boundary Dataset (HUC8/10/12 drainage basins). Listed in the manifest if a basin layer is wanted later.
+ - All NHD water features are raw-zone context; attach a `source_register.sources` row (USGS NHD = public domain) before any promotion to publish layers.
+
+## Update: map search (2026-05-20)
+
+User asked for a search box that re-focuses the map on a named feature.
+
+ - Added to `website/index.html` (no new files, no dependency, fully client-side over already-loaded GeoJSON — works offline).
+ - `indexFeatures()` registers every named feature as each layer's data loads; `buildSearchGroups()` collapses multi-segment features into one result framed by its full extent. 127 named features indexed today (streams, waterbodies, springs, roads, OSM tracks/landmarks, publish features).
+ - Trails are searchable: the publish `trail_centerlines` layer is indexed as kind `trail`. `searchDisplayName()` strips a trailing `(segment N)` suffix so a GPX-imported trail like `Saturday Afternoon Activity` collapses from its segment rows into one result. Real named AOP trails will be searchable automatically once loaded into `publish.geojson`.
+ - OSM `highway=track` ways are wired for search too, but all 47 in the 9-patch are unnamed in OSM, so none surface today.
+ - Search box at the top of the panel: substring match, dropdown of up to 8 results with a kind tag, arrow-key navigation, Enter selects, Escape clears.
+ - On select: `fitBounds`/`flyTo` to the feature, auto-enables the feature's layer toggle if it was off, and flashes a yellow `search-highlight` layer (a ~2.6 s rAF pulse).
+ - Verified with `mvp/scripts/playwright_verify_search.py` on 2026-05-20: 12 of 12 checks PASS, 0 console errors. Screenshots `brain/output/playwright_search_*.png`.
+
+## Update: contour smoothing (2026-05-20)
+
+User flagged the contour lines as more jagged than hoped and asked about closer
+sampling or a fitting algorithm.
+
+ - Diagnosis: two causes. (1) The raw 1 m lidar DEM carries micro-noise, so the
+   isolines crinkle. (2) `ogr2ogr -simplify` (Douglas-Peucker) only deletes
+   vertices — it never adds curvature, so the thinned lines met at hard corners.
+   Sampling a finer interval would worsen this; the lever is smooth + curve-fit.
+ - Fix is two passes. (1) DEM low-pass: `build_contours.sh` now resamples the
+   clipped DEM 1 m → 2 m with `gdalwarp -r cubicspline` before `gdal_contour`,
+   stripping the micro-noise. Smoothed DEM cached at `mvp/cache/dem/dem_9patch_smooth.tif`.
+   (2) Line curve-fit: new `mvp/scripts/chaikin_smooth.py` runs 2 Chaikin
+   corner-cutting passes (pure stdlib, runs in the GDAL container) after a 2 m
+   Douglas-Peucker thin, then drops colinear vertices to keep payload small.
+ - Result: `website/data/aop_contours.geojson` is now 2,831 smoothed LineStrings,
+   ~8.9 MB (was 6,376 / ~5.0 MB). Median segment ~24 m → ~12 m, median turn angle
+   ~12°. Feature count dropped because the DEM low-pass erased noise-speckle
+   micro-loops; elevation coverage (605–1820 ft, 501 indexed) is unchanged.
+ - Viewer needed no change — the GeoJSON schema (`elev_m`/`elev_ft`/`idx`) is the
+   same. `playwright_verify_lidar_tiles.py` PASS, 0 console errors; z16 spot-check
+   at `brain/output/playwright_lidar_contours_z16.png`.
+ - Tunables live at the top of `build_contours.sh`: `SMOOTH_RES_M`, `SIMPLIFY_M`,
+   `CHAIKIN_ITERS`, `COLINEAR_EPS_M`. Raise iterations or smoothing if still too
+   angular; lower them if real micro-terrain is washing out.
+
 ## Session note
 
 This file is handoff context, not a durable policy document. Keep it live until the next session has read and acted on it.

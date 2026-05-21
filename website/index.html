@@ -18,6 +18,14 @@
     .panel button:hover { background: #ececec; }
     .panel button[disabled] { opacity: 0.4; cursor: not-allowed; }
     .message { position: absolute; left: 12px; bottom: 12px; background: rgba(255,255,255,0.95); padding: 10px 12px; border-radius: 10px; font-size: 0.9rem; max-width: 60ch; }
+    .search { position: relative; margin-bottom: 10px; }
+    .search input { width: 100%; box-sizing: border-box; padding: 7px 9px; font: inherit; border: 1px solid #bbb; border-radius: 8px; }
+    .search input:focus { outline: 2px solid #4d8ac8; border-color: #4d8ac8; }
+    .search-results { position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 240px; overflow-y: auto; display: none; z-index: 5; }
+    .search-item { display: flex; justify-content: space-between; gap: 10px; padding: 6px 9px; cursor: pointer; font-size: 0.9rem; }
+    .search-item:hover, .search-item.active { background: #eaf2fa; }
+    .search-kind { color: #888; font-size: 0.78rem; }
+    .search-empty { padding: 6px 9px; color: #999; font-size: 0.88rem; }
     .align-handle { background: #ff3366; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #000, 0 2px 6px rgba(0,0,0,0.4); cursor: grab; }
     .align-handle:active { cursor: grabbing; filter: brightness(1.15); }
     .align-handle-corner { width: 18px; height: 18px; background: #ff3366; }
@@ -30,12 +38,19 @@
   <div id="map"></div>
   <div class="panel">
     <h1>AOP MVP viewer</h1>
+    <div class="search">
+      <input type="text" id="searchInput" placeholder="🔍 Search the map…" autocomplete="off" />
+      <div class="search-results" id="searchResults"></div>
+    </div>
     <label><input type="checkbox" id="showTerrain" /> 3D terrain (AWS Terrarium / USGS 3DEP)</label>
     <label><input type="checkbox" id="showHillshade" /> Lidar hillshade (USGS 3DEP)</label>
+    <label><input type="checkbox" id="showContours" /> Lidar contours (5 ft, 1m DEM)</label>
     <label><input type="checkbox" id="showSatellite" /> Satellite imagery (TNMap 2022)</label>
     <label><input type="checkbox" id="showNinePatch" /> 9-patch acquisition AOI</label>
     <label><input type="checkbox" id="showLidarTiles" /> Lidar tile index (USGS 3DEP)</label>
     <label><input type="checkbox" id="showRoads" checked /> Asphalt roads (USGS National Map)</label>
+    <label><input type="checkbox" id="showWater" /> Streams &amp; waterbodies (USGS NHD)</label>
+    <label><input type="checkbox" id="showSprings" /> Springs &amp; gages (USGS NHD)</label>
     <hr/>
     <div class="section-title">Community (OSM)</div>
     <label><input type="checkbox" id="showOsmPark" /> OSM park polygon</label>
@@ -64,6 +79,7 @@
     <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
     <small>Terrain: AWS Terrain Tiles, derived from USGS 3DEP. Drag with right-click (or two-finger drag) to tilt and rotate.</small>
     <small>Satellite tiles served by TDOT/TNMap — inspection use only, not for redistribution.</small>
+    <small>Contours: 5 ft interval from the USGS 3DEP 1 m lidar DEM; bold lines every 25 ft.</small>
     <small>SFWDA raster is &copy; Adventure Off Road Park (via SFWDA) — internal/inspection only. Drag the 4 corner handles in Edit mode to pixel-align against OSM tracks, then Export to save <code>website/data/sfwda_raster_alignment.json</code>.</small>
   </div>
   <div class="message" id="message">Loading publish layer...</div>
@@ -91,10 +107,13 @@
     const message = document.getElementById('message');
     const terrainToggle = document.getElementById('showTerrain');
     const hillshadeToggle = document.getElementById('showHillshade');
+    const contoursToggle = document.getElementById('showContours');
     const satelliteToggle = document.getElementById('showSatellite');
     const ninePatchToggle = document.getElementById('showNinePatch');
     const lidarTilesToggle = document.getElementById('showLidarTiles');
     const roadsToggle = document.getElementById('showRoads');
+    const waterToggle = document.getElementById('showWater');
+    const springsToggle = document.getElementById('showSprings');
     const osmParkToggle = document.getElementById('showOsmPark');
     const osmTracksToggle = document.getElementById('showOsmTracks');
     const osmServiceToggle = document.getElementById('showOsmService');
@@ -111,12 +130,22 @@
     const trailToggle = document.getElementById('showTrails');
     const boundaryToggle = document.getElementById('showBoundaries');
     const trailheadToggle = document.getElementById('showTrailheads');
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+    // Named-feature search registry, filled by indexFeatures during map load.
+    const searchIndex = [];
+    let searchGroups = [];
+    let searchMatches = [];
+    let searchActive = -1;
 
     function setLayerVisibility(layerId, visible) {
       if (map.getLayer(layerId)) {
         map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
       }
     }
+
+    // SFWDA paper map is sliced into a GRID_N x GRID_N mesh of warpable raster tiles.
+    const GRID_N = 6;
 
     const SKY_ATMOSPHERE = {
       'sky-color': '#7AB3FF',
@@ -140,38 +169,35 @@
       }
     }
 
+    // Each toggle drives one or more map layers. setLayerVisibility no-ops on
+    // layers that do not exist yet, so this is safe to call before layers load.
+    const LAYER_TOGGLES = [
+      [hillshadeToggle, ['lidar-hillshade']],
+      [contoursToggle, ['contours-minor', 'contours-index', 'contours-labels']],
+      [satelliteToggle, ['tnmap-satellite']],
+      [ninePatchToggle, ['nine-patch-fill', 'nine-patch-outline', 'nine-patch-labels']],
+      [lidarTilesToggle, ['lidar-tiles-fill', 'lidar-tiles-outline', 'lidar-tiles-labels']],
+      [roadsToggle, ['roads-local-casing', 'roads-local', 'roads-connecting-casing', 'roads-connecting', 'roads-controlled-casing', 'roads-controlled', 'roads-labels']],
+      [waterToggle, ['water-area-fill', 'waterbody-fill', 'waterbody-outline', 'streams', 'stream-labels']],
+      [springsToggle, ['water-points', 'water-point-labels']],
+      [osmParkToggle, ['osm-park-outline']],
+      [osmTracksToggle, ['osm-tracks']],
+      [osmServiceToggle, ['osm-service']],
+      [osmNamedToggle, ['osm-named-points', 'osm-named-labels']],
+      [trailToggle, ['publish-trails']],
+      [boundaryToggle, ['publish-boundary-fill', 'publish-boundaries']],
+      [trailheadToggle, ['publish-trailheads']]
+    ];
+
     function updateLayerVisibility() {
-      setLayerVisibility('lidar-hillshade', hillshadeToggle.checked);
-      setLayerVisibility('tnmap-satellite', satelliteToggle.checked);
-      setLayerVisibility('nine-patch-fill', ninePatchToggle.checked);
-      setLayerVisibility('nine-patch-outline', ninePatchToggle.checked);
-      setLayerVisibility('nine-patch-labels', ninePatchToggle.checked);
-      setLayerVisibility('lidar-tiles-fill', lidarTilesToggle.checked);
-      setLayerVisibility('lidar-tiles-outline', lidarTilesToggle.checked);
-      setLayerVisibility('lidar-tiles-labels', lidarTilesToggle.checked);
-      setLayerVisibility('roads-local-casing', roadsToggle.checked);
-      setLayerVisibility('roads-local', roadsToggle.checked);
-      setLayerVisibility('roads-connecting-casing', roadsToggle.checked);
-      setLayerVisibility('roads-connecting', roadsToggle.checked);
-      setLayerVisibility('roads-controlled-casing', roadsToggle.checked);
-      setLayerVisibility('roads-controlled', roadsToggle.checked);
-      setLayerVisibility('roads-labels', roadsToggle.checked);
-      setLayerVisibility('osm-park-outline', osmParkToggle.checked);
-      setLayerVisibility('osm-tracks', osmTracksToggle.checked);
-      setLayerVisibility('osm-service', osmServiceToggle.checked);
-      setLayerVisibility('osm-named-points', osmNamedToggle.checked);
-      setLayerVisibility('osm-named-labels', osmNamedToggle.checked);
-      // SFWDA tiles use a dynamic grid size (GRID_N in the load handler). Iterate by id existence.
-      for (let r = 0; r < 12; r++) {
-        for (let c = 0; c < 12; c++) {
-          const id = `sfwda-tile-${r}-${c}`;
-          if (map.getLayer(id)) setLayerVisibility(id, sfwdaToggle.checked);
+      for (const [toggle, layerIds] of LAYER_TOGGLES) {
+        for (const id of layerIds) setLayerVisibility(id, toggle.checked);
+      }
+      for (let r = 0; r < GRID_N; r++) {
+        for (let c = 0; c < GRID_N; c++) {
+          setLayerVisibility(`sfwda-tile-${r}-${c}`, sfwdaToggle.checked);
         }
       }
-      setLayerVisibility('publish-trails', trailToggle.checked);
-      setLayerVisibility('publish-boundary-fill', boundaryToggle.checked);
-      setLayerVisibility('publish-boundaries', boundaryToggle.checked);
-      setLayerVisibility('publish-trailheads', trailheadToggle.checked);
     }
 
     function escapeHtml(value) {
@@ -188,6 +214,33 @@
         .filter(([, value]) => value !== undefined && value !== null && value !== '')
         .map(([label, value]) => `${escapeHtml(label)}: ${escapeHtml(value)}`)
         .join('<br/>');
+    }
+
+    // Fetch an optional overlay. Returns undefined (and warns) if it cannot load,
+    // so a missing overlay never aborts the rest of the viewer.
+    async function fetchJson(url, label) {
+      try {
+        const response = await fetch(url);
+        if (response.ok) return await response.json();
+      } catch (error) {
+        console.warn(`${label}:`, error);
+      }
+      return undefined;
+    }
+
+    // Wire a click popup for one or more layers. titleFor and footerFor may be
+    // a value or a (props) => value function; footerFor is optional trailing HTML.
+    function bindPopup(layers, titleFor, rowsFor, footerFor) {
+      map.on('click', layers, (event) => {
+        const props = event.features?.[0]?.properties || {};
+        const title = typeof titleFor === 'function' ? titleFor(props) : titleFor;
+        let html = `<strong>${title}</strong><br/>${detailRows(rowsFor(props))}`;
+        if (footerFor) {
+          const footer = footerFor(props);
+          if (footer) html += '<br/>' + footer;
+        }
+        new maplibregl.Popup().setLngLat(event.lngLat).setHTML(html).addTo(map);
+      });
     }
 
     function extendBounds(bounds, coordinates) {
@@ -227,6 +280,10 @@
     }
 
     map.on('load', async () => {
+      map.on('error', (e) => {
+        console.error(e.error || e);
+      });
+
       map.addSource('aws-terrain-dem', {
         type: 'raster-dem',
         tiles: [
@@ -272,15 +329,7 @@
         paint: { 'raster-opacity': 1 }
       });
 
-      let ninePatchData;
-      try {
-        const ninePatchResponse = await fetch('./data/aop_9_patch.geojson');
-        if (ninePatchResponse.ok) {
-          ninePatchData = await ninePatchResponse.json();
-        }
-      } catch (error) {
-        console.warn('9-patch overlay missing:', error);
-      }
+      const ninePatchData = await fetchJson('./data/aop_9_patch.geojson', '9-patch overlay missing');
 
       if (ninePatchData) {
         map.addSource('nine-patch', { type: 'geojson', data: ninePatchData });
@@ -316,15 +365,7 @@
         });
       }
 
-      let lidarTileData;
-      try {
-        const lidarTileResponse = await fetch('./data/aop_lidar_tiles.geojson');
-        if (lidarTileResponse.ok) {
-          lidarTileData = await lidarTileResponse.json();
-        }
-      } catch (error) {
-        console.warn('Lidar tile index missing:', error);
-      }
+      const lidarTileData = await fetchJson('./data/aop_lidar_tiles.geojson', 'Lidar tile index missing');
 
       if (lidarTileData) {
         map.addSource('lidar-tiles', { type: 'geojson', data: lidarTileData });
@@ -360,14 +401,185 @@
         });
       }
 
-      // --- USGS National Map asphalt roads --------------------------------
-      let roadsData;
-      try {
-        const roadsResponse = await fetch('./data/aop_roads.geojson');
-        if (roadsResponse.ok) roadsData = await roadsResponse.json();
-      } catch (error) {
-        console.warn('Roads layer missing:', error);
+      // --- Lidar contours (USGS 3DEP 1m DEM) ------------------------------
+      const contourData = await fetchJson('./data/aop_contours.geojson', 'Contour layer missing');
+      if (contourData) {
+        map.addSource('aop-contours', {
+          type: 'geojson',
+          data: contourData,
+          attribution: 'Contours: USGS 3DEP 1m DEM (lidar-derived)'
+        });
+        map.addLayer({
+          id: 'contours-minor',
+          type: 'line',
+          source: 'aop-contours',
+          filter: ['==', ['get', 'idx'], 0],
+          layout: { visibility: 'none', 'line-join': 'round' },
+          paint: {
+            'line-color': '#9c6b3c',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 16, 1.4],
+            'line-opacity': 0.75
+          }
+        });
+        map.addLayer({
+          id: 'contours-index',
+          type: 'line',
+          source: 'aop-contours',
+          filter: ['==', ['get', 'idx'], 1],
+          layout: { visibility: 'none', 'line-join': 'round' },
+          paint: {
+            'line-color': '#6e4420',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 16, 2.8],
+            'line-opacity': 0.95
+          }
+        });
+        map.addLayer({
+          id: 'contours-labels',
+          type: 'symbol',
+          source: 'aop-contours',
+          filter: ['==', ['get', 'idx'], 1],
+          layout: {
+            visibility: 'none',
+            'symbol-placement': 'line',
+            'text-field': ['concat', ['to-string', ['get', 'elev_ft']], ' ft'],
+            'text-size': 11,
+            'symbol-spacing': 320
+          },
+          paint: {
+            'text-color': '#5a3618',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 1.8
+          }
+        });
       }
+
+      // --- USGS NHD hydrography (streams, waterbodies, springs) -----------
+      const waterData = await fetchJson('./data/aop_water.geojson', 'Water layer missing');
+      if (waterData) {
+        map.addSource('usgs-water', {
+          type: 'geojson',
+          data: waterData,
+          attribution: 'Hydrography: USGS National Hydrography Dataset'
+        });
+
+        map.addLayer({
+          id: 'water-area-fill',
+          type: 'fill',
+          source: 'usgs-water',
+          filter: ['==', ['get', 'water_kind'], 'water_area'],
+          layout: { visibility: 'none' },
+          paint: { 'fill-color': '#7fc0e6', 'fill-opacity': 0.55 }
+        });
+        map.addLayer({
+          id: 'waterbody-fill',
+          type: 'fill',
+          source: 'usgs-water',
+          filter: ['==', ['get', 'water_kind'], 'waterbody'],
+          layout: { visibility: 'none' },
+          paint: { 'fill-color': '#4d9fd6', 'fill-opacity': 0.5 }
+        });
+        map.addLayer({
+          id: 'waterbody-outline',
+          type: 'line',
+          source: 'usgs-water',
+          filter: ['==', ['get', 'water_kind'], 'waterbody'],
+          layout: { visibility: 'none' },
+          paint: { 'line-color': '#1f6aa8', 'line-width': 1.2 }
+        });
+        // One line layer for every flowline; named streams render heavier than
+        // artificial paths / connectors via a per-class width case.
+        map.addLayer({
+          id: 'streams',
+          type: 'line',
+          source: 'usgs-water',
+          filter: ['==', ['get', 'water_kind'], 'flowline'],
+          layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
+          paint: {
+            'line-color': '#2b7fc4',
+            'line-opacity': 0.9,
+            'line-width': [
+              'interpolate', ['linear'], ['zoom'],
+              10, ['case', ['==', ['get', 'water_class'], 'stream'], 0.9, 0.5],
+              14, ['case', ['==', ['get', 'water_class'], 'stream'], 2.4, 1.3],
+              17, ['case', ['==', ['get', 'water_class'], 'stream'], 5.5, 2.8]
+            ]
+          }
+        });
+        map.addLayer({
+          id: 'stream-labels',
+          type: 'symbol',
+          source: 'usgs-water',
+          filter: ['all', ['==', ['get', 'water_kind'], 'flowline'], ['!=', ['get', 'name'], null]],
+          layout: {
+            visibility: 'none',
+            'symbol-placement': 'line',
+            'text-field': ['get', 'name'],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 12, 9, 16, 13],
+            'text-letter-spacing': 0.04
+          },
+          paint: {
+            'text-color': '#13507f',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 1.8
+          }
+        });
+        map.addLayer({
+          id: 'water-points',
+          type: 'circle',
+          source: 'usgs-water',
+          filter: ['==', ['get', 'water_kind'], 'point'],
+          layout: { visibility: 'none' },
+          paint: {
+            'circle-radius': 5,
+            'circle-color': ['match', ['get', 'water_class'],
+              'spring', '#1f9ed0',
+              'gage', '#e07b00',
+              '#2b7fc4'],
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 1.5
+          }
+        });
+        map.addLayer({
+          id: 'water-point-labels',
+          type: 'symbol',
+          source: 'usgs-water',
+          filter: ['all', ['==', ['get', 'water_kind'], 'point'], ['!=', ['get', 'name'], null]],
+          layout: {
+            visibility: 'none',
+            'text-field': ['get', 'name'],
+            'text-size': 11,
+            'text-offset': [0, 1.1],
+            'text-anchor': 'top'
+          },
+          paint: { 'text-color': '#13507f', 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 }
+        });
+
+        bindPopup('streams', (props) => escapeHtml(props.name || 'Stream / flowline'), (props) => [
+          ['Class', props.water_class || 'unknown'],
+          ['NHD ftype', props.ftype || ''],
+          ['NHD fcode', props.fcode || ''],
+          ['Length (km)', props.lengthkm != null ? Number(props.lengthkm).toFixed(2) : '']
+        ]);
+        bindPopup(['waterbody-fill', 'water-area-fill'], (props) => escapeHtml(props.name || 'Waterbody'), (props) => [
+          ['Class', props.water_class || 'unknown'],
+          ['NHD ftype', props.ftype || ''],
+          ['Area (km²)', props.areasqkm != null ? Number(props.areasqkm).toFixed(4) : '']
+        ]);
+        bindPopup('water-points', (props) => escapeHtml(props.name || 'Water point'), (props) => [
+          ['Class', props.water_class || 'unknown'],
+          ['NHD ftype', props.ftype || ''],
+          ['GNIS id', props.gnis_id || '']
+        ]);
+
+        indexFeatures(waterData,
+          (props) => props.water_kind === 'point' ? (props.water_class || 'water point')
+            : props.water_kind === 'waterbody' ? 'waterbody'
+            : 'stream',
+          (props) => props.water_kind === 'point' ? springsToggle : waterToggle);
+      }
+
+      // --- USGS National Map asphalt roads --------------------------------
+      const roadsData = await fetchJson('./data/aop_roads.geojson', 'Roads layer missing');
       if (roadsData) {
         map.addSource('usgs-roads', { type: 'geojson', data: roadsData });
 
@@ -446,29 +658,21 @@
           }
         });
 
-        map.on('click', ['roads-local', 'roads-connecting', 'roads-controlled'], (event) => {
-          const props = event.features?.[0]?.properties || {};
-          const description = `<strong>Road</strong><br/>${detailRows([
-            ['Name', props.name || 'Unnamed'],
-            ['Class', props.road_class || 'unknown'],
-            ['MTFCC', props.mtfcc_code || ''],
-            ['Interstate', props.interstate || ''],
-            ['US Route', props.us_route || ''],
-            ['State Route', props.state_route || ''],
-            ['County Route', props.county_route || '']
-          ])}`;
-          new maplibregl.Popup().setLngLat(event.lngLat).setHTML(description).addTo(map);
-        });
+        bindPopup(['roads-local', 'roads-connecting', 'roads-controlled'], 'Road', (props) => [
+          ['Name', props.name || 'Unnamed'],
+          ['Class', props.road_class || 'unknown'],
+          ['MTFCC', props.mtfcc_code || ''],
+          ['Interstate', props.interstate || ''],
+          ['US Route', props.us_route || ''],
+          ['State Route', props.state_route || ''],
+          ['County Route', props.county_route || '']
+        ]);
+
+        indexFeatures(roadsData, 'road', roadsToggle);
       }
 
       // --- Community OSM 9-patch vectors ---------------------------------
-      let osmData;
-      try {
-        const osmResponse = await fetch('./data/osm_aop_9patch.geojson');
-        if (osmResponse.ok) osmData = await osmResponse.json();
-      } catch (error) {
-        console.warn('OSM 9-patch missing:', error);
-      }
+      const osmData = await fetchJson('./data/osm_aop_9patch.geojson', 'OSM 9-patch missing');
       if (osmData) {
         map.addSource('osm-9patch', { type: 'geojson', data: osmData });
         map.addLayer({
@@ -495,15 +699,15 @@
           layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
           paint: { 'line-color': '#b8410d', 'line-width': 2, 'line-opacity': 0.95 }
         });
+
+        indexFeatures(osmData,
+          (props) => props.highway === 'track' ? 'OSM track'
+            : props.highway === 'service' ? 'OSM road' : 'OSM feature',
+          (props) => props.highway === 'track' ? osmTracksToggle
+            : props.highway === 'service' ? osmServiceToggle : osmParkToggle);
       }
 
-      let osmNamedData;
-      try {
-        const osmNamedResponse = await fetch('./data/osm_aop_named.geojson');
-        if (osmNamedResponse.ok) osmNamedData = await osmNamedResponse.json();
-      } catch (error) {
-        console.warn('OSM named features missing:', error);
-      }
+      const osmNamedData = await fetchJson('./data/osm_aop_named.geojson', 'OSM named features missing');
       if (osmNamedData) {
         map.addSource('osm-named', { type: 'geojson', data: osmNamedData });
         map.addLayer({
@@ -527,16 +731,12 @@
           },
           paint: { 'text-color': '#1c1c1c', 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 }
         });
+
+        indexFeatures(osmNamedData, (props) => props.place || props.natural || 'landmark', osmNamedToggle);
       }
 
       // --- SFWDA paper map raster + 9-patch alignment editor -------------
-      let alignmentData;
-      try {
-        const alignResponse = await fetch('./data/sfwda_raster_alignment.json');
-        if (alignResponse.ok) alignmentData = await alignResponse.json();
-      } catch (error) {
-        console.warn('SFWDA alignment missing:', error);
-      }
+      const alignmentData = await fetchJson('./data/sfwda_raster_alignment.json', 'SFWDA alignment missing');
       const defaultCorners = alignmentData?.corners
         ? [
             alignmentData.corners.nw,
@@ -553,8 +753,6 @@
       const defaultOrientation = Number.isFinite(alignmentData?.orientation_cw_degrees)
         ? alignmentData.orientation_cw_degrees
         : 0;
-
-      const GRID_N = 6; // patches per side; (GRID_N+1) x (GRID_N+1) control points
 
       function defaultGridFromCorners(corners, n) {
         // corners = [NW, NE, SE, SW]. Returns (n+1)x(n+1) grid of [lng, lat].
@@ -964,105 +1162,280 @@
       updateLayerVisibility();
       fitToDataBounds(publishData);
 
-      map.on('click', 'publish-trails', (event) => {
-        const props = event.features?.[0]?.properties || {};
-        const coordinates = event.lngLat;
-        const description = `<strong>Trail</strong><br/>${detailRows([
-          ['Name', props.name || 'Unnamed'],
-          ['Difficulty', props.difficulty || 'unknown'],
-          ['Confidence', props.confidence || 'unknown'],
-          ['Status', props.status || 'unknown']
-        ])}`;
-        new maplibregl.Popup().setLngLat(coordinates).setHTML(description).addTo(map);
+      bindPopup('publish-trails', 'Trail', (props) => [
+        ['Name', props.name || 'Unnamed'],
+        ['Difficulty', props.difficulty || 'unknown'],
+        ['Confidence', props.confidence || 'unknown'],
+        ['Status', props.status || 'unknown']
+      ]);
+
+      bindPopup('publish-boundaries', 'Boundary', (props) => [
+        ['Name', props.name || 'Unnamed'],
+        ['Confidence', props.confidence || 'unknown'],
+        ['Status', props.status || 'unknown'],
+        ['Permission', props.permission || 'unknown']
+      ]);
+
+      bindPopup('lidar-tiles-fill', 'Lidar tile', (props) => [
+        ['Tile', props.tile_code || 'unknown'],
+        ['Project', props.project || 'unknown'],
+        ['Published', props.publication_date || 'unknown'],
+        ['Size (MB)', props.size_mb ?? 'unknown']
+      ], (props) => {
+        const url = props.download_url || '';
+        return url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">Download LAZ</a>` : '';
       });
 
-      map.on('click', 'publish-boundaries', (event) => {
-        const props = event.features?.[0]?.properties || {};
-        const coordinates = event.lngLat;
-        const description = `<strong>Boundary</strong><br/>${detailRows([
-          ['Name', props.name || 'Unnamed'],
-          ['Confidence', props.confidence || 'unknown'],
-          ['Status', props.status || 'unknown'],
-          ['Permission', props.permission || 'unknown']
-        ])}`;
-        new maplibregl.Popup().setLngLat(coordinates).setHTML(description).addTo(map);
-      });
+      bindPopup(['contours-index', 'contours-minor'], 'Contour', (props) => [
+        ['Elevation', props.elev_ft != null ? `${props.elev_ft} ft` : 'unknown'],
+        ['Type', props.idx === 1 ? 'index (25 ft)' : 'minor (5 ft)']
+      ]);
 
-      map.on('click', 'lidar-tiles-fill', (event) => {
-        const props = event.features?.[0]?.properties || {};
-        const coordinates = event.lngLat;
-        const downloadUrl = props.download_url || '';
-        const downloadLink = downloadUrl
-          ? `<a href="${escapeHtml(downloadUrl)}" target="_blank" rel="noopener">Download LAZ</a>`
-          : '';
-        const description = `<strong>Lidar tile</strong><br/>${detailRows([
-          ['Tile', props.tile_code || 'unknown'],
-          ['Project', props.project || 'unknown'],
-          ['Published', props.publication_date || 'unknown'],
-          ['Size (MB)', props.size_mb ?? 'unknown']
-        ])}${downloadLink ? '<br/>' + downloadLink : ''}`;
-        new maplibregl.Popup().setLngLat(coordinates).setHTML(description).addTo(map);
-      });
+      bindPopup('publish-trailheads', 'Trailhead', (props) => [
+        ['Name', props.name || 'Unnamed'],
+        ['Status', props.status || 'unknown']
+      ]);
 
-      map.on('click', 'publish-trailheads', (event) => {
-        const props = event.features?.[0]?.properties || {};
-        const coordinates = event.lngLat;
-        const description = `<strong>Trailhead</strong><br/>${detailRows([
-          ['Name', props.name || 'Unnamed'],
-          ['Status', props.status || 'unknown']
-        ])}`;
-        new maplibregl.Popup().setLngLat(coordinates).setHTML(description).addTo(map);
-      });
+      bindPopup('osm-tracks', 'OSM track', (props) => [
+        ['Name', props.name || '(unnamed)'],
+        ['Highway', props.highway || ''],
+        ['Surface', props.surface || ''],
+        ['OSM type', props.osm_type || ''],
+        ['OSM id', props.osm_id || '']
+      ]);
 
-      map.on('click', 'osm-tracks', (event) => {
-        const props = event.features?.[0]?.properties || {};
-        const coordinates = event.lngLat;
-        const description = `<strong>OSM track</strong><br/>${detailRows([
-          ['Name', props.name || '(unnamed)'],
-          ['Highway', props.highway || ''],
-          ['Surface', props.surface || ''],
-          ['OSM type', props.osm_type || ''],
-          ['OSM id', props.osm_id || '']
-        ])}`;
-        new maplibregl.Popup().setLngLat(coordinates).setHTML(description).addTo(map);
-      });
+      bindPopup('osm-service', 'OSM service road', (props) => [
+        ['Name', props.name || '(unnamed)'],
+        ['Surface', props.surface || ''],
+        ['OSM type', props.osm_type || ''],
+        ['OSM id', props.osm_id || '']
+      ]);
 
-      map.on('click', 'osm-service', (event) => {
-        const props = event.features?.[0]?.properties || {};
-        const coordinates = event.lngLat;
-        const description = `<strong>OSM service road</strong><br/>${detailRows([
-          ['Name', props.name || '(unnamed)'],
-          ['Surface', props.surface || ''],
-          ['OSM type', props.osm_type || ''],
-          ['OSM id', props.osm_id || '']
-        ])}`;
-        new maplibregl.Popup().setLngLat(coordinates).setHTML(description).addTo(map);
-      });
+      bindPopup('osm-named-points', (props) => escapeHtml(props.name || 'OSM landmark'), (props) => [
+        ['Kind', props.place || props.natural || props.highway || props.leisure || ''],
+        ['Elevation (m)', props.ele || ''],
+        ['OSM id', props.osm_id || '']
+      ]);
 
-      map.on('click', 'osm-named-points', (event) => {
-        const props = event.features?.[0]?.properties || {};
-        const coordinates = event.lngLat;
-        const description = `<strong>${escapeHtml(props.name || 'OSM landmark')}</strong><br/>${detailRows([
-          ['Kind', props.place || props.natural || props.highway || props.leisure || ''],
-          ['Elevation (m)', props.ele || ''],
-          ['OSM id', props.osm_id || '']
-        ])}`;
-        new maplibregl.Popup().setLngLat(coordinates).setHTML(description).addTo(map);
-      });
+      // --- Search index + highlight layers ------------------------------
+      indexFeatures(publishData,
+        (props) => props.layer === 'trail_centerlines' ? 'trail'
+          : props.layer === 'park_boundaries' ? 'boundary' : 'trailhead',
+        (props) => props.layer === 'trail_centerlines' ? trailToggle
+          : props.layer === 'park_boundaries' ? boundaryToggle : trailheadToggle);
+      buildSearchGroups();
 
-      map.on('error', (e) => {
-        console.error(e.error || e);
+      map.addSource('search-highlight', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+      // Added last so the highlight draws above every other layer.
+      map.addLayer({
+        id: 'search-highlight-line',
+        type: 'line',
+        source: 'search-highlight',
+        layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': '#ffe600', 'line-width': 8, 'line-opacity': 0.85, 'line-blur': 1.5 }
+      });
+      map.addLayer({
+        id: 'search-highlight-point',
+        type: 'circle',
+        source: 'search-highlight',
+        filter: ['==', ['geometry-type'], 'Point'],
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-radius': 16,
+          'circle-color': '#ffe600',
+          'circle-opacity': 0,
+          'circle-stroke-color': '#ffe600',
+          'circle-stroke-width': 4,
+          'circle-stroke-opacity': 0.85
+        }
       });
 
       message.textContent = `${publishData.features.length} publish feature${publishData.features.length === 1 ? '' : 's'} loaded.`;
     });
 
+    // --- Map search -----------------------------------------------------
+    // Searches named features across every loaded layer, flies to the match,
+    // turns its layer on if hidden, and flashes a highlight. Fully client-side
+    // over already-loaded GeoJSON — no geocoder service, works offline.
+
+    // Register every named feature of a FeatureCollection. kindFor/toggleFor
+    // may be a value or a (props) => value function.
+    function indexFeatures(data, kindFor, toggleFor) {
+      if (!data || !data.features) return;
+      for (const feature of data.features) {
+        const props = feature.properties || {};
+        const name = props.name || props.gnis_name;
+        if (!name || !feature.geometry) continue;
+        searchIndex.push({
+          name: String(name),
+          kind: typeof kindFor === 'function' ? kindFor(props) : kindFor,
+          toggle: typeof toggleFor === 'function' ? toggleFor(props) : toggleFor,
+          geometry: feature.geometry
+        });
+      }
+    }
+
+    // Trails imported as "<name> (segment N)" rows collapse to one searchable
+    // trail; strip the segment suffix so every segment shares a group.
+    function searchDisplayName(name) {
+      return name.replace(/\s*\(segment[^)]*\)\s*$/i, '').trim();
+    }
+
+    // Collapse per-segment entries into one group per name+kind, so a
+    // multi-segment creek or trail is a single result framed by its full extent.
+    function buildSearchGroups() {
+      const byKey = new Map();
+      for (const entry of searchIndex) {
+        const display = searchDisplayName(entry.name) || entry.name;
+        const key = display.toLowerCase() + '|' + entry.kind;
+        let group = byKey.get(key);
+        if (!group) {
+          group = { name: display, kind: entry.kind, toggle: entry.toggle, geometries: [] };
+          byKey.set(key, group);
+        }
+        group.geometries.push(entry.geometry);
+      }
+      searchGroups = [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    function clearSearchResults() {
+      searchResults.innerHTML = '';
+      searchResults.style.display = 'none';
+      searchMatches = [];
+      searchActive = -1;
+    }
+
+    function renderSearchResults() {
+      const query = searchInput.value.trim().toLowerCase();
+      if (query.length < 2) {
+        searchResults.style.display = 'none';
+        searchMatches = [];
+        return;
+      }
+      searchMatches = searchGroups
+        .filter((group) => group.name.toLowerCase().includes(query))
+        .slice(0, 8);
+      if (!searchMatches.length) {
+        searchResults.innerHTML = '<div class="search-empty">No match</div>';
+        searchResults.style.display = 'block';
+        return;
+      }
+      searchResults.innerHTML = searchMatches
+        .map((match, i) =>
+          `<div class="search-item${i === searchActive ? ' active' : ''}" data-i="${i}">`
+          + `<span>${escapeHtml(match.name)}</span>`
+          + `<span class="search-kind">${escapeHtml(match.kind)}</span></div>`)
+        .join('');
+      searchResults.style.display = 'block';
+    }
+
+    let pulseRAF = null;
+    function pulseHighlight() {
+      if (!map.getLayer('search-highlight-line')) return;
+      setLayerVisibility('search-highlight-line', true);
+      setLayerVisibility('search-highlight-point', true);
+      if (pulseRAF) cancelAnimationFrame(pulseRAF);
+      const start = performance.now();
+      const DURATION = 2600;
+      function frame(now) {
+        const t = (now - start) / DURATION;
+        if (t >= 1) {
+          setLayerVisibility('search-highlight-line', false);
+          setLayerVisibility('search-highlight-point', false);
+          pulseRAF = null;
+          return;
+        }
+        const osc = 0.5 + 0.5 * Math.cos(t * Math.PI * 6); // three flashes
+        if (map.getLayer('search-highlight-line')) {
+          map.setPaintProperty('search-highlight-line', 'line-opacity', 0.2 + 0.7 * osc);
+          map.setPaintProperty('search-highlight-line', 'line-width', 5 + 9 * osc);
+        }
+        if (map.getLayer('search-highlight-point')) {
+          map.setPaintProperty('search-highlight-point', 'circle-radius', 12 + 16 * osc);
+          map.setPaintProperty('search-highlight-point', 'circle-stroke-opacity', 0.2 + 0.7 * osc);
+        }
+        pulseRAF = requestAnimationFrame(frame);
+      }
+      pulseRAF = requestAnimationFrame(frame);
+    }
+
+    function gotoMatch(index) {
+      const match = searchMatches[index];
+      if (!match) return;
+      const bounds = { minLng: Infinity, minLat: Infinity, maxLng: -Infinity, maxLat: -Infinity };
+      for (const geometry of match.geometries) {
+        if (geometry.coordinates) extendBounds(bounds, geometry.coordinates);
+      }
+      if (!Number.isFinite(bounds.minLng)) return;
+      // Turn the layer on so the result is actually visible on arrival.
+      if (match.toggle && !match.toggle.checked) {
+        match.toggle.checked = true;
+        match.toggle.dispatchEvent(new Event('change'));
+      }
+      if (bounds.minLng === bounds.maxLng && bounds.minLat === bounds.maxLat) {
+        map.flyTo({ center: [bounds.minLng, bounds.minLat], zoom: 16, duration: 1100 });
+      } else {
+        map.fitBounds(
+          [[bounds.minLng, bounds.minLat], [bounds.maxLng, bounds.maxLat]],
+          { padding: 90, maxZoom: 16.5, duration: 1100, bearing: map.getBearing() }
+        );
+      }
+      const highlight = map.getSource('search-highlight');
+      if (highlight) {
+        highlight.setData({
+          type: 'FeatureCollection',
+          features: match.geometries.map((geometry) => ({ type: 'Feature', properties: {}, geometry }))
+        });
+        pulseHighlight();
+      }
+      searchInput.value = match.name;
+      clearSearchResults();
+    }
+
+    searchInput.addEventListener('input', () => { searchActive = -1; renderSearchResults(); });
+    searchInput.addEventListener('focus', renderSearchResults);
+    searchInput.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        searchActive = Math.min(searchActive + 1, searchMatches.length - 1);
+        renderSearchResults();
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        searchActive = Math.max(searchActive - 1, 0);
+        renderSearchResults();
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        gotoMatch(searchActive >= 0 ? searchActive : 0);
+      } else if (event.key === 'Escape') {
+        searchInput.value = '';
+        clearSearchResults();
+        searchInput.blur();
+      }
+    });
+    // mousedown (not click) so it fires before the input blur closes the list.
+    searchResults.addEventListener('mousedown', (event) => {
+      const item = event.target.closest('.search-item');
+      if (item) {
+        event.preventDefault();
+        gotoMatch(Number(item.dataset.i));
+      }
+    });
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('.search')) clearSearchResults();
+    });
+
     terrainToggle.addEventListener('change', () => setTerrainEnabled(terrainToggle.checked));
     hillshadeToggle.addEventListener('change', updateLayerVisibility);
+    contoursToggle.addEventListener('change', updateLayerVisibility);
     satelliteToggle.addEventListener('change', updateLayerVisibility);
     ninePatchToggle.addEventListener('change', updateLayerVisibility);
     lidarTilesToggle.addEventListener('change', updateLayerVisibility);
     roadsToggle.addEventListener('change', updateLayerVisibility);
+    waterToggle.addEventListener('change', updateLayerVisibility);
+    springsToggle.addEventListener('change', updateLayerVisibility);
     osmParkToggle.addEventListener('change', updateLayerVisibility);
     osmTracksToggle.addEventListener('change', updateLayerVisibility);
     osmServiceToggle.addEventListener('change', updateLayerVisibility);

@@ -1,41 +1,9 @@
 \set ON_ERROR_STOP on
 
+-- Schema (tables and publish views) is owned by mvp/init_db.sql.
+-- This script only imports data; run init_db.sql first if the DB is fresh.
+
 BEGIN;
-
-ALTER TABLE core.parcels
-  ADD COLUMN IF NOT EXISTS status text,
-  ADD COLUMN IF NOT EXISTS confidence text,
-  ADD COLUMN IF NOT EXISTS permission text,
-  ADD COLUMN IF NOT EXISTS publish_status text,
-  ADD COLUMN IF NOT EXISTS last_verified timestamptz;
-
-DROP VIEW IF EXISTS publish.park_boundaries;
-
-ALTER TABLE core.park_boundaries
-  ALTER COLUMN geom TYPE geometry(MultiPolygon,4326)
-  USING ST_Multi(geom);
-
-CREATE OR REPLACE VIEW publish.park_boundaries AS
-  SELECT id, name, status, confidence, permission, geom
-  FROM core.park_boundaries
-  WHERE permission = 'publish'
-    AND publish_status = 'publish';
-
-CREATE TABLE IF NOT EXISTS raw.arcgis_feature_captures (
-  id serial PRIMARY KEY,
-  source_id integer REFERENCES source_register.sources(id),
-  source_url text NOT NULL,
-  query_where text NOT NULL,
-  fetched_at timestamptz DEFAULT now(),
-  feature_json jsonb NOT NULL,
-  notes text
-);
-
-CREATE OR REPLACE VIEW publish.parcels AS
-  SELECT id, parcel_id, status, confidence, permission, land_area, geom
-  FROM core.parcels
-  WHERE permission = 'publish'
-    AND publish_status = 'publish';
 
 WITH inserted_source AS (
   INSERT INTO source_register.sources (

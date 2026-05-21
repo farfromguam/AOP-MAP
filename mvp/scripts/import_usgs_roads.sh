@@ -94,6 +94,7 @@ fi
 
 mkdir -p "$(dirname "$OUT_FILE")"
 mv "$TMP_OUT" "$OUT_FILE"
+chmod 644 "$OUT_FILE"
 trap - EXIT
 
 echo "Wrote $TOTAL road features to $OUT_FILE"

@@ -3,6 +3,7 @@
 
 Covers:
   - Lidar tile index (USGS 3DEP) GeoJSON overlay (24 tiles).
+  - Lidar contours (5 ft, 1m DEM) GeoJSON overlay.
   - Lidar hillshade (raster-dem 'hillshade' layer over aws-terrain-dem).
   - 3D terrain (map.setTerrain via showTerrain toggle).
 
@@ -27,6 +28,8 @@ OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 
 SCREENSHOTS = {
     "initial": "playwright_lidar_initial.png",
+    "contours_off": "playwright_lidar_contours_off.png",
+    "contours_on": "playwright_lidar_contours_on.png",
     "tiles_on": "playwright_lidar_tiles_on.png",
     "hillshade_on": "playwright_lidar_hillshade_on.png",
     "hillshade_plus_tiles": "playwright_lidar_hillshade_plus_tiles.png",
@@ -40,6 +43,7 @@ TOGGLE_IDS = {
     "satellite": "showSatellite",
     "patch": "showNinePatch",
     "lidar": "showLidarTiles",
+    "contours": "showContours",
 }
 
 
@@ -89,6 +93,18 @@ def terrain_enabled(page) -> bool:
     )
 
 
+def rendered_count(page, layers: list[str]) -> int:
+    return page.evaluate(
+        """(layers) => {
+          if (!window.map || !window.map.queryRenderedFeatures) return -1;
+          const present = layers.filter((l) => window.map.getLayer(l));
+          if (!present.length) return -1;
+          return window.map.queryRenderedFeatures({ layers: present }).length;
+        }""",
+        layers,
+    )
+
+
 def main() -> int:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     console_errors: list[str] = []
@@ -124,7 +140,7 @@ def main() -> int:
         page.wait_for_timeout(500)
 
         print("\n== Initial state ==")
-        for name in ("terrain", "hillshade", "lidar", "patch", "satellite"):
+        for name in ("terrain", "hillshade", "lidar", "patch", "satellite", "contours"):
             tid = TOGGLE_IDS[name]
             check(
                 f"{name} toggle exists and starts off",
@@ -149,7 +165,38 @@ def main() -> int:
             count == 24,
             f"feature_count={count}",
         )
+        check(
+            "contours-minor layer added with visibility=none",
+            layer_visibility(page, "contours-minor") == "none",
+        )
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["initial"]))
+
+        print("\n== Lidar contours ON ==")
+        ccount = feature_count(page, "./data/aop_contours.geojson")
+        check(
+            "contour GeoJSON has features",
+            ccount > 0,
+            f"feature_count={ccount}",
+        )
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["contours_off"]))
+        set_toggle(page, TOGGLE_IDS["contours"], True)
+        page.wait_for_timeout(900)
+        for layer in ("contours-minor", "contours-index"):
+            vis = layer_visibility(page, layer)
+            check(f"{layer} visible", vis == "visible", f"visibility={vis}")
+        rendered = rendered_count(page, ["contours-minor", "contours-index"])
+        check(
+            "contours render in viewport",
+            rendered > 0,
+            f"{rendered} rendered contour features",
+        )
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["contours_on"]))
+        set_toggle(page, TOGGLE_IDS["contours"], False)
+        page.wait_for_timeout(300)
+        check(
+            "contours-minor hidden again",
+            layer_visibility(page, "contours-minor") == "none",
+        )
 
         print("\n== Toggle lidar tile-index ON ==")
         set_toggle(page, TOGGLE_IDS["lidar"], True)

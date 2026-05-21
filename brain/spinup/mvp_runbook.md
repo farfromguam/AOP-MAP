@@ -108,6 +108,47 @@ host. It defaults to `PGPORT=55432` and can be overridden with:
 PGHOST=localhost PGPORT=55433 PGUSER=aop PGDATABASE=aop_map PGPASSWORD=aop ./scripts/import_geojson.sh file.geojson schema.table
 ```
 
+## GDAL toolchain (raster / contour work)
+
+GDAL is not installed on the host. Raster, DEM, and contour work runs through a
+pinned Docker image:
+
+```text
+ghcr.io/osgeo/gdal:alpine-small-latest
+```
+
+Docker Hub `osgeo/gdal` is stale (newest tag is 3.6.3). The project publishes
+current images to GitHub Container Registry, so pull from `ghcr.io`.
+
+### macOS file-access constraint
+
+macOS blocks Docker Desktop from reading the repo tree, because the repo lives
+under `~/Documents`, a TCC-protected folder. A bind mount of any path under
+`~/Documents` resolves the directory but fails every file read with
+`Operation not permitted`.
+
+Workaround: stage GDAL inputs and outputs in `/private/tmp`, which Docker can
+always read and write. Copy inputs in and final outputs back with host `cp`.
+
+### Invocation pattern
+
+```bash
+# stage inputs (host cp works fine against the repo)
+mkdir -p /private/tmp/aop_gdal
+cp mvp/cache/dem/<dem>.tif /private/tmp/aop_gdal/dem.tif
+
+# run a GDAL tool against the tmp workdir
+docker run --rm -v "/private/tmp/aop_gdal:/data" \
+  ghcr.io/osgeo/gdal:alpine-small-latest \
+  gdalinfo /data/dem.tif
+
+# copy final outputs back into the repo (host cp)
+cp /private/tmp/aop_gdal/aop_contours.geojson website/data/
+```
+
+The large DEM cache lives at `mvp/cache/dem/` (gitignored via `/mvp/cache/`).
+The `/private/tmp/aop_gdal/` workdir is scratch and can be deleted any time.
+
 ## Publish export check
 
 Refresh the web export:

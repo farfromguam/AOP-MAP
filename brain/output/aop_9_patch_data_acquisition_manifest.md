@@ -64,6 +64,10 @@ This manifest records concrete public data found for the AOP 9-patch. Use it for
 - Download: `https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/TN_27County_blk4_2015/TIFF/USGS_one_meter_x61y389_TN_27County_blk4_2015.tif`
 - Coverage bbox: `-85.7924866883, 35.0555407932, -85.684039456, 35.1469521929`
 - Interpretation: one tile covers the full 9-patch.
+- Downloaded 2026-05-20 to `mvp/cache/dem/` (gitignored). SHA-256:
+  `f21b4dd6219e77d7d6b3c0f61416b02943202150bf84bc79f16c0406d568306a`
+- Native CRS confirmed by `gdalinfo`: `NAD83 / UTM zone 16N` (EPSG:26916), 1 m pixels, 10012 x 10012.
+- Used by `mvp/scripts/build_contours.sh` to generate the viewer's 5-foot lidar contour layer.
 
 ### USGS 3DEP Dynamic Elevation Service
 
@@ -143,6 +147,30 @@ The 9-patch intersects the Orme and South Pittsburg 7.5-minute quadrangles.
 - AOP 9-patch counts (2026-05-20): 10 controlled-access (I-24), 0 secondary, 28 local connecting, 76 local, 0 ramps = **114 paved-network features**.
 - Importer: `mvp/scripts/import_usgs_roads.sh` writes `website/data/aop_roads.geojson` with a `road_class` property per feature.
 - Considered and rejected: TNMap `TRANSPORTATION/MAJOR_ROADS` (interstates + state highways only, no county/park-access roads); OSM via Overpass (119 ways but requires per-way `surface=*` filtering, locally inconsistent).
+
+## Hydrography / Water
+
+### USGS National Hydrography Dataset (NHD)
+
+- Service: `https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer`
+- Large-scale (high-resolution) layers — the right resolution for a park AOI:
+  `6` Flowline, `9` Area, `12` Waterbody, `0` Point. (The `Small Scale` layers
+  4/7/10 are continental-scale generalizations — too coarse here.)
+- AOP 9-patch counts (2026-05-20): 85 flowlines (55 perennial stream/river, 30
+  artificial path), 1 stream/river area polygon (0.63 km²), 3 lake/pond polygons
+  (all small unnamed ponds), 5 points (4 springs, 1 gage) = **94 water features**.
+- Named streams: Battle Creek (main creek, modeled as artificial path through the
+  area polygon), Big Fiery Gizzard Creek, Kelly Cove Branch, Rogers Cove Branch,
+  Sweden Creek, Tate Cove Creek. Named springs: Gilliam, Bible, Fish Trap.
+- Importer: `mvp/scripts/import_usgs_hydrography.sh` writes `website/data/aop_water.geojson`
+  with `water_kind` + `water_class` + NHD `ftype`/`fcode` per feature.
+- Bulk alternative: NHD is also distributed as the National Hydrography Dataset
+  Plus High Resolution (NHDPlus HR) by HUC4 (this AOI is HUC4 `0602` — Middle
+  Tennessee-Hiwassee) as a downloadable geodatabase, if a full local copy is wanted
+  later. The MapServer query is enough for the 9-patch.
+- Watershed boundaries (HUC8/10/12) for the 9-patch can be pulled from the USGS
+  Watershed Boundary Dataset service `https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer`
+  if a drainage-basin layer is wanted; not pulled in this pass.
 
 ## Query References
 

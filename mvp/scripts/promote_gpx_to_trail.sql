@@ -58,11 +58,12 @@ upserted AS (
   RETURNING id, name, source_id
 ),
 promoted_tracks AS (
-  -- Mark the source field_tracks as promoted (status update only).
+  -- Mark the source field_tracks as promoted. The track stays held; the
+  -- promoted trail centerline is the publishable artifact, not the raw track.
   UPDATE core.field_tracks ft
   SET
     status = 'promoted',
-    publish_status = 'reference_publish',
+    publish_status = 'hold',
     updated_at = now()
   FROM candidates c
   WHERE ft.id = c.field_track_id

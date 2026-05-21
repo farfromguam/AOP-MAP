@@ -71,13 +71,6 @@ CREATE TABLE IF NOT EXISTS core.parcels (
   updated_at timestamptz DEFAULT now()
 );
 
-ALTER TABLE core.parcels
-  ADD COLUMN IF NOT EXISTS status text,
-  ADD COLUMN IF NOT EXISTS confidence text,
-  ADD COLUMN IF NOT EXISTS permission text,
-  ADD COLUMN IF NOT EXISTS publish_status text,
-  ADD COLUMN IF NOT EXISTS last_verified timestamptz;
-
 CREATE TABLE IF NOT EXISTS core.trail_centerlines (
   id serial PRIMARY KEY,
   name text,
@@ -184,6 +177,16 @@ CREATE TABLE IF NOT EXISTS raw.gpx_captures (
   UNIQUE (file_name, recorded_at)
 );
 
+CREATE TABLE IF NOT EXISTS raw.arcgis_feature_captures (
+  id serial PRIMARY KEY,
+  source_id integer REFERENCES source_register.sources(id),
+  source_url text NOT NULL,
+  query_where text NOT NULL,
+  fetched_at timestamptz DEFAULT now(),
+  feature_json jsonb NOT NULL,
+  notes text
+);
+
 CREATE OR REPLACE VIEW publish.trail_centerlines AS
   SELECT id, name, difficulty, status, confidence, permission, geom
   FROM core.trail_centerlines
@@ -213,3 +216,53 @@ CREATE OR REPLACE VIEW publish.hazards AS
   FROM core.hazards
   WHERE permission = 'publish'
     AND publish_status = 'publish';
+
+-- Indexes -----------------------------------------------------------------
+
+CREATE INDEX IF NOT EXISTS park_boundaries_geom_gix   ON core.park_boundaries   USING GIST (geom);
+CREATE INDEX IF NOT EXISTS parcels_geom_gix           ON core.parcels           USING GIST (geom);
+CREATE INDEX IF NOT EXISTS trail_centerlines_geom_gix ON core.trail_centerlines USING GIST (geom);
+CREATE INDEX IF NOT EXISTS observations_geom_gix      ON core.observations      USING GIST (geom);
+CREATE INDEX IF NOT EXISTS hazards_geom_gix           ON core.hazards           USING GIST (geom);
+CREATE INDEX IF NOT EXISTS trailheads_geom_gix        ON core.trailheads        USING GIST (geom);
+CREATE INDEX IF NOT EXISTS print_annotations_geom_gix ON core.print_annotations USING GIST (geom);
+CREATE INDEX IF NOT EXISTS field_tracks_geom_gix      ON core.field_tracks      USING GIST (geom);
+
+-- Provenance links are always looked up by the feature they describe.
+CREATE INDEX IF NOT EXISTS feature_sources_feature_idx
+  ON source_register.feature_sources (feature_schema, feature_table, feature_id);
+
+-- updated_at maintenance ---------------------------------------------------
+-- One trigger keeps updated_at honest so importers do not have to remember.
+
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DO $$
+DECLARE
+  t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'source_register.sources',
+    'source_register.feature_sources',
+    'core.park_boundaries',
+    'core.parcels',
+    'core.trail_centerlines',
+    'core.observations',
+    'core.hazards',
+    'core.trailheads',
+    'core.print_annotations',
+    'core.field_tracks'
+  ]
+  LOOP
+    EXECUTE format('DROP TRIGGER IF EXISTS trg_set_updated_at ON %s', t);
+    EXECUTE format(
+      'CREATE TRIGGER trg_set_updated_at BEFORE UPDATE ON %s '
+      'FOR EACH ROW EXECUTE FUNCTION public.set_updated_at()', t);
+  END LOOP;
+END $$;

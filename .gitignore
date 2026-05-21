@@ -9,6 +9,13 @@
 /mvp/db-data/
 /mvp/db-data-broken-*/
 
+# Cached large raster/elevation downloads (not published)
+/mvp/cache/
+
+# Python bytecode cache
+__pycache__/
+*.pyc
+
 # Temporary files
 *.swp
 *~

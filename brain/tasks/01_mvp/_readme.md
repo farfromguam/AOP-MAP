@@ -42,6 +42,8 @@ This MVP scaffold is the first practical step toward the build card:
 8. [ ] Reconcile the 600+ acre official AOP claim against related parcels or current holdings
 9. [ ] Replace demo/smoke trail and trailhead placeholders with actual AOP trail/observation data and verify the live viewer shows real map data
 10. [ ] Swap the AWS terrarium DEM in `website/index.html` for AOP-specific tiles derived from the USGS 3DEP 1m DEM. Steps: `brew install gdal` and `pip install rio-rgbify`; download `USGS_one_meter_x61y389_TN_27County_blk4_2015.tif` (~500MB) into `mvp/data/dem/` per `brain/output/aop_9_patch_data_acquisition_manifest.md`; clip to the 9-patch bbox `-85.782935283, 35.067164188, -85.717154097, 35.117928496`; reproject to EPSG:3857; encode with `rio rgbify -b -10000 -i 0.1`; tile with `gdal2tiles.py -z 10-16 -r bilinear --xyz` into `website/data/terrain/`; add an `aop-1m-dem` raster-dem source (`encoding: mapbox`) and rebind the `lidar-hillshade` layer + `setTerrain()` call to it; keep AWS terrarium as the fallback outside the AOI; extend `mvp/scripts/playwright_verify_terrain.py` to assert the new source loads at high zoom.
+11. [ ] Work the code-health remediation pass: `code_health_pass.md`. Schema constraints, viewer de-duplication, and repo housekeeping from a deep code review.
+12. [X] Generate lidar-grade 5 ft contour lines for the 9-patch from the USGS 3DEP 1m DEM and wire them into the viewer. See `lidar_contour_pipeline.md`.
 
 ## Files added
 - `mvp/docker-compose.yml`
