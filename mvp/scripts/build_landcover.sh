@@ -3,11 +3,11 @@ set -euo pipefail
 
 # Build the AOP vector land-cover layer from NAIP aerial imagery.
 #
-# Pipeline: download/cache a 4-band NAIP ortho clipped to the park ->
-# classify into five land-cover classes (canopy-roughness field for forest vs
-# open, then NDVI vigour for the sub-classes) -> polygonize every class ->
-# light vertex simplify -> Chaikin smooth -> clip to the AOP boundary ->
-# WGS84 GeoJSON for the viewer.
+# Pipeline: download/cache a leaf-on 4-band NAIP ortho clipped to the park ->
+# classify into five land-cover classes (NDVI + brightness thresholds for
+# forest vs open, then k-means colour quantisation for the open sub-classes)
+# -> polygonize every class -> light vertex simplify -> Chaikin smooth ->
+# clip to the AOP boundary -> WGS84 GeoJSON for the viewer.
 #
 # The layer is a full coverage: forest_deciduous, forest_evergreen,
 # open_grass, open_meadow, open_bare tile the whole park. Water/hydrography is
@@ -22,14 +22,16 @@ REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 GDAL_IMG="ghcr.io/osgeo/gdal:ubuntu-small-latest"
 
-# NAIP 2021 (acquired 2021-11-07), 0.6 m, 4-band, from the USGS NAIP ImageServer.
-# bbox is the AOP parcel-envelope centre cell padded ~100 m so the texture
-# window has clean context up to the true boundary; the pad is clipped off.
+# NAIP 2023 (acquired June, leaf-on), 0.6 m, 4-band, from the USDA NAIP public
+# ImageServer (USDA_CONUS_PRIME). Leaf-on summer canopy is what lets the
+# colour-threshold classification work; see classify_landcover.py.
+# bbox is the AOP parcel-envelope centre cell padded ~100 m so the morphology
+# windows have clean context up to the true boundary; the pad is clipped off.
 NAIP_BBOX="-85.762008221,35.083085624,-85.738081159,35.102007060"
 NAIP_SIZE="3633,3487"   # ~0.6 m pixels in EPSG:26916
-NAIP_EXPORT="https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPImagery/ImageServer/exportImage?bbox=${NAIP_BBOX}&bboxSR=4326&imageSR=26916&size=${NAIP_SIZE}&format=tiff&pixelType=U8&interpolation=RSP_NearestNeighbor"
+NAIP_EXPORT="https://gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME/ImageServer/exportImage?bbox=${NAIP_BBOX}&bboxSR=4326&imageSR=26916&size=${NAIP_SIZE}&format=tiff&pixelType=U8&interpolation=RSP_NearestNeighbor"
 
-NAIP_CACHE="$REPO_DIR/mvp/cache/imagery/naip_2021_aop.tif"
+NAIP_CACHE="$REPO_DIR/mvp/cache/imagery/naip_2023_aop.tif"
 LC_CACHE="$REPO_DIR/mvp/cache/landcover"
 BOUNDARY="$REPO_DIR/website/data/publish.geojson"
 
@@ -41,7 +43,7 @@ echo "==> AOP land-cover build"
 # 1. Cache the NAIP ortho ---------------------------------------------------
 mkdir -p "$(dirname "$NAIP_CACHE")" "$LC_CACHE"
 if [[ ! -f "$NAIP_CACHE" ]]; then
-  echo "==> Downloading NAIP 2021 4-band ortho (ImageServer export)"
+  echo "==> Downloading NAIP 2023 leaf-on 4-band ortho (USDA ImageServer export)"
   # A 12-megapixel mosaic export will not stream inline. The robust path is
   # the two-step ArcGIS pattern: request f=json to trigger generation and
   # return an href, then download the generated TIFF from that href.

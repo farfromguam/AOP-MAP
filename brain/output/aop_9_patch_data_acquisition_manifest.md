@@ -12,11 +12,13 @@ This manifest records concrete public data found for the AOP 9-patch. Use it for
 
 ## Best Immediate Stack
 
-1. TDOT / TNMap 2022 orthoimagery for visual inspection.
-2. USGS 3DEP 1-meter DEM for hillshade, slope, contours, and print terrain.
-3. USGS 3DEP LAZ point cloud only if the 1-meter DEM is not enough.
-4. USDA / USGS NAIP for downloadable aerial fallback and comparison.
-5. USGS US Topo and contour GeoPackage for cartographic/topographic context.
+1. USDA NAIP public ImageServer (Tennessee 2023) for source-clear browser
+   tracing and comparison.
+2. TDOT / TNMap 2022 orthoimagery for visual inspection.
+3. USGS 3DEP 1-meter DEM for hillshade, slope, contours, and print terrain.
+4. USGS 3DEP LAZ point cloud only if the 1-meter DEM is not enough.
+5. USDA / USGS NAIP downloads for aerial fallback and classification.
+6. USGS US Topo and contour GeoPackage for cartographic/topographic context.
 
 ## Imagery
 
@@ -38,6 +40,16 @@ This manifest records concrete public data found for the AOP 9-patch. Use it for
 | `m_3508558_ne_16_060_20211107` | 2021 | 2021-11-07 | 0.6 m | 4 | https://earthexplorer.usgs.gov/download/options/naip/3084501 |
 | `m_3508559_nw_16_060_20211107` | 2021 | 2021-11-07 | 0.6 m | 4 | https://earthexplorer.usgs.gov/download/options/naip/3084506 |
 
+### USDA NAIP Public ImageServer
+
+- Service: `https://gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME/ImageServer`
+- Tile URL used by the viewer:
+  `https://gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME/ImageServer/tile/{z}/{y}/{x}`
+- USDA's NAIP Public Image Services index lists Tennessee as `TN_NAIP`, year
+  `2023`, resolution `60 Centimeters`.
+- Use: source-clear online imagery layer for tracing and comparison in
+  `website/index.html`. Do not republish exported tiles.
+
 ### USDA 2023 NAIP Date Index
 
 - ArcGIS item: `2023 Tennessee Image Dates`
@@ -46,6 +58,19 @@ This manifest records concrete public data found for the AOP 9-patch. Use it for
 - AOP bbox intersects six 2023 acquisition-date polygons, all `2023-06-09`, natural color (`NC`), digital Leica Geosystems ContentMapper.
 - This confirms newer NAIP coverage exists over the AOI, but the direct downloadable imagery link was not resolved in this pass.
 - USDA Geospatial Data Gateway was retired on 2026-03-31. USDA now points many direct geospatial downloads to Box: `https://nrcs.app.box.com/v/gateway/`; direct NAIP folder: `https://nrcs.app.box.com/v/naip`.
+
+### USDA 2025 NAIP Date Index + County Archive
+
+- Date index: `2025 Tennessee Image Dates`.
+- AOP 9-patch intersects 2025 acquisition-date polygons dated `2025-08-30`.
+- Metadata over AOP: 4-band (`M4B`) imagery, PhaseOne PAS Pana camera; bands
+  red `585-690`, green `570-600`, blue `425-530`, NIR `680-830`.
+- Public USDA NAIP Box archive path resolved to Marion County file
+  `ortho_1-1_hm_s_tn115_2025_1.zip`, downloaded 2026-05-21 to
+  `mvp/cache/imagery/` (gitignored). Archive contents are MrSID
+  (`ortho_1-1_hm_s_tn115_2025_1.sid`) plus metadata sidecars.
+- Current blocker: repo GDAL Docker image has no MrSID driver, so this is cached
+  for MrSID-capable desktop GIS but is not yet a reproducible browser layer.
 
 ### NAIP AWS
 

@@ -8,6 +8,10 @@
   <style>
     body, html { margin: 0; padding: 0; height: 100%; font-family: Inter, system-ui, sans-serif; }
     #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    .preset-bar { position: absolute; left: 12px; top: 12px; display: flex; gap: 6px; z-index: 3; padding: 6px; border-radius: 8px; background: rgba(247,241,226,0.94); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .preset-bar button { min-width: 66px; font: 700 0.86rem Inter, system-ui, sans-serif; padding: 7px 10px; border-radius: 6px; border: 1px solid #b9aa88; background: #fff8e8; color: #4a3c2a; cursor: pointer; }
+    .preset-bar button:hover { background: #efe2c6; }
+    .preset-bar button.active { background: #8b5f38; border-color: #8b5f38; color: #fff8e8; }
     .panel { position: absolute; right: 12px; top: 12px; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); max-width: 320px; max-height: calc(100vh - 24px); overflow-y: auto; z-index: 2; }
     .panel h1 { margin: 0 0 8px; font-size: 1rem; }
     .panel label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.94rem; }
@@ -19,6 +23,16 @@
     .panel button[disabled] { opacity: 0.4; cursor: not-allowed; }
     .panel button.active { background: #9a5a32; color: #fff; border-color: #9a5a32; }
     .panel select { font: inherit; padding: 3px 5px; border-radius: 6px; border: 1px solid #bbb; }
+    .tune-select-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .tune-select-row select { width: 100%; min-width: 0; }
+    .panel label.tune-visible { margin: 0; white-space: nowrap; }
+    .tune-control { display: grid !important; grid-template-columns: 68px 1fr 42px; gap: 8px !important; align-items: center; margin-bottom: 7px !important; }
+    .tune-control input[type="range"] { width: 100%; min-width: 0; }
+    .tune-control input[type="color"] { width: 100%; height: 28px; padding: 0; border: 1px solid #bbb; border-radius: 5px; background: #fff; }
+    .tune-control output { text-align: right; font-size: 0.82rem; color: #5c5548; }
+    .tune-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+    .tune-actions button { margin-right: 0; }
+    #presetStatus { min-height: 1.2em; }
     .editor-row { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; }
     .editor-row button { flex: 1; margin-right: 0; }
     .poi-popup input { font: inherit; width: 100%; box-sizing: border-box; margin: 6px 0; padding: 3px 5px; }
@@ -38,16 +52,41 @@
     .align-handle-edge { width: 13px; height: 13px; background: #ff9500; }
     .align-handle-interior { width: 11px; height: 11px; background: #ffd400; }
     .align-handle::after { content: attr(data-label); position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none; }
+    @media (max-width: 760px) {
+      .preset-bar { left: 8px; right: 8px; top: 8px; }
+      .preset-bar button { flex: 1; min-width: 0; }
+      .panel { left: 8px; right: 8px; top: 62px; max-width: none; max-height: calc(100vh - 70px); }
+      .message { left: 8px; right: 8px; max-width: none; }
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
+  <div class="preset-bar" role="group" aria-label="UI presets">
+    <button id="presetPark" type="button" data-preset="park" class="active">Park</button>
+    <button id="presetTopo" type="button" data-preset="topo">Topo</button>
+    <button id="presetTrace" type="button" data-preset="trace">Trace</button>
+  </div>
   <div class="panel">
     <h1>AOP MVP viewer</h1>
     <div class="search">
       <input type="text" id="searchInput" placeholder="🔍 Search the map…" autocomplete="off" />
       <div class="search-results" id="searchResults"></div>
     </div>
+    <div class="section-title">Preset tuning</div>
+    <div class="tune-select-row">
+      <select id="layerTuneSelect" title="Layer"></select>
+      <label class="tune-visible"><input type="checkbox" id="tuneVisible" /> Visible</label>
+    </div>
+    <label class="tune-control"><span>Opacity</span><input type="range" id="tuneOpacity" min="0" max="100" value="100" /><output id="tuneOpacityValue">100%</output></label>
+    <label class="tune-control"><span>Color</span><input type="color" id="tuneColor" value="#9a5a32" /><output></output></label>
+    <label class="tune-control"><span>Width</span><input type="range" id="tuneWidth" min="0.2" max="10" step="0.1" value="2" /><output id="tuneWidthValue">2.0</output></label>
+    <div class="tune-actions">
+      <button id="snapshotPreset" type="button">Snapshot preset</button>
+      <button id="exportSettings" type="button">Export settings</button>
+    </div>
+    <small id="presetStatus">Park preset active.</small>
+    <hr/>
     <label><input type="checkbox" id="showLandcover" checked /> Land cover (NAIP)</label>
     <label><input type="checkbox" id="showLandcover9" checked /> Land cover — 9-patch (NAIP)</label>
     <label><input type="range" id="landcover9Opacity" min="0" max="100" value="55" style="flex:1" /> 9-patch land cover opacity</label>
@@ -194,15 +233,34 @@
     const poiStatus = document.getElementById('poiStatus');
     const searchInput = document.getElementById('searchInput');
     const searchResults = document.getElementById('searchResults');
+    const presetButtons = [...document.querySelectorAll('.preset-bar button[data-preset]')];
+    const layerTuneSelect = document.getElementById('layerTuneSelect');
+    const tuneVisible = document.getElementById('tuneVisible');
+    const tuneOpacity = document.getElementById('tuneOpacity');
+    const tuneOpacityValue = document.getElementById('tuneOpacityValue');
+    const tuneColor = document.getElementById('tuneColor');
+    const tuneWidth = document.getElementById('tuneWidth');
+    const tuneWidthValue = document.getElementById('tuneWidthValue');
+    const snapshotPresetBtn = document.getElementById('snapshotPreset');
+    const exportSettingsBtn = document.getElementById('exportSettings');
+    const presetStatus = document.getElementById('presetStatus');
     // Named-feature search registry, filled by indexFeatures during map load.
     const searchIndex = [];
     let searchGroups = [];
     let searchMatches = [];
     let searchActive = -1;
+    let activePresetId = 'park';
+    let applyingPreset = false;
 
     function setLayerVisibility(layerId, visible) {
       if (map.getLayer(layerId)) {
         map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
+      }
+    }
+
+    function setPaint(layerId, property, value) {
+      if (map.getLayer(layerId)) {
+        map.setPaintProperty(layerId, property, JSON.parse(JSON.stringify(value)));
       }
     }
 
@@ -225,6 +283,35 @@
       'horizon-fog-blend': 0.5,
       'fog-ground-blend': 0.5
     };
+
+    const LANDCOVER_MUTED_FILL = ['match', ['get', 'class'],
+      'forest_deciduous', '#b9c2a3',
+      'forest_evergreen', '#7f8c66',
+      'open_grass',       '#cfd4b0',
+      'open_meadow',      '#dccfa3',
+      'open_bare',        '#cdba8f',
+      '#b9c2a3'];
+    const LANDCOVER_MUTED_OUTLINE = ['match', ['get', 'class'],
+      'forest_deciduous', '#94a07c',
+      'forest_evergreen', '#647154',
+      'open_grass',       '#b4ba93',
+      'open_meadow',      '#c5b783',
+      'open_bare',        '#b6a073',
+      '#94a07c'];
+    const LANDCOVER_RELIEF_FILL = ['match', ['get', 'class'],
+      'forest_deciduous', '#aeb89a',
+      'forest_evergreen', '#6f7e5a',
+      'open_grass',       '#c7c99f',
+      'open_meadow',      '#d1c08d',
+      'open_bare',        '#c2aa78',
+      '#aeb89a'];
+    const LANDCOVER_RELIEF_OUTLINE = ['match', ['get', 'class'],
+      'forest_deciduous', '#849068',
+      'forest_evergreen', '#566548',
+      'open_grass',       '#a8aa7d',
+      'open_meadow',      '#b49f68',
+      'open_bare',        '#a78e5f',
+      '#849068'];
 
     function setTerrainEnabled(enabled) {
       if (!map.getSource('aws-terrain-dem')) return;
@@ -265,6 +352,434 @@
       [editorPoiToggle, ['editor-poi-fill', 'editor-poi-outline', 'editor-poi-lines', 'editor-poi-circles', 'editor-poi-labels', 'editor-poi-fill-labels', 'editor-poi-line-labels']]
     ];
 
+    const PRESET_TOGGLE_IDS = [
+      'showLandcover', 'showLandcover9', 'showTerrain', 'showHillshade',
+      'showContours', 'showSatellite', 'showUsdaNaip', 'showNinePatch',
+      'showLidarTiles', 'showRoads', 'showWater', 'showSprings',
+      'showCemeteries', 'showBuildings', 'showOsmPark', 'showOsmTracks',
+      'showOsmService', 'showOsmNamed', 'showSfwda', 'showTrails',
+      'showBoundaries', 'showTrailheads', 'showEditorPois'
+    ];
+    const PRESET_SLIDER_IDS = ['landcover9Opacity', 'sfwdaOpacity', 'sfwdaMultiply'];
+
+    const TUNABLE_LAYERS = {
+      landcover: {
+        label: 'Land cover',
+        toggle: landcoverToggle,
+        defaults: { opacity: 90, color: '#b9c2a3', width: 0.8 },
+        opacity: [
+          ['landcover-forest', 'fill-opacity'],
+          ['landcover-forest-outline', 'line-opacity']
+        ],
+        color: [
+          ['landcover-forest', 'fill-color'],
+          ['landcover-forest-outline', 'line-color']
+        ],
+        width: [['landcover-forest-outline', 'line-width']]
+      },
+      landcover9: {
+        label: '9-patch land cover',
+        toggle: landcover9Toggle,
+        linkedSlider: landcover9Opacity,
+        defaults: { opacity: 55, color: '#b9c2a3', width: 0.6 },
+        opacity: [
+          ['landcover-9patch-forest', 'fill-opacity'],
+          ['landcover-9patch-forest-outline', 'line-opacity']
+        ],
+        color: [
+          ['landcover-9patch-forest', 'fill-color'],
+          ['landcover-9patch-forest-outline', 'line-color']
+        ],
+        width: [['landcover-9patch-forest-outline', 'line-width']]
+      },
+      contours: {
+        label: 'Contours',
+        toggle: contoursToggle,
+        defaults: { opacity: 95, color: '#a8906a', width: 1.8 },
+        opacity: [
+          ['contours-minor', 'line-opacity'],
+          ['contours-index', 'line-opacity'],
+          ['contours-labels', 'text-opacity']
+        ],
+        color: [
+          ['contours-minor', 'line-color'],
+          ['contours-index', 'line-color'],
+          ['contours-labels', 'text-color']
+        ],
+        width: [
+          ['contours-minor', 'line-width'],
+          ['contours-index', 'line-width']
+        ]
+      },
+      hillshade: {
+        label: 'Hillshade',
+        toggle: hillshadeToggle,
+        defaults: { opacity: 60, color: '#3a2f22', width: 0.6 },
+        opacity: [['lidar-hillshade', 'hillshade-exaggeration']],
+        color: [['lidar-hillshade', 'hillshade-shadow-color']],
+        width: []
+      },
+      satellite: {
+        label: 'TNMap imagery',
+        toggle: satelliteToggle,
+        defaults: { opacity: 100, color: '#ffffff', width: 1 },
+        opacity: [['tnmap-satellite', 'raster-opacity']],
+        color: [],
+        width: []
+      },
+      naip: {
+        label: 'USDA NAIP imagery',
+        toggle: usdaNaipToggle,
+        defaults: { opacity: 100, color: '#ffffff', width: 1 },
+        opacity: [['usda-naip-satellite', 'raster-opacity']],
+        color: [],
+        width: []
+      },
+      roads: {
+        label: 'Roads',
+        toggle: roadsToggle,
+        defaults: { opacity: 90, color: '#cdb079', width: 2.2 },
+        opacity: [
+          ['roads-local-casing', 'line-opacity'],
+          ['roads-local', 'line-opacity'],
+          ['roads-connecting-casing', 'line-opacity'],
+          ['roads-connecting', 'line-opacity'],
+          ['roads-controlled-casing', 'line-opacity'],
+          ['roads-controlled', 'line-opacity'],
+          ['roads-labels', 'text-opacity']
+        ],
+        color: [
+          ['roads-local', 'line-color'],
+          ['roads-connecting', 'line-color'],
+          ['roads-controlled', 'line-color'],
+          ['roads-labels', 'text-color']
+        ],
+        width: [
+          ['roads-local', 'line-width'],
+          ['roads-connecting', 'line-width'],
+          ['roads-controlled', 'line-width']
+        ]
+      },
+      water: {
+        label: 'Water',
+        toggle: waterToggle,
+        defaults: { opacity: 85, color: '#7fa3ac', width: 2.4 },
+        opacity: [
+          ['water-area-fill', 'fill-opacity'],
+          ['waterbody-fill', 'fill-opacity'],
+          ['streams', 'line-opacity'],
+          ['stream-labels', 'text-opacity']
+        ],
+        color: [
+          ['water-area-fill', 'fill-color'],
+          ['waterbody-fill', 'fill-color'],
+          ['waterbody-outline', 'line-color'],
+          ['streams', 'line-color'],
+          ['stream-labels', 'text-color']
+        ],
+        width: [
+          ['waterbody-outline', 'line-width'],
+          ['streams', 'line-width']
+        ]
+      },
+      boundaries: {
+        label: 'Boundaries',
+        toggle: boundaryToggle,
+        defaults: { opacity: 100, color: '#6e5a3c', width: 2.5 },
+        opacity: [
+          ['publish-boundary-fill', 'fill-opacity'],
+          ['publish-boundaries', 'line-opacity']
+        ],
+        color: [
+          ['publish-boundary-fill', 'fill-color'],
+          ['publish-boundaries', 'line-color']
+        ],
+        width: [['publish-boundaries', 'line-width']]
+      },
+      trails: {
+        label: 'Trails',
+        toggle: trailToggle,
+        defaults: { opacity: 100, color: '#9a5a32', width: 3.5 },
+        opacity: [['publish-trails', 'line-opacity']],
+        color: [['publish-trails', 'line-color']],
+        width: [['publish-trails', 'line-width']]
+      },
+      trailheads: {
+        label: 'Trailheads',
+        toggle: trailheadToggle,
+        defaults: { opacity: 100, color: '#6f8a5c', width: 6 },
+        opacity: [['publish-trailheads', 'circle-opacity']],
+        color: [['publish-trailheads', 'circle-color']],
+        width: [['publish-trailheads', 'circle-radius']]
+      },
+      cemeteries: {
+        label: 'Cemeteries',
+        toggle: cemeteriesToggle,
+        defaults: { opacity: 75, color: '#8a7a82', width: 2.4 },
+        opacity: [
+          ['cemetery-fill', 'fill-opacity'],
+          ['cemetery-outline', 'line-opacity'],
+          ['cemetery-marker', 'circle-opacity'],
+          ['cemetery-label', 'text-opacity']
+        ],
+        color: [
+          ['cemetery-fill', 'fill-color'],
+          ['cemetery-outline', 'line-color'],
+          ['cemetery-marker', 'circle-color'],
+          ['cemetery-label', 'text-color']
+        ],
+        width: [
+          ['cemetery-outline', 'line-width'],
+          ['cemetery-marker', 'circle-radius']
+        ]
+      },
+      buildings: {
+        label: 'Buildings',
+        toggle: buildingsToggle,
+        defaults: { opacity: 45, color: '#c1a386', width: 1.8 },
+        opacity: [
+          ['building-footprint-fill', 'fill-opacity'],
+          ['building-footprint-outline', 'line-opacity'],
+          ['building-footprint-aop-outline', 'line-opacity']
+        ],
+        color: [
+          ['building-footprint-fill', 'fill-color'],
+          ['building-footprint-outline', 'line-color'],
+          ['building-footprint-aop-outline', 'line-color']
+        ],
+        width: [
+          ['building-footprint-outline', 'line-width'],
+          ['building-footprint-aop-outline', 'line-width']
+        ]
+      },
+      osmTracks: {
+        label: 'OSM tracks',
+        toggle: osmTracksToggle,
+        defaults: { opacity: 95, color: '#9a5a32', width: 2 },
+        opacity: [['osm-tracks', 'line-opacity']],
+        color: [['osm-tracks', 'line-color']],
+        width: [['osm-tracks', 'line-width']]
+      },
+      osmService: {
+        label: 'OSM service roads',
+        toggle: osmServiceToggle,
+        defaults: { opacity: 85, color: '#a89a7e', width: 1.5 },
+        opacity: [['osm-service', 'line-opacity']],
+        color: [['osm-service', 'line-color']],
+        width: [['osm-service', 'line-width']]
+      },
+      sfwda: {
+        label: 'SFWDA paper map',
+        toggle: sfwdaToggle,
+        linkedSlider: sfwdaOpacity,
+        defaults: { opacity: 70, color: '#ffffff', width: 1 },
+        opacity: [],
+        color: [],
+        width: []
+      }
+    };
+
+    const EXTRA_PRESET_PAINTS = [
+      ['background', 'background-color'],
+      ['lidar-hillshade', 'hillshade-highlight-color'],
+      ['lidar-hillshade', 'hillshade-accent-color'],
+      ['water-points', 'circle-color'],
+      ['water-points', 'circle-stroke-color'],
+      ['water-point-labels', 'text-color'],
+      ['osm-named-points', 'circle-color'],
+      ['osm-named-points', 'circle-stroke-color'],
+      ['osm-named-labels', 'text-color'],
+      ['search-highlight-line', 'line-color'],
+      ['search-highlight-point', 'circle-color'],
+      ['search-highlight-point', 'circle-stroke-color']
+    ];
+
+    function uniquePaintTargets() {
+      const seen = new Set();
+      const targets = [];
+      const add = ([layer, property]) => {
+        const key = `${layer}|${property}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          targets.push([layer, property]);
+        }
+      };
+      EXTRA_PRESET_PAINTS.forEach(add);
+      for (const config of Object.values(TUNABLE_LAYERS)) {
+        [...config.opacity, ...config.color, ...config.width].forEach(add);
+      }
+      return targets;
+    }
+    const PRESET_PAINT_TARGETS = uniquePaintTargets();
+
+    const BUILT_IN_PRESETS = {
+      park: {
+        label: 'Park',
+        toggles: {
+          showLandcover: true,
+          showLandcover9: true,
+          showTerrain: false,
+          showHillshade: false,
+          showContours: false,
+          showSatellite: false,
+          showUsdaNaip: false,
+          showNinePatch: false,
+          showLidarTiles: false,
+          showRoads: true,
+          showWater: false,
+          showSprings: false,
+          showCemeteries: false,
+          showBuildings: false,
+          showOsmPark: false,
+          showOsmTracks: false,
+          showOsmService: false,
+          showOsmNamed: false,
+          showSfwda: false,
+          showTrails: true,
+          showBoundaries: true,
+          showTrailheads: true,
+          showEditorPois: true
+        },
+        sliders: { landcover9Opacity: 55, sfwdaOpacity: 70, sfwdaMultiply: 0 },
+        paints: {
+          background: { 'background-color': '#efe7d5' },
+          'landcover-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.9 },
+          'landcover-forest-outline': { 'line-color': LANDCOVER_MUTED_OUTLINE, 'line-width': 0.8, 'line-opacity': 0.55 },
+          'landcover-9patch-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.55 },
+          'landcover-9patch-forest-outline': { 'line-color': LANDCOVER_MUTED_OUTLINE, 'line-width': 0.6, 'line-opacity': 0.35 },
+          'lidar-hillshade': {
+            'hillshade-exaggeration': 0.6,
+            'hillshade-shadow-color': '#3a2f22',
+            'hillshade-highlight-color': '#fbf4e2',
+            'hillshade-accent-color': '#6b5640'
+          },
+          'contours-minor': { 'line-color': '#c7b48f', 'line-opacity': 0.75 },
+          'contours-index': { 'line-color': '#a8906a', 'line-opacity': 0.95 },
+          'contours-labels': { 'text-color': '#7d6a4a', 'text-opacity': 1 },
+          streams: { 'line-color': '#7fa3ac', 'line-opacity': 0.9 },
+          'stream-labels': { 'text-color': '#4a6c73', 'text-opacity': 1 },
+          'water-area-fill': { 'fill-color': '#a8c5c9', 'fill-opacity': 0.55 },
+          'waterbody-fill': { 'fill-color': '#9fbfc4', 'fill-opacity': 0.5 },
+          'waterbody-outline': { 'line-color': '#6f9098', 'line-width': 1.2 },
+          'publish-boundary-fill': { 'fill-color': '#d8c8a2', 'fill-opacity': 0.1 },
+          'publish-boundaries': { 'line-color': '#6e5a3c', 'line-width': 2.5, 'line-opacity': 1 },
+          'publish-trails': { 'line-color': '#9a5a32', 'line-width': 3.5, 'line-opacity': 1 },
+          'publish-trailheads': { 'circle-color': '#6f8a5c', 'circle-radius': 6, 'circle-opacity': 1 },
+          'osm-tracks': { 'line-color': '#9a5a32', 'line-width': 2, 'line-opacity': 0.95 },
+          'osm-service': { 'line-color': '#a89a7e', 'line-width': 1.5, 'line-opacity': 0.85 }
+        }
+      },
+      topo: {
+        label: 'Topo',
+        toggles: {
+          showLandcover: true,
+          showLandcover9: true,
+          showTerrain: false,
+          showHillshade: true,
+          showContours: true,
+          showSatellite: false,
+          showUsdaNaip: false,
+          showNinePatch: false,
+          showLidarTiles: false,
+          showRoads: true,
+          showWater: true,
+          showSprings: true,
+          showCemeteries: false,
+          showBuildings: false,
+          showOsmPark: false,
+          showOsmTracks: false,
+          showOsmService: false,
+          showOsmNamed: false,
+          showSfwda: false,
+          showTrails: true,
+          showBoundaries: true,
+          showTrailheads: true,
+          showEditorPois: true
+        },
+        sliders: { landcover9Opacity: 38, sfwdaOpacity: 60, sfwdaMultiply: 100 },
+        paints: {
+          background: { 'background-color': '#e7ddc4' },
+          'landcover-forest': { 'fill-color': LANDCOVER_RELIEF_FILL, 'fill-opacity': 0.62 },
+          'landcover-forest-outline': { 'line-color': LANDCOVER_RELIEF_OUTLINE, 'line-width': 0.7, 'line-opacity': 0.35 },
+          'landcover-9patch-forest': { 'fill-color': LANDCOVER_RELIEF_FILL, 'fill-opacity': 0.38 },
+          'landcover-9patch-forest-outline': { 'line-color': LANDCOVER_RELIEF_OUTLINE, 'line-width': 0.5, 'line-opacity': 0.25 },
+          'lidar-hillshade': {
+            'hillshade-exaggeration': 0.78,
+            'hillshade-shadow-color': '#2f2a21',
+            'hillshade-highlight-color': '#fff4d9',
+            'hillshade-accent-color': '#6f604c'
+          },
+          'contours-minor': { 'line-color': '#8e7a5c', 'line-opacity': 0.8, 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.65, 16, 1.55] },
+          'contours-index': { 'line-color': '#5f4934', 'line-opacity': 0.98, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.25, 16, 3.1] },
+          'contours-labels': { 'text-color': '#4e3d2c', 'text-opacity': 1 },
+          streams: { 'line-color': '#4d8792', 'line-opacity': 0.95 },
+          'stream-labels': { 'text-color': '#2f6570', 'text-opacity': 1 },
+          'water-area-fill': { 'fill-color': '#8eb7be', 'fill-opacity': 0.62 },
+          'waterbody-fill': { 'fill-color': '#83aeb6', 'fill-opacity': 0.58 },
+          'waterbody-outline': { 'line-color': '#44747d', 'line-width': 1.5 },
+          'publish-boundary-fill': { 'fill-color': '#e7c982', 'fill-opacity': 0.08 },
+          'publish-boundaries': { 'line-color': '#4d3928', 'line-width': 3, 'line-opacity': 1 },
+          'publish-trails': { 'line-color': '#7d4328', 'line-width': 3.8, 'line-opacity': 1 },
+          'publish-trailheads': { 'circle-color': '#546f4b', 'circle-radius': 6.5, 'circle-opacity': 1 },
+          'roads-local': { 'line-color': '#908773', 'line-opacity': 0.82 },
+          'roads-connecting': { 'line-color': '#b9905b', 'line-opacity': 0.9 },
+          'roads-controlled': { 'line-color': '#c99a5c', 'line-opacity': 0.94 }
+        }
+      },
+      trace: {
+        label: 'Trace',
+        toggles: {
+          showLandcover: false,
+          showLandcover9: false,
+          showTerrain: false,
+          showHillshade: false,
+          showContours: false,
+          showSatellite: false,
+          showUsdaNaip: true,
+          showNinePatch: false,
+          showLidarTiles: false,
+          showRoads: true,
+          showWater: false,
+          showSprings: false,
+          showCemeteries: false,
+          showBuildings: true,
+          showOsmPark: true,
+          showOsmTracks: true,
+          showOsmService: true,
+          showOsmNamed: true,
+          showSfwda: true,
+          showTrails: true,
+          showBoundaries: true,
+          showTrailheads: true,
+          showEditorPois: true
+        },
+        sliders: { landcover9Opacity: 0, sfwdaOpacity: 64, sfwdaMultiply: 0 },
+        paints: {
+          background: { 'background-color': '#1d1a16' },
+          'usda-naip-satellite': { 'raster-opacity': 1 },
+          'tnmap-satellite': { 'raster-opacity': 1 },
+          'publish-boundary-fill': { 'fill-color': '#fff0b8', 'fill-opacity': 0.03 },
+          'publish-boundaries': { 'line-color': '#fff0b8', 'line-width': 3.4, 'line-opacity': 1 },
+          'publish-trails': { 'line-color': '#ffb347', 'line-width': 4, 'line-opacity': 1 },
+          'publish-trailheads': { 'circle-color': '#ffe08a', 'circle-radius': 7, 'circle-opacity': 1 },
+          'osm-park-outline': { 'line-color': '#d4ff86', 'line-width': 2.4 },
+          'osm-tracks': { 'line-color': '#ff6b3d', 'line-width': 3, 'line-opacity': 0.98 },
+          'osm-service': { 'line-color': '#ffd166', 'line-width': 2.5, 'line-opacity': 0.95 },
+          'osm-named-points': { 'circle-color': '#ffd166', 'circle-stroke-color': '#33251a' },
+          'osm-named-labels': { 'text-color': '#fff0b8' },
+          'roads-local': { 'line-color': '#fff4cf', 'line-width': 2.4, 'line-opacity': 0.86 },
+          'roads-connecting': { 'line-color': '#ffe08a', 'line-width': 3, 'line-opacity': 0.9 },
+          'roads-controlled': { 'line-color': '#f7bb5f', 'line-width': 4.2, 'line-opacity': 0.95 },
+          'roads-labels': { 'text-color': '#fff4cf', 'text-opacity': 1 },
+          'building-footprint-fill': { 'fill-color': '#ffe0a6', 'fill-opacity': 0.22 },
+          'building-footprint-outline': { 'line-color': '#fff0b8', 'line-width': 1.6, 'line-opacity': 0.88 },
+          'building-footprint-aop-outline': { 'line-color': '#ff9f5a', 'line-width': 3.2, 'line-opacity': 0.95 },
+          'search-highlight-line': { 'line-color': '#00d1ff' },
+          'search-highlight-point': { 'circle-color': '#00d1ff', 'circle-stroke-color': '#00d1ff' }
+        }
+      }
+    };
+
     function updateLayerVisibility() {
       for (const [toggle, layerIds] of LAYER_TOGGLES) {
         for (const id of layerIds) setLayerVisibility(id, toggle.checked);
@@ -274,7 +789,265 @@
           setLayerVisibility(`sfwda-tile-${r}-${c}`, sfwdaToggle.checked);
         }
       }
+      syncLayerTunerFromSelection();
     }
+
+    function cloneJson(value) {
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function deepMergePaints(base = {}, override = {}) {
+      const merged = cloneJson(base);
+      for (const [layerId, properties] of Object.entries(override || {})) {
+        merged[layerId] = { ...(merged[layerId] || {}), ...cloneJson(properties) };
+      }
+      return merged;
+    }
+
+    function loadSavedPresetStates() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem('aop_viewer_preset_settings_v1') || '{}');
+        return parsed && typeof parsed.presets === 'object' ? parsed.presets : {};
+      } catch (error) {
+        console.warn('Preset settings failed to load:', error);
+        return {};
+      }
+    }
+
+    let savedPresetStates = loadSavedPresetStates();
+
+    function savePresetStates() {
+      localStorage.setItem('aop_viewer_preset_settings_v1', JSON.stringify({
+        schema: 'aop-viewer-preset-settings-v1',
+        saved_at: new Date().toISOString(),
+        presets: savedPresetStates
+      }));
+    }
+
+    function presetState(presetId) {
+      const base = BUILT_IN_PRESETS[presetId];
+      const saved = savedPresetStates[presetId] || {};
+      return {
+        label: base.label,
+        toggles: { ...base.toggles, ...(saved.toggles || {}) },
+        sliders: { ...base.sliders, ...(saved.sliders || {}) },
+        paints: deepMergePaints(base.paints, saved.paints || {})
+      };
+    }
+
+    function applyPaintState(paints) {
+      for (const [layerId, properties] of Object.entries(paints || {})) {
+        for (const [property, value] of Object.entries(properties || {})) {
+          setPaint(layerId, property, value);
+        }
+      }
+    }
+
+    function setSliderValue(id, value) {
+      const element = document.getElementById(id);
+      if (!element || value === undefined || value === null) return;
+      element.value = String(value);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function applyPreset(presetId) {
+      if (!BUILT_IN_PRESETS[presetId]) return;
+      const state = presetState(presetId);
+      activePresetId = presetId;
+      applyingPreset = true;
+      for (const id of PRESET_TOGGLE_IDS) {
+        const element = document.getElementById(id);
+        if (element && Object.prototype.hasOwnProperty.call(state.toggles, id)) {
+          element.checked = Boolean(state.toggles[id]);
+        }
+      }
+      if (editSfwdaToggle.checked) {
+        editSfwdaToggle.checked = false;
+        editSfwdaToggle.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      for (const [id, value] of Object.entries(state.sliders || {})) {
+        setSliderValue(id, value);
+      }
+      updateLayerVisibility();
+      setTerrainEnabled(terrainToggle.checked);
+      applyPaintState(state.paints);
+      presetButtons.forEach((button) => {
+        button.classList.toggle('active', button.dataset.preset === presetId);
+      });
+      applyingPreset = false;
+      syncLayerTunerFromSelection();
+      const saved = savedPresetStates[presetId] ? ' custom' : '';
+      presetStatus.textContent = `${state.label}${saved} preset active.`;
+    }
+
+    function capturePaintState() {
+      const paints = {};
+      for (const [layerId, property] of PRESET_PAINT_TARGETS) {
+        if (!map.getLayer(layerId)) continue;
+        const value = map.getPaintProperty(layerId, property);
+        if (value === undefined) continue;
+        paints[layerId] = paints[layerId] || {};
+        paints[layerId][property] = cloneJson(value);
+      }
+      return paints;
+    }
+
+    function captureViewerState() {
+      const toggles = {};
+      for (const id of PRESET_TOGGLE_IDS) {
+        const element = document.getElementById(id);
+        if (element) toggles[id] = Boolean(element.checked);
+      }
+      const sliders = {};
+      for (const id of PRESET_SLIDER_IDS) {
+        const element = document.getElementById(id);
+        if (element) sliders[id] = Number(element.value);
+      }
+      return {
+        captured_at: new Date().toISOString(),
+        toggles,
+        sliders,
+        paints: capturePaintState()
+      };
+    }
+
+    function selectedTunable() {
+      return TUNABLE_LAYERS[layerTuneSelect.value] || TUNABLE_LAYERS.landcover;
+    }
+
+    function firstPaintValue(targets, fallback) {
+      for (const [layerId, property] of targets || []) {
+        if (!map.getLayer(layerId)) continue;
+        const value = map.getPaintProperty(layerId, property);
+        if (value !== undefined) return value;
+      }
+      return fallback;
+    }
+
+    function cssColorOrDefault(value, fallback) {
+      return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
+    }
+
+    function numberOrDefault(value, fallback) {
+      return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+    }
+
+    function syncLayerTunerFromSelection() {
+      if (!layerTuneSelect.value) return;
+      const config = selectedTunable();
+      tuneVisible.checked = config.toggle.checked;
+      const opacitySource = config.linkedSlider
+        ? Number(config.linkedSlider.value) / 100
+        : firstPaintValue(config.opacity, config.defaults.opacity / 100);
+      const opacity = numberOrDefault(opacitySource, config.defaults.opacity / 100);
+      tuneOpacity.disabled = !(config.opacity.length || config.linkedSlider);
+      tuneOpacity.value = String(Math.round(opacity * 100));
+      tuneOpacityValue.textContent = `${tuneOpacity.value}%`;
+      const color = cssColorOrDefault(firstPaintValue(config.color, config.defaults.color), config.defaults.color);
+      tuneColor.disabled = !config.color.length;
+      tuneColor.value = color;
+      const width = numberOrDefault(firstPaintValue(config.width, config.defaults.width), config.defaults.width);
+      tuneWidth.disabled = !config.width.length;
+      tuneWidth.value = String(width);
+      tuneWidthValue.textContent = Number(width).toFixed(1);
+    }
+
+    function markPresetEdited() {
+      if (applyingPreset) return;
+      const label = BUILT_IN_PRESETS[activePresetId]?.label || 'Current';
+      presetStatus.textContent = `${label} preset modified.`;
+    }
+
+    function setTunablePaint(targets, value) {
+      for (const [layerId, property] of targets || []) setPaint(layerId, property, value);
+    }
+
+    function setSelectedLayerVisible() {
+      const config = selectedTunable();
+      config.toggle.checked = tuneVisible.checked;
+      config.toggle.dispatchEvent(new Event('change', { bubbles: true }));
+      markPresetEdited();
+    }
+
+    function setSelectedLayerOpacity() {
+      const config = selectedTunable();
+      const value = Number(tuneOpacity.value) / 100;
+      tuneOpacityValue.textContent = `${tuneOpacity.value}%`;
+      if (config.linkedSlider) {
+        config.linkedSlider.value = String(tuneOpacity.value);
+        config.linkedSlider.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      setTunablePaint(config.opacity, value);
+      markPresetEdited();
+    }
+
+    function setSelectedLayerColor() {
+      setTunablePaint(selectedTunable().color, tuneColor.value);
+      markPresetEdited();
+    }
+
+    function setSelectedLayerWidth() {
+      const value = Number(tuneWidth.value);
+      tuneWidthValue.textContent = value.toFixed(1);
+      setTunablePaint(selectedTunable().width, value);
+      markPresetEdited();
+    }
+
+    function snapshotActivePreset() {
+      savedPresetStates[activePresetId] = captureViewerState();
+      savePresetStates();
+      presetStatus.textContent = `${BUILT_IN_PRESETS[activePresetId].label} preset snapshot saved.`;
+      presetButtons.forEach((button) => {
+        button.classList.toggle('active', button.dataset.preset === activePresetId);
+      });
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+      const box = document.createElement('textarea');
+      box.value = text;
+      box.style.position = 'fixed';
+      box.style.left = '-9999px';
+      document.body.appendChild(box);
+      box.focus();
+      box.select();
+      const copied = document.execCommand('copy');
+      box.remove();
+      return copied;
+    }
+
+    async function exportPresetSettings() {
+      const payload = {
+        schema: 'aop-viewer-preset-settings-v1',
+        exported_at: new Date().toISOString(),
+        active_preset: activePresetId,
+        presets: {
+          park: presetState('park'),
+          topo: presetState('topo'),
+          trace: presetState('trace')
+        },
+        current_state: captureViewerState()
+      };
+      const text = JSON.stringify(payload, null, 2) + '\n';
+      try {
+        const copied = await copyText(text);
+        presetStatus.textContent = copied ? 'Settings copied to clipboard.' : 'Clipboard copy failed.';
+      } catch (error) {
+        console.warn('Settings export failed:', error);
+        presetStatus.textContent = 'Clipboard copy failed.';
+      }
+    }
+
+    for (const [key, config] of Object.entries(TUNABLE_LAYERS)) {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = config.label;
+      layerTuneSelect.appendChild(option);
+    }
+    layerTuneSelect.value = 'landcover';
 
     function escapeHtml(value) {
       return String(value ?? '')
@@ -1569,7 +2342,7 @@
       });
 
       sfwdaMultiply.addEventListener('input', () => {
-        sfwdaMultiplyUserTouched = true;
+        if (!applyingPreset) sfwdaMultiplyUserTouched = true;
         sfwdaMultiplyStrength = Number(sfwdaMultiply.value) / 100;
         rebakeTiles();
       });
@@ -1882,6 +2655,7 @@
       });
 
       message.textContent = `${publishData.features.length} publish feature${publishData.features.length === 1 ? '' : 's'} loaded.`;
+      applyPreset(activePresetId);
     });
 
     // --- Map search -----------------------------------------------------
@@ -2055,6 +2829,18 @@
       if (!event.target.closest('.search')) clearSearchResults();
     });
 
+    for (const button of presetButtons) {
+      button.addEventListener('click', () => applyPreset(button.dataset.preset));
+    }
+
+    layerTuneSelect.addEventListener('change', syncLayerTunerFromSelection);
+    tuneVisible.addEventListener('change', setSelectedLayerVisible);
+    tuneOpacity.addEventListener('input', setSelectedLayerOpacity);
+    tuneColor.addEventListener('input', setSelectedLayerColor);
+    tuneWidth.addEventListener('input', setSelectedLayerWidth);
+    snapshotPresetBtn.addEventListener('click', snapshotActivePreset);
+    exportSettingsBtn.addEventListener('click', exportPresetSettings);
+
     terrainToggle.addEventListener('change', () => setTerrainEnabled(terrainToggle.checked));
     landcoverToggle.addEventListener('change', updateLayerVisibility);
     landcover9Toggle.addEventListener('change', updateLayerVisibility);
@@ -2081,6 +2867,25 @@
     boundaryToggle.addEventListener('change', updateLayerVisibility);
     trailheadToggle.addEventListener('change', updateLayerVisibility);
     editorPoiToggle.addEventListener('change', updateLayerVisibility);
+
+    for (const id of PRESET_TOGGLE_IDS) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.addEventListener('change', () => {
+          if (!applyingPreset) markPresetEdited();
+          syncLayerTunerFromSelection();
+        });
+      }
+    }
+    for (const id of PRESET_SLIDER_IDS) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.addEventListener('input', () => {
+          if (!applyingPreset) markPresetEdited();
+          syncLayerTunerFromSelection();
+        });
+      }
+    }
 
     placePoiBtn.addEventListener('click', () => {
       setDrawMode(draw && draw.getMode() === 'point' ? 'static' : 'point');

@@ -48,6 +48,10 @@ This MVP scaffold is the first practical step toward the build card:
 14. [X] Add a searchable cemeteries layer. Confirmed the hole in the AOP boundary polygon is the Ellis Cemetery inholding (parcel `110 008.04`). See `cemeteries_layer.md` and `brain/research/aop_ellis_cemetery.md`.
 15. [X] Vectorize the satellite imagery into a forest land-cover layer (NAIP 2021 4-band -> texture classification -> forest polygons) and restyle the viewer into the Muted Earth palette. See `landcover_layer.md`.
 16. [X] Review/import 9-patch building footprints. FEMA USA Structures returned 202 footprints; OSM returned 11 `building=*` ways; TNMap FEMA BLE returned 0. Imported FEMA as a default-off viewer layer. See `buildings_layer.md`.
+17. [X] Add USDA NAIP as a tracing imagery layer and extend the viewer editor
+    with raw LineString trace capture. The 2025 county archive is cached but
+    blocked by MrSID support in the current toolchain; the browser layer uses
+    USDA's public 2023 Tennessee NAIP cache. See `imagery_tracing_layer.md`.
 
 ## Initial scaffold files
 

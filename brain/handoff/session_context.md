@@ -324,6 +324,32 @@ both now.
    relative vigour ranking, not crop ID. Leaf-on 2023 NAIP
    (`tasks/backlog/leaf_on_landcover.md`) would make both far more meaningful.
 
+## Update: USDA NAIP tracing imagery (2026-05-21)
+
+User asked for nicer imagery, to get it, make it a layer option, and trace from
+it.
+
+ - Found and downloaded the USDA 2025 Marion County NAIP archive:
+   `mvp/cache/imagery/ortho_1-1_hm_s_tn115_2025_1.zip` (~2.6 GB, gitignored).
+   The image-date index over the AOP block reports acquisition `2025-08-30`,
+   4-band (`M4B`) imagery. The archive is MrSID; the repo's current GDAL Docker
+   image does not include a MrSID driver, so it cannot yet be converted into a
+   reproducible browser layer.
+ - Found the practical public browser layer: USDA FPAC
+   `USDA_CONUS_PRIME` ImageServer. USDA's public NAIP service index lists
+   Tennessee as 2023, 60 cm. The service exposes cached tiles and works directly
+   in MapLibre.
+ - Viewer: added toggle `USDA NAIP imagery (TN 2023)`, default OFF, with source
+   `https://gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME/ImageServer/tile/{z}/{y}/{x}`.
+ - Editor: added `Trace line` using Terra Draw LineString mode. Exported traces
+   use `layer=editor_trace` and carry USDA NAIP source URL/year, `confidence=draft`,
+   and `review_status=raw imagery trace; needs review before core/publish`.
+ - Verification: `playwright_verify_satellite.py` PASS, 0 console errors, 24
+   USDA tile requests. `playwright_verify_poi_editor.py` PASS, 0 console errors,
+   trace persisted through reload with source metadata.
+ - Durable docs: `tasks/01_mvp/imagery_tracing_layer.md`,
+   `tasks/01_mvp/poi_editor.md`, `research/viewer.md`, and `search_map.md`.
+
 ## Session note
 
 This file is handoff context, not a durable policy document. Keep it live until the next session has read and acted on it.

@@ -14,6 +14,7 @@ TL;DR:
 - AOP, Adventure Off Road Park, South Pittsburg, Ellis Cove Road: `research/aop_south_pittsburg_sources.md`
 - bounds, AOI, 9-patch, current parcel envelope, data acquisition: `research/aop_data_bounds.md`, then `research/aop_south_pittsburg_sources.md`
 - viewer, web map, `index.html`, layers, toggles, satellite, hillshade, 3D terrain, contours, roads, water, lidar tile index, search box, MapLibre: `research/viewer.md`
+- imagery tracing, USDA NAIP, 2023 NAIP, 2025 NAIP, MrSID, trace line, raw image traces: `tasks/01_mvp/imagery_tracing_layer.md`, then `research/viewer.md`
 - POI editor, draw, footprint, pavilion, building, Terra Draw, on-map editing: `tasks/01_mvp/poi_editor.md`
 - building footprints, FEMA USA Structures, structures layer, ORNL footprints: `tasks/01_mvp/buildings_layer.md`, then `research/viewer.md`
 - GPX, field track, ride recording, observation import: `import/_readme.md`, then `tasks/01_mvp/mvp_validation_loop.md`

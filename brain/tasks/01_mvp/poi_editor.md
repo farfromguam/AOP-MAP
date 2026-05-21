@@ -8,9 +8,10 @@ This is the first editing surface in the web viewer. Until now the viewer was re
 
 -----
 
-**Status: DONE (2026-05-21).** Point POIs and polygon footprints both draw,
-label, persist, and export in the viewer. PostGIS write-back and select/move
-remain follow-ups (see below). Outcome section records what shipped.
+**Status: DONE (2026-05-21).** Point POIs, polygon footprints, and raw imagery
+trace lines draw, label, persist, and export in the viewer. PostGIS write-back
+and select/move remain follow-ups (see below). Outcome section records what
+shipped.
 
 ## Source
 
@@ -20,8 +21,11 @@ remain follow-ups (see below). Outcome section records what shipped.
 
 ## Scope
 
-- In: point POIs and polygon footprints with a category, on-map labels, click-to-rename, click-to-delete, browser persistence, GeoJSON export.
-- Out: line drawing, vertex move/select on committed features, writing features back to PostGIS, source/confidence/permission metadata per the source register.
+- In: point POIs, polygon footprints, and raw imagery LineString traces with a
+  category, on-map labels, click-to-rename, click-to-delete, browser
+  persistence, GeoJSON export.
+- Out: vertex move/select on committed features, writing features back to
+  PostGIS, full source-register write-back.
 
 ## Decisions
 
@@ -50,19 +54,27 @@ The category is a dropdown but the chosen value is stored as a free string; noth
 ## Acceptance
 
 - [x] Terra Draw + adapter vendored as UMD; viewer still loads offline.
-- [x] "Map editor" panel section: category select, Place POI, Draw footprint, Export GeoJSON, Clear all, count.
+- [x] "Map editor" panel section: category select, Place POI, Draw footprint, Trace line, Export GeoJSON, Clear all, count.
 - [x] Point mode places categorized POIs; committed POIs render as colored circles with labels.
 - [x] Polygon mode draws categorized footprints; committed footprints render as colored fill + outline with a centered label.
-- [x] Point and footprint modes are mutually exclusive; Escape exits either.
-- [x] Click a POI or footprint to rename or delete it.
+- [x] LineString mode traces candidate trails/roads over imagery; committed
+  traces render as colored lines with line labels.
+- [x] Point, footprint, and trace modes are mutually exclusive; Escape exits any
+  draw mode.
+- [x] Trace features export with USDA NAIP source metadata, `confidence=draft`,
+  and a review-needed status.
+- [x] Click a POI, footprint, or trace to rename or delete it.
 - [x] Features persist in localStorage and survive reload.
-- [x] "Drawn POIs" toggle hides/shows all five editor layers via `LAYER_TOGGLES`.
-- [x] Export writes a valid GeoJSON FeatureCollection (points + polygons).
+- [x] "Drawn POIs" toggle hides/shows all seven editor layers via `LAYER_TOGGLES`.
+- [x] Export writes a valid GeoJSON FeatureCollection (points + polygons + lines).
 - [x] Playwright verification script, all checks pass, 0 console errors.
 
 ## Verification
 
-- `mvp/scripts/playwright_verify_poi_editor.py` -- 2026-05-21 run: 38/38 checks PASS, 0 console errors. Covers point placement, footprint drawing, persistence, reload, popups, and the layer toggle. Screenshots `brain/output/playwright_poi_*.png`.
+- `mvp/scripts/playwright_verify_poi_editor.py` -- 2026-05-21 run: PASS, 0
+  console errors. Covers point placement, footprint drawing, trace-line drawing,
+  trace source metadata, persistence, reload, popups, and the layer toggle.
+  Screenshots `brain/output/playwright_poi_*.png`.
 - `node --check` on the inline viewer script: syntax OK.
 
 ## Outcome
@@ -70,7 +82,17 @@ The category is a dropdown but the chosen value is stored as a free string; noth
 Completed 2026-05-21.
 
 - `website/vendor/terra-draw.umd.js`, `terra-draw-maplibre-gl-adapter.umd.js` -- vendored UMD bundles.
-- `website/index.html` -- "Map editor" panel section; `editor-poi` GeoJSON source with five render layers (`editor-poi-fill`, `editor-poi-outline`, `editor-poi-circles`, `editor-poi-labels`, `editor-poi-fill-labels`, geometry-filtered so points and polygons style independently); Terra Draw point + polygon modes wired as input via `setDrawMode`; rename/delete popup for both geometry kinds; localStorage persistence; GeoJSON export. Feature properties: `id`, `layer` (`editor_poi`), `category`, `name`, `created`. Footprints close on the Enter key or by clicking the first corner (Terra Draw polygon mode).
+- `website/index.html` -- "Map editor" panel section; `editor-poi` GeoJSON
+  source with seven render layers (`editor-poi-fill`, `editor-poi-outline`,
+  `editor-poi-lines`, `editor-poi-circles`, `editor-poi-labels`,
+  `editor-poi-fill-labels`, `editor-poi-line-labels`, geometry-filtered so
+  points, polygons, and traces style independently); Terra Draw point, polygon,
+  and LineString modes wired as input via `setDrawMode`; rename/delete popup
+  for all three geometry kinds; localStorage persistence; GeoJSON export.
+  Point/polygon properties: `id`, `layer=editor_poi`, `category`, `name`,
+  `created`. Trace properties use `layer=editor_trace` and add
+  `source_name`, `source_url`, `source_year`, `source_resolution`,
+  `confidence=draft`, and `review_status`.
 - `mvp/scripts/playwright_verify_poi_editor.py` -- verification script.
 
 ## Follow-ups (not blocking)

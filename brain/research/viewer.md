@@ -51,6 +51,7 @@ how the layer was built.
 | Lidar hillshade (USGS 3DEP) | AWS Terrain Tiles | off | "Lidar Hillshade and 3D Terrain Layers" below |
 | Lidar contours (5 ft, 1m DEM) | `aop_contours.geojson` | off | `tasks/01_mvp/lidar_contour_pipeline.md`; "Lidar Contour Layer" below |
 | Satellite imagery (TNMap 2022) | TNMap XYZ tiles | off | "Satellite Imagery" below |
+| USDA NAIP imagery (TN 2023) | USDA FPAC `USDA_CONUS_PRIME` tiles | off | "USDA NAIP Imagery / Tracing Source" below |
 | 9-patch acquisition AOI | `aop_9_patch.geojson` | off | "9-Patch Acquisition AOI Overlay" below |
 | Lidar tile index (USGS 3DEP) | `aop_lidar_tiles.geojson` | off | "Lidar Tile Index Layer" below |
 | Streams & waterbodies (USGS NHD) | `aop_water.geojson` | off | "Hydrography / Water Layer" below |
@@ -63,10 +64,32 @@ how the layer was built.
 | OSM named landmarks | `osm_aop_named.geojson` | off | `tasks/01_mvp/community_trails_import.md` |
 | SFWDA paper trail map | `sfwda_aop_trail_map.webp` + `sfwda_raster_alignment.json` | off | `tasks/01_mvp/community_trails_import.md` |
 
-The viewer also has a feature search box and the POI/footprint editor -- see
+The viewer also has a feature search box and the POI/footprint/trace editor -- see
 "Viewer capabilities" below.
 
 ## Viewer capabilities
+
+### UI presets and layer tuning
+
+Added 2026-05-21. The viewer has three top-left preset buttons:
+`Park`, `Topo`, and `Trace`.
+
+- `Park` is the clean Muted Earth vector map: land cover, roads, publishable
+  boundary/trails/trailheads.
+- `Topo` turns on hillshade, lidar contours, streams, and springs and retunes
+  the palette for relief reading.
+- `Trace` turns off land cover, turns on USDA NAIP imagery, SFWDA paper map,
+  OSM tracks/service roads, buildings, and high-contrast reference styling for
+  tracing/review.
+
+The right panel has a layer tuner for selected layers. It can change visibility,
+opacity, color, and width/size where those paint properties exist. `Snapshot
+preset` stores the current toggles/sliders/paint state for the active preset in
+`localStorage` (`aop_viewer_preset_settings_v1`). `Export settings` copies a
+JSON payload to the clipboard with all three resolved presets plus the current
+state so the user can paste preferred settings back into the session.
+
+Verification: `mvp/scripts/playwright_verify_presets.py`.
 
 ### Feature search
 
@@ -89,11 +112,14 @@ already-loaded GeoJSON -- so it works offline.
 - Verified: `mvp/scripts/playwright_verify_search.py` -- 12/12 PASS on
   2026-05-20, 0 console errors.
 
-### POI / footprint editor
+### POI / footprint / trace editor
 
 The viewer can draw, label, persist (`localStorage`), and export point POIs and
-polygon footprints -- pavilions, buildings, staging, gates, hazards. Full
-record: `tasks/01_mvp/poi_editor.md`. PostGIS write-back is the open follow-up.
+polygon footprints -- pavilions, buildings, staging, gates, hazards. As of
+2026-05-21 it can also draw LineString traces over imagery. Trace features are
+tagged `layer=editor_trace`, `confidence=draft`, and
+`review_status=raw imagery trace; needs review before core/publish`. Full record:
+`tasks/01_mvp/poi_editor.md`. PostGIS write-back is the open follow-up.
 
 ## Layer detail
 
@@ -123,6 +149,34 @@ Recorded on 2026-05-20:
 - Toggle `Satellite imagery (TNMap 2022)`, default OFF so the viewer still opens
   with no network.
 - Verified: `mvp/scripts/playwright_verify_satellite.py`.
+
+### USDA NAIP Imagery / Tracing Source
+
+Recorded on 2026-05-21:
+
+- Source: USDA FPAC-BC-GEO public NAIP ImageServer
+  `https://gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME/ImageServer`.
+  The USDA public image-service index reports Tennessee as `TN_NAIP`, year
+  `2023`, resolution `60 Centimeters`; the service itself is a cached image
+  service with `/tile/{z}/{y}/{x}` access through level 17.
+- Viewer: toggle `USDA NAIP imagery (TN 2023)`, default OFF. It is an online
+  inspection/tracing layer and is not cached into `website/data/`.
+- Trace workflow: the map editor now has `Trace line`, backed by Terra Draw's
+  LineString mode. Exported trace features carry source metadata:
+  `source_name=USDA NAIP public image service`, the ImageServer URL,
+  `source_year=2023`, `confidence=draft`, and a review-needed status. They are
+  raw candidates only; do not promote to `core` or `publish` without the source
+  register and field/imagery review.
+- 2025 note: USDA's 2025 Tennessee image-date index covers AOP with acquisition
+  `2025-08-30` and 4-band (`M4B`) imagery. The Marion County 2025 archive was
+  downloaded to the gitignored cache as
+  `mvp/cache/imagery/ortho_1-1_hm_s_tn115_2025_1.zip` (~2.6 GB), but it ships
+  as MrSID. The repo's current GDAL Docker image has no MrSID driver, so the
+  2025 image is available for MrSID-capable desktop GIS work but is not yet a
+  browser layer.
+- Verified: `mvp/scripts/playwright_verify_satellite.py` -- the USDA toggle
+  requested 24 tiles from `gis.apfo.usda.gov` and produced 0 console errors on
+  2026-05-21.
 
 ### 9-Patch Acquisition AOI Overlay
 
