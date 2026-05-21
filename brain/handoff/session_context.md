@@ -177,6 +177,38 @@ overlapping the 820 ft line below it.
    leaves ~16° median vertex turn), the long-term fix is shipping raw contours as
    PMTiles — keeps full smoothness with no crossings. Not done; not blocking.
 
+## Update: cemeteries layer / the hole in the plot (2026-05-21)
+
+User asked to review a USGenWeb cemetery record for "Ellis Cemetery" and
+whether it is the hole in the AOP plot.
+
+ - Confirmed: the AOP working-envelope polygon (`website/data/publish.geojson`)
+   has an interior ring — a hole — in parcel `110 008.00`. A point query
+   against the TN Comptroller Marion County parcel layer at the hole centroid
+   returns parcel `110 008.04`, owner `BRYSON & ELLIS CEMETERY`, class
+   `05 RELIGIOUS`, ~0.12 acre. The cemetery parcel geometry is bit-identical to
+   the hole ring. It is an inholding excepted out of the deed when the Ellis
+   land became the park. Full evidence: `brain/research/aop_ellis_cemetery.md`.
+ - Added `mvp/scripts/import_marion_cemeteries.py` — pulls cemetery-class
+   parcels (`OWNER LIKE '%CEMETERY%'`) from the 9-patch, joins a hand-curated
+   burial roster, writes `website/data/aop_cemeteries.geojson` (4 cemeteries —
+   Ellis, Gilliam, Bible, Tate; 8 features: a parcel polygon + a centroid
+   marker each, tagged `geom_role`).
+ - Wired a `Cemeteries (TN Comptroller parcels)` layer into `website/index.html`
+   (default OFF): `cemetery-fill`, `cemetery-outline`, `cemetery-marker` (amber
+   ring on the AOP inholding), `cemetery-label`, plus a click popup carrying
+   parcel facts and the Ellis burial roster. Cemeteries are searchable; the
+   county owner-of-record name is indexed as a search alias.
+ - Added `mvp/scripts/playwright_verify_cemeteries.py`; on 2026-05-21 it
+   reported 25 of 25 checks PASS, 0 console errors. Screenshots at
+   `brain/output/playwright_cemeteries_*.png`.
+ - Build card: `brain/tasks/01_mvp/cemeteries_layer.md` (DONE). Research:
+   `brain/research/aop_ellis_cemetery.md`. Routed in `brain/search_map.md`.
+ - Open follow-ups in the research doc: the `Bryson & Ellis` vs `Ellis`
+   cemetery-name question, the cemetery-access easement (an AOP operational
+   question), and a `source_register` decision before the USGenWeb burial
+   roster ships beyond the inspection viewer.
+
 ## Session note
 
 This file is handoff context, not a durable policy document. Keep it live until the next session has read and acted on it.

@@ -8,12 +8,14 @@ The tooling fork is real -- GDAL is not on this machine today, and the DEM tile 
 
 -----
 
-**Status: DONE (2026-05-20).** Picked up from the backlog and completed this
-session. Contours are live in the viewer; see the Outcome section below.
+**Status: DONE (2026-05-20; smoothing + crossing repair 2026-05-21).** Picked up
+from the backlog and completed this session. Contours are live in the viewer; see
+the Outcome section, then the 2026-05-21 Update section, for the current state.
 
 ## Source
 
-- `../../research/aop_data_bounds.md` -- 9-patch AOI, parcel envelope, and the existing lidar layers ("Lidar Tile Index Layer", "Lidar Hillshade and 3D Terrain Layers").
+- `../../research/aop_data_bounds.md` -- 9-patch AOI and parcel envelope.
+- `../../research/viewer.md` -- the viewer's layer catalog, including the existing lidar layers ("Lidar Tile Index Layer", "Lidar Hillshade and 3D Terrain Layers").
 - `../../output/aop_9_patch_data_acquisition_manifest.md` -- exact USGS 1-meter DEM URL, size, and quad coverage.
 - `../../handoff/session_context.md` -- entry from 2026-05-20 capturing why the viewer pivoted to AWS Terrarium hillshade and why contours were deferred.
 - `aop_south_pittsburg_map_build_card.md` -- stage 2 ("Base Map Assembly") names DEM hillshade and contours as deliverables; this card is the contours half.
@@ -59,7 +61,9 @@ the pipeline stages all GDAL work in `/private/tmp`. Full pattern in `brain/spin
 
 **Decided:** GeoJSON. Unsimplified the file was 160 MB, but a 3 m Douglas-Peucker
 simplification brought it to ~5.0 MB -- far under the ~25 MB threshold -- so no
-tippecanoe/PMTiles step was needed.
+tippecanoe/PMTiles step was needed. (Later revised: the smoothing + crossing-repair
+pass moved the ship setting to a 0.5 m simplification; the shipped file is ~14 MB,
+still under the threshold. See the Update section below.)
 
 
 ## Resolved Questions
@@ -72,8 +76,9 @@ tippecanoe/PMTiles step was needed.
   the viewer (MapLibre collision-culls overlaps); every contour also answers a click
   popup. Minor lines stay unlabeled.
 - **Simplified GeoJSON size?** Unsimplified: 160 MB. At 1.5 m / 3 m / 6 m
-  Douglas-Peucker the file is 8.1 / 5.1 / 4.1 MB. Shipped at 3 m (~5.0 MB) -- GeoJSON,
-  no PMTiles needed.
+  Douglas-Peucker the file first shipped at 3 m (~5.0 MB) -- GeoJSON, no PMTiles
+  needed. Superseded by the crossing-repair pass (0.5 m DP, ~14 MB) -- see the
+  Update section below.
 
 
 ## Acceptance
@@ -83,7 +88,7 @@ tippecanoe/PMTiles step was needed.
 - [x] **Clipped DEM** for the 9-patch written next to the cache, with the clip bbox and CRS recorded.
 - [x] **Contours generated** at 5-foot interval, with an indexed-contour attribute (boolean or 25-foot remainder) on every line, output to GeoPackage.
 - [x] **Ship-format decision** recorded -- GeoJSON file size + simplification settings, or PMTiles build command + tile size budget.
-- [x] **Viewer layer wired** at `website/index.html` as a toggleable `Lidar contours (1m DEM)` layer with attribution and minor/indexed styling. Source provenance recorded in `core.sources` if it lands in PostGIS, otherwise documented in `brain/research/aop_data_bounds.md`.
+- [x] **Viewer layer wired** at `website/index.html` as a toggleable `Lidar contours (1m DEM)` layer with attribution and minor/indexed styling. Source provenance recorded in `core.sources` if it lands in PostGIS, otherwise documented in `brain/research/viewer.md`.
 - [x] **Brain updates** -- new subsection in `brain/research/aop_data_bounds.md` describing the contour layer, plus a closing note in `brain/handoff/session_context.md` when the work happens.
 
 
@@ -113,9 +118,29 @@ Completed 2026-05-20.
   2026-05-20 run reported all checks PASS with 4,170 contours rendered in-viewport
   and 0 console errors. Screenshots: `brain/output/playwright_lidar_contours_off.png`,
   `playwright_lidar_contours_on.png`, `playwright_lidar_contours_satellite.png`.
-- Brain: `brain/research/aop_data_bounds.md` "Lidar Contour Layer"; GDAL toolchain in
+- Brain: `brain/research/viewer.md` "Lidar Contour Layer"; GDAL toolchain in
   `brain/spinup/mvp_runbook.md`; DEM SHA in `brain/output/aop_9_patch_data_acquisition_manifest.md`.
 
 Follow-ups (not blocking): revisit a 2-foot interval if 5 ft proves too coarse for
 RC-scale micro-terrain; the contour layer is a candidate to swap onto AOP-specific
 1 m DEM tiles alongside the hillshade (`brain/tasks/01_mvp/_readme.md` item #10).
+
+
+## Update: smoothing and crossing repair (2026-05-21)
+
+The first-pass contours (above) read as jagged, and a later check found ~955
+places where contours of different elevation crossed -- impossible on a real
+surface. Two fixes folded into `build_contours.sh`:
+
+- **Smoothing.** The clipped DEM is low-pass smoothed (resampled 1 m -> 2 m with
+  `gdalwarp -r cubicspline`) before `gdal_contour`, stripping the lidar
+  micro-noise that crinkled the isolines.
+- **Crossing repair.** Simplification dropped to a light 0.5 m Douglas-Peucker
+  pass, then `mvp/scripts/repair_crossings.py` restores any crossing segments to
+  raw geometry, iterating to zero.
+
+Current shipped file: `website/data/aop_contours.geojson` -- 2,831 LineStrings,
+605-1820 ft (501 indexed), ~14 MB, 0 crossings. Still GeoJSON, still under the
+~25 MB threshold. The viewer schema (`elev_m` / `elev_ft` / `idx`) did not change.
+Full detail in `brain/research/viewer.md` ("Lidar Contour Layer") and
+`brain/handoff/session_context.md`.

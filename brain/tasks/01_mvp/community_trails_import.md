@@ -1,6 +1,7 @@
 # Community trails import into the viewer
 
 Started: 2026-05-20
+Status: DONE (2026-05-20)
 
 Pull the May 2026 `brain/import/community_trails/` material into the static viewer as toggleable layers, and wire an in-viewer alignment editor for the SFWDA paper map raster so it can be pixel-aligned against OSM trail/road vectors.
 
@@ -71,12 +72,37 @@ The user explicitly asked to `pixel align the jpeg map` using `the trail info`. 
 
 ## Acceptance
 
-- [ ] `website/data/osm_aop_9patch.geojson`, `osm_aop_named.geojson`, `sfwda_aop_trail_map.webp`, and `sfwda_raster_alignment.json` exist.
-- [ ] The viewer panel has toggles for OSM tracks, OSM service roads, OSM park polygon, OSM named features, and the SFWDA paper map.
-- [ ] Toggling the SFWDA paper map ON shows the 2015 raster on the map.
-- [ ] `Edit SFWDA alignment` mode shows four draggable corners and updates the raster live.
-- [ ] `Export alignment` produces a JSON file with the current 4 corners.
-- [ ] The static viewer still opens cleanly with all new layers OFF by default (except the OSM park polygon outline, which is acceptable to ship visible).
+- [x] `website/data/osm_aop_9patch.geojson`, `osm_aop_named.geojson`, `sfwda_aop_trail_map.webp`, and `sfwda_raster_alignment.json` exist.
+- [x] The viewer panel has toggles for OSM tracks, OSM service roads, OSM park polygon, OSM named features, and the SFWDA paper map.
+- [x] Toggling the SFWDA paper map ON shows the 2015 raster on the map.
+- [x] `Edit SFWDA alignment` mode shows draggable corners and updates the raster live.
+- [x] `Export alignment` produces a JSON file with the current alignment.
+- [x] The static viewer still opens cleanly with all new layers OFF by default.
+
+## Outcome
+
+Completed 2026-05-20.
+
+- `website/data/` gained `osm_aop_9patch.geojson` (71 features),
+  `osm_aop_named.geojson` (5 named), `sfwda_aop_trail_map.webp` (the 2015 SFWDA
+  raster, inspection-only), and `sfwda_raster_alignment.json`.
+- `website/index.html` gained toggles for OSM tracks, OSM service roads, the OSM
+  park polygon, OSM named landmarks, and the SFWDA paper map -- all default OFF.
+- The SFWDA raster ships with an opacity slider and a multiply (white key-out)
+  slider, plus the alignment editor. Opacity and multiply are separate controls
+  -- see `[[feedback-opacity-and-multiply-are-separate]]`.
+- The alignment model shipped as a 6x6 grid mesh of warpable raster tiles
+  (`GRID_N = 6`), driven by `sfwda_raster_alignment.json` (`corners`,
+  `orientation_cw_degrees`, and a `grid_6x6` array of 7x7 control points). A
+  loaded grid produces a nonlinear warp -- richer than the 4-corner plan in the
+  "Alignment editor" section above.
+- Verified: `mvp/scripts/playwright_verify_community_trails.py` -- 11/11 checks
+  PASS on 2026-05-20, 0 console errors. The SFWDA multiply blend has its own
+  check, `mvp/scripts/playwright_verify_sfwda_multiply.py`.
+
+Open follow-up: drag the alignment until the SFWDA trail centerlines overlap the
+OSM tracks, then Export and commit `sfwda_raster_alignment.json`. The raster is a
+quadrilateral/grid warp -- inspection-grade, not survey-grade georeferencing.
 
 ## Provenance to record later
 

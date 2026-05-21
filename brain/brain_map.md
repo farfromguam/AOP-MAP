@@ -12,13 +12,14 @@ TL;DR:
 ## Top-level layout
 
 ```text
-aop_brain/
+brain/
 ├── _readme.md
 ├── brain_map.md
 ├── search_map.md
 ├── split_manifest.md
 ├── northstar/      what is locked for the AOP map
 ├── research/       source briefs, evidence, current facts
+├── import/         raw zone for community-sourced trail material
 ├── tasks/          work cards and execution notes
 ├── practices/      portable methods from the Soka brain
 ├── flows/          reusable work flows
@@ -41,6 +42,8 @@ aop_brain/
 
 `research/aop_data_bounds.md` records the current two-parcel working envelope and the 9-patch data acquisition AOI for imagery, topo, DEM, and lidar pulls.
 
+`research/viewer.md` is the catalog for the static MapLibre viewer (`website/index.html`): every layer, where its data comes from, and which doc records how it was built. Read it before adding or changing a viewer layer.
+
 `spinup/mvp_runbook.md` is the durable local MVP runbook. Use it for CWC checks, Docker/PostGIS startup, QGIS connection settings, port collisions, publish export checks, and viewer spinup.
 
 `tasks/01_mvp/aop_south_pittsburg_map_build_card.md` is the current build card. It is direction, not gospel; update it as the map learns.
@@ -53,11 +56,10 @@ aop_brain/
 
 ## Split status
 
-This is a staged sub-brain. It is not yet the final project root.
+The brain has split out of Soka into its own repo. The directory is `brain/`,
+and the repo root carries its own `AGENTS.md` and `CLAUDE.md`.
 
-Open split chores:
+Remaining split chores:
 
-- Decide whether the final directory is named `brain/` or kept as `aop_brain/`.
-- Add the new project's root `AGENTS.md` once the repo exists.
-- Replace any remaining Soka-rooted paths that should become local paths after the move.
+- Replace any remaining Soka-rooted paths that should become local paths.
 - Import only the voice corpus samples that the new project actually needs.

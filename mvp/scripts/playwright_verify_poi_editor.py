@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Playwright verification for the AOP viewer map editor (drawn POIs).
+"""Playwright verification for the AOP viewer map editor (drawn POIs + footprints).
 
-Covers the Terra Draw POI placement feature added to website/index.html:
+Covers the Terra Draw editing feature added to website/index.html:
   - Vendored Terra Draw + MapLibre adapter UMD bundles load.
-  - editor-poi GeoJSON source and circle/label layers are created.
-  - "Place POI" enters Terra Draw point mode; clicking the map commits a POI.
-  - Placed POIs carry the selected category and persist to localStorage.
-  - POIs survive a page reload (offline-safe persistence).
-  - The "Drawn POIs" toggle hides/shows the editor layers.
-  - Clicking a POI opens a rename/delete popup; delete removes the POI.
+  - editor-poi GeoJSON source with point (circle/label) and polygon
+    (fill/outline/label) render layers.
+  - "Place POI" enters point mode; clicking the map commits a POI.
+  - "Draw footprint" enters polygon mode; a multi-click polygon commits a footprint.
+  - Drawn features carry the selected category and persist to localStorage.
+  - Points and footprints survive a page reload (offline-safe persistence).
+  - The "Drawn POIs" toggle hides/shows every editor layer.
+  - Clicking a POI or a footprint opens a rename/delete popup; delete removes it.
 
 Run after `python3 -m http.server 8000` is serving the `website/` directory.
 """
@@ -30,13 +32,24 @@ SCREENSHOTS = {
     "initial": "playwright_poi_initial.png",
     "placing": "playwright_poi_placing.png",
     "placed": "playwright_poi_placed.png",
+    "footprint": "playwright_poi_footprint.png",
     "reloaded": "playwright_poi_reloaded.png",
     "popup": "playwright_poi_popup.png",
     "hidden": "playwright_poi_hidden.png",
 }
 
+EDITOR_LAYERS = [
+    "editor-poi-fill",
+    "editor-poi-outline",
+    "editor-poi-circles",
+    "editor-poi-labels",
+    "editor-poi-fill-labels",
+]
+
 # Click points on the map canvas, kept clear of the top-right control panel.
-PLACE_POINTS = [(380, 360), (520, 300), (300, 480)]
+PLACE_POINTS = [(380, 360), (520, 320), (300, 470)]
+# A four-corner footprint; the run closes it by clicking the first corner again.
+FOOTPRINT_CORNERS = [(360, 520), (560, 520), (560, 640), (360, 640)]
 
 
 def check(label: str, ok: bool, detail: str = "") -> None:
@@ -68,8 +81,14 @@ def layer_visibility(page, layer_id: str) -> str | None:
     )
 
 
-def poi_count(page) -> int:
+def feature_count(page) -> int:
     return page.evaluate("editorPois.length")
+
+
+def kind_count(page, geom_type: str) -> int:
+    return page.evaluate(
+        "(t) => editorPois.filter((f) => f.geometry.type === t).length", geom_type
+    )
 
 
 def main() -> int:
@@ -105,27 +124,20 @@ def main() -> int:
                 " && !!terraDrawMaplibreGlAdapter.TerraDrawMapLibreGLAdapter"
             ),
         )
-        check("Terra Draw instance created", page.evaluate("!!window.draw"))
         check(
-            "Terra Draw starts in static mode",
-            page.evaluate("draw.getMode()") == "static",
+            "point + polygon modes registered",
+            page.evaluate("typeof terraDraw.TerraDrawPointMode === 'function'"
+                          " && typeof terraDraw.TerraDrawPolygonMode === 'function'"),
         )
-        check(
-            "editor-poi-circles layer exists",
-            page.evaluate("!!map.getLayer('editor-poi-circles')"),
-        )
-        check(
-            "editor-poi-labels layer exists",
-            page.evaluate("!!map.getLayer('editor-poi-labels')"),
-        )
-        check("no POIs placed initially", poi_count(page) == 0, f"count={poi_count(page)}")
-        check(
-            "Place POI button present",
-            page.locator("#placePoiBtn").count() == 1,
-        )
+        check("Terra Draw starts in static mode", page.evaluate("draw.getMode()") == "static")
+        for layer in EDITOR_LAYERS:
+            check(f"{layer} layer exists", page.evaluate(f"!!map.getLayer('{layer}')"))
+        check("no features placed initially", feature_count(page) == 0)
+        check("Place POI button present", page.locator("#placePoiBtn").count() == 1)
+        check("Draw footprint button present", page.locator("#drawFootprintBtn").count() == 1)
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["initial"]))
 
-        print("\n== Enter placing mode ==")
+        print("\n== Place POIs (point mode) ==")
         page.locator("#placePoiBtn").click()
         page.wait_for_timeout(200)
         check("draw mode is 'point' after Place POI", page.evaluate("draw.getMode()") == "point")
@@ -135,8 +147,6 @@ def main() -> int:
         )
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["placing"]))
 
-        print("\n== Place POIs ==")
-        # First two as Pavilion, third as Building, to prove the category sticks.
         page.select_option("#poiCategory", "Pavilion")
         for x, y in PLACE_POINTS[:2]:
             page.mouse.click(x, y)
@@ -144,86 +154,124 @@ def main() -> int:
         page.select_option("#poiCategory", "Building")
         page.mouse.click(*PLACE_POINTS[2])
         page.wait_for_timeout(350)
-
-        check("three POIs placed", poi_count(page) == 3, f"count={poi_count(page)}")
-        categories = page.evaluate("editorPois.map((f) => f.properties.category)")
-        check(
-            "categories recorded (2 Pavilion, 1 Building)",
-            categories.count("Pavilion") == 2 and categories.count("Building") == 1,
-            str(categories),
-        )
-        check(
-            "poiStatus text updated",
-            "3 POIs placed" in (page.locator("#poiStatus").inner_text()),
-            page.locator("#poiStatus").inner_text(),
-        )
-        check(
-            "all POIs carry layer=editor_poi",
-            page.evaluate("editorPois.every((f) => f.properties.layer === 'editor_poi')"),
-        )
-        page.keyboard.press("Escape")
-        page.wait_for_timeout(200)
-        check("Escape exits placing mode", page.evaluate("draw.getMode()") == "static")
+        check("three POIs placed", kind_count(page, "Point") == 3, f"points={kind_count(page, 'Point')}")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["placed"]))
 
+        print("\n== Draw a footprint (polygon mode) ==")
+        page.locator("#drawFootprintBtn").click()
+        page.wait_for_timeout(200)
+        check("draw mode is 'polygon' after Draw footprint",
+              page.evaluate("draw.getMode()") == "polygon")
+        check(
+            "Draw footprint button shows active state",
+            "active" in (page.locator("#drawFootprintBtn").get_attribute("class") or ""),
+        )
+        check(
+            "Place POI button no longer active",
+            "active" not in (page.locator("#placePoiBtn").get_attribute("class") or ""),
+        )
+        page.select_option("#poiCategory", "Building")
+        # Click each corner, then click the first corner again to close the ring.
+        for x, y in FOOTPRINT_CORNERS:
+            page.mouse.click(x, y)
+            page.wait_for_timeout(250)
+        page.mouse.click(*FOOTPRINT_CORNERS[0])
+        page.wait_for_timeout(500)
+        check("one footprint polygon committed",
+              kind_count(page, "Polygon") == 1, f"polygons={kind_count(page, 'Polygon')}")
+        check("total feature count is 4", feature_count(page) == 4, f"count={feature_count(page)}")
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["footprint"]))
+
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(200)
+        check("Escape exits drawing mode", page.evaluate("draw.getMode()") == "static")
+
+        print("\n== Categories + properties ==")
+        point_cats = page.evaluate(
+            "editorPois.filter((f) => f.geometry.type === 'Point').map((f) => f.properties.category)"
+        )
+        poly_cat = page.evaluate(
+            "editorPois.find((f) => f.geometry.type === 'Polygon').properties.category"
+        )
+        check(
+            "point categories recorded (2 Pavilion, 1 Building)",
+            point_cats.count("Pavilion") == 2 and point_cats.count("Building") == 1,
+            str(point_cats),
+        )
+        check("footprint category recorded (Building)", poly_cat == "Building", str(poly_cat))
+        check(
+            "all features carry layer=editor_poi",
+            page.evaluate("editorPois.every((f) => f.properties.layer === 'editor_poi')"),
+        )
+        check(
+            "status text reports points and footprints",
+            page.locator("#poiStatus").inner_text() == "3 POIs, 1 footprint.",
+            page.locator("#poiStatus").inner_text(),
+        )
+
         print("\n== localStorage persistence ==")
-        stored = page.evaluate(f"localStorage.getItem('{POI_STORAGE_KEY}')")
-        check("POIs written to localStorage", bool(stored) and stored != "[]")
         stored_count = page.evaluate(
             f"JSON.parse(localStorage.getItem('{POI_STORAGE_KEY}') || '[]').length"
         )
-        check("localStorage holds 3 POIs", stored_count == 3, f"count={stored_count}")
+        check("localStorage holds 4 features", stored_count == 4, f"count={stored_count}")
 
         print("\n== Survive a reload ==")
         page.reload(wait_until="load")
         wait_for_viewer(page)
-        check("3 POIs restored after reload", poi_count(page) == 3, f"count={poi_count(page)}")
+        check("4 features restored after reload", feature_count(page) == 4, f"count={feature_count(page)}")
+        check("3 points + 1 polygon restored",
+              kind_count(page, "Point") == 3 and kind_count(page, "Polygon") == 1)
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["reloaded"]))
 
-        print("\n== POI popup: rename + delete ==")
-        # Project the first POI to a screen pixel and click it.
-        pixel = page.evaluate(
-            "(() => { const c = editorPois[0].geometry.coordinates;"
-            " const p = map.project(c); return [p.x, p.y]; })()"
+        print("\n== Popup: delete a POI, then a footprint ==")
+        point_pixel = page.evaluate(
+            "(() => { const f = editorPois.find((x) => x.geometry.type === 'Point');"
+            " const p = map.project(f.geometry.coordinates); return [p.x, p.y]; })()"
         )
-        page.mouse.click(pixel[0], pixel[1])
+        page.mouse.click(point_pixel[0], point_pixel[1])
         page.wait_for_timeout(300)
         check("POI popup opened", page.locator(".poi-popup").count() == 1)
-        check("popup has name input", page.locator("#poiNameInput").count() == 1)
-        check("popup has Save + Delete buttons",
-              page.locator("#poiSaveBtn").count() == 1
+        check("popup has name input + Save + Delete",
+              page.locator("#poiNameInput").count() == 1
+              and page.locator("#poiSaveBtn").count() == 1
               and page.locator("#poiDeleteBtn").count() == 1)
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["popup"]))
         page.locator("#poiDeleteBtn").click()
         page.wait_for_timeout(300)
-        check("POI deleted via popup", poi_count(page) == 2, f"count={poi_count(page)}")
-        check(
-            "delete persisted to localStorage",
-            page.evaluate(
-                f"JSON.parse(localStorage.getItem('{POI_STORAGE_KEY}') || '[]').length"
-            )
-            == 2,
+        check("POI deleted via popup", kind_count(page, "Point") == 2, f"points={kind_count(page, 'Point')}")
+
+        # Click the footprint at its centroid and delete it too.
+        poly_pixel = page.evaluate(
+            "(() => { const f = editorPois.find((x) => x.geometry.type === 'Polygon');"
+            " const r = f.geometry.coordinates[0]; const n = r.length - 1;"
+            " let x = 0, y = 0; for (let i = 0; i < n; i++) { x += r[i][0]; y += r[i][1]; }"
+            " const p = map.project([x / n, y / n]); return [p.x, p.y]; })()"
         )
+        page.mouse.click(poly_pixel[0], poly_pixel[1])
+        page.wait_for_timeout(300)
+        check("footprint popup opened", page.locator(".poi-popup").count() == 1)
+        page.locator("#poiDeleteBtn").click()
+        page.wait_for_timeout(300)
+        check("footprint deleted via popup", kind_count(page, "Polygon") == 0)
+        check("two POIs remain", feature_count(page) == 2, f"count={feature_count(page)}")
 
         print("\n== Drawn POIs toggle ==")
         check(
             "editor layers visible by default",
-            layer_visibility(page, "editor-poi-circles") == "visible"
-            and layer_visibility(page, "editor-poi-labels") == "visible",
+            all(layer_visibility(page, lyr) == "visible" for lyr in EDITOR_LAYERS),
         )
         page.locator("#showEditorPois").click()
         page.wait_for_timeout(250)
         check(
-            "editor layers hidden after toggle off",
-            layer_visibility(page, "editor-poi-circles") == "none"
-            and layer_visibility(page, "editor-poi-labels") == "none",
+            "all editor layers hidden after toggle off",
+            all(layer_visibility(page, lyr) == "none" for lyr in EDITOR_LAYERS),
         )
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["hidden"]))
         page.locator("#showEditorPois").click()
         page.wait_for_timeout(250)
         check(
-            "editor layers visible after toggle on",
-            layer_visibility(page, "editor-poi-circles") == "visible",
+            "all editor layers visible after toggle on",
+            all(layer_visibility(page, lyr) == "visible" for lyr in EDITOR_LAYERS),
         )
 
         print("\n== Console summary ==")

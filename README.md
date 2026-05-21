@@ -10,6 +10,9 @@ This repository contains the Adventure Off Road Park map brain and a minimal MVP
 - [X] Confirm Docker container startup
 - [X] Prove observation capture, review, promotion, provenance, and export with a smoke test
 - [X] Import the first real source-backed AOP boundary slice from the Tennessee Comptroller Marion County parcel layer
+- [X] Wire reference layers into the viewer: TNMap satellite, lidar hillshade and 3D terrain, lidar 5 ft contours, the 9-patch AOI and lidar tile index, USGS roads and water, OSM community layers, and the SFWDA 2015 paper map
+- [X] Add an in-viewer POI/footprint editor and a feature search box
+- [X] Add a searchable Marion County cemeteries layer and confirm the Ellis Cemetery inholding
 - [ ] Connect QGIS and verify schema
 - [ ] Reconcile the official 600+ acre AOP claim against parcel data and any related parcels
 
@@ -115,5 +118,9 @@ docker compose logs db
 - `mvp/scripts/import_aop_parcel_boundary.sh` — imports the current source-backed AOP parcel boundary slice
 - `mvp/scripts/run_validation_loop_smoke.sh` — proves observation-to-promotion plumbing with demo rows
 - `mvp/scripts/export_publish_geojson.sh` — exports publish views to the static viewer
-- `website/index.html` — static MapLibre viewer skeleton
+- `website/index.html` — static MapLibre viewer
 - `website/data/publish.geojson` — current publish layer export
+
+This is the initial scaffold set. The MVP has grown well past it; see
+`mvp/README.md`, `mvp/scripts/README.md`, and `website/README.md` for the
+current files, scripts, and viewer layers.

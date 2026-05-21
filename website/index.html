@@ -20,6 +20,7 @@
     .panel button.active { background: #f16624; color: #fff; border-color: #f16624; }
     .panel select { font: inherit; padding: 3px 5px; border-radius: 6px; border: 1px solid #bbb; }
     .editor-row { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; }
+    .editor-row button { flex: 1; margin-right: 0; }
     .poi-popup input { font: inherit; width: 100%; box-sizing: border-box; margin: 6px 0; padding: 3px 5px; }
     .poi-popup button { font: inherit; padding: 3px 9px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
     .message { position: absolute; left: 12px; bottom: 12px; background: rgba(255,255,255,0.95); padding: 10px 12px; border-radius: 10px; font-size: 0.9rem; max-width: 60ch; }
@@ -56,6 +57,7 @@
     <label><input type="checkbox" id="showRoads" checked /> Asphalt roads (USGS National Map)</label>
     <label><input type="checkbox" id="showWater" /> Streams &amp; waterbodies (USGS NHD)</label>
     <label><input type="checkbox" id="showSprings" /> Springs &amp; gages (USGS NHD)</label>
+    <label><input type="checkbox" id="showCemeteries" /> Cemeteries (TN Comptroller parcels)</label>
     <hr/>
     <div class="section-title">Community (OSM)</div>
     <label><input type="checkbox" id="showOsmPark" /> OSM park polygon</label>
@@ -86,7 +88,7 @@
     <div class="section-title">Map editor</div>
     <label><input type="checkbox" id="showEditorPois" checked /> Drawn POIs</label>
     <div class="editor-row">
-      <select id="poiCategory" title="POI type">
+      <select id="poiCategory" title="Feature type" style="flex:1">
         <option>Pavilion</option>
         <option>Building</option>
         <option>Restroom</option>
@@ -97,17 +99,21 @@
         <option>Hazard</option>
         <option>Other</option>
       </select>
+    </div>
+    <div class="editor-row">
       <button id="placePoiBtn" type="button">Place POI</button>
+      <button id="drawFootprintBtn" type="button">Draw footprint</button>
     </div>
     <div class="editor-row">
       <button id="exportPoiBtn" type="button">Export GeoJSON</button>
       <button id="clearPoiBtn" type="button">Clear all</button>
     </div>
-    <small id="poiStatus">0 POIs placed.</small>
-    <small>Pick a type, click Place POI, then click the map. Click a POI to rename or delete it. Drawn POIs save in this browser; Export writes <code>aop_editor_pois.geojson</code>.</small>
+    <small id="poiStatus">0 POIs, 0 footprints.</small>
+    <small>Pick a type, then <b>Place POI</b> (one click) or <b>Draw footprint</b> (click each corner, press Enter or click the first corner to close). Click a feature to rename or delete it. Edits save in this browser; Export writes <code>aop_editor_pois.geojson</code>.</small>
     <small>Terrain: AWS Terrain Tiles, derived from USGS 3DEP. Drag with right-click (or two-finger drag) to tilt and rotate.</small>
     <small>Satellite tiles served by TDOT/TNMap — inspection use only, not for redistribution.</small>
     <small>Contours: 5 ft interval from the USGS 3DEP 1 m lidar DEM; bold lines every 25 ft.</small>
+    <small>Cemeteries: TN Comptroller Marion County parcels. Ellis Cemetery is the inholding inside the AOP boundary — the gap in the park polygon.</small>
     <small>SFWDA raster is &copy; Adventure Off Road Park (via SFWDA) — internal/inspection only. Drag the 4 corner handles in Edit mode to pixel-align against OSM tracks, then Export to save <code>website/data/sfwda_raster_alignment.json</code>.</small>
   </div>
   <div class="message" id="message">Loading publish layer...</div>
@@ -144,6 +150,7 @@
     const roadsToggle = document.getElementById('showRoads');
     const waterToggle = document.getElementById('showWater');
     const springsToggle = document.getElementById('showSprings');
+    const cemeteriesToggle = document.getElementById('showCemeteries');
     const osmParkToggle = document.getElementById('showOsmPark');
     const osmTracksToggle = document.getElementById('showOsmTracks');
     const osmServiceToggle = document.getElementById('showOsmService');
@@ -163,6 +170,7 @@
     const editorPoiToggle = document.getElementById('showEditorPois');
     const poiCategory = document.getElementById('poiCategory');
     const placePoiBtn = document.getElementById('placePoiBtn');
+    const drawFootprintBtn = document.getElementById('drawFootprintBtn');
     const exportPoiBtn = document.getElementById('exportPoiBtn');
     const clearPoiBtn = document.getElementById('clearPoiBtn');
     const poiStatus = document.getElementById('poiStatus');
@@ -216,6 +224,7 @@
       [roadsToggle, ['roads-local-casing', 'roads-local', 'roads-connecting-casing', 'roads-connecting', 'roads-controlled-casing', 'roads-controlled', 'roads-labels']],
       [waterToggle, ['water-area-fill', 'waterbody-fill', 'waterbody-outline', 'streams', 'stream-labels']],
       [springsToggle, ['water-points', 'water-point-labels']],
+      [cemeteriesToggle, ['cemetery-fill', 'cemetery-outline', 'cemetery-marker', 'cemetery-label']],
       [osmParkToggle, ['osm-park-outline']],
       [osmTracksToggle, ['osm-tracks']],
       [osmServiceToggle, ['osm-service']],
@@ -223,7 +232,7 @@
       [trailToggle, ['publish-trails']],
       [boundaryToggle, ['publish-boundary-fill', 'publish-boundaries']],
       [trailheadToggle, ['publish-trailheads']],
-      [editorPoiToggle, ['editor-poi-circles', 'editor-poi-labels']]
+      [editorPoiToggle, ['editor-poi-fill', 'editor-poi-outline', 'editor-poi-circles', 'editor-poi-labels', 'editor-poi-fill-labels']]
     ];
 
     function updateLayerVisibility() {
@@ -251,6 +260,34 @@
         .filter(([, value]) => value !== undefined && value !== null && value !== '')
         .map(([label, value]) => `${escapeHtml(label)}: ${escapeHtml(value)}`)
         .join('<br/>');
+    }
+
+    // A GeoJSON source round-trips property values through MapLibre, which may
+    // hand booleans back as the strings 'true'/'false'.
+    function isTrue(value) {
+      return value === true || value === 'true';
+    }
+
+    // Render a cemetery's burial roster for the popup footer. `burials` is a
+    // [{name, dates}] array; MapLibre JSON-encodes non-primitive properties, so
+    // it may arrive as a string and need parsing back.
+    function cemeteryBurialHtml(props) {
+      let burials = props.burials;
+      if (typeof burials === 'string') {
+        try { burials = JSON.parse(burials); } catch (error) { burials = []; }
+      }
+      if (!Array.isArray(burials) || !burials.length) return '';
+      const items = burials
+        .map((b) => `<li>${escapeHtml(b.name)}`
+          + `${b.dates ? ' — ' + escapeHtml(b.dates) : ''}</li>`)
+        .join('');
+      let html = '<em>Recorded burials</em>'
+        + `<ul style="margin:4px 0 0;padding-left:18px;">${items}</ul>`;
+      if (props.burial_source) {
+        html += '<small style="display:block;margin-top:4px;color:#666;">'
+          + `${escapeHtml(props.burial_source)}</small>`;
+      }
+      return html;
     }
 
     // --- Map editor: drawn POIs ---------------------------------------
@@ -303,7 +340,10 @@
     function refreshEditorSource() {
       const source = map.getSource('editor-poi');
       if (source) source.setData(editorFeatureCollection());
-      poiStatus.textContent = `${editorPois.length} POI${editorPois.length === 1 ? '' : 's'} placed.`;
+      const points = editorPois.filter((f) => f.geometry.type === 'Point').length;
+      const footprints = editorPois.length - points;
+      poiStatus.textContent =
+        `${points} POI${points === 1 ? '' : 's'}, ${footprints} footprint${footprints === 1 ? '' : 's'}.`;
     }
 
     function exportEditorPois() {
@@ -317,11 +357,14 @@
       setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
     }
 
-    function setPlacingMode(placing) {
+    // mode is 'point' (POI), 'polygon' (footprint), or 'static' (not drawing).
+    function setDrawMode(mode) {
       if (!draw) return;
-      draw.setMode(placing ? 'point' : 'static');
-      placePoiBtn.classList.toggle('active', placing);
-      placePoiBtn.textContent = placing ? 'Placing… (Esc)' : 'Place POI';
+      draw.setMode(mode);
+      placePoiBtn.classList.toggle('active', mode === 'point');
+      drawFootprintBtn.classList.toggle('active', mode === 'polygon');
+      placePoiBtn.textContent = mode === 'point' ? 'Placing… (Esc)' : 'Place POI';
+      drawFootprintBtn.textContent = mode === 'polygon' ? 'Drawing… (Esc)' : 'Draw footprint';
     }
 
     function openPoiPopup(feature, lngLat) {
@@ -806,6 +849,107 @@
         ]);
 
         indexFeatures(roadsData, 'road', roadsToggle);
+      }
+
+      // --- Marion County cemeteries (TN Comptroller parcels) -------------
+      // Cemetery-class parcels in the 9-patch. One — Ellis Cemetery, parcel
+      // 110 008.04 — is the interior parcel carved out of the AOP boundary:
+      // the hole in the park polygon. Each cemetery is a parcel polygon plus a
+      // centroid marker; both carry the same properties (geom_role tells them
+      // apart). Default off — search turns the layer on when it jumps here.
+      const cemeteryData = await fetchJson('./data/aop_cemeteries.geojson', 'Cemetery layer missing');
+      if (cemeteryData) {
+        map.addSource('cemeteries', {
+          type: 'geojson',
+          data: cemeteryData,
+          attribution: 'Cemetery parcels: TN Comptroller of the Treasury — Marion County'
+        });
+
+        map.addLayer({
+          id: 'cemetery-fill',
+          type: 'fill',
+          source: 'cemeteries',
+          filter: ['==', ['get', 'geom_role'], 'parcel'],
+          layout: { visibility: 'none' },
+          paint: { 'fill-color': '#8a7fa6', 'fill-opacity': 0.4 }
+        });
+        map.addLayer({
+          id: 'cemetery-outline',
+          type: 'line',
+          source: 'cemeteries',
+          filter: ['==', ['get', 'geom_role'], 'parcel'],
+          layout: { visibility: 'none' },
+          paint: {
+            'line-color': '#4a3f63',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 12, 1, 17, 3]
+          }
+        });
+        map.addLayer({
+          id: 'cemetery-marker',
+          type: 'circle',
+          source: 'cemeteries',
+          filter: ['==', ['get', 'geom_role'], 'marker'],
+          layout: { visibility: 'none' },
+          paint: {
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 3.5, 14, 6, 17, 8],
+            'circle-color': '#6f5b8e',
+            // The AOP inholding gets an amber ring so the "hole" reads at a glance.
+            'circle-stroke-color': ['case', ['get', 'aop_inholding'], '#f5b820', '#ffffff'],
+            'circle-stroke-width': ['case', ['get', 'aop_inholding'], 3, 1.6]
+          }
+        });
+        map.addLayer({
+          id: 'cemetery-label',
+          type: 'symbol',
+          source: 'cemeteries',
+          filter: ['==', ['get', 'geom_role'], 'marker'],
+          layout: {
+            visibility: 'none',
+            'text-field': ['get', 'name'],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 13],
+            'text-offset': [0, 1.1],
+            'text-anchor': 'top'
+          },
+          paint: {
+            'text-color': '#3a3050',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 1.8
+          }
+        });
+
+        bindPopup(['cemetery-fill', 'cemetery-marker'],
+          (props) => escapeHtml(props.name || 'Cemetery'),
+          (props) => [
+            ['Also known as', props.aka],
+            ['Type', props.cemetery_type],
+            ['Parcel', props.parcel_id],
+            ['Owner of record', props.parcel_owner],
+            ['Class', props.parcel_class],
+            ['Area', props.acres != null ? `${props.acres} acre` : ''],
+            ['Within AOP', isTrue(props.aop_inholding)
+              ? 'Yes — interior parcel excluded from the park boundary (the hole in parcel 110 008.00)'
+              : ''],
+            ['Recorded burials', Number(props.burial_count) > 0
+              ? `${props.burial_count} (${props.named_burial_count} named)`
+              : ''],
+            ['Source', props.parcel_source]
+          ],
+          (props) => cemeteryBurialHtml(props));
+
+        indexFeatures(cemeteryData, 'cemetery', cemeteriesToggle);
+        // Index the county owner-of-record name too (e.g. searching
+        // "Bryson & Ellis Cemetery" should also land on Ellis Cemetery).
+        for (const feature of cemeteryData.features) {
+          const aka = feature.properties && feature.properties.aka;
+          if (aka && feature.geometry) {
+            searchIndex.push({
+              name: String(aka),
+              kind: 'cemetery',
+              toggle: cemeteriesToggle,
+              geometry: feature.geometry
+            });
+          }
+        }
       }
 
       // --- Community OSM 9-patch vectors ---------------------------------
@@ -1354,13 +1498,30 @@
         ['OSM id', props.osm_id || '']
       ]);
 
-      // --- Map editor: Terra Draw POI placement -------------------------
+      // --- Map editor: Terra Draw POI + footprint drawing ---------------
       loadEditorPois();
       map.addSource('editor-poi', { type: 'geojson', data: editorFeatureCollection() });
+      // Footprints (polygons) draw below POIs (points) so a point inside a
+      // footprint stays clickable; labels sit on top of both geometry kinds.
+      map.addLayer({
+        id: 'editor-poi-fill',
+        type: 'fill',
+        source: 'editor-poi',
+        filter: ['==', ['geometry-type'], 'Polygon'],
+        paint: { 'fill-color': poiColorExpression, 'fill-opacity': 0.3 }
+      });
+      map.addLayer({
+        id: 'editor-poi-outline',
+        type: 'line',
+        source: 'editor-poi',
+        filter: ['==', ['geometry-type'], 'Polygon'],
+        paint: { 'line-color': poiColorExpression, 'line-width': 2.5 }
+      });
       map.addLayer({
         id: 'editor-poi-circles',
         type: 'circle',
         source: 'editor-poi',
+        filter: ['==', ['geometry-type'], 'Point'],
         paint: {
           'circle-radius': 7,
           'circle-color': poiColorExpression,
@@ -1372,6 +1533,7 @@
         id: 'editor-poi-labels',
         type: 'symbol',
         source: 'editor-poi',
+        filter: ['==', ['geometry-type'], 'Point'],
         layout: {
           'text-field': ['coalesce', ['get', 'name'], ['get', 'category']],
           'text-size': 12,
@@ -1380,24 +1542,37 @@
         },
         paint: { 'text-color': '#1c1c1c', 'text-halo-color': '#ffffff', 'text-halo-width': 1.6 }
       });
+      map.addLayer({
+        id: 'editor-poi-fill-labels',
+        type: 'symbol',
+        source: 'editor-poi',
+        filter: ['==', ['geometry-type'], 'Polygon'],
+        layout: {
+          'text-field': ['coalesce', ['get', 'name'], ['get', 'category']],
+          'text-size': 12
+        },
+        paint: { 'text-color': '#1c1c1c', 'text-halo-color': '#ffffff', 'text-halo-width': 1.6 }
+      });
       refreshEditorSource();
 
       draw = new terraDraw.TerraDraw({
         adapter: new terraDrawMaplibreGlAdapter.TerraDrawMapLibreGLAdapter({ map }),
-        modes: [new terraDraw.TerraDrawPointMode()]
+        modes: [new terraDraw.TerraDrawPointMode(), new terraDraw.TerraDrawPolygonMode()]
       });
       draw.start();
       draw.setMode('static');
-      // Point mode commits on click; we lift the placed point out of Terra Draw
-      // into our own source (tagged with the selected category) so Terra Draw
-      // stays a pure input device and never accumulates state.
+      // Point and polygon modes commit on finish; we lift the drawn geometry
+      // out of Terra Draw into our own source (tagged with the selected
+      // category) so Terra Draw stays a pure input device with no state.
       draw.on('finish', (id) => {
         const feature = draw.getSnapshot().find((f) => f.id === id);
-        if (!feature || feature.geometry.type !== 'Point') return;
+        if (!feature) return;
+        const kind = feature.geometry.type;
+        if (kind !== 'Point' && kind !== 'Polygon') return;
         const category = poiCategory.value;
         editorPois.push({
           type: 'Feature',
-          geometry: { type: 'Point', coordinates: feature.geometry.coordinates },
+          geometry: JSON.parse(JSON.stringify(feature.geometry)),
           properties: {
             id: `poi_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
             layer: 'editor_poi',
@@ -1411,17 +1586,23 @@
         refreshEditorSource();
       });
 
-      map.on('click', 'editor-poi-circles', (event) => {
-        if (draw && draw.getMode() !== 'static') return;
-        const feature = event.features?.[0];
-        if (feature) openPoiPopup(feature, event.lngLat);
-      });
-      map.on('mouseenter', 'editor-poi-circles', () => {
-        if (draw && draw.getMode() === 'static') map.getCanvas().style.cursor = 'pointer';
-      });
-      map.on('mouseleave', 'editor-poi-circles', () => {
-        map.getCanvas().style.cursor = '';
-      });
+      // Clicking a committed POI or footprint (only while not drawing) opens
+      // the rename/delete popup.
+      function bindEditorClick(layerId) {
+        map.on('click', layerId, (event) => {
+          if (draw && draw.getMode() !== 'static') return;
+          const feature = event.features?.[0];
+          if (feature) openPoiPopup(feature, event.lngLat);
+        });
+        map.on('mouseenter', layerId, () => {
+          if (draw && draw.getMode() === 'static') map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', layerId, () => {
+          map.getCanvas().style.cursor = '';
+        });
+      }
+      bindEditorClick('editor-poi-circles');
+      bindEditorClick('editor-poi-fill');
 
       // --- Search index + highlight layers ------------------------------
       indexFeatures(publishData,
@@ -1642,6 +1823,7 @@
     roadsToggle.addEventListener('change', updateLayerVisibility);
     waterToggle.addEventListener('change', updateLayerVisibility);
     springsToggle.addEventListener('change', updateLayerVisibility);
+    cemeteriesToggle.addEventListener('change', updateLayerVisibility);
     osmParkToggle.addEventListener('change', updateLayerVisibility);
     osmTracksToggle.addEventListener('change', updateLayerVisibility);
     osmServiceToggle.addEventListener('change', updateLayerVisibility);
@@ -1653,18 +1835,21 @@
     editorPoiToggle.addEventListener('change', updateLayerVisibility);
 
     placePoiBtn.addEventListener('click', () => {
-      setPlacingMode(!(draw && draw.getMode() === 'point'));
+      setDrawMode(draw && draw.getMode() === 'point' ? 'static' : 'point');
+    });
+    drawFootprintBtn.addEventListener('click', () => {
+      setDrawMode(draw && draw.getMode() === 'polygon' ? 'static' : 'polygon');
     });
     exportPoiBtn.addEventListener('click', exportEditorPois);
     clearPoiBtn.addEventListener('click', () => {
       if (!editorPois.length) return;
-      if (!window.confirm(`Delete all ${editorPois.length} drawn POIs? This cannot be undone.`)) return;
+      if (!window.confirm(`Delete all ${editorPois.length} drawn feature(s)? This cannot be undone.`)) return;
       editorPois = [];
       saveEditorPois();
       refreshEditorSource();
     });
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && draw && draw.getMode() === 'point') setPlacingMode(false);
+      if (event.key === 'Escape' && draw && draw.getMode() !== 'static') setDrawMode('static');
     });
   </script>
 </body>

@@ -122,7 +122,7 @@ def fetch_cemetery_parcels() -> list[dict]:
         "f": "geojson",
     }
     url = f"{PARCEL_SERVICE_URL}/query?" + urllib.parse.urlencode(params)
-    print(f"Fetching cemetery parcels from {PARCEL_SERVICE_URL}/35")
+    print(f"Fetching cemetery parcels from {PARCEL_SERVICE_URL}")
     with urllib.request.urlopen(url, timeout=60) as resp:
         payload = json.load(resp)
     feats = payload.get("features", [])
@@ -214,12 +214,15 @@ def build_features(parcels: list[dict]) -> list[dict]:
         if override.get("aka"):
             cemetery["aka"] = override["aka"]
 
-        # One Polygon (the parcel) and one Point (a centroid marker). Same
-        # properties on both so either is clickable and search collapses them.
-        out.append({"type": "Feature", "properties": dict(cemetery), "geometry": geom})
+        # One parcel feature (Polygon/MultiPolygon) and one centroid marker
+        # (Point). Same properties on both — apart from `geom_role`, which the
+        # viewer filters on — so either is clickable and search collapses them.
+        parcel_props = dict(cemetery, geom_role="parcel")
+        marker_props = dict(cemetery, geom_role="marker")
+        out.append({"type": "Feature", "properties": parcel_props, "geometry": geom})
         out.append({
             "type": "Feature",
-            "properties": dict(cemetery),
+            "properties": marker_props,
             "geometry": {"type": "Point", "coordinates": ring_centroid(ring)},
         })
     return out
@@ -248,7 +251,7 @@ def main() -> None:
             os.remove(tmp)
         raise
 
-    cemeteries = [f for f in features if f["geometry"]["type"] == "Polygon"]
+    cemeteries = [f for f in features if f["properties"]["geom_role"] == "parcel"]
     print(f"Wrote {len(cemeteries)} cemeteries "
           f"({len(features)} features) to {OUT_FILE}")
     for f in cemeteries:
