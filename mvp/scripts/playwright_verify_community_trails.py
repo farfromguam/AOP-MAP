@@ -106,27 +106,27 @@ def main() -> int:
         check("SFWDA paper map toggle on", ok)
 
         page.click("#editSfwda")
-        page.wait_for_timeout(700)
+        page.wait_for_timeout(800)
         handles = page.query_selector_all(".align-handle")
-        check("Edit mode renders 16 grid handles", len(handles) == 16)
+        check("Edit mode renders 49 grid handles (6x6)", len(handles) == 49)
 
         corner_handles = page.query_selector_all(".align-handle-corner")
         edge_handles = page.query_selector_all(".align-handle-edge")
         interior_handles = page.query_selector_all(".align-handle-interior")
         check("4 corner handles (red)", len(corner_handles) == 4)
-        check("8 edge handles (orange)", len(edge_handles) == 8)
-        check("4 interior handles (yellow)", len(interior_handles) == 4)
+        check("20 edge handles (orange)", len(edge_handles) == 20)
+        check("25 interior handles (yellow)", len(interior_handles) == 25)
 
         labels = [h.get_attribute("data-label") for h in corner_handles]
         check("Corner handles labeled NW/NE/SE/SW", set(labels) == {"NW", "NE", "SE", "SW"})
 
         # Toggle interior handles off -> only 4 corners
         page.click("#showInterior")
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(400)
         h2 = page.query_selector_all(".align-handle")
         check("Hiding interior leaves 4 corner handles only", len(h2) == 4)
         page.click("#showInterior")
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(400)
         handles = page.query_selector_all(".align-handle")
 
         # Buttons enabled

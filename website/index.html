@@ -46,7 +46,8 @@
     <div class="section-title">SFWDA paper map (2015)</div>
     <label><input type="checkbox" id="showSfwda" /> SFWDA paper trail map</label>
     <label><input type="range" id="sfwdaOpacity" min="0" max="100" value="70" style="flex:1" /> opacity</label>
-    <label><input type="checkbox" id="editSfwda" /> Edit alignment (3×3 grid)</label>
+    <label><input type="range" id="sfwdaMultiply" min="0" max="100" value="0" style="flex:1" /> multiply (white key-out)</label>
+    <label><input type="checkbox" id="editSfwda" /> Edit alignment (6×6 grid)</label>
     <label><input type="checkbox" id="showInterior" checked /> Show edge + interior handles</label>
     <div style="margin: 4px 0 0;">
       <button id="rotateCcw" disabled>↺ 90° CCW</button>
@@ -100,6 +101,7 @@
     const osmNamedToggle = document.getElementById('showOsmNamed');
     const sfwdaToggle = document.getElementById('showSfwda');
     const sfwdaOpacity = document.getElementById('sfwdaOpacity');
+    const sfwdaMultiply = document.getElementById('sfwdaMultiply');
     const editSfwdaToggle = document.getElementById('editSfwda');
     const showInteriorToggle = document.getElementById('showInterior');
     const exportAlignmentBtn = document.getElementById('exportAlignment');
@@ -159,9 +161,11 @@
       setLayerVisibility('osm-service', osmServiceToggle.checked);
       setLayerVisibility('osm-named-points', osmNamedToggle.checked);
       setLayerVisibility('osm-named-labels', osmNamedToggle.checked);
-      for (let r = 0; r < 3; r++) {
-        for (let c = 0; c < 3; c++) {
-          setLayerVisibility(`sfwda-tile-${r}-${c}`, sfwdaToggle.checked);
+      // SFWDA tiles use a dynamic grid size (GRID_N in the load handler). Iterate by id existence.
+      for (let r = 0; r < 12; r++) {
+        for (let c = 0; c < 12; c++) {
+          const id = `sfwda-tile-${r}-${c}`;
+          if (map.getLayer(id)) setLayerVisibility(id, sfwdaToggle.checked);
         }
       }
       setLayerVisibility('publish-trails', trailToggle.checked);
@@ -550,16 +554,18 @@
         ? alignmentData.orientation_cw_degrees
         : 0;
 
-      function defaultGridFromCorners(corners) {
-        // corners = [NW, NE, SE, SW]. Returns 4x4 grid of [lng, lat].
-        // grid[0][0]=NW, grid[0][3]=NE, grid[3][3]=SE, grid[3][0]=SW.
+      const GRID_N = 6; // patches per side; (GRID_N+1) x (GRID_N+1) control points
+
+      function defaultGridFromCorners(corners, n) {
+        // corners = [NW, NE, SE, SW]. Returns (n+1)x(n+1) grid of [lng, lat].
+        // grid[0][0]=NW, grid[0][n]=NE, grid[n][n]=SE, grid[n][0]=SW.
         const [NW, NE, SE, SW] = corners;
         const out = [];
-        for (let r = 0; r < 4; r++) {
-          const v = r / 3;
+        for (let r = 0; r <= n; r++) {
+          const v = r / n;
           const row = [];
-          for (let c = 0; c < 4; c++) {
-            const u = c / 3;
+          for (let c = 0; c <= n; c++) {
+            const u = c / n;
             const lng = (1-u)*(1-v)*NW[0] + u*(1-v)*NE[0] + u*v*SE[0] + (1-u)*v*SW[0];
             const lat = (1-u)*(1-v)*NW[1] + u*(1-v)*NE[1] + u*v*SE[1] + (1-u)*v*SW[1];
             row.push([lng, lat]);
@@ -568,9 +574,79 @@
         }
         return out;
       }
-      const defaultGrid = alignmentData?.grid_3x3 || defaultGridFromCorners(defaultCorners);
+
+      function upsampleGrid(srcGrid, dstN) {
+        // Preserves the warp encoded in srcGrid by bilinear-interpolating inside each source patch.
+        // dstN is the number of patches per side of the destination grid.
+        const srcN = srcGrid.length - 1;
+        const dst = [];
+        for (let r = 0; r <= dstN; r++) {
+          const v = r / dstN;
+          const row = [];
+          for (let c = 0; c <= dstN; c++) {
+            const u = c / dstN;
+            const pc = Math.min(srcN - 1, Math.floor(u * srcN));
+            const pr = Math.min(srcN - 1, Math.floor(v * srcN));
+            const lu = u * srcN - pc;
+            const lv = v * srcN - pr;
+            const p00 = srcGrid[pr][pc];
+            const p10 = srcGrid[pr][pc + 1];
+            const p11 = srcGrid[pr + 1][pc + 1];
+            const p01 = srcGrid[pr + 1][pc];
+            const lng = (1-lu)*(1-lv)*p00[0] + lu*(1-lv)*p10[0] + lu*lv*p11[0] + (1-lu)*lv*p01[0];
+            const lat = (1-lu)*(1-lv)*p00[1] + lu*(1-lv)*p10[1] + lu*lv*p11[1] + (1-lu)*lv*p01[1];
+            row.push([lng, lat]);
+          }
+          dst.push(row);
+        }
+        return dst;
+      }
+
+      function loadGrid(data, fallbackCorners, n) {
+        const exactKey = `grid_${n}x${n}`;
+        if (Array.isArray(data?.[exactKey]) && data[exactKey].length === n + 1) {
+          return data[exactKey];
+        }
+        // Find any grid_KxK and upsample (prefer the richest signal available).
+        const otherKeys = Object.keys(data || {})
+          .filter((k) => /^grid_(\d+)x\1$/.test(k))
+          .sort((a, b) => parseInt(b.match(/\d+/)[0]) - parseInt(a.match(/\d+/)[0]));
+        if (otherKeys.length) return upsampleGrid(data[otherKeys[0]], n);
+        return defaultGridFromCorners(fallbackCorners, n);
+      }
+
+      const defaultGrid = loadGrid(alignmentData, defaultCorners, GRID_N);
       let sfwdaGrid = defaultGrid.map((row) => row.map((p) => p.slice()));
       let sfwdaOrientationCw = ((defaultOrientation % 360) + 360) % 360;
+      // Multiply strength (0..1): fakes a multiply blend by keying paper-white to
+      // transparent. Distinct from opacity (a uniform fade) — multiply is tone-dependent,
+      // so white paper drops out while dark trail ink stays.
+      // Substrate default: satellite on -> 0 (keep paper intact over imagery; takes
+      // precedence even if lidar is also on). Lidar hillshade alone -> 100 (key white
+      // out so ink reads over relief). No substrate -> 0.
+      function defaultMultiplyForSubstrate() {
+        if (satelliteToggle.checked) return 0;
+        if (hillshadeToggle.checked) return 1;
+        return 0;
+      }
+      let sfwdaMultiplyStrength = defaultMultiplyForSubstrate();
+      let sfwdaMultiplyUserTouched = false;
+      sfwdaMultiply.value = String(Math.round(sfwdaMultiplyStrength * 100));
+
+      function applyMultiplyAlpha(canvas, strength) {
+        if (strength <= 0) return canvas;
+        const ctx = canvas.getContext('2d');
+        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const d = img.data;
+        for (let i = 0; i < d.length; i += 4) {
+          // keyed alpha: pure whites go fully transparent, colored ink stays opaque.
+          const keyed = (d[i + 3] * (255 - Math.min(d[i], d[i + 1], d[i + 2]))) / 255;
+          // blend raw alpha -> keyed alpha by strength.
+          d[i + 3] = d[i + 3] * (1 - strength) + keyed * strength;
+        }
+        ctx.putImageData(img, 0, 0);
+        return canvas;
+      }
 
       function loadImageEl(src) {
         return new Promise((resolve, reject) => {
@@ -609,17 +685,17 @@
         return canvas;
       }
 
-      function sliceCanvas9(canvas) {
+      function sliceCanvasN(canvas, n) {
         const W = canvas.width, H = canvas.height;
         const out = [];
-        for (let r = 0; r < 3; r++) {
+        for (let r = 0; r < n; r++) {
           const row = [];
           // integer pixel boundaries to avoid sub-pixel gaps; last row/col absorbs rounding remainder
-          const y0 = Math.floor(r * H / 3);
-          const y1 = (r === 2) ? H : Math.floor((r + 1) * H / 3);
-          for (let c = 0; c < 3; c++) {
-            const x0 = Math.floor(c * W / 3);
-            const x1 = (c === 2) ? W : Math.floor((c + 1) * W / 3);
+          const y0 = Math.floor(r * H / n);
+          const y1 = (r === n - 1) ? H : Math.floor((r + 1) * H / n);
+          for (let c = 0; c < n; c++) {
+            const x0 = Math.floor(c * W / n);
+            const x1 = (c === n - 1) ? W : Math.floor((c + 1) * W / n);
             const sub = document.createElement('canvas');
             sub.width = x1 - x0;
             sub.height = y1 - y0;
@@ -633,11 +709,12 @@
         return out;
       }
 
-      let tileURLs = [[null,null,null],[null,null,null],[null,null,null]];
+      let tileURLs = Array.from({ length: GRID_N }, () => Array(GRID_N).fill(null));
       function bakeTiles() {
         if (!sfwdaImageEl) return;
         const rotated = rotateToCanvas(sfwdaImageEl, sfwdaOrientationCw);
-        tileURLs = sliceCanvas9(rotated);
+        applyMultiplyAlpha(rotated, sfwdaMultiplyStrength);
+        tileURLs = sliceCanvasN(rotated, GRID_N);
       }
       bakeTiles();
 
@@ -652,8 +729,8 @@
         ];
       }
       const tileLayerIds = [];
-      for (let r = 0; r < 3; r++) {
-        for (let c = 0; c < 3; c++) {
+      for (let r = 0; r < GRID_N; r++) {
+        for (let c = 0; c < GRID_N; c++) {
           const sid = tileSourceId(r, c);
           if (tileURLs[r][c]) {
             map.addSource(sid, {
@@ -685,8 +762,8 @@
       }
 
       function refreshAlignmentSource() {
-        for (let r = 0; r < 3; r++) {
-          for (let c = 0; c < 3; c++) {
+        for (let r = 0; r < GRID_N; r++) {
+          for (let c = 0; c < GRID_N; c++) {
             const src = map.getSource(tileSourceId(r, c));
             if (src && src.setCoordinates) src.setCoordinates(tileCornerCoords(r, c));
           }
@@ -695,8 +772,8 @@
 
       function rebakeTiles() {
         bakeTiles();
-        for (let r = 0; r < 3; r++) {
-          for (let c = 0; c < 3; c++) {
+        for (let r = 0; r < GRID_N; r++) {
+          for (let c = 0; c < GRID_N; c++) {
             const src = map.getSource(tileSourceId(r, c));
             if (src && src.updateImage && tileURLs[r][c]) {
               src.updateImage({ url: tileURLs[r][c], coordinates: tileCornerCoords(r, c) });
@@ -711,23 +788,25 @@
       }
 
       function handleKind(r, c) {
-        if ((r === 0 || r === 3) && (c === 0 || c === 3)) return 'corner';
-        if (r === 0 || r === 3 || c === 0 || c === 3) return 'edge';
+        const onEdgeR = (r === 0 || r === GRID_N);
+        const onEdgeC = (c === 0 || c === GRID_N);
+        if (onEdgeR && onEdgeC) return 'corner';
+        if (onEdgeR || onEdgeC) return 'edge';
         return 'interior';
       }
       function cornerLabel(r, c) {
         if (r === 0 && c === 0) return 'NW';
-        if (r === 0 && c === 3) return 'NE';
-        if (r === 3 && c === 3) return 'SE';
-        if (r === 3 && c === 0) return 'SW';
+        if (r === 0 && c === GRID_N) return 'NE';
+        if (r === GRID_N && c === GRID_N) return 'SE';
+        if (r === GRID_N && c === 0) return 'SW';
         return '';
       }
 
       function showAlignmentHandles() {
         clearAlignmentHandles();
         const includeNonCorner = showInteriorToggle.checked;
-        for (let r = 0; r < 4; r++) {
-          for (let c = 0; c < 4; c++) {
+        for (let r = 0; r <= GRID_N; r++) {
+          for (let c = 0; c <= GRID_N; c++) {
             const kind = handleKind(r, c);
             if (kind !== 'corner' && !includeNonCorner) continue;
             const el = document.createElement('div');
@@ -786,11 +865,11 @@
           orientation_cw_degrees: sfwdaOrientationCw,
           corners: {
             nw: sfwdaGrid[0][0],
-            ne: sfwdaGrid[0][3],
-            se: sfwdaGrid[3][3],
-            sw: sfwdaGrid[3][0]
+            ne: sfwdaGrid[0][GRID_N],
+            se: sfwdaGrid[GRID_N][GRID_N],
+            sw: sfwdaGrid[GRID_N][0]
           },
-          grid_3x3: sfwdaGrid
+          [`grid_${GRID_N}x${GRID_N}`]: sfwdaGrid
         };
         const blob = new Blob([JSON.stringify(payload, null, 2) + '\n'], { type: 'application/json' });
         const a = document.createElement('a');
@@ -811,6 +890,24 @@
       sfwdaOpacity.addEventListener('input', () => {
         setSfwdaOpacity(Number(sfwdaOpacity.value) / 100);
       });
+
+      sfwdaMultiply.addEventListener('input', () => {
+        sfwdaMultiplyUserTouched = true;
+        sfwdaMultiplyStrength = Number(sfwdaMultiply.value) / 100;
+        rebakeTiles();
+      });
+
+      function applySubstrateMultiplyDefault() {
+        if (sfwdaMultiplyUserTouched) return;
+        const next = defaultMultiplyForSubstrate();
+        if (next === sfwdaMultiplyStrength) return;
+        sfwdaMultiplyStrength = next;
+        sfwdaMultiply.value = String(Math.round(next * 100));
+        rebakeTiles();
+      }
+
+      hillshadeToggle.addEventListener('change', applySubstrateMultiplyDefault);
+      satelliteToggle.addEventListener('change', applySubstrateMultiplyDefault);
 
       editSfwdaToggle.addEventListener('change', () => setEditAlignment(editSfwdaToggle.checked));
 

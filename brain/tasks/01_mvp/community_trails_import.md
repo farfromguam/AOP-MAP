@@ -26,7 +26,7 @@ The 2015 SFWDA raster is `high for shape, low for current trails`. It cannot be 
 - `website/data/osm_aop_9patch.geojson` -- copy of `brain/import/community_trails/osm_aop_9patch.geojson`. 71 features.
 - `website/data/osm_aop_named.geojson` -- copy of `brain/import/community_trails/osm_aop_9patch_named.geojson`. 5 named features.
 - `website/data/sfwda_aop_trail_map.webp` -- copy of `brain/import/community_trails/sfwda_aop_trail_map_2015-03-11.webp` (smaller; PNG kept in import). Inspection-only per source license.
-- `website/data/sfwda_raster_alignment.json` -- four corner coordinates (NW, NE, SE, SW) plus `orientation_cw_degrees` used by MapLibre `image` source. Default corners = OSM AOP polygon corners. Default rotation = `270` (image is rendered 90 degrees CCW from its native pixel orientation, because the viewer ships with `bearing: -90` so map east is screen-up). Refined by the in-viewer editor.
+- `website/data/sfwda_raster_alignment.json` -- alignment sidecar. Carries `corners` (NW/NE/SE/SW), `orientation_cw_degrees`, and a `grid_NxN` field (currently `grid_6x6`, a 7x7 array of [lng, lat] control points). The viewer slices the rotated source raster into N x N image sources and binds each tile to its four control points, so dragging interior control points produces a nonlinear warp. Default corners = OSM AOP polygon corners; default rotation = `270`. Loader prefers `grid_${GRID_N}x${GRID_N}` exactly, falls back to upsampling any other `grid_KxK`, then to bilinear from `corners`. Refined by the in-viewer editor.
 
 ### New viewer layers in `website/index.html`
 
