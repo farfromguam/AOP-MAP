@@ -94,11 +94,13 @@ def main() -> int:
         )
         page.wait_for_timeout(700)
 
-        print("\n== Preset bar ==")
-        check("three top-left preset buttons exist", page.locator(".preset-bar button").count() == 3)
-        bar_box = page.locator(".preset-bar").bounding_box()
+        print("\n== Left controls ==")
+        check("three top-left preset buttons exist", page.locator(".preset-bar button[data-preset]").count() == 3)
+        check("dedicated 3D button exists", page.locator("#terrainButton").count() == 1)
+        check("search input sits in the left control cluster", page.locator(".left-controls #searchInput").count() == 1)
+        bar_box = page.locator(".left-controls").bounding_box()
         check(
-            "preset bar is in the top-left",
+            "left controls are in the top-left",
             bool(bar_box and bar_box["x"] <= 16 and bar_box["y"] <= 16),
             str(bar_box),
         )
@@ -186,7 +188,7 @@ def main() -> int:
         page.wait_for_timeout(350)
         boxes = page.evaluate(
             """() => {
-              const bar = document.querySelector('.preset-bar').getBoundingClientRect();
+              const bar = document.querySelector('.left-controls').getBoundingClientRect();
               const panel = document.querySelector('.panel').getBoundingClientRect();
               return {
                 bar: { x: bar.x, y: bar.y, width: bar.width, height: bar.height },
@@ -195,7 +197,7 @@ def main() -> int:
             }"""
         )
         separated = boxes["bar"]["y"] + boxes["bar"]["height"] <= boxes["panel"]["y"]
-        check("preset bar does not overlap panel on narrow screens", separated, str(boxes))
+        check("left controls do not overlap panel on narrow screens", separated, str(boxes))
 
         print("\n== Console summary ==")
         check("no non-tile console errors", len(console_errors) == 0,

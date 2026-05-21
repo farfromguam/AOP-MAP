@@ -10,6 +10,7 @@ Run after `python3 -m http.server 8000` is serving the `website/` directory.
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -17,7 +18,7 @@ from playwright.sync_api import sync_playwright
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WEBSITE_URL = "http://localhost:8000/"
+WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8000/")
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 
 SCREENSHOTS = {
@@ -30,10 +31,10 @@ SCREENSHOTS = {
 }
 
 TOGGLE_IDS = {
-    "terrain": "showTerrain",
     "hillshade": "showHillshade",
     "satellite": "showSatellite",
 }
+TERRAIN_BUTTON_ID = "terrainButton"
 
 TERRARIUM_HOST = "elevation-tiles-prod"
 
@@ -53,6 +54,16 @@ def set_toggle(page, toggle_id: str, target: bool) -> None:
     current = element.is_checked()
     if current != target:
         element.click()
+    page.wait_for_timeout(150)
+
+
+def terrain_button_pressed(page) -> bool:
+    return page.locator(f"#{TERRAIN_BUTTON_ID}").get_attribute("aria-pressed") == "true"
+
+
+def set_terrain(page, target: bool) -> None:
+    if terrain_button_pressed(page) != target:
+        page.locator(f"#{TERRAIN_BUTTON_ID}").click()
     page.wait_for_timeout(150)
 
 
@@ -88,6 +99,10 @@ def has_sky(page) -> bool:
 
 def map_pitch(page) -> float:
     return page.evaluate("() => window.map ? window.map.getPitch() : -1")
+
+
+def save_screenshot(page, name: str) -> None:
+    page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS[name]), timeout=60_000)
 
 
 def main() -> int:
@@ -126,9 +141,10 @@ def main() -> int:
 
         print("\n== Initial state ==")
         check(
-            "terrain toggle exists and starts off",
-            page.locator(f"#{TOGGLE_IDS['terrain']}").count() == 1
-            and not page.locator(f"#{TOGGLE_IDS['terrain']}").is_checked(),
+            "3D button exists and starts off",
+            page.locator(f"#{TERRAIN_BUTTON_ID}").count() == 1
+            and not terrain_button_pressed(page)
+            and not page.locator("#showTerrain").is_checked(),
         )
         check(
             "aws-terrain-dem source registered",
@@ -156,12 +172,13 @@ def main() -> int:
             len(terrarium_requests) == 0,
             f"requests={len(terrarium_requests)}",
         )
-        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["initial"]))
+        save_screenshot(page, "initial")
 
         print("\n== Toggle terrain ON ==")
-        set_toggle(page, TOGGLE_IDS["terrain"], True)
+        set_terrain(page, True)
         page.wait_for_timeout(3000)
         check("terrain bound to aws-terrain-dem", has_terrain(page))
+        check("3D button state is active", terrain_button_pressed(page))
         check("sky atmosphere applied", has_sky(page))
         pitch = map_pitch(page)
         check(
@@ -174,11 +191,14 @@ def main() -> int:
             len(terrarium_requests) > 0,
             f"requests={len(terrarium_requests)}",
         )
-        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["terrain_on"]))
+        page.locator("#presetTopo").click()
+        page.wait_for_timeout(900)
+        check("terrain stays on after switching preset", has_terrain(page) and terrain_button_pressed(page))
+        save_screenshot(page, "terrain_on")
 
         print("\n== Hillshade alone (2D + shaded relief) ==")
         # Drop terrain back to 2D, leave satellite off, turn hillshade on.
-        set_toggle(page, TOGGLE_IDS["terrain"], False)
+        set_terrain(page, False)
         page.wait_for_timeout(1000)
         set_toggle(page, TOGGLE_IDS["hillshade"], True)
         page.wait_for_timeout(2000)
@@ -187,17 +207,17 @@ def main() -> int:
             layer_visibility(page, "lidar-hillshade") == "visible",
         )
         check("terrain unbound while hillshade only", not has_terrain(page))
-        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["hillshade_only"]))
+        save_screenshot(page, "hillshade_only")
 
         print("\n== Hillshade + terrain together ==")
-        set_toggle(page, TOGGLE_IDS["terrain"], True)
+        set_terrain(page, True)
         page.wait_for_timeout(2000)
         check("terrain bound", has_terrain(page))
         check(
             "lidar-hillshade still visible",
             layer_visibility(page, "lidar-hillshade") == "visible",
         )
-        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["hillshade_plus_terrain"]))
+        save_screenshot(page, "hillshade_plus_terrain")
         # Reset hillshade off for the rest of the run.
         set_toggle(page, TOGGLE_IDS["hillshade"], False)
         page.wait_for_timeout(300)
@@ -210,10 +230,10 @@ def main() -> int:
             layer_visibility(page, "tnmap-satellite") == "visible",
         )
         check("terrain still bound", has_terrain(page))
-        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["terrain_plus_satellite"]))
+        save_screenshot(page, "terrain_plus_satellite")
 
         print("\n== Toggle terrain OFF ==")
-        set_toggle(page, TOGGLE_IDS["terrain"], False)
+        set_terrain(page, False)
         page.wait_for_timeout(1000)
         check("terrain unbound", not has_terrain(page))
         check("sky atmosphere cleared", not has_sky(page))
@@ -225,7 +245,7 @@ def main() -> int:
             pitch <= 5,
             f"pitch={pitch:.1f}",
         )
-        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["terrain_off"]))
+        save_screenshot(page, "terrain_off")
 
         print("\n== Console summary ==")
         check(

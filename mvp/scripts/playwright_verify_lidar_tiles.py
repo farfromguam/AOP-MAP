@@ -5,7 +5,7 @@ Covers:
   - Lidar tile index (USGS 3DEP) GeoJSON overlay (24 tiles).
   - Lidar contours (5 ft, 1m DEM) GeoJSON overlay.
   - Lidar hillshade (raster-dem 'hillshade' layer over aws-terrain-dem).
-  - 3D terrain (map.setTerrain via showTerrain toggle).
+  - 3D terrain (map.setTerrain via the dedicated 3D button).
 
 Confirms layers render and that AWS Terrarium DEM tiles are actually fetched
 when hillshade or 3D terrain is enabled. Captures verification screenshots
@@ -16,6 +16,7 @@ Run after `python3 -m http.server 8000` is serving the `website/` directory.
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -23,7 +24,7 @@ from playwright.sync_api import sync_playwright
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WEBSITE_URL = "http://localhost:8000/"
+WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8000/")
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 
 SCREENSHOTS = {
@@ -38,13 +39,13 @@ SCREENSHOTS = {
 }
 
 TOGGLE_IDS = {
-    "terrain": "showTerrain",
     "hillshade": "showHillshade",
     "satellite": "showSatellite",
     "patch": "showNinePatch",
     "lidar": "showLidarTiles",
     "contours": "showContours",
 }
+TERRAIN_BUTTON_ID = "terrainButton"
 
 
 def check(label: str, ok: bool, detail: str = "") -> None:
@@ -62,6 +63,16 @@ def set_toggle(page, toggle_id: str, target: bool) -> None:
     current = element.is_checked()
     if current != target:
         element.click()
+    page.wait_for_timeout(200)
+
+
+def terrain_button_pressed(page) -> bool:
+    return page.locator(f"#{TERRAIN_BUTTON_ID}").get_attribute("aria-pressed") == "true"
+
+
+def set_terrain(page, target: bool) -> None:
+    if terrain_button_pressed(page) != target:
+        page.locator(f"#{TERRAIN_BUTTON_ID}").click()
     page.wait_for_timeout(200)
 
 
@@ -140,13 +151,18 @@ def main() -> int:
         page.wait_for_timeout(500)
 
         print("\n== Initial state ==")
-        for name in ("terrain", "hillshade", "lidar", "patch", "satellite", "contours"):
+        for name in ("hillshade", "lidar", "patch", "satellite", "contours"):
             tid = TOGGLE_IDS[name]
             check(
                 f"{name} toggle exists and starts off",
                 page.locator(f"#{tid}").count() == 1
                 and not page.locator(f"#{tid}").is_checked(),
             )
+        check(
+            "3D button exists and starts off",
+            page.locator(f"#{TERRAIN_BUTTON_ID}").count() == 1
+            and not terrain_button_pressed(page),
+        )
         check(
             "lidar-tiles-outline added with visibility=none",
             layer_visibility(page, "lidar-tiles-outline") == "none",
@@ -229,7 +245,7 @@ def main() -> int:
 
         print("\n== Toggle 3D terrain ON ==")
         before_t = len(terrarium_requests)
-        set_toggle(page, TOGGLE_IDS["terrain"], True)
+        set_terrain(page, True)
         page.wait_for_timeout(3500)
         check(
             "map.getTerrain() truthy",
@@ -243,7 +259,7 @@ def main() -> int:
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["terrain_3d"]))
 
         print("\n== Toggle everything OFF ==")
-        set_toggle(page, TOGGLE_IDS["terrain"], False)
+        set_terrain(page, False)
         set_toggle(page, TOGGLE_IDS["hillshade"], False)
         page.wait_for_timeout(800)
         check(

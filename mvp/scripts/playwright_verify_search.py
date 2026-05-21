@@ -12,6 +12,7 @@ Run after `python3 -m http.server 8000` is serving the `website/` directory.
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -19,12 +20,12 @@ from playwright.sync_api import sync_playwright
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WEBSITE_URL = "http://localhost:8000/"
+WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8000/")
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 
 SCREENSHOTS = {
     "results": "playwright_search_results.png",
-    "battle_creek": "playwright_search_battle_creek.png",
+    "sweden_creek": "playwright_search_sweden_creek.png",
     "ellis_rd": "playwright_search_ellis_rd.png",
 }
 
@@ -83,6 +84,13 @@ def main() -> int:
 
         print("\n== Initial state ==")
         check("search input exists", page.locator("#searchInput").count() == 1)
+        search_box = page.locator("#searchInput").bounding_box()
+        panel_box = page.locator(".panel").bounding_box()
+        check(
+            "search input is left of the layer panel",
+            bool(search_box and panel_box and search_box["x"] < panel_box["x"]),
+            f"search={search_box}, panel={panel_box}",
+        )
         registry = page.evaluate("() => (typeof searchIndex !== 'undefined') ? searchIndex.length : -1")
         check(
             "search index populated with named features",
@@ -98,24 +106,24 @@ def main() -> int:
             not page.locator("#showWater").is_checked(),
         )
 
-        print("\n== Type 'battle' ==")
+        print("\n== Type 'sweden' ==")
         page.locator("#searchInput").click()
-        page.locator("#searchInput").fill("battle")
+        page.locator("#searchInput").fill("sweden")
         page.wait_for_timeout(300)
         items = page.locator(".search-item")
         n_items = items.count()
         check("result dropdown shows matches", n_items > 0, f"{n_items} items")
         texts = [items.nth(i).inner_text() for i in range(n_items)]
         check(
-            "Battle Creek is a result",
-            any("Battle Creek" in t for t in texts),
+            "Sweden Creek is a result",
+            any("Sweden Creek" in t for t in texts),
             f"results={texts}",
         )
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["results"]))
 
-        print("\n== Select Battle Creek ==")
+        print("\n== Select Sweden Creek ==")
         before = map_view(page)
-        page.locator(".search-item", has_text="Battle Creek").first.click()
+        page.locator(".search-item", has_text="Sweden Creek").first.click()
         page.wait_for_timeout(450)
         check("water layer auto-enabled by search", page.locator("#showWater").is_checked())
         check(
@@ -131,7 +139,7 @@ def main() -> int:
             moved > 0.001 or zoomed > 0.3,
             f"center delta={moved:.5f}, zoom delta={zoomed:.2f}",
         )
-        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["battle_creek"]))
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["sweden_creek"]))
         page.wait_for_timeout(1600)
         check(
             "search-highlight hides after the flash",

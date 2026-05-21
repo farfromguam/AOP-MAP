@@ -8,10 +8,12 @@
   <style>
     body, html { margin: 0; padding: 0; height: 100%; font-family: Inter, system-ui, sans-serif; }
     #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-    .preset-bar { position: absolute; left: 12px; top: 12px; display: flex; gap: 6px; z-index: 3; padding: 6px; border-radius: 8px; background: rgba(247,241,226,0.94); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
-    .preset-bar button { min-width: 66px; font: 700 0.86rem Inter, system-ui, sans-serif; padding: 7px 10px; border-radius: 6px; border: 1px solid #b9aa88; background: #fff8e8; color: #4a3c2a; cursor: pointer; }
+    .left-controls { position: absolute; left: 12px; top: 12px; z-index: 3; width: 320px; max-width: calc(100vw - 368px); display: grid; gap: 8px; }
+    .preset-bar, .search-shell { display: flex; gap: 6px; padding: 6px; border-radius: 8px; background: rgba(247,241,226,0.94); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .preset-bar button { flex: 1; min-width: 0; font: 700 0.86rem Inter, system-ui, sans-serif; padding: 7px 10px; border-radius: 6px; border: 1px solid #b9aa88; background: #fff8e8; color: #4a3c2a; cursor: pointer; }
     .preset-bar button:hover { background: #efe2c6; }
     .preset-bar button.active { background: #8b5f38; border-color: #8b5f38; color: #fff8e8; }
+    .preset-bar button.terrain-button { max-width: 58px; }
     .panel { position: absolute; right: 12px; top: 12px; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); max-width: 320px; max-height: calc(100vh - 24px); overflow-y: auto; z-index: 2; }
     .panel h1 { margin: 0 0 8px; font-size: 1rem; }
     .panel label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.94rem; }
@@ -39,6 +41,8 @@
     .poi-popup button { font: inherit; padding: 3px 9px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
     .message { position: absolute; left: 12px; bottom: 12px; background: rgba(255,255,255,0.95); padding: 10px 12px; border-radius: 10px; font-size: 0.9rem; max-width: 60ch; }
     .search { position: relative; margin-bottom: 10px; }
+    .left-controls .search { margin-bottom: 0; width: 100%; }
+    .search-shell { display: block; }
     .search input { width: 100%; box-sizing: border-box; padding: 7px 9px; font: inherit; border: 1px solid #bbb; border-radius: 8px; }
     .search input:focus { outline: 2px solid #9a8a5a; border-color: #9a8a5a; }
     .search-results { position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 240px; overflow-y: auto; display: none; z-index: 5; }
@@ -53,26 +57,31 @@
     .align-handle-interior { width: 11px; height: 11px; background: #ffd400; }
     .align-handle::after { content: attr(data-label); position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none; }
     @media (max-width: 760px) {
-      .preset-bar { left: 8px; right: 8px; top: 8px; }
-      .preset-bar button { flex: 1; min-width: 0; }
-      .panel { left: 8px; right: 8px; top: 62px; max-width: none; max-height: calc(100vh - 70px); }
+      .left-controls { left: 8px; right: 8px; top: 8px; width: auto; max-width: none; }
+      .panel { left: 8px; right: 8px; top: 112px; max-width: none; max-height: calc(100vh - 120px); }
       .message { left: 8px; right: 8px; max-width: none; }
     }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <div class="preset-bar" role="group" aria-label="UI presets">
-    <button id="presetPark" type="button" data-preset="park" class="active">Park</button>
-    <button id="presetTopo" type="button" data-preset="topo">Topo</button>
-    <button id="presetTrace" type="button" data-preset="trace">Trace</button>
+  <div class="left-controls">
+    <div class="search-shell">
+      <div class="search">
+        <input type="text" id="searchInput" placeholder="Search the map…" autocomplete="off" />
+        <div class="search-results" id="searchResults"></div>
+      </div>
+    </div>
+    <div class="preset-bar" role="group" aria-label="Map presets and 3D view">
+      <button id="presetPark" type="button" data-preset="park" class="active">Park</button>
+      <button id="presetTopo" type="button" data-preset="topo">Topo</button>
+      <button id="presetTrace" type="button" data-preset="trace">Trace</button>
+      <button id="terrainButton" type="button" class="terrain-button" aria-pressed="false" title="Toggle 3D terrain view">3D</button>
+      <input type="checkbox" id="showTerrain" hidden />
+    </div>
   </div>
   <div class="panel">
     <h1>AOP MVP viewer</h1>
-    <div class="search">
-      <input type="text" id="searchInput" placeholder="🔍 Search the map…" autocomplete="off" />
-      <div class="search-results" id="searchResults"></div>
-    </div>
     <div class="section-title">Preset tuning</div>
     <div class="tune-select-row">
       <select id="layerTuneSelect" title="Layer"></select>
@@ -90,7 +99,6 @@
     <label><input type="checkbox" id="showLandcover" checked /> Land cover (NAIP)</label>
     <label><input type="checkbox" id="showLandcover9" checked /> Land cover — 9-patch (NAIP)</label>
     <label><input type="range" id="landcover9Opacity" min="0" max="100" value="55" style="flex:1" /> 9-patch land cover opacity</label>
-    <label><input type="checkbox" id="showTerrain" /> 3D terrain (AWS Terrarium / USGS 3DEP)</label>
     <label><input type="checkbox" id="showHillshade" /> Lidar hillshade (USGS 3DEP)</label>
     <label><input type="checkbox" id="showContours" /> Lidar contours (5 ft, 1m DEM)</label>
     <label><input type="checkbox" id="showSatellite" /> Satellite imagery (TNMap 2022)</label>
@@ -159,7 +167,7 @@
     </div>
     <small id="poiStatus">0 POIs, 0 footprints, 0 traces.</small>
     <small>Pick a type, then <b>Place POI</b> (one click), <b>Draw footprint</b> (click each corner), or <b>Trace line</b> (click vertices, press Enter to finish). Click a feature to rename or delete it. Edits save in this browser; Export writes <code>aop_editor_features.geojson</code>.</small>
-    <small>Terrain: AWS Terrain Tiles, derived from USGS 3DEP. Drag with right-click (or two-finger drag) to tilt and rotate.</small>
+    <small>Terrain: use the 3D button with any preset. AWS Terrain Tiles, derived from USGS 3DEP. Drag with right-click (or two-finger drag) to tilt and rotate.</small>
     <small>Satellite tiles served by TDOT/TNMap — inspection use only, not for redistribution.</small>
     <small>USDA NAIP traces are raw candidates. Keep them out of publish until source, confidence, and field/imagery review are attached.</small>
     <small>Contours: 5 ft interval from the USGS 3DEP 1 m lidar DEM; bold lines every 25 ft.</small>
@@ -234,6 +242,7 @@
     const searchInput = document.getElementById('searchInput');
     const searchResults = document.getElementById('searchResults');
     const presetButtons = [...document.querySelectorAll('.preset-bar button[data-preset]')];
+    const terrainButton = document.getElementById('terrainButton');
     const layerTuneSelect = document.getElementById('layerTuneSelect');
     const tuneVisible = document.getElementById('tuneVisible');
     const tuneOpacity = document.getElementById('tuneOpacity');
@@ -313,7 +322,15 @@
       'open_bare',        '#a78e5f',
       '#849068'];
 
+    function syncTerrainControl(enabled) {
+      terrainToggle.checked = Boolean(enabled);
+      terrainButton.classList.toggle('active', Boolean(enabled));
+      terrainButton.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+      terrainButton.title = enabled ? 'Return to 2D terrain view' : 'Toggle 3D terrain view';
+    }
+
     function setTerrainEnabled(enabled) {
+      syncTerrainControl(enabled);
       if (!map.getSource('aws-terrain-dem')) return;
       if (enabled) {
         map.setTerrain({ source: 'aws-terrain-dem', exaggeration: 1.4 });
@@ -353,7 +370,7 @@
     ];
 
     const PRESET_TOGGLE_IDS = [
-      'showLandcover', 'showLandcover9', 'showTerrain', 'showHillshade',
+      'showLandcover', 'showLandcover9', 'showHillshade',
       'showContours', 'showSatellite', 'showUsdaNaip', 'showNinePatch',
       'showLidarTiles', 'showRoads', 'showWater', 'showSprings',
       'showCemeteries', 'showBuildings', 'showOsmPark', 'showOsmTracks',
@@ -618,7 +635,6 @@
         toggles: {
           showLandcover: true,
           showLandcover9: true,
-          showTerrain: false,
           showHillshade: false,
           showContours: false,
           showSatellite: false,
@@ -674,7 +690,6 @@
         toggles: {
           showLandcover: true,
           showLandcover9: true,
-          showTerrain: false,
           showHillshade: true,
           showContours: true,
           showSatellite: false,
@@ -731,7 +746,6 @@
         toggles: {
           showLandcover: false,
           showLandcover9: false,
-          showTerrain: false,
           showHillshade: false,
           showContours: false,
           showSatellite: false,
@@ -2832,6 +2846,7 @@
     for (const button of presetButtons) {
       button.addEventListener('click', () => applyPreset(button.dataset.preset));
     }
+    terrainButton.addEventListener('click', () => setTerrainEnabled(!terrainToggle.checked));
 
     layerTuneSelect.addEventListener('change', syncLayerTunerFromSelection);
     tuneVisible.addEventListener('change', setSelectedLayerVisible);

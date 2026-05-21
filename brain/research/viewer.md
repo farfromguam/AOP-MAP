@@ -47,7 +47,7 @@ how the layer was built.
 | Asphalt roads (USGS National Map) | `aop_roads.geojson` | on | "Asphalt Roads Layer" below |
 | Land cover (NAIP) | `aop_landcover.geojson` | on | "Land-Cover Layer" below |
 | Land cover — 9-patch (NAIP) | `aop_landcover_9patch.geojson` | on | "Land-Cover Layer" below |
-| 3D terrain (AWS Terrarium / USGS 3DEP) | AWS Terrain Tiles | off | "Lidar Hillshade and 3D Terrain Layers" below |
+| 3D button | AWS Terrain Tiles | off | "Lidar Hillshade and 3D Terrain Layers" below |
 | Lidar hillshade (USGS 3DEP) | AWS Terrain Tiles | off | "Lidar Hillshade and 3D Terrain Layers" below |
 | Lidar contours (5 ft, 1m DEM) | `aop_contours.geojson` | off | `tasks/01_mvp/lidar_contour_pipeline.md`; "Lidar Contour Layer" below |
 | Satellite imagery (TNMap 2022) | TNMap XYZ tiles | off | "Satellite Imagery" below |
@@ -71,8 +71,8 @@ The viewer also has a feature search box and the POI/footprint/trace editor -- s
 
 ### UI presets and layer tuning
 
-Added 2026-05-21. The viewer has three top-left preset buttons:
-`Park`, `Topo`, and `Trace`.
+Added 2026-05-21. The viewer has a top-left control cluster with search, three
+preset buttons (`Park`, `Topo`, and `Trace`), and a dedicated `3D` button.
 
 - `Park` is the clean Muted Earth vector map: land cover, roads, publishable
   boundary/trails/trailheads.
@@ -81,6 +81,10 @@ Added 2026-05-21. The viewer has three top-left preset buttons:
 - `Trace` turns off land cover, turns on USDA NAIP imagery, SFWDA paper map,
   OSM tracks/service roads, buildings, and high-contrast reference styling for
   tracing/review.
+
+The `3D` button is independent of presets. Turning it on binds MapLibre terrain
+and pitches the camera; switching between `Park`, `Topo`, and `Trace` leaves the
+3D state alone.
 
 The right panel has a layer tuner for selected layers. It can change visibility,
 opacity, color, and width/size where those paint properties exist. `Snapshot
@@ -105,8 +109,9 @@ already-loaded GeoJSON -- so it works offline.
   searchable automatically once they land in `publish.geojson`.
 - OSM `highway=track` ways are wired for search, but all 47 in the 9-patch are
   unnamed in OSM so none surface yet.
-- The box sits at the top of the panel: substring match, dropdown of up to 8
-  results with a kind tag, arrow-key navigation, Enter selects, Escape clears.
+- The box sits in the top-left control cluster with the preset buttons:
+  substring match, dropdown of up to 8 results with a kind tag, arrow-key
+  navigation, Enter selects, Escape clears.
 - On select it `fitBounds`/`flyTo`s to the feature, auto-enables the feature's
   layer toggle if it was off, and flashes a yellow highlight pulse.
 - Verified: `mvp/scripts/playwright_verify_search.py` -- 12/12 PASS on
@@ -207,7 +212,9 @@ Recorded on 2026-05-20:
 - The viewer renders a lidar-derived hillshade and a 3D terrain view directly from AWS Terrain Tiles (Terrarium-encoded raster-DEM). In the AOP block the upstream elevation is USGS 3DEP, which is lidar-derived; that is the closest "see the lidar" the viewer can show without downloading the LAZ tiles.
 - Source: `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png`, `encoding: 'terrarium'`, `maxzoom: 15`.
 - 2D shading: MapLibre `hillshade` layer `lidar-hillshade`, toggle `Lidar hillshade (USGS 3DEP)`.
-- 3D terrain: `map.setTerrain` with exaggeration 1.4 plus `map.setSky` atmosphere, toggle `3D terrain (AWS Terrarium / USGS 3DEP)`. Drag with right-click / two-finger to tilt and rotate.
+- 3D terrain: `map.setTerrain` with exaggeration 1.4 plus `map.setSky`
+  atmosphere, controlled by the dedicated `3D` button. Drag with right-click /
+  two-finger to tilt and rotate.
 - Attribution shown in the viewer credits AWS Terrain Tiles (USGS 3DEP, SRTM, GMTED, ETOPO1).
 - Verified with `mvp/scripts/playwright_verify_lidar_tiles.py` on 2026-05-20: 21 of 21 checks PASS, 109 AWS Terrarium tile requests during the run, 0 console errors.
 - The hillshade and 3D terrain are global-DEM derivatives, not the locally-derived 1-meter DEM lidar product. The locally-derived contour layer below is the lidar-grade product; swapping the hillshade onto AOP-specific 1 m DEM tiles is tracked at `tasks/01_mvp/_readme.md` item #10.
