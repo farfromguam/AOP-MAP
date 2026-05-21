@@ -4,13 +4,14 @@ set -euo pipefail
 # Build the AOP vector land-cover layer from NAIP aerial imagery.
 #
 # Pipeline: download/cache a 4-band NAIP ortho clipped to the park ->
-# classify forest vs open (canopy-roughness field + Otsu + morphological
-# cleanup) -> polygonize forest -> light vertex simplify -> Chaikin smooth ->
-# clip to the AOP boundary -> WGS84 GeoJSON for the viewer.
+# classify into five land-cover classes (canopy-roughness field for forest vs
+# open, then NDVI vigour for the sub-classes) -> polygonize every class ->
+# light vertex simplify -> Chaikin smooth -> clip to the AOP boundary ->
+# WGS84 GeoJSON for the viewer.
 #
-# Only forest is emitted as polygons. Open ground is left as the viewer's
-# paper background; water/hydrography is carried by the separate USGS NHD
-# layer (website/data/aop_water.geojson).
+# The layer is a full coverage: forest_deciduous, forest_evergreen,
+# open_grass, open_meadow, open_bare tile the whole park. Water/hydrography is
+# still carried by the separate USGS NHD layer (website/data/aop_water.geojson).
 #
 # GDAL runs via Docker (host has no GDAL). macOS blocks Docker from reading the
 # repo under ~/Documents, so all GDAL work is staged in /private/tmp and the
@@ -74,17 +75,18 @@ echo "==> Classifying and vectorizing"
 docker run --rm -v "$WORK:/data" "$GDAL_IMG" sh -c "
 set -e
 
-# pixel classification + modal de-speckle -> single-band class raster
+# pixel classification -> single-band 5-class coverage raster
 python3 /data/classify_landcover.py /data/naip.tif /data/class.tif /data/preview.png
 
 # polygonize connected class regions (class 0 = nodata is skipped)
 rm -f /data/class.gpkg
 gdal_polygonize.py /data/class.tif -b 1 -f GPKG /data/class.gpkg lc DN
 
-# light vertex simplify (1.5 m, ~2.5 px) + keep only forest (DN 1);
-# stays in EPSG:26916 so the simplify tolerance is metric
+# light vertex simplify (1.5 m, ~2.5 px) + keep every land-cover class
+# (DN > 0; only nodata is dropped); stays in EPSG:26916 so the simplify
+# tolerance is metric
 rm -f /data/class_simpl.gpkg
-ogr2ogr -f GPKG -simplify 1.5 -where \"DN = 1\" \
+ogr2ogr -f GPKG -simplify 1.5 -where \"DN > 0\" \
   /data/class_simpl.gpkg /data/class.gpkg lc
 
 # reproject to WGS84 for the smoothing pass
@@ -92,14 +94,20 @@ rm -f /data/class_simpl.geojson
 ogr2ogr -f GeoJSON -t_srs EPSG:4326 \
   /data/class_simpl.geojson /data/class_simpl.gpkg
 
-# Chaikin smooth + drop slivers + rename DN -> class
+# Chaikin smooth + rename DN -> class
 python3 /data/smooth_landcover.py /data/class_simpl.geojson /data/class_smooth.geojson
+
+# repair any self-intersections Chaikin can pinch into thin polygons, so the
+# boundary clip's GEOS overlay gets only valid input
+rm -f /data/class_valid.geojson
+ogr2ogr -f GeoJSON -makevalid -nlt PROMOTE_TO_MULTI \
+  /data/class_valid.geojson /data/class_smooth.geojson
 
 # clip to the AOP boundary (hole at the Ellis cemetery is respected)
 rm -f /data/aop_landcover.geojson
 ogr2ogr -f GeoJSON -clipsrc /data/boundary.geojson \
   -lco COORDINATE_PRECISION=6 \
-  /data/aop_landcover.geojson /data/class_smooth.geojson
+  /data/aop_landcover.geojson /data/class_valid.geojson
 "
 
 # 4. Copy outputs back into the repo ----------------------------------------

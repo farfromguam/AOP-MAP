@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Playwright verification for the AOP viewer satellite + 9-patch layers.
+"""Playwright verification for the AOP viewer imagery + 9-patch layers.
 
 Loads the static viewer at http://localhost:8000/, exercises every toggle,
-confirms the TNMap satellite tile network is hit when satellite is enabled,
-and captures screenshots into brain/output/.
+confirms the TNMap and USDA NAIP tile networks are hit when their imagery
+layers are enabled, and captures screenshots into brain/output/.
 
 Run after `python3 -m http.server 8000` is serving the `website/` directory.
 """
@@ -11,18 +11,20 @@ Run after `python3 -m http.server 8000` is serving the `website/` directory.
 from __future__ import annotations
 
 import sys
+import os
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WEBSITE_URL = "http://localhost:8000/"
+WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8000/")
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 
 SCREENSHOTS = {
     "initial": "playwright_satellite_initial.png",
     "satellite_on": "playwright_satellite_on.png",
+    "usda_naip_on": "playwright_usda_naip_on.png",
     "satellite_plus_patch": "playwright_satellite_plus_patch.png",
     "patch_only": "playwright_patch_only.png",
     "all_off": "playwright_all_off.png",
@@ -30,6 +32,7 @@ SCREENSHOTS = {
 
 TOGGLE_IDS = {
     "satellite": "showSatellite",
+    "usda_naip": "showUsdaNaip",
     "patch": "showNinePatch",
     "trails": "showTrails",
     "boundaries": "showBoundaries",
@@ -69,6 +72,7 @@ def main() -> int:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     console_errors: list[str] = []
     tnmap_tile_requests: list[str] = []
+    usda_tile_requests: list[str] = []
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -85,6 +89,12 @@ def main() -> int:
             "request",
             lambda req: tnmap_tile_requests.append(req.url)
             if "tnmap.tn.gov" in req.url
+            else None,
+        )
+        page.on(
+            "request",
+            lambda req: usda_tile_requests.append(req.url)
+            if "gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME" in req.url
             else None,
         )
 
@@ -113,6 +123,11 @@ def main() -> int:
             and not page.locator(f"#{TOGGLE_IDS['satellite']}").is_checked(),
         )
         check(
+            "USDA NAIP toggle exists and starts off",
+            page.locator(f"#{TOGGLE_IDS['usda_naip']}").count() == 1
+            and not page.locator(f"#{TOGGLE_IDS['usda_naip']}").is_checked(),
+        )
+        check(
             "9-patch toggle exists and starts off",
             page.locator(f"#{TOGGLE_IDS['patch']}").count() == 1
             and not page.locator(f"#{TOGGLE_IDS['patch']}").is_checked(),
@@ -120,6 +135,10 @@ def main() -> int:
         check(
             "tnmap-satellite layer added with visibility=none",
             layer_visibility(page, "tnmap-satellite") == "none",
+        )
+        check(
+            "usda-naip-satellite layer added with visibility=none",
+            layer_visibility(page, "usda-naip-satellite") == "none",
         )
         check(
             "nine-patch-outline layer added with visibility=none",
@@ -148,6 +167,23 @@ def main() -> int:
         )
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["satellite_on"]))
 
+        print(f"\n== Toggle USDA NAIP ON ==")
+        set_toggle(page, TOGGLE_IDS["satellite"], False)
+        before_usda_count = len(usda_tile_requests)
+        set_toggle(page, TOGGLE_IDS["usda_naip"], True)
+        page.wait_for_timeout(4000)
+        new_usda = len(usda_tile_requests) - before_usda_count
+        check(
+            "USDA NAIP layer visible after toggle",
+            layer_visibility(page, "usda-naip-satellite") == "visible",
+        )
+        check(
+            "USDA NAIP tiles requested",
+            new_usda > 0,
+            f"{new_usda} requests to gis.apfo.usda.gov after enabling NAIP",
+        )
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["usda_naip_on"]))
+
         print(f"\n== Toggle 9-patch ON ==")
         set_toggle(page, TOGGLE_IDS["patch"], True)
         page.wait_for_timeout(500)
@@ -167,10 +203,15 @@ def main() -> int:
 
         print(f"\n== Toggle satellite OFF, keep patch ON ==")
         set_toggle(page, TOGGLE_IDS["satellite"], False)
+        set_toggle(page, TOGGLE_IDS["usda_naip"], False)
         page.wait_for_timeout(300)
         check(
             "satellite layer hidden",
             layer_visibility(page, "tnmap-satellite") == "none",
+        )
+        check(
+            "USDA NAIP layer hidden",
+            layer_visibility(page, "usda-naip-satellite") == "none",
         )
         check(
             "nine-patch still visible",
@@ -179,11 +220,12 @@ def main() -> int:
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["patch_only"]))
 
         print(f"\n== Toggle every layer OFF ==")
-        for key in ("patch", "trails", "boundaries", "trailheads"):
+        for key in ("patch", "usda_naip", "trails", "boundaries", "trailheads"):
             set_toggle(page, TOGGLE_IDS[key], False)
         page.wait_for_timeout(300)
         for layer in (
             "tnmap-satellite",
+            "usda-naip-satellite",
             "nine-patch-outline",
             "publish-trails",
             "publish-boundaries",
@@ -201,6 +243,7 @@ def main() -> int:
             f"{len(console_errors)} error(s): {console_errors[:3]}",
         )
         print(f"  Total TNMap tile requests during run: {len(tnmap_tile_requests)}")
+        print(f"  Total USDA NAIP tile requests during run: {len(usda_tile_requests)}")
 
         browser.close()
 

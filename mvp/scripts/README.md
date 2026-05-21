@@ -60,3 +60,14 @@ cd mvp/scripts
 ```
 
 The script uses `-append` so it will add rows if the table exists. Adjust as needed for safe imports.
+
+## 9-patch reference imports
+
+These scripts write static viewer reference layers under `website/data/`:
+
+```
+python3 mvp/scripts/import_fema_buildings.py
+```
+
+`import_fema_buildings.py` pulls FEMA USA Structures / ORNL building footprints
+for the AOP 9-patch and writes `website/data/aop_buildings.geojson`.

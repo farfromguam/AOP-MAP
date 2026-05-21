@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Playwright verification for the AOP viewer map editor (drawn POIs + footprints).
+"""Playwright verification for the AOP viewer map editor.
 
 Covers the Terra Draw editing feature added to website/index.html:
   - Vendored Terra Draw + MapLibre adapter UMD bundles load.
-  - editor-poi GeoJSON source with point (circle/label) and polygon
-    (fill/outline/label) render layers.
+  - editor-poi GeoJSON source with point, polygon, and LineString render layers.
   - "Place POI" enters point mode; clicking the map commits a POI.
   - "Draw footprint" enters polygon mode; a multi-click polygon commits a footprint.
+  - "Trace line" enters linestring mode; a multi-click line commits a raw trace
+    with source/review metadata.
   - Drawn features carry the selected category and persist to localStorage.
-  - Points and footprints survive a page reload (offline-safe persistence).
+  - Points, footprints, and traces survive a page reload (offline-safe persistence).
   - The "Drawn POIs" toggle hides/shows every editor layer.
   - Clicking a POI or a footprint opens a rename/delete popup; delete removes it.
 
@@ -18,13 +19,14 @@ Run after `python3 -m http.server 8000` is serving the `website/` directory.
 from __future__ import annotations
 
 import sys
+import os
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WEBSITE_URL = "http://localhost:8000/"
+WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8000/")
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 POI_STORAGE_KEY = "aop_editor_pois_v1"
 
@@ -33,6 +35,7 @@ SCREENSHOTS = {
     "placing": "playwright_poi_placing.png",
     "placed": "playwright_poi_placed.png",
     "footprint": "playwright_poi_footprint.png",
+    "trace": "playwright_poi_trace.png",
     "reloaded": "playwright_poi_reloaded.png",
     "popup": "playwright_poi_popup.png",
     "hidden": "playwright_poi_hidden.png",
@@ -41,15 +44,18 @@ SCREENSHOTS = {
 EDITOR_LAYERS = [
     "editor-poi-fill",
     "editor-poi-outline",
+    "editor-poi-lines",
     "editor-poi-circles",
     "editor-poi-labels",
     "editor-poi-fill-labels",
+    "editor-poi-line-labels",
 ]
 
 # Click points on the map canvas, kept clear of the top-right control panel.
 PLACE_POINTS = [(380, 360), (520, 320), (300, 470)]
 # A four-corner footprint; the run closes it by clicking the first corner again.
 FOOTPRINT_CORNERS = [(360, 520), (560, 520), (560, 640), (360, 640)]
+TRACE_POINTS = [(300, 285), (390, 260), (500, 290), (620, 345)]
 
 
 def check(label: str, ok: bool, detail: str = "") -> None:
@@ -125,9 +131,10 @@ def main() -> int:
             ),
         )
         check(
-            "point + polygon modes registered",
+            "point + polygon + linestring modes registered",
             page.evaluate("typeof terraDraw.TerraDrawPointMode === 'function'"
-                          " && typeof terraDraw.TerraDrawPolygonMode === 'function'"),
+                          " && typeof terraDraw.TerraDrawPolygonMode === 'function'"
+                          " && typeof terraDraw.TerraDrawLineStringMode === 'function'"),
         )
         check("Terra Draw starts in static mode", page.evaluate("draw.getMode()") == "static")
         for layer in EDITOR_LAYERS:
@@ -135,6 +142,7 @@ def main() -> int:
         check("no features placed initially", feature_count(page) == 0)
         check("Place POI button present", page.locator("#placePoiBtn").count() == 1)
         check("Draw footprint button present", page.locator("#drawFootprintBtn").count() == 1)
+        check("Trace line button present", page.locator("#traceLineBtn").count() == 1)
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["initial"]))
 
         print("\n== Place POIs (point mode) ==")
@@ -182,6 +190,27 @@ def main() -> int:
         check("total feature count is 4", feature_count(page) == 4, f"count={feature_count(page)}")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["footprint"]))
 
+        print("\n== Trace a line (linestring mode) ==")
+        page.locator("#traceLineBtn").click()
+        page.wait_for_timeout(200)
+        check("draw mode is 'linestring' after Trace line",
+              page.evaluate("draw.getMode()") == "linestring")
+        check(
+            "Trace line button shows active state",
+            "active" in (page.locator("#traceLineBtn").get_attribute("class") or ""),
+        )
+        page.select_option("#poiCategory", "Trail trace")
+        for x, y in TRACE_POINTS:
+            page.mouse.click(x, y)
+            page.wait_for_timeout(220)
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(500)
+        check("one trace line committed",
+              kind_count(page, "LineString") == 1,
+              f"lines={kind_count(page, 'LineString')}")
+        check("total feature count is 5", feature_count(page) == 5, f"count={feature_count(page)}")
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["trace"]))
+
         page.keyboard.press("Escape")
         page.wait_for_timeout(200)
         check("Escape exits drawing mode", page.evaluate("draw.getMode()") == "static")
@@ -193,6 +222,9 @@ def main() -> int:
         poly_cat = page.evaluate(
             "editorPois.find((f) => f.geometry.type === 'Polygon').properties.category"
         )
+        trace_props = page.evaluate(
+            "editorPois.find((f) => f.geometry.type === 'LineString').properties"
+        )
         check(
             "point categories recorded (2 Pavilion, 1 Building)",
             point_cats.count("Pavilion") == 2 and point_cats.count("Building") == 1,
@@ -200,12 +232,27 @@ def main() -> int:
         )
         check("footprint category recorded (Building)", poly_cat == "Building", str(poly_cat))
         check(
-            "all features carry layer=editor_poi",
-            page.evaluate("editorPois.every((f) => f.properties.layer === 'editor_poi')"),
+            "point/polygon features carry layer=editor_poi",
+            page.evaluate("editorPois.filter((f) => f.geometry.type !== 'LineString')"
+                          ".every((f) => f.properties.layer === 'editor_poi')"),
+        )
+        check("trace category recorded (Trail trace)", trace_props["category"] == "Trail trace")
+        check("trace carries layer=editor_trace", trace_props["layer"] == "editor_trace")
+        check(
+            "trace carries USDA NAIP source metadata",
+            trace_props["source_name"] == "USDA NAIP public image service"
+            and trace_props["source_year"] == "2023"
+            and trace_props["confidence"] == "draft",
+            str(trace_props),
         )
         check(
-            "status text reports points and footprints",
-            page.locator("#poiStatus").inner_text() == "3 POIs, 1 footprint.",
+            "trace is explicitly marked raw/review-needed",
+            "needs review" in trace_props["review_status"],
+            trace_props["review_status"],
+        )
+        check(
+            "status text reports points, footprints, and traces",
+            page.locator("#poiStatus").inner_text() == "3 POIs, 1 footprint, 1 trace.",
             page.locator("#poiStatus").inner_text(),
         )
 
@@ -213,14 +260,16 @@ def main() -> int:
         stored_count = page.evaluate(
             f"JSON.parse(localStorage.getItem('{POI_STORAGE_KEY}') || '[]').length"
         )
-        check("localStorage holds 4 features", stored_count == 4, f"count={stored_count}")
+        check("localStorage holds 5 features", stored_count == 5, f"count={stored_count}")
 
         print("\n== Survive a reload ==")
         page.reload(wait_until="load")
         wait_for_viewer(page)
-        check("4 features restored after reload", feature_count(page) == 4, f"count={feature_count(page)}")
-        check("3 points + 1 polygon restored",
-              kind_count(page, "Point") == 3 and kind_count(page, "Polygon") == 1)
+        check("5 features restored after reload", feature_count(page) == 5, f"count={feature_count(page)}")
+        check("3 points + 1 polygon + 1 trace restored",
+              kind_count(page, "Point") == 3
+              and kind_count(page, "Polygon") == 1
+              and kind_count(page, "LineString") == 1)
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["reloaded"]))
 
         print("\n== Popup: delete a POI, then a footprint ==")
@@ -253,7 +302,7 @@ def main() -> int:
         page.locator("#poiDeleteBtn").click()
         page.wait_for_timeout(300)
         check("footprint deleted via popup", kind_count(page, "Polygon") == 0)
-        check("two POIs remain", feature_count(page) == 2, f"count={feature_count(page)}")
+        check("two POIs and one trace remain", feature_count(page) == 3, f"count={feature_count(page)}")
 
         print("\n== Drawn POIs toggle ==")
         check(

@@ -172,6 +172,31 @@ The 9-patch intersects the Orme and South Pittsburg 7.5-minute quadrangles.
   Watershed Boundary Dataset service `https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer`
   if a drainage-basin layer is wanted; not pulled in this pass.
 
+## Structures / Building Footprints
+
+### FEMA USA Structures
+
+- Service item: `https://www.arcgis.com/home/item.html?id=e9fc147eaeae4dcaa4e9ad9802c7b9c6`
+- FeatureServer:
+  `https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/USA_Structures_View/FeatureServer/0`
+- AOP 9-patch count (2026-05-21): 202 polygon footprints.
+- Imported by `mvp/scripts/import_fema_buildings.py` to
+  `website/data/aop_buildings.geojson`.
+- Class breakdown: 166 Residential, 24 Agriculture, 7 Unclassified, 3 Assembly,
+  2 Government.
+- Four footprint centroids fall inside the current AOP candidate boundary:
+  1010, 1033, 665, and 880 Ellis Cove Road.
+- Treat as raw reference context. Verify against imagery or field knowledge
+  before promoting any footprint into a park facilities layer.
+
+### Sources Checked But Not Imported
+
+- OpenStreetMap `building=*` via Overpass: 11 building ways in the 9-patch.
+  Deferred because FEMA has broader coverage and OSM would add ODbL context.
+- TNMap FEMA BLE `Building Footprints` layer:
+  `https://tnmap.tn.gov/arcgis/rest/services/ENVIRONMENTAL/FEMA_BLE/MapServer/1`
+  returned 0 features in the 9-patch.
+
 ## Query References
 
 - TNM product API: `https://tnmaccess.nationalmap.gov/api/v1/products`

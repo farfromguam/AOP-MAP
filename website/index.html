@@ -17,7 +17,7 @@
     .panel button { font: inherit; padding: 4px 10px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
     .panel button:hover { background: #ececec; }
     .panel button[disabled] { opacity: 0.4; cursor: not-allowed; }
-    .panel button.active { background: #f16624; color: #fff; border-color: #f16624; }
+    .panel button.active { background: #9a5a32; color: #fff; border-color: #9a5a32; }
     .panel select { font: inherit; padding: 3px 5px; border-radius: 6px; border: 1px solid #bbb; }
     .editor-row { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; }
     .editor-row button { flex: 1; margin-right: 0; }
@@ -26,10 +26,10 @@
     .message { position: absolute; left: 12px; bottom: 12px; background: rgba(255,255,255,0.95); padding: 10px 12px; border-radius: 10px; font-size: 0.9rem; max-width: 60ch; }
     .search { position: relative; margin-bottom: 10px; }
     .search input { width: 100%; box-sizing: border-box; padding: 7px 9px; font: inherit; border: 1px solid #bbb; border-radius: 8px; }
-    .search input:focus { outline: 2px solid #4d8ac8; border-color: #4d8ac8; }
+    .search input:focus { outline: 2px solid #9a8a5a; border-color: #9a8a5a; }
     .search-results { position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 240px; overflow-y: auto; display: none; z-index: 5; }
     .search-item { display: flex; justify-content: space-between; gap: 10px; padding: 6px 9px; cursor: pointer; font-size: 0.9rem; }
-    .search-item:hover, .search-item.active { background: #eaf2fa; }
+    .search-item:hover, .search-item.active { background: #e8dcc3; }
     .search-kind { color: #888; font-size: 0.78rem; }
     .search-empty { padding: 6px 9px; color: #999; font-size: 0.88rem; }
     .align-handle { background: #ff3366; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #000, 0 2px 6px rgba(0,0,0,0.4); cursor: grab; }
@@ -48,16 +48,21 @@
       <input type="text" id="searchInput" placeholder="🔍 Search the map…" autocomplete="off" />
       <div class="search-results" id="searchResults"></div>
     </div>
+    <label><input type="checkbox" id="showLandcover" checked /> Land cover (NAIP)</label>
+    <label><input type="checkbox" id="showLandcover9" checked /> Land cover — 9-patch (NAIP)</label>
+    <label><input type="range" id="landcover9Opacity" min="0" max="100" value="55" style="flex:1" /> 9-patch land cover opacity</label>
     <label><input type="checkbox" id="showTerrain" /> 3D terrain (AWS Terrarium / USGS 3DEP)</label>
     <label><input type="checkbox" id="showHillshade" /> Lidar hillshade (USGS 3DEP)</label>
     <label><input type="checkbox" id="showContours" /> Lidar contours (5 ft, 1m DEM)</label>
     <label><input type="checkbox" id="showSatellite" /> Satellite imagery (TNMap 2022)</label>
+    <label><input type="checkbox" id="showUsdaNaip" /> USDA NAIP imagery (TN 2023)</label>
     <label><input type="checkbox" id="showNinePatch" /> 9-patch acquisition AOI</label>
     <label><input type="checkbox" id="showLidarTiles" /> Lidar tile index (USGS 3DEP)</label>
     <label><input type="checkbox" id="showRoads" checked /> Asphalt roads (USGS National Map)</label>
     <label><input type="checkbox" id="showWater" /> Streams &amp; waterbodies (USGS NHD)</label>
     <label><input type="checkbox" id="showSprings" /> Springs &amp; gages (USGS NHD)</label>
     <label><input type="checkbox" id="showCemeteries" /> Cemeteries (TN Comptroller parcels)</label>
+    <label><input type="checkbox" id="showBuildings" /> Building footprints (FEMA USA Structures)</label>
     <hr/>
     <div class="section-title">Community (OSM)</div>
     <label><input type="checkbox" id="showOsmPark" /> OSM park polygon</label>
@@ -95,6 +100,8 @@
         <option>Parking</option>
         <option>Staging area</option>
         <option>Gate</option>
+        <option>Trail trace</option>
+        <option>Road trace</option>
         <option>Landmark</option>
         <option>Hazard</option>
         <option>Other</option>
@@ -105,15 +112,20 @@
       <button id="drawFootprintBtn" type="button">Draw footprint</button>
     </div>
     <div class="editor-row">
+      <button id="traceLineBtn" type="button">Trace line</button>
+    </div>
+    <div class="editor-row">
       <button id="exportPoiBtn" type="button">Export GeoJSON</button>
       <button id="clearPoiBtn" type="button">Clear all</button>
     </div>
-    <small id="poiStatus">0 POIs, 0 footprints.</small>
-    <small>Pick a type, then <b>Place POI</b> (one click) or <b>Draw footprint</b> (click each corner, press Enter or click the first corner to close). Click a feature to rename or delete it. Edits save in this browser; Export writes <code>aop_editor_pois.geojson</code>.</small>
+    <small id="poiStatus">0 POIs, 0 footprints, 0 traces.</small>
+    <small>Pick a type, then <b>Place POI</b> (one click), <b>Draw footprint</b> (click each corner), or <b>Trace line</b> (click vertices, press Enter to finish). Click a feature to rename or delete it. Edits save in this browser; Export writes <code>aop_editor_features.geojson</code>.</small>
     <small>Terrain: AWS Terrain Tiles, derived from USGS 3DEP. Drag with right-click (or two-finger drag) to tilt and rotate.</small>
     <small>Satellite tiles served by TDOT/TNMap — inspection use only, not for redistribution.</small>
+    <small>USDA NAIP traces are raw candidates. Keep them out of publish until source, confidence, and field/imagery review are attached.</small>
     <small>Contours: 5 ft interval from the USGS 3DEP 1 m lidar DEM; bold lines every 25 ft.</small>
     <small>Cemeteries: TN Comptroller Marion County parcels. Ellis Cemetery is the inholding inside the AOP boundary — the gap in the park polygon.</small>
+    <small>Buildings: FEMA USA Structures footprints over the 9-patch. Raw reference context; verify against imagery before treating as park facilities.</small>
     <small>SFWDA raster is &copy; Adventure Off Road Park (via SFWDA) — internal/inspection only. Drag the 4 corner handles in Edit mode to pixel-align against OSM tracks, then Export to save <code>website/data/sfwda_raster_alignment.json</code>.</small>
   </div>
   <div class="message" id="message">Loading publish layer...</div>
@@ -131,7 +143,7 @@
           {
             id: 'background',
             type: 'background',
-            paint: { 'background-color': '#e8f0f6' }
+            paint: { 'background-color': '#efe7d5' }
           }
         ]
       },
@@ -142,15 +154,20 @@
 
     const message = document.getElementById('message');
     const terrainToggle = document.getElementById('showTerrain');
+    const landcoverToggle = document.getElementById('showLandcover');
+    const landcover9Toggle = document.getElementById('showLandcover9');
+    const landcover9Opacity = document.getElementById('landcover9Opacity');
     const hillshadeToggle = document.getElementById('showHillshade');
     const contoursToggle = document.getElementById('showContours');
     const satelliteToggle = document.getElementById('showSatellite');
+    const usdaNaipToggle = document.getElementById('showUsdaNaip');
     const ninePatchToggle = document.getElementById('showNinePatch');
     const lidarTilesToggle = document.getElementById('showLidarTiles');
     const roadsToggle = document.getElementById('showRoads');
     const waterToggle = document.getElementById('showWater');
     const springsToggle = document.getElementById('showSprings');
     const cemeteriesToggle = document.getElementById('showCemeteries');
+    const buildingsToggle = document.getElementById('showBuildings');
     const osmParkToggle = document.getElementById('showOsmPark');
     const osmTracksToggle = document.getElementById('showOsmTracks');
     const osmServiceToggle = document.getElementById('showOsmService');
@@ -171,6 +188,7 @@
     const poiCategory = document.getElementById('poiCategory');
     const placePoiBtn = document.getElementById('placePoiBtn');
     const drawFootprintBtn = document.getElementById('drawFootprintBtn');
+    const traceLineBtn = document.getElementById('traceLineBtn');
     const exportPoiBtn = document.getElementById('exportPoiBtn');
     const clearPoiBtn = document.getElementById('clearPoiBtn');
     const poiStatus = document.getElementById('poiStatus');
@@ -185,6 +203,14 @@
     function setLayerVisibility(layerId, visible) {
       if (map.getLayer(layerId)) {
         map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
+      }
+    }
+
+    // The 9-patch forest layer fades independently of the crisp park layer,
+    // so its opacity slider reads as the "non-park context" opacity control.
+    function setLandcover9Opacity(value) {
+      if (map.getLayer('landcover-9patch-forest')) {
+        map.setPaintProperty('landcover-9patch-forest', 'fill-opacity', value);
       }
     }
 
@@ -216,15 +242,19 @@
     // Each toggle drives one or more map layers. setLayerVisibility no-ops on
     // layers that do not exist yet, so this is safe to call before layers load.
     const LAYER_TOGGLES = [
+      [landcoverToggle, ['landcover-forest', 'landcover-forest-outline']],
+      [landcover9Toggle, ['landcover-9patch-forest', 'landcover-9patch-forest-outline']],
       [hillshadeToggle, ['lidar-hillshade']],
       [contoursToggle, ['contours-minor', 'contours-index', 'contours-labels']],
       [satelliteToggle, ['tnmap-satellite']],
+      [usdaNaipToggle, ['usda-naip-satellite']],
       [ninePatchToggle, ['nine-patch-fill', 'nine-patch-outline', 'nine-patch-labels']],
       [lidarTilesToggle, ['lidar-tiles-fill', 'lidar-tiles-outline', 'lidar-tiles-labels']],
       [roadsToggle, ['roads-local-casing', 'roads-local', 'roads-connecting-casing', 'roads-connecting', 'roads-controlled-casing', 'roads-controlled', 'roads-labels']],
       [waterToggle, ['water-area-fill', 'waterbody-fill', 'waterbody-outline', 'streams', 'stream-labels']],
       [springsToggle, ['water-points', 'water-point-labels']],
       [cemeteriesToggle, ['cemetery-fill', 'cemetery-outline', 'cemetery-marker', 'cemetery-label']],
+      [buildingsToggle, ['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline']],
       [osmParkToggle, ['osm-park-outline']],
       [osmTracksToggle, ['osm-tracks']],
       [osmServiceToggle, ['osm-service']],
@@ -232,7 +262,7 @@
       [trailToggle, ['publish-trails']],
       [boundaryToggle, ['publish-boundary-fill', 'publish-boundaries']],
       [trailheadToggle, ['publish-trailheads']],
-      [editorPoiToggle, ['editor-poi-fill', 'editor-poi-outline', 'editor-poi-circles', 'editor-poi-labels', 'editor-poi-fill-labels']]
+      [editorPoiToggle, ['editor-poi-fill', 'editor-poi-outline', 'editor-poi-lines', 'editor-poi-circles', 'editor-poi-labels', 'editor-poi-fill-labels', 'editor-poi-line-labels']]
     ];
 
     function updateLayerVisibility() {
@@ -296,21 +326,23 @@
     // and labels, and survive reloads via localStorage (works offline).
     const POI_STORAGE_KEY = 'aop_editor_pois_v1';
     const POI_COLORS = {
-      'Pavilion': '#e07b39',
-      'Building': '#b5651d',
-      'Restroom': '#3f8efc',
-      'Parking': '#6c757d',
-      'Staging area': '#9b30ff',
-      'Gate': '#d62828',
-      'Landmark': '#2a9d8f',
-      'Hazard': '#ffb703',
-      'Other': '#555555'
+      'Pavilion': '#c47a44',
+      'Building': '#a07442',
+      'Restroom': '#6f8aa6',
+      'Parking': '#8a8576',
+      'Staging area': '#9a7d96',
+      'Gate': '#b05a48',
+      'Trail trace': '#9a5a32',
+      'Road trace': '#6f6a5b',
+      'Landmark': '#5f9183',
+      'Hazard': '#cf9a4a',
+      'Other': '#6a6256'
     };
     // An unknown category falls through to the default color instead of being
     // dropped, so a typed/edited category never hides a POI.
     const poiColorExpression = ['match', ['get', 'category']];
     for (const [name, color] of Object.entries(POI_COLORS)) poiColorExpression.push(name, color);
-    poiColorExpression.push('#555555');
+    poiColorExpression.push('#6a6256');
 
     let editorPois = [];
     let draw = null;
@@ -341,9 +373,10 @@
       const source = map.getSource('editor-poi');
       if (source) source.setData(editorFeatureCollection());
       const points = editorPois.filter((f) => f.geometry.type === 'Point').length;
-      const footprints = editorPois.length - points;
+      const traces = editorPois.filter((f) => f.geometry.type === 'LineString').length;
+      const footprints = editorPois.length - points - traces;
       poiStatus.textContent =
-        `${points} POI${points === 1 ? '' : 's'}, ${footprints} footprint${footprints === 1 ? '' : 's'}.`;
+        `${points} POI${points === 1 ? '' : 's'}, ${footprints} footprint${footprints === 1 ? '' : 's'}, ${traces} trace${traces === 1 ? '' : 's'}.`;
     }
 
     function exportEditorPois() {
@@ -351,20 +384,23 @@
         { type: 'application/geo+json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'aop_editor_pois.geojson';
+      a.download = 'aop_editor_features.geojson';
       document.body.appendChild(a);
       a.click();
       setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
     }
 
-    // mode is 'point' (POI), 'polygon' (footprint), or 'static' (not drawing).
+    // mode is 'point' (POI), 'polygon' (footprint), 'linestring' (trace), or
+    // 'static' (not drawing).
     function setDrawMode(mode) {
       if (!draw) return;
       draw.setMode(mode);
       placePoiBtn.classList.toggle('active', mode === 'point');
       drawFootprintBtn.classList.toggle('active', mode === 'polygon');
+      traceLineBtn.classList.toggle('active', mode === 'linestring');
       placePoiBtn.textContent = mode === 'point' ? 'Placing… (Esc)' : 'Place POI';
       drawFootprintBtn.textContent = mode === 'polygon' ? 'Drawing… (Esc)' : 'Draw footprint';
+      traceLineBtn.textContent = mode === 'linestring' ? 'Tracing… (Esc)' : 'Trace line';
     }
 
     function openPoiPopup(feature, lngLat) {
@@ -464,6 +500,79 @@
         console.error(e.error || e);
       });
 
+      // Land-cover palette. The classifier emits five classes; each gets a
+      // Muted Earth fill and a slightly darker same-family outline. The
+      // outline doubles as a hairline-gap bridge: the polygons are a coverage,
+      // but independent vertex-simplify can leave sub-pixel slivers between
+      // adjacent classes, and the thin outline closes them.
+      const LANDCOVER_FILL = ['match', ['get', 'class'],
+        'forest_deciduous', '#b9c2a3',
+        'forest_evergreen', '#7f8c66',
+        'open_grass',       '#cfd4b0',
+        'open_meadow',      '#dccfa3',
+        'open_bare',        '#cdba8f',
+        '#b9c2a3'];
+      const LANDCOVER_OUTLINE = ['match', ['get', 'class'],
+        'forest_deciduous', '#94a07c',
+        'forest_evergreen', '#647154',
+        'open_grass',       '#b4ba93',
+        'open_meadow',      '#c5b783',
+        'open_bare',        '#b6a073',
+        '#94a07c'];
+
+      // --- Land cover, 9-patch (NAIP 2021, classified) --------------------
+      // Wide-area land-cover context across the full 3x3 acquisition AOI,
+      // built from a coarser ~1.5 m ortho. Added first so it sits at the very
+      // bottom of the stack; the crisp park-clipped layer draws on top of it.
+      // Its opacity slider fades this mass without touching the park layer,
+      // so it reads as adjustable context for the non-park areas.
+      const landcover9Data = await fetchJson('./data/aop_landcover_9patch.geojson', '9-patch land cover missing');
+      if (landcover9Data) {
+        map.addSource('aop-landcover-9patch', {
+          type: 'geojson',
+          data: landcover9Data,
+          attribution: 'Land cover: classified from USDA NAIP 2021 imagery'
+        });
+        map.addLayer({
+          id: 'landcover-9patch-forest',
+          type: 'fill',
+          source: 'aop-landcover-9patch',
+          paint: { 'fill-color': LANDCOVER_FILL, 'fill-opacity': Number(landcover9Opacity.value) / 100 }
+        });
+        map.addLayer({
+          id: 'landcover-9patch-forest-outline',
+          type: 'line',
+          source: 'aop-landcover-9patch',
+          paint: { 'line-color': LANDCOVER_OUTLINE, 'line-width': 0.6, 'line-opacity': 0.35 }
+        });
+      }
+
+      // --- Land cover (NAIP 2021, classified) -----------------------------
+      // The crisp park ground cover: a five-class vector land-cover coverage
+      // classified from 0.6 m NAIP imagery, clipped to the AOP boundary.
+      // Drawn just above the wide-area 9-patch layer, so every other layer
+      // still draws on top of both.
+      const landcoverData = await fetchJson('./data/aop_landcover.geojson', 'Land cover missing');
+      if (landcoverData) {
+        map.addSource('aop-landcover', {
+          type: 'geojson',
+          data: landcoverData,
+          attribution: 'Land cover: classified from USDA NAIP 2021 imagery'
+        });
+        map.addLayer({
+          id: 'landcover-forest',
+          type: 'fill',
+          source: 'aop-landcover',
+          paint: { 'fill-color': LANDCOVER_FILL, 'fill-opacity': 0.9 }
+        });
+        map.addLayer({
+          id: 'landcover-forest-outline',
+          type: 'line',
+          source: 'aop-landcover',
+          paint: { 'line-color': LANDCOVER_OUTLINE, 'line-width': 0.8, 'line-opacity': 0.55 }
+        });
+      }
+
       map.addSource('aws-terrain-dem', {
         type: 'raster-dem',
         tiles: [
@@ -483,9 +592,9 @@
         layout: { visibility: 'none' },
         paint: {
           'hillshade-exaggeration': 0.6,
-          'hillshade-shadow-color': '#23231f',
-          'hillshade-highlight-color': '#ffffff',
-          'hillshade-accent-color': '#5a4a3a'
+          'hillshade-shadow-color': '#3a2f22',
+          'hillshade-highlight-color': '#fbf4e2',
+          'hillshade-accent-color': '#6b5640'
         }
       });
 
@@ -509,6 +618,26 @@
         paint: { 'raster-opacity': 1 }
       });
 
+      map.addSource('usda-naip-imagery', {
+        type: 'raster',
+        tiles: [
+          'https://gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME/ImageServer/tile/{z}/{y}/{x}'
+        ],
+        tileSize: 256,
+        minzoom: 11,
+        maxzoom: 17,
+        bounds: [-85.782935283, 35.067164188, -85.717154097, 35.117928496],
+        attribution: 'Imagery: USDA NAIP public image service (Tennessee 2023, 60 cm source)'
+      });
+
+      map.addLayer({
+        id: 'usda-naip-satellite',
+        type: 'raster',
+        source: 'usda-naip-imagery',
+        layout: { visibility: 'none' },
+        paint: { 'raster-opacity': 1 }
+      });
+
       const ninePatchData = await fetchJson('./data/aop_9_patch.geojson', '9-patch overlay missing');
 
       if (ninePatchData) {
@@ -518,14 +647,14 @@
           type: 'fill',
           source: 'nine-patch',
           layout: { visibility: 'none' },
-          paint: { 'fill-color': '#ffcc33', 'fill-opacity': 0.06 }
+          paint: { 'fill-color': '#c7a85e', 'fill-opacity': 0.10 }
         });
         map.addLayer({
           id: 'nine-patch-outline',
           type: 'line',
           source: 'nine-patch',
           layout: { visibility: 'none' },
-          paint: { 'line-color': '#cc8800', 'line-width': 1.5, 'line-dasharray': [2, 2] }
+          paint: { 'line-color': '#a88246', 'line-width': 1.5, 'line-dasharray': [2, 2] }
         });
         map.addLayer({
           id: 'nine-patch-labels',
@@ -538,8 +667,8 @@
             'text-anchor': 'center'
           },
           paint: {
-            'text-color': '#664400',
-            'text-halo-color': '#ffffff',
+            'text-color': '#6a5836',
+            'text-halo-color': '#f7f1e2',
             'text-halo-width': 1.5
           }
         });
@@ -554,14 +683,14 @@
           type: 'fill',
           source: 'lidar-tiles',
           layout: { visibility: 'none' },
-          paint: { 'fill-color': '#9b30ff', 'fill-opacity': 0.16 }
+          paint: { 'fill-color': '#9a7d96', 'fill-opacity': 0.16 }
         });
         map.addLayer({
           id: 'lidar-tiles-outline',
           type: 'line',
           source: 'lidar-tiles',
           layout: { visibility: 'none' },
-          paint: { 'line-color': '#9b30ff', 'line-width': 2.5, 'line-dasharray': [4, 2] }
+          paint: { 'line-color': '#8a6f86', 'line-width': 2.5, 'line-dasharray': [4, 2] }
         });
         map.addLayer({
           id: 'lidar-tiles-labels',
@@ -574,8 +703,8 @@
             'text-anchor': 'center'
           },
           paint: {
-            'text-color': '#6a1bff',
-            'text-halo-color': '#ffffff',
+            'text-color': '#7a6076',
+            'text-halo-color': '#f7f1e2',
             'text-halo-width': 2
           }
         });
@@ -596,7 +725,7 @@
           filter: ['==', ['get', 'idx'], 0],
           layout: { visibility: 'none', 'line-join': 'round' },
           paint: {
-            'line-color': '#9c6b3c',
+            'line-color': '#c7b48f',
             'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 16, 1.4],
             'line-opacity': 0.75
           }
@@ -608,7 +737,7 @@
           filter: ['==', ['get', 'idx'], 1],
           layout: { visibility: 'none', 'line-join': 'round' },
           paint: {
-            'line-color': '#6e4420',
+            'line-color': '#a8906a',
             'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 16, 2.8],
             'line-opacity': 0.95
           }
@@ -626,8 +755,8 @@
             'symbol-spacing': 320
           },
           paint: {
-            'text-color': '#5a3618',
-            'text-halo-color': '#ffffff',
+            'text-color': '#7d6a4a',
+            'text-halo-color': '#f7f1e2',
             'text-halo-width': 1.8
           }
         });
@@ -648,7 +777,7 @@
           source: 'usgs-water',
           filter: ['==', ['get', 'water_kind'], 'water_area'],
           layout: { visibility: 'none' },
-          paint: { 'fill-color': '#7fc0e6', 'fill-opacity': 0.55 }
+          paint: { 'fill-color': '#a8c5c9', 'fill-opacity': 0.55 }
         });
         map.addLayer({
           id: 'waterbody-fill',
@@ -656,7 +785,7 @@
           source: 'usgs-water',
           filter: ['==', ['get', 'water_kind'], 'waterbody'],
           layout: { visibility: 'none' },
-          paint: { 'fill-color': '#4d9fd6', 'fill-opacity': 0.5 }
+          paint: { 'fill-color': '#9fbfc4', 'fill-opacity': 0.5 }
         });
         map.addLayer({
           id: 'waterbody-outline',
@@ -664,7 +793,7 @@
           source: 'usgs-water',
           filter: ['==', ['get', 'water_kind'], 'waterbody'],
           layout: { visibility: 'none' },
-          paint: { 'line-color': '#1f6aa8', 'line-width': 1.2 }
+          paint: { 'line-color': '#6f9098', 'line-width': 1.2 }
         });
         // One line layer for every flowline; named streams render heavier than
         // artificial paths / connectors via a per-class width case.
@@ -675,7 +804,7 @@
           filter: ['==', ['get', 'water_kind'], 'flowline'],
           layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
           paint: {
-            'line-color': '#2b7fc4',
+            'line-color': '#7fa3ac',
             'line-opacity': 0.9,
             'line-width': [
               'interpolate', ['linear'], ['zoom'],
@@ -698,8 +827,8 @@
             'text-letter-spacing': 0.04
           },
           paint: {
-            'text-color': '#13507f',
-            'text-halo-color': '#ffffff',
+            'text-color': '#4a6c73',
+            'text-halo-color': '#f7f1e2',
             'text-halo-width': 1.8
           }
         });
@@ -712,10 +841,10 @@
           paint: {
             'circle-radius': 5,
             'circle-color': ['match', ['get', 'water_class'],
-              'spring', '#1f9ed0',
-              'gage', '#e07b00',
-              '#2b7fc4'],
-            'circle-stroke-color': '#ffffff',
+              'spring', '#6f9aa6',
+              'gage', '#bb8a4a',
+              '#7fa3ac'],
+            'circle-stroke-color': '#f7f1e2',
             'circle-stroke-width': 1.5
           }
         });
@@ -731,7 +860,7 @@
             'text-offset': [0, 1.1],
             'text-anchor': 'top'
           },
-          paint: { 'text-color': '#13507f', 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 }
+          paint: { 'text-color': '#4a6c73', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.5 }
         });
 
         bindPopup('streams', (props) => escapeHtml(props.name || 'Stream / flowline'), (props) => [
@@ -777,7 +906,7 @@
           source: 'usgs-roads',
           filter: ['==', ['get', 'road_class'], 'local'],
           layout: lineLayout,
-          paint: { 'line-color': '#ffffff', 'line-width': lineWidth(0.8, 2.2, 6), 'line-opacity': 0.9 }
+          paint: { 'line-color': '#f3ecda', 'line-width': lineWidth(0.8, 2.2, 6), 'line-opacity': 0.9 }
         });
         map.addLayer({
           id: 'roads-local',
@@ -785,7 +914,7 @@
           source: 'usgs-roads',
           filter: ['==', ['get', 'road_class'], 'local'],
           layout: lineLayout,
-          paint: { 'line-color': '#888888', 'line-width': lineWidth(0.4, 1.2, 3.2) }
+          paint: { 'line-color': '#b0a68c', 'line-width': lineWidth(0.4, 1.2, 3.2) }
         });
         map.addLayer({
           id: 'roads-connecting-casing',
@@ -793,7 +922,7 @@
           source: 'usgs-roads',
           filter: ['==', ['get', 'road_class'], 'local_connecting'],
           layout: lineLayout,
-          paint: { 'line-color': '#ffffff', 'line-width': lineWidth(1.2, 3, 8), 'line-opacity': 0.95 }
+          paint: { 'line-color': '#f3ecda', 'line-width': lineWidth(1.2, 3, 8), 'line-opacity': 0.95 }
         });
         map.addLayer({
           id: 'roads-connecting',
@@ -801,7 +930,7 @@
           source: 'usgs-roads',
           filter: ['==', ['get', 'road_class'], 'local_connecting'],
           layout: lineLayout,
-          paint: { 'line-color': '#f0c14b', 'line-width': lineWidth(0.7, 1.8, 4.5) }
+          paint: { 'line-color': '#cdb079', 'line-width': lineWidth(0.7, 1.8, 4.5) }
         });
         map.addLayer({
           id: 'roads-controlled-casing',
@@ -809,7 +938,7 @@
           source: 'usgs-roads',
           filter: ['==', ['get', 'road_class'], 'controlled_access'],
           layout: lineLayout,
-          paint: { 'line-color': '#a83a1c', 'line-width': lineWidth(2, 5, 11) }
+          paint: { 'line-color': '#9a7a52', 'line-width': lineWidth(2, 5, 11) }
         });
         map.addLayer({
           id: 'roads-controlled',
@@ -817,7 +946,7 @@
           source: 'usgs-roads',
           filter: ['==', ['get', 'road_class'], 'controlled_access'],
           layout: lineLayout,
-          paint: { 'line-color': '#ffcf4d', 'line-width': lineWidth(1.2, 3, 7) }
+          paint: { 'line-color': '#d8b173', 'line-width': lineWidth(1.2, 3, 7) }
         });
         map.addLayer({
           id: 'roads-labels',
@@ -832,8 +961,8 @@
             'text-letter-spacing': 0.04
           },
           paint: {
-            'text-color': '#1a1a1a',
-            'text-halo-color': '#ffffff',
+            'text-color': '#4a3c2a',
+            'text-halo-color': '#f7f1e2',
             'text-halo-width': 1.8
           }
         });
@@ -871,7 +1000,7 @@
           source: 'cemeteries',
           filter: ['==', ['get', 'geom_role'], 'parcel'],
           layout: { visibility: 'none' },
-          paint: { 'fill-color': '#8a7fa6', 'fill-opacity': 0.4 }
+          paint: { 'fill-color': '#a99aa0', 'fill-opacity': 0.4 }
         });
         map.addLayer({
           id: 'cemetery-outline',
@@ -880,7 +1009,7 @@
           filter: ['==', ['get', 'geom_role'], 'parcel'],
           layout: { visibility: 'none' },
           paint: {
-            'line-color': '#4a3f63',
+            'line-color': '#7d6e74',
             'line-width': ['interpolate', ['linear'], ['zoom'], 12, 1, 17, 3]
           }
         });
@@ -892,9 +1021,9 @@
           layout: { visibility: 'none' },
           paint: {
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 3.5, 14, 6, 17, 8],
-            'circle-color': '#6f5b8e',
+            'circle-color': '#8a7a82',
             // The AOP inholding gets an amber ring so the "hole" reads at a glance.
-            'circle-stroke-color': ['case', ['get', 'aop_inholding'], '#f5b820', '#ffffff'],
+            'circle-stroke-color': ['case', ['get', 'aop_inholding'], '#c7a14e', '#f7f1e2'],
             'circle-stroke-width': ['case', ['get', 'aop_inholding'], 3, 1.6]
           }
         });
@@ -911,8 +1040,8 @@
             'text-anchor': 'top'
           },
           paint: {
-            'text-color': '#3a3050',
-            'text-halo-color': '#ffffff',
+            'text-color': '#5a4e54',
+            'text-halo-color': '#f7f1e2',
             'text-halo-width': 1.8
           }
         });
@@ -952,6 +1081,75 @@
         }
       }
 
+      // --- FEMA USA Structures building footprints -------------------------
+      // Polygon building footprints across the 9-patch. This is raw reference
+      // context, not a park-facilities claim; four footprint centroids currently
+      // fall inside the candidate AOP boundary and should be checked in imagery.
+      const buildingsData = await fetchJson('./data/aop_buildings.geojson', 'Building footprints missing');
+      if (buildingsData) {
+        map.addSource('fema-buildings', {
+          type: 'geojson',
+          data: buildingsData,
+          attribution: 'Buildings: FEMA USA Structures / ORNL'
+        });
+
+        map.addLayer({
+          id: 'building-footprint-fill',
+          type: 'fill',
+          source: 'fema-buildings',
+          layout: { visibility: 'none' },
+          paint: {
+            'fill-color': ['match', ['get', 'occupancy_class'],
+              'Residential', '#c1a386',
+              'Agriculture', '#b7a36f',
+              'Assembly', '#b78f6f',
+              'Government', '#9da4a6',
+              'Unclassified', '#aaa397',
+              '#ad987f'],
+            'fill-opacity': ['case', ['==', ['get', 'inside_aop_boundary'], true], 0.56, 0.34]
+          }
+        });
+        map.addLayer({
+          id: 'building-footprint-outline',
+          type: 'line',
+          source: 'fema-buildings',
+          layout: { visibility: 'none' },
+          paint: {
+            'line-color': ['case', ['==', ['get', 'inside_aop_boundary'], true], '#8e5f37', '#776f61'],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.5, 16, 1.8],
+            'line-opacity': 0.9
+          }
+        });
+        map.addLayer({
+          id: 'building-footprint-aop-outline',
+          type: 'line',
+          source: 'fema-buildings',
+          filter: ['==', ['get', 'inside_aop_boundary'], true],
+          layout: { visibility: 'none' },
+          paint: {
+            'line-color': '#7c4a2a',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.1, 16, 3.1],
+            'line-opacity': 0.95
+          }
+        });
+
+        bindPopup(['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline'],
+          (props) => escapeHtml(props.building_label || 'Building footprint'),
+          (props) => [
+            ['Occupancy', props.occupancy_class || 'unknown'],
+            ['Primary use', props.primary_occupancy || ''],
+            ['Address', props.address || ''],
+            ['Area', props.area_sqft != null ? `${Number(props.area_sqft).toLocaleString()} sq ft` : ''],
+            ['Height', props.height_m != null ? `${props.height_m} m` : ''],
+            ['Within AOP', isTrue(props.inside_aop_boundary) ? 'Centroid inside candidate boundary' : ''],
+            ['Image date', props.image_date || ''],
+            ['Method', props.validation_method || ''],
+            ['Source', props.footprint_source || '']
+          ]);
+
+        indexFeatures(buildingsData, 'building', buildingsToggle);
+      }
+
       // --- Community OSM 9-patch vectors ---------------------------------
       const osmData = await fetchJson('./data/osm_aop_9patch.geojson', 'OSM 9-patch missing');
       if (osmData) {
@@ -962,7 +1160,7 @@
           source: 'osm-9patch',
           filter: ['==', ['get', 'leisure'], 'park'],
           layout: { visibility: 'none' },
-          paint: { 'line-color': '#1f8a3a', 'line-width': 2, 'line-dasharray': [3, 2] }
+          paint: { 'line-color': '#8a9a6a', 'line-width': 2, 'line-dasharray': [3, 2] }
         });
         map.addLayer({
           id: 'osm-service',
@@ -970,7 +1168,7 @@
           source: 'osm-9patch',
           filter: ['==', ['get', 'highway'], 'service'],
           layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': '#888', 'line-width': 1.5, 'line-opacity': 0.85 }
+          paint: { 'line-color': '#a89a7e', 'line-width': 1.5, 'line-opacity': 0.85 }
         });
         map.addLayer({
           id: 'osm-tracks',
@@ -978,7 +1176,7 @@
           source: 'osm-9patch',
           filter: ['==', ['get', 'highway'], 'track'],
           layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': '#b8410d', 'line-width': 2, 'line-opacity': 0.95 }
+          paint: { 'line-color': '#9a5a32', 'line-width': 2, 'line-opacity': 0.95 }
         });
 
         indexFeatures(osmData,
@@ -997,7 +1195,7 @@
           source: 'osm-named',
           filter: ['==', ['geometry-type'], 'Point'],
           layout: { visibility: 'none' },
-          paint: { 'circle-radius': 5, 'circle-color': '#ffd400', 'circle-stroke-color': '#3a2c00', 'circle-stroke-width': 1.5 }
+          paint: { 'circle-radius': 5, 'circle-color': '#c7a85e', 'circle-stroke-color': '#6a5836', 'circle-stroke-width': 1.5 }
         });
         map.addLayer({
           id: 'osm-named-labels',
@@ -1010,7 +1208,7 @@
             'text-offset': [0, 1.1],
             'text-anchor': 'top'
           },
-          paint: { 'text-color': '#1c1c1c', 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 }
+          paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.5 }
         });
 
         indexFeatures(osmNamedData, (props) => props.place || props.natural || 'landmark', osmNamedToggle);
@@ -1104,7 +1302,7 @@
       // precedence even if lidar is also on). Lidar hillshade alone -> 100 (key white
       // out so ink reads over relief). No substrate -> 0.
       function defaultMultiplyForSubstrate() {
-        if (satelliteToggle.checked) return 0;
+        if (satelliteToggle.checked || usdaNaipToggle.checked) return 0;
         if (hillshadeToggle.checked) return 1;
         return 0;
       }
@@ -1387,6 +1585,7 @@
 
       hillshadeToggle.addEventListener('change', applySubstrateMultiplyDefault);
       satelliteToggle.addEventListener('change', applySubstrateMultiplyDefault);
+      usdaNaipToggle.addEventListener('change', applySubstrateMultiplyDefault);
 
       editSfwdaToggle.addEventListener('change', () => setEditAlignment(editSfwdaToggle.checked));
 
@@ -1413,7 +1612,7 @@
         type: 'fill',
         source: 'publish-data',
         filter: ['==', ['get', 'layer'], 'park_boundaries'],
-        paint: { 'fill-color': '#4d8ac8', 'fill-opacity': 0.16 }
+        paint: { 'fill-color': '#d8c8a2', 'fill-opacity': 0.10 }
       });
 
       map.addLayer({
@@ -1421,7 +1620,7 @@
         type: 'line',
         source: 'publish-data',
         filter: ['==', ['get', 'layer'], 'park_boundaries'],
-        paint: { 'line-color': '#0055aa', 'line-width': 3 }
+        paint: { 'line-color': '#6e5a3c', 'line-width': 2.5 }
       });
 
       map.addLayer({
@@ -1429,7 +1628,7 @@
         type: 'line',
         source: 'publish-data',
         filter: ['==', ['get', 'layer'], 'trail_centerlines'],
-        paint: { 'line-color': '#f16624', 'line-width': 4 }
+        paint: { 'line-color': '#9a5a32', 'line-width': 3.5 }
       });
 
       map.addLayer({
@@ -1437,7 +1636,7 @@
         type: 'circle',
         source: 'publish-data',
         filter: ['==', ['get', 'layer'], 'trailheads'],
-        paint: { 'circle-radius': 6, 'circle-color': '#009688', 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 }
+        paint: { 'circle-radius': 6, 'circle-color': '#6f8a5c', 'circle-stroke-color': '#f7f1e2', 'circle-stroke-width': 2 }
       });
 
       updateLayerVisibility();
@@ -1518,6 +1717,18 @@
         paint: { 'line-color': poiColorExpression, 'line-width': 2.5 }
       });
       map.addLayer({
+        id: 'editor-poi-lines',
+        type: 'line',
+        source: 'editor-poi',
+        filter: ['==', ['geometry-type'], 'LineString'],
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': poiColorExpression,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 2.5, 16, 5],
+          'line-opacity': 0.95
+        }
+      });
+      map.addLayer({
         id: 'editor-poi-circles',
         type: 'circle',
         source: 'editor-poi',
@@ -1525,7 +1736,7 @@
         paint: {
           'circle-radius': 7,
           'circle-color': poiColorExpression,
-          'circle-stroke-color': '#ffffff',
+          'circle-stroke-color': '#f7f1e2',
           'circle-stroke-width': 2
         }
       });
@@ -1540,7 +1751,7 @@
           'text-offset': [0, 1.2],
           'text-anchor': 'top'
         },
-        paint: { 'text-color': '#1c1c1c', 'text-halo-color': '#ffffff', 'text-halo-width': 1.6 }
+        paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 }
       });
       map.addLayer({
         id: 'editor-poi-fill-labels',
@@ -1551,13 +1762,30 @@
           'text-field': ['coalesce', ['get', 'name'], ['get', 'category']],
           'text-size': 12
         },
-        paint: { 'text-color': '#1c1c1c', 'text-halo-color': '#ffffff', 'text-halo-width': 1.6 }
+        paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 }
+      });
+      map.addLayer({
+        id: 'editor-poi-line-labels',
+        type: 'symbol',
+        source: 'editor-poi',
+        filter: ['==', ['geometry-type'], 'LineString'],
+        layout: {
+          'symbol-placement': 'line',
+          'text-field': ['coalesce', ['get', 'name'], ['get', 'category']],
+          'text-size': 12,
+          'text-keep-upright': true
+        },
+        paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 }
       });
       refreshEditorSource();
 
       draw = new terraDraw.TerraDraw({
         adapter: new terraDrawMaplibreGlAdapter.TerraDrawMapLibreGLAdapter({ map }),
-        modes: [new terraDraw.TerraDrawPointMode(), new terraDraw.TerraDrawPolygonMode()]
+        modes: [
+          new terraDraw.TerraDrawPointMode(),
+          new terraDraw.TerraDrawPolygonMode(),
+          new terraDraw.TerraDrawLineStringMode()
+        ]
       });
       draw.start();
       draw.setMode('static');
@@ -1568,18 +1796,30 @@
         const feature = draw.getSnapshot().find((f) => f.id === id);
         if (!feature) return;
         const kind = feature.geometry.type;
-        if (kind !== 'Point' && kind !== 'Polygon') return;
+        if (kind !== 'Point' && kind !== 'Polygon' && kind !== 'LineString') return;
         const category = poiCategory.value;
+        const isTrace = kind === 'LineString';
+        const properties = {
+          id: `poi_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          layer: isTrace ? 'editor_trace' : 'editor_poi',
+          category: category,
+          name: category,
+          created: new Date().toISOString()
+        };
+        if (isTrace) {
+          Object.assign(properties, {
+            source_name: 'USDA NAIP public image service',
+            source_url: 'https://gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME/ImageServer',
+            source_year: '2023',
+            source_resolution: '60 cm source imagery; cached service draws through level 17',
+            confidence: 'draft',
+            review_status: 'raw imagery trace; needs review before core/publish'
+          });
+        }
         editorPois.push({
           type: 'Feature',
           geometry: JSON.parse(JSON.stringify(feature.geometry)),
-          properties: {
-            id: `poi_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-            layer: 'editor_poi',
-            category: category,
-            name: category,
-            created: new Date().toISOString()
-          }
+          properties
         });
         setTimeout(() => draw.removeFeatures([id]), 0);
         saveEditorPois();
@@ -1603,6 +1843,7 @@
       }
       bindEditorClick('editor-poi-circles');
       bindEditorClick('editor-poi-fill');
+      bindEditorClick('editor-poi-lines');
 
       // --- Search index + highlight layers ------------------------------
       indexFeatures(publishData,
@@ -1622,7 +1863,7 @@
         type: 'line',
         source: 'search-highlight',
         layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': '#ffe600', 'line-width': 8, 'line-opacity': 0.85, 'line-blur': 1.5 }
+        paint: { 'line-color': '#e8a83a', 'line-width': 8, 'line-opacity': 0.85, 'line-blur': 1.5 }
       });
       map.addLayer({
         id: 'search-highlight-point',
@@ -1632,9 +1873,9 @@
         layout: { visibility: 'none' },
         paint: {
           'circle-radius': 16,
-          'circle-color': '#ffe600',
+          'circle-color': '#e8a83a',
           'circle-opacity': 0,
-          'circle-stroke-color': '#ffe600',
+          'circle-stroke-color': '#e8a83a',
           'circle-stroke-width': 4,
           'circle-stroke-opacity': 0.85
         }
@@ -1815,15 +2056,22 @@
     });
 
     terrainToggle.addEventListener('change', () => setTerrainEnabled(terrainToggle.checked));
+    landcoverToggle.addEventListener('change', updateLayerVisibility);
+    landcover9Toggle.addEventListener('change', updateLayerVisibility);
+    landcover9Opacity.addEventListener('input', () => {
+      setLandcover9Opacity(Number(landcover9Opacity.value) / 100);
+    });
     hillshadeToggle.addEventListener('change', updateLayerVisibility);
     contoursToggle.addEventListener('change', updateLayerVisibility);
     satelliteToggle.addEventListener('change', updateLayerVisibility);
+    usdaNaipToggle.addEventListener('change', updateLayerVisibility);
     ninePatchToggle.addEventListener('change', updateLayerVisibility);
     lidarTilesToggle.addEventListener('change', updateLayerVisibility);
     roadsToggle.addEventListener('change', updateLayerVisibility);
     waterToggle.addEventListener('change', updateLayerVisibility);
     springsToggle.addEventListener('change', updateLayerVisibility);
     cemeteriesToggle.addEventListener('change', updateLayerVisibility);
+    buildingsToggle.addEventListener('change', updateLayerVisibility);
     osmParkToggle.addEventListener('change', updateLayerVisibility);
     osmTracksToggle.addEventListener('change', updateLayerVisibility);
     osmServiceToggle.addEventListener('change', updateLayerVisibility);
@@ -1839,6 +2087,9 @@
     });
     drawFootprintBtn.addEventListener('click', () => {
       setDrawMode(draw && draw.getMode() === 'polygon' ? 'static' : 'polygon');
+    });
+    traceLineBtn.addEventListener('click', () => {
+      setDrawMode(draw && draw.getMode() === 'linestring' ? 'static' : 'linestring');
     });
     exportPoiBtn.addEventListener('click', exportEditorPois);
     clearPoiBtn.addEventListener('click', () => {

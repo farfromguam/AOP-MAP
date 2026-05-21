@@ -3,7 +3,7 @@
 TL;DR:
 - `website/index.html` is the static MapLibre viewer -- one file, vendored
   libraries, no build step, runs offline.
-- It shows three publishable layers from `publish.geojson` plus ~15 toggleable
+- It shows three publishable layers from `publish.geojson` plus ~18 toggleable
   reference layers, has a feature search box, and an in-map POI/footprint editor.
 - This is the viewer's home doc: the layer catalog. Per-layer build detail that
   has its own task card is linked, not duplicated.
@@ -45,6 +45,8 @@ how the layer was built.
 | Publishable trailheads | `publish.geojson` | on | build card |
 | Drawn POIs | `localStorage` + editor export | on | `tasks/01_mvp/poi_editor.md` |
 | Asphalt roads (USGS National Map) | `aop_roads.geojson` | on | "Asphalt Roads Layer" below |
+| Land cover (NAIP) | `aop_landcover.geojson` | on | "Land-Cover Layer" below |
+| Land cover — 9-patch (NAIP) | `aop_landcover_9patch.geojson` | on | "Land-Cover Layer" below |
 | 3D terrain (AWS Terrarium / USGS 3DEP) | AWS Terrain Tiles | off | "Lidar Hillshade and 3D Terrain Layers" below |
 | Lidar hillshade (USGS 3DEP) | AWS Terrain Tiles | off | "Lidar Hillshade and 3D Terrain Layers" below |
 | Lidar contours (5 ft, 1m DEM) | `aop_contours.geojson` | off | `tasks/01_mvp/lidar_contour_pipeline.md`; "Lidar Contour Layer" below |
@@ -54,6 +56,7 @@ how the layer was built.
 | Streams & waterbodies (USGS NHD) | `aop_water.geojson` | off | "Hydrography / Water Layer" below |
 | Springs & gages (USGS NHD) | `aop_water.geojson` | off | "Hydrography / Water Layer" below |
 | Cemeteries (TN Comptroller parcels) | `aop_cemeteries.geojson` | off | `tasks/01_mvp/cemeteries_layer.md`; "Cemeteries Layer" below |
+| Building footprints (FEMA USA Structures) | `aop_buildings.geojson` | off | `tasks/01_mvp/buildings_layer.md`; "Building Footprints Layer" below |
 | OSM park polygon | `osm_aop_9patch.geojson` | off | `tasks/01_mvp/community_trails_import.md` |
 | OSM tracks (highway=track) | `osm_aop_9patch.geojson` | off | `tasks/01_mvp/community_trails_import.md` |
 | OSM service roads | `osm_aop_9patch.geojson` | off | `tasks/01_mvp/community_trails_import.md` |
@@ -240,11 +243,125 @@ Recorded on 2026-05-21:
 - Verified with `mvp/scripts/playwright_verify_cemeteries.py` on 2026-05-21: 25 of 25 checks PASS, 0 console errors.
 - All cemetery features are raw-zone context. Before any promotion to publish layers, attach a `source_register.sources` row per `northstar/source_register.md`. The Ellis burial roster comes from a USGenWeb transcription with non-commercial terms -- keep it inspection-only until use is settled.
 
+### Building Footprints Layer
+
+Recorded on 2026-05-21:
+
+- Source selected: FEMA USA Structures / ORNL,
+  `https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/USA_Structures_View/FeatureServer/0`.
+  The ArcGIS item is `Building Footprints (FEMA USA Structures)`,
+  `https://www.arcgis.com/home/item.html?id=e9fc147eaeae4dcaa4e9ad9802c7b9c6`.
+- Source review: FEMA returned 202 polygon footprints in the 9-patch and was
+  selected. OSM `building=*` returned 11 ways and was not imported to avoid a
+  duplicate ODbL layer. TNMap FEMA BLE building footprints returned 0 features
+  in the AOI.
+- Importer: `mvp/scripts/import_fema_buildings.py`. It first queries object ids
+  over the 9-patch bbox, then fetches those ids in GeoJSON chunks because direct
+  bbox feature queries rejected the parameters. It tags each footprint by whether
+  its representative point falls inside the current AOP boundary.
+- Output: `website/data/aop_buildings.geojson` -- 202 footprints: 166
+  Residential, 24 Agriculture, 7 Unclassified, 3 Assembly, 2 Government. Four
+  footprint centroids fall inside the candidate AOP boundary: 1010, 1033, 665,
+  and 880 Ellis Cove Road.
+- Viewer: toggle `Building footprints (FEMA USA Structures)`, default off.
+  Layers `building-footprint-fill`, `building-footprint-outline`, and
+  `building-footprint-aop-outline`; the inside-AOP outlines draw heavier.
+  Clicking a footprint opens occupancy, address, area, image date, validation
+  method, and source. Addressed footprints are searchable.
+- Verified with `mvp/scripts/playwright_verify_buildings.py` on 2026-05-21:
+  all checks PASS, 0 console errors.
+- Raw-zone context only. A footprint must be checked against imagery or field
+  knowledge and linked to a source-register row before becoming a publishable
+  park facility.
+
+### Land-Cover Layer
+
+Recorded on 2026-05-21:
+
+- `website/data/aop_landcover.geojson` is the viewer's base ground cover -- a
+  five-class vector land-cover *coverage* classified from NAIP aerial imagery.
+  Every valid pixel is one of: `forest_deciduous`, `forest_evergreen`,
+  `open_grass`, `open_meadow`, `open_bare`. 631 polygons, clipped to the AOP
+  boundary, ~920 KB.
+- Source imagery: USGS NAIP 2021, 4-band (R/G/B/NIR), 0.6 m, acquired
+  2021-11-07, from the `USGSNAIPImagery` ImageServer. Downloaded via the
+  two-step ArcGIS export (`f=json` -> `href` -> TIFF, since a 12-megapixel
+  mosaic will not stream inline). Cached gitignored at
+  `mvp/cache/imagery/naip_2021_aop.tif` (~51 MB).
+- Why NAIP 2021: the only no-auth 4-band source. 2023 NAIP (leaf-on, ideal) is
+  behind an EarthExplorer login; the TNM products API no longer serves NAIP;
+  TNMap 2022 ortho is RGB-only. The NIR band is what makes the classification
+  possible. NAIP 2021 is partial leaf-off (early November).
+- Build pipeline: `mvp/scripts/build_landcover.sh`, with `classify_landcover.py`
+  (NAIP -> 5-class raster) and `smooth_landcover.py` (Chaikin smooth, all
+  classes kept). A `ogr2ogr -makevalid` pass repairs the rare self-intersection
+  Chaikin pinches into a thin polygon. GDAL via Docker per
+  `spinup/mvp_runbook.md`.
+- Classification, stage 1 -- forest vs open: forest is a neighbourhood-scale
+  canopy-roughness field (local NIR std-dev, low-pass smoothed, Otsu, then
+  morphological closing/opening). Texture, not NDVI, because canopy roughness
+  survives leaf-off. Forest cover 57.6% raw -> 78.2% cleaned.
+- Classification, stage 2 -- sub-classes by NDVI vigour, smoothed *within* each
+  zone so the forest/open edge does not bleed:
+  - Forest split: evergreen is the high-NDVI tail (top 20%). Conifers keep
+    their needles in November and stay green where bare hardwood canopy does
+    not. The leaf-off conifer signal is weak and scattered, so NDVI is
+    low-passed over a stand-scale window and the result is morphologically
+    consolidated into coherent stands rather than confetti. ~20% evergreen.
+  - Open split: two Otsu cuts rank open ground by greenness into bare (low),
+    meadow (mid), grass (high). This is a *relative* greenness ranking within
+    this one leaf-off image, not absolute crop identification.
+- Water is deliberately not classified -- leaf-off NIR confuses water with
+  shadow, and the USGS NHD layer already carries hydrography.
+- Viewer: layers `landcover-forest` (fill) + `landcover-forest-outline`,
+  toggle `Land cover (NAIP)`, default ON. The fill colour is a MapLibre
+  `match` on `class`; each class also gets a thin same-family outline that
+  bridges the sub-pixel slivers independent vertex-simplify can leave between
+  adjacent classes. Raw-zone context -- attach a `source_register.sources` row
+  (NAIP = USDA, public domain) before any promotion.
+- 9-patch extension (`aop_landcover_9patch.geojson`): the same classifier run
+  over the full 3x3 acquisition AOI, so the viewer has land-cover context
+  around the park, not only inside it. The NAIP ImageServer caps an export at
+  4000 px and the 9-patch is ~6 km wide, so this ortho is pulled at ~1.5 m (one
+  3996x3742 export) -- coarser than the 0.6 m park ortho by design.
+  `classify_landcover.py` is resolution-aware: it rescales its windows from the
+  geotransform pixel size, so the one classifier serves both builds. 6420
+  polygons, ~7.8 MB (simplified harder, 3 m, since it is a dimmed context
+  layer), clipped to the 9-patch rectangle. Build script:
+  `mvp/scripts/build_landcover_9patch.sh`.
+- The 9-patch layers `landcover-9patch-forest` (fill) + `-outline` sit at the
+  very base of the stack, below the crisp park layer which draws on top.
+  Toggle `Land cover — 9-patch (NAIP)`, default ON, with a `9-patch land cover
+  opacity` slider (default 55%). Because the park layer covers the park
+  crisply, the slider effectively fades only the non-park context. Bounds are
+  deliberately separate from the park layer.
+- Edge crispness is capped by the leaf-off imagery (~15 m softness floor), and
+  the 9-patch layer additionally by its coarser ~1.5 m resolution; leaf-on
+  2023 NAIP would sharpen both, and would make the conifer split and the
+  open-ground split far more meaningful -- see `tasks/backlog/leaf_on_landcover.md`.
+- Verified with `mvp/scripts/playwright_verify_landcover.py` on 2026-05-21:
+  31 of 31 checks PASS, 0 console errors -- the script covers both layers, the
+  five classes in each GeoJSON, base-of-stack order, and the opacity slider.
+- Build card: `tasks/01_mvp/landcover_layer.md`.
+
+### Cartographic palette (Muted Earth)
+
+Recorded on 2026-05-21:
+
+- The viewer ships a unified "Muted Earth" palette -- a warm, desaturated,
+  vintage park-map look the user chose. Paper background `#efe7d5`, forest
+  `#b9c2a3`, trail `#9a5a32`, contours in tan-browns, water in muted blue-grey,
+  roads in muted ochre, text in warm dark brown over warm off-white halos.
+- It was a map-wide retune: every layer's paint in `website/index.html` was
+  adjusted in one pass so the layers read as one map rather than a stack of
+  independently-coloured overlays. POI editor category colours were muted to
+  fit while staying distinguishable.
+
 ## Verification scripts
 
 Viewer layers and capabilities have Playwright checks under `mvp/scripts/`
 (`playwright_verify_*.py` -- satellite, lidar tiles, terrain, water, cemeteries,
-community trails, SFWDA multiply, POI editor, search, trails). They drive the
+land cover, community trails, SFWDA multiply, POI editor, search, trails). They drive the
 real browser, exercise the toggles, assert layer visibility and network traffic,
 capture screenshots into `brain/output/`, and fail on any console error. Run the
 relevant one after touching `website/index.html`. `brain/output/playwright_eyes.md`

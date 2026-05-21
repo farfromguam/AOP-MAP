@@ -209,6 +209,121 @@ whether it is the hole in the AOP plot.
    question), and a `source_register` decision before the USGenWeb burial
    roster ships beyond the inspection viewer.
 
+## Update: forest land-cover layer + Muted Earth restyle (2026-05-21)
+
+User asked to turn the satellite imagery into a vector layer and restyle the
+viewer into a muted/pastel park-map palette.
+
+ - Reframed: imagery cannot be vectorized directly — it becomes a
+   classification source. Built a vector forest land-cover layer.
+ - Imagery: USGS NAIP 2021, 4-band, 0.6 m, leaf-off (acquired 2021-11-07). Only
+   no-auth 4-band source — 2023 leaf-on NAIP is behind an EarthExplorer login,
+   the TNM products API no longer serves NAIP, TNMap is RGB-only. Cached
+   gitignored at `mvp/cache/imagery/naip_2021_aop.tif`.
+ - Pipeline: `mvp/scripts/build_landcover.sh` + `classify_landcover.py` +
+   `smooth_landcover.py`. Forest classified as a neighbourhood-scale
+   canopy-roughness field (NIR std-dev, low-pass, Otsu) then cleaned with
+   morphological closing/opening. The first pixel-scale attempt produced
+   unusable speckle; the user asked for "a more thorough conversion so it's not
+   so blobby" — the field-scale + morphology approach is that fix.
+ - Output: `website/data/aop_landcover.geojson` — 7 forest polygons, 63
+   clearings as holes, 78% forest cover, clipped to the AOP boundary, ~152 KB.
+ - Water dropped from land cover (leaf-off NIR confuses water with shadow; the
+   NHD layer already handles hydrography). Open ground = paper background.
+ - Viewer: `landcover-forest` layer at the base + `Forest land cover (NAIP)`
+   toggle (default ON). Full "Muted Earth" palette restyle — paper background
+   `#efe7d5`, every layer's paint retuned to the warm vintage palette.
+ - Verified: `mvp/scripts/playwright_verify_landcover.py` 19/19 PASS, 0 console
+   errors. Screenshots `brain/output/playwright_landcover_*.png`.
+ - Build card `tasks/01_mvp/landcover_layer.md`; layer detail added to the
+   viewer catalog `research/viewer.md`; routed in `search_map.md`.
+ - Open follow-up: leaf-off imagery caps edge crispness (~15 m softness floor).
+
+## Update: building footprints layer (2026-05-21)
+
+User asked to review the 9-patch for accessible building layers and import what
+we can use.
+
+ - Checked FEMA USA Structures / ORNL, OSM `building=*`, and TNMap FEMA BLE
+   building footprints.
+ - FEMA USA Structures returned 202 polygon footprints in the 9-patch and was
+   selected. OSM returned 11 building ways but was not imported to avoid a
+   duplicate ODbL context layer. TNMap FEMA BLE returned 0 features in the AOI.
+ - Added `mvp/scripts/import_fema_buildings.py`. It queries FEMA object ids over
+   the 9-patch bbox, fetches those ids as GeoJSON chunks, normalizes fields, and
+   writes `website/data/aop_buildings.geojson`.
+ - Output count: 202 footprints. Class mix: 166 Residential, 24 Agriculture, 7
+   Unclassified, 3 Assembly, 2 Government. Four footprint centroids fall inside
+   the candidate AOP boundary: 1010, 1033, 665, and 880 Ellis Cove Road.
+ - Wired `Building footprints (FEMA USA Structures)` into `website/index.html`,
+   default OFF, with fill/outline layers and heavier outline for inside-AOP
+   footprints. Addressed footprints are searchable.
+ - Added `mvp/scripts/playwright_verify_buildings.py`; on 2026-05-21 it
+   reported all checks PASS, 0 console errors. Screenshots:
+   `brain/output/playwright_buildings_*.png`.
+ - Build card: `brain/tasks/01_mvp/buildings_layer.md`. Viewer catalog and
+   data-acquisition manifest were updated.
+
+## Update: 9-patch forest land cover (2026-05-21)
+
+User asked to extend the forest land-cover layer to the full 9-patch AOI, was
+fine with the bounds being separate, and wanted to adjust opacity on the
+non-park areas.
+
+ - `classify_landcover.py` is now resolution-aware -- it rescales its texture
+   and morphology window radii from the geotransform pixel size. Byte-identical
+   at the 0.6 m park resolution, so the park build/layer was not touched.
+ - New `mvp/scripts/build_landcover_9patch.sh` pulls one ~1.5 m NAIP export for
+   the full 9-patch (the ImageServer caps exports at 4000 px, so 0.6 m would
+   not fit), classifies, vectorizes, clips to the 9-patch rectangle.
+ - `website/data/aop_landcover_9patch.geojson` -- 70 forest polygons, ~80%
+   cover, ~1.7 MB, bbox = the full 9-patch.
+ - Viewer: `landcover-9patch-forest` (+ `-outline`) layer at the base of the
+   stack below the crisp park layer; toggle `Forest land cover — 9-patch
+   (NAIP)` default ON; `9-patch forest opacity` slider default 55%. The park
+   layer draws on top, so the slider fades only the non-park context. Full
+   9-patch coverage, not park-cut-out.
+ - `playwright_verify_landcover.py` extended for the new layer, base-of-stack
+   order, and the slider; all checks PASS, 0 console errors. Screenshots
+   `brain/output/playwright_landcover_9patch_*.png`.
+ - Build card updated: `tasks/01_mvp/landcover_layer.md` ("Update: 9-patch
+   extension"). Catalog updated: `research/viewer.md`.
+ - Open follow-up unchanged: leaf-on 2023 NAIP (`tasks/backlog/leaf_on_landcover.md`)
+   would sharpen both the park and 9-patch layers.
+
+## Update: multi-shade land cover (2026-05-21)
+
+User noted the land-cover layer was one green for all trees while the satellite
+shows fields in different colours, and asked to support varied field colours
+and darker tree shades. They chose to do the forest split and the field split
+both now.
+
+ - The land-cover layer went from binary forest/open to a five-class coverage:
+   `forest_deciduous`, `forest_evergreen`, `open_grass`, `open_meadow`,
+   `open_bare`. Open ground is now emitted as polygons (was paper background).
+ - `classify_landcover.py` gained a stage 2: NDVI vigour smoothed within each
+   zone. Forest split -- evergreen is the high-NDVI tail (top 20%); the weak
+   scattered leaf-off conifer signal is consolidated into coherent stands by a
+   stand-scale smooth + heavy morphology (the first attempt was dark-green
+   confetti). Open split -- two Otsu cuts rank open ground bare/meadow/grass.
+ - `smooth_landcover.py` keeps all five classes and no longer drops slivers/
+   holes (would punch coverage gaps). Both build scripts emit all classes
+   (`DN > 0`) and gained an `ogr2ogr -makevalid` pass (Chaikin can pinch thin
+   polygons into self-intersections -> the GEOS clip threw TopologyException).
+   The 9-patch build simplifies harder (3 m) since it is a dimmed context layer.
+ - Viewer: fill colour is a MapLibre `match` on `class` with a same-family
+   outline that bridges sub-pixel simplify slivers. Toggles relabelled `Land
+   cover (NAIP)` / `Land cover — 9-patch (NAIP)`; layer ids kept.
+ - Output: `aop_landcover.geojson` 631 polygons / ~920 KB;
+   `aop_landcover_9patch.geojson` 6420 polygons / ~7.8 MB.
+ - Verified: `playwright_verify_landcover.py` updated for the five classes --
+   31 of 31 PASS, 0 console errors. Build card `tasks/01_mvp/landcover_layer.md`
+   ("Update: multi-shade land cover"); catalog `research/viewer.md`.
+ - Honest limit: leaf-off November is the ceiling. The conifer split is real
+   but weak and only coherent after heavy consolidation; the open split is a
+   relative vigour ranking, not crop ID. Leaf-on 2023 NAIP
+   (`tasks/backlog/leaf_on_landcover.md`) would make both far more meaningful.
+
 ## Session note
 
 This file is handoff context, not a durable policy document. Keep it live until the next session has read and acted on it.

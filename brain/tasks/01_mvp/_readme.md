@@ -46,6 +46,8 @@ This MVP scaffold is the first practical step toward the build card:
 12. [X] Generate lidar-grade 5 ft contour lines for the 9-patch from the USGS 3DEP 1m DEM and wire them into the viewer. See `lidar_contour_pipeline.md`.
 13. [X] Add a web-viewer map editor (Terra Draw): draw/label/persist/export point POIs and polygon footprints (pavilions, buildings, etc.) in `website/index.html`. PostGIS write-back is the remaining follow-up. See `poi_editor.md`.
 14. [X] Add a searchable cemeteries layer. Confirmed the hole in the AOP boundary polygon is the Ellis Cemetery inholding (parcel `110 008.04`). See `cemeteries_layer.md` and `brain/research/aop_ellis_cemetery.md`.
+15. [X] Vectorize the satellite imagery into a forest land-cover layer (NAIP 2021 4-band -> texture classification -> forest polygons) and restyle the viewer into the Muted Earth palette. See `landcover_layer.md`.
+16. [X] Review/import 9-patch building footprints. FEMA USA Structures returned 202 footprints; OSM returned 11 `building=*` ways; TNMap FEMA BLE returned 0. Imported FEMA as a default-off viewer layer. See `buildings_layer.md`.
 
 ## Initial scaffold files
 

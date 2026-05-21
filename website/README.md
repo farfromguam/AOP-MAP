@@ -41,6 +41,7 @@ Reference and context layers, toggled from the panel (off by default unless note
 - 9-patch acquisition AOI and the USGS 3DEP lidar tile index
 - asphalt roads (USGS National Map; on by default)
 - streams, waterbodies, springs, and gages (USGS NHD)
+- building footprints (FEMA USA Structures)
 - community OSM layers: park polygon, tracks, service roads, named landmarks
 - SFWDA 2015 paper trail map, with an in-viewer alignment editor
 

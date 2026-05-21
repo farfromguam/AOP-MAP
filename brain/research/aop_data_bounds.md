@@ -126,7 +126,8 @@ Recorded on 2026-05-20:
 ## Viewer Layers
 
 The data pulled for the 9-patch -- lidar tile index, hillshade and 3D terrain,
-5-foot contours, asphalt roads, hydrography, cemeteries, satellite imagery, and
-the 9-patch overlay itself -- is wired into the static viewer. The per-layer
-catalog (source service, importer script, feature counts, verification) moved
-to `research/viewer.md`. This doc stays focused on bounds and acquisition.
+5-foot contours, asphalt roads, hydrography, cemeteries, FEMA building
+footprints, satellite imagery, and the 9-patch overlay itself -- is wired into
+the static viewer. The per-layer catalog (source service, importer script,
+feature counts, verification) moved to `research/viewer.md`. This doc stays
+focused on bounds and acquisition.
