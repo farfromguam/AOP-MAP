@@ -16,6 +16,7 @@ TL;DR:
 - map build, PostGIS, QGIS, MapLibre, PMTiles, Cloudflare, Phoenix: `tasks/01_mvp/aop_south_pittsburg_map_build_card.md`
 - spinup, runbook, CWC, database port, PostGIS connection, QGIS connection, Docker, `localhost:55432`, port collision: `spinup/mvp_runbook.md`, then `spinup/discovery.md`
 - source ledger, permission, confidence, provenance, publishable: `northstar/source_register.md`
+- community trail pull, OSM 9-patch, SFWDA 2015 raster, raw zone, import staging: `import/_readme.md`
 - print map, wall map, whiteboard validation, board markup: `northstar/map_northstar.md`, then `tasks/01_mvp/aop_south_pittsburg_map_build_card.md`
 
 ## Working method

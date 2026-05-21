@@ -133,6 +133,17 @@ The 9-patch intersects the Orme and South Pittsburg 7.5-minute quadrangles.
 - Service: `https://tnmap.tn.gov/arcgis/rest/services/BASEMAPS/USGS_TOPO/MapServer`
 - Use for quick topo overlay in QGIS. Download GeoPDFs above for archived local references.
 
+## Transportation / Roads
+
+### USGS National Map Transportation
+
+- Service: `https://carto.nationalmap.gov/arcgis/rest/services/transportation/MapServer`
+- Paved-network layers used: `29` Controlled-access Highways, `30` Secondary Highways, `31` Local Connecting Roads, `32` Local Roads, `33` Ramps.
+- Unpaved/closed layers explicitly excluded: `35` 4WD Roads, `36` Closed Roads, `37` Trails.
+- AOP 9-patch counts (2026-05-20): 10 controlled-access (I-24), 0 secondary, 28 local connecting, 76 local, 0 ramps = **114 paved-network features**.
+- Importer: `mvp/scripts/import_usgs_roads.sh` writes `website/data/aop_roads.geojson` with a `road_class` property per feature.
+- Considered and rejected: TNMap `TRANSPORTATION/MAJOR_ROADS` (interstates + state highways only, no county/park-access roads); OSM via Overpass (119 ways but requires per-way `surface=*` filtering, locally inconsistent).
+
 ## Query References
 
 - TNM product API: `https://tnmaccess.nationalmap.gov/api/v1/products`

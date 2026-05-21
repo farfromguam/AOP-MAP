@@ -144,3 +144,16 @@ Recorded on 2026-05-20:
 - Attribution shown in the viewer credits AWS Terrain Tiles (USGS 3DEP, SRTM, GMTED, ETOPO1).
 - Verified with `mvp/scripts/playwright_verify_lidar_tiles.py` on 2026-05-20: 21 of 21 checks PASS, 109 AWS Terrarium tile requests during the run, 0 console errors. Screenshots: `brain/output/playwright_lidar_initial.png`, `playwright_lidar_tiles_on.png`, `playwright_lidar_hillshade_on.png`, `playwright_lidar_hillshade_plus_tiles.png`, `playwright_lidar_terrain_3d.png`, `playwright_lidar_all_off.png`.
 - The hillshade and 3D terrain are global-DEM derivatives, not the locally-derived 1-meter DEM lidar product. For lidar-grade contour lines clipped to the 9-patch, install a GDAL toolchain (Docker `osgeo/gdal` or `brew install gdal`) and clip/contour `USGS_one_meter_x61y389_TN_27County_blk4_2015.tif`; that path remains open.
+
+## Asphalt Roads Layer
+
+Recorded on 2026-05-20:
+
+- Source: USGS National Map Transportation MapServer `https://carto.nationalmap.gov/arcgis/rest/services/transportation/MapServer`.
+- Layers queried over the 9-patch bbox: `29` Controlled-access Highways (10 features), `30` Secondary Highways (0), `31` Local Connecting Roads (28), `32` Local Roads (76), `33` Ramps (0). Total `114` paved-network features.
+- Excluded by design: layer `35` 4WD Roads, layer `36` Closed Roads, layer `37` Trails — those would not be asphalt.
+- Importer: `mvp/scripts/import_usgs_roads.sh` (curl + jq, atomic write).
+- Output: `website/data/aop_roads.geojson` — each feature tagged with `road_class` (`controlled_access`, `secondary`, `local_connecting`, `local`, `ramp`) plus `name`, `mtfcc_code`, `tnmfrc`, and route designators.
+- Viewer: toggle `Asphalt roads (USGS National Map)`, default-on. Stacked layers `roads-local-casing` + `roads-local`, `roads-connecting-casing` + `roads-connecting`, `roads-controlled-casing` + `roads-controlled`, plus a `roads-labels` symbol layer along the line. Click any class for a popup with name, MTFCC, and route designators.
+- Notable named features in-AOI: I-24, Ellis Cove Rd (the AOP access road), Ellis Rd, Battlecreek Rd, Fiery Gizzard Rd, Sweetens Cove Rd.
+- Picked over TNMap MAJOR_ROADS (too sparse — interstates and state highways only, misses county/park-access roads) and Overpass/OSM (would require per-way `surface=*` filtering and local TN ways are not reliably tagged for surface).

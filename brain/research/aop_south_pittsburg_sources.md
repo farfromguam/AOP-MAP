@@ -246,3 +246,24 @@ Field / validation pass:
 For an accurate AOP terrain research base, use TDOT/TNMap imagery plus USGS 3DEP lidar-derived DEM. For boundaries, use Tennessee Comptroller parcels and verify the acreage mismatch. For trails, get the official AOP map first, then compare it against RiderPlanet, SFWDA's 2015 artifact, Gather/off-road app coverage, and field GPX.
 
 No single public trail source is good enough by itself. The trail map has to be assembled by triangulation.
+
+-----
+
+## Community-sourced pull 2026-05-20
+
+First pass at staging community trail material in the raw zone. See `import/_readme.md` for the full manifest.
+
+What was successfully pulled into `brain/import/community_trails/`:
+
+- OpenStreetMap via Overpass API across the 9-patch bbox -- 71 features (47 `highway=track`, 19 `service`, 1 `unclassified`, plus 5 named features and a couple of misc tags). Includes a community-supplied `Adventure Off Road Park` polygon (OSM way `1215497712`, envelope `-85.7601, 35.0834` to `-85.7455, 35.0995`). Named landmarks include `Jackson Point` (matches RiderPlanet's landmark list), `Smithtown`, `Pinhook`, and `Stagecoach Road`. License: ODbL. Files: `osm_aop_9patch_raw.json`, `osm_aop_9patch.geojson`, `osm_aop_9patch_named.geojson`.
+- SFWDA 2015 trail-map raster -- the explicit `AOP-3-11-15` artifact from the SFWDA page. The server returns WebP despite a `.jpg` URL; both `.webp` and a converted `.png` are staged. Treat as inspection-only and tag the source as AOP-copyright-via-SFWDA. Files: `sfwda_aop_trail_map_2015-03-11.webp`, `sfwda_aop_trail_map_2015-03-11.png`.
+
+What was identified but not pulled (login walls, JS shells, or TOS issues):
+
+- Official AOP map page is a Replit-hosted JS SPA. The "View Trail Map" asset is not in the static HTML; render it with the existing Playwright tooling in `mvp/scripts/` next pass.
+- onX Offroad, Trails Offroad, Trailforks, Gaia GPS, AllTrails, Wikiloc all require an authenticated session or block scripted clients. Per-app GPX export is the supported path; do it from inside each app and drop the resulting GPX into `import/`.
+- Maprika `id=16054` "Adventure Offroad Park" exists but is explicitly flagged "Probably way off"; mobile-only download path.
+- Hardline Crawlers forum thread (community paper-map photos) returns 403 to scripted clients.
+- Scaletra and rcmap.io -- the right peers for AOP's actual scale-crawler hobby. Listings are not exposed to anonymous web search; check from inside each app.
+
+Open question that gates the next pull: does AOP permit republishing any trail data, or is the digital map behind their QR code intended for personal use only? That call determines whether community geometries promote out of `raw` at all.
