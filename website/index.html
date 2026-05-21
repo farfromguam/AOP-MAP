@@ -8,7 +8,7 @@
   <style>
     body, html { margin: 0; padding: 0; height: 100%; font-family: Inter, system-ui, sans-serif; }
     #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-    .panel { position: absolute; right: 12px; top: 12px; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); max-width: 320px; z-index: 2; }
+    .panel { position: absolute; right: 12px; top: 12px; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); max-width: 320px; max-height: calc(100vh - 24px); overflow-y: auto; z-index: 2; }
     .panel h1 { margin: 0 0 8px; font-size: 1rem; }
     .panel label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.94rem; }
     .panel small { display: block; margin-top: 8px; color: #444; }
@@ -17,6 +17,11 @@
     .panel button { font: inherit; padding: 4px 10px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
     .panel button:hover { background: #ececec; }
     .panel button[disabled] { opacity: 0.4; cursor: not-allowed; }
+    .panel button.active { background: #f16624; color: #fff; border-color: #f16624; }
+    .panel select { font: inherit; padding: 3px 5px; border-radius: 6px; border: 1px solid #bbb; }
+    .editor-row { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; }
+    .poi-popup input { font: inherit; width: 100%; box-sizing: border-box; margin: 6px 0; padding: 3px 5px; }
+    .poi-popup button { font: inherit; padding: 3px 9px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
     .message { position: absolute; left: 12px; bottom: 12px; background: rgba(255,255,255,0.95); padding: 10px 12px; border-radius: 10px; font-size: 0.9rem; max-width: 60ch; }
     .search { position: relative; margin-bottom: 10px; }
     .search input { width: 100%; box-sizing: border-box; padding: 7px 9px; font: inherit; border: 1px solid #bbb; border-radius: 8px; }
@@ -77,6 +82,29 @@
     <label><input type="checkbox" id="showTrails" checked /> Publishable trails</label>
     <label><input type="checkbox" id="showBoundaries" checked /> Publishable boundaries</label>
     <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
+    <hr/>
+    <div class="section-title">Map editor</div>
+    <label><input type="checkbox" id="showEditorPois" checked /> Drawn POIs</label>
+    <div class="editor-row">
+      <select id="poiCategory" title="POI type">
+        <option>Pavilion</option>
+        <option>Building</option>
+        <option>Restroom</option>
+        <option>Parking</option>
+        <option>Staging area</option>
+        <option>Gate</option>
+        <option>Landmark</option>
+        <option>Hazard</option>
+        <option>Other</option>
+      </select>
+      <button id="placePoiBtn" type="button">Place POI</button>
+    </div>
+    <div class="editor-row">
+      <button id="exportPoiBtn" type="button">Export GeoJSON</button>
+      <button id="clearPoiBtn" type="button">Clear all</button>
+    </div>
+    <small id="poiStatus">0 POIs placed.</small>
+    <small>Pick a type, click Place POI, then click the map. Click a POI to rename or delete it. Drawn POIs save in this browser; Export writes <code>aop_editor_pois.geojson</code>.</small>
     <small>Terrain: AWS Terrain Tiles, derived from USGS 3DEP. Drag with right-click (or two-finger drag) to tilt and rotate.</small>
     <small>Satellite tiles served by TDOT/TNMap — inspection use only, not for redistribution.</small>
     <small>Contours: 5 ft interval from the USGS 3DEP 1 m lidar DEM; bold lines every 25 ft.</small>
@@ -85,6 +113,8 @@
   <div class="message" id="message">Loading publish layer...</div>
 
   <script src="./vendor/maplibre-gl.js"></script>
+  <script src="./vendor/terra-draw.umd.js"></script>
+  <script src="./vendor/terra-draw-maplibre-gl-adapter.umd.js"></script>
   <script>
     const map = new maplibregl.Map({
       container: 'map',
@@ -130,6 +160,12 @@
     const trailToggle = document.getElementById('showTrails');
     const boundaryToggle = document.getElementById('showBoundaries');
     const trailheadToggle = document.getElementById('showTrailheads');
+    const editorPoiToggle = document.getElementById('showEditorPois');
+    const poiCategory = document.getElementById('poiCategory');
+    const placePoiBtn = document.getElementById('placePoiBtn');
+    const exportPoiBtn = document.getElementById('exportPoiBtn');
+    const clearPoiBtn = document.getElementById('clearPoiBtn');
+    const poiStatus = document.getElementById('poiStatus');
     const searchInput = document.getElementById('searchInput');
     const searchResults = document.getElementById('searchResults');
     // Named-feature search registry, filled by indexFeatures during map load.
@@ -186,7 +222,8 @@
       [osmNamedToggle, ['osm-named-points', 'osm-named-labels']],
       [trailToggle, ['publish-trails']],
       [boundaryToggle, ['publish-boundary-fill', 'publish-boundaries']],
-      [trailheadToggle, ['publish-trailheads']]
+      [trailheadToggle, ['publish-trailheads']],
+      [editorPoiToggle, ['editor-poi-circles', 'editor-poi-labels']]
     ];
 
     function updateLayerVisibility() {
@@ -214,6 +251,106 @@
         .filter(([, value]) => value !== undefined && value !== null && value !== '')
         .map(([label, value]) => `${escapeHtml(label)}: ${escapeHtml(value)}`)
         .join('<br/>');
+    }
+
+    // --- Map editor: drawn POIs ---------------------------------------
+    // Terra Draw supplies the click-to-place interaction; committed POIs live
+    // in our own `editor-poi` GeoJSON source so they carry category styling
+    // and labels, and survive reloads via localStorage (works offline).
+    const POI_STORAGE_KEY = 'aop_editor_pois_v1';
+    const POI_COLORS = {
+      'Pavilion': '#e07b39',
+      'Building': '#b5651d',
+      'Restroom': '#3f8efc',
+      'Parking': '#6c757d',
+      'Staging area': '#9b30ff',
+      'Gate': '#d62828',
+      'Landmark': '#2a9d8f',
+      'Hazard': '#ffb703',
+      'Other': '#555555'
+    };
+    // An unknown category falls through to the default color instead of being
+    // dropped, so a typed/edited category never hides a POI.
+    const poiColorExpression = ['match', ['get', 'category']];
+    for (const [name, color] of Object.entries(POI_COLORS)) poiColorExpression.push(name, color);
+    poiColorExpression.push('#555555');
+
+    let editorPois = [];
+    let draw = null;
+
+    function loadEditorPois() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(POI_STORAGE_KEY) || '[]');
+        editorPois = Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        console.warn('Drawn POIs failed to load from storage:', error);
+        editorPois = [];
+      }
+    }
+
+    function saveEditorPois() {
+      try {
+        localStorage.setItem(POI_STORAGE_KEY, JSON.stringify(editorPois));
+      } catch (error) {
+        console.warn('Drawn POIs failed to save to storage:', error);
+      }
+    }
+
+    function editorFeatureCollection() {
+      return { type: 'FeatureCollection', features: editorPois };
+    }
+
+    function refreshEditorSource() {
+      const source = map.getSource('editor-poi');
+      if (source) source.setData(editorFeatureCollection());
+      poiStatus.textContent = `${editorPois.length} POI${editorPois.length === 1 ? '' : 's'} placed.`;
+    }
+
+    function exportEditorPois() {
+      const blob = new Blob([JSON.stringify(editorFeatureCollection(), null, 2) + '\n'],
+        { type: 'application/geo+json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'aop_editor_pois.geojson';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    }
+
+    function setPlacingMode(placing) {
+      if (!draw) return;
+      draw.setMode(placing ? 'point' : 'static');
+      placePoiBtn.classList.toggle('active', placing);
+      placePoiBtn.textContent = placing ? 'Placing… (Esc)' : 'Place POI';
+    }
+
+    function openPoiPopup(feature, lngLat) {
+      const props = feature.properties || {};
+      const popup = new maplibregl.Popup({ maxWidth: '240px' })
+        .setLngLat(lngLat)
+        .setHTML(
+          `<div class="poi-popup"><strong>${escapeHtml(props.category || 'POI')}</strong>`
+          + `<input type="text" id="poiNameInput" value="${escapeHtml(props.name || '')}" />`
+          + '<button type="button" id="poiSaveBtn">Save name</button>'
+          + '<button type="button" id="poiDeleteBtn">Delete</button></div>')
+        .addTo(map);
+      const el = popup.getElement();
+      const nameInput = el.querySelector('#poiNameInput');
+      el.querySelector('#poiSaveBtn').addEventListener('click', () => {
+        const target = editorPois.find((f) => f.properties.id === props.id);
+        if (target) {
+          target.properties.name = nameInput.value;
+          saveEditorPois();
+          refreshEditorSource();
+        }
+        popup.remove();
+      });
+      el.querySelector('#poiDeleteBtn').addEventListener('click', () => {
+        editorPois = editorPois.filter((f) => f.properties.id !== props.id);
+        saveEditorPois();
+        refreshEditorSource();
+        popup.remove();
+      });
     }
 
     // Fetch an optional overlay. Returns undefined (and warns) if it cannot load,
@@ -1217,6 +1354,75 @@
         ['OSM id', props.osm_id || '']
       ]);
 
+      // --- Map editor: Terra Draw POI placement -------------------------
+      loadEditorPois();
+      map.addSource('editor-poi', { type: 'geojson', data: editorFeatureCollection() });
+      map.addLayer({
+        id: 'editor-poi-circles',
+        type: 'circle',
+        source: 'editor-poi',
+        paint: {
+          'circle-radius': 7,
+          'circle-color': poiColorExpression,
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 2
+        }
+      });
+      map.addLayer({
+        id: 'editor-poi-labels',
+        type: 'symbol',
+        source: 'editor-poi',
+        layout: {
+          'text-field': ['coalesce', ['get', 'name'], ['get', 'category']],
+          'text-size': 12,
+          'text-offset': [0, 1.2],
+          'text-anchor': 'top'
+        },
+        paint: { 'text-color': '#1c1c1c', 'text-halo-color': '#ffffff', 'text-halo-width': 1.6 }
+      });
+      refreshEditorSource();
+
+      draw = new terraDraw.TerraDraw({
+        adapter: new terraDrawMaplibreGlAdapter.TerraDrawMapLibreGLAdapter({ map }),
+        modes: [new terraDraw.TerraDrawPointMode()]
+      });
+      draw.start();
+      draw.setMode('static');
+      // Point mode commits on click; we lift the placed point out of Terra Draw
+      // into our own source (tagged with the selected category) so Terra Draw
+      // stays a pure input device and never accumulates state.
+      draw.on('finish', (id) => {
+        const feature = draw.getSnapshot().find((f) => f.id === id);
+        if (!feature || feature.geometry.type !== 'Point') return;
+        const category = poiCategory.value;
+        editorPois.push({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: feature.geometry.coordinates },
+          properties: {
+            id: `poi_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            layer: 'editor_poi',
+            category: category,
+            name: category,
+            created: new Date().toISOString()
+          }
+        });
+        setTimeout(() => draw.removeFeatures([id]), 0);
+        saveEditorPois();
+        refreshEditorSource();
+      });
+
+      map.on('click', 'editor-poi-circles', (event) => {
+        if (draw && draw.getMode() !== 'static') return;
+        const feature = event.features?.[0];
+        if (feature) openPoiPopup(feature, event.lngLat);
+      });
+      map.on('mouseenter', 'editor-poi-circles', () => {
+        if (draw && draw.getMode() === 'static') map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', 'editor-poi-circles', () => {
+        map.getCanvas().style.cursor = '';
+      });
+
       // --- Search index + highlight layers ------------------------------
       indexFeatures(publishData,
         (props) => props.layer === 'trail_centerlines' ? 'trail'
@@ -1444,6 +1650,22 @@
     trailToggle.addEventListener('change', updateLayerVisibility);
     boundaryToggle.addEventListener('change', updateLayerVisibility);
     trailheadToggle.addEventListener('change', updateLayerVisibility);
+    editorPoiToggle.addEventListener('change', updateLayerVisibility);
+
+    placePoiBtn.addEventListener('click', () => {
+      setPlacingMode(!(draw && draw.getMode() === 'point'));
+    });
+    exportPoiBtn.addEventListener('click', exportEditorPois);
+    clearPoiBtn.addEventListener('click', () => {
+      if (!editorPois.length) return;
+      if (!window.confirm(`Delete all ${editorPois.length} drawn POIs? This cannot be undone.`)) return;
+      editorPois = [];
+      saveEditorPois();
+      refreshEditorSource();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && draw && draw.getMode() === 'point') setPlacingMode(false);
+    });
   </script>
 </body>
 </html>

@@ -5,11 +5,14 @@ set -euo pipefail
 #
 # Pipeline: download/cache DEM -> clip to 9-patch -> low-pass smooth the DEM
 # (1m -> 2m cubic spline, strips lidar micro-noise) -> gdal_contour at 5ft ->
-# attribute (elev_ft + indexed flag) -> Douglas-Peucker thin -> Chaikin
-# corner-cutting -> WGS84 GeoJSON for the viewer.
+# attribute (elev_ft + indexed flag) -> light Douglas-Peucker thin -> repair
+# crossings -> WGS84 GeoJSON for the viewer.
 #
-# Smoothing is two passes: the DEM low-pass removes the noise that makes raw
-# isolines crinkle; Chaikin then replaces the angular DP corners with curves.
+# The DEM low-pass removes the noise that makes raw isolines crinkle. Vertices
+# are then thinned with a light Douglas-Peucker pass for file size -- but DP
+# treats each contour independently and can push tightly-spaced neighbours
+# across each other on steep ground. Contours are isolines and cannot cross,
+# so repair_crossings.py restores any crossed segment to its raw geometry.
 #
 # GDAL runs via Docker (host has no GDAL). macOS blocks Docker from reading the
 # repo under ~/Documents, so all GDAL work is staged in /private/tmp and the
@@ -34,9 +37,7 @@ BBOX_N="35.117928496"
 CONTOUR_INTERVAL_M="1.524"   # 5 ft
 INDEX_FT="25"                # indexed (major) contour every 25 ft
 SMOOTH_RES_M="2"             # DEM low-pass: resample 1m -> this, cubic spline
-SIMPLIFY_M="2.0"             # Douglas-Peucker tolerance, applied before Chaikin
-CHAIKIN_ITERS="2"            # Chaikin corner-cutting passes
-COLINEAR_EPS_M="0.5"         # post-Chaikin: drop vertices within this of straight
+SIMPLIFY_M="0.5"             # Douglas-Peucker tolerance (light, keeps crossings rare)
 DEM_NODATA="-999999"
 
 WORK="/private/tmp/aop_gdal"
@@ -57,13 +58,13 @@ else
 fi
 
 # 2. Stage inputs where Docker can read them --------------------------------
-echo "==> Staging DEM and Chaikin script into $WORK"
+echo "==> Staging DEM and repair script into $WORK"
 mkdir -p "$WORK"
 cp "$DEM_CACHE" "$WORK/dem.tif"
-cp "$SCRIPT_DIR/chaikin_smooth.py" "$WORK/chaikin_smooth.py"
+cp "$SCRIPT_DIR/repair_crossings.py" "$WORK/repair_crossings.py"
 
 # 3. Run the GDAL pipeline in one container pass ----------------------------
-echo "==> Clipping, smoothing DEM, contouring, attributing, simplifying, Chaikin"
+echo "==> Clipping, smoothing DEM, contouring, attributing, simplifying, repairing"
 docker run --rm -v "$WORK:/data" "$GDAL_IMG" sh -c "
 set -e
 
@@ -98,17 +99,20 @@ rm -f /data/aop_contours_simplified.gpkg
 ogr2ogr -f GPKG -nln contour -simplify $SIMPLIFY_M \
   /data/aop_contours_simplified.gpkg /data/aop_contours.gpkg
 
-# reproject the thinned copy to WGS84 GeoJSON
-rm -f /data/aop_contours_dp.geojson
+# reproject both the raw and the thinned contours to WGS84 GeoJSON. the raw
+# copy is the non-crossing reference the repair pass restores segments from.
+rm -f /data/aop_contours_raw.geojson /data/aop_contours_dp.geojson
+ogr2ogr -f GeoJSON -t_srs EPSG:4326 -lco COORDINATE_PRECISION=6 \
+  /data/aop_contours_raw.geojson /data/aop_contours.gpkg
 ogr2ogr -f GeoJSON -t_srs EPSG:4326 -lco COORDINATE_PRECISION=6 \
   /data/aop_contours_dp.geojson /data/aop_contours_simplified.gpkg
 
-# Chaikin corner-cutting: replaces the angular DP corners with flowing curves,
-# then drops the colinear vertices Chaikin adds on straight runs.
+# repair: DP can cross tightly-spaced contours; restore crossed segments to raw.
 rm -f /data/aop_contours.geojson
-python3 /data/chaikin_smooth.py \
-  --iterations $CHAIKIN_ITERS --colinear-eps-m $COLINEAR_EPS_M \
-  /data/aop_contours_dp.geojson /data/aop_contours.geojson
+python3 /data/repair_crossings.py \
+  --raw /data/aop_contours_raw.geojson \
+  --simplified /data/aop_contours_dp.geojson \
+  --out /data/aop_contours.geojson
 "
 
 # 4. Copy outputs back into the repo ----------------------------------------

@@ -143,31 +143,39 @@ User asked for a search box that re-focuses the map on a named feature.
  - On select: `fitBounds`/`flyTo` to the feature, auto-enables the feature's layer toggle if it was off, and flashes a yellow `search-highlight` layer (a ~2.6 s rAF pulse).
  - Verified with `mvp/scripts/playwright_verify_search.py` on 2026-05-20: 12 of 12 checks PASS, 0 console errors. Screenshots `brain/output/playwright_search_*.png`.
 
-## Update: contour smoothing (2026-05-20)
+## Update: contour smoothing + crossing repair (2026-05-20 / 05-21)
 
-User flagged the contour lines as more jagged than hoped and asked about closer
-sampling or a fitting algorithm.
+User flagged the contour lines as jagged, then later spotted an 825 ft contour
+overlapping the 820 ft line below it.
 
- - Diagnosis: two causes. (1) The raw 1 m lidar DEM carries micro-noise, so the
-   isolines crinkle. (2) `ogr2ogr -simplify` (Douglas-Peucker) only deletes
-   vertices — it never adds curvature, so the thinned lines met at hard corners.
-   Sampling a finer interval would worsen this; the lever is smooth + curve-fit.
- - Fix is two passes. (1) DEM low-pass: `build_contours.sh` now resamples the
-   clipped DEM 1 m → 2 m with `gdalwarp -r cubicspline` before `gdal_contour`,
-   stripping the micro-noise. Smoothed DEM cached at `mvp/cache/dem/dem_9patch_smooth.tif`.
-   (2) Line curve-fit: new `mvp/scripts/chaikin_smooth.py` runs 2 Chaikin
-   corner-cutting passes (pure stdlib, runs in the GDAL container) after a 2 m
-   Douglas-Peucker thin, then drops colinear vertices to keep payload small.
- - Result: `website/data/aop_contours.geojson` is now 2,831 smoothed LineStrings,
-   ~8.9 MB (was 6,376 / ~5.0 MB). Median segment ~24 m → ~12 m, median turn angle
-   ~12°. Feature count dropped because the DEM low-pass erased noise-speckle
-   micro-loops; elevation coverage (605–1820 ft, 501 indexed) is unchanged.
- - Viewer needed no change — the GeoJSON schema (`elev_m`/`elev_ft`/`idx`) is the
-   same. `playwright_verify_lidar_tiles.py` PASS, 0 console errors; z16 spot-check
-   at `brain/output/playwright_lidar_contours_z16.png`.
- - Tunables live at the top of `build_contours.sh`: `SMOOTH_RES_M`, `SIMPLIFY_M`,
-   `CHAIKIN_ITERS`, `COLINEAR_EPS_M`. Raise iterations or smoothing if still too
-   angular; lower them if real micro-terrain is washing out.
+ - Jaggedness diagnosis: the raw 1 m lidar DEM carries micro-noise so the
+   isolines crinkle, and Douglas-Peucker simplification only deletes vertices —
+   it never adds curvature. Sampling finer would worsen it; the lever is to
+   smooth the surface.
+ - Smoothing fix: `build_contours.sh` now low-pass smooths the DEM — resamples
+   the clipped DEM 1 m → 2 m with `gdalwarp -r cubicspline` before
+   `gdal_contour`. Smoothed DEM cached at `mvp/cache/dem/dem_9patch_smooth.tif`.
+ - Crossing diagnosis: a crossing detector found ~955 places where contours of
+   different elevation intersect — impossible on a real surface. Cause: DP
+   simplifies each line independently and pushes tightly-spaced contours across
+   each other on steep ground. Raw `gdal_contour` output has 0 crossings; the
+   count scales with DP tolerance (0.5 m→12, 1 m→216, 2 m→1281). Chaikin was
+   *not* the cause (it slightly reduced crossings) and has been dropped.
+ - Crossing fix: light 0.5 m DP, then new `mvp/scripts/repair_crossings.py`.
+   Since DP only deletes vertices, a simplified line is an exact subsequence of
+   its raw line; the repair detects crossings and restores the offending
+   segments to raw geometry, iterating to zero. Last build: 14 → 0 in 4
+   iterations, 130 vertices restored. `chaikin_smooth.py` was removed.
+ - Result: `website/data/aop_contours.geojson` — 2,831 LineStrings, ~14 MB,
+   605–1820 ft (501 indexed), 0 crossings (independent detector confirms).
+ - Viewer needed no change — GeoJSON schema (`elev_m`/`elev_ft`/`idx`) unchanged.
+   `playwright_verify_lidar_tiles.py` PASS, 0 console errors. Spot-checks:
+   `brain/output/playwright_lidar_contours_z16.png`, `..._repair_spot.png`.
+ - Tunables at the top of `build_contours.sh`: `SMOOTH_RES_M` (DEM low-pass) and
+   `SIMPLIFY_M` (DP tolerance). The repair handles whatever crossings DP leaves.
+ - Open follow-up: if the lines read slightly angular at high zoom (DP 0.5 m
+   leaves ~16° median vertex turn), the long-term fix is shipping raw contours as
+   PMTiles — keeps full smoothness with no crossings. Not done; not blocking.
 
 ## Session note
 

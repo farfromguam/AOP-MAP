@@ -153,38 +153,45 @@ Recorded on 2026-05-20:
   generated from the USGS 3DEP 1-meter DEM (lidar-derived bare-earth elevation).
 - Build pipeline: `mvp/scripts/build_contours.sh`. It caches the DEM, clips it to
   the 9-patch, low-pass smooths the DEM, runs `gdal_contour` at a 5-foot interval,
-  attributes each line, thins with Douglas-Peucker, applies Chaikin corner-cutting,
-  and exports a WGS84 GeoJSON. GDAL runs via Docker `ghcr.io/osgeo/gdal:ubuntu-small-latest`
-  (see `brain/spinup/mvp_runbook.md` for the toolchain and the macOS file-access constraint).
+  attributes each line, thins with a light Douglas-Peucker pass, repairs any
+  contour crossings, and exports a WGS84 GeoJSON. GDAL runs via Docker
+  `ghcr.io/osgeo/gdal:ubuntu-small-latest` (see `brain/spinup/mvp_runbook.md` for
+  the toolchain and the macOS file-access constraint).
 - Source DEM: `USGS_one_meter_x61y389_TN_27County_blk4_2015.tif`, native CRS
   `NAD83 / UTM zone 16N` (EPSG:26916), 1 m pixels. Clipped to the full 9-patch bbox
   `-85.782935283, 35.067164188, -85.717154097, 35.117928496`; the clipped DEM is
   cached at `mvp/cache/dem/dem_9patch.tif`.
 - Contour interval: 5 ft (1.524 m). Indexed (major) contour every 25 ft.
-- Smoothing (2026-05-20): raw 1 m lidar contours were jagged — angular DP corners
-  joined by straight chords, plus crinkle from lidar micro-noise. Two passes fix it:
-  (1) the DEM is low-pass smoothed by resampling 1 m → 2 m with a cubic-spline kernel
-  (`gdalwarp -r cubicspline`), which strips the micro-noise before contouring; the
-  smoothed DEM is cached at `mvp/cache/dem/dem_9patch_smooth.tif`. (2) after a 2 m
-  Douglas-Peucker thin, `mvp/scripts/chaikin_smooth.py` runs 2 Chaikin corner-cutting
-  passes (converges to a quadratic B-spline), then drops vertices within 0.5 m of
-  straight so the file stays small. Result: median segment length dropped ~24 m → ~12 m
-  and median vertex turn angle is ~12°. Sampling a *finer* interval would worsen this,
-  not help — smoothing the surface and curve-fitting the lines is the lever.
+- Smoothing (2026-05-20): raw 1 m lidar contours were jagged — crinkle from lidar
+  micro-noise plus angular corners from Douglas-Peucker. The DEM is low-pass
+  smoothed first: resampled 1 m → 2 m with a cubic-spline kernel
+  (`gdalwarp -r cubicspline`), which strips the micro-noise before contouring. The
+  smoothed DEM is cached at `mvp/cache/dem/dem_9patch_smooth.tif`. Sampling a
+  *finer* interval would worsen the noise crinkle, not help — smoothing the surface
+  is the lever.
+- Crossing repair (2026-05-21): contours are isolines and can never cross, but
+  Douglas-Peucker simplifies each line independently and pushed tightly-spaced
+  contours across each other on steep ground (~955 crossings at a 2 m tolerance).
+  The fix: a light 0.5 m DP pass, then `mvp/scripts/repair_crossings.py`. Because
+  DP only *deletes* vertices, a simplified line is an exact subsequence of its raw
+  line; the repair detects crossings and restores the offending segments to raw
+  (non-crossing) geometry, iterating until none remain. The last build repaired
+  14 crossings to 0 in 4 iterations, restoring 130 vertices — a negligible file
+  cost. Tunable: `SIMPLIFY_M` at the top of `build_contours.sh`.
 - Features: 2,831 LineStrings spanning 605–1820 ft (501 indexed). Each carries
   `elev_m` (metres), `elev_ft` (whole feet), and `idx` (1 = indexed/25-ft, 0 = minor/5-ft).
   The feature count is lower than the pre-smoothing 6,376 because the DEM low-pass
   erased noise-speckle micro-loops; elevation coverage is unchanged.
-- Ship format: smoothed GeoJSON, ~8.9 MB. This is under the ~25 MB threshold, so the
-  layer ships as GeoJSON rather than PMTiles. The full-resolution attributed
-  GeoPackage is cached at `mvp/cache/contours/aop_contours.gpkg` (gitignored,
-  archival / QGIS use).
+- Ship format: GeoJSON, ~14 MB. Under the ~25 MB threshold, so the layer ships as
+  GeoJSON rather than PMTiles. The full-resolution attributed GeoPackage is cached
+  at `mvp/cache/contours/aop_contours.gpkg` (gitignored, archival / QGIS use).
 - Viewer: toggle `Lidar contours (5 ft, 1m DEM)`, default OFF. Layers `contours-minor`
   (thin), `contours-index` (bold 25-ft), and `contours-labels` (elevation labels on
   index lines). Clicking any contour shows its elevation.
-- Verified with `mvp/scripts/playwright_verify_lidar_tiles.py` on 2026-05-20: all
-  checks PASS, 0 console errors, 2,343 contours rendered in-viewport. Smoothness
-  spot-checked at z16 — `brain/output/playwright_lidar_contours_z16.png`.
+- Verified with `mvp/scripts/playwright_verify_lidar_tiles.py` on 2026-05-21: all
+  checks PASS, 0 console errors. An independent crossing detector confirms 0
+  different-elevation crossings. Spot-checked at z16/z18 —
+  `brain/output/playwright_lidar_contours_z16.png` and `..._repair_spot.png`.
 
 ## Asphalt Roads Layer
 
