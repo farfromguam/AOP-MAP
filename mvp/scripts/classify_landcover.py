@@ -71,11 +71,11 @@ CLASS_NAMES = {
 # preview reads the same as the shipped map.
 CLASS_RGB = {
     NODATA: (255, 255, 255),
-    FOREST_DECIDUOUS: (185, 194, 163),  # #b9c2a3 muted sage
-    FOREST_EVERGREEN: (127, 140, 102),  # #7f8c66 darker conifer green
-    OPEN_GRASS: (207, 212, 176),        # #cfd4b0 pale sage
-    OPEN_MEADOW: (220, 207, 163),       # #dccfa3 warm khaki
-    OPEN_BARE: (205, 186, 143),         # #cdba8f ochre tan
+    FOREST_DECIDUOUS: (184, 193, 161),  # #b8c1a1 light sage
+    FOREST_EVERGREEN: (168, 177, 143),  # #a8b18f darker sage
+    OPEN_GRASS: (221, 210, 173),        # #ddd2ad light khaki
+    OPEN_MEADOW: (212, 199, 159),       # #d4c79f base khaki
+    OPEN_BARE: (199, 184, 144),         # #c7b890 darker khaki
 }
 
 # Canopy height threshold -- a height in metres, not a window, so it is not

@@ -129,8 +129,10 @@ def main() -> int:
         check("fine 5 ft contours fade with zoom",
               isinstance(minor_opacity, list) and minor_opacity[0] == "interpolate",
               str(minor_opacity))
-        check("index 25 ft contours keep a flat opacity",
-              isinstance(index_opacity, (int, float)) and not isinstance(index_opacity, bool),
+        check("index contours tier 50 ft vs 25 ft by zoom",
+              isinstance(index_opacity, list)
+              and index_opacity[0] == "interpolate"
+              and "case" in json.dumps(index_opacity),
               str(index_opacity))
 
         page.locator("#zoomPavilion").click()
@@ -163,15 +165,24 @@ def main() -> int:
               region_zoom < park_zoom < pav["z"], f"park={park_zoom:.2f}")
 
         print("\n== Inline layer tuning + snapshot ==")
-        page.locator('[data-tune-key="trails"]').click()
-        check("inline editor can select trails", page.locator("#layerEditorTitle").inner_text() == "Trails")
+        page.locator('[data-tune-key="trails"]').click(position={"x": 2, "y": 2})
+        check("selecting a layer row does not expand the editor",
+              page.locator("#layerEditor").evaluate("el => el.hidden"))
+        page.locator('[data-tune-expand-key="trails"]').click()
+        check("inline editor can expand trails", page.locator("#layerEditorTitle").inner_text() == "Trails")
         check(
-            "editor sits under the selected layer row",
+            "editor sits under the expanded layer row",
             page.locator('[data-tune-key="trails"]').evaluate(
                 "el => el.nextElementSibling && el.nextElementSibling.id === 'layerEditor'"
             ),
         )
         check("trail tuner reflects visible state", page.locator("#tuneVisible").is_checked())
+        check("trail tuner reads current color",
+              page.locator("#tuneColor").input_value() == paint(page, "publish-trails", "line-color"))
+        check("trail tuner reads current width",
+              abs(float(page.locator("#tuneWidth").input_value()) - float(paint(page, "publish-trails", "line-width"))) < 0.01)
+        check("trail tuner reads current opacity",
+              int(page.locator("#tuneOpacity").input_value()) == round(float(paint(page, "publish-trails", "line-opacity")) * 100))
         page.locator("#tuneColor").fill("#00a6a6")
         page.locator("#tuneWidth").evaluate(
             """el => {
@@ -190,6 +201,10 @@ def main() -> int:
         check("width knob updates selected layer", abs(float(paint(page, "publish-trails", "line-width")) - 5.2) < 0.01)
         check("opacity knob updates selected layer", abs(float(paint(page, "publish-trails", "line-opacity")) - 0.63) < 0.01)
         check("status shows unsaved preset modification", "modified" in page.locator("#presetStatus").inner_text())
+        page.locator('[data-tune-expand-key="roads"]').click()
+        check("roads exposes each configured tuning knob",
+              page.locator("#tuneControls .tune-control").count() >= 14,
+              f"count={page.locator('#tuneControls .tune-control').count()}")
         page.locator("#snapshotPreset").click()
         page.wait_for_timeout(250)
         saved = page.evaluate("JSON.parse(localStorage.getItem('aop_viewer_preset_settings_v1')).presets.topo")
@@ -219,8 +234,8 @@ def main() -> int:
               is_checked(page, "showUsdaNaip") and is_checked(page, "showSfwda")
               and is_checked(page, "showOsmTracks") and is_checked(page, "showBuildings"))
         check("Trace applies high-contrast boundary color", paint(page, "publish-boundaries", "line-color") == "#fff0b8")
-        page.locator('[data-tune-key="sfwda"]').click()
-        check("inline editor can select SFWDA", page.locator("#layerEditorTitle").inner_text() == "SFWDA paper map")
+        page.locator('[data-tune-expand-key="sfwda"]').click()
+        check("inline editor can expand SFWDA", page.locator("#layerEditorTitle").inner_text() == "SFWDA paper map")
         page.locator("#tuneOpacity").evaluate(
             """el => {
               el.value = '42';

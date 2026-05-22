@@ -369,6 +369,13 @@ zoomed in tight, and Region/Park/Pavilion zoom presets.
    touch layers. Bearing/pitch preserved. Region bbox is a constant;
    `parkViewBounds` is computed from `publish.geojson` boundary features at
    load, so Park tracks the live boundary.
+ - Camera leash: user said Region was too far zoomed out and asked not to let
+   users go past the 9-patch. The map now sets `maxBounds = REGION_BOUNDS`
+   (the 9-patch), so panning/zooming out is capped at the 9-patch edge. Region
+   now fits the 9-patch edge-to-edge (`padding: 0`), which is also the widest
+   the leash allows. Checked first that all viewer data -- including the
+   visitor context callouts -- sits inside the 9-patch, so the leash hides
+   nothing. Verifier got a leash check (jumpTo far out -> camera clamps back).
  - `fitToDataBounds` was refactored to share a `geojsonBounds` helper.
  - Mobile layout: the new 4th control row made `.left-controls` taller, so the
    mobile `.panel` `top` moved 112px -> 168px to clear it.
@@ -418,6 +425,50 @@ rebuilt around that workflow.
    `spinup/mvp_runbook.md`, and `tasks/backlog/leaf_on_landcover.md` (DONE).
  - The leaf-off NAIP 2021 orthos stay cached but are no longer used by the
    land-cover build.
+
+## Update: SE callout Chattanooga anchor + per-town deep links (2026-05-21)
+
+User asked for the SE visitor-context circle to carry a distance to Chattanooga
+on the circle label (not the popup) to orient riders to the region, and flagged
+that both callouts' `Food` links opened the same page top.
+
+ - `website/data/aop_visitor_context_callouts.geojson`: SE `South Pittsburg /
+   Kimball` label gained a 4th line `Chattanooga metro ~35 mi | ~45 min`
+   (Distance-Cities: South Pittsburg->Chattanooga 30 mi / ~35 min via I-24,
+   rounded up for the Ellis Cove Road approach). New Distance-Cities source
+   added to `_sources_checked`; SE `distance_note`/`services`/`examples`/
+   `source_summary` updated so the popup detail stays consistent.
+ - `Food` and `Lodging` links now deep-link per town with a `#:~:text=` browser
+   text fragment (the Marion County Tourism pages group by town heading but
+   have no anchor ids). The SE callout uses a two-fragment directive covering
+   both its towns: food -> `South Pittsburg`+`Kimball`, lodging -> `Kimball`+
+   `South Pittsburg` (lodging scrolls to the Kimball I-24 hotel cluster first).
+   Monteagle -> `Monteagle`. Degrades to opening the page top on browsers
+   without text-fragment support.
+ - `mvp/scripts/playwright_verify_visitor_context.py`: added Chattanooga-anchor,
+   distinct-deep-link, and SE-covers-both-towns checks; Chromium now launches
+   with `--enable-unsafe-swiftshader` and `wait_for_function` uses timer polling
+   so the run survives a GPU-less headless host. Run: 25/25 PASS, 0 console
+   errors.
+ - Catalog `research/viewer.md` and build card
+   `tasks/01_mvp/visitor_context_callouts.md` updated.
+
+## Update: collapsible right panel (2026-05-21)
+
+User asked to make the right panel collapsible upward.
+
+ - `website/index.html`: the `AOP edit panel` heading is now a clickable header
+   bar (`.panel-header`, `#panelHeader`) with a chevron button (`#panelCollapse`).
+   All panel content moved into a `#panelBody` wrapper.
+ - Clicking the header or the chevron retracts the panel body upward into the
+   header — only the title bar stays visible so the map underneath is exposed.
+   Clicking again expands it back down. The body animates with a `max-height`
+   transition (JS pins `scrollHeight`, then clears the cap on `transitionend` so
+   tall content can still scroll). Default state is expanded.
+ - Chevron glyph flips ▴ (collapse) / ▾ (expand); `aria-expanded` tracks state.
+ - Verified with an ad-hoc Playwright check: 14 of 14 checks PASS, 0 console
+   errors. Screenshots `brain/output/playwright_panel_collapse_*.png`.
+ - Catalog updated: `research/viewer.md` ("UI presets and layer tuning").
 
 ## Session note
 

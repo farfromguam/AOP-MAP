@@ -49,13 +49,13 @@
         "direction": "southeast",
         "kind": "visitor_support",
         "services": "food, fuel, convenience, hotels, I-24 access; Chattanooga metro further SE",
-        "examples": "South Pittsburg restaurants; Hampton Inn; Kimball hotel and restaurant cluster; Chattanooga metro for airport, big-box, and full city services",
+        "examples": "South Pittsburg restaurants; Kimball I-24 interchange fuel, fast food, and Hampton Inn hotel cluster; Chattanooga metro for airport, big-box, and full city services",
         "distance_note": "Approximate from the AOP office / Ellis Cove Road approach. Chattanooga sits about 30 driving miles past South Pittsburg via I-24, so the ~35 mi / ~45 min AOP-to-Chattanooga figure rounds the park approach plus that route — a regional-orientation estimate, not turn-by-turn routing.",
         "drive_time_note": "Planning estimate; check live routing and hours before relying on it.",
         "source_summary": "AOP office address; RiderPlanet approach and key-services notes; Marion County Tourism food/lodging listings; South Pittsburg-to-Chattanooga drive reference.",
         "directions_url": "https://www.google.com/maps/dir/?api=1&origin=1040%20Ellis%20Cove%20Road%2C%20South%20Pittsburg%2C%20TN%2037380&destination=South%20Pittsburg%2C%20TN",
-        "food_url": "https://visitmarioncountytn.com/food-and-drink/all-restaurants/#:~:text=South%20Pittsburg",
-        "lodging_url": "https://visitmarioncountytn.com/places-to-stay/hotels/#:~:text=South%20Pittsburg",
+        "food_url": "https://visitmarioncountytn.com/food-and-drink/all-restaurants/#:~:text=South%20Pittsburg&text=Kimball",
+        "lodging_url": "https://visitmarioncountytn.com/places-to-stay/hotels/#:~:text=Kimball&text=South%20Pittsburg",
         "source_url": "https://www.riderplanet-usa.com/atv/trails/info/tennessee_15194/ride_d19a.htm"
       },
       "geometry": {

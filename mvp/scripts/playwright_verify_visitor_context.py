@@ -120,9 +120,14 @@ def main() -> int:
         print(f"Opening {WEBSITE_URL}")
         page.goto(WEBSITE_URL, wait_until="load")
         page.evaluate("window.map = map;")
+        # polling=500: software WebGL keeps the main thread busy compiling
+        # shaders, which starves the default requestAnimationFrame poll. Timer
+        # polling and a generous timeout keep the wait reliable on a GPU-less
+        # headless host.
         page.wait_for_function(
             "() => document.getElementById('message').textContent.includes('publish feature')",
-            timeout=15_000,
+            timeout=45_000,
+            polling=500,
         )
         page.wait_for_timeout(700)
 
@@ -161,11 +166,22 @@ def main() -> int:
                   len(set(data["lodgingUrls"])) == len(data["lodgingUrls"])
                   and all("#:~:text=" in url for url in data["lodgingUrls"]),
                   str(data["lodgingUrls"]))
+            se_idx = (data["names"].index("South Pittsburg / Kimball supply run")
+                      if "South Pittsburg / Kimball supply run" in data["names"]
+                      else None)
+            if se_idx is not None:
+                se_food = data["foodUrls"][se_idx]
+                se_lodging = data["lodgingUrls"][se_idx]
+                check("SE callout food/lodging links cover both South Pittsburg and Kimball",
+                      all("South%20Pittsburg" in url and "Kimball" in url
+                          for url in (se_food, se_lodging)),
+                      str([se_food, se_lodging]))
 
         page.wait_for_function(
             """() => window.map && window.map.queryRenderedFeatures
               && window.map.queryRenderedFeatures({ layers: ['visitor-context-fill'] }).length > 0""",
-            timeout=5_000,
+            timeout=15_000,
+            polling=500,
         )
         rendered = rendered_count(page, ["visitor-context-fill"])
         check("callout circles render in initial viewport", rendered > 0, f"{rendered} rendered")

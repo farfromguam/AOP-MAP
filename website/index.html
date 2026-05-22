@@ -15,28 +15,57 @@
     .preset-bar button.active { background: #8b5f38; border-color: #8b5f38; color: #fff8e8; }
     .preset-bar button.terrain-button { max-width: 58px; }
     .zoom-bar .zoom-label { flex: 0 0 auto; align-self: center; font: 700 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.06em; color: #6b5a3e; padding: 0 4px 0 2px; }
-    .panel { position: absolute; right: 12px; top: 12px; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); max-width: 340px; max-height: calc(100vh - 24px); overflow-y: auto; z-index: 2; }
+    .panel { position: absolute; right: 12px; top: 12px; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); width: 380px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); overflow-y: auto; z-index: 2; }
     .panel h1 { margin: 0 0 8px; font-size: 1rem; }
+    .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; user-select: none; }
+    .panel-header h1 { margin: 0; }
+    .panel-collapse { flex: 0 0 auto; margin: 0; padding: 2px 9px; font-size: 0.8rem; line-height: 1.5; color: #6b5a3e; }
+    .panel-body { overflow: hidden; transition: max-height 0.26s ease; }
+    .panel.collapsed .panel-body { max-height: 0; }
     .panel label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.94rem; }
     .panel small { display: block; margin-top: 8px; color: #444; }
     .panel hr { border: 0; border-top: 1px solid #d8d8d8; margin: 10px 0; }
-    .panel .section-title { font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: #666; margin: 0 0 6px; }
+    .panel-section { border-top: 1px solid #d8d0bd; padding-top: 8px; margin-top: 10px; }
+    .panel-section:first-of-type { margin-top: 8px; }
+    .section-toggle { width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin: 0 0 6px !important; padding: 3px 0 !important; border: 0 !important; background: transparent !important; color: #666; text-align: left; }
+    .section-toggle:hover { color: #3f3122; background: transparent !important; }
+    .section-label { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .section-chevron { color: #6b5a3e; font-size: 0.85rem; line-height: 1; }
+    .panel-section.collapsed .section-content { display: none; }
     .panel button { font: inherit; padding: 4px 10px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
     .panel button:hover { background: #ececec; }
     .panel button[disabled] { opacity: 0.4; cursor: not-allowed; }
     .panel button.active { background: #9a5a32; color: #fff; border-color: #9a5a32; }
     .panel select { font: inherit; padding: 3px 5px; border-radius: 6px; border: 1px solid #bbb; }
-    .panel label.layer-row { margin: 0 0 4px; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
-    .panel label.layer-row.active { background: #efe2c6; color: #3f3122; }
+    .layer-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; margin: 0 0 4px; padding: 3px 4px 3px 6px; border-radius: 6px; }
+    .layer-row.active { background: #f6edda; color: #3f3122; }
+    .layer-row.expanded { background: #efe2c6; color: #3f3122; }
+    .layer-row label { min-width: 0; margin: 0; cursor: pointer; }
+    .layer-expand { min-width: 30px; margin: 0 !important; padding: 2px 7px !important; color: #6b5a3e; }
     .panel label.tune-visible { margin: 0; white-space: nowrap; }
-    .layer-editor { margin: 0 0 10px 28px; padding: 10px; border-left: 3px solid #9a5a32; border-radius: 8px; background: rgba(247,241,226,0.92); }
+    .layer-editor { margin: 0 0 10px 18px; padding: 10px; border-left: 3px solid #9a5a32; border-radius: 8px; background: rgba(247,241,226,0.92); }
+    .layer-editor[hidden] { display: none; }
     .layer-editor-heading { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
     .layer-editor-heading strong { font-size: 0.9rem; color: #4a3c2a; }
-    .tune-control { display: grid !important; grid-template-columns: 68px 1fr 42px; gap: 8px !important; align-items: center; margin-bottom: 7px !important; }
+    .tune-controls { display: grid; gap: 7px; }
+    .tune-control { display: grid !important; grid-template-columns: minmax(84px, 1fr) minmax(92px, 1.35fr) 42px; gap: 8px !important; align-items: center; margin-bottom: 0 !important; }
     .tune-control[hidden] { display: none !important; }
+    .tune-label { min-width: 0; overflow-wrap: anywhere; color: #4a3c2a; font-size: 0.82rem; line-height: 1.15; }
     .tune-control input[type="range"] { width: 100%; min-width: 0; }
     .tune-control input[type="color"] { width: 100%; height: 28px; padding: 0; border: 1px solid #bbb; border-radius: 5px; background: #fff; }
     .tune-control output { text-align: right; font-size: 0.82rem; color: #5c5548; }
+    .tune-band { display: grid; gap: 4px; }
+    .tune-band-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .tune-band-head .tune-label { font-size: 0.82rem; }
+    .tune-band-head output { text-align: right; font-size: 0.82rem; color: #5c5548; white-space: nowrap; }
+    .dual-range { position: relative; height: 24px; }
+    .dual-range .dual-track { position: absolute; top: 10px; left: 0; right: 0; height: 4px; border-radius: 2px; background: #d8cdb4; }
+    .dual-range .dual-fill { position: absolute; top: 10px; height: 4px; border-radius: 2px; background: #9a5a32; }
+    .dual-range input[type="range"] { position: absolute; top: 0; left: 0; width: 100%; height: 24px; margin: 0; -webkit-appearance: none; appearance: none; background: none; pointer-events: none; }
+    .dual-range input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: transparent; }
+    .dual-range input[type="range"]::-moz-range-track { height: 4px; background: transparent; }
+    .dual-range input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; pointer-events: auto; margin-top: -5.5px; width: 15px; height: 15px; border-radius: 50%; background: #f7f1e2; border: 2px solid #9a5a32; cursor: pointer; }
+    .dual-range input[type="range"]::-moz-range-thumb { pointer-events: auto; box-sizing: border-box; width: 15px; height: 15px; border-radius: 50%; background: #f7f1e2; border: 2px solid #9a5a32; cursor: pointer; }
     .tune-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
     .tune-actions button { margin-right: 0; }
     #presetStatus { min-height: 1.2em; }
@@ -92,103 +121,150 @@
     </div>
   </div>
   <div class="panel">
-    <h1>AOP edit panel</h1>
-    <small id="presetStatus">Park preset active.</small>
-    <hr/>
-    <div class="section-title">Layers</div>
-    <label><input type="checkbox" id="showLandcover" checked /> Land cover (NAIP)</label>
-    <div id="layerEditor" class="layer-editor">
-      <div class="layer-editor-heading">
-        <strong id="layerEditorTitle">Land cover</strong>
-        <label class="tune-visible"><input type="checkbox" id="tuneVisible" /> Visible</label>
-      </div>
-      <label class="tune-control"><span>Opacity</span><input type="range" id="tuneOpacity" min="0" max="100" value="100" /><output id="tuneOpacityValue">100%</output></label>
-      <label class="tune-control"><span>Color</span><input type="color" id="tuneColor" value="#9a5a32" /><output></output></label>
-      <label class="tune-control"><span>Width</span><input type="range" id="tuneWidth" min="0.2" max="10" step="0.1" value="2" /><output id="tuneWidthValue">2.0</output></label>
-      <div class="tune-actions">
-        <button id="snapshotPreset" type="button">Snapshot preset</button>
-        <button id="exportSettings" type="button">Export settings</button>
-      </div>
+    <div class="panel-header" id="panelHeader" title="Collapse panel">
+      <h1>AOP edit panel</h1>
+      <button type="button" id="panelCollapse" class="panel-collapse" aria-expanded="true" aria-controls="panelBody" title="Collapse panel">▴</button>
     </div>
-    <label><input type="checkbox" id="showLandcover9" checked /> Land cover — 9-patch (NAIP)</label>
-    <label><input type="range" id="landcover9Opacity" min="0" max="100" value="55" style="flex:1" /> 9-patch land cover opacity</label>
-    <label><input type="checkbox" id="showHillshade" /> Lidar hillshade (USGS 3DEP)</label>
-    <label><input type="checkbox" id="showContours" /> Lidar contours (5 ft, 1m DEM)</label>
-    <label><input type="checkbox" id="showSatellite" /> Satellite imagery (TNMap 2022)</label>
-    <label><input type="checkbox" id="showUsdaNaip" /> USDA NAIP imagery (TN 2023)</label>
-    <label><input type="checkbox" id="showNinePatch" /> 9-patch acquisition AOI</label>
-    <label><input type="checkbox" id="showLidarTiles" /> Lidar tile index (USGS 3DEP)</label>
-    <label><input type="checkbox" id="showRoads" checked /> Asphalt roads (USGS National Map)</label>
-    <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
-    <label><input type="checkbox" id="showWater" /> Streams &amp; waterbodies (USGS NHD)</label>
-    <label><input type="checkbox" id="showSprings" /> Springs &amp; gages (USGS NHD)</label>
-    <label><input type="checkbox" id="showCemeteries" /> Cemeteries (TN Comptroller parcels)</label>
-    <label><input type="checkbox" id="showBuildings" /> Building footprints (FEMA USA Structures)</label>
-    <hr/>
-    <div class="section-title">Community (OSM)</div>
-    <label><input type="checkbox" id="showOsmPark" /> OSM park polygon</label>
-    <label><input type="checkbox" id="showOsmTracks" /> OSM tracks (highway=track)</label>
-    <label><input type="checkbox" id="showOsmService" /> OSM service roads</label>
-    <label><input type="checkbox" id="showOsmNamed" /> OSM named landmarks</label>
-    <hr/>
-    <div class="section-title">SFWDA paper map (2015)</div>
-    <label><input type="checkbox" id="showSfwda" /> SFWDA paper trail map</label>
-    <label><input type="range" id="sfwdaOpacity" min="0" max="100" value="70" style="flex:1" /> opacity</label>
-    <label><input type="range" id="sfwdaMultiply" min="0" max="100" value="0" style="flex:1" /> multiply (white key-out)</label>
-    <label><input type="checkbox" id="editSfwda" /> Edit alignment (6×6 grid)</label>
-    <label><input type="checkbox" id="showInterior" checked /> Show edge + interior handles</label>
-    <div style="margin: 4px 0 0;">
-      <button id="rotateCcw" disabled>↺ 90° CCW</button>
-      <button id="rotateCw" disabled>↻ 90° CW</button>
+    <div class="panel-body" id="panelBody">
+      <small id="presetStatus">Park preset active.</small>
+
+      <section class="panel-section" data-section="layers">
+        <button type="button" class="section-toggle" aria-expanded="true">
+          <span class="section-label">Layers</span>
+          <span class="section-chevron">▴</span>
+        </button>
+        <div class="section-content">
+          <label><input type="checkbox" id="showLandcover" checked /> Land cover (NAIP)</label>
+          <div id="layerEditor" class="layer-editor" hidden>
+            <div class="layer-editor-heading">
+              <strong id="layerEditorTitle">Land cover</strong>
+              <label class="tune-visible"><input type="checkbox" id="tuneVisible" /> Visible</label>
+            </div>
+            <div id="tuneControls" class="tune-controls"></div>
+            <div class="tune-actions">
+              <button id="snapshotPreset" type="button">Snapshot preset</button>
+              <button id="exportSettings" type="button">Export settings</button>
+            </div>
+          </div>
+          <label><input type="checkbox" id="showLandcover9" checked /> Land cover — 9-patch (NAIP)</label>
+          <label><input type="range" id="landcover9Opacity" min="0" max="100" value="55" style="flex:1" /> 9-patch land cover opacity</label>
+          <label><input type="checkbox" id="showHillshade" /> Lidar hillshade (USGS 3DEP)</label>
+          <label><input type="checkbox" id="showContours" /> Lidar contours (5 ft, 1m DEM)</label>
+          <label><input type="checkbox" id="showSatellite" /> Satellite imagery (TNMap 2022)</label>
+          <label><input type="checkbox" id="showUsdaNaip" /> USDA NAIP imagery (TN 2023)</label>
+          <label><input type="checkbox" id="showNinePatch" /> 9-patch acquisition AOI</label>
+          <label><input type="checkbox" id="showLidarTiles" /> Lidar tile index (USGS 3DEP)</label>
+          <label><input type="checkbox" id="showRoads" checked /> Asphalt roads (USGS National Map)</label>
+          <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
+          <label><input type="checkbox" id="showWater" /> Streams &amp; waterbodies (USGS NHD)</label>
+          <label><input type="checkbox" id="showSprings" /> Springs &amp; gages (USGS NHD)</label>
+          <label><input type="checkbox" id="showCemeteries" /> Cemeteries (TN Comptroller parcels)</label>
+          <label><input type="checkbox" id="showBuildings" /> Building footprints (FEMA USA Structures)</label>
+        </div>
+      </section>
+
+      <section class="panel-section" data-section="community">
+        <button type="button" class="section-toggle" aria-expanded="true">
+          <span class="section-label">Community (OSM)</span>
+          <span class="section-chevron">▴</span>
+        </button>
+        <div class="section-content">
+          <label><input type="checkbox" id="showOsmPark" /> OSM park polygon</label>
+          <label><input type="checkbox" id="showOsmTracks" /> OSM tracks (highway=track)</label>
+          <label><input type="checkbox" id="showOsmService" /> OSM service roads</label>
+          <label><input type="checkbox" id="showOsmNamed" /> OSM named landmarks</label>
+        </div>
+      </section>
+
+      <section class="panel-section" data-section="sfwda">
+        <button type="button" class="section-toggle" aria-expanded="true">
+          <span class="section-label">SFWDA paper map (2015)</span>
+          <span class="section-chevron">▴</span>
+        </button>
+        <div class="section-content">
+          <label><input type="checkbox" id="showSfwda" /> SFWDA paper trail map</label>
+          <label><input type="range" id="sfwdaOpacity" min="0" max="100" value="70" style="flex:1" /> opacity</label>
+          <label><input type="range" id="sfwdaMultiply" min="0" max="100" value="0" style="flex:1" /> multiply (white key-out)</label>
+          <label><input type="checkbox" id="editSfwda" /> Edit alignment (6×6 grid)</label>
+          <label><input type="checkbox" id="showInterior" checked /> Show edge + interior handles</label>
+          <div style="margin: 4px 0 0;">
+            <button id="rotateCcw" disabled>↺ 90° CCW</button>
+            <button id="rotateCw" disabled>↻ 90° CW</button>
+          </div>
+          <div style="margin: 6px 0 0;">
+            <button id="exportAlignment" disabled>Export alignment</button>
+            <button id="resetAlignment" disabled>Reset</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-section" data-section="publishable">
+        <button type="button" class="section-toggle" aria-expanded="true">
+          <span class="section-label">Publishable</span>
+          <span class="section-chevron">▴</span>
+        </button>
+        <div class="section-content">
+          <label><input type="checkbox" id="showTrails" checked /> Publishable trails</label>
+          <label><input type="checkbox" id="showBoundaries" checked /> Publishable boundaries</label>
+          <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
+        </div>
+      </section>
+
+      <section class="panel-section" data-section="editor">
+        <button type="button" class="section-toggle" aria-expanded="true">
+          <span class="section-label">Map editor</span>
+          <span class="section-chevron">▴</span>
+        </button>
+        <div class="section-content">
+          <label><input type="checkbox" id="showEditorPois" checked /> Drawn POIs</label>
+          <div class="editor-row">
+            <select id="poiCategory" title="Feature type" style="flex:1">
+              <option>Pavilion</option>
+              <option>Building</option>
+              <option>Restroom</option>
+              <option>Parking</option>
+              <option>Staging area</option>
+              <option>Gate</option>
+              <option>Trail trace</option>
+              <option>Road trace</option>
+              <option>Landmark</option>
+              <option>Hazard</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="editor-row">
+            <button id="placePoiBtn" type="button">Place POI</button>
+            <button id="drawFootprintBtn" type="button">Draw footprint</button>
+          </div>
+          <div class="editor-row">
+            <button id="traceLineBtn" type="button">Trace line</button>
+          </div>
+          <div class="editor-row">
+            <button id="exportPoiBtn" type="button">Export GeoJSON</button>
+            <button id="clearPoiBtn" type="button">Clear all</button>
+          </div>
+          <small id="poiStatus">0 POIs, 0 footprints, 0 traces.</small>
+          <small>Pick a type, then <b>Place POI</b> (one click), <b>Draw footprint</b> (click each corner), or <b>Trace line</b> (click vertices, press Enter to finish). Click a feature to rename or delete it. Edits save in this browser; Export writes <code>aop_editor_features.geojson</code>.</small>
+        </div>
+      </section>
+
+      <section class="panel-section collapsed" data-section="notes">
+        <button type="button" class="section-toggle" aria-expanded="false">
+          <span class="section-label">Layer notes</span>
+          <span class="section-chevron">▾</span>
+        </button>
+        <div class="section-content">
+          <small>Terrain: use the 3D button with any preset. AWS Terrain Tiles, derived from USGS 3DEP. Drag with right-click (or two-finger drag) to tilt and rotate.</small>
+          <small>Satellite tiles served by TDOT/TNMap — inspection use only, not for redistribution.</small>
+          <small>USDA NAIP traces are raw candidates. Keep them out of publish until source, confidence, and field/imagery review are attached.</small>
+          <small>Contours: USGS 3DEP 1 m lidar DEM. Detail tiers by zoom — 50 ft index lines when zoomed out, all 25 ft index lines at mid-zoom, fine 5 ft lines when zoomed in.</small>
+          <small>Cemeteries: TN Comptroller Marion County parcels. Ellis Cemetery is the inholding inside the AOP boundary — the gap in the park polygon.</small>
+          <small>Buildings: FEMA USA Structures footprints over the 9-patch. Raw reference context; verify against imagery before treating as park facilities.</small>
+          <small>Visitor context callouts: support-town planning notes from AOP, RiderPlanet, and Marion County Tourism. Times are approximate; check live routing and hours.</small>
+          <small>SFWDA raster is &copy; Adventure Off Road Park (via SFWDA) — internal/inspection only. Drag the 4 corner handles in Edit mode to pixel-align against OSM tracks, then Export to save <code>website/data/sfwda_raster_alignment.json</code>.</small>
+        </div>
+      </section>
     </div>
-    <div style="margin: 6px 0 0;">
-      <button id="exportAlignment" disabled>Export alignment</button>
-      <button id="resetAlignment" disabled>Reset</button>
-    </div>
-    <hr/>
-    <div class="section-title">Publishable</div>
-    <label><input type="checkbox" id="showTrails" checked /> Publishable trails</label>
-    <label><input type="checkbox" id="showBoundaries" checked /> Publishable boundaries</label>
-    <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
-    <hr/>
-    <div class="section-title">Map editor</div>
-    <label><input type="checkbox" id="showEditorPois" checked /> Drawn POIs</label>
-    <div class="editor-row">
-      <select id="poiCategory" title="Feature type" style="flex:1">
-        <option>Pavilion</option>
-        <option>Building</option>
-        <option>Restroom</option>
-        <option>Parking</option>
-        <option>Staging area</option>
-        <option>Gate</option>
-        <option>Trail trace</option>
-        <option>Road trace</option>
-        <option>Landmark</option>
-        <option>Hazard</option>
-        <option>Other</option>
-      </select>
-    </div>
-    <div class="editor-row">
-      <button id="placePoiBtn" type="button">Place POI</button>
-      <button id="drawFootprintBtn" type="button">Draw footprint</button>
-    </div>
-    <div class="editor-row">
-      <button id="traceLineBtn" type="button">Trace line</button>
-    </div>
-    <div class="editor-row">
-      <button id="exportPoiBtn" type="button">Export GeoJSON</button>
-      <button id="clearPoiBtn" type="button">Clear all</button>
-    </div>
-    <small id="poiStatus">0 POIs, 0 footprints, 0 traces.</small>
-    <small>Pick a type, then <b>Place POI</b> (one click), <b>Draw footprint</b> (click each corner), or <b>Trace line</b> (click vertices, press Enter to finish). Click a feature to rename or delete it. Edits save in this browser; Export writes <code>aop_editor_features.geojson</code>.</small>
-    <small>Terrain: use the 3D button with any preset. AWS Terrain Tiles, derived from USGS 3DEP. Drag with right-click (or two-finger drag) to tilt and rotate.</small>
-    <small>Satellite tiles served by TDOT/TNMap — inspection use only, not for redistribution.</small>
-    <small>USDA NAIP traces are raw candidates. Keep them out of publish until source, confidence, and field/imagery review are attached.</small>
-    <small>Contours: 5 ft interval from the USGS 3DEP 1 m lidar DEM; bold lines every 25 ft.</small>
-    <small>Cemeteries: TN Comptroller Marion County parcels. Ellis Cemetery is the inholding inside the AOP boundary — the gap in the park polygon.</small>
-    <small>Buildings: FEMA USA Structures footprints over the 9-patch. Raw reference context; verify against imagery before treating as park facilities.</small>
-    <small>Visitor context callouts: support-town planning notes from AOP, RiderPlanet, and Marion County Tourism. Times are approximate; check live routing and hours.</small>
-    <small>SFWDA raster is &copy; Adventure Off Road Park (via SFWDA) — internal/inspection only. Drag the 4 corner handles in Edit mode to pixel-align against OSM tracks, then Export to save <code>website/data/sfwda_raster_alignment.json</code>.</small>
   </div>
   <div class="message" id="message">Loading publish layer...</div>
 
@@ -266,15 +342,66 @@
     const terrainButton = document.getElementById('terrainButton');
     const layerEditor = document.getElementById('layerEditor');
     const layerEditorTitle = document.getElementById('layerEditorTitle');
+    const tuneControls = document.getElementById('tuneControls');
     const tuneVisible = document.getElementById('tuneVisible');
-    const tuneOpacity = document.getElementById('tuneOpacity');
-    const tuneOpacityValue = document.getElementById('tuneOpacityValue');
-    const tuneColor = document.getElementById('tuneColor');
-    const tuneWidth = document.getElementById('tuneWidth');
-    const tuneWidthValue = document.getElementById('tuneWidthValue');
     const snapshotPresetBtn = document.getElementById('snapshotPreset');
     const exportSettingsBtn = document.getElementById('exportSettings');
     const presetStatus = document.getElementById('presetStatus');
+
+    // --- Right panel: collapse upward into its header bar ---
+    const panel = document.querySelector('.panel');
+    const panelHeader = document.getElementById('panelHeader');
+    const panelBody = document.getElementById('panelBody');
+    const panelCollapse = document.getElementById('panelCollapse');
+    let panelCollapsed = false;
+
+    function togglePanel() {
+      panelCollapsed = !panelCollapsed;
+      panel.classList.toggle('collapsed', panelCollapsed);
+      panelCollapse.textContent = panelCollapsed ? '▾' : '▴';
+      panelCollapse.setAttribute('aria-expanded', String(!panelCollapsed));
+      panelHeader.title = panelCollapse.title = panelCollapsed ? 'Expand panel' : 'Collapse panel';
+      if (panelCollapsed) {
+        // Pin the live height so the transition has somewhere to retract from.
+        panelBody.style.maxHeight = panelBody.scrollHeight + 'px';
+        requestAnimationFrame(() => { panelBody.style.maxHeight = '0px'; });
+      } else {
+        panelBody.style.maxHeight = panelBody.scrollHeight + 'px';
+        // Drop the cap once expanded so tall content can still grow and scroll.
+        panelBody.addEventListener('transitionend', function clear(e) {
+          if (e.target !== panelBody || e.propertyName !== 'max-height') return;
+          panelBody.style.maxHeight = '';
+          panelBody.removeEventListener('transitionend', clear);
+        });
+      }
+    }
+
+    panelCollapse.addEventListener('click', (e) => { e.stopPropagation(); togglePanel(); });
+    panelHeader.addEventListener('click', togglePanel);
+
+    function setSectionCollapsed(section, collapsed) {
+      const button = section.querySelector('.section-toggle');
+      const chevron = section.querySelector('.section-chevron');
+      section.classList.toggle('collapsed', collapsed);
+      if (button) button.setAttribute('aria-expanded', String(!collapsed));
+      if (chevron) chevron.textContent = collapsed ? '▾' : '▴';
+    }
+
+    for (const section of document.querySelectorAll('.panel-section')) {
+      const button = section.querySelector('.section-toggle');
+      setSectionCollapsed(section, section.classList.contains('collapsed'));
+      if (button) {
+        button.addEventListener('click', () => {
+          setSectionCollapsed(section, !section.classList.contains('collapsed'));
+        });
+      }
+    }
+
+    function openContainingSection(element) {
+      const section = element?.closest('.panel-section');
+      if (section) setSectionCollapsed(section, false);
+    }
+
     // Named-feature search registry, filled by indexFeatures during map load.
     const searchIndex = [];
     let searchGroups = [];
@@ -282,6 +409,7 @@
     let searchActive = -1;
     let activePresetId = 'park';
     let activeTuneKey = 'landcover';
+    let expandedTuneKey = null;
     let applyingPreset = false;
 
     function setLayerVisibility(layerId, visible) {
@@ -294,6 +422,24 @@
       if (map.getLayer(layerId)) {
         map.setPaintProperty(layerId, property, JSON.parse(JSON.stringify(value)));
       }
+    }
+
+    // Contour fade bands are ['interpolate','linear',['zoom'], z0, out0, z1, out1].
+    // The zoom-band knobs move only z0/z1; the opacity outputs are left as-is so
+    // the per-preset / per-line-class opacity values survive a knob drag.
+    function withZoomStops(expr, z0, z1) {
+      if (!Array.isArray(expr) || expr[0] !== 'interpolate') return expr;
+      const next = JSON.parse(JSON.stringify(expr));
+      next[3] = z0;
+      next[5] = z1;
+      return next;
+    }
+    function zoomStopsOf(expr, fallback) {
+      if (Array.isArray(expr) && expr[0] === 'interpolate'
+          && typeof expr[3] === 'number' && typeof expr[5] === 'number') {
+        return [expr[3], expr[5]];
+      }
+      return fallback.slice();
     }
 
     // The 9-patch forest layer fades independently of the crisp park layer,
@@ -316,34 +462,40 @@
       'fog-ground-blend': 0.5
     };
 
+    // Land-cover palette -- two tight colour families so variation reads as a
+    // highlight, not a clash. Trees: a light/dark sage pair. Fields: a
+    // light/base/dark warm-khaki trio. Within each set the steps are small;
+    // the two sets stay clearly apart (green vs khaki).
     const LANDCOVER_MUTED_FILL = ['match', ['get', 'class'],
-      'forest_deciduous', '#b9c2a3',
-      'forest_evergreen', '#7f8c66',
-      'open_grass',       '#cfd4b0',
-      'open_meadow',      '#dccfa3',
-      'open_bare',        '#cdba8f',
-      '#b9c2a3'];
+      'forest_deciduous', '#b8c1a1',
+      'forest_evergreen', '#a8b18f',
+      'open_grass',       '#ddd2ad',
+      'open_meadow',      '#d4c79f',
+      'open_bare',        '#c7b890',
+      '#b8c1a1'];
     const LANDCOVER_MUTED_OUTLINE = ['match', ['get', 'class'],
-      'forest_deciduous', '#94a07c',
-      'forest_evergreen', '#647154',
-      'open_grass',       '#b4ba93',
-      'open_meadow',      '#c5b783',
-      'open_bare',        '#b6a073',
-      '#94a07c'];
+      'forest_deciduous', '#a6af8d',
+      'forest_evergreen', '#969f7c',
+      'open_grass',       '#cdc29c',
+      'open_meadow',      '#c4b78d',
+      'open_bare',        '#b7a87f',
+      '#a6af8d'];
+    // Topo/relief variant of the same two families, lifted lighter and a touch
+    // greyer so hillshade and contour lines read clearly on top of it.
     const LANDCOVER_RELIEF_FILL = ['match', ['get', 'class'],
-      'forest_deciduous', '#aeb89a',
-      'forest_evergreen', '#6f7e5a',
-      'open_grass',       '#c7c99f',
-      'open_meadow',      '#d1c08d',
-      'open_bare',        '#c2aa78',
-      '#aeb89a'];
+      'forest_deciduous', '#c0c6ad',
+      'forest_evergreen', '#b1b89b',
+      'open_grass',       '#e5dcbc',
+      'open_meadow',      '#ddd2ae',
+      'open_bare',        '#d1c5a0',
+      '#c0c6ad'];
     const LANDCOVER_RELIEF_OUTLINE = ['match', ['get', 'class'],
-      'forest_deciduous', '#849068',
-      'forest_evergreen', '#566548',
-      'open_grass',       '#a8aa7d',
-      'open_meadow',      '#b49f68',
-      'open_bare',        '#a78e5f',
-      '#849068'];
+      'forest_deciduous', '#aeb499',
+      'forest_evergreen', '#9fa687',
+      'open_grass',       '#d3caa8',
+      'open_meadow',      '#cbc09b',
+      'open_bare',        '#bfb28c',
+      '#aeb499'];
 
     function syncTerrainControl(enabled) {
       terrainToggle.checked = Boolean(enabled);
@@ -450,6 +602,19 @@
         width: [
           ['contours-minor', 'line-width'],
           ['contours-index', 'line-width']
+        ],
+        zoomBandRange: { min: 12, max: 20, step: 0.5 },
+        zoomBands: [
+          {
+            label: '25 ft index fade',
+            targets: [['contours-index', 'line-opacity'], ['contours-labels', 'text-opacity']],
+            fallback: [15, 16]
+          },
+          {
+            label: '5 ft detail fade',
+            targets: [['contours-minor', 'line-opacity']],
+            fallback: [16.5, 17.5]
+          }
         ]
       },
       hillshade: {
@@ -697,6 +862,7 @@
         label: 'SFWDA paper map',
         toggle: sfwdaToggle,
         linkedSlider: sfwdaOpacity,
+        extraSliders: [{ label: 'Multiply', slider: sfwdaMultiply, kind: 'percent', defaultValue: 0 }],
         defaults: { opacity: 70, color: '#ffffff', width: 1 },
         opacity: [],
         color: [],
@@ -797,9 +963,9 @@
             'hillshade-highlight-color': '#fbf4e2',
             'hillshade-accent-color': '#6b5640'
           },
-          'contours-minor': { 'line-color': '#c7b48f', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0, 15.5, 0.75] },
-          'contours-index': { 'line-color': '#a8906a', 'line-opacity': 0.95 },
-          'contours-labels': { 'text-color': '#7d6a4a', 'text-opacity': 1 },
+          'contours-minor': { 'line-color': '#c7b48f', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0, 17.5, 0.75] },
+          'contours-index': { 'line-color': '#a8906a', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 0.95, 0], 16, 0.95] },
+          'contours-labels': { 'text-color': '#7d6a4a', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 1, 0], 16, 1] },
           streams: { 'line-color': '#7fa3ac', 'line-opacity': 0.9 },
           'stream-labels': { 'text-color': '#4a6c73', 'text-opacity': 1 },
           'water-area-fill': { 'fill-color': '#a8c5c9', 'fill-opacity': 0.55 },
@@ -856,9 +1022,9 @@
             'hillshade-highlight-color': '#fff4d9',
             'hillshade-accent-color': '#6f604c'
           },
-          'contours-minor': { 'line-color': '#8e7a5c', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0, 15.5, 0.8], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.65, 16, 1.55] },
-          'contours-index': { 'line-color': '#5f4934', 'line-opacity': 0.98, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.25, 16, 3.1] },
-          'contours-labels': { 'text-color': '#4e3d2c', 'text-opacity': 1 },
+          'contours-minor': { 'line-color': '#8e7a5c', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0, 17.5, 0.8], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.65, 16, 1.55] },
+          'contours-index': { 'line-color': '#5f4934', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 0.98, 0], 16, 0.98], 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.25, 16, 3.1] },
+          'contours-labels': { 'text-color': '#4e3d2c', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 1, 0], 16, 1] },
           streams: { 'line-color': '#4d8792', 'line-opacity': 0.95 },
           'stream-labels': { 'text-color': '#2f6570', 'text-opacity': 1 },
           'water-area-fill': { 'fill-color': '#8eb7be', 'fill-opacity': 0.62 },
@@ -1065,16 +1231,7 @@
     }
 
     function selectedTunable() {
-      return TUNABLE_LAYERS[activeTuneKey] || TUNABLE_LAYERS.landcover;
-    }
-
-    function firstPaintValue(targets, fallback = undefined) {
-      for (const [layerId, property] of targets || []) {
-        if (!map.getLayer(layerId)) continue;
-        const value = map.getPaintProperty(layerId, property);
-        if (value !== undefined) return value;
-      }
-      return fallback;
+      return TUNABLE_LAYERS[expandedTuneKey || activeTuneKey] || TUNABLE_LAYERS.landcover;
     }
 
     function cssColorOrDefault(value, fallback) {
@@ -1085,80 +1242,310 @@
       return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
     }
 
-    function setControlVisible(input, visible) {
-      const row = input.closest('.tune-control');
-      if (row) row.hidden = !visible;
-      input.disabled = !visible;
+    function humanizeId(value) {
+      return String(value || '')
+        .replace(/^publish-/, '')
+        .replace(/^landcover-9patch-/, '9patch ')
+        .replace(/^landcover-/, '')
+        .replace(/^editor-poi-/, 'editor ')
+        .replace(/^osm-/, 'OSM ')
+        .replace(/^waterbody-/, 'waterbody ')
+        .replace(/-/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function propertyLabel(property) {
+      if (property === 'circle-radius') return 'size';
+      if (property === 'hillshade-exaggeration') return 'relief';
+      return String(property || '')
+        .replace(/^(fill|line|circle|text|raster|hillshade)-/, '')
+        .replace(/-/g, ' ');
+    }
+
+    function tuneTargetLabel(layerId, property) {
+      const layer = humanizeId(layerId);
+      const prop = propertyLabel(property);
+      return layer ? `${layer} ${prop}` : prop;
     }
 
     function tuneRowForKey(key) {
-      const config = TUNABLE_LAYERS[key];
-      return config?.toggle?.closest('label') || null;
+      return TUNABLE_LAYERS[key]?.row || null;
+    }
+
+    function updateLayerRowState() {
+      for (const [key, config] of Object.entries(TUNABLE_LAYERS)) {
+        const row = tuneRowForKey(key);
+        const button = config.expandButton;
+        if (!row) continue;
+        const expanded = expandedTuneKey === key;
+        row.classList.toggle('active', activeTuneKey === key);
+        row.classList.toggle('expanded', expanded);
+        if (button) {
+          button.textContent = expanded ? '▴' : '▾';
+          button.setAttribute('aria-expanded', String(expanded));
+          button.title = expanded ? `Hide ${config.label} controls` : `Show ${config.label} controls`;
+        }
+      }
+    }
+
+    function paintValue(layerId, property, fallback) {
+      if (!map.getLayer(layerId)) return fallback;
+      const value = map.getPaintProperty(layerId, property);
+      return value === undefined ? fallback : value;
+    }
+
+    function currentKnobValue(config, knob) {
+      if (knob.sliderId) {
+        const slider = document.getElementById(knob.sliderId);
+        return Number(slider?.value ?? knob.defaultValue ?? 100);
+      }
+      if (knob.kind === 'color') {
+        return cssColorOrDefault(paintValue(knob.layerId, knob.property, undefined), config.defaults.color);
+      }
+      if (knob.kind === 'width') {
+        return numberOrDefault(paintValue(knob.layerId, knob.property, undefined), config.defaults.width);
+      }
+      const fallback = config.defaults.opacity / 100;
+      return numberOrDefault(paintValue(knob.layerId, knob.property, undefined), fallback);
+    }
+
+    function configuredKnobs(config) {
+      const knobs = [];
+      for (const band of config.zoomBands || []) {
+        knobs.push({ kind: 'zoomband', band, label: band.label });
+      }
+      if (config.linkedSlider && !config.opacity.length) {
+        knobs.push({
+          kind: 'opacity',
+          sliderId: config.linkedSlider.id,
+          label: 'Opacity',
+          defaultValue: config.defaults.opacity
+        });
+      }
+      for (const [layerId, property] of config.opacity || []) {
+        knobs.push({ kind: 'opacity', layerId, property, label: tuneTargetLabel(layerId, property) });
+      }
+      for (const [layerId, property] of config.color || []) {
+        knobs.push({ kind: 'color', layerId, property, label: tuneTargetLabel(layerId, property) });
+      }
+      for (const [layerId, property] of config.width || []) {
+        knobs.push({ kind: 'width', layerId, property, label: tuneTargetLabel(layerId, property) });
+      }
+      for (const extra of config.extraSliders || []) {
+        knobs.push({ kind: extra.kind || 'percent', sliderId: extra.slider.id, label: extra.label, defaultValue: extra.defaultValue ?? Number(extra.slider.value) });
+      }
+      return knobs;
+    }
+
+    function knobInputId(kind, index) {
+      if (kind === 'opacity' && index === 0) return 'tuneOpacity';
+      if (kind === 'color' && index === 0) return 'tuneColor';
+      if (kind === 'width' && index === 0) return 'tuneWidth';
+      return `tune-${kind}-${index}`;
+    }
+
+    function knobOutputId(kind, index) {
+      if (kind === 'opacity' && index === 0) return 'tuneOpacityValue';
+      if (kind === 'width' && index === 0) return 'tuneWidthValue';
+      return `tune-${kind}-${index}-value`;
+    }
+
+    function widthMaxForProperty(property) {
+      return property === 'circle-radius' ? 24 : 14;
+    }
+
+    // Dual-thumb zoom slider for a contour fade band. HTML has no native
+    // two-knob range input, so this stacks two <input type="range"> elements
+    // and only their thumbs take pointer events (see .dual-range CSS). The
+    // left thumb is the fade-start zoom, the right thumb the fade-end zoom.
+    function buildZoomBandRow(config, knob) {
+      const band = knob.band;
+      const rng = config.zoomBandRange || { min: 12, max: 20, step: 0.5 };
+      const wrap = document.createElement('div');
+      wrap.className = 'tune-band';
+
+      const head = document.createElement('div');
+      head.className = 'tune-band-head';
+      const label = document.createElement('span');
+      label.className = 'tune-label';
+      label.textContent = knob.label;
+      const out = document.createElement('output');
+      head.append(label, out);
+
+      const dual = document.createElement('div');
+      dual.className = 'dual-range';
+      const track = document.createElement('div');
+      track.className = 'dual-track';
+      const fill = document.createElement('div');
+      fill.className = 'dual-fill';
+      const lo = document.createElement('input');
+      const hi = document.createElement('input');
+      for (const el of [lo, hi]) {
+        el.type = 'range';
+        el.min = String(rng.min);
+        el.max = String(rng.max);
+        el.step = String(rng.step);
+      }
+      lo.className = 'dual-lo';
+      hi.className = 'dual-hi';
+
+      const seed = zoomStopsOf(
+        map.getPaintProperty(band.targets[0][0], band.targets[0][1]), band.fallback);
+      lo.value = String(seed[0]);
+      hi.value = String(seed[1]);
+      dual.append(track, fill, lo, hi);
+      wrap.append(head, dual);
+
+      const span = (rng.max - rng.min) || 1;
+      const pct = (v) => ((v - rng.min) / span) * 100;
+      function apply(active) {
+        let a = Number(lo.value);
+        let b = Number(hi.value);
+        // interpolate stops must ascend, so keep one step between the thumbs.
+        if (active === lo && a > b - rng.step) { a = b - rng.step; lo.value = String(a); }
+        if (active === hi && b < a + rng.step) { b = a + rng.step; hi.value = String(b); }
+        fill.style.left = pct(a) + '%';
+        fill.style.width = Math.max(0, pct(b) - pct(a)) + '%';
+        out.textContent = `z${a.toFixed(1)} – z${b.toFixed(1)}`;
+        if (active) {
+          for (const [layerId, property] of band.targets) {
+            setPaint(layerId, property,
+              withZoomStops(map.getPaintProperty(layerId, property), a, b));
+          }
+          markPresetEdited();
+        }
+      }
+      lo.addEventListener('input', () => apply(lo));
+      hi.addEventListener('input', () => apply(hi));
+      apply(null);
+      return wrap;
+    }
+
+    function renderTuneControls(config) {
+      tuneControls.innerHTML = '';
+      const counts = { opacity: 0, color: 0, width: 0, percent: 0 };
+      for (const knob of configuredKnobs(config)) {
+        if (knob.kind === 'zoomband') {
+          tuneControls.append(buildZoomBandRow(config, knob));
+          continue;
+        }
+        const index = counts[knob.kind] || 0;
+        counts[knob.kind] = index + 1;
+        const row = document.createElement('label');
+        row.className = 'tune-control';
+        const label = document.createElement('span');
+        label.className = 'tune-label';
+        label.textContent = knob.label;
+        const input = document.createElement('input');
+        const output = document.createElement('output');
+        input.id = knobInputId(knob.kind, index);
+        input.dataset.tuneKind = knob.kind;
+        if (knob.sliderId) input.dataset.sliderId = knob.sliderId;
+        if (knob.layerId) input.dataset.layerId = knob.layerId;
+        if (knob.property) input.dataset.property = knob.property;
+
+        if (knob.kind === 'color') {
+          input.type = 'color';
+          input.value = currentKnobValue(config, knob);
+        } else {
+          input.type = 'range';
+          input.min = knob.kind === 'width' ? '0.2' : '0';
+          input.max = knob.kind === 'width' ? String(widthMaxForProperty(knob.property)) : '100';
+          input.step = knob.kind === 'width' ? '0.1' : '1';
+          const value = currentKnobValue(config, knob);
+          input.value = knob.kind === 'width' ? String(value) : String(Math.round(value * (knob.sliderId ? 1 : 100)));
+          output.id = knobOutputId(knob.kind, index);
+          output.textContent = knob.kind === 'width' ? Number(input.value).toFixed(1) : `${input.value}%`;
+        }
+
+        row.append(label, input, output);
+        tuneControls.append(row);
+      }
     }
 
     function syncLayerTunerFromSelection() {
+      updateLayerRowState();
+      if (!expandedTuneKey) {
+        layerEditor.hidden = true;
+        return;
+      }
       const config = selectedTunable();
       if (!config) return;
       layerEditorTitle.textContent = config.label;
       tuneVisible.checked = config.toggle.checked;
-      const opacitySource = config.linkedSlider
-        ? Number(config.linkedSlider.value) / 100
-        : firstPaintValue(config.opacity, config.defaults.opacity / 100);
-      const opacity = numberOrDefault(opacitySource, config.defaults.opacity / 100);
-      setControlVisible(tuneOpacity, Boolean(config.opacity.length || config.linkedSlider));
-      tuneOpacity.value = String(Math.round(opacity * 100));
-      tuneOpacityValue.textContent = `${tuneOpacity.value}%`;
-      const colorSource = firstPaintValue(config.color);
-      const color = cssColorOrDefault(colorSource, config.defaults.color);
-      setControlVisible(tuneColor, Boolean(config.color.length && cssColorOrDefault(colorSource, '')));
-      tuneColor.value = color;
-      const widthSource = firstPaintValue(config.width);
-      const width = numberOrDefault(widthSource, config.defaults.width);
-      setControlVisible(tuneWidth, Boolean(config.width.length && typeof widthSource === 'number'));
-      tuneWidth.value = String(width);
-      tuneWidthValue.textContent = Number(width).toFixed(1);
+      renderTuneControls(config);
     }
 
     function selectTunable(key) {
       if (!TUNABLE_LAYERS[key]) return;
       activeTuneKey = key;
-      for (const rowKey of Object.keys(TUNABLE_LAYERS)) {
-        const row = tuneRowForKey(rowKey);
-        if (row) row.classList.toggle('active', rowKey === key);
+      updateLayerRowState();
+    }
+
+    function collapseTunableEditor() {
+      expandedTuneKey = null;
+      layerEditor.hidden = true;
+      updateLayerRowState();
+    }
+
+    function toggleTunableExpansion(key) {
+      if (!TUNABLE_LAYERS[key]) return;
+      if (expandedTuneKey === key) {
+        selectTunable(key);
+        collapseTunableEditor();
+        return;
       }
+      activeTuneKey = key;
+      expandedTuneKey = key;
       const selectedRow = tuneRowForKey(key);
-      if (selectedRow && selectedRow.nextElementSibling !== layerEditor) {
-        selectedRow.insertAdjacentElement('afterend', layerEditor);
+      if (selectedRow) {
+        openContainingSection(selectedRow);
+        if (selectedRow.nextElementSibling !== layerEditor) {
+          selectedRow.insertAdjacentElement('afterend', layerEditor);
+        }
       }
+      layerEditor.hidden = false;
       syncLayerTunerFromSelection();
     }
 
     function wireLayerEditRows() {
       for (const [key, config] of Object.entries(TUNABLE_LAYERS)) {
-        const row = config.toggle.closest('label');
-        if (!row) continue;
-        row.classList.add('layer-row');
+        const label = config.toggle.closest('label');
+        if (!label) continue;
+        const row = document.createElement('div');
+        row.className = 'layer-row';
         row.dataset.tuneKey = key;
+        label.insertAdjacentElement('beforebegin', row);
+        row.append(label);
+        const expandButton = document.createElement('button');
+        expandButton.type = 'button';
+        expandButton.className = 'layer-expand';
+        expandButton.dataset.tuneExpandKey = key;
+        expandButton.setAttribute('aria-expanded', 'false');
+        expandButton.textContent = '▾';
+        row.append(expandButton);
+        config.row = row;
+        config.expandButton = expandButton;
         row.addEventListener('click', (event) => {
-          if (event.target !== config.toggle) {
-            event.preventDefault();
-            selectTunable(key);
-            return;
-          }
-          window.requestAnimationFrame(() => selectTunable(key));
+          if (event.target === row) selectTunable(key);
+        });
+        label.addEventListener('click', () => selectTunable(key));
+        config.toggle.addEventListener('focus', () => selectTunable(key));
+        expandButton.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          toggleTunableExpansion(key);
         });
       }
       selectTunable(activeTuneKey);
+      syncLayerTunerFromSelection();
     }
 
     function markPresetEdited() {
       if (applyingPreset) return;
       const label = BUILT_IN_PRESETS[activePresetId]?.label || 'Current';
       presetStatus.textContent = `${label} preset modified.`;
-    }
-
-    function setTunablePaint(targets, value) {
-      for (const [layerId, property] of targets || []) setPaint(layerId, property, value);
     }
 
     function setSelectedLayerVisible() {
@@ -1168,27 +1555,30 @@
       markPresetEdited();
     }
 
-    function setSelectedLayerOpacity() {
-      const config = selectedTunable();
-      const value = Number(tuneOpacity.value) / 100;
-      tuneOpacityValue.textContent = `${tuneOpacity.value}%`;
-      if (config.linkedSlider) {
-        config.linkedSlider.value = String(tuneOpacity.value);
-        config.linkedSlider.dispatchEvent(new Event('input', { bubbles: true }));
+    function updateTuneOutput(input) {
+      const output = input.closest('.tune-control')?.querySelector('output');
+      if (!output) return;
+      output.textContent = input.dataset.tuneKind === 'width'
+        ? Number(input.value).toFixed(1)
+        : `${input.value}%`;
+    }
+
+    function handleTuneInput(event) {
+      const input = event.target.closest('input[data-tune-kind]');
+      if (!input) return;
+      updateTuneOutput(input);
+      if (input.dataset.sliderId) {
+        const slider = document.getElementById(input.dataset.sliderId);
+        if (slider) {
+          slider.value = input.value;
+          slider.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      } else if (input.dataset.layerId && input.dataset.property) {
+        const value = input.dataset.tuneKind === 'color'
+          ? input.value
+          : Number(input.value) / (input.dataset.tuneKind === 'opacity' ? 100 : 1);
+        setPaint(input.dataset.layerId, input.dataset.property, value);
       }
-      setTunablePaint(config.opacity, value);
-      markPresetEdited();
-    }
-
-    function setSelectedLayerColor() {
-      setTunablePaint(selectedTunable().color, tuneColor.value);
-      markPresetEdited();
-    }
-
-    function setSelectedLayerWidth() {
-      const value = Number(tuneWidth.value);
-      tuneWidthValue.textContent = value.toFixed(1);
-      setTunablePaint(selectedTunable().width, value);
       markPresetEdited();
     }
 
@@ -1370,6 +1760,10 @@
 
     // mode is 'point' (POI), 'polygon' (footprint), 'linestring' (trace), or
     // 'static' (not drawing).
+    function isDrawModeActive() {
+      return Boolean(draw && draw.getMode && draw.getMode() !== 'static');
+    }
+
     function setDrawMode(mode) {
       if (!draw) return;
       draw.setMode(mode);
@@ -1426,6 +1820,7 @@
     // a value or a (props) => value function; footerFor is optional trailing HTML.
     function bindPopup(layers, titleFor, rowsFor, footerFor) {
       map.on('click', layers, (event) => {
+        if (isDrawModeActive()) return;
         const props = event.features?.[0]?.properties || {};
         const title = typeof titleFor === 'function' ? titleFor(props) : titleFor;
         let html = `<strong>${title}</strong><br/>${detailRows(rowsFor(props))}`;
@@ -1513,20 +1908,23 @@
       // outline doubles as a hairline-gap bridge: the polygons are a coverage,
       // but independent vertex-simplify can leave sub-pixel slivers between
       // adjacent classes, and the thin outline closes them.
+      // Two tight colour families so variation reads as a highlight, not a
+      // clash: a light/dark sage pair for trees, a light/base/dark warm-khaki
+      // trio for fields. Matches LANDCOVER_MUTED_* (the Park preset).
       const LANDCOVER_FILL = ['match', ['get', 'class'],
-        'forest_deciduous', '#b9c2a3',
-        'forest_evergreen', '#7f8c66',
-        'open_grass',       '#cfd4b0',
-        'open_meadow',      '#dccfa3',
-        'open_bare',        '#cdba8f',
-        '#b9c2a3'];
+        'forest_deciduous', '#b8c1a1',
+        'forest_evergreen', '#a8b18f',
+        'open_grass',       '#ddd2ad',
+        'open_meadow',      '#d4c79f',
+        'open_bare',        '#c7b890',
+        '#b8c1a1'];
       const LANDCOVER_OUTLINE = ['match', ['get', 'class'],
-        'forest_deciduous', '#94a07c',
-        'forest_evergreen', '#647154',
-        'open_grass',       '#b4ba93',
-        'open_meadow',      '#c5b783',
-        'open_bare',        '#b6a073',
-        '#94a07c'];
+        'forest_deciduous', '#a6af8d',
+        'forest_evergreen', '#969f7c',
+        'open_grass',       '#cdc29c',
+        'open_meadow',      '#c4b78d',
+        'open_bare',        '#b7a87f',
+        '#a6af8d'];
 
       // --- Land cover, 9-patch (NAIP 2023 + lidar, classified) ------------
       // Wide-area land-cover context across the full 3x3 acquisition AOI,
@@ -1736,9 +2134,9 @@
           paint: {
             'line-color': '#c7b48f',
             'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 16, 1.4],
-            // Fine 5 ft contours fade in only when zoomed in tight; zoomed out
-            // they are invisible so just the 25 ft index lines carry the relief.
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0, 15.5, 0.75]
+            // Innermost detail tier: the fine 5 ft lines stay hidden until
+            // zoomed in tight, fading in 16.5 -> 17.5.
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0, 17.5, 0.75]
           }
         });
         map.addLayer({
@@ -1750,7 +2148,12 @@
           paint: {
             'line-color': '#a8906a',
             'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 16, 2.8],
-            'line-opacity': 0.95
+            // Middle tier: 25 ft index lines that are not a multiple of 50 ft
+            // fade out when zoomed out (15 -> 16). The 50 ft lines stay on, so
+            // zoomed out shows half the index lines; mid-zoom shows them all.
+            'line-opacity': ['interpolate', ['linear'], ['zoom'],
+              15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 0.95, 0],
+              16, 0.95]
           }
         });
         map.addLayer({
@@ -1768,7 +2171,12 @@
           paint: {
             'text-color': '#7d6a4a',
             'text-halo-color': '#f7f1e2',
-            'text-halo-width': 1.8
+            'text-halo-width': 1.8,
+            // Labels follow their index line: 25 ft labels fade out with the
+            // 25 ft lines when zoomed out; 50 ft labels stay.
+            'text-opacity': ['interpolate', ['linear'], ['zoom'],
+              15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 1, 0],
+              16, 1]
           }
         });
       }
@@ -3152,9 +3560,7 @@
     terrainButton.addEventListener('click', () => setTerrainEnabled(!terrainToggle.checked));
 
     tuneVisible.addEventListener('change', setSelectedLayerVisible);
-    tuneOpacity.addEventListener('input', setSelectedLayerOpacity);
-    tuneColor.addEventListener('input', setSelectedLayerColor);
-    tuneWidth.addEventListener('input', setSelectedLayerWidth);
+    tuneControls.addEventListener('input', handleTuneInput);
     snapshotPresetBtn.addEventListener('click', snapshotActivePreset);
     exportSettingsBtn.addEventListener('click', exportPresetSettings);
 

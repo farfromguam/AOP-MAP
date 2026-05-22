@@ -95,12 +95,29 @@ the layer presets (note the name collision: the `Park` *layer* preset and the
 `publish.geojson`, and `Pavilion` flies in tight (zoom 17) on the 1010 Ellis
 Cove Road building. Bearing and pitch are preserved across all three.
 
-The right panel has a layer tuner for selected layers. It can change visibility,
-opacity, color, and width/size where those paint properties exist. `Snapshot
-preset` stores the current toggles/sliders/paint state for the active preset in
-`localStorage` (`aop_viewer_preset_settings_v1`). `Export settings` copies a
-JSON payload to the clipboard with all three resolved presets plus the current
-state so the user can paste preferred settings back into the session.
+The map's `maxBounds` is set to the 9-patch (`REGION_BOUNDS`), so the camera is
+leashed: users cannot pan or zoom out past where there is map data. `Region` is
+therefore the widest the camera can go -- it fits the 9-patch edge-to-edge with
+no margin. All viewer data (contours, water, roads, buildings, the visitor
+context callouts, publish layers) sits inside the 9-patch, so the leash hides
+nothing.
+
+The right panel is the `AOP edit panel`. Selecting a layer row moves the inline
+editor directly under that row, initialized from the layer's current MapLibre
+paint values. It can change visibility, opacity, color, and width/size where
+those controls are appropriate for that layer; controls that cannot represent
+the current paint expression stay hidden. `Snapshot preset` stores the current
+toggles/sliders/paint state for the active preset in `localStorage`
+(`aop_viewer_preset_settings_v1`). `Export settings` copies a JSON payload to
+the clipboard with all three resolved presets plus the current state so the user
+can paste preferred settings back into the session.
+
+The right panel is **collapsible**. Its `AOP edit panel` heading is a clickable
+header bar (`.panel-header`) with a chevron button (`#panelCollapse`). Clicking
+the header or the chevron retracts the panel body upward into the header,
+leaving just the title bar so the map underneath is visible; clicking again
+expands it back down. The body (`#panelBody`) animates via a `max-height`
+transition. Default state is expanded.
 
 Verification: `mvp/scripts/playwright_verify_presets.py`.
 
@@ -159,14 +176,29 @@ Recorded on 2026-05-21:
   popups with direction, services, examples, distance/drive-time notes, and
   source summaries. Each popup also has `Directions`, `Food`, `Lodging`, and
   `Source` links.
+- The SE `South Pittsburg / Kimball` circle label carries a regional-anchor
+  line on the circle itself — `Chattanooga metro ~35 mi | ~45 min` — so the map
+  orients a rider to the nearest metro, not just the supply town. The figure
+  rounds the Ellis Cove Road park approach plus the ~30 mi South Pittsburg-to-
+  Chattanooga I-24 route; it is an orientation estimate, not turn-by-turn
+  routing.
+- `Food` and `Lodging` links deep-link to the relevant town on the Marion
+  County Tourism pages with a `#:~:text=` browser text fragment (the pages
+  group listings by town heading but expose no anchor ids). The SE callout
+  covers both of its towns with a two-fragment directive — food scrolls to
+  `South Pittsburg` and also highlights `Kimball`; lodging scrolls to `Kimball`
+  (the I-24 interchange hotel cluster) and also highlights `South Pittsburg`.
+  The Monteagle callout scrolls to `Monteagle`. So the two callouts no longer
+  land on the same page top. On a browser without text-fragment support the
+  link still opens the correct page, just at the top.
 - The callouts are searchable. Searching "South Pittsburg", "Kimball", or
   "Monteagle" jumps to the relevant circle and turns the layer on if it was
   hidden.
 - Sources are embedded in the GeoJSON and summarized in
   `tasks/01_mvp/visitor_context_callouts.md`: AOP official pages, RiderPlanet,
-  Marion County Tourism restaurants/hotels, and a South Pittsburg-to-Monteagle
-  drive-distance reference. Times are planning estimates, not routed/live
-  traffic data.
+  Marion County Tourism restaurants/hotels, and South Pittsburg-to-Monteagle
+  and South Pittsburg-to-Chattanooga drive-distance references. Times are
+  planning estimates, not routed/live traffic data.
 - Verified with `mvp/scripts/playwright_verify_visitor_context.py`.
 
 ### Satellite Imagery (TNMap 2022)
@@ -291,12 +323,19 @@ Recorded on 2026-05-20; updated 2026-05-21:
 - Viewer: toggle `Lidar contours (5 ft, 1m DEM)`, default OFF. Layers `contours-minor`
   (thin), `contours-index` (bold 25-ft), and `contours-labels` (elevation labels on
   index lines). Clicking any contour shows its elevation.
-- Zoom-dependent visibility (2026-05-21): the fine `contours-minor` 5-ft lines
-  fade with zoom -- `line-opacity` interpolates 0 at zoom 14 up to full at zoom
-  15.5. Zoomed out they are invisible so only the 25-ft `contours-index` lines
-  carry the relief; zoomed in tight the full 5-ft detail appears. The fade is
-  baked into the base layer paint and into the `Park`/`Topo` preset paints so it
-  survives a preset switch.
+- Zoom-dependent visibility (2026-05-21): contour detail tiers by zoom. At lower
+  zoom only 50-ft index lines stay visible; the remaining 25-ft index lines fade
+  in from zoom 15 to 16; fine 5-ft `contours-minor` lines fade in from zoom 16.5
+  to 17.5. The fades are baked into the base layer paint and into the `Park` /
+  `Topo` preset paints so they survive a preset switch.
+- Tunable fade bands (2026-05-22): the contour layer editor carries two
+  dual-thumb zoom sliders -- `25 ft index fade` and `5 ft detail fade`. Each
+  thumb pair is the fade-start / fade-end zoom for that tier; dragging rewrites
+  only the `z0`/`z1` stops of the `interpolate` expression and leaves the
+  opacity outputs intact. HTML has no native two-knob range input, so the
+  widget is two stacked `<input type="range">` elements with thumb-only pointer
+  events (`.dual-range` CSS, `buildZoomBandRow`). A preset switch resets the
+  bands to that preset's defaults; `Snapshot preset` captures them.
 - Verified with `mvp/scripts/playwright_verify_lidar_tiles.py` on 2026-05-21: all
   checks PASS, 0 console errors. An independent crossing detector confirms 0
   different-elevation crossings.
