@@ -350,6 +350,75 @@ it.
  - Durable docs: `tasks/01_mvp/imagery_tracing_layer.md`,
    `tasks/01_mvp/poi_editor.md`, `research/viewer.md`, and `search_map.md`.
 
+## Update: contour zoom-fade + zoom presets (2026-05-21)
+
+User asked for two viewer changes: fine contour lines that only show when
+zoomed in tight, and Region/Park/Pavilion zoom presets.
+
+ - Contour zoom-fade: the fine `contours-minor` (5 ft) lines now interpolate
+   `line-opacity` 0 at zoom 14 -> full at zoom 15.5. Zoomed out only the 25 ft
+   `contours-index` lines show; zoomed in tight the 5 ft detail fills in. The
+   expression is in the base layer paint and in the `Park` + `Topo` preset
+   paints (the only presets that style contours), so it survives preset
+   switches. The contour layer tuner's `opacity` target list was reordered
+   index-first so the slider still reads a real number.
+ - Zoom presets: a new control row below the Park/Topo/Trace bar -- `Region`
+   (fits the documented 9-patch AOI bbox), `Park` (fits the published park
+   boundary), `Pavilion` (flies to zoom 17 on the 1010 Ellis Cove Road
+   building -- user confirmed 1010 is the pavilion). Camera-only; they do not
+   touch layers. Bearing/pitch preserved. Region bbox is a constant;
+   `parkViewBounds` is computed from `publish.geojson` boundary features at
+   load, so Park tracks the live boundary.
+ - `fitToDataBounds` was refactored to share a `geojsonBounds` helper.
+ - Mobile layout: the new 4th control row made `.left-controls` taller, so the
+   mobile `.panel` `top` moved 112px -> 168px to clear it.
+ - `mvp/scripts/playwright_verify_presets.py` extended with a zoom-presets +
+   contour-fade section; full run PASS, 0 console errors.
+   `playwright_verify_lidar_tiles.py` re-run PASS. Catalog `research/viewer.md`
+   updated (UI presets + Lidar Contour Layer sections).
+
+## Update: land-cover rebuilt on lidar + leaf-on imagery (2026-05-21)
+
+The user asked how the vector land-cover layer was being produced, said it was
+"not quite right," and described an Illustrator workflow -- threshold the trees
+off the fields, then posterise the fields into a few colours. They added the
+USDA NAIP 2023 imagery layer to compare against. The land-cover layer was
+rebuilt around that workflow.
+
+ - Finding: leaf-on imagery is better for the field colours but worse for the
+   tree mask. The forest/open split cannot be done from leaf-on imagery --
+   canopy is a smooth blanket, the texture histogram is unimodal, no threshold
+   works (confirmed over 4 builds). The old pipeline only worked because
+   leaf-off winter NAIP has extreme bare-branch texture. The fix is tree height.
+ - The user chose the lidar canopy-height path.
+ - New `mvp/scripts/build_canopy_height.sh [park|9patch]`: USGS 3DEP LAZ tiles
+   -> PDAL `hag_delaunay` -> grid max height -> mosaic -> warp onto the NAIP
+   grid. Runs via the `pdal/pdal` Docker image. CHM cached at
+   `mvp/cache/lidar/chm_{aop,9patch}.tif`.
+ - All 24 USGS 3DEP LAZ tiles downloaded to `mvp/cache/lidar/` (~2.8 GB,
+   gitignored).
+ - `classify_landcover.py` stage 1 rewritten: forest = `CHM > 2.5 m`, a crisp
+   per-pixel cut, morphological close(12)/open(4) to consolidate the canopy.
+   Stage 2 kept (evergreen = darkest canopy tail; open ground = k-means RGB
+   colour quantisation -> grass/meadow/bare). Imagery moved to USDA NAIP 2023
+   (June, leaf-on, no-auth `USDA_CONUS_PRIME` ImageServer).
+ - `build_landcover.sh` / `build_landcover_9patch.sh` updated for the new NAIP
+   source and the CHM dependency.
+ - Park `aop_landcover.geojson` rebuilt: ~154 polygons, ~81% forest, crisp
+   lidar-cut forest edge, clean k-means field polygons. Verified
+   `playwright_verify_landcover.py` PASS, 0 console errors.
+ - 9-patch `aop_landcover_9patch.geojson` rebuilt from the full 24-tile CHM.
+ - Gotcha logged in `spinup/mvp_runbook.md`: the 3DEP lidar carries a compound
+   CRS with a NAVD88 vertical component, so `gdalwarp` geoid-shifts the CHM
+   values unless the warp forces `-s_srs EPSG:6576` (the 2D horizontal CRS).
+ - Viewer: `Region` zoom preset tightened -- it now insets the 9-patch ~15%
+   so it frames the park core, not the empty context margin.
+ - Docs updated: `tasks/01_mvp/landcover_layer.md` ("Update: lidar
+   canopy-height rebuild"), `research/viewer.md`, `search_map.md`,
+   `spinup/mvp_runbook.md`, and `tasks/backlog/leaf_on_landcover.md` (DONE).
+ - The leaf-off NAIP 2021 orthos stay cached but are no longer used by the
+   land-cover build.
+
 ## Session note
 
 This file is handoff context, not a durable policy document. Keep it live until the next session has read and acted on it.

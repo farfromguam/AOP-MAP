@@ -52,6 +52,8 @@ This MVP scaffold is the first practical step toward the build card:
     with raw LineString trace capture. The 2025 county archive is cached but
     blocked by MrSID support in the current toolchain; the browser layer uses
     USDA's public 2023 Tennessee NAIP cache. See `imagery_tracing_layer.md`.
+18. [X] Add visitor support callout circles for South Pittsburg/Kimball and
+    Monteagle services. See `visitor_context_callouts.md`.
 
 ## Initial scaffold files
 

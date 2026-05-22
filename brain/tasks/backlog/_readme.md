@@ -23,6 +23,6 @@ Items that fail the northstar test should still get written down. The point is t
 - `rcmap_feature_review.md` -- the place-catalog peer for RC scale trucking.
 - `scaletra_feature_review.md` -- the activity-recording peer for RC scale trucking; sits upstream of our map.
 - `rc_event_mapping_backlog.md` -- event-layer requirements pulled from Recon G6, Pro-Line By The Fire, and comp-class formats.
-- `leaf_on_landcover.md` -- rebuild the forest land-cover layer from leaf-on imagery for crisper forest edges.
+- `leaf_on_landcover.md` -- DONE 2026-05-21. Leaf-on 2023 NAIP adopted; the crisp forest edge came from a lidar canopy-height model, not leaf-on NDVI. See `tasks/01_mvp/landcover_layer.md`.
 
 All cards use the same fit tags: **V1 fit**, **V2 fit**, **Internal fit**, **Out**.

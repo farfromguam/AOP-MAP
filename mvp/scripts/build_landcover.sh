@@ -3,11 +3,12 @@ set -euo pipefail
 
 # Build the AOP vector land-cover layer from NAIP aerial imagery.
 #
-# Pipeline: download/cache a leaf-on 4-band NAIP ortho clipped to the park ->
-# classify into five land-cover classes (NDVI + brightness thresholds for
-# forest vs open, then k-means colour quantisation for the open sub-classes)
-# -> polygonize every class -> light vertex simplify -> Chaikin smooth ->
-# clip to the AOP boundary -> WGS84 GeoJSON for the viewer.
+# Pipeline: download/cache a leaf-on 4-band NAIP ortho clipped to the park,
+# build (or reuse) the lidar canopy-height model -> classify into five
+# land-cover classes (canopy height for forest vs open, then k-means colour
+# quantisation for the open sub-classes) -> polygonize every class -> light
+# vertex simplify -> Chaikin smooth -> clip to the AOP boundary -> WGS84
+# GeoJSON for the viewer.
 #
 # The layer is a full coverage: forest_deciduous, forest_evergreen,
 # open_grass, open_meadow, open_bare tile the whole park. Water/hydrography is
@@ -32,6 +33,7 @@ NAIP_SIZE="3633,3487"   # ~0.6 m pixels in EPSG:26916
 NAIP_EXPORT="https://gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME/ImageServer/exportImage?bbox=${NAIP_BBOX}&bboxSR=4326&imageSR=26916&size=${NAIP_SIZE}&format=tiff&pixelType=U8&interpolation=RSP_NearestNeighbor"
 
 NAIP_CACHE="$REPO_DIR/mvp/cache/imagery/naip_2023_aop.tif"
+CHM_CACHE="$REPO_DIR/mvp/cache/lidar/chm_aop.tif"
 LC_CACHE="$REPO_DIR/mvp/cache/landcover"
 BOUNDARY="$REPO_DIR/website/data/publish.geojson"
 
@@ -55,10 +57,21 @@ else
 fi
 echo "    $(du -h "$NAIP_CACHE" | cut -f1)  $NAIP_CACHE"
 
+# 1b. Ensure the lidar canopy-height model exists ---------------------------
+# Stage 1 of the classifier (forest vs open) thresholds tree height, so the
+# CHM is a hard dependency. build_canopy_height.sh caches it; reuse if present.
+if [[ ! -f "$CHM_CACHE" ]]; then
+  echo "==> CHM missing -- running build_canopy_height.sh park"
+  bash "$SCRIPT_DIR/build_canopy_height.sh" park
+else
+  echo "==> CHM already cached: $CHM_CACHE"
+fi
+
 # 2. Stage inputs where Docker can read them --------------------------------
 echo "==> Staging inputs into $WORK"
 mkdir -p "$WORK"
 cp "$NAIP_CACHE" "$WORK/naip.tif"
+cp "$CHM_CACHE" "$WORK/chm.tif"
 cp "$SCRIPT_DIR/classify_landcover.py" "$WORK/classify_landcover.py"
 cp "$SCRIPT_DIR/smooth_landcover.py" "$WORK/smooth_landcover.py"
 
@@ -78,7 +91,8 @@ docker run --rm -v "$WORK:/data" "$GDAL_IMG" sh -c "
 set -e
 
 # pixel classification -> single-band 5-class coverage raster
-python3 /data/classify_landcover.py /data/naip.tif /data/class.tif /data/preview.png
+# (NAIP ortho for colour, lidar CHM for the crisp forest/open split)
+python3 /data/classify_landcover.py /data/naip.tif /data/chm.tif /data/class.tif /data/preview.png
 
 # polygonize connected class regions (class 0 = nodata is skipped)
 rm -f /data/class.gpkg

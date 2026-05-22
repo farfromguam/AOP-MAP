@@ -14,7 +14,8 @@
     .preset-bar button:hover { background: #efe2c6; }
     .preset-bar button.active { background: #8b5f38; border-color: #8b5f38; color: #fff8e8; }
     .preset-bar button.terrain-button { max-width: 58px; }
-    .panel { position: absolute; right: 12px; top: 12px; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); max-width: 320px; max-height: calc(100vh - 24px); overflow-y: auto; z-index: 2; }
+    .zoom-bar .zoom-label { flex: 0 0 auto; align-self: center; font: 700 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.06em; color: #6b5a3e; padding: 0 4px 0 2px; }
+    .panel { position: absolute; right: 12px; top: 12px; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); max-width: 340px; max-height: calc(100vh - 24px); overflow-y: auto; z-index: 2; }
     .panel h1 { margin: 0 0 8px; font-size: 1rem; }
     .panel label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.94rem; }
     .panel small { display: block; margin-top: 8px; color: #444; }
@@ -25,10 +26,14 @@
     .panel button[disabled] { opacity: 0.4; cursor: not-allowed; }
     .panel button.active { background: #9a5a32; color: #fff; border-color: #9a5a32; }
     .panel select { font: inherit; padding: 3px 5px; border-radius: 6px; border: 1px solid #bbb; }
-    .tune-select-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
-    .tune-select-row select { width: 100%; min-width: 0; }
+    .panel label.layer-row { margin: 0 0 4px; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
+    .panel label.layer-row.active { background: #efe2c6; color: #3f3122; }
     .panel label.tune-visible { margin: 0; white-space: nowrap; }
+    .layer-editor { margin: 0 0 10px 28px; padding: 10px; border-left: 3px solid #9a5a32; border-radius: 8px; background: rgba(247,241,226,0.92); }
+    .layer-editor-heading { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .layer-editor-heading strong { font-size: 0.9rem; color: #4a3c2a; }
     .tune-control { display: grid !important; grid-template-columns: 68px 1fr 42px; gap: 8px !important; align-items: center; margin-bottom: 7px !important; }
+    .tune-control[hidden] { display: none !important; }
     .tune-control input[type="range"] { width: 100%; min-width: 0; }
     .tune-control input[type="color"] { width: 100%; height: 28px; padding: 0; border: 1px solid #bbb; border-radius: 5px; background: #fff; }
     .tune-control output { text-align: right; font-size: 0.82rem; color: #5c5548; }
@@ -58,7 +63,7 @@
     .align-handle::after { content: attr(data-label); position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none; }
     @media (max-width: 760px) {
       .left-controls { left: 8px; right: 8px; top: 8px; width: auto; max-width: none; }
-      .panel { left: 8px; right: 8px; top: 112px; max-width: none; max-height: calc(100vh - 120px); }
+      .panel { left: 8px; right: 8px; top: 168px; max-width: none; max-height: calc(100vh - 176px); }
       .message { left: 8px; right: 8px; max-width: none; }
     }
   </style>
@@ -79,24 +84,32 @@
       <button id="terrainButton" type="button" class="terrain-button" aria-pressed="false" title="Toggle 3D terrain view">3D</button>
       <input type="checkbox" id="showTerrain" hidden />
     </div>
+    <div class="preset-bar zoom-bar" role="group" aria-label="Zoom to area">
+      <span class="zoom-label">Zoom</span>
+      <button id="zoomRegion" type="button" data-view="region" title="Zoom out to the full 9-patch region">Region</button>
+      <button id="zoomPark" type="button" data-view="park" title="Fit the AOP park boundary">Park</button>
+      <button id="zoomPavilion" type="button" data-view="pavilion" title="Zoom in tight on the pavilion">Pavilion</button>
+    </div>
   </div>
   <div class="panel">
-    <h1>AOP MVP viewer</h1>
-    <div class="section-title">Preset tuning</div>
-    <div class="tune-select-row">
-      <select id="layerTuneSelect" title="Layer"></select>
-      <label class="tune-visible"><input type="checkbox" id="tuneVisible" /> Visible</label>
-    </div>
-    <label class="tune-control"><span>Opacity</span><input type="range" id="tuneOpacity" min="0" max="100" value="100" /><output id="tuneOpacityValue">100%</output></label>
-    <label class="tune-control"><span>Color</span><input type="color" id="tuneColor" value="#9a5a32" /><output></output></label>
-    <label class="tune-control"><span>Width</span><input type="range" id="tuneWidth" min="0.2" max="10" step="0.1" value="2" /><output id="tuneWidthValue">2.0</output></label>
-    <div class="tune-actions">
-      <button id="snapshotPreset" type="button">Snapshot preset</button>
-      <button id="exportSettings" type="button">Export settings</button>
-    </div>
+    <h1>AOP edit panel</h1>
     <small id="presetStatus">Park preset active.</small>
     <hr/>
+    <div class="section-title">Layers</div>
     <label><input type="checkbox" id="showLandcover" checked /> Land cover (NAIP)</label>
+    <div id="layerEditor" class="layer-editor">
+      <div class="layer-editor-heading">
+        <strong id="layerEditorTitle">Land cover</strong>
+        <label class="tune-visible"><input type="checkbox" id="tuneVisible" /> Visible</label>
+      </div>
+      <label class="tune-control"><span>Opacity</span><input type="range" id="tuneOpacity" min="0" max="100" value="100" /><output id="tuneOpacityValue">100%</output></label>
+      <label class="tune-control"><span>Color</span><input type="color" id="tuneColor" value="#9a5a32" /><output></output></label>
+      <label class="tune-control"><span>Width</span><input type="range" id="tuneWidth" min="0.2" max="10" step="0.1" value="2" /><output id="tuneWidthValue">2.0</output></label>
+      <div class="tune-actions">
+        <button id="snapshotPreset" type="button">Snapshot preset</button>
+        <button id="exportSettings" type="button">Export settings</button>
+      </div>
+    </div>
     <label><input type="checkbox" id="showLandcover9" checked /> Land cover — 9-patch (NAIP)</label>
     <label><input type="range" id="landcover9Opacity" min="0" max="100" value="55" style="flex:1" /> 9-patch land cover opacity</label>
     <label><input type="checkbox" id="showHillshade" /> Lidar hillshade (USGS 3DEP)</label>
@@ -106,6 +119,7 @@
     <label><input type="checkbox" id="showNinePatch" /> 9-patch acquisition AOI</label>
     <label><input type="checkbox" id="showLidarTiles" /> Lidar tile index (USGS 3DEP)</label>
     <label><input type="checkbox" id="showRoads" checked /> Asphalt roads (USGS National Map)</label>
+    <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
     <label><input type="checkbox" id="showWater" /> Streams &amp; waterbodies (USGS NHD)</label>
     <label><input type="checkbox" id="showSprings" /> Springs &amp; gages (USGS NHD)</label>
     <label><input type="checkbox" id="showCemeteries" /> Cemeteries (TN Comptroller parcels)</label>
@@ -173,6 +187,7 @@
     <small>Contours: 5 ft interval from the USGS 3DEP 1 m lidar DEM; bold lines every 25 ft.</small>
     <small>Cemeteries: TN Comptroller Marion County parcels. Ellis Cemetery is the inholding inside the AOP boundary — the gap in the park polygon.</small>
     <small>Buildings: FEMA USA Structures footprints over the 9-patch. Raw reference context; verify against imagery before treating as park facilities.</small>
+    <small>Visitor context callouts: support-town planning notes from AOP, RiderPlanet, and Marion County Tourism. Times are approximate; check live routing and hours.</small>
     <small>SFWDA raster is &copy; Adventure Off Road Park (via SFWDA) — internal/inspection only. Drag the 4 corner handles in Edit mode to pixel-align against OSM tracks, then Export to save <code>website/data/sfwda_raster_alignment.json</code>.</small>
   </div>
   <div class="message" id="message">Loading publish layer...</div>
@@ -181,6 +196,10 @@
   <script src="./vendor/terra-draw.umd.js"></script>
   <script src="./vendor/terra-draw-maplibre-gl-adapter.umd.js"></script>
   <script>
+    // The 9-patch data-acquisition AOI doubles as the camera leash: maxBounds
+    // stops users panning or zooming out past where there is any map data.
+    const REGION_BOUNDS = [[-85.782935283, 35.067164188], [-85.717154097, 35.117928496]];
+
     const map = new maplibregl.Map({
       container: 'map',
       style: {
@@ -194,9 +213,10 @@
           }
         ]
       },
-      center: [-85.85, 35.03],
+      center: [-85.75, 35.0925],
       zoom: 12,
-      bearing: -90
+      bearing: -90,
+      maxBounds: REGION_BOUNDS
     });
 
     const message = document.getElementById('message');
@@ -211,6 +231,7 @@
     const ninePatchToggle = document.getElementById('showNinePatch');
     const lidarTilesToggle = document.getElementById('showLidarTiles');
     const roadsToggle = document.getElementById('showRoads');
+    const visitorContextToggle = document.getElementById('showVisitorContext');
     const waterToggle = document.getElementById('showWater');
     const springsToggle = document.getElementById('showSprings');
     const cemeteriesToggle = document.getElementById('showCemeteries');
@@ -243,7 +264,8 @@
     const searchResults = document.getElementById('searchResults');
     const presetButtons = [...document.querySelectorAll('.preset-bar button[data-preset]')];
     const terrainButton = document.getElementById('terrainButton');
-    const layerTuneSelect = document.getElementById('layerTuneSelect');
+    const layerEditor = document.getElementById('layerEditor');
+    const layerEditorTitle = document.getElementById('layerEditorTitle');
     const tuneVisible = document.getElementById('tuneVisible');
     const tuneOpacity = document.getElementById('tuneOpacity');
     const tuneOpacityValue = document.getElementById('tuneOpacityValue');
@@ -259,6 +281,7 @@
     let searchMatches = [];
     let searchActive = -1;
     let activePresetId = 'park';
+    let activeTuneKey = 'landcover';
     let applyingPreset = false;
 
     function setLayerVisibility(layerId, visible) {
@@ -355,6 +378,7 @@
       [ninePatchToggle, ['nine-patch-fill', 'nine-patch-outline', 'nine-patch-labels']],
       [lidarTilesToggle, ['lidar-tiles-fill', 'lidar-tiles-outline', 'lidar-tiles-labels']],
       [roadsToggle, ['roads-local-casing', 'roads-local', 'roads-connecting-casing', 'roads-connecting', 'roads-controlled-casing', 'roads-controlled', 'roads-labels']],
+      [visitorContextToggle, ['visitor-context-fill', 'visitor-context-outline', 'visitor-context-labels']],
       [waterToggle, ['water-area-fill', 'waterbody-fill', 'waterbody-outline', 'streams', 'stream-labels']],
       [springsToggle, ['water-points', 'water-point-labels']],
       [cemeteriesToggle, ['cemetery-fill', 'cemetery-outline', 'cemetery-marker', 'cemetery-label']],
@@ -373,7 +397,7 @@
       'showLandcover', 'showLandcover9', 'showHillshade',
       'showContours', 'showSatellite', 'showUsdaNaip', 'showNinePatch',
       'showLidarTiles', 'showRoads', 'showWater', 'showSprings',
-      'showCemeteries', 'showBuildings', 'showOsmPark', 'showOsmTracks',
+      'showVisitorContext', 'showCemeteries', 'showBuildings', 'showOsmPark', 'showOsmTracks',
       'showOsmService', 'showOsmNamed', 'showSfwda', 'showTrails',
       'showBoundaries', 'showTrailheads', 'showEditorPois'
     ];
@@ -414,13 +438,13 @@
         toggle: contoursToggle,
         defaults: { opacity: 95, color: '#a8906a', width: 1.8 },
         opacity: [
-          ['contours-minor', 'line-opacity'],
           ['contours-index', 'line-opacity'],
+          ['contours-minor', 'line-opacity'],
           ['contours-labels', 'text-opacity']
         ],
         color: [
-          ['contours-minor', 'line-color'],
           ['contours-index', 'line-color'],
+          ['contours-minor', 'line-color'],
           ['contours-labels', 'text-color']
         ],
         width: [
@@ -452,6 +476,38 @@
         color: [],
         width: []
       },
+      ninePatch: {
+        label: '9-patch AOI',
+        toggle: ninePatchToggle,
+        defaults: { opacity: 100, color: '#a88246', width: 1.5 },
+        opacity: [
+          ['nine-patch-fill', 'fill-opacity'],
+          ['nine-patch-outline', 'line-opacity'],
+          ['nine-patch-labels', 'text-opacity']
+        ],
+        color: [
+          ['nine-patch-fill', 'fill-color'],
+          ['nine-patch-outline', 'line-color'],
+          ['nine-patch-labels', 'text-color']
+        ],
+        width: [['nine-patch-outline', 'line-width']]
+      },
+      lidarTiles: {
+        label: 'Lidar tile index',
+        toggle: lidarTilesToggle,
+        defaults: { opacity: 80, color: '#8a6f86', width: 2.5 },
+        opacity: [
+          ['lidar-tiles-fill', 'fill-opacity'],
+          ['lidar-tiles-outline', 'line-opacity'],
+          ['lidar-tiles-labels', 'text-opacity']
+        ],
+        color: [
+          ['lidar-tiles-fill', 'fill-color'],
+          ['lidar-tiles-outline', 'line-color'],
+          ['lidar-tiles-labels', 'text-color']
+        ],
+        width: [['lidar-tiles-outline', 'line-width']]
+      },
       roads: {
         label: 'Roads',
         toggle: roadsToggle,
@@ -477,6 +533,22 @@
           ['roads-controlled', 'line-width']
         ]
       },
+      visitorContext: {
+        label: 'Visitor context',
+        toggle: visitorContextToggle,
+        defaults: { opacity: 78, color: '#d8b173', width: 2.2 },
+        opacity: [
+          ['visitor-context-fill', 'fill-opacity'],
+          ['visitor-context-outline', 'line-opacity'],
+          ['visitor-context-labels', 'text-opacity']
+        ],
+        color: [
+          ['visitor-context-fill', 'fill-color'],
+          ['visitor-context-outline', 'line-color'],
+          ['visitor-context-labels', 'text-color']
+        ],
+        width: [['visitor-context-outline', 'line-width']]
+      },
       water: {
         label: 'Water',
         toggle: waterToggle,
@@ -498,6 +570,20 @@
           ['waterbody-outline', 'line-width'],
           ['streams', 'line-width']
         ]
+      },
+      springs: {
+        label: 'Springs & gages',
+        toggle: springsToggle,
+        defaults: { opacity: 100, color: '#4a6c73', width: 5 },
+        opacity: [
+          ['water-points', 'circle-opacity'],
+          ['water-point-labels', 'text-opacity']
+        ],
+        color: [
+          ['water-points', 'circle-color'],
+          ['water-point-labels', 'text-color']
+        ],
+        width: [['water-points', 'circle-radius']]
       },
       boundaries: {
         label: 'Boundaries',
@@ -569,6 +655,14 @@
           ['building-footprint-aop-outline', 'line-width']
         ]
       },
+      osmPark: {
+        label: 'OSM park polygon',
+        toggle: osmParkToggle,
+        defaults: { opacity: 100, color: '#8a9a6a', width: 2 },
+        opacity: [['osm-park-outline', 'line-opacity']],
+        color: [['osm-park-outline', 'line-color']],
+        width: [['osm-park-outline', 'line-width']]
+      },
       osmTracks: {
         label: 'OSM tracks',
         toggle: osmTracksToggle,
@@ -585,6 +679,20 @@
         color: [['osm-service', 'line-color']],
         width: [['osm-service', 'line-width']]
       },
+      osmNamed: {
+        label: 'OSM named landmarks',
+        toggle: osmNamedToggle,
+        defaults: { opacity: 100, color: '#c7a85e', width: 5 },
+        opacity: [
+          ['osm-named-points', 'circle-opacity'],
+          ['osm-named-labels', 'text-opacity']
+        ],
+        color: [
+          ['osm-named-points', 'circle-color'],
+          ['osm-named-labels', 'text-color']
+        ],
+        width: [['osm-named-points', 'circle-radius']]
+      },
       sfwda: {
         label: 'SFWDA paper map',
         toggle: sfwdaToggle,
@@ -593,6 +701,25 @@
         opacity: [],
         color: [],
         width: []
+      },
+      editorPois: {
+        label: 'Drawn POIs',
+        toggle: editorPoiToggle,
+        defaults: { opacity: 100, color: '#6a6256', width: 5 },
+        opacity: [
+          ['editor-poi-fill', 'fill-opacity'],
+          ['editor-poi-outline', 'line-opacity'],
+          ['editor-poi-lines', 'line-opacity'],
+          ['editor-poi-circles', 'circle-opacity'],
+          ['editor-poi-labels', 'text-opacity'],
+          ['editor-poi-fill-labels', 'text-opacity'],
+          ['editor-poi-line-labels', 'text-opacity']
+        ],
+        color: [
+          ['editor-poi-circles', 'circle-color'],
+          ['editor-poi-labels', 'text-color']
+        ],
+        width: [['editor-poi-circles', 'circle-radius']]
       }
     };
 
@@ -642,6 +769,7 @@
           showNinePatch: false,
           showLidarTiles: false,
           showRoads: true,
+          showVisitorContext: true,
           showWater: false,
           showSprings: false,
           showCemeteries: false,
@@ -669,7 +797,7 @@
             'hillshade-highlight-color': '#fbf4e2',
             'hillshade-accent-color': '#6b5640'
           },
-          'contours-minor': { 'line-color': '#c7b48f', 'line-opacity': 0.75 },
+          'contours-minor': { 'line-color': '#c7b48f', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0, 15.5, 0.75] },
           'contours-index': { 'line-color': '#a8906a', 'line-opacity': 0.95 },
           'contours-labels': { 'text-color': '#7d6a4a', 'text-opacity': 1 },
           streams: { 'line-color': '#7fa3ac', 'line-opacity': 0.9 },
@@ -677,6 +805,9 @@
           'water-area-fill': { 'fill-color': '#a8c5c9', 'fill-opacity': 0.55 },
           'waterbody-fill': { 'fill-color': '#9fbfc4', 'fill-opacity': 0.5 },
           'waterbody-outline': { 'line-color': '#6f9098', 'line-width': 1.2 },
+          'visitor-context-fill': { 'fill-color': '#d8b173', 'fill-opacity': 0.18 },
+          'visitor-context-outline': { 'line-color': '#8b5f38', 'line-width': 2.2, 'line-opacity': 0.9 },
+          'visitor-context-labels': { 'text-color': '#4a3c2a', 'text-opacity': 1 },
           'publish-boundary-fill': { 'fill-color': '#d8c8a2', 'fill-opacity': 0.1 },
           'publish-boundaries': { 'line-color': '#6e5a3c', 'line-width': 2.5, 'line-opacity': 1 },
           'publish-trails': { 'line-color': '#9a5a32', 'line-width': 3.5, 'line-opacity': 1 },
@@ -697,6 +828,7 @@
           showNinePatch: false,
           showLidarTiles: false,
           showRoads: true,
+          showVisitorContext: true,
           showWater: true,
           showSprings: true,
           showCemeteries: false,
@@ -724,7 +856,7 @@
             'hillshade-highlight-color': '#fff4d9',
             'hillshade-accent-color': '#6f604c'
           },
-          'contours-minor': { 'line-color': '#8e7a5c', 'line-opacity': 0.8, 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.65, 16, 1.55] },
+          'contours-minor': { 'line-color': '#8e7a5c', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0, 15.5, 0.8], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.65, 16, 1.55] },
           'contours-index': { 'line-color': '#5f4934', 'line-opacity': 0.98, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.25, 16, 3.1] },
           'contours-labels': { 'text-color': '#4e3d2c', 'text-opacity': 1 },
           streams: { 'line-color': '#4d8792', 'line-opacity': 0.95 },
@@ -738,7 +870,10 @@
           'publish-trailheads': { 'circle-color': '#546f4b', 'circle-radius': 6.5, 'circle-opacity': 1 },
           'roads-local': { 'line-color': '#908773', 'line-opacity': 0.82 },
           'roads-connecting': { 'line-color': '#b9905b', 'line-opacity': 0.9 },
-          'roads-controlled': { 'line-color': '#c99a5c', 'line-opacity': 0.94 }
+          'roads-controlled': { 'line-color': '#c99a5c', 'line-opacity': 0.94 },
+          'visitor-context-fill': { 'fill-color': '#d2a95f', 'fill-opacity': 0.14 },
+          'visitor-context-outline': { 'line-color': '#6f4e2e', 'line-width': 2.4, 'line-opacity': 0.86 },
+          'visitor-context-labels': { 'text-color': '#3f3122', 'text-opacity': 1 }
         }
       },
       trace: {
@@ -753,6 +888,7 @@
           showNinePatch: false,
           showLidarTiles: false,
           showRoads: true,
+          showVisitorContext: false,
           showWater: false,
           showSprings: false,
           showCemeteries: false,
@@ -785,6 +921,9 @@
           'roads-connecting': { 'line-color': '#ffe08a', 'line-width': 3, 'line-opacity': 0.9 },
           'roads-controlled': { 'line-color': '#f7bb5f', 'line-width': 4.2, 'line-opacity': 0.95 },
           'roads-labels': { 'text-color': '#fff4cf', 'text-opacity': 1 },
+          'visitor-context-fill': { 'fill-color': '#ffe08a', 'fill-opacity': 0.1 },
+          'visitor-context-outline': { 'line-color': '#ffe08a', 'line-width': 2.6, 'line-opacity': 0.9 },
+          'visitor-context-labels': { 'text-color': '#fff4cf', 'text-opacity': 1 },
           'building-footprint-fill': { 'fill-color': '#ffe0a6', 'fill-opacity': 0.22 },
           'building-footprint-outline': { 'line-color': '#fff0b8', 'line-width': 1.6, 'line-opacity': 0.88 },
           'building-footprint-aop-outline': { 'line-color': '#ff9f5a', 'line-width': 3.2, 'line-opacity': 0.95 },
@@ -926,10 +1065,10 @@
     }
 
     function selectedTunable() {
-      return TUNABLE_LAYERS[layerTuneSelect.value] || TUNABLE_LAYERS.landcover;
+      return TUNABLE_LAYERS[activeTuneKey] || TUNABLE_LAYERS.landcover;
     }
 
-    function firstPaintValue(targets, fallback) {
+    function firstPaintValue(targets, fallback = undefined) {
       for (const [layerId, property] of targets || []) {
         if (!map.getLayer(layerId)) continue;
         const value = map.getPaintProperty(layerId, property);
@@ -946,24 +1085,70 @@
       return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
     }
 
+    function setControlVisible(input, visible) {
+      const row = input.closest('.tune-control');
+      if (row) row.hidden = !visible;
+      input.disabled = !visible;
+    }
+
+    function tuneRowForKey(key) {
+      const config = TUNABLE_LAYERS[key];
+      return config?.toggle?.closest('label') || null;
+    }
+
     function syncLayerTunerFromSelection() {
-      if (!layerTuneSelect.value) return;
       const config = selectedTunable();
+      if (!config) return;
+      layerEditorTitle.textContent = config.label;
       tuneVisible.checked = config.toggle.checked;
       const opacitySource = config.linkedSlider
         ? Number(config.linkedSlider.value) / 100
         : firstPaintValue(config.opacity, config.defaults.opacity / 100);
       const opacity = numberOrDefault(opacitySource, config.defaults.opacity / 100);
-      tuneOpacity.disabled = !(config.opacity.length || config.linkedSlider);
+      setControlVisible(tuneOpacity, Boolean(config.opacity.length || config.linkedSlider));
       tuneOpacity.value = String(Math.round(opacity * 100));
       tuneOpacityValue.textContent = `${tuneOpacity.value}%`;
-      const color = cssColorOrDefault(firstPaintValue(config.color, config.defaults.color), config.defaults.color);
-      tuneColor.disabled = !config.color.length;
+      const colorSource = firstPaintValue(config.color);
+      const color = cssColorOrDefault(colorSource, config.defaults.color);
+      setControlVisible(tuneColor, Boolean(config.color.length && cssColorOrDefault(colorSource, '')));
       tuneColor.value = color;
-      const width = numberOrDefault(firstPaintValue(config.width, config.defaults.width), config.defaults.width);
-      tuneWidth.disabled = !config.width.length;
+      const widthSource = firstPaintValue(config.width);
+      const width = numberOrDefault(widthSource, config.defaults.width);
+      setControlVisible(tuneWidth, Boolean(config.width.length && typeof widthSource === 'number'));
       tuneWidth.value = String(width);
       tuneWidthValue.textContent = Number(width).toFixed(1);
+    }
+
+    function selectTunable(key) {
+      if (!TUNABLE_LAYERS[key]) return;
+      activeTuneKey = key;
+      for (const rowKey of Object.keys(TUNABLE_LAYERS)) {
+        const row = tuneRowForKey(rowKey);
+        if (row) row.classList.toggle('active', rowKey === key);
+      }
+      const selectedRow = tuneRowForKey(key);
+      if (selectedRow && selectedRow.nextElementSibling !== layerEditor) {
+        selectedRow.insertAdjacentElement('afterend', layerEditor);
+      }
+      syncLayerTunerFromSelection();
+    }
+
+    function wireLayerEditRows() {
+      for (const [key, config] of Object.entries(TUNABLE_LAYERS)) {
+        const row = config.toggle.closest('label');
+        if (!row) continue;
+        row.classList.add('layer-row');
+        row.dataset.tuneKey = key;
+        row.addEventListener('click', (event) => {
+          if (event.target !== config.toggle) {
+            event.preventDefault();
+            selectTunable(key);
+            return;
+          }
+          window.requestAnimationFrame(() => selectTunable(key));
+        });
+      }
+      selectTunable(activeTuneKey);
     }
 
     function markPresetEdited() {
@@ -1055,13 +1240,7 @@
       }
     }
 
-    for (const [key, config] of Object.entries(TUNABLE_LAYERS)) {
-      const option = document.createElement('option');
-      option.value = key;
-      option.textContent = config.label;
-      layerTuneSelect.appendChild(option);
-    }
-    layerTuneSelect.value = 'landcover';
+    wireLayerEditRows();
 
     function escapeHtml(value) {
       return String(value ?? '')
@@ -1083,6 +1262,18 @@
     // hand booleans back as the strings 'true'/'false'.
     function isTrue(value) {
       return value === true || value === 'true';
+    }
+
+    function visitorContextLinksHtml(props) {
+      const links = [
+        ['Directions', props.directions_url],
+        ['Food', props.food_url],
+        ['Lodging', props.lodging_url],
+        ['Source', props.source_url]
+      ]
+        .filter(([, url]) => /^https?:\/\//.test(String(url || '')))
+        .map(([label, url]) => `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`);
+      return links.length ? `<span>${links.join(' &middot; ')}</span>` : '';
     }
 
     // Render a cemetery's burial roster for the popup footer. `burials` is a
@@ -1259,27 +1450,57 @@
       coordinates.forEach((child) => extendBounds(bounds, child));
     }
 
-    function fitToDataBounds(data) {
+    function geojsonBounds(data) {
       const bounds = {
         minLng: Infinity,
         minLat: Infinity,
         maxLng: -Infinity,
         maxLat: -Infinity
       };
-
-      data.features
+      (data?.features || [])
         .filter((feature) => feature.geometry?.coordinates)
         .forEach((feature) => extendBounds(bounds, feature.geometry.coordinates));
+      return Number.isFinite(bounds.minLng)
+        ? [[bounds.minLng, bounds.minLat], [bounds.maxLng, bounds.maxLat]]
+        : null;
+    }
 
-      if (Number.isFinite(bounds.minLng)) {
-        map.fitBounds(
-          [
-            [bounds.minLng, bounds.minLat],
-            [bounds.maxLng, bounds.maxLat]
-          ],
-          { padding: 60, duration: 0, maxZoom: 14, bearing: map.getBearing() }
-        );
+    function fitToDataBounds(data) {
+      const bounds = geojsonBounds(data);
+      if (bounds) {
+        map.fitBounds(bounds, { padding: 60, duration: 0, maxZoom: 14, bearing: map.getBearing() });
       }
+    }
+
+    // Camera/zoom presets, separate from the layer presets (Park/Topo/Trace).
+    // Region fits REGION_BOUNDS (the 9-patch, also the map's maxBounds); Park
+    // fits the live park boundary from publish.geojson; Pavilion is the 1010
+    // Ellis Cove Rd building.
+    const PAVILION_VIEW = { center: [-85.748268, 35.090703], zoom: 17 };
+    let parkViewBounds = null;
+
+    function goToView(view) {
+      const bearing = map.getBearing();
+      const pitch = map.getPitch();
+      if (view === 'pavilion') {
+        map.flyTo({ center: PAVILION_VIEW.center, zoom: PAVILION_VIEW.zoom, bearing, pitch, duration: 1100 });
+        return;
+      }
+      if (view === 'park') {
+        map.fitBounds(parkViewBounds || REGION_BOUNDS, {
+          padding: 60, bearing, pitch, duration: 1100, maxZoom: 15.5
+        });
+        return;
+      }
+      // Region frames the 9-patch, inset ~15% per side so the view sits
+      // tighter on the core rather than edge-to-edge with empty context margin.
+      const [[rw, rs], [re, rn]] = REGION_BOUNDS;
+      const insetX = (re - rw) * 0.15;
+      const insetY = (rn - rs) * 0.15;
+      map.fitBounds(
+        [[rw + insetX, rs + insetY], [re - insetX, rn - insetY]],
+        { padding: 20, bearing, pitch, duration: 1100 }
+      );
     }
 
     map.on('load', async () => {
@@ -1307,7 +1528,7 @@
         'open_bare',        '#b6a073',
         '#94a07c'];
 
-      // --- Land cover, 9-patch (NAIP 2021, classified) --------------------
+      // --- Land cover, 9-patch (NAIP 2023 + lidar, classified) ------------
       // Wide-area land-cover context across the full 3x3 acquisition AOI,
       // built from a coarser ~1.5 m ortho. Added first so it sits at the very
       // bottom of the stack; the crisp park-clipped layer draws on top of it.
@@ -1318,7 +1539,7 @@
         map.addSource('aop-landcover-9patch', {
           type: 'geojson',
           data: landcover9Data,
-          attribution: 'Land cover: classified from USDA NAIP 2021 imagery'
+          attribution: 'Land cover: classified from USDA NAIP 2023 + USGS 3DEP lidar'
         });
         map.addLayer({
           id: 'landcover-9patch-forest',
@@ -1334,9 +1555,10 @@
         });
       }
 
-      // --- Land cover (NAIP 2021, classified) -----------------------------
-      // The crisp park ground cover: a five-class vector land-cover coverage
-      // classified from 0.6 m NAIP imagery, clipped to the AOP boundary.
+      // --- Land cover (NAIP 2023 + lidar, classified) ---------------------
+      // The crisp park ground cover: a five-class vector land-cover coverage.
+      // Forest vs open is cut from a USGS 3DEP lidar canopy-height model;
+      // field colours from 0.6 m leaf-on NAIP. Clipped to the AOP boundary.
       // Drawn just above the wide-area 9-patch layer, so every other layer
       // still draws on top of both.
       const landcoverData = await fetchJson('./data/aop_landcover.geojson', 'Land cover missing');
@@ -1344,7 +1566,7 @@
         map.addSource('aop-landcover', {
           type: 'geojson',
           data: landcoverData,
-          attribution: 'Land cover: classified from USDA NAIP 2021 imagery'
+          attribution: 'Land cover: classified from USDA NAIP 2023 + USGS 3DEP lidar'
         });
         map.addLayer({
           id: 'landcover-forest',
@@ -1514,7 +1736,9 @@
           paint: {
             'line-color': '#c7b48f',
             'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 16, 1.4],
-            'line-opacity': 0.75
+            // Fine 5 ft contours fade in only when zoomed in tight; zoomed out
+            // they are invisible so just the 25 ft index lines carry the relief.
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0, 15.5, 0.75]
           }
         });
         map.addLayer({
@@ -1765,6 +1989,73 @@
         ]);
 
         indexFeatures(roadsData, 'road', roadsToggle);
+      }
+
+      // --- Visitor context callouts --------------------------------------
+      // Two cartographic support-town annotations: one for the immediate
+      // South Pittsburg/Kimball supply run and one for the Monteagle plateau
+      // services option. These are planning circles, not service-area claims.
+      const visitorContextData = await fetchJson('./data/aop_visitor_context_callouts.geojson', 'Visitor context callouts missing');
+      if (visitorContextData) {
+        map.addSource('visitor-context', {
+          type: 'geojson',
+          data: visitorContextData,
+          attribution: 'Visitor context: AOP, RiderPlanet, Marion County Tourism'
+        });
+
+        map.addLayer({
+          id: 'visitor-context-fill',
+          type: 'fill',
+          source: 'visitor-context',
+          paint: { 'fill-color': '#d8b173', 'fill-opacity': 0.18 }
+        });
+        map.addLayer({
+          id: 'visitor-context-outline',
+          type: 'line',
+          source: 'visitor-context',
+          layout: { 'line-join': 'round' },
+          paint: {
+            'line-color': '#8b5f38',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.6, 16, 3.2],
+            'line-opacity': 0.9,
+            'line-dasharray': [3, 1.4]
+          }
+        });
+        map.addLayer({
+          id: 'visitor-context-labels',
+          type: 'symbol',
+          source: 'visitor-context',
+          layout: {
+            'text-field': ['get', 'label'],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 11, 10, 15, 12],
+            'text-line-height': 1.08,
+            'text-anchor': 'center',
+            'text-offset': ['case',
+              ['==', ['get', 'direction'], 'northwest'], ['literal', [-3.2, 0]],
+              ['literal', [0, 0]]],
+            'text-max-width': 18,
+            'text-padding': 4
+          },
+          paint: {
+            'text-color': '#4a3c2a',
+            'text-halo-color': '#f7f1e2',
+            'text-halo-width': 1.8
+          }
+        });
+
+        bindPopup(['visitor-context-fill', 'visitor-context-outline'],
+          (props) => escapeHtml(props.name || 'Visitor context'),
+          (props) => [
+            ['Direction', props.direction || ''],
+            ['Services', props.services || ''],
+            ['Examples', props.examples || ''],
+            ['Distance', props.distance_note || ''],
+            ['Drive time', props.drive_time_note || ''],
+            ['Sources', props.source_summary || '']
+          ],
+          (props) => visitorContextLinksHtml(props));
+
+        indexFeatures(visitorContextData, 'visitor context', visitorContextToggle);
       }
 
       // --- Marion County cemeteries (TN Comptroller parcels) -------------
@@ -2429,6 +2720,15 @@
       updateLayerVisibility();
       fitToDataBounds(publishData);
 
+      // The Park zoom preset fits the published park boundary; fall back to all
+      // publish features if no boundary has been exported yet.
+      const boundaryOnly = {
+        features: publishData.features.filter(
+          (feature) => feature.properties?.layer === 'park_boundaries'
+        )
+      };
+      parkViewBounds = geojsonBounds(boundaryOnly) || geojsonBounds(publishData);
+
       bindPopup('publish-trails', 'Trail', (props) => [
         ['Name', props.name || 'Unnamed'],
         ['Difficulty', props.difficulty || 'unknown'],
@@ -2846,9 +3146,11 @@
     for (const button of presetButtons) {
       button.addEventListener('click', () => applyPreset(button.dataset.preset));
     }
+    for (const button of document.querySelectorAll('.zoom-bar button[data-view]')) {
+      button.addEventListener('click', () => goToView(button.dataset.view));
+    }
     terrainButton.addEventListener('click', () => setTerrainEnabled(!terrainToggle.checked));
 
-    layerTuneSelect.addEventListener('change', syncLayerTunerFromSelection);
     tuneVisible.addEventListener('change', setSelectedLayerVisible);
     tuneOpacity.addEventListener('input', setSelectedLayerOpacity);
     tuneColor.addEventListener('input', setSelectedLayerColor);
@@ -2869,6 +3171,7 @@
     ninePatchToggle.addEventListener('change', updateLayerVisibility);
     lidarTilesToggle.addEventListener('change', updateLayerVisibility);
     roadsToggle.addEventListener('change', updateLayerVisibility);
+    visitorContextToggle.addEventListener('change', updateLayerVisibility);
     waterToggle.addEventListener('change', updateLayerVisibility);
     springsToggle.addEventListener('change', updateLayerVisibility);
     cemeteriesToggle.addEventListener('change', updateLayerVisibility);

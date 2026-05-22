@@ -1,0 +1,487 @@
+{
+  "type": "FeatureCollection",
+  "name": "aop_visitor_context_callouts",
+  "_description": "Two planning callout areas for visitor support orientation around Adventure Off Road Park. These are cartographic annotations, not surveyed service-area boundaries.",
+  "_sources_checked": [
+    {
+      "name": "Adventure Off Road Park official site / rentals pages",
+      "url": "https://adventureoffroadpark.com/",
+      "used_for": "AOP address, on-site camping/RV/bunkhouse context, office contact",
+      "accessed": "2026-05-21"
+    },
+    {
+      "name": "RiderPlanet Adventure Off Road Park page",
+      "url": "https://www.riderplanet-usa.com/atv/trails/info/tennessee_15194/ride_d19a.htm",
+      "used_for": "AOP approach directions, nearby key services, camping/RV/restroom/shower notes",
+      "accessed": "2026-05-21"
+    },
+    {
+      "name": "Marion County Tennessee Tourism restaurants",
+      "url": "https://visitmarioncountytn.com/food-and-drink/all-restaurants/",
+      "used_for": "Restaurant clusters in South Pittsburg, Kimball, and Monteagle",
+      "accessed": "2026-05-21"
+    },
+    {
+      "name": "Marion County Tennessee Tourism hotels",
+      "url": "https://visitmarioncountytn.com/places-to-stay/hotels/",
+      "used_for": "Hotel/lodging clusters in South Pittsburg, Kimball, and Monteagle",
+      "accessed": "2026-05-21"
+    },
+    {
+      "name": "Distance-Cities South Pittsburg to Monteagle",
+      "url": "https://www.distance-cities.com/distance-south-pittsburg-tn-to-monteagle-tn",
+      "used_for": "South Pittsburg to Monteagle drive-time planning estimate; AOP to Monteagle label is rounded upward from park approach distance plus this city-to-city route",
+      "accessed": "2026-05-21"
+    },
+    {
+      "name": "Distance-Cities South Pittsburg to Chattanooga",
+      "url": "https://www.distance-cities.com/distance-south-pittsburg-tn-to-chattanooga-tn",
+      "used_for": "South Pittsburg to Chattanooga drive distance/time (30 mi, ~35 min via I-24); the AOP-to-Chattanooga circle label rounds the park approach plus this route to orient riders to the regional metro",
+      "accessed": "2026-05-21"
+    }
+  ],
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "South Pittsburg / Kimball supply run",
+        "label": "SE TO SOUTH PITTSBURG / KIMBALL\n5-8 mi | 10-15 min\nfood • fuel • hotels\nChattanooga metro ~35 mi | ~45 min",
+        "direction": "southeast",
+        "kind": "visitor_support",
+        "services": "food, fuel, convenience, hotels, I-24 access; Chattanooga metro further SE",
+        "examples": "South Pittsburg restaurants; Hampton Inn; Kimball hotel and restaurant cluster; Chattanooga metro for airport, big-box, and full city services",
+        "distance_note": "Approximate from the AOP office / Ellis Cove Road approach. Chattanooga sits about 30 driving miles past South Pittsburg via I-24, so the ~35 mi / ~45 min AOP-to-Chattanooga figure rounds the park approach plus that route — a regional-orientation estimate, not turn-by-turn routing.",
+        "drive_time_note": "Planning estimate; check live routing and hours before relying on it.",
+        "source_summary": "AOP office address; RiderPlanet approach and key-services notes; Marion County Tourism food/lodging listings; South Pittsburg-to-Chattanooga drive reference.",
+        "directions_url": "https://www.google.com/maps/dir/?api=1&origin=1040%20Ellis%20Cove%20Road%2C%20South%20Pittsburg%2C%20TN%2037380&destination=South%20Pittsburg%2C%20TN",
+        "food_url": "https://visitmarioncountytn.com/food-and-drink/all-restaurants/#:~:text=South%20Pittsburg",
+        "lodging_url": "https://visitmarioncountytn.com/places-to-stay/hotels/#:~:text=South%20Pittsburg",
+        "source_url": "https://www.riderplanet-usa.com/atv/trails/info/tennessee_15194/ride_d19a.htm"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.733711177,
+              35.0837
+            ],
+            [
+              -85.733758135,
+              35.084286268
+            ],
+            [
+              -85.733898204,
+              35.084862506
+            ],
+            [
+              -85.734128989,
+              35.085418852
+            ],
+            [
+              -85.73444654,
+              35.085945788
+            ],
+            [
+              -85.734845424,
+              35.086434298
+            ],
+            [
+              -85.735318816,
+              35.086876024
+            ],
+            [
+              -85.735858616,
+              35.087263407
+            ],
+            [
+              -85.736455589,
+              35.087589819
+            ],
+            [
+              -85.737099518,
+              35.087849676
+            ],
+            [
+              -85.737779388,
+              35.08803853
+            ],
+            [
+              -85.738483565,
+              35.08815315
+            ],
+            [
+              -85.7392,
+              35.088191576
+            ],
+            [
+              -85.739916435,
+              35.08815315
+            ],
+            [
+              -85.740620612,
+              35.08803853
+            ],
+            [
+              -85.741300482,
+              35.087849676
+            ],
+            [
+              -85.741944411,
+              35.087589819
+            ],
+            [
+              -85.742541384,
+              35.087263407
+            ],
+            [
+              -85.743081184,
+              35.086876024
+            ],
+            [
+              -85.743554576,
+              35.086434298
+            ],
+            [
+              -85.74395346,
+              35.085945788
+            ],
+            [
+              -85.744271011,
+              35.085418852
+            ],
+            [
+              -85.744501796,
+              35.084862506
+            ],
+            [
+              -85.744641865,
+              35.084286268
+            ],
+            [
+              -85.744688823,
+              35.0837
+            ],
+            [
+              -85.744641865,
+              35.083113732
+            ],
+            [
+              -85.744501796,
+              35.082537494
+            ],
+            [
+              -85.744271011,
+              35.081981148
+            ],
+            [
+              -85.74395346,
+              35.081454212
+            ],
+            [
+              -85.743554576,
+              35.080965702
+            ],
+            [
+              -85.743081184,
+              35.080523976
+            ],
+            [
+              -85.742541384,
+              35.080136593
+            ],
+            [
+              -85.741944411,
+              35.079810181
+            ],
+            [
+              -85.741300482,
+              35.079550324
+            ],
+            [
+              -85.740620612,
+              35.07936147
+            ],
+            [
+              -85.739916435,
+              35.07924685
+            ],
+            [
+              -85.7392,
+              35.079208424
+            ],
+            [
+              -85.738483565,
+              35.07924685
+            ],
+            [
+              -85.737779388,
+              35.07936147
+            ],
+            [
+              -85.737099518,
+              35.079550324
+            ],
+            [
+              -85.736455589,
+              35.079810181
+            ],
+            [
+              -85.735858616,
+              35.080136593
+            ],
+            [
+              -85.735318816,
+              35.080523976
+            ],
+            [
+              -85.734845424,
+              35.080965702
+            ],
+            [
+              -85.73444654,
+              35.081454212
+            ],
+            [
+              -85.734128989,
+              35.081981148
+            ],
+            [
+              -85.733898204,
+              35.082537494
+            ],
+            [
+              -85.733758135,
+              35.083113732
+            ],
+            [
+              -85.733711177,
+              35.0837
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Monteagle plateau services",
+        "label": "N/NW TO MONTEAGLE\n~30 min\nfood • lodging • I-24",
+        "direction": "northwest",
+        "kind": "visitor_support",
+        "services": "lodging, restaurants, I-24 plateau access",
+        "examples": "Smokehouse Lodge & Cabins, Monteagle hotels, Mountain Goat Market, High Point, Smokehouse Restaurant",
+        "distance_note": "South Pittsburg to Monteagle is listed at about 21 driving miles; AOP adds the Ellis Cove Road approach.",
+        "drive_time_note": "Approximate planning callout, rounded upward from the city-to-city drive and park approach.",
+        "source_summary": "Marion County Tourism Monteagle food/lodging listings; South Pittsburg to Monteagle drive-distance reference.",
+        "directions_url": "https://www.google.com/maps/dir/?api=1&origin=1040%20Ellis%20Cove%20Road%2C%20South%20Pittsburg%2C%20TN%2037380&destination=Monteagle%2C%20TN",
+        "food_url": "https://visitmarioncountytn.com/food-and-drink/all-restaurants/#:~:text=Monteagle",
+        "lodging_url": "https://visitmarioncountytn.com/places-to-stay/hotels/#:~:text=Monteagle",
+        "source_url": "https://www.distance-cities.com/distance-south-pittsburg-tn-to-monteagle-tn"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.752290399,
+              35.1012
+            ],
+            [
+              -85.752339246,
+              35.101809719
+            ],
+            [
+              -85.752484949,
+              35.102409006
+            ],
+            [
+              -85.752725017,
+              35.102987606
+            ],
+            [
+              -85.753055341,
+              35.10353562
+            ],
+            [
+              -85.753470269,
+              35.10404367
+            ],
+            [
+              -85.753962703,
+              35.104503065
+            ],
+            [
+              -85.754524215,
+              35.104905943
+            ],
+            [
+              -85.7551452,
+              35.105245412
+            ],
+            [
+              -85.75581503,
+              35.105515663
+            ],
+            [
+              -85.756522247,
+              35.105712071
+            ],
+            [
+              -85.757254748,
+              35.105831276
+            ],
+            [
+              -85.758,
+              35.105871239
+            ],
+            [
+              -85.758745252,
+              35.105831276
+            ],
+            [
+              -85.759477753,
+              35.105712071
+            ],
+            [
+              -85.76018497,
+              35.105515663
+            ],
+            [
+              -85.7608548,
+              35.105245412
+            ],
+            [
+              -85.761475785,
+              35.104905943
+            ],
+            [
+              -85.762037297,
+              35.104503065
+            ],
+            [
+              -85.762529731,
+              35.10404367
+            ],
+            [
+              -85.762944659,
+              35.10353562
+            ],
+            [
+              -85.763274983,
+              35.102987606
+            ],
+            [
+              -85.763515051,
+              35.102409006
+            ],
+            [
+              -85.763660754,
+              35.101809719
+            ],
+            [
+              -85.763709601,
+              35.1012
+            ],
+            [
+              -85.763660754,
+              35.100590281
+            ],
+            [
+              -85.763515051,
+              35.099990994
+            ],
+            [
+              -85.763274983,
+              35.099412394
+            ],
+            [
+              -85.762944659,
+              35.09886438
+            ],
+            [
+              -85.762529731,
+              35.09835633
+            ],
+            [
+              -85.762037297,
+              35.097896935
+            ],
+            [
+              -85.761475785,
+              35.097494057
+            ],
+            [
+              -85.7608548,
+              35.097154588
+            ],
+            [
+              -85.76018497,
+              35.096884337
+            ],
+            [
+              -85.759477753,
+              35.096687929
+            ],
+            [
+              -85.758745252,
+              35.096568724
+            ],
+            [
+              -85.758,
+              35.096528761
+            ],
+            [
+              -85.757254748,
+              35.096568724
+            ],
+            [
+              -85.756522247,
+              35.096687929
+            ],
+            [
+              -85.75581503,
+              35.096884337
+            ],
+            [
+              -85.7551452,
+              35.097154588
+            ],
+            [
+              -85.754524215,
+              35.097494057
+            ],
+            [
+              -85.753962703,
+              35.097896935
+            ],
+            [
+              -85.753470269,
+              35.09835633
+            ],
+            [
+              -85.753055341,
+              35.09886438
+            ],
+            [
+              -85.752725017,
+              35.099412394
+            ],
+            [
+              -85.752484949,
+              35.099990994
+            ],
+            [
+              -85.752339246,
+              35.100590281
+            ],
+            [
+              -85.752290399,
+              35.1012
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

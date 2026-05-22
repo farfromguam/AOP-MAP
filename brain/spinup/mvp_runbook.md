@@ -149,6 +149,23 @@ cp /private/tmp/aop_gdal/aop_contours.geojson website/data/
 The large DEM cache lives at `mvp/cache/dem/` (gitignored via `/mvp/cache/`).
 The `/private/tmp/aop_gdal/` workdir is scratch and can be deleted any time.
 
+## Lidar toolchain (PDAL)
+
+Lidar point-cloud work runs through a separate Docker image, `pdal/pdal:latest`
+(PDAL 2.10 with GDAL 3.13 bundled). `mvp/scripts/build_canopy_height.sh` uses
+it to turn USGS 3DEP LAZ tiles into the canopy-height model the land-cover
+classifier needs. Same `/private/tmp` staging constraint as the GDAL work.
+
+Gotcha worth knowing: the 3DEP lidar carries a *compound* CRS with a NAVD88
+vertical component. `gdalwarp`, left to itself, reads a single-band raster in
+that CRS as elevation data and applies a ~-30 m geoid shift to the pixel
+values. When the values are heights *above ground* (not elevations), force the
+2D horizontal CRS on the warp -- `-s_srs EPSG:6576` -- so the values pass
+through unchanged.
+
+The LAZ cache (24 tiles, ~2.8 GB) and the derived CHMs live at
+`mvp/cache/lidar/` (gitignored via `/mvp/cache/`).
+
 ## Publish export check
 
 Refresh the web export:

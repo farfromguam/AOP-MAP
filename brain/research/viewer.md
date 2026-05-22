@@ -47,6 +47,7 @@ how the layer was built.
 | Asphalt roads (USGS National Map) | `aop_roads.geojson` | on | "Asphalt Roads Layer" below |
 | Land cover (NAIP) | `aop_landcover.geojson` | on | "Land-Cover Layer" below |
 | Land cover — 9-patch (NAIP) | `aop_landcover_9patch.geojson` | on | "Land-Cover Layer" below |
+| Visitor context callouts | `aop_visitor_context_callouts.geojson` | on | `tasks/01_mvp/visitor_context_callouts.md`; "Visitor Context Callouts" below |
 | 3D button | AWS Terrain Tiles | off | "Lidar Hillshade and 3D Terrain Layers" below |
 | Lidar hillshade (USGS 3DEP) | AWS Terrain Tiles | off | "Lidar Hillshade and 3D Terrain Layers" below |
 | Lidar contours (5 ft, 1m DEM) | `aop_contours.geojson` | off | `tasks/01_mvp/lidar_contour_pipeline.md`; "Lidar Contour Layer" below |
@@ -85,6 +86,14 @@ preset buttons (`Park`, `Topo`, and `Trace`), and a dedicated `3D` button.
 The `3D` button is independent of presets. Turning it on binds MapLibre terrain
 and pitches the camera; switching between `Park`, `Topo`, and `Trace` leaves the
 3D state alone.
+
+A second row below the preset bar holds three **zoom presets** -- `Region`,
+`Park`, and `Pavilion`. These move the camera only; they do not touch layers or
+the layer presets (note the name collision: the `Park` *layer* preset and the
+`Park` *zoom* preset are different controls). `Region` fits the documented
+9-patch acquisition AOI, `Park` fits the published park boundary from
+`publish.geojson`, and `Pavilion` flies in tight (zoom 17) on the 1010 Ellis
+Cove Road building. Bearing and pitch are preserved across all three.
 
 The right panel has a layer tuner for selected layers. It can change visibility,
 opacity, color, and width/size where those paint properties exist. `Snapshot
@@ -137,6 +146,28 @@ feature: the parcel-derived AOP working envelope. How features earn their way
 into `publish` is the source-register contract -- see
 `northstar/source_register.md`, `northstar/validation_loop.md`, and the build
 card.
+
+### Visitor Context Callouts
+
+Recorded on 2026-05-21:
+
+- `website/data/aop_visitor_context_callouts.geojson` is a small cartographic
+  annotation layer with two support-town circles:
+  `South Pittsburg / Kimball supply run` and `Monteagle plateau services`.
+- The layer is default ON in the Park and Topo presets and hidden in Trace.
+  It draws as muted ochre circle fills/outlines plus multiline labels, and has
+  popups with direction, services, examples, distance/drive-time notes, and
+  source summaries. Each popup also has `Directions`, `Food`, `Lodging`, and
+  `Source` links.
+- The callouts are searchable. Searching "South Pittsburg", "Kimball", or
+  "Monteagle" jumps to the relevant circle and turns the layer on if it was
+  hidden.
+- Sources are embedded in the GeoJSON and summarized in
+  `tasks/01_mvp/visitor_context_callouts.md`: AOP official pages, RiderPlanet,
+  Marion County Tourism restaurants/hotels, and a South Pittsburg-to-Monteagle
+  drive-distance reference. Times are planning estimates, not routed/live
+  traffic data.
+- Verified with `mvp/scripts/playwright_verify_visitor_context.py`.
 
 ### Satellite Imagery (TNMap 2022)
 
@@ -260,6 +291,12 @@ Recorded on 2026-05-20; updated 2026-05-21:
 - Viewer: toggle `Lidar contours (5 ft, 1m DEM)`, default OFF. Layers `contours-minor`
   (thin), `contours-index` (bold 25-ft), and `contours-labels` (elevation labels on
   index lines). Clicking any contour shows its elevation.
+- Zoom-dependent visibility (2026-05-21): the fine `contours-minor` 5-ft lines
+  fade with zoom -- `line-opacity` interpolates 0 at zoom 14 up to full at zoom
+  15.5. Zoomed out they are invisible so only the 25-ft `contours-index` lines
+  carry the relief; zoomed in tight the full 5-ft detail appears. The fade is
+  baked into the base layer paint and into the `Park`/`Topo` preset paints so it
+  survives a preset switch.
 - Verified with `mvp/scripts/playwright_verify_lidar_tiles.py` on 2026-05-21: all
   checks PASS, 0 console errors. An independent crossing detector confirms 0
   different-elevation crossings.
@@ -337,58 +374,57 @@ Recorded on 2026-05-21:
 
 ### Land-Cover Layer
 
-Recorded on 2026-05-21:
+Recorded 2026-05-21 (rebuilt the same day onto lidar + leaf-on imagery).
 
 - `website/data/aop_landcover.geojson` is the viewer's base ground cover -- a
-  five-class vector land-cover *coverage* classified from NAIP aerial imagery.
-  Every valid pixel is one of: `forest_deciduous`, `forest_evergreen`,
-  `open_grass`, `open_meadow`, `open_bare`. 631 polygons, clipped to the AOP
-  boundary, ~920 KB.
-- Source imagery: USGS NAIP 2021, 4-band (R/G/B/NIR), 0.6 m, acquired
-  2021-11-07, from the `USGSNAIPImagery` ImageServer. Downloaded via the
-  two-step ArcGIS export (`f=json` -> `href` -> TIFF, since a 12-megapixel
-  mosaic will not stream inline). Cached gitignored at
-  `mvp/cache/imagery/naip_2021_aop.tif` (~51 MB).
-- Why NAIP 2021: the only no-auth 4-band source. 2023 NAIP (leaf-on, ideal) is
-  behind an EarthExplorer login; the TNM products API no longer serves NAIP;
-  TNMap 2022 ortho is RGB-only. The NIR band is what makes the classification
-  possible. NAIP 2021 is partial leaf-off (early November).
-- Build pipeline: `mvp/scripts/build_landcover.sh`, with `classify_landcover.py`
-  (NAIP -> 5-class raster) and `smooth_landcover.py` (Chaikin smooth, all
-  classes kept). A `ogr2ogr -makevalid` pass repairs the rare self-intersection
-  Chaikin pinches into a thin polygon. GDAL via Docker per
-  `spinup/mvp_runbook.md`.
-- Classification, stage 1 -- forest vs open: forest is a neighbourhood-scale
-  canopy-roughness field (local NIR std-dev, low-pass smoothed, Otsu, then
-  morphological closing/opening). Texture, not NDVI, because canopy roughness
-  survives leaf-off. Forest cover 57.6% raw -> 78.2% cleaned.
-- Classification, stage 2 -- sub-classes by NDVI vigour, smoothed *within* each
-  zone so the forest/open edge does not bleed:
-  - Forest split: evergreen is the high-NDVI tail (top 20%). Conifers keep
-    their needles in November and stay green where bare hardwood canopy does
-    not. The leaf-off conifer signal is weak and scattered, so NDVI is
-    low-passed over a stand-scale window and the result is morphologically
-    consolidated into coherent stands rather than confetti. ~20% evergreen.
-  - Open split: two Otsu cuts rank open ground by greenness into bare (low),
-    meadow (mid), grass (high). This is a *relative* greenness ranking within
-    this one leaf-off image, not absolute crop identification.
-- Water is deliberately not classified -- leaf-off NIR confuses water with
-  shadow, and the USGS NHD layer already carries hydrography.
+  five-class vector land-cover *coverage*: every valid pixel is one of
+  `forest_deciduous`, `forest_evergreen`, `open_grass`, `open_meadow`,
+  `open_bare`. Clipped to the AOP boundary, ~154 polygons.
+- Two data sources, each used for what it is good at:
+  - **USGS 3DEP lidar** -> a canopy-height model. Forest vs open is a height
+    threshold, so the forest edge is crisp and per-pixel. Imagery alone cannot
+    do this: leaf-off canopy texture works but blurs the edge, and leaf-on
+    canopy is too smooth to threshold at all.
+  - **USDA NAIP 2023** (June, leaf-on, 4-band R/G/B/NIR, 0.6 m, the no-auth
+    `USDA_CONUS_PRIME` ImageServer) -> the colours: the evergreen/deciduous
+    split and the open-ground colour quantisation.
+- Build pipeline:
+  - `mvp/scripts/build_canopy_height.sh [park|9patch]` -- USGS 3DEP LAZ tiles
+    -> PDAL `hag_delaunay` (height above the ground-classified returns) -> grid
+    the per-cell max height -> mosaic -> warp onto the NAIP grid. CHM cached
+    gitignored at `mvp/cache/lidar/chm_{aop,9patch}.tif`. Runs via the
+    `pdal/pdal` Docker image; the warp forces `-s_srs EPSG:6576` so GDAL does
+    not geoid-shift the height values (the lidar CRS carries a NAVD88 vertical
+    component).
+  - `mvp/scripts/build_landcover.sh` -- downloads the NAIP ortho, ensures the
+    CHM, then `classify_landcover.py` (NAIP + CHM -> 5-class raster) and
+    `smooth_landcover.py` (Chaikin), polygonize, clip to the AOP boundary.
+    GDAL via Docker per `spinup/mvp_runbook.md`.
+- Classification, stage 1 -- forest vs open: forest = `CHM > 2.5 m`, a crisp
+  per-pixel cut. The CHM is a stipple of crowns, so a morphological closing
+  bridges the inter-crown gaps into a coherent mass and an opening drops lone
+  trees / specks. ~81% forest in the park.
+- Classification, stage 2 -- sub-classes from the leaf-on NAIP colour:
+  - Forest split: evergreen is the darkest tail of the canopy (conifers read
+    darker than leaf-on hardwood), stand-smoothed and cut at a percentile so
+    it stays a coherent accent.
+  - Open split: k-means RGB colour quantisation into three clusters, majority-
+    voted into contiguous fields, ranked by greenness onto grass / meadow /
+    bare. A relative colour ranking within one image, not absolute crop ID.
+- Water is deliberately not classified -- the USGS NHD layer already carries
+  hydrography.
 - Viewer: layers `landcover-forest` (fill) + `landcover-forest-outline`,
   toggle `Land cover (NAIP)`, default ON. The fill colour is a MapLibre
   `match` on `class`; each class also gets a thin same-family outline that
   bridges the sub-pixel slivers independent vertex-simplify can leave between
-  adjacent classes. Raw-zone context -- attach a `source_register.sources` row
-  (NAIP = USDA, public domain) before any promotion.
-- 9-patch extension (`aop_landcover_9patch.geojson`): the same classifier run
-  over the full 3x3 acquisition AOI, so the viewer has land-cover context
-  around the park, not only inside it. The NAIP ImageServer caps an export at
-  4000 px and the 9-patch is ~6 km wide, so this ortho is pulled at ~1.5 m (one
-  3996x3742 export) -- coarser than the 0.6 m park ortho by design.
-  `classify_landcover.py` is resolution-aware: it rescales its windows from the
-  geotransform pixel size, so the one classifier serves both builds. 6420
-  polygons, ~7.8 MB (simplified harder, 3 m, since it is a dimmed context
-  layer), clipped to the 9-patch rectangle. Build script:
+  adjacent classes.
+- 9-patch extension (`aop_landcover_9patch.geojson`): the same pipeline over
+  the full 3x3 acquisition AOI, so the viewer has land-cover context around the
+  park, not only inside it. The NAIP ImageServer caps an export at 4000 px and
+  the 9-patch is ~6 km wide, so that ortho is pulled at ~1.5 m; the CHM is
+  built from all 24 USGS 3DEP lidar tiles. `classify_landcover.py` is
+  resolution-aware (it rescales its windows from the geotransform pixel size),
+  so the one classifier serves both builds. Build script:
   `mvp/scripts/build_landcover_9patch.sh`.
 - The 9-patch layers `landcover-9patch-forest` (fill) + `-outline` sit at the
   very base of the stack, below the crisp park layer which draws on top.
@@ -396,14 +432,17 @@ Recorded on 2026-05-21:
   opacity` slider (default 55%). Because the park layer covers the park
   crisply, the slider effectively fades only the non-park context. Bounds are
   deliberately separate from the park layer.
-- Edge crispness is capped by the leaf-off imagery (~15 m softness floor), and
-  the 9-patch layer additionally by its coarser ~1.5 m resolution; leaf-on
-  2023 NAIP would sharpen both, and would make the conifer split and the
-  open-ground split far more meaningful -- see `tasks/backlog/leaf_on_landcover.md`.
+- Honest limits: the 3DEP lidar is 2015, so canopy is ~8 years older than the
+  2023 imagery -- growth or clearing since is not captured; the CHM catches any
+  tall object, so a large barn reads as a small forest patch; the open-ground
+  colour split is a relative ranking, not crop identification.
+- Raw-zone context -- attach a `source_register.sources` row (NAIP = USDA
+  public domain; 3DEP lidar = USGS public domain) before any promotion.
 - Verified with `mvp/scripts/playwright_verify_landcover.py` on 2026-05-21:
-  31 of 31 checks PASS, 0 console errors -- the script covers both layers, the
-  five classes in each GeoJSON, base-of-stack order, and the opacity slider.
-- Build card: `tasks/01_mvp/landcover_layer.md`.
+  PASS, 0 console errors -- the script covers both layers, the five classes in
+  each GeoJSON, base-of-stack order, and the opacity slider.
+- Build card: `tasks/01_mvp/landcover_layer.md` ("Update: lidar canopy-height
+  rebuild").
 
 ### Cartographic palette (Muted Earth)
 

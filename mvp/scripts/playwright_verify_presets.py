@@ -121,9 +121,56 @@ def main() -> int:
         check("Topo restyles index contours", paint(page, "contours-index", "line-color") == "#5f4934")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["topo"]))
 
-        print("\n== Layer tuning + snapshot ==")
-        page.locator("#layerTuneSelect").select_option("trails")
-        check("tuner can select trails", page.locator("#layerTuneSelect").input_value() == "trails")
+        print("\n== Zoom presets + contour fade ==")
+        check("zoom bar has three view buttons",
+              page.locator(".zoom-bar button[data-view]").count() == 3)
+        minor_opacity = paint(page, "contours-minor", "line-opacity")
+        index_opacity = paint(page, "contours-index", "line-opacity")
+        check("fine 5 ft contours fade with zoom",
+              isinstance(minor_opacity, list) and minor_opacity[0] == "interpolate",
+              str(minor_opacity))
+        check("index 25 ft contours keep a flat opacity",
+              isinstance(index_opacity, (int, float)) and not isinstance(index_opacity, bool),
+              str(index_opacity))
+
+        page.locator("#zoomPavilion").click()
+        page.wait_for_timeout(1500)
+        pav = page.evaluate("() => ({ z: window.map.getZoom(), c: window.map.getCenter() })")
+        check("Pavilion zooms in tight", pav["z"] >= 15.5, f"zoom={pav['z']:.2f}")
+        check("Pavilion centers on the 1010 building",
+              abs(pav["c"]["lng"] + 85.748268) < 0.01 and abs(pav["c"]["lat"] - 35.090703) < 0.01,
+              str(pav["c"]))
+
+        page.locator("#zoomRegion").click()
+        page.wait_for_timeout(1500)
+        region_zoom = page.evaluate("() => window.map.getZoom()")
+        check("Region zooms out wide", region_zoom < pav["z"] - 2,
+              f"region={region_zoom:.2f} pavilion={pav['z']:.2f}")
+
+        page.evaluate("() => window.map.jumpTo({ center: [-85.45, 35.42], zoom: 7 })")
+        page.wait_for_timeout(400)
+        leashed = page.evaluate("() => ({ z: map.getZoom(), c: map.getCenter() })")
+        check("camera is leashed to the 9-patch (cannot pan/zoom past it)",
+              -85.81 < leashed["c"]["lng"] < -85.70
+              and 35.05 < leashed["c"]["lat"] < 35.13
+              and leashed["z"] >= region_zoom - 0.5,
+              f"z={leashed['z']:.2f} c=({leashed['c']['lng']:.4f},{leashed['c']['lat']:.4f})")
+
+        page.locator("#zoomPark").click()
+        page.wait_for_timeout(1500)
+        park_zoom = page.evaluate("() => window.map.getZoom()")
+        check("Park zoom sits between region and pavilion",
+              region_zoom < park_zoom < pav["z"], f"park={park_zoom:.2f}")
+
+        print("\n== Inline layer tuning + snapshot ==")
+        page.locator('[data-tune-key="trails"]').click()
+        check("inline editor can select trails", page.locator("#layerEditorTitle").inner_text() == "Trails")
+        check(
+            "editor sits under the selected layer row",
+            page.locator('[data-tune-key="trails"]').evaluate(
+                "el => el.nextElementSibling && el.nextElementSibling.id === 'layerEditor'"
+            ),
+        )
         check("trail tuner reflects visible state", page.locator("#tuneVisible").is_checked())
         page.locator("#tuneColor").fill("#00a6a6")
         page.locator("#tuneWidth").evaluate(
@@ -172,7 +219,8 @@ def main() -> int:
               is_checked(page, "showUsdaNaip") and is_checked(page, "showSfwda")
               and is_checked(page, "showOsmTracks") and is_checked(page, "showBuildings"))
         check("Trace applies high-contrast boundary color", paint(page, "publish-boundaries", "line-color") == "#fff0b8")
-        page.locator("#layerTuneSelect").select_option("sfwda")
+        page.locator('[data-tune-key="sfwda"]').click()
+        check("inline editor can select SFWDA", page.locator("#layerEditorTitle").inner_text() == "SFWDA paper map")
         page.locator("#tuneOpacity").evaluate(
             """el => {
               el.value = '42';

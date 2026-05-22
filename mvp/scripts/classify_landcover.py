@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Classify a NAIP 4-band ortho into the AOP land-cover map.
+"""Classify NAIP imagery + a lidar canopy-height model into the AOP land-cover map.
 
-Reads a 4-band (R, G, B, NIR) NAIP GeoTIFF and writes a single-band class
-raster plus a colorized PNG preview. The output is a full coverage: every
-valid pixel gets exactly one of five land-cover classes.
+Reads a 4-band (R, G, B, NIR) NAIP GeoTIFF and a single-band canopy-height
+model (CHM, metres above ground) on the *same pixel grid*, and writes a
+single-band class raster plus a colorized PNG preview. The output is a full
+coverage: every valid pixel gets exactly one of five land-cover classes.
 
   1 forest_deciduous   bright leaf-on hardwood canopy -- the bulk of the woods
   2 forest_evergreen   conifer / needleleaf -- the darker, denser tree shade
@@ -11,28 +12,23 @@ valid pixel gets exactly one of five land-cover classes.
   4 open_meadow        the mid open-ground colour cluster
   5 open_bare          the brownest open-ground colour cluster
 
-This pipeline expects LEAF-ON summer imagery (USDA NAIP 2023, acquired June,
-full canopy). Leaf-on is what makes the *sub-class* work meaningful: the
-fields hold real, separable colours and conifer stands read distinctly
-against leaf-on hardwood. See tasks/01_mvp/landcover_layer.md.
-
 The method mirrors the manual Illustrator workflow it replaces -- separate the
 trees off the fields, then posterise the remaining ground into a few field
 colours -- but runs it automatically and reproducibly.
 
 Two stages.
 
-1. Forest vs open -- canopy texture. Tree canopy is rough (sunlit crowns next
-   to deep inter-crown shadow), open ground is smooth; this holds in any
-   season and does not depend on canopy brightness, which is unreliable
-   (leaf-on crowns in full sun are bright, not dark). Roughness is the local
-   NIR standard deviation, low-passed into a coherent forest score, then
-   Otsu-thresholded and tidied with a morphological closing/opening. Because
-   texture is a neighbourhood property, the forest edge carries an inherent
-   softness of about one window width -- imagery alone cannot place a canopy
-   edge per-pixel; a lidar canopy-height model is the crisp alternative.
+1. Forest vs open -- lidar canopy height. Trees are tall, grass is not, so a
+   canopy-height model thresholds forest cleanly and *per-pixel*: the edge is
+   a real edge, not the blurred neighbourhood field a texture classifier
+   produces. (Optical imagery cannot do this: leaf-off canopy texture works
+   but blurs the edge; leaf-on canopy is too smooth to threshold at all.) The
+   CHM comes from build_canopy_height.sh -- USGS 3DEP lidar, height above the
+   ground-classified returns, warped onto the NAIP grid. The CHM is a stipple
+   of crowns, so a morphological closing first bridges the inter-crown gaps
+   into a coherent canopy mass; an opening then drops lone trees and specks.
 
-2. Sub-classes.
+2. Sub-classes -- leaf-on NAIP colour.
      - Forest split: evergreen is the darkest tail of the canopy (conifers
        read darker than leaf-on hardwood), measured as a stand-scale smoothed
        darkness field and cut at a percentile so it stays a coherent accent.
@@ -47,6 +43,8 @@ image, not absolute crop identification, and k-means is unsupervised so the
 cluster boundaries follow whatever colour spread the scene happens to have.
 
 Pure numpy + GDAL bindings; box filters use summed-area tables (no scipy).
+
+Usage: classify_landcover.py naip.tif chm.tif out_class.tif preview.png
 
 Classes: 0 nodata, 1 forest_deciduous, 2 forest_evergreen, 3 open_grass,
 4 open_meadow, 5 open_bare.
@@ -80,15 +78,17 @@ CLASS_RGB = {
     OPEN_BARE: (205, 186, 143),         # #cdba8f ochre tan
 }
 
+# Canopy height threshold -- a height in metres, not a window, so it is not
+# rescaled with pixel size.
+CANOPY_HEIGHT_M = 2.5         # CHM above this reads as tree canopy
+
 # Window radii are pixel counts tuned at REF_PX_M. main() rescales every
 # radius to the ortho's actual pixel size so the *metric* window is held
 # constant -- the park build feeds a 0.6 m ortho, the 9-patch build a coarser
-# ~1.5 m one. At REF_PX_M the scale is 1.0 and the radii are unchanged.
+# one. At REF_PX_M the scale is 1.0 and the radii are unchanged.
 REF_PX_M = 0.60               # reference pixel size the radii below were tuned at
-TEXTURE_RADIUS = 16           # local NIR std-dev window -- spans several crowns
-FOREST_SMOOTH_RADIUS = 8      # low-pass the roughness into a coherent forest score
-CLOSE_RADIUS = 8              # fill canopy-gap holes
-OPEN_RADIUS = 5               # drop forest/field specks
+CLOSE_RADIUS = 12             # bridge inter-crown gaps so the woods read as a mass
+OPEN_RADIUS = 4               # drop lone trees / building specks from the forest mask
 FOREST_DARK_RADIUS = 30       # stand-scale smooth of canopy darkness -> conifer
 FOREST_CLEAN_RADIUS = 16      # consolidate evergreen stipple into real stands
 EVERGREEN_PERCENTILE = 78     # evergreen = the darkest tail of the canopy
@@ -187,10 +187,6 @@ def otsu(values):
     return float(mids[int(np.nanargmax(sigma_b))])
 
 
-def pct(a, q):
-    return float(np.percentile(a[np.isfinite(a)], q))
-
-
 def share(mask, base):
     """Percentage of `base` pixels that are also in `mask`."""
     b = int(base.sum())
@@ -248,21 +244,28 @@ def write_preview(cls, path):
 
 
 def main():
-    in_tif, out_tif, preview_png = sys.argv[1], sys.argv[2], sys.argv[3]
-    ds = gdal.Open(in_tif)
+    naip_tif, chm_tif = sys.argv[1], sys.argv[2]
+    out_tif, preview_png = sys.argv[3], sys.argv[4]
+
+    ds = gdal.Open(naip_tif)
     geo, proj = ds.GetGeoTransform(), ds.GetProjection()
     bands = [ds.GetRasterBand(i + 1).ReadAsArray().astype(np.float32)
              for i in range(4)]
     red, green, blue, nir = bands
     h, w = red.shape
-    print(f"==> NAIP ortho {w} x {h} px, 4 bands (leaf-on workflow)")
+    print(f"==> NAIP ortho {w} x {h} px, 4 bands")
+
+    chm_ds = gdal.Open(chm_tif)
+    chm = chm_ds.GetRasterBand(1).ReadAsArray().astype(np.float32)
+    if chm.shape != (h, w):
+        sys.exit(f"CHM grid {chm.shape} != NAIP grid {(h, w)} -- "
+                 f"rebuild the CHM against this ortho (build_canopy_height.sh)")
+    print(f"==> CHM {w} x {h} px, height max {np.nanmax(chm):.1f} m")
 
     # Hold the metric window constant across ortho resolutions: the projection
     # is metric (EPSG:26916), so geo[1] is the pixel size in metres.
     px_m = abs(geo[1]) or REF_PX_M
     scale = REF_PX_M / px_m
-    tex_r = max(1, round(TEXTURE_RADIUS * scale))
-    smooth_r = max(1, round(FOREST_SMOOTH_RADIUS * scale))
     close_r = max(1, round(CLOSE_RADIUS * scale))
     open_r = max(1, round(OPEN_RADIUS * scale))
     dark_r = max(1, round(FOREST_DARK_RADIUS * scale))
@@ -270,47 +273,35 @@ def main():
     presmooth_r = max(1, round(OPEN_PRESMOOTH_RADIUS * scale))
     majority_r = max(1, round(OPEN_MAJORITY_RADIUS * scale))
     print(f"==> pixel size {px_m:.2f} m, radius scale {scale:.2f} "
-          f"(texture {tex_r}, smooth {smooth_r}, close {close_r}, "
-          f"open {open_r}, dark {dark_r}, forest-clean {forest_clean_r}, "
-          f"presmooth {presmooth_r}, majority {majority_r})")
+          f"(close {close_r}, open {open_r}, dark {dark_r}, "
+          f"forest-clean {forest_clean_r}, presmooth {presmooth_r}, "
+          f"majority {majority_r})")
 
     nodata = (red == 0) & (green == 0) & (blue == 0) & (nir == 0)
     valid = ~nodata
 
-    # --- Stage 1: forest vs open -- canopy texture ------------------------
-    # Tree canopy is rough (sunlit crowns beside deep inter-crown shadow),
-    # open ground is smooth. Roughness = local NIR std-dev; that is patchy
-    # within a single crown, so it is low-passed into a coherent forest score
-    # that reads uniformly high over woods and uniformly low over fields.
-    # Otsu thresholds it; a morphological close/open tidies holes and specks.
-    # Texture is a neighbourhood signal, so the forest edge carries an
-    # inherent softness of roughly one window width -- the cost of detecting
-    # canopy from imagery alone (a lidar height model would be crisp).
-    mean_nir = box_mean(nir, tex_r)
-    mean_sq = box_mean(nir * nir, tex_r)
-    texture = np.sqrt(np.maximum(mean_sq - mean_nir * mean_nir, 0.0))
-    forest_score = box_mean(texture, smooth_r)
+    # NDVI -- ranks the open colour clusters by greenness in stage 2b.
+    denom = nir + red
+    denom[denom == 0] = 1e-6
+    ndvi = (nir - red) / denom
 
-    forest_thr = otsu(forest_score[valid])
-    print(f"==> forest score: p10={pct(forest_score[valid],10):.1f} "
-          f"p50={pct(forest_score[valid],50):.1f} "
-          f"p90={pct(forest_score[valid],90):.1f} "
-          f"-> Otsu forest threshold {forest_thr:.2f}")
-
-    forest = valid & (forest_score > forest_thr)
+    # --- Stage 1: forest vs open -- lidar canopy height -------------------
+    # Tall canopy is forest, low ground is open -- a crisp per-pixel cut. The
+    # CHM is a stipple of individual crowns, so a morphological closing first
+    # bridges the inter-crown gaps into a coherent canopy mass (real clearings,
+    # larger than the closing window, stay as holes); an opening then drops
+    # lone trees and building-sized specks. The forest edge stays crisp --
+    # closing preserves the outer boundary of a large object, it only fills
+    # concavities smaller than its window.
+    forest = valid & (chm > CANOPY_HEIGHT_M)
     raw_pct = 100.0 * forest.sum() / valid.sum()
     forest = closing(forest, close_r)
     forest = opening(forest, open_r)
     forest &= valid
     open_ = valid & ~forest
-    print(f"==> forest cover: {raw_pct:.1f}% raw -> "
-          f"{100.0 * forest.sum() / valid.sum():.1f}% "
+    print(f"==> forest cover: {raw_pct:.1f}% raw (CHM > {CANOPY_HEIGHT_M} m) "
+          f"-> {100.0 * forest.sum() / valid.sum():.1f}% "
           f"after close({close_r})/open({open_r})")
-
-    # NDVI -- used only to rank the open colour clusters by greenness below.
-    denom = nir + red
-    denom[denom == 0] = 1e-6
-    ndvi = (nir - red) / denom
 
     # --- Stage 2a: forest split -- evergreen is the darkest canopy --------
     # Conifers read darker than leaf-on hardwood. Darkness is smoothed over a

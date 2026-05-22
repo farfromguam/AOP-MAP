@@ -222,3 +222,82 @@ polygons instead of being left as the paper background.
 - Tunables added at the top of `classify_landcover.py`: `FOREST_NDVI_RADIUS`,
   `OPEN_NDVI_RADIUS`, `FOREST_CLEAN_RADIUS`, `OPEN_CLEAN_RADIUS`,
   `EVERGREEN_PERCENTILE`, and the `CLASS_RGB` preview palette.
+
+## Update: lidar canopy-height rebuild (2026-05-21)
+
+The user asked how the vector land-cover layer was being produced, said it was
+"not quite right," and described the Illustrator workflow they would use:
+threshold the trees off the fields, then posterise the remaining ground into
+3-4 field colours. They added a new satellite dataset (USDA NAIP 2023) to
+compare against. The layer was rebuilt around that workflow.
+
+### What was found
+
+- **Leaf-on imagery is better for the fields, worse for the tree mask.** The
+  open-ground colour split (the user's step 2) automates cleanly on leaf-on
+  imagery -- k-means colour quantisation, the field colours are real and
+  separable. But the forest/open split (step 1) does **not** automate from
+  leaf-on imagery. Four builds confirmed it:
+  - Colour/brightness threshold fails -- leaf-on canopy in full sun is bright,
+    not dark.
+  - Texture (canopy roughness) fails -- leaf-on canopy is a smooth continuous
+    blanket; its texture barely differs from a mown field, the histogram is
+    unimodal, and Otsu lands in the tail (5-11% forest, should be ~80%).
+  - The *old* pipeline only worked because it ran on leaf-**off** winter NAIP:
+    bare branches make extreme texture, a clean separate mode. Leaf-on kills
+    that signal.
+- Separating leaf-on tree canopy from grass is a genuine remote-sensing limit
+  from optical imagery alone. The fix is **tree height**: trees are tall,
+  grass is not. The user chose the lidar canopy-height path.
+
+### The new pipeline
+
+- **`mvp/scripts/build_canopy_height.sh`** (new) -- builds a canopy-height
+  model (CHM) from USGS 3DEP lidar. `build_canopy_height.sh [park|9patch]`:
+  downloads the LAZ tiles (6 for the park, all 24 for the 9-patch, from
+  `website/data/aop_lidar_tiles.geojson`), runs PDAL `filters.hag_delaunay`
+  (height above a TIN of the ground-classified returns), grids the per-cell
+  max height, mosaics, and warps onto the exact NAIP grid. Output cached at
+  `mvp/cache/lidar/chm_aop.tif` / `chm_9patch.tif` (gitignored).
+- **PDAL toolchain**: the `pdal/pdal` Docker image (PDAL 2.10 + GDAL 3.13).
+  Same `/private/tmp` staging pattern as the GDAL work.
+- **Vertical-datum gotcha**: the 3DEP lidar carries a compound CRS with a
+  NAVD88 vertical component. GDAL 3.x, left to itself, reads the CHM raster as
+  elevation data and applies a ~-30 m geoid shift to the pixel values. The
+  warp forces `-s_srs EPSG:6576` (the 2D horizontal CRS) so the height-above-
+  ground values pass through unchanged.
+- **`classify_landcover.py`** stage 1 rewritten: forest = `CHM > 2.5 m`, a
+  crisp per-pixel cut. The CHM is a stipple of crowns, so a morphological
+  closing (radius 12) bridges inter-crown gaps into a coherent mass and an
+  opening (radius 4) drops lone trees / specks. Closing preserves the outer
+  boundary of a large object, so the forest edge stays crisp. Stage 2 is
+  unchanged in spirit: evergreen = darkest canopy tail; open ground = k-means
+  RGB colour quantisation into grass/meadow/bare, majority-voted into solids.
+- **Imagery moved to USDA NAIP 2023** (`USDA_CONUS_PRIME` ImageServer): June,
+  leaf-on, 4-band, 0.6 m, no-auth `exportImage`. Cached
+  `mvp/cache/imagery/naip_2023_aop.tif` / `naip_2023_9patch.tif`.
+- `build_landcover.sh` / `build_landcover_9patch.sh` updated: new NAIP source,
+  and each now ensures its CHM exists (runs `build_canopy_height.sh`) and
+  passes it to the classifier as a second input.
+
+### Output
+
+- `aop_landcover.geojson` -- park, 154 polygons / ~420 KB, ~81% forest. The
+  forest mass is coherent with a crisp lidar-cut edge; the fields are clean
+  k-means colour polygons. (Was 631 speckled polygons on the leaf-off build.)
+- `aop_landcover_9patch.geojson` -- rebuilt from the 24-tile 9-patch CHM.
+- Viewer: class ids/names unchanged, so `LANDCOVER_FILL`/`LANDCOVER_OUTLINE`
+  and the toggles were untouched; only the attribution strings updated to
+  "USDA NAIP 2023 + USGS 3DEP lidar".
+- Verified: `playwright_verify_landcover.py` PASS, 0 console errors.
+
+### Honest limits
+
+- The 3DEP lidar is from 2015; canopy grown or cleared since is not captured
+  (the NAIP imagery is 2023, so colour and canopy are 8 years apart).
+- The CHM threshold catches any tall object -- a large barn reads as a small
+  forest patch; the opening drops house-sized specks, big structures survive.
+- The open-ground colour split is still a relative ranking within one image,
+  not absolute crop ID.
+- Tunables at the top of `classify_landcover.py`: `CANOPY_HEIGHT_M`,
+  `CLOSE_RADIUS`, `OPEN_RADIUS`, plus the stage-2 radii and k-means settings.

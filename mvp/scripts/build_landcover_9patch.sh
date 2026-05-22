@@ -16,9 +16,10 @@ set -euo pipefail
 # cover.py is resolution-aware (it rescales its windows from the geotransform),
 # so the same classifier handles both the 0.6 m and the ~1.5 m ortho.
 #
-# Pipeline: download/cache the 4-band NAIP ortho for the 9-patch -> classify
-# into five land-cover classes -> polygonize -> light vertex simplify ->
-# Chaikin smooth -> clip to the 9-patch rectangle -> WGS84 GeoJSON.
+# Pipeline: download/cache the leaf-on 4-band NAIP ortho for the 9-patch,
+# build (or reuse) the 9-patch lidar canopy-height model -> classify into five
+# land-cover classes -> polygonize -> light vertex simplify -> Chaikin smooth
+# -> clip to the 9-patch rectangle -> WGS84 GeoJSON.
 #
 # The layer is a full coverage (forest_deciduous, forest_evergreen,
 # open_grass, open_meadow, open_bare) tiling the whole 9-patch rectangle.
@@ -38,14 +39,15 @@ NINE_PATCH_S="35.067164188"
 NINE_PATCH_E="-85.717154097"
 NINE_PATCH_N="35.117928496"
 
-# NAIP 2021 (acquired 2021-11-07), 4-band, from the USGS NAIP ImageServer.
-# 3996 x 3742 keeps both axes under the 4000 px export cap; over the ~6.0 x
-# 5.6 km AOI that lands at ~1.5 m pixels.
+# NAIP 2023 (acquired June, leaf-on), 4-band, from the USDA NAIP public
+# ImageServer (USDA_CONUS_PRIME). 3996 x 3742 keeps both axes under the
+# 4000 px export cap; over the ~6.0 x 5.6 km AOI that lands at ~1.5 m pixels.
 NAIP_BBOX="${NINE_PATCH_W},${NINE_PATCH_S},${NINE_PATCH_E},${NINE_PATCH_N}"
 NAIP_SIZE="3996,3742"
-NAIP_EXPORT="https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPImagery/ImageServer/exportImage?bbox=${NAIP_BBOX}&bboxSR=4326&imageSR=26916&size=${NAIP_SIZE}&format=tiff&pixelType=U8&interpolation=RSP_NearestNeighbor"
+NAIP_EXPORT="https://gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME/ImageServer/exportImage?bbox=${NAIP_BBOX}&bboxSR=4326&imageSR=26916&size=${NAIP_SIZE}&format=tiff&pixelType=U8&interpolation=RSP_NearestNeighbor"
 
-NAIP_CACHE="$REPO_DIR/mvp/cache/imagery/naip_2021_9patch.tif"
+NAIP_CACHE="$REPO_DIR/mvp/cache/imagery/naip_2023_9patch.tif"
+CHM_CACHE="$REPO_DIR/mvp/cache/lidar/chm_9patch.tif"
 LC_CACHE="$REPO_DIR/mvp/cache/landcover"
 
 WORK="/private/tmp/aop_lc9"
@@ -56,7 +58,7 @@ echo "==> AOP 9-patch land-cover build"
 # 1. Cache the NAIP ortho ---------------------------------------------------
 mkdir -p "$(dirname "$NAIP_CACHE")" "$LC_CACHE"
 if [[ ! -f "$NAIP_CACHE" ]]; then
-  echo "==> Downloading NAIP 2021 4-band ortho for the 9-patch (ImageServer export)"
+  echo "==> Downloading NAIP 2023 leaf-on 4-band ortho for the 9-patch (USDA ImageServer)"
   # A 15-megapixel mosaic export will not stream inline. The robust path is
   # the two-step ArcGIS pattern: request f=json to trigger generation and
   # return an href, then download the generated TIFF from that href.
@@ -68,10 +70,21 @@ else
 fi
 echo "    $(du -h "$NAIP_CACHE" | cut -f1)  $NAIP_CACHE"
 
+# 1b. Ensure the 9-patch lidar canopy-height model exists -------------------
+# Stage 1 of the classifier (forest vs open) thresholds tree height; the
+# 9-patch CHM is built from all 24 USGS 3DEP LAZ tiles. Reuse if present.
+if [[ ! -f "$CHM_CACHE" ]]; then
+  echo "==> 9-patch CHM missing -- running build_canopy_height.sh 9patch"
+  bash "$SCRIPT_DIR/build_canopy_height.sh" 9patch
+else
+  echo "==> 9-patch CHM already cached: $CHM_CACHE"
+fi
+
 # 2. Stage inputs where Docker can read them --------------------------------
 echo "==> Staging inputs into $WORK"
 mkdir -p "$WORK"
 cp "$NAIP_CACHE" "$WORK/naip.tif"
+cp "$CHM_CACHE" "$WORK/chm.tif"
 cp "$SCRIPT_DIR/classify_landcover.py" "$WORK/classify_landcover.py"
 cp "$SCRIPT_DIR/smooth_landcover.py" "$WORK/smooth_landcover.py"
 
@@ -82,7 +95,7 @@ set -e
 
 # pixel classification -> single-band class raster (classifier rescales its
 # windows to the ~1.5 m pixel size read from the geotransform)
-python3 /data/classify_landcover.py /data/naip.tif /data/class.tif /data/preview.png
+python3 /data/classify_landcover.py /data/naip.tif /data/chm.tif /data/class.tif /data/preview.png
 
 # polygonize connected class regions (class 0 = nodata is skipped)
 rm -f /data/class.gpkg

@@ -1,6 +1,7 @@
 # Leaf-on imagery for a crisper forest land-cover layer
 
 Added: 2026-05-21
+Status: DONE (2026-05-21) -- see Resolution below
 Fit: V1 fit (quality improvement to a shipped V1 layer)
 
 #aop #backlog #landcover #naip #imagery
@@ -49,3 +50,20 @@ strict quality improvement to an existing V1 layer — same pipeline, same
 provenance discipline, sharper output. Not urgent: the leaf-off layer is a
 serviceable stylized base today. Pick this up when the EarthExplorer/AWS auth
 friction is worth the crisper edges.
+
+## Resolution (2026-05-21)
+
+Done the same day. Leaf-on 2023 NAIP was adopted — the USDA `USDA_CONUS_PRIME`
+ImageServer serves it with no EarthExplorer login, so the auth friction this
+card worried about did not apply.
+
+But the core premise here — that leaf-on NDVI would drive a crisp forest/open
+edge — proved wrong. Leaf-on canopy is a smooth continuous blanket: neither
+colour nor texture separates it from grass (the texture histogram is unimodal).
+The leaf-off pipeline only worked because bare winter branches make extreme
+texture. The crisp forest edge instead came from a **USGS 3DEP lidar
+canopy-height model** — trees are tall, grass is not. Leaf-on NAIP is still
+used, for the field colours.
+
+Full detail: `tasks/01_mvp/landcover_layer.md` ("Update: lidar canopy-height
+rebuild").

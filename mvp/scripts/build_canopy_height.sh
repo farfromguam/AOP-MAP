@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build a lidar canopy-height model (CHM) for the AOP park.
+# Build a lidar canopy-height model (CHM) for the AOP land-cover classifier.
+#
+#   build_canopy_height.sh [park|9patch]      (default: park)
 #
 # The land-cover classifier needs a crisp forest mask. Optical imagery cannot
 # give one: leaf-off canopy texture works but blurs the edge, and leaf-on
@@ -10,10 +12,10 @@ set -euo pipefail
 # tall, grass is not -- so this script turns the USGS 3DEP lidar point cloud
 # into a canopy-height raster the classifier can threshold per-pixel.
 #
-# Pipeline: download/cache the LAZ tiles over the park -> PDAL computes height
-# above ground per point (Delaunay TIN of the ground-classified returns) ->
-# grid the max height per cell into a per-tile CHM -> mosaic -> warp onto the
-# exact NAIP ortho grid so the classifier can read imagery and CHM together.
+# Pipeline: download/cache the LAZ tiles -> PDAL computes height above ground
+# per point (Delaunay TIN of the ground-classified returns) -> grid the max
+# height per cell into a per-tile CHM -> mosaic -> warp onto the exact NAIP
+# ortho grid so the classifier can read imagery and CHM together.
 #
 # Source: USGS 3DEP LPC, project USGS_LPC_TN_27County_blk4_2015_LAS_2018.
 # The cloud is NAD83(2011) / Tennessee State Plane in US survey feet (EPSG
@@ -27,23 +29,42 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 PDAL_IMG="pdal/pdal:latest"
-
-# The 6 USGS 3DEP LAZ tiles whose footprints intersect the park centre cell
-# (from website/data/aop_lidar_tiles.geojson).
-TILES=(2038269NE 2038269NW 2038269SE 2038269SW 2038277SE 2038277SW)
 LAZ_BASE="https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/USGS_LPC_TN_27County_blk4_2015_LAS_2018/laz"
-
 LIDAR_CACHE="$REPO_DIR/mvp/cache/lidar"
-NAIP_REF="$REPO_DIR/mvp/cache/imagery/naip_2023_aop.tif"   # CHM is warped to this grid
-OUT_CHM="$LIDAR_CACHE/chm_aop.tif"
-
 WORK="/private/tmp/aop_chm"
 
-echo "==> AOP canopy-height (CHM) build"
+# The 3DEP LAZ tiles (from website/data/aop_lidar_tiles.geojson). The park
+# centre cell is covered by 6 tiles; the full 9-patch by all 24.
+PARK_TILES=(2038269NE 2038269NW 2038269SE 2038269SW 2038277SE 2038277SW)
+NINE_PATCH_TILES=(
+  2024261NE 2024269NE 2024269SE 2024277NE 2024277SE 2024285SE
+  2038261NE 2038261NW 2038269NE 2038269NW 2038269SE 2038269SW
+  2038277NE 2038277NW 2038277SE 2038277SW 2038285SE 2038285SW
+  2052261NW 2052269NW 2052269SW 2052277NW 2052277SW 2052285SW)
+
+AOI="${1:-park}"
+case "$AOI" in
+  park)
+    TILES=("${PARK_TILES[@]}")
+    NAIP_REF="$REPO_DIR/mvp/cache/imagery/naip_2023_aop.tif"
+    OUT_CHM="$LIDAR_CACHE/chm_aop.tif"
+    ;;
+  9patch)
+    TILES=("${NINE_PATCH_TILES[@]}")
+    NAIP_REF="$REPO_DIR/mvp/cache/imagery/naip_2023_9patch.tif"
+    OUT_CHM="$LIDAR_CACHE/chm_9patch.tif"
+    ;;
+  *)
+    echo "ERROR: unknown AOI '$AOI' (expected: park | 9patch)" >&2
+    exit 1
+    ;;
+esac
+
+echo "==> AOP canopy-height (CHM) build -- AOI: $AOI (${#TILES[@]} tiles)"
 
 if [[ ! -f "$NAIP_REF" ]]; then
   echo "ERROR: NAIP reference ortho missing: $NAIP_REF" >&2
-  echo "       run build_landcover.sh once first to cache it." >&2
+  echo "       run the matching build_landcover script once first to cache it." >&2
   exit 1
 fi
 
@@ -115,8 +136,13 @@ done
 gdalbuildvrt -q -srcnodata -9999 -vrtnodata -9999 \
   /data/chm_mosaic.vrt /data/chmtile_*.tif
 
-# warp onto the NAIP grid: same SRS, extent and pixel count
-gdalwarp -q -overwrite -t_srs EPSG:26916 \
+# warp onto the NAIP grid: same SRS, extent and pixel count.
+# -s_srs is forced to the 2D horizontal CRS (EPSG:6576, NAD83(2011)/TN ftUS).
+# The lidar carries a compound CRS with a NAVD88 vertical component; without
+# this override GDAL 3.x reads the raster as elevation data and applies a
+# ~-30 m geoid shift to the pixel values -- but these values are heights
+# *above ground*, not elevations, and must pass through the warp unchanged.
+gdalwarp -q -overwrite -s_srs EPSG:6576 -t_srs EPSG:26916 \
   -te $XMIN $YMIN $XMAX $YMAX -ts $W $H -r bilinear \
   -srcnodata -9999 -dstnodata -9999 -ot Float32 -co COMPRESS=LZW \
   /data/chm_mosaic.vrt /data/chm_aop.tif
