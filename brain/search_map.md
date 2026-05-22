@@ -13,12 +13,14 @@ TL;DR:
 
 - AOP, Adventure Off Road Park, South Pittsburg, Ellis Cove Road: `research/aop_south_pittsburg_sources.md`
 - bounds, AOI, 9-patch, current parcel envelope, data acquisition: `research/aop_data_bounds.md`, then `research/aop_south_pittsburg_sources.md`
-- viewer, web map, `index.html`, layers, toggles, satellite, hillshade, 3D terrain, contours, roads, water, lidar tile index, search box, MapLibre: `research/viewer.md`
+- viewer, web map, `index.html`, layers, toggles, satellite, hillshade, 3D terrain, contours, roads, water, lidar tile index, search box, calendar, MapLibre: `research/viewer.md`
 - imagery tracing, USDA NAIP, 2023 NAIP, 2025 NAIP, MrSID, trace line, raw image traces: `tasks/01_mvp/imagery_tracing_layer.md`, then `research/viewer.md`
 - POI editor, draw, footprint, pavilion, building, Terra Draw, on-map editing: `tasks/01_mvp/poi_editor.md`
 - building footprints, FEMA USA Structures, structures layer, ORNL footprints: `tasks/01_mvp/buildings_layer.md`, then `research/viewer.md`
 - visitor context, support towns, South Pittsburg, Kimball, Monteagle, food, fuel, hotels, callout circles: `tasks/01_mvp/visitor_context_callouts.md`, then `research/viewer.md`
 - GPX, field track, ride recording, observation import: `import/_readme.md`, then `tasks/01_mvp/mvp_validation_loop.md`
+- activity hotspots, heatmap, dwell time, user-entered trail hotspots, timestamped GPX, GPS recorder: `tasks/01_mvp/activity_hotspots.md`, then `research/viewer.md`
+- event schedule, event calendar, RC event, G6, Pro-Line, schedule rows, `#pavilion`, `#registration`, event POI: `tasks/01_mvp/event_schedule_layer.md`, then `research/viewer.md`
 - database schema, `init_db.sql`, tables, raw/core/publish zones, publish views, status vocabularies: `tasks/01_mvp/code_health_pass.md`
 - contour build, gdal_contour, GDAL Docker, DEM clip: `tasks/01_mvp/lidar_contour_pipeline.md`, then `spinup/mvp_runbook.md`
 - map build, PostGIS, QGIS, MapLibre, PMTiles, Cloudflare, Phoenix: `tasks/01_mvp/aop_south_pittsburg_map_build_card.md`

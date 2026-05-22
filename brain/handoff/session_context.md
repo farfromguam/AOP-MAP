@@ -470,6 +470,198 @@ User asked to make the right panel collapsible upward.
    errors. Screenshots `brain/output/playwright_panel_collapse_*.png`.
  - Catalog updated: `research/viewer.md` ("UI presets and layer tuning").
 
+## Update: activity hotspots from GPX dwell (2026-05-22)
+
+User asked to implement hotspots from a user-entered trail where longer time in
+an area draws hotter.
+
+ - Added `mvp/scripts/build_activity_hotspots.py`, a pure-Python builder that
+   parses timestamped GPX trackpoints, respects segment breaks, interpolates
+   point-to-point intervals into a 15 m local grid, and weights each cell by
+   elapsed time. It splits dwell into stopped/slow/moving seconds and preserves
+   max point gap / capped time metadata.
+ - Generated `website/data/aop_activity_hotspots.geojson` from
+   `brain/import/Saturday_Afternoon_Activity.gpx`: 65 hotspot cells / 130
+   features (Polygon cells plus centroid Points) from 368 GPX points and 2
+   segments.
+ - Wired `Activity hotspots (GPX dwell)` into `website/index.html`, default
+   OFF under Derived layers. It renders a soft heatmap, auditable polygon cells,
+   labels for the strongest cells, and popups with dwell, stopped/slow/moving
+   split, visits, max point gap, source, and review status.
+ - Added `mvp/scripts/playwright_verify_activity_hotspots.py` for toggle,
+   GeoJSON, render, popup, and console verification. Run on 2026-05-22 against
+   `WEBSITE_URL=http://localhost:8010/`: PASS, 0 console errors. Screenshots:
+   `brain/output/playwright_activity_hotspots_*.png`.
+ - Build/roadmap doc: `brain/tasks/01_mvp/activity_hotspots.md`. Viewer catalog:
+   `brain/research/viewer.md`. Search route: `brain/search_map.md`.
+ - Source discipline: raw first-party activity evidence only (`permission =
+   internal`, `publish_status = hold`). Do not treat hotspots as trail
+   authority; use them as prompts for review, POI/hazard annotation, or future
+   aggregate event operations layers.
+
+## Update: Playwright viewer port convention (2026-05-22)
+
+User noted Codex keeps probing/asking around preview ports. Durable convention:
+use `8001` for Playwright/browser automation against the static viewer.
+
+ - `brain/spinup/mvp_runbook.md` now records: human/manual preview can still use
+   `8000`, but Playwright runs should start `cd website && python3 -m
+   http.server 8001` and use `http://localhost:8001/` by default.
+ - The Playwright verifier scripts under `mvp/scripts/playwright_verify_*.py`
+   were mechanically updated from `8000` to `8001` defaults/docstrings.
+ - If `8001` is occupied, use the next open port and pass
+   `WEBSITE_URL=http://localhost:<port>/ ...`; do not try `8000` first for
+   Playwright.
+
+## Update: sister-event schedule research / AOP event-slot proposal (2026-05-22)
+
+User asked to look up sister events from the brain, find their event schedules,
+and propose events to fill the current viewer calendar slots. Each proposed
+event should point to a POI on the map such as pavilion, registration,
+trailhead, or location on trail.
+
+Context read first:
+
+- `brain/northstar/whats_this_for.md` -- event mental model: Recon G6-style
+  scale rally, Pro-Line By The Fire-style multi-day adventure, comp-class gate
+  courses, and scale trials.
+- `brain/tasks/backlog/rc_event_mapping_backlog.md` -- event-layer data shape:
+  stages, gates, mandatory skills sections, start/finish/checkpoints, day loops,
+  geocache/photo waypoints, registration, camping, vendors, parking, event
+  dates/status, and event-feature joins.
+- `brain/research/viewer.md` -- the viewer already has a collapsible
+  `Event calendar` card with three broad windows only: Friday evening to night,
+  Saturday morning to evening, and Sunday morning to mid-day.
+
+External sister-event schedules checked:
+
+- Pro-Line By The Fire 2025, Horizon Hobby:
+  `https://www.horizonhobby.com/pro-line-by-the-fire/`
+  - Thursday: arrival/check-in, pre-registered check-in, on-site registration,
+    designated-area fun crawl, welcome party/driver meeting.
+  - Friday: gates open, all trails open, King of the Hill, Ultra 5K, U4RC Hot
+    Lap, raffle/day awards, Poker Run Night Crawl, close at 11 PM.
+  - Saturday: gates open, all trails open, Concourse, Proving Grounds, GPS
+    Treasure, Comp Crawl, raffle/daily awards, Into the Night Crawl, fire pit
+    and s'mores, close at 11 PM.
+  - Sunday: closed/cleanup; attendees out by 10:30 AM.
+- Pit Bull RC Super Series RG6 "Family Reunion" 2025, Eventzilla:
+  `https://www.eventzilla.net/e/pit-bull-rc-super-series-rg6-family-reunion-15-years-of-fun-2138666182`
+  - Thursday: meet-and-greet TTC / bonus stage.
+  - Friday: noon driver check-in/registration, 2 PM Scaletra challenge, 4 PM TTC
+    driver meeting/start, dusk campfire story night run.
+  - Saturday: 8-9 AM check-in/registration and Show-n-Shine staging, 9:30 AM
+    national anthem/driver meeting/G6 stages open, 3 PM logbooks due, 4 PM
+    Terracross, 5 PM BBQ awards, 8:30 PM night tour.
+  - 2026 RG6 page exists
+    (`https://www.eventzilla.net/e/2026-pit-bull-rc-super-series-rg6-happy-camper-2138674803`)
+    but currently exposes only the Apr 10-11, 2026 event window and broad copy,
+    not a detailed session schedule.
+- AxialFest / AxialFest Badlands:
+  - Axial first-timer guide:
+    `https://www.axialadventure.com/axi-blog-archive-first-timers-guide-to-axialfest.html`
+    confirms G-Central is the pavilion / central hub and lists registration,
+    driver meetings, staging, G6 stages, food/dinner, awards/bonfire.
+  - AxialFest Badlands 2024 schedule PDF:
+    `https://www.horizonhobby.com/on/demandware.static/-/Sites-horizon-master/default/dw77e21d99/Manuals/Axialfest-Badlands-2024-Schedule.pdf`
+    shows Base Camp welcome party, registration/tech, map review, nightly
+    awards/raffle, Ultra 5K, TTC, Concours, Light Up the Night Crawl, rock
+    racing, rock bouncing, and Sunday cleanup.
+  - AxialFest Badlands 2025 was cancelled; current page is venue/ticket context,
+    not a usable 2025 schedule.
+
+Proposed AOP schedule fill:
+
+- **Friday evening -- Registration + wristband check.**
+  Map anchor: `Registration Desk` at AOP Pavilion / 1010 Ellis Cove Road,
+  `-85.74825124, 35.09072636`.
+- **Friday evening -- Driver meeting + map review.**
+  Map anchor: `Pavilion / G-Central` at 1010 Ellis Cove Road.
+- **Friday night -- Poker Run / Campfire Story Night Crawl.**
+  Map anchor: start at `Trailhead - Saturday Afternoon segment 2`,
+  `-85.751478, 35.091933`; finish back at pavilion.
+- **Saturday morning -- Late registration + tech check.**
+  Map anchor: `Registration Desk` / pavilion.
+- **Saturday morning to mid-day -- G6 Cove Rally stages.**
+  Map anchor: `Trailhead - Saturday Afternoon segment 2`; route should use the
+  observed trail and checkpoints near activity hotspots #2 and #3.
+- **Saturday afternoon -- Proving Grounds / comp gates.**
+  Map anchor candidate: `Proving Grounds`, near the 665 Ellis Cove Road clearing,
+  `-85.74561938, 35.08722305`.
+- **Saturday afternoon -- King of the Hill / technical crawl.**
+  Map anchor candidate: `North Technical Hotspot`, activity hotspot #3,
+  `-85.7439989, 35.0979524`.
+- **Saturday evening -- Awards + raffle + food.**
+  Map anchor: `Pavilion / G-Central`.
+- **Saturday night -- Into the Night Crawl.**
+  Map anchor: same main trailhead, with checkpoint candidate activity hotspot #6,
+  `-85.7469876, 35.0923056`.
+- **Sunday morning -- Coffee, cleanup, map feedback board.**
+  Map anchor: `Pavilion / G-Central`.
+- **Sunday morning to mid-day -- Sunday Funday short loop / photo scavenge.**
+  Map anchor: start/end at pavilion; nearby checkpoint candidates are activity
+  hotspots #8 and #9 around `-85.74876, 35.09156`.
+- **Sunday mid-day -- Final check-out.**
+  Map anchor: `Registration Desk` / pavilion.
+
+Map anchors / caveats:
+
+- Pavilion: user previously confirmed the 1010 Ellis Cove Road building is the
+  pavilion. FEMA USA Structures footprint records centroid
+  `-85.74825124, 35.09072636`, but the footprint source remains raw context.
+- Other inside-AOP building footprints currently in `aop_buildings.geojson`:
+  1033, 665, and 880 Ellis Cove Road. Treat them as potential staging/ops
+  references only until AOP confirms facility use.
+- Current `website/data/publish.geojson` has the observed
+  `Saturday Afternoon Activity` trail in two segments. Segment 2 is the useful
+  route anchor: start `-85.751478, 35.091933`, end near the pavilion
+  `-85.748163, 35.090376`.
+- Activity hotspots are raw first-party GPX dwell evidence. They are useful for
+  possible checkpoint / obstacle / staging leads, not trail authority.
+
+Recommended next implementation slice:
+
+1. Create an MVP event task card, likely
+   `brain/tasks/01_mvp/event_schedule_layer.md`, to move this out of handoff.
+2. Add event POI / route feature categories before coding:
+   `event_registration`, `event_stage_start`, `event_checkpoint`,
+   `event_proving_ground`, `event_awards`, `event_night_route`,
+   `event_photo_waypoint`.
+3. For the static viewer, start with a small `website/data/aop_event_schedule.geojson`
+   (or PostGIS-backed export if the database is already the focus) carrying
+   `event_id`, `session_id`, `day`, `time_label`, `title`, `location_label`,
+   `poi_role`, `status`, `source_summary`, and geometry.
+4. Replace the current generic calendar text rows in `website/index.html` with
+   named schedule rows that can fly to their linked POI/route/checkpoint.
+5. Add a default-off event overlay toggle and a Playwright verifier covering
+   schedule rendering, row-click camera movement, event POI visibility, and
+   console cleanliness.
+6. Keep the sister-event schedules as vocabulary references, not a copied event
+   template. AOP's actual event should be adjusted to site capacity, confirmed
+   facilities, and AOP permission.
+
+## Update: tag-driven event schedule sidebar (2026-05-22)
+
+User clarified that the app should consume an editable JSON object, not a baked
+GeoJSON schedule, so future event edits can update dates, times, titles, and
+locations without repeating coordinates.
+
+- Added `website/data/aop_event_schedule.json`.
+- The JSON has a `locations` tag dictionary: `#pavilion`, `#registration`,
+  `#observed-trailhead`, `#north-technical`, `#night-checkpoint`,
+  `#photo-waypoint`, etc. Sessions reference `location_tag` and optional
+  `route_tags`.
+- `#registration` aliases to `#pavilion`; `#pavillion` is accepted as a
+  misspelling alias for `#pavilion`.
+- `website/index.html` now fetches the JSON, resolves tags into an in-memory
+  GeoJSON source, renders 12 proposed sidebar schedule rows, and adds a
+  default-off `Event schedule POIs` overlay.
+- Selecting a row turns the event overlay on, flies to the tagged point/route,
+  flashes the existing highlight layer, and opens a session popup.
+- Added `mvp/scripts/playwright_verify_event_schedule.py` and updated
+  `playwright_verify_presets.py` for the JSON-driven schedule rows.
+- Durable task card: `brain/tasks/01_mvp/event_schedule_layer.md`.
+
 ## Session note
 
 This file is handoff context, not a durable policy document. Keep it live until the next session has read and acted on it.

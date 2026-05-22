@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Playwright verification for the AOP viewer 3D-terrain toggle.
 
-Loads the static viewer at http://localhost:8000/, toggles 3D terrain,
+Loads the static viewer at http://localhost:8001/, toggles 3D terrain,
 confirms the terrarium DEM source is registered, the sky layer becomes
 visible, the map pitches, and AWS terrarium tile requests fire.
 
-Run after `python3 -m http.server 8000` is serving the `website/` directory.
+Run after `python3 -m http.server 8001` is serving the `website/` directory.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from playwright.sync_api import sync_playwright
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8000/")
+WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8001/")
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 
 SCREENSHOTS = {

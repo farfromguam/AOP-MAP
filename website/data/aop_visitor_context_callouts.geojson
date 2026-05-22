@@ -45,12 +45,12 @@
       "type": "Feature",
       "properties": {
         "name": "South Pittsburg / Kimball supply run",
-        "label": "SE TO SOUTH PITTSBURG / KIMBALL\n5-8 mi | 10-15 min\nfood • fuel • hotels\nChattanooga metro ~35 mi | ~45 min",
+        "label": "SE TO SOUTH PITTSBURG / KIMBALL\n5-8 mi | 10-15 min\nfood \u2022 fuel \u2022 hotels\nChattanooga metro ~35 mi | ~45 min",
         "direction": "southeast",
         "kind": "visitor_support",
         "services": "food, fuel, convenience, hotels, I-24 access; Chattanooga metro further SE",
         "examples": "South Pittsburg restaurants; Kimball I-24 interchange fuel, fast food, and Hampton Inn hotel cluster; Chattanooga metro for airport, big-box, and full city services",
-        "distance_note": "Approximate from the AOP office / Ellis Cove Road approach. Chattanooga sits about 30 driving miles past South Pittsburg via I-24, so the ~35 mi / ~45 min AOP-to-Chattanooga figure rounds the park approach plus that route — a regional-orientation estimate, not turn-by-turn routing.",
+        "distance_note": "Approximate from the AOP office / Ellis Cove Road approach. Chattanooga sits about 30 driving miles past South Pittsburg via I-24, so the ~35 mi / ~45 min AOP-to-Chattanooga figure rounds the park approach plus that route \u2014 a regional-orientation estimate, not turn-by-turn routing.",
         "drive_time_note": "Planning estimate; check live routing and hours before relying on it.",
         "source_summary": "AOP office address; RiderPlanet approach and key-services notes; Marion County Tourism food/lodging listings; South Pittsburg-to-Chattanooga drive reference.",
         "directions_url": "https://www.google.com/maps/dir/?api=1&origin=1040%20Ellis%20Cove%20Road%2C%20South%20Pittsburg%2C%20TN%2037380&destination=South%20Pittsburg%2C%20TN",
@@ -266,7 +266,7 @@
       "type": "Feature",
       "properties": {
         "name": "Monteagle plateau services",
-        "label": "N/NW TO MONTEAGLE\n~30 min\nfood • lodging • I-24",
+        "label": "N/NW TO MONTEAGLE\n~30 min\nfood \u2022 lodging \u2022 I-24",
         "direction": "northwest",
         "kind": "visitor_support",
         "services": "lodging, restaurants, I-24 plateau access",
@@ -284,200 +284,200 @@
         "coordinates": [
           [
             [
-              -85.752290399,
-              35.1012
+              -85.742290399,
+              35.0942
             ],
             [
-              -85.752339246,
-              35.101809719
+              -85.742339246,
+              35.094809719
             ],
             [
-              -85.752484949,
-              35.102409006
+              -85.742484949,
+              35.095409006
             ],
             [
-              -85.752725017,
-              35.102987606
+              -85.742725017,
+              35.095987606
             ],
             [
-              -85.753055341,
-              35.10353562
+              -85.743055341,
+              35.09653562
             ],
             [
-              -85.753470269,
-              35.10404367
+              -85.743470269,
+              35.09704367
             ],
             [
-              -85.753962703,
-              35.104503065
+              -85.743962703,
+              35.097503065
             ],
             [
-              -85.754524215,
-              35.104905943
+              -85.744524215,
+              35.097905943
             ],
             [
-              -85.7551452,
-              35.105245412
+              -85.7451452,
+              35.098245412
             ],
             [
-              -85.75581503,
-              35.105515663
+              -85.74581503,
+              35.098515663
             ],
             [
-              -85.756522247,
-              35.105712071
+              -85.746522247,
+              35.098712071
             ],
             [
-              -85.757254748,
-              35.105831276
+              -85.747254748,
+              35.098831276
             ],
             [
-              -85.758,
-              35.105871239
+              -85.748,
+              35.098871239
             ],
             [
-              -85.758745252,
-              35.105831276
+              -85.748745252,
+              35.098831276
             ],
             [
-              -85.759477753,
-              35.105712071
+              -85.749477753,
+              35.098712071
             ],
             [
-              -85.76018497,
-              35.105515663
+              -85.75018497,
+              35.098515663
             ],
             [
-              -85.7608548,
-              35.105245412
+              -85.7508548,
+              35.098245412
             ],
             [
-              -85.761475785,
-              35.104905943
+              -85.751475785,
+              35.097905943
             ],
             [
-              -85.762037297,
-              35.104503065
+              -85.752037297,
+              35.097503065
             ],
             [
-              -85.762529731,
-              35.10404367
+              -85.752529731,
+              35.09704367
             ],
             [
-              -85.762944659,
-              35.10353562
+              -85.752944659,
+              35.09653562
             ],
             [
-              -85.763274983,
-              35.102987606
+              -85.753274983,
+              35.095987606
             ],
             [
-              -85.763515051,
-              35.102409006
+              -85.753515051,
+              35.095409006
             ],
             [
-              -85.763660754,
-              35.101809719
+              -85.753660754,
+              35.094809719
             ],
             [
-              -85.763709601,
-              35.1012
+              -85.753709601,
+              35.0942
             ],
             [
-              -85.763660754,
-              35.100590281
+              -85.753660754,
+              35.093590281
             ],
             [
-              -85.763515051,
-              35.099990994
+              -85.753515051,
+              35.092990994
             ],
             [
-              -85.763274983,
-              35.099412394
+              -85.753274983,
+              35.092412394
             ],
             [
-              -85.762944659,
-              35.09886438
+              -85.752944659,
+              35.09186438
             ],
             [
-              -85.762529731,
-              35.09835633
+              -85.752529731,
+              35.09135633
             ],
             [
-              -85.762037297,
-              35.097896935
+              -85.752037297,
+              35.090896935
             ],
             [
-              -85.761475785,
-              35.097494057
+              -85.751475785,
+              35.090494057
             ],
             [
-              -85.7608548,
-              35.097154588
+              -85.7508548,
+              35.090154588
             ],
             [
-              -85.76018497,
-              35.096884337
+              -85.75018497,
+              35.089884337
             ],
             [
-              -85.759477753,
-              35.096687929
+              -85.749477753,
+              35.089687929
             ],
             [
-              -85.758745252,
-              35.096568724
+              -85.748745252,
+              35.089568724
             ],
             [
-              -85.758,
-              35.096528761
+              -85.748,
+              35.089528761
             ],
             [
-              -85.757254748,
-              35.096568724
+              -85.747254748,
+              35.089568724
             ],
             [
-              -85.756522247,
-              35.096687929
+              -85.746522247,
+              35.089687929
             ],
             [
-              -85.75581503,
-              35.096884337
+              -85.74581503,
+              35.089884337
             ],
             [
-              -85.7551452,
-              35.097154588
+              -85.7451452,
+              35.090154588
             ],
             [
-              -85.754524215,
-              35.097494057
+              -85.744524215,
+              35.090494057
             ],
             [
-              -85.753962703,
-              35.097896935
+              -85.743962703,
+              35.090896935
             ],
             [
-              -85.753470269,
-              35.09835633
+              -85.743470269,
+              35.09135633
             ],
             [
-              -85.753055341,
-              35.09886438
+              -85.743055341,
+              35.09186438
             ],
             [
-              -85.752725017,
-              35.099412394
+              -85.742725017,
+              35.092412394
             ],
             [
-              -85.752484949,
-              35.099990994
+              -85.742484949,
+              35.092990994
             ],
             [
-              -85.752339246,
-              35.100590281
+              -85.742339246,
+              35.093590281
             ],
             [
-              -85.752290399,
-              35.1012
+              -85.742290399,
+              35.0942
             ]
           ]
         ]

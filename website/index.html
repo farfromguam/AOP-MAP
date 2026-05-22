@@ -9,7 +9,7 @@
     body, html { margin: 0; padding: 0; height: 100%; font-family: Inter, system-ui, sans-serif; }
     #map { position: absolute; top: 0; bottom: 0; width: 100%; }
     .left-controls { position: absolute; left: 12px; top: 12px; z-index: 3; width: 320px; max-width: calc(100vw - 368px); display: grid; gap: 8px; }
-    .preset-bar, .search-shell { display: flex; gap: 6px; padding: 6px; border-radius: 8px; background: rgba(247,241,226,0.94); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .preset-bar, .search-shell, .calendar-card { display: flex; gap: 6px; padding: 6px; border-radius: 8px; background: rgba(247,241,226,0.94); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
     .preset-bar button { flex: 1; min-width: 0; font: 700 0.86rem Inter, system-ui, sans-serif; padding: 7px 10px; border-radius: 6px; border: 1px solid #b9aa88; background: #fff8e8; color: #4a3c2a; cursor: pointer; }
     .preset-bar button:hover { background: #efe2c6; }
     .preset-bar button.active { background: #8b5f38; border-color: #8b5f38; color: #fff8e8; }
@@ -68,6 +68,8 @@
     .dual-range input[type="range"]::-moz-range-thumb { pointer-events: auto; box-sizing: border-box; width: 15px; height: 15px; border-radius: 50%; background: #f7f1e2; border: 2px solid #9a5a32; cursor: pointer; }
     .tune-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
     .tune-actions button { margin-right: 0; }
+    .drawer-extra-controls { display: grid; gap: 7px; margin-top: 7px; padding-top: 8px; border-top: 1px solid #d8cdb4; }
+    .drawer-extra-controls[hidden] { display: none; }
     #presetStatus { min-height: 1.2em; }
     .editor-row { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; }
     .editor-row button { flex: 1; margin-right: 0; }
@@ -84,6 +86,23 @@
     .search-item:hover, .search-item.active { background: #e8dcc3; }
     .search-kind { color: #888; font-size: 0.78rem; }
     .search-empty { padding: 6px 9px; color: #999; font-size: 0.88rem; }
+    .calendar-card { display: block; padding: 0; overflow: hidden; }
+    .calendar-toggle { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; margin: 0; padding: 8px 10px; border: 0; background: transparent; color: #4a3c2a; cursor: pointer; text-align: left; }
+    .calendar-toggle:hover { background: #efe2c6; }
+    .calendar-title { display: block; font: 800 0.78rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+    .calendar-range { display: block; margin-top: 1px; font-size: 0.76rem; color: #756444; }
+    .calendar-chevron { color: #6b5a3e; font-size: 0.88rem; line-height: 1; }
+    .calendar-body { max-height: 240px; overflow-y: auto; padding: 0 8px 8px; opacity: 1; transition: max-height 0.24s ease, opacity 0.2s ease, padding 0.2s ease; }
+    .calendar-card.collapsed .calendar-body { max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; }
+    .calendar-days { list-style: none; display: grid; gap: 4px; margin: 0; padding: 0; }
+    .calendar-days li { margin: 0; padding: 0; border-top: 1px solid #d8cdb4; color: #4a3c2a; }
+    .calendar-row { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 8px; margin: 0; padding: 7px 8px; border: 0; border-radius: 0; background: transparent; color: #4a3c2a; cursor: pointer; text-align: left; }
+    .calendar-row:hover, .calendar-row.active { background: #efe2c6; }
+    .calendar-day { padding-top: 2px; font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; color: #6b5a3e; }
+    .calendar-time { display: block; min-width: 0; font: 700 0.74rem Inter, system-ui, sans-serif; line-height: 1.15; color: #756444; overflow-wrap: anywhere; }
+    .calendar-name { display: block; margin-top: 1px; font-size: 0.88rem; line-height: 1.18; overflow-wrap: anywhere; }
+    .calendar-location { display: block; margin-top: 2px; font-size: 0.74rem; line-height: 1.15; color: #756444; overflow-wrap: anywhere; }
+    .calendar-empty { padding: 8px; font-size: 0.86rem; color: #756444; }
     .align-handle { background: #ff3366; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #000, 0 2px 6px rgba(0,0,0,0.4); cursor: grab; }
     .align-handle:active { cursor: grabbing; filter: brightness(1.15); }
     .align-handle-corner { width: 18px; height: 18px; background: #ff3366; }
@@ -92,7 +111,8 @@
     .align-handle::after { content: attr(data-label); position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none; }
     @media (max-width: 760px) {
       .left-controls { left: 8px; right: 8px; top: 8px; width: auto; max-width: none; }
-      .panel { left: 8px; right: 8px; top: 168px; max-width: none; max-height: calc(100vh - 176px); }
+      .calendar-body { max-height: 190px; }
+      .panel { left: 8px; right: 8px; top: 430px; max-width: none; max-height: calc(100vh - 438px); }
       .message { left: 8px; right: 8px; max-width: none; }
     }
   </style>
@@ -119,6 +139,20 @@
       <button id="zoomPark" type="button" data-view="park" title="Fit the AOP park boundary">Park</button>
       <button id="zoomPavilion" type="button" data-view="pavilion" title="Zoom in tight on the pavilion">Pavilion</button>
     </div>
+    <section class="calendar-card" id="calendarCard" aria-label="Event calendar">
+      <button id="calendarToggle" class="calendar-toggle" type="button" aria-expanded="true" aria-controls="calendarBody">
+        <span>
+          <span class="calendar-title">Event calendar</span>
+          <span class="calendar-range" id="calendarRange">Draft Fri-Sun schedule</span>
+        </span>
+        <span id="calendarChevron" class="calendar-chevron">▴</span>
+      </button>
+      <div id="calendarBody" class="calendar-body">
+        <ol class="calendar-days" id="calendarDays">
+          <li class="calendar-empty">Loading schedule...</li>
+        </ol>
+      </div>
+    </section>
   </div>
   <div class="panel">
     <div class="panel-header" id="panelHeader" title="Collapse panel">
@@ -128,9 +162,9 @@
     <div class="panel-body" id="panelBody">
       <small id="presetStatus">Park preset active.</small>
 
-      <section class="panel-section" data-section="layers">
+      <section class="panel-section" data-section="derived-layers">
         <button type="button" class="section-toggle" aria-expanded="true">
-          <span class="section-label">Layers</span>
+          <span class="section-label">Derived layers</span>
           <span class="section-chevron">▴</span>
         </button>
         <div class="section-content">
@@ -141,60 +175,55 @@
               <label class="tune-visible"><input type="checkbox" id="tuneVisible" /> Visible</label>
             </div>
             <div id="tuneControls" class="tune-controls"></div>
+            <div id="sfwdaDrawerControls" class="drawer-extra-controls" hidden>
+              <input type="range" id="sfwdaOpacity" min="0" max="100" value="70" hidden aria-hidden="true" tabindex="-1" />
+              <input type="range" id="sfwdaMultiply" min="0" max="100" value="0" hidden aria-hidden="true" tabindex="-1" />
+              <label><input type="checkbox" id="editSfwda" /> Edit alignment (6×6 grid)</label>
+              <label><input type="checkbox" id="showInterior" checked /> Show edge + interior handles</label>
+              <div class="editor-row">
+                <button id="rotateCcw" type="button" disabled>↺ 90° CCW</button>
+                <button id="rotateCw" type="button" disabled>↻ 90° CW</button>
+              </div>
+              <div class="editor-row">
+                <button id="exportAlignment" type="button" disabled>Export alignment</button>
+                <button id="resetAlignment" type="button" disabled>Reset</button>
+              </div>
+            </div>
             <div class="tune-actions">
               <button id="snapshotPreset" type="button">Snapshot preset</button>
               <button id="exportSettings" type="button">Export settings</button>
             </div>
           </div>
           <label><input type="checkbox" id="showLandcover9" checked /> Land cover — 9-patch (NAIP)</label>
-          <label><input type="range" id="landcover9Opacity" min="0" max="100" value="55" style="flex:1" /> 9-patch land cover opacity</label>
+          <input type="range" id="landcover9Opacity" min="0" max="100" value="55" hidden aria-hidden="true" tabindex="-1" />
           <label><input type="checkbox" id="showHillshade" /> Lidar hillshade (USGS 3DEP)</label>
           <label><input type="checkbox" id="showContours" /> Lidar contours (5 ft, 1m DEM)</label>
+          <label><input type="checkbox" id="showActivityHotspots" /> Activity hotspots (GPX dwell)</label>
+          <label><input type="checkbox" id="showEventSchedule" /> Event schedule POIs</label>
+          <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
+        </div>
+      </section>
+
+      <section class="panel-section" data-section="source-layers">
+        <button type="button" class="section-toggle" aria-expanded="true">
+          <span class="section-label">Source layers</span>
+          <span class="section-chevron">▴</span>
+        </button>
+        <div class="section-content">
           <label><input type="checkbox" id="showSatellite" /> Satellite imagery (TNMap 2022)</label>
           <label><input type="checkbox" id="showUsdaNaip" /> USDA NAIP imagery (TN 2023)</label>
           <label><input type="checkbox" id="showNinePatch" /> 9-patch acquisition AOI</label>
           <label><input type="checkbox" id="showLidarTiles" /> Lidar tile index (USGS 3DEP)</label>
           <label><input type="checkbox" id="showRoads" checked /> Asphalt roads (USGS National Map)</label>
-          <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
           <label><input type="checkbox" id="showWater" /> Streams &amp; waterbodies (USGS NHD)</label>
           <label><input type="checkbox" id="showSprings" /> Springs &amp; gages (USGS NHD)</label>
           <label><input type="checkbox" id="showCemeteries" /> Cemeteries (TN Comptroller parcels)</label>
           <label><input type="checkbox" id="showBuildings" /> Building footprints (FEMA USA Structures)</label>
-        </div>
-      </section>
-
-      <section class="panel-section" data-section="community">
-        <button type="button" class="section-toggle" aria-expanded="true">
-          <span class="section-label">Community (OSM)</span>
-          <span class="section-chevron">▴</span>
-        </button>
-        <div class="section-content">
           <label><input type="checkbox" id="showOsmPark" /> OSM park polygon</label>
           <label><input type="checkbox" id="showOsmTracks" /> OSM tracks (highway=track)</label>
           <label><input type="checkbox" id="showOsmService" /> OSM service roads</label>
           <label><input type="checkbox" id="showOsmNamed" /> OSM named landmarks</label>
-        </div>
-      </section>
-
-      <section class="panel-section" data-section="sfwda">
-        <button type="button" class="section-toggle" aria-expanded="true">
-          <span class="section-label">SFWDA paper map (2015)</span>
-          <span class="section-chevron">▴</span>
-        </button>
-        <div class="section-content">
           <label><input type="checkbox" id="showSfwda" /> SFWDA paper trail map</label>
-          <label><input type="range" id="sfwdaOpacity" min="0" max="100" value="70" style="flex:1" /> opacity</label>
-          <label><input type="range" id="sfwdaMultiply" min="0" max="100" value="0" style="flex:1" /> multiply (white key-out)</label>
-          <label><input type="checkbox" id="editSfwda" /> Edit alignment (6×6 grid)</label>
-          <label><input type="checkbox" id="showInterior" checked /> Show edge + interior handles</label>
-          <div style="margin: 4px 0 0;">
-            <button id="rotateCcw" disabled>↺ 90° CCW</button>
-            <button id="rotateCw" disabled>↻ 90° CW</button>
-          </div>
-          <div style="margin: 6px 0 0;">
-            <button id="exportAlignment" disabled>Export alignment</button>
-            <button id="resetAlignment" disabled>Reset</button>
-          </div>
         </div>
       </section>
 
@@ -260,6 +289,8 @@
           <small>Contours: USGS 3DEP 1 m lidar DEM. Detail tiers by zoom — 50 ft index lines when zoomed out, all 25 ft index lines at mid-zoom, fine 5 ft lines when zoomed in.</small>
           <small>Cemeteries: TN Comptroller Marion County parcels. Ellis Cemetery is the inholding inside the AOP boundary — the gap in the park polygon.</small>
           <small>Buildings: FEMA USA Structures footprints over the 9-patch. Raw reference context; verify against imagery before treating as park facilities.</small>
+          <small>Activity hotspots: time-weighted from first-party timestamped GPX. Longer dwell in one cell draws hotter; raw evidence only.</small>
+          <small>Event schedule: proposed RC event sessions from <code>website/data/aop_event_schedule.json</code>. Schedule rows use location tags such as <code>#pavilion</code> and <code>#registration</code>; edit those tags once under <code>locations</code> instead of repeating coordinates.</small>
           <small>Visitor context callouts: support-town planning notes from AOP, RiderPlanet, and Marion County Tourism. Times are approximate; check live routing and hours.</small>
           <small>SFWDA raster is &copy; Adventure Off Road Park (via SFWDA) — internal/inspection only. Drag the 4 corner handles in Edit mode to pixel-align against OSM tracks, then Export to save <code>website/data/sfwda_raster_alignment.json</code>.</small>
         </div>
@@ -302,6 +333,8 @@
     const landcover9Opacity = document.getElementById('landcover9Opacity');
     const hillshadeToggle = document.getElementById('showHillshade');
     const contoursToggle = document.getElementById('showContours');
+    const activityHotspotsToggle = document.getElementById('showActivityHotspots');
+    const eventScheduleToggle = document.getElementById('showEventSchedule');
     const satelliteToggle = document.getElementById('showSatellite');
     const usdaNaipToggle = document.getElementById('showUsdaNaip');
     const ninePatchToggle = document.getElementById('showNinePatch');
@@ -338,11 +371,17 @@
     const poiStatus = document.getElementById('poiStatus');
     const searchInput = document.getElementById('searchInput');
     const searchResults = document.getElementById('searchResults');
+    const calendarCard = document.getElementById('calendarCard');
+    const calendarToggle = document.getElementById('calendarToggle');
+    const calendarRange = document.getElementById('calendarRange');
+    const calendarDays = document.getElementById('calendarDays');
+    const calendarChevron = document.getElementById('calendarChevron');
     const presetButtons = [...document.querySelectorAll('.preset-bar button[data-preset]')];
     const terrainButton = document.getElementById('terrainButton');
     const layerEditor = document.getElementById('layerEditor');
     const layerEditorTitle = document.getElementById('layerEditorTitle');
     const tuneControls = document.getElementById('tuneControls');
+    const sfwdaDrawerControls = document.getElementById('sfwdaDrawerControls');
     const tuneVisible = document.getElementById('tuneVisible');
     const snapshotPresetBtn = document.getElementById('snapshotPreset');
     const exportSettingsBtn = document.getElementById('exportSettings');
@@ -378,6 +417,22 @@
 
     panelCollapse.addEventListener('click', (e) => { e.stopPropagation(); togglePanel(); });
     panelHeader.addEventListener('click', togglePanel);
+
+    function setCalendarCollapsed(collapsed) {
+      calendarCard.classList.toggle('collapsed', collapsed);
+      calendarToggle.setAttribute('aria-expanded', String(!collapsed));
+      calendarToggle.title = collapsed ? 'Expand calendar' : 'Collapse calendar';
+      calendarChevron.textContent = collapsed ? '▾' : '▴';
+    }
+
+    calendarToggle.addEventListener('click', () => {
+      setCalendarCollapsed(!calendarCard.classList.contains('collapsed'));
+    });
+    calendarDays.addEventListener('click', (event) => {
+      const row = event.target.closest('.calendar-row');
+      if (row?.dataset.sessionId) gotoEventSession(row.dataset.sessionId);
+    });
+    setCalendarCollapsed(false);
 
     function setSectionCollapsed(section, collapsed) {
       const button = section.querySelector('.section-toggle');
@@ -443,7 +498,7 @@
     }
 
     // The 9-patch forest layer fades independently of the crisp park layer,
-    // so its opacity slider reads as the "non-park context" opacity control.
+    // so its drawer opacity control reads as the "non-park context" control.
     function setLandcover9Opacity(value) {
       if (map.getLayer('landcover-9patch-forest')) {
         map.setPaintProperty('landcover-9patch-forest', 'fill-opacity', value);
@@ -497,6 +552,19 @@
       'open_bare',        '#bfb28c',
       '#aeb499'];
 
+    const ACTIVITY_HOTSPOT_FILL = ['match', ['get', 'intensity_class'],
+      'low',    '#e6c86f',
+      'medium', '#d9903d',
+      'high',   '#bf5a36',
+      'peak',   '#7f2f27',
+      '#d9903d'];
+    const ACTIVITY_HOTSPOT_OPACITY = [
+      'interpolate', ['linear'], ['get', 'intensity_norm'],
+      0, 0.12,
+      0.4, 0.28,
+      1, 0.58
+    ];
+
     function syncTerrainControl(enabled) {
       terrainToggle.checked = Boolean(enabled);
       terrainButton.classList.toggle('active', Boolean(enabled));
@@ -525,6 +593,8 @@
       [landcover9Toggle, ['landcover-9patch-forest', 'landcover-9patch-forest-outline']],
       [hillshadeToggle, ['lidar-hillshade']],
       [contoursToggle, ['contours-minor', 'contours-index', 'contours-labels']],
+      [activityHotspotsToggle, ['activity-hotspots-heat', 'activity-hotspots-fill', 'activity-hotspots-outline', 'activity-hotspots-labels']],
+      [eventScheduleToggle, ['event-session-routes', 'event-route-labels', 'event-anchor-points', 'event-anchor-labels']],
       [satelliteToggle, ['tnmap-satellite']],
       [usdaNaipToggle, ['usda-naip-satellite']],
       [ninePatchToggle, ['nine-patch-fill', 'nine-patch-outline', 'nine-patch-labels']],
@@ -547,7 +617,7 @@
 
     const PRESET_TOGGLE_IDS = [
       'showLandcover', 'showLandcover9', 'showHillshade',
-      'showContours', 'showSatellite', 'showUsdaNaip', 'showNinePatch',
+      'showContours', 'showActivityHotspots', 'showEventSchedule', 'showSatellite', 'showUsdaNaip', 'showNinePatch',
       'showLidarTiles', 'showRoads', 'showWater', 'showSprings',
       'showVisitorContext', 'showCemeteries', 'showBuildings', 'showOsmPark', 'showOsmTracks',
       'showOsmService', 'showOsmNamed', 'showSfwda', 'showTrails',
@@ -616,6 +686,22 @@
             fallback: [16.5, 17.5]
           }
         ]
+      },
+      activityHotspots: {
+        label: 'Activity hotspots',
+        toggle: activityHotspotsToggle,
+        defaults: { opacity: 70, color: '#d9903d', width: 1.1 },
+        opacity: [
+          ['activity-hotspots-heat', 'heatmap-opacity'],
+          ['activity-hotspots-fill', 'fill-opacity'],
+          ['activity-hotspots-outline', 'line-opacity'],
+          ['activity-hotspots-labels', 'text-opacity']
+        ],
+        color: [
+          ['activity-hotspots-outline', 'line-color'],
+          ['activity-hotspots-labels', 'text-color']
+        ],
+        width: [['activity-hotspots-outline', 'line-width']]
       },
       hillshade: {
         label: 'Hillshade',
@@ -863,6 +949,7 @@
         toggle: sfwdaToggle,
         linkedSlider: sfwdaOpacity,
         extraSliders: [{ label: 'Multiply', slider: sfwdaMultiply, kind: 'percent', defaultValue: 0 }],
+        drawerControls: sfwdaDrawerControls,
         defaults: { opacity: 70, color: '#ffffff', width: 1 },
         opacity: [],
         color: [],
@@ -930,6 +1017,8 @@
           showLandcover9: true,
           showHillshade: false,
           showContours: false,
+          showActivityHotspots: false,
+          showEventSchedule: false,
           showSatellite: false,
           showUsdaNaip: false,
           showNinePatch: false,
@@ -966,6 +1055,10 @@
           'contours-minor': { 'line-color': '#c7b48f', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0, 17.5, 0.75] },
           'contours-index': { 'line-color': '#a8906a', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 0.95, 0], 16, 0.95] },
           'contours-labels': { 'text-color': '#7d6a4a', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 1, 0], 16, 1] },
+          'activity-hotspots-heat': { 'heatmap-opacity': 0.68 },
+          'activity-hotspots-fill': { 'fill-opacity': ACTIVITY_HOTSPOT_OPACITY },
+          'activity-hotspots-outline': { 'line-color': '#7f2f27', 'line-width': 1.1, 'line-opacity': 0.55 },
+          'activity-hotspots-labels': { 'text-color': '#5b2d25', 'text-opacity': 1 },
           streams: { 'line-color': '#7fa3ac', 'line-opacity': 0.9 },
           'stream-labels': { 'text-color': '#4a6c73', 'text-opacity': 1 },
           'water-area-fill': { 'fill-color': '#a8c5c9', 'fill-opacity': 0.55 },
@@ -989,6 +1082,8 @@
           showLandcover9: true,
           showHillshade: true,
           showContours: true,
+          showActivityHotspots: false,
+          showEventSchedule: false,
           showSatellite: false,
           showUsdaNaip: false,
           showNinePatch: false,
@@ -1025,6 +1120,10 @@
           'contours-minor': { 'line-color': '#8e7a5c', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0, 17.5, 0.8], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.65, 16, 1.55] },
           'contours-index': { 'line-color': '#5f4934', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 0.98, 0], 16, 0.98], 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.25, 16, 3.1] },
           'contours-labels': { 'text-color': '#4e3d2c', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 1, 0], 16, 1] },
+          'activity-hotspots-heat': { 'heatmap-opacity': 0.62 },
+          'activity-hotspots-fill': { 'fill-opacity': ACTIVITY_HOTSPOT_OPACITY },
+          'activity-hotspots-outline': { 'line-color': '#6e2a22', 'line-width': 1.25, 'line-opacity': 0.62 },
+          'activity-hotspots-labels': { 'text-color': '#4e2a22', 'text-opacity': 1 },
           streams: { 'line-color': '#4d8792', 'line-opacity': 0.95 },
           'stream-labels': { 'text-color': '#2f6570', 'text-opacity': 1 },
           'water-area-fill': { 'fill-color': '#8eb7be', 'fill-opacity': 0.62 },
@@ -1049,6 +1148,8 @@
           showLandcover9: false,
           showHillshade: false,
           showContours: false,
+          showActivityHotspots: false,
+          showEventSchedule: false,
           showSatellite: false,
           showUsdaNaip: true,
           showNinePatch: false,
@@ -1087,6 +1188,10 @@
           'roads-connecting': { 'line-color': '#ffe08a', 'line-width': 3, 'line-opacity': 0.9 },
           'roads-controlled': { 'line-color': '#f7bb5f', 'line-width': 4.2, 'line-opacity': 0.95 },
           'roads-labels': { 'text-color': '#fff4cf', 'text-opacity': 1 },
+          'activity-hotspots-heat': { 'heatmap-opacity': 0.82 },
+          'activity-hotspots-fill': { 'fill-opacity': ['interpolate', ['linear'], ['get', 'intensity_norm'], 0, 0.16, 1, 0.62] },
+          'activity-hotspots-outline': { 'line-color': '#ff6b3d', 'line-width': 1.5, 'line-opacity': 0.82 },
+          'activity-hotspots-labels': { 'text-color': '#fff0b8', 'text-opacity': 1 },
           'visitor-context-fill': { 'fill-color': '#ffe08a', 'fill-opacity': 0.1 },
           'visitor-context-outline': { 'line-color': '#ffe08a', 'line-width': 2.6, 'line-opacity': 0.9 },
           'visitor-context-labels': { 'text-color': '#fff4cf', 'text-opacity': 1 },
@@ -1247,6 +1352,7 @@
         .replace(/^publish-/, '')
         .replace(/^landcover-9patch-/, '9patch ')
         .replace(/^landcover-/, '')
+        .replace(/^activity-hotspots-/, 'activity ')
         .replace(/^editor-poi-/, 'editor ')
         .replace(/^osm-/, 'OSM ')
         .replace(/^waterbody-/, 'waterbody ')
@@ -1315,16 +1421,17 @@
       for (const band of config.zoomBands || []) {
         knobs.push({ kind: 'zoomband', band, label: band.label });
       }
-      if (config.linkedSlider && !config.opacity.length) {
+      if (config.linkedSlider) {
         knobs.push({
           kind: 'opacity',
           sliderId: config.linkedSlider.id,
           label: 'Opacity',
           defaultValue: config.defaults.opacity
         });
-      }
-      for (const [layerId, property] of config.opacity || []) {
-        knobs.push({ kind: 'opacity', layerId, property, label: tuneTargetLabel(layerId, property) });
+      } else {
+        for (const [layerId, property] of config.opacity || []) {
+          knobs.push({ kind: 'opacity', layerId, property, label: tuneTargetLabel(layerId, property) });
+        }
       }
       for (const [layerId, property] of config.color || []) {
         knobs.push({ kind: 'color', layerId, property, label: tuneTargetLabel(layerId, property) });
@@ -1467,6 +1574,7 @@
     function syncLayerTunerFromSelection() {
       updateLayerRowState();
       if (!expandedTuneKey) {
+        if (sfwdaDrawerControls) sfwdaDrawerControls.hidden = true;
         layerEditor.hidden = true;
         return;
       }
@@ -1475,6 +1583,7 @@
       layerEditorTitle.textContent = config.label;
       tuneVisible.checked = config.toggle.checked;
       renderTuneControls(config);
+      if (sfwdaDrawerControls) sfwdaDrawerControls.hidden = config.drawerControls !== sfwdaDrawerControls;
     }
 
     function selectTunable(key) {
@@ -1485,6 +1594,7 @@
 
     function collapseTunableEditor() {
       expandedTuneKey = null;
+      if (sfwdaDrawerControls) sfwdaDrawerControls.hidden = true;
       layerEditor.hidden = true;
       updateLayerRowState();
     }
@@ -1648,6 +1758,19 @@
         .join('<br/>');
     }
 
+    function formatListProperty(value) {
+      if (Array.isArray(value)) return value.join(', ');
+      if (typeof value !== 'string') return value;
+      const trimmed = value.trim();
+      if (!trimmed.startsWith('[')) return value;
+      try {
+        const parsed = JSON.parse(trimmed);
+        return Array.isArray(parsed) ? parsed.join(', ') : value;
+      } catch (_) {
+        return value;
+      }
+    }
+
     // A GeoJSON source round-trips property values through MapLibre, which may
     // hand booleans back as the strings 'true'/'false'.
     function isTrue(value) {
@@ -1686,6 +1809,225 @@
           + `${escapeHtml(props.burial_source)}</small>`;
       }
       return html;
+    }
+
+    // --- Event schedule: editable JSON -> map features -------------------
+    // The sidebar consumes website/data/aop_event_schedule.json directly.
+    // Sessions reference reusable location tags (#pavilion, #registration)
+    // so future schedule edits do not repeat coordinates in every row.
+    let eventScheduleData = null;
+    let eventScheduleConfig = null;
+    const eventLocationByTag = new Map();
+    const eventSessionById = new Map();
+    let activeEventSessionId = null;
+
+    function normalizeLocationTag(tag) {
+      const value = String(tag || '').trim();
+      if (!value) return '';
+      return value.startsWith('#') ? value : `#${value}`;
+    }
+
+    function resolveEventLocation(config, tag, seen = new Set()) {
+      const normalized = normalizeLocationTag(tag);
+      if (!normalized || seen.has(normalized)) return null;
+      const raw = config?.locations?.[normalized];
+      if (!raw) return null;
+      if (raw.alias_of) {
+        seen.add(normalized);
+        const base = resolveEventLocation(config, raw.alias_of, seen);
+        if (!base) return null;
+        return {
+          ...base,
+          ...raw,
+          tag: normalized,
+          coordinates: raw.coordinates || base.coordinates,
+          label: raw.label || base.label,
+          map_label: raw.map_label || raw.label || base.map_label || base.label,
+          role: raw.role || base.role
+        };
+      }
+      return { ...raw, tag: normalized };
+    }
+
+    function buildEventLocationIndex(config) {
+      eventLocationByTag.clear();
+      for (const tag of Object.keys(config?.locations || {})) {
+        const location = resolveEventLocation(config, tag);
+        if (location) eventLocationByTag.set(normalizeLocationTag(tag), location);
+      }
+    }
+
+    function eventDayShort(label) {
+      const clean = String(label || '').trim();
+      return clean.length <= 3 ? clean : clean.slice(0, 3);
+    }
+
+    function eventRouteCoordinates(session) {
+      const tags = Array.isArray(session.route_tags) ? session.route_tags : [];
+      const coords = [];
+      for (const tag of tags) {
+        const location = eventLocationByTag.get(normalizeLocationTag(tag));
+        if (location?.coordinates) coords.push(location.coordinates);
+      }
+      return coords;
+    }
+
+    function eventScheduleToGeojson(config) {
+      buildEventLocationIndex(config);
+      eventSessionById.clear();
+      const features = [];
+      const event = config?.event || {};
+
+      for (const [tag, location] of eventLocationByTag.entries()) {
+        if (location.hidden || !location.coordinates) continue;
+        features.push({
+          type: 'Feature',
+          properties: {
+            feature_kind: 'event_anchor',
+            event_id: event.id || '',
+            location_tag: tag,
+            name: location.label || tag,
+            map_label: location.map_label || location.label || tag,
+            role: location.role || 'event_location',
+            source: location.source || '',
+            confidence: location.confidence || config?.status || 'proposed',
+            caveat: location.caveat || event.caveat || ''
+          },
+          geometry: { type: 'Point', coordinates: location.coordinates }
+        });
+      }
+
+      for (const session of config?.sessions || []) {
+        const tag = normalizeLocationTag(session.location_tag);
+        const location = eventLocationByTag.get(tag);
+        const routeCoords = eventRouteCoordinates(session);
+        const geometry = routeCoords.length >= 2
+          ? { type: 'LineString', coordinates: routeCoords }
+          : location?.coordinates
+            ? { type: 'Point', coordinates: location.coordinates }
+            : null;
+        const props = {
+          feature_kind: 'event_session',
+          event_id: event.id || '',
+          session_id: session.id || '',
+          sort_order: Number(session.sort_order || 0),
+          day: session.date_label || '',
+          day_short: session.day_short || eventDayShort(session.date_label),
+          window: session.time_label || '',
+          name: session.title || '',
+          title: session.title || '',
+          location_tag: tag,
+          location_label: location?.label || `Missing ${tag}`,
+          route_tags: Array.isArray(session.route_tags) ? session.route_tags.map(normalizeLocationTag) : [],
+          route_labels: routeCoords.length >= 2
+            ? session.route_tags.map((routeTag) => eventLocationByTag.get(normalizeLocationTag(routeTag))?.label || normalizeLocationTag(routeTag))
+            : [],
+          poi_role: session.poi_role || location?.role || 'event_session',
+          status: session.status || config?.status || 'proposed',
+          inspired_by: session.inspired_by || [],
+          caveat: session.caveat || location?.caveat || event.caveat || ''
+        };
+        const feature = { type: 'Feature', properties: props, geometry };
+        features.push(feature);
+        if (props.session_id) eventSessionById.set(props.session_id, feature);
+      }
+
+      return {
+        type: 'FeatureCollection',
+        metadata: {
+          schema: config?.schema || 'aop-event-schedule-v1',
+          updated_at: config?.updated_at || '',
+          status: config?.status || 'proposed',
+          event
+        },
+        features
+      };
+    }
+
+    function renderEventSchedule(config, data) {
+      const event = config?.event || {};
+      calendarRange.textContent = event.date_range_label
+        ? `Draft ${event.date_range_label} schedule`
+        : 'Draft schedule';
+      const sessions = (data?.features || [])
+        .filter((feature) => feature.properties?.feature_kind === 'event_session')
+        .sort((a, b) => Number(a.properties.sort_order || 0) - Number(b.properties.sort_order || 0));
+      if (!sessions.length) {
+        calendarDays.innerHTML = '<li class="calendar-empty">No schedule rows.</li>';
+        return;
+      }
+      calendarDays.innerHTML = sessions.map((feature) => {
+        const props = feature.properties || {};
+        const tag = props.location_tag || '';
+        const location = props.location_label || tag;
+        const active = props.session_id === activeEventSessionId ? ' active' : '';
+        return '<li>'
+          + `<button type="button" class="calendar-row${active}" data-session-id="${escapeHtml(props.session_id)}">`
+          + `<span class="calendar-day">${escapeHtml(props.day_short || props.day || '')}</span>`
+          + '<span>'
+          + `<span class="calendar-time">${escapeHtml(props.window || '')}</span>`
+          + `<span class="calendar-name">${escapeHtml(props.title || props.name || '')}</span>`
+          + `<span class="calendar-location">${escapeHtml(tag)} - ${escapeHtml(location)}</span>`
+          + '</span></button></li>';
+      }).join('');
+    }
+
+    function firstCoordinate(geometry) {
+      if (!geometry?.coordinates) return null;
+      let coords = geometry.coordinates;
+      while (Array.isArray(coords) && Array.isArray(coords[0])) coords = coords[0];
+      return Array.isArray(coords) && typeof coords[0] === 'number' ? coords : null;
+    }
+
+    function sessionPopupHtml(props) {
+      return `<strong>${escapeHtml(props.title || props.name || 'Event session')}</strong><br/>`
+        + detailRows([
+          ['Date', props.day],
+          ['Time', props.window],
+          ['Location', props.location_label],
+          ['Tag', props.location_tag],
+          ['Route', formatListProperty(props.route_tags)],
+          ['Status', props.status],
+          ['Inspired by', formatListProperty(props.inspired_by)],
+          ['Caveat', props.caveat]
+        ]);
+    }
+
+    function gotoEventSession(sessionId) {
+      const feature = eventSessionById.get(sessionId);
+      if (!feature) return;
+      activeEventSessionId = sessionId;
+      if (eventScheduleConfig && eventScheduleData) renderEventSchedule(eventScheduleConfig, eventScheduleData);
+
+      if (!eventScheduleToggle.checked) {
+        eventScheduleToggle.checked = true;
+        eventScheduleToggle.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      const bounds = geojsonBounds({ type: 'FeatureCollection', features: [feature] });
+      if (bounds) {
+        const [[minLng, minLat], [maxLng, maxLat]] = bounds;
+        if (minLng === maxLng && minLat === maxLat) {
+          map.flyTo({ center: [minLng, minLat], zoom: 17, duration: 1000, bearing: map.getBearing(), pitch: map.getPitch() });
+        } else {
+          map.fitBounds(bounds, { padding: 90, maxZoom: 16.8, duration: 1000, bearing: map.getBearing(), pitch: map.getPitch() });
+        }
+      }
+
+      const highlight = map.getSource('search-highlight');
+      if (highlight && feature.geometry) {
+        highlight.setData({ type: 'FeatureCollection', features: [feature] });
+        pulseHighlight();
+      }
+
+      const popupCoord = eventLocationByTag.get(feature.properties.location_tag)?.coordinates
+        || firstCoordinate(feature.geometry);
+      if (popupCoord) {
+        new maplibregl.Popup({ maxWidth: '280px' })
+          .setLngLat(popupCoord)
+          .setHTML(sessionPopupHtml(feature.properties))
+          .addTo(map);
+      }
     }
 
     // --- Map editor: drawn POIs ---------------------------------------
@@ -1930,7 +2272,7 @@
       // Wide-area land-cover context across the full 3x3 acquisition AOI,
       // built from a coarser ~1.5 m ortho. Added first so it sits at the very
       // bottom of the stack; the crisp park-clipped layer draws on top of it.
-      // Its opacity slider fades this mass without touching the park layer,
+      // Its opacity control fades this mass without touching the park layer,
       // so it reads as adjustable context for the non-park areas.
       const landcover9Data = await fetchJson('./data/aop_landcover_9patch.geojson', '9-patch land cover missing');
       if (landcover9Data) {
@@ -2179,6 +2521,179 @@
               16, 1]
           }
         });
+      }
+
+      // --- Activity hotspots (timestamped GPX dwell) ----------------------
+      const activityData = await fetchJson('./data/aop_activity_hotspots.geojson', 'Activity hotspot layer missing');
+      if (activityData) {
+        const activityVisibility = activityHotspotsToggle.checked ? 'visible' : 'none';
+        map.addSource('activity-hotspots', {
+          type: 'geojson',
+          data: activityData,
+          attribution: 'Activity hotspots: first-party timestamped GPX'
+        });
+        map.addLayer({
+          id: 'activity-hotspots-heat',
+          type: 'heatmap',
+          source: 'activity-hotspots',
+          filter: ['==', ['geometry-type'], 'Point'],
+          layout: { visibility: activityVisibility },
+          paint: {
+            'heatmap-weight': ['interpolate', ['linear'], ['get', 'intensity_norm'], 0, 0.18, 1, 1],
+            'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 11, 0.45, 16, 1.65],
+            'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 11, 18, 16, 44],
+            'heatmap-opacity': 0.68,
+            'heatmap-color': [
+              'interpolate', ['linear'], ['heatmap-density'],
+              0, 'rgba(230, 200, 111, 0)',
+              0.22, 'rgba(230, 200, 111, 0.55)',
+              0.45, 'rgba(217, 144, 61, 0.65)',
+              0.72, 'rgba(191, 90, 54, 0.76)',
+              1, 'rgba(127, 47, 39, 0.9)'
+            ]
+          }
+        });
+        map.addLayer({
+          id: 'activity-hotspots-fill',
+          type: 'fill',
+          source: 'activity-hotspots',
+          filter: ['==', ['geometry-type'], 'Polygon'],
+          layout: { visibility: activityVisibility },
+          paint: { 'fill-color': ACTIVITY_HOTSPOT_FILL, 'fill-opacity': ACTIVITY_HOTSPOT_OPACITY }
+        });
+        map.addLayer({
+          id: 'activity-hotspots-outline',
+          type: 'line',
+          source: 'activity-hotspots',
+          filter: ['==', ['geometry-type'], 'Polygon'],
+          layout: { visibility: activityVisibility },
+          paint: { 'line-color': '#7f2f27', 'line-width': 1.1, 'line-opacity': 0.55 }
+        });
+        map.addLayer({
+          id: 'activity-hotspots-labels',
+          type: 'symbol',
+          source: 'activity-hotspots',
+          filter: ['all', ['==', ['geometry-type'], 'Point'], ['!=', ['get', 'label'], '']],
+          layout: {
+            visibility: activityVisibility,
+            'text-field': ['get', 'label'],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 12],
+            'text-allow-overlap': false,
+            'text-ignore-placement': false
+          },
+          paint: { 'text-color': '#5b2d25', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.4 }
+        });
+        bindPopup('activity-hotspots-fill', 'Activity hotspot', (props) => [
+          ['Dwell', `${props.dwell_minutes ?? 'unknown'} min`],
+          ['Stopped', `${Math.round(Number(props.stop_seconds || 0) / 60 * 10) / 10} min`],
+          ['Slow', `${Math.round(Number(props.slow_seconds || 0) / 60 * 10) / 10} min`],
+          ['Moving', `${Math.round(Number(props.moving_seconds || 0) / 60 * 10) / 10} min`],
+          ['Visits', props.visit_count ?? 'unknown'],
+          ['Max point gap', `${props.max_gap_seconds ?? 'unknown'} sec`],
+          ['Source', formatListProperty(props.source_files) || 'unknown'],
+          ['Review', props.review_status || 'raw']
+        ]);
+      }
+
+      // --- Event schedule proposal ---------------------------------------
+      // Source data is editable JSON with reusable location tags; this block
+      // resolves tags into a transient GeoJSON source for MapLibre.
+      eventScheduleConfig = await fetchJson('./data/aop_event_schedule.json', 'Event schedule missing');
+      if (eventScheduleConfig) {
+        eventScheduleData = eventScheduleToGeojson(eventScheduleConfig);
+        renderEventSchedule(eventScheduleConfig, eventScheduleData);
+        map.addSource('event-schedule', {
+          type: 'geojson',
+          data: eventScheduleData,
+          attribution: 'Event schedule: proposed from sister-event references'
+        });
+        const eventVisibility = eventScheduleToggle.checked ? 'visible' : 'none';
+        map.addLayer({
+          id: 'event-session-routes',
+          type: 'line',
+          source: 'event-schedule',
+          filter: ['all', ['==', ['get', 'feature_kind'], 'event_session'], ['==', ['geometry-type'], 'LineString']],
+          layout: { visibility: eventVisibility, 'line-cap': 'round', 'line-join': 'round' },
+          paint: {
+            'line-color': '#b45f43',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 12, 2, 16, 4.2],
+            'line-opacity': 0.92,
+            'line-dasharray': [3, 1.4]
+          }
+        });
+        map.addLayer({
+          id: 'event-route-labels',
+          type: 'symbol',
+          source: 'event-schedule',
+          filter: ['all', ['==', ['get', 'feature_kind'], 'event_session'], ['==', ['geometry-type'], 'LineString']],
+          layout: {
+            visibility: eventVisibility,
+            'symbol-placement': 'line',
+            'text-field': ['get', 'title'],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 12],
+            'text-keep-upright': true
+          },
+          paint: { 'text-color': '#6f382b', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 }
+        });
+        map.addLayer({
+          id: 'event-anchor-points',
+          type: 'circle',
+          source: 'event-schedule',
+          filter: ['==', ['get', 'feature_kind'], 'event_anchor'],
+          layout: { visibility: eventVisibility },
+          paint: {
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 4.5, 16, 8],
+            'circle-color': ['match', ['get', 'role'],
+              'pavilion', '#8b5f38',
+              'event_registration', '#b05a48',
+              'event_stage_start', '#7f7a4b',
+              'event_proving_ground', '#9a7d96',
+              'event_checkpoint', '#b45f43',
+              'event_photo_waypoint', '#5f9183',
+              '#8b5f38'],
+            'circle-stroke-color': '#f7f1e2',
+            'circle-stroke-width': 2
+          }
+        });
+        map.addLayer({
+          id: 'event-anchor-labels',
+          type: 'symbol',
+          source: 'event-schedule',
+          filter: ['==', ['get', 'feature_kind'], 'event_anchor'],
+          layout: {
+            visibility: eventVisibility,
+            'text-field': ['get', 'map_label'],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 12],
+            'text-offset': [0, 1.2],
+            'text-anchor': 'top'
+          },
+          paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 }
+        });
+
+        bindPopup('event-anchor-points',
+          (props) => escapeHtml(props.name || 'Event location'),
+          (props) => [
+            ['Tag', props.location_tag || ''],
+            ['Role', props.role || ''],
+            ['Confidence', props.confidence || ''],
+            ['Source', props.source || ''],
+            ['Caveat', props.caveat || '']
+          ]);
+        bindPopup('event-session-routes',
+          (props) => escapeHtml(props.title || 'Event route'),
+          (props) => [
+            ['Date', props.day || ''],
+            ['Time', props.window || ''],
+            ['Location', props.location_label || ''],
+            ['Tag', props.location_tag || ''],
+            ['Route', formatListProperty(props.route_tags) || ''],
+            ['Status', props.status || '']
+          ]);
+        indexFeatures(eventScheduleData,
+          (props) => props.feature_kind === 'event_anchor' ? 'event location' : 'event session',
+          eventScheduleToggle);
+      } else {
+        calendarDays.innerHTML = '<li class="calendar-empty">Schedule unavailable.</li>';
       }
 
       // --- USGS NHD hydrography (streams, waterbodies, springs) -----------
@@ -2438,9 +2953,7 @@
             'text-size': ['interpolate', ['linear'], ['zoom'], 11, 10, 15, 12],
             'text-line-height': 1.08,
             'text-anchor': 'center',
-            'text-offset': ['case',
-              ['==', ['get', 'direction'], 'northwest'], ['literal', [-3.2, 0]],
-              ['literal', [0, 0]]],
+            'text-offset': [0, 0],
             'text-max-width': 18,
             'text-padding': 4
           },
@@ -3067,6 +3580,7 @@
         sfwdaMultiplyStrength = next;
         sfwdaMultiply.value = String(Math.round(next * 100));
         rebakeTiles();
+        if (expandedTuneKey === 'sfwda') syncLayerTunerFromSelection();
       }
 
       hillshadeToggle.addEventListener('change', applySubstrateMultiplyDefault);
@@ -3572,6 +4086,8 @@
     });
     hillshadeToggle.addEventListener('change', updateLayerVisibility);
     contoursToggle.addEventListener('change', updateLayerVisibility);
+    activityHotspotsToggle.addEventListener('change', updateLayerVisibility);
+    eventScheduleToggle.addEventListener('change', updateLayerVisibility);
     satelliteToggle.addEventListener('change', updateLayerVisibility);
     usdaNaipToggle.addEventListener('change', updateLayerVisibility);
     ninePatchToggle.addEventListener('change', updateLayerVisibility);

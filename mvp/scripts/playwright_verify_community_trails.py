@@ -12,7 +12,7 @@ updates the image source coordinates.
 
 Captures screenshots into brain/output/playwright_community_*.png.
 
-Run after `python3 -m http.server 8000` is serving the `website/` directory.
+Run after `python3 -m http.server 8001` is serving the `website/` directory.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from playwright.sync_api import sync_playwright
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WEBSITE_URL = "http://localhost:8000/"
+WEBSITE_URL = "http://localhost:8001/"
 OUT_DIR = REPO_ROOT / "brain" / "output"
 
 
@@ -104,6 +104,11 @@ def main() -> int:
         page.wait_for_timeout(300)
         ok = page.is_checked("#showSfwda")
         check("SFWDA paper map toggle on", ok)
+
+        page.click('[data-tune-expand-key="sfwda"]')
+        page.wait_for_timeout(300)
+        check("SFWDA edit controls live in the layer drawer",
+              page.is_visible("#sfwdaDrawerControls"))
 
         page.click("#editSfwda")
         page.wait_for_timeout(800)

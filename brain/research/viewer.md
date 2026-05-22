@@ -38,6 +38,13 @@ Default-ON layers are marked; everything else is OFF until toggled, so the
 viewer opens cleanly with no network. "Detail" points to the doc that records
 how the layer was built.
 
+The right panel separates processed map products from source/reference inputs:
+`Derived layers` holds land cover, hillshade, contours, activity hotspots, the
+event schedule overlay, and visitor callouts;
+`Source layers` holds imagery, acquisition indexes, roads, water, cemeteries,
+buildings, OSM, and the SFWDA paper map. `Publishable` and `Map editor` remain
+separate because they are workflow states, not source-vs-derived context.
+
 | Toggle label | Data / source | Default | Detail |
 | --- | --- | --- | --- |
 | Publishable trails | `publish.geojson` (`core` -> `publish` views) | on | build card; `northstar/source_register.md` |
@@ -51,6 +58,8 @@ how the layer was built.
 | 3D button | AWS Terrain Tiles | off | "Lidar Hillshade and 3D Terrain Layers" below |
 | Lidar hillshade (USGS 3DEP) | AWS Terrain Tiles | off | "Lidar Hillshade and 3D Terrain Layers" below |
 | Lidar contours (5 ft, 1m DEM) | `aop_contours.geojson` | off | `tasks/01_mvp/lidar_contour_pipeline.md`; "Lidar Contour Layer" below |
+| Activity hotspots (GPX dwell) | `aop_activity_hotspots.geojson` | off | `tasks/01_mvp/activity_hotspots.md`; "Activity Hotspots Layer" below |
+| Event schedule POIs | `aop_event_schedule.json` | off | `tasks/01_mvp/event_schedule_layer.md`; "Event Schedule Layer" below |
 | Satellite imagery (TNMap 2022) | TNMap XYZ tiles | off | "Satellite Imagery" below |
 | USDA NAIP imagery (TN 2023) | USDA FPAC `USDA_CONUS_PRIME` tiles | off | "USDA NAIP Imagery / Tracing Source" below |
 | 9-patch acquisition AOI | `aop_9_patch.geojson` | off | "9-Patch Acquisition AOI Overlay" below |
@@ -98,19 +107,30 @@ Cove Road building. Bearing and pitch are preserved across all three.
 The map's `maxBounds` is set to the 9-patch (`REGION_BOUNDS`), so the camera is
 leashed: users cannot pan or zoom out past where there is map data. `Region` is
 therefore the widest the camera can go -- it fits the 9-patch edge-to-edge with
-no margin. All viewer data (contours, water, roads, buildings, the visitor
-context callouts, publish layers) sits inside the 9-patch, so the leash hides
-nothing.
+no margin. All viewer data (contours, water, roads, buildings, activity
+hotspots, the visitor context callouts, publish layers) sits inside the
+9-patch, so the leash hides nothing.
 
 The right panel is the `AOP edit panel`. Selecting a layer row moves the inline
 editor directly under that row, initialized from the layer's current MapLibre
 paint values. It can change visibility, opacity, color, and width/size where
 those controls are appropriate for that layer; controls that cannot represent
-the current paint expression stay hidden. `Snapshot preset` stores the current
+the current paint expression stay hidden. The 9-patch land-cover opacity and
+SFWDA paper-map opacity/multiply/alignment controls live in their layer drawers,
+not as loose rows under the section. `Snapshot preset` stores the current
 toggles/sliders/paint state for the active preset in `localStorage`
 (`aop_viewer_preset_settings_v1`). `Export settings` copies a JSON payload to
 the clipboard with all three resolved presets plus the current state so the user
 can paste preferred settings back into the session.
+
+The right panel groups layers by provenance role. `Derived layers` contains
+viewer-ready outputs generated from source material: land cover, the 9-patch
+land-cover context, lidar hillshade/contours, activity hotspots, the event
+schedule overlay, and visitor context callouts. `Source layers` contains the
+inspectable inputs and reference overlays: TNMap and USDA imagery, the
+9-patch and lidar tile acquisition
+indexes, USGS/FEMA/TN Comptroller context layers, OSM, and the SFWDA paper map.
+The inline layer editor works in either group.
 
 The right panel is **collapsible**. Its `AOP edit panel` heading is a clickable
 header bar (`.panel-header`) with a chevron button (`#panelCollapse`). Clicking
@@ -119,7 +139,20 @@ leaving just the title bar so the map underneath is visible; clicking again
 expands it back down. The body (`#panelBody`) animates via a `max-height`
 transition. Default state is expanded.
 
-Verification: `mvp/scripts/playwright_verify_presets.py`.
+The left control stack also hosts a collapsible `Event calendar` card
+(`#calendarCard`) under the search, preset, and zoom controls. It opens by
+default and renders the proposed session rows from
+`website/data/aop_event_schedule.json`. The JSON is intentionally schedule-first:
+rows carry `date_label`, `time_label`, `title`, and a `location_tag` such as
+`#pavilion` or `#registration`; coordinates live once under `locations`. The
+viewer resolves those tags into transient MapLibre features at load time. Row
+selection turns on the default-off `Event schedule POIs` overlay, moves the
+camera to the row's point/route, and opens a session popup. The header button
+(`#calendarToggle`) collapses the schedule into the title row with
+`aria-expanded` tracking the state.
+
+Verification: `mvp/scripts/playwright_verify_presets.py` and
+`mvp/scripts/playwright_verify_event_schedule.py`.
 
 ### Feature search
 
@@ -340,6 +373,62 @@ Recorded on 2026-05-20; updated 2026-05-21:
   checks PASS, 0 console errors. An independent crossing detector confirms 0
   different-elevation crossings.
 
+### Activity Hotspots Layer
+
+Recorded on 2026-05-22:
+
+- `website/data/aop_activity_hotspots.geojson` is a derived layer built from the
+  first-party Gaia GPX in `brain/import/Saturday_Afternoon_Activity.gpx`.
+- Builder: `mvp/scripts/build_activity_hotspots.py`. It parses timestamped GPX
+  trackpoints, respects GPX segment breaks, interpolates each point-to-point
+  interval into a 15 m local meter grid, and weights each cell by elapsed time.
+  A cell with more dwell time draws hotter.
+- Current output: 65 hotspot cells / 130 features. The GeoJSON intentionally
+  contains both Polygon cells and centroid Points: polygons are the auditable
+  click/print layer, points feed the MapLibre heatmap and labels.
+- Properties include `dwell_seconds`, `stop_seconds`, `slow_seconds`,
+  `moving_seconds`, `visit_count`, `max_gap_seconds`, `source_files`,
+  `confidence`, `permission=internal`, `publish_status=hold`, and
+  `review_status=raw activity evidence; not a validated trail or facility`.
+- Viewer: toggle `Activity hotspots (GPX dwell)`, default OFF, under `Derived
+  layers`. Layers: `activity-hotspots-heat` (soft heatmap),
+  `activity-hotspots-fill` (time-weighted cells), `activity-hotspots-outline`,
+  and `activity-hotspots-labels` for the strongest cells. Popups show dwell,
+  stopped/slow/moving split, visits, max point gap, source, and review status.
+- Source discipline: raw activity evidence only. It may suggest staging spots,
+  bottlenecks, technical crawl areas, or simply conversation/repair stops. Do
+  not promote it to trails or public operational claims without review and a
+  privacy decision.
+- Verification: `mvp/scripts/playwright_verify_activity_hotspots.py` -- PASS,
+  0 console errors on 2026-05-22.
+- Roadmap: `tasks/01_mvp/activity_hotspots.md`.
+
+### Event Schedule Layer
+
+Recorded on 2026-05-22:
+
+- Source: `website/data/aop_event_schedule.json`, distilled from
+  `brain/handoff/event_schedule_context_20260522.json`. The sister-event
+  schedules are vocabulary references only; this is not an official AOP event
+  calendar.
+- Data shape: `locations` is a tag dictionary (`#pavilion`, `#registration`,
+  `#observed-trailhead`, `#north-technical`, etc.). A session references
+  `location_tag`, and optional `route_tags`, instead of embedding coordinates.
+  `#registration` is an alias of `#pavilion`; `#pavillion` is accepted as a
+  misspelling alias so future edits do not silently break.
+- Viewer: the left `Event calendar` card renders 12 proposed Fri-Sun rows from
+  the JSON. Selecting a row turns on the default-off `Event schedule POIs`
+  overlay, flies to the tagged point or route, flashes the highlight layer, and
+  opens a popup with date, time, location tag, status, and source vocabulary.
+- Map layers: `event-session-routes`, `event-route-labels`,
+  `event-anchor-points`, and `event-anchor-labels`. The static JSON is resolved
+  into an in-memory GeoJSON source named `event-schedule`; no generated GeoJSON
+  file is checked in.
+- Source discipline: proposed event planning context only. Facility placement,
+  route choices, and activity labels need AOP confirmation before moving into a
+  publishable event layer.
+- Verification: `mvp/scripts/playwright_verify_event_schedule.py`.
+
 ### Asphalt Roads Layer
 
 Recorded on 2026-05-20:
@@ -467,9 +556,9 @@ Recorded 2026-05-21 (rebuilt the same day onto lidar + leaf-on imagery).
   `mvp/scripts/build_landcover_9patch.sh`.
 - The 9-patch layers `landcover-9patch-forest` (fill) + `-outline` sit at the
   very base of the stack, below the crisp park layer which draws on top.
-  Toggle `Land cover — 9-patch (NAIP)`, default ON, with a `9-patch land cover
-  opacity` slider (default 55%). Because the park layer covers the park
-  crisply, the slider effectively fades only the non-park context. Bounds are
+  Toggle `Land cover — 9-patch (NAIP)`, default ON, with a drawer opacity
+  control (default 55%). Because the park layer covers the park
+  crisply, the control effectively fades only the non-park context. Bounds are
   deliberately separate from the park layer.
 - Honest limits: the 3DEP lidar is 2015, so canopy is ~8 years older than the
   2023 imagery -- growth or clearing since is not captured; the CHM catches any
@@ -479,7 +568,7 @@ Recorded 2026-05-21 (rebuilt the same day onto lidar + leaf-on imagery).
   public domain; 3DEP lidar = USGS public domain) before any promotion.
 - Verified with `mvp/scripts/playwright_verify_landcover.py` on 2026-05-21:
   PASS, 0 console errors -- the script covers both layers, the five classes in
-  each GeoJSON, base-of-stack order, and the opacity slider.
+  each GeoJSON, base-of-stack order, and the drawer opacity control.
 - Build card: `tasks/01_mvp/landcover_layer.md` ("Update: lidar canopy-height
   rebuild").
 
@@ -503,5 +592,7 @@ Viewer layers and capabilities have Playwright checks under `mvp/scripts/`
 land cover, community trails, SFWDA multiply, POI editor, search, trails). They drive the
 real browser, exercise the toggles, assert layer visibility and network traffic,
 capture screenshots into `brain/output/`, and fail on any console error. Run the
-relevant one after touching `website/index.html`. `brain/output/playwright_eyes.md`
+relevant one after touching `website/index.html`. Use `8001` as the default
+Playwright preview port (`cd website && python3 -m http.server 8001`); use
+`WEBSITE_URL=...` only when that port is occupied. `brain/output/playwright_eyes.md`
 records why the viewer vendors its libraries instead of using a CDN.

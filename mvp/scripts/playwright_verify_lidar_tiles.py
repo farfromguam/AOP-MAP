@@ -11,7 +11,7 @@ Confirms layers render and that AWS Terrarium DEM tiles are actually fetched
 when hillshade or 3D terrain is enabled. Captures verification screenshots
 into brain/output/.
 
-Run after `python3 -m http.server 8000` is serving the `website/` directory.
+Run after `python3 -m http.server 8001` is serving the `website/` directory.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from playwright.sync_api import sync_playwright
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8000/")
+WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8001/")
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 
 SCREENSHOTS = {

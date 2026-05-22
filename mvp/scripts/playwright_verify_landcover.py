@@ -5,18 +5,18 @@ Covers:
   - Land cover (NAIP) — the crisp five-class vector land-cover coverage
     classified from 0.6 m NAIP imagery, clipped to the AOP park boundary.
   - Land cover, 9-patch — the wide-area land-cover context across the full
-    3x3 acquisition AOI, with its own toggle and opacity slider, drawn below
-    the park layer.
+    3x3 acquisition AOI, with its own toggle and drawer opacity control,
+    drawn below the park layer.
   - The Muted Earth restyle — the paper background and palette retune.
 
 Confirms the toggles exist and start on, the 9-patch layer sits at the base of
 the stack below the park layer, both GeoJSONs carry the five land-cover
-classes (two forest shades, three open-ground shades), the opacity slider
-drives the 9-patch fill, toggling hides/shows the layers, the paper background
-colour is applied, and there are no console errors. Captures screenshots into
-brain/output/.
+classes (two forest shades, three open-ground shades), the drawer opacity
+control drives the 9-patch fill, toggling hides/shows the layers, the paper
+background colour is applied, and there are no console errors. Captures
+screenshots into brain/output/.
 
-Run after `python3 -m http.server 8000` is serving the `website/` directory.
+Run after `python3 -m http.server 8001` is serving the `website/` directory.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ from playwright.sync_api import sync_playwright
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WEBSITE_URL = "http://localhost:8000/"
+WEBSITE_URL = "http://localhost:8001/"
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 
 SCREENSHOTS = {
@@ -245,27 +245,33 @@ def main() -> int:
               f"{rendered9} rendered")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["ninepatch_wide"]))
 
-        print("\n== 9-patch opacity slider ==")
-        check("opacity slider exists", page.locator("#landcover9Opacity").count() == 1)
+        print("\n== 9-patch opacity drawer ==")
+        check("opacity state slider exists", page.locator("#landcover9Opacity").count() == 1)
+        check("opacity state slider is no longer visible inline",
+              page.locator("#landcover9Opacity").evaluate("el => el.hidden"))
+        page.locator('[data-tune-expand-key="landcover9"]').click()
+        page.wait_for_timeout(250)
+        check("9-patch land cover drawer opens",
+              page.locator("#layerEditorTitle").inner_text() == "9-patch land cover")
+        check("9-patch opacity control is in the drawer",
+              page.locator("#tuneOpacity").is_visible())
         op_before = layer_opacity(page, "landcover-9patch-forest")
-        page.evaluate(
-            """() => {
-              const s = document.getElementById('landcover9Opacity');
-              s.value = '100';
-              s.dispatchEvent(new Event('input', { bubbles: true }));
+        page.locator("#tuneOpacity").evaluate(
+            """el => {
+              el.value = '100';
+              el.dispatchEvent(new Event('input', { bubbles: true }));
             }"""
         )
         page.wait_for_timeout(300)
         op_after = layer_opacity(page, "landcover-9patch-forest")
-        check("slider drives 9-patch fill-opacity",
+        check("drawer opacity drives 9-patch fill-opacity",
               op_after is not None and abs(op_after - 1.0) < 0.01
               and op_after != op_before,
               f"{op_before} -> {op_after}")
-        page.evaluate(
-            """() => {
-              const s = document.getElementById('landcover9Opacity');
-              s.value = '55';
-              s.dispatchEvent(new Event('input', { bubbles: true }));
+        page.locator("#tuneOpacity").evaluate(
+            """el => {
+              el.value = '55';
+              el.dispatchEvent(new Event('input', { bubbles: true }));
             }"""
         )
         page.wait_for_timeout(200)

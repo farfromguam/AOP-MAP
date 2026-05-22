@@ -203,6 +203,31 @@ The viewer reads `website/data/publish.geojson`. If port `8000` is already in
 use, pick another port and document the current one in
 `brain/handoff/session_context.md`.
 
+### Playwright viewer convention
+
+Use port `8001` for Playwright/browser automation by default:
+
+```bash
+cd website
+python3 -m http.server 8001
+```
+
+Then run verifier scripts against:
+
+```text
+http://localhost:8001/
+```
+
+The Playwright scripts in `mvp/scripts/playwright_verify_*.py` default to
+`http://localhost:8001/` unless a script says otherwise. Do not try `8000`
+first for Playwright runs; `8000` is commonly used for manual preview or an
+existing listener on this machine. If `8001` is occupied, use the next open
+port and pass it explicitly:
+
+```bash
+WEBSITE_URL=http://localhost:8010/ python3 mvp/scripts/playwright_verify_<layer>.py
+```
+
 ## Do not lose local data
 
 Do not delete or reset `mvp/db-data` just because Postgres does not connect from

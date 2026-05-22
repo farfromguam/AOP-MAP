@@ -108,3 +108,21 @@ circle (not the popup) to orient riders to the region, and flagged that the
   headless host (software WebGL starves the default rAF poll). Full run: 25/25
   PASS, 0 console errors.
 - Catalog `research/viewer.md` ("Visitor Context Callouts") updated.
+
+## Update: Monteagle callout repositioned (2026-05-22)
+
+User asked to move the N/NW Monteagle callout down (south) and east, and to
+reset its offset label.
+
+- `aop_visitor_context_callouts.geojson`: the `Monteagle plateau services`
+  polygon was shifted +0.010 deg lon (east) and -0.007 deg lat (south). Its
+  center moved from ~(-85.758, 35.1012) to (-85.748, 35.0942) — from the
+  upper-left toward map-center, lower and to the right. Still well inside
+  `REGION_BOUNDS` (the 9-patch camera leash), so it is not clipped. The circle
+  is a cartographic planning annotation, not a surveyed service area, so a
+  placement shift does not change any factual claim.
+- `website/index.html`: the `visitor-context-labels` `text-offset` was a
+  `case` expression pushing the `northwest` label `[-3.2, 0]` (3.2 em left of
+  its circle). Reset to a plain `[0, 0]` so both callout labels sit centered
+  in their circles.
+- `playwright_verify_visitor_context.py`: 25/25 PASS, 0 console errors.

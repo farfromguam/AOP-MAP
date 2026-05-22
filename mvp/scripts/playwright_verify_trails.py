@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Playwright check for why trails do not appear on the AOP viewer.
 
-Loads http://localhost:8000/, inspects window.map sources/layers, counts
+Loads http://localhost:8001/, inspects window.map sources/layers, counts
 features actually rendered by the publish-trails layer, and dumps a JSON
 summary plus a zoomed screenshot to brain/output/.
 """
@@ -16,7 +16,7 @@ from playwright.sync_api import sync_playwright
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
-WEBSITE_URL = "http://localhost:8000/"
+WEBSITE_URL = "http://localhost:8001/"
 
 
 def main() -> int:

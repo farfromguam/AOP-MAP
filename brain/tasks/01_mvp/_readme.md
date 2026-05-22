@@ -54,6 +54,13 @@ This MVP scaffold is the first practical step toward the build card:
     USDA's public 2023 Tennessee NAIP cache. See `imagery_tracing_layer.md`.
 18. [X] Add visitor support callout circles for South Pittsburg/Kimball and
     Monteagle services. See `visitor_context_callouts.md`.
+19. [X] Add time-weighted activity hotspots from first-party timestamped GPX.
+    The viewer layer is default-off raw evidence, not trail authority; future
+    recorder/PostGIS steps are roadmapped in `activity_hotspots.md`.
+20. [X] Add a tag-driven proposed event schedule sidebar and default-off event
+    POI/route overlay. Schedule rows consume `website/data/aop_event_schedule.json`;
+    locations are edited once under tags like `#pavilion` and `#registration`.
+    See `event_schedule_layer.md`.
 
 ## Initial scaffold files
 

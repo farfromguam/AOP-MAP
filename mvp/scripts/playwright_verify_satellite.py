@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Playwright verification for the AOP viewer imagery + 9-patch layers.
 
-Loads the static viewer at http://localhost:8000/, exercises every toggle,
+Loads the static viewer at http://localhost:8001/, exercises every toggle,
 confirms the TNMap and USDA NAIP tile networks are hit when their imagery
 layers are enabled, and captures screenshots into brain/output/.
 
-Run after `python3 -m http.server 8000` is serving the `website/` directory.
+Run after `python3 -m http.server 8001` is serving the `website/` directory.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from playwright.sync_api import sync_playwright
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8000/")
+WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8001/")
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 
 SCREENSHOTS = {

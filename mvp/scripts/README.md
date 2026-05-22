@@ -45,6 +45,47 @@ cd mvp
 
 The importer parses the GPX track, stores the raw XML in `raw.gpx_captures`, inserts segment rows into `core.field_tracks`, and links them to `source_register.feature_sources`. It does not promote the track into `core.trail_centerlines`; review should happen first.
 
+## Activity hotspot export
+
+Build the static viewer hotspot layer from timestamped GPX:
+
+```
+python3 mvp/scripts/build_activity_hotspots.py
+```
+
+The builder writes `website/data/aop_activity_hotspots.geojson`, a mixed
+FeatureCollection with Polygon hotspot cells plus centroid Points for the
+MapLibre heatmap/labels. It is a derived raw-evidence layer; it does not promote
+tracks into trails.
+
+Verification:
+
+```
+cd website
+python3 -m http.server 8001
+```
+
+Then, from the repo root:
+
+```
+python3 mvp/scripts/playwright_verify_activity_hotspots.py
+```
+
+Playwright verifier scripts default to `http://localhost:8001/`. If that port is
+busy, start the viewer on another open port and pass `WEBSITE_URL=...`.
+
+## Event schedule sidebar verification
+
+The viewer schedule consumes `website/data/aop_event_schedule.json` directly.
+Session rows reference location tags such as `#pavilion` and `#registration`;
+the viewer resolves those tags into map points/routes at load time.
+
+Serve the viewer, then run:
+
+```
+python3 mvp/scripts/playwright_verify_event_schedule.py
+```
+
 ## import_geojson helper
 
 Requirements:

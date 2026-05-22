@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Playwright verification for AOP viewer UI presets and layer tuning.
 
-Run after `python3 -m http.server 8000` is serving the `website/` directory.
+Run after `python3 -m http.server 8001` is serving the `website/` directory.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from playwright.sync_api import sync_playwright
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8000/")
+WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8001/")
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 
 SCREENSHOTS = {
@@ -59,6 +59,16 @@ def is_checked(page, toggle_id: str) -> bool:
     return page.locator(f"#{toggle_id}").is_checked()
 
 
+def panel_section_for(page, toggle_id: str) -> str | None:
+    return page.evaluate(
+        """(id) => {
+          const el = document.getElementById(id);
+          return el?.closest('.panel-section')?.dataset.section || null;
+        }""",
+        toggle_id,
+    )
+
+
 def main() -> int:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     console_errors: list[str] = []
@@ -98,6 +108,40 @@ def main() -> int:
         check("three top-left preset buttons exist", page.locator(".preset-bar button[data-preset]").count() == 3)
         check("dedicated 3D button exists", page.locator("#terrainButton").count() == 1)
         check("search input sits in the left control cluster", page.locator(".left-controls #searchInput").count() == 1)
+        check("calendar sits in the left control cluster", page.locator(".left-controls #calendarCard").count() == 1)
+        schedule_rows = page.locator("#calendarBody .calendar-row").evaluate_all(
+            "els => els.map((el) => el.textContent.trim().replace(/\\s+/g, ' '))"
+        )
+        check(
+            "calendar renders the editable schedule rows",
+            len(schedule_rows) == 12
+            and any("G6 Cove Rally stages" in row for row in schedule_rows)
+            and any("#pavilion" in row for row in schedule_rows),
+            str(schedule_rows),
+        )
+        check(
+            "event schedule toggle exists and starts off",
+            page.locator("#showEventSchedule").count() == 1
+            and not page.locator("#showEventSchedule").is_checked(),
+        )
+        check(
+            "calendar starts expanded",
+            page.locator("#calendarToggle").get_attribute("aria-expanded") == "true"
+            and not page.locator("#calendarCard").evaluate("el => el.classList.contains('collapsed')"),
+        )
+        expanded_height = page.locator("#calendarCard").bounding_box()["height"]
+        page.locator("#calendarToggle").click()
+        page.wait_for_timeout(300)
+        collapsed_height = page.locator("#calendarCard").bounding_box()["height"]
+        check(
+            "calendar collapses",
+            page.locator("#calendarToggle").get_attribute("aria-expanded") == "false"
+            and collapsed_height < expanded_height,
+            f"expanded={expanded_height:.1f} collapsed={collapsed_height:.1f}",
+        )
+        page.locator("#calendarToggle").click()
+        page.wait_for_timeout(300)
+        check("calendar expands again", page.locator("#calendarToggle").get_attribute("aria-expanded") == "true")
         bar_box = page.locator(".left-controls").bounding_box()
         check(
             "left controls are in the top-left",
@@ -109,6 +153,25 @@ def main() -> int:
         check("Park keeps topo overlays off", not is_checked(page, "showHillshade") and not is_checked(page, "showContours"))
         check("Park background is Muted Earth", paint(page, "background", "background-color") == "#efe7d5")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["park"]))
+
+        print("\n== Right panel layer grouping ==")
+        labels = page.locator(".panel-section .section-label").evaluate_all(
+            "els => els.map((el) => el.textContent.trim())"
+        )
+        check("panel has a Derived layers section", "Derived layers" in labels, str(labels))
+        check("panel has a Source layers section", "Source layers" in labels, str(labels))
+        check("old source sub-sections are consolidated",
+              not {"Acquisition overlays", "Community (OSM)", "SFWDA paper map (2015)"} & set(labels),
+              str(labels))
+        check("land-cover outputs live under Derived layers",
+              panel_section_for(page, "showLandcover") == "derived-layers"
+              and panel_section_for(page, "showContours") == "derived-layers"
+              and panel_section_for(page, "showVisitorContext") == "derived-layers")
+        check("source/reference inputs live under Source layers",
+              panel_section_for(page, "showSatellite") == "source-layers"
+              and panel_section_for(page, "showNinePatch") == "source-layers"
+              and panel_section_for(page, "showOsmTracks") == "source-layers"
+              and panel_section_for(page, "showSfwda") == "source-layers")
 
         print("\n== Topo preset ==")
         page.locator("#presetTopo").click()
@@ -236,6 +299,7 @@ def main() -> int:
         check("Trace applies high-contrast boundary color", paint(page, "publish-boundaries", "line-color") == "#fff0b8")
         page.locator('[data-tune-expand-key="sfwda"]').click()
         check("inline editor can expand SFWDA", page.locator("#layerEditorTitle").inner_text() == "SFWDA paper map")
+        check("SFWDA alignment controls live in the drawer", page.locator("#sfwdaDrawerControls").is_visible())
         page.locator("#tuneOpacity").evaluate(
             """el => {
               el.value = '42';
@@ -244,6 +308,7 @@ def main() -> int:
         )
         page.wait_for_timeout(250)
         check("SFWDA tuner drives the existing opacity slider", page.locator("#sfwdaOpacity").input_value() == "42")
+        check("SFWDA drawer exposes alignment toggle", page.locator("#editSfwda").is_visible())
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["trace"]))
 
         print("\n== Mobile layout ==")

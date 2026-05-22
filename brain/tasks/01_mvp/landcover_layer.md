@@ -150,12 +150,14 @@ the bounds being a separate layer, and wanted to dim the non-park areas.
   -- 70 forest polygons, ~80% cover, ~1.7 MB.
 - Viewer: a separate `landcover-9patch-forest` layer at the very base of the
   stack (below the crisp park layer), toggle `Forest land cover — 9-patch
-  (NAIP)` default ON, plus a `9-patch forest opacity` slider (default 55%).
-  The park layer draws on top, so the slider effectively fades only the
+  (NAIP)` default ON, plus a 9-patch opacity control in that layer's edit
+  drawer (default 55%).
+  The park layer draws on top, so the control effectively fades only the
   non-park context. Full 9-patch coverage (not park-cut-out) so the layer is
   still complete if the park layer is toggled off.
 - Verified: `playwright_verify_landcover.py` extended for the new layer, its
-  base-of-stack order, and the slider -- all checks PASS, 0 console errors.
+  base-of-stack order, and the drawer opacity control -- all checks PASS, 0
+  console errors.
   Screenshots `brain/output/playwright_landcover_9patch_*.png`.
 - Same leaf-off ceiling as the park layer, plus the coarser ~1.5 m resolution.
   Fine for a reduced-opacity context layer; the leaf-on backlog card
@@ -203,9 +205,10 @@ polygons instead of being left as the paper background.
   (one `LANDCOVER_FILL` expression reused by the park and 9-patch fills); each
   class gets a thin same-family outline that doubles as a hairline-gap bridge
   for the sub-pixel slivers independent vertex-simplify leaves on a coverage.
-  Toggles relabelled `Land cover (NAIP)` / `Land cover — 9-patch (NAIP)`; the
-  slider is now `9-patch land cover opacity`. Layer ids kept (`landcover-forest`
-  etc.) to avoid rippling the toggle map and verification script.
+  Toggles relabelled `Land cover (NAIP)` / `Land cover — 9-patch (NAIP)`;
+  9-patch opacity now lives in that layer's edit drawer. Layer ids kept
+  (`landcover-forest` etc.) to avoid rippling the toggle map and verification
+  script.
 - Muted Earth class palette: `forest_deciduous` `#b9c2a3` (the existing sage),
   `forest_evergreen` `#7f8c66` (darker conifer green), `open_grass` `#cfd4b0`,
   `open_meadow` `#dccfa3`, `open_bare` `#cdba8f`.

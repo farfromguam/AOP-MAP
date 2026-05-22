@@ -41,7 +41,7 @@ Each layer is added behind a toggle in the side panel. Initial visibility for th
 
 ### Alignment editor (matches "editor is the viewer")
 
-When `Edit SFWDA alignment` is toggled on:
+When `Edit SFWDA alignment` is toggled on from the SFWDA paper-map layer drawer:
 
 - Four draggable corner markers appear at the current image corners (labeled NW, NE, SE, SW relative to the displayed quadrilateral, not the raster's pixel orientation).
 - Dragging a marker recomputes the image source coordinates live.
@@ -88,9 +88,10 @@ Completed 2026-05-20.
   raster, inspection-only), and `sfwda_raster_alignment.json`.
 - `website/index.html` gained toggles for OSM tracks, OSM service roads, the OSM
   park polygon, OSM named landmarks, and the SFWDA paper map -- all default OFF.
-- The SFWDA raster ships with an opacity slider and a multiply (white key-out)
-  slider, plus the alignment editor. Opacity and multiply are separate controls
-  -- see `[[feedback-opacity-and-multiply-are-separate]]`.
+- The SFWDA raster ships with opacity and multiply (white key-out) controls in
+  the SFWDA paper-map layer drawer, plus the alignment editor. Opacity and
+  multiply are separate controls -- see
+  `[[feedback-opacity-and-multiply-are-separate]]`.
 - The alignment model shipped as a 6x6 grid mesh of warpable raster tiles
   (`GRID_N = 6`), driven by `sfwda_raster_alignment.json` (`corners`,
   `orientation_cw_degrees`, and a `grid_6x6` array of 7x7 control points). A

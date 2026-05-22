@@ -37,6 +37,7 @@ Publishable layers, from `data/publish.geojson`:
 Reference and context layers, toggled from the panel (off by default unless noted):
 - 3D terrain and lidar hillshade (AWS Terrain Tiles / USGS 3DEP)
 - lidar 5 ft contours (USGS 3DEP 1 m DEM)
+- activity hotspots from first-party timestamped GPX dwell time
 - TNMap 2022 satellite imagery
 - 9-patch acquisition AOI and the USGS 3DEP lidar tile index
 - asphalt roads (USGS National Map; on by default)
