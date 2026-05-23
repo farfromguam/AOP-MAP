@@ -2,6 +2,18 @@
 
 This folder contains small helpers for moving data through the MVP PostGIS database.
 
+## Canonical psql invocation
+
+Every shell importer that talks to the database does it the same way:
+
+```
+docker compose exec -T db psql -U aop -d aop_map < script.sql
+```
+
+The SQL files themselves carry `\set ON_ERROR_STOP on`, so the wrapper does
+not need the older `-v ON_ERROR_STOP=1` flag. Match this form in new importers
+so the invocation does not drift again.
+
 ## Validation-loop smoke test
 
 Run one repeatable demo pass through the observation review and promotion path:
@@ -88,19 +100,25 @@ python3 mvp/scripts/playwright_verify_event_schedule.py
 
 ## import_geojson helper
 
+The ad-hoc ingest path for one-off GeoJSON files that do not yet have a
+dedicated importer. Use a schema-specific importer when one exists; this
+wrapper does not set source provenance.
+
 Requirements:
 - `ogr2ogr` (GDAL) installed on the host.
 - Database accessible at `localhost:55432` with user `aop` / password `aop`.
   Override `PGHOST`, `PGPORT`, `PGUSER`, `PGDATABASE`, or `PGPASSWORD` if needed.
 
-Example:
+Example (drop a generic geometry set into `core.observations` for review):
 
 ```
 cd mvp/scripts
-./import_geojson.sh ../../website/data/publish.geojson publish.publish_features
+./import_geojson.sh ../../website/data/aop_buildings.geojson core.observations
 ```
 
-The script uses `-append` so it will add rows if the table exists. Adjust as needed for safe imports.
+The script uses `-append` so it adds rows if the table exists. ogr2ogr maps
+GeoJSON properties to matching column names; unmapped properties are dropped.
+After import the script prints a SQL hint for back-filling `source_id`.
 
 ## 9-patch reference imports
 

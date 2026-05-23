@@ -586,43 +586,49 @@
       }
     }
 
+    // Slider markup uses 0-100; layer paint properties want 0-1. One helper so
+    // adding a fifth slider does not invent a fifth divisor.
+    const sliderPercent = (element) => Number(element.value) / 100;
+
     // Each toggle drives one or more map layers. setLayerVisibility no-ops on
     // layers that do not exist yet, so this is safe to call before layers load.
+    // The third field, presetId, is the DOM id used to capture/restore the
+    // toggle in named presets -- one row here is the only place a new layer
+    // needs to be registered.
     const LAYER_TOGGLES = [
-      [landcoverToggle, ['landcover-forest', 'landcover-forest-outline']],
-      [landcover9Toggle, ['landcover-9patch-forest', 'landcover-9patch-forest-outline']],
-      [hillshadeToggle, ['lidar-hillshade']],
-      [contoursToggle, ['contours-minor', 'contours-index', 'contours-labels']],
-      [activityHotspotsToggle, ['activity-hotspots-heat', 'activity-hotspots-fill', 'activity-hotspots-outline', 'activity-hotspots-labels']],
-      [eventScheduleToggle, ['event-session-routes', 'event-route-labels', 'event-anchor-points', 'event-anchor-labels']],
-      [satelliteToggle, ['tnmap-satellite']],
-      [usdaNaipToggle, ['usda-naip-satellite']],
-      [ninePatchToggle, ['nine-patch-fill', 'nine-patch-outline', 'nine-patch-labels']],
-      [lidarTilesToggle, ['lidar-tiles-fill', 'lidar-tiles-outline', 'lidar-tiles-labels']],
-      [roadsToggle, ['roads-local-casing', 'roads-local', 'roads-connecting-casing', 'roads-connecting', 'roads-controlled-casing', 'roads-controlled', 'roads-labels']],
-      [visitorContextToggle, ['visitor-context-fill', 'visitor-context-outline', 'visitor-context-labels']],
-      [waterToggle, ['water-area-fill', 'waterbody-fill', 'waterbody-outline', 'streams', 'stream-labels']],
-      [springsToggle, ['water-points', 'water-point-labels']],
-      [cemeteriesToggle, ['cemetery-fill', 'cemetery-outline', 'cemetery-marker', 'cemetery-label']],
-      [buildingsToggle, ['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline']],
-      [osmParkToggle, ['osm-park-outline']],
-      [osmTracksToggle, ['osm-tracks']],
-      [osmServiceToggle, ['osm-service']],
-      [osmNamedToggle, ['osm-named-points', 'osm-named-labels']],
-      [trailToggle, ['publish-trails']],
-      [boundaryToggle, ['publish-boundary-fill', 'publish-boundaries']],
-      [trailheadToggle, ['publish-trailheads']],
-      [editorPoiToggle, ['editor-poi-fill', 'editor-poi-outline', 'editor-poi-lines', 'editor-poi-circles', 'editor-poi-labels', 'editor-poi-fill-labels', 'editor-poi-line-labels']]
+      [landcoverToggle, ['landcover-forest', 'landcover-forest-outline'], 'showLandcover'],
+      [landcover9Toggle, ['landcover-9patch-forest', 'landcover-9patch-forest-outline'], 'showLandcover9'],
+      [hillshadeToggle, ['lidar-hillshade'], 'showHillshade'],
+      [contoursToggle, ['contours-minor', 'contours-index', 'contours-labels'], 'showContours'],
+      [activityHotspotsToggle, ['activity-hotspots-heat', 'activity-hotspots-fill', 'activity-hotspots-outline', 'activity-hotspots-labels'], 'showActivityHotspots'],
+      [eventScheduleToggle, ['event-session-routes', 'event-route-labels', 'event-anchor-points', 'event-anchor-labels'], 'showEventSchedule'],
+      [satelliteToggle, ['tnmap-satellite'], 'showSatellite'],
+      [usdaNaipToggle, ['usda-naip-satellite'], 'showUsdaNaip'],
+      [ninePatchToggle, ['nine-patch-fill', 'nine-patch-outline', 'nine-patch-labels'], 'showNinePatch'],
+      [lidarTilesToggle, ['lidar-tiles-fill', 'lidar-tiles-outline', 'lidar-tiles-labels'], 'showLidarTiles'],
+      [roadsToggle, ['roads-local-casing', 'roads-local', 'roads-connecting-casing', 'roads-connecting', 'roads-secondary-casing', 'roads-secondary', 'roads-ramp-casing', 'roads-ramp', 'roads-controlled-casing', 'roads-controlled', 'roads-labels'], 'showRoads'],
+      [visitorContextToggle, ['visitor-context-fill', 'visitor-context-outline', 'visitor-context-labels'], 'showVisitorContext'],
+      [waterToggle, ['water-area-fill', 'waterbody-fill', 'waterbody-outline', 'streams', 'stream-labels'], 'showWater'],
+      [springsToggle, ['water-points', 'water-point-labels'], 'showSprings'],
+      [cemeteriesToggle, ['cemetery-fill', 'cemetery-outline', 'cemetery-marker', 'cemetery-label'], 'showCemeteries'],
+      [buildingsToggle, ['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline'], 'showBuildings'],
+      [osmParkToggle, ['osm-park-outline'], 'showOsmPark'],
+      [osmTracksToggle, ['osm-tracks'], 'showOsmTracks'],
+      [osmServiceToggle, ['osm-service'], 'showOsmService'],
+      [osmNamedToggle, ['osm-named-points', 'osm-named-labels'], 'showOsmNamed'],
+      // SFWDA has no shared layer set -- the visibility loop is grid-driven
+      // inside updateLayerVisibility -- but it still belongs in the preset list
+      // and wants the same change handler.
+      [sfwdaToggle, [], 'showSfwda'],
+      [trailToggle, ['publish-trails'], 'showTrails'],
+      [boundaryToggle, ['publish-boundary-fill', 'publish-boundaries'], 'showBoundaries'],
+      [trailheadToggle, ['publish-trailheads'], 'showTrailheads'],
+      [editorPoiToggle, ['editor-poi-fill', 'editor-poi-outline', 'editor-poi-lines', 'editor-poi-circles', 'editor-poi-labels', 'editor-poi-fill-labels', 'editor-poi-line-labels'], 'showEditorPois']
     ];
 
-    const PRESET_TOGGLE_IDS = [
-      'showLandcover', 'showLandcover9', 'showHillshade',
-      'showContours', 'showActivityHotspots', 'showEventSchedule', 'showSatellite', 'showUsdaNaip', 'showNinePatch',
-      'showLidarTiles', 'showRoads', 'showWater', 'showSprings',
-      'showVisitorContext', 'showCemeteries', 'showBuildings', 'showOsmPark', 'showOsmTracks',
-      'showOsmService', 'showOsmNamed', 'showSfwda', 'showTrails',
-      'showBoundaries', 'showTrailheads', 'showEditorPois'
-    ];
+    // Derived from LAYER_TOGGLES so adding a row above propagates everywhere
+    // the preset machinery reads from.
+    const PRESET_TOGGLE_IDS = LAYER_TOGGLES.map(([, , presetId]) => presetId);
     const PRESET_SLIDER_IDS = ['landcover9Opacity', 'sfwdaOpacity', 'sfwdaMultiply'];
 
     const TUNABLE_LAYERS = {
@@ -768,6 +774,10 @@
           ['roads-local', 'line-opacity'],
           ['roads-connecting-casing', 'line-opacity'],
           ['roads-connecting', 'line-opacity'],
+          ['roads-secondary-casing', 'line-opacity'],
+          ['roads-secondary', 'line-opacity'],
+          ['roads-ramp-casing', 'line-opacity'],
+          ['roads-ramp', 'line-opacity'],
           ['roads-controlled-casing', 'line-opacity'],
           ['roads-controlled', 'line-opacity'],
           ['roads-labels', 'text-opacity']
@@ -775,12 +785,16 @@
         color: [
           ['roads-local', 'line-color'],
           ['roads-connecting', 'line-color'],
+          ['roads-secondary', 'line-color'],
+          ['roads-ramp', 'line-color'],
           ['roads-controlled', 'line-color'],
           ['roads-labels', 'text-color']
         ],
         width: [
           ['roads-local', 'line-width'],
           ['roads-connecting', 'line-width'],
+          ['roads-secondary', 'line-width'],
+          ['roads-ramp', 'line-width'],
           ['roads-controlled', 'line-width']
         ]
       },
@@ -1135,6 +1149,8 @@
           'publish-trailheads': { 'circle-color': '#546f4b', 'circle-radius': 6.5, 'circle-opacity': 1 },
           'roads-local': { 'line-color': '#908773', 'line-opacity': 0.82 },
           'roads-connecting': { 'line-color': '#b9905b', 'line-opacity': 0.9 },
+          'roads-secondary': { 'line-color': '#c09060', 'line-opacity': 0.92 },
+          'roads-ramp': { 'line-color': '#c99a5c', 'line-opacity': 0.88 },
           'roads-controlled': { 'line-color': '#c99a5c', 'line-opacity': 0.94 },
           'visitor-context-fill': { 'fill-color': '#d2a95f', 'fill-opacity': 0.14 },
           'visitor-context-outline': { 'line-color': '#6f4e2e', 'line-width': 2.4, 'line-opacity': 0.86 },
@@ -1186,6 +1202,8 @@
           'osm-named-labels': { 'text-color': '#fff0b8' },
           'roads-local': { 'line-color': '#fff4cf', 'line-width': 2.4, 'line-opacity': 0.86 },
           'roads-connecting': { 'line-color': '#ffe08a', 'line-width': 3, 'line-opacity': 0.9 },
+          'roads-secondary': { 'line-color': '#ffd072', 'line-width': 3.5, 'line-opacity': 0.92 },
+          'roads-ramp': { 'line-color': '#f7bb5f', 'line-width': 2.6, 'line-opacity': 0.88 },
           'roads-controlled': { 'line-color': '#f7bb5f', 'line-width': 4.2, 'line-opacity': 0.95 },
           'roads-labels': { 'text-color': '#fff4cf', 'text-opacity': 1 },
           'activity-hotspots-heat': { 'heatmap-opacity': 0.82 },
@@ -2335,7 +2353,7 @@
           id: 'landcover-9patch-forest',
           type: 'fill',
           source: 'aop-landcover-9patch',
-          paint: { 'fill-color': LANDCOVER_FILL, 'fill-opacity': Number(landcover9Opacity.value) / 100 }
+          paint: { 'fill-color': LANDCOVER_FILL, 'fill-opacity': sliderPercent(landcover9Opacity) }
         });
         map.addLayer({
           id: 'landcover-9patch-forest-outline',
@@ -2917,6 +2935,38 @@
           paint: { 'line-color': '#cdb079', 'line-width': lineWidth(0.7, 1.8, 4.5) }
         });
         map.addLayer({
+          id: 'roads-secondary-casing',
+          type: 'line',
+          source: 'usgs-roads',
+          filter: ['==', ['get', 'road_class'], 'secondary'],
+          layout: lineLayout,
+          paint: { 'line-color': '#f3ecda', 'line-width': lineWidth(1.6, 4, 9.5), 'line-opacity': 0.95 }
+        });
+        map.addLayer({
+          id: 'roads-secondary',
+          type: 'line',
+          source: 'usgs-roads',
+          filter: ['==', ['get', 'road_class'], 'secondary'],
+          layout: lineLayout,
+          paint: { 'line-color': '#c09060', 'line-width': lineWidth(0.9, 2.4, 5.5) }
+        });
+        map.addLayer({
+          id: 'roads-ramp-casing',
+          type: 'line',
+          source: 'usgs-roads',
+          filter: ['==', ['get', 'road_class'], 'ramp'],
+          layout: lineLayout,
+          paint: { 'line-color': '#bf8f55', 'line-width': lineWidth(1.5, 3.5, 8) }
+        });
+        map.addLayer({
+          id: 'roads-ramp',
+          type: 'line',
+          source: 'usgs-roads',
+          filter: ['==', ['get', 'road_class'], 'ramp'],
+          layout: lineLayout,
+          paint: { 'line-color': '#d8b173', 'line-width': lineWidth(0.8, 2.0, 4.8) }
+        });
+        map.addLayer({
           id: 'roads-controlled-casing',
           type: 'line',
           source: 'usgs-roads',
@@ -2951,7 +3001,7 @@
           }
         });
 
-        bindPopup(['roads-local', 'roads-connecting', 'roads-controlled'], 'Road', (props) => [
+        bindPopup(['roads-local', 'roads-connecting', 'roads-secondary', 'roads-ramp', 'roads-controlled'], 'Road', (props) => [
           ['Name', props.name || 'Unnamed'],
           ['Class', props.road_class || 'unknown'],
           ['MTFCC', props.mtfcc_code || ''],
@@ -3614,12 +3664,12 @@
       });
 
       sfwdaOpacity.addEventListener('input', () => {
-        setSfwdaOpacity(Number(sfwdaOpacity.value) / 100);
+        setSfwdaOpacity(sliderPercent(sfwdaOpacity));
       });
 
       sfwdaMultiply.addEventListener('input', () => {
         if (!applyingPreset) sfwdaMultiplyUserTouched = true;
-        sfwdaMultiplyStrength = Number(sfwdaMultiply.value) / 100;
+        sfwdaMultiplyStrength = sliderPercent(sfwdaMultiply);
         rebakeTiles();
       });
 
@@ -4020,6 +4070,18 @@
       searchResults.style.display = 'block';
     }
 
+    // Search-result pulse. `osc` runs 0 -> 1 -> 0 a few times across the
+    // duration; everything else is taste. If the effect needs tuning, change
+    // the constants here, not the math below.
+    const PULSE_DURATION_MS = 2600;
+    const PULSE_FLASHES = 3;                  // half-cycles of the cosine
+    const PULSE_LINE_OPACITY_MIN = 0.2;
+    const PULSE_LINE_OPACITY_RANGE = 0.7;
+    const PULSE_LINE_WIDTH_MIN = 5;
+    const PULSE_LINE_WIDTH_RANGE = 9;
+    const PULSE_POINT_RADIUS_MIN = 12;
+    const PULSE_POINT_RADIUS_RANGE = 16;
+
     let pulseRAF = null;
     function pulseHighlight() {
       if (!map.getLayer('search-highlight-line')) return;
@@ -4027,23 +4089,26 @@
       setLayerVisibility('search-highlight-point', true);
       if (pulseRAF) cancelAnimationFrame(pulseRAF);
       const start = performance.now();
-      const DURATION = 2600;
       function frame(now) {
-        const t = (now - start) / DURATION;
+        const t = (now - start) / PULSE_DURATION_MS;
         if (t >= 1) {
           setLayerVisibility('search-highlight-line', false);
           setLayerVisibility('search-highlight-point', false);
           pulseRAF = null;
           return;
         }
-        const osc = 0.5 + 0.5 * Math.cos(t * Math.PI * 6); // three flashes
+        const osc = 0.5 + 0.5 * Math.cos(t * Math.PI * 2 * PULSE_FLASHES);
         if (map.getLayer('search-highlight-line')) {
-          map.setPaintProperty('search-highlight-line', 'line-opacity', 0.2 + 0.7 * osc);
-          map.setPaintProperty('search-highlight-line', 'line-width', 5 + 9 * osc);
+          map.setPaintProperty('search-highlight-line', 'line-opacity',
+            PULSE_LINE_OPACITY_MIN + PULSE_LINE_OPACITY_RANGE * osc);
+          map.setPaintProperty('search-highlight-line', 'line-width',
+            PULSE_LINE_WIDTH_MIN + PULSE_LINE_WIDTH_RANGE * osc);
         }
         if (map.getLayer('search-highlight-point')) {
-          map.setPaintProperty('search-highlight-point', 'circle-radius', 12 + 16 * osc);
-          map.setPaintProperty('search-highlight-point', 'circle-stroke-opacity', 0.2 + 0.7 * osc);
+          map.setPaintProperty('search-highlight-point', 'circle-radius',
+            PULSE_POINT_RADIUS_MIN + PULSE_POINT_RADIUS_RANGE * osc);
+          map.setPaintProperty('search-highlight-point', 'circle-stroke-opacity',
+            PULSE_LINE_OPACITY_MIN + PULSE_LINE_OPACITY_RANGE * osc);
         }
         pulseRAF = requestAnimationFrame(frame);
       }
@@ -4128,35 +4193,18 @@
     snapshotPresetBtn.addEventListener('click', snapshotActivePreset);
     exportSettingsBtn.addEventListener('click', exportPresetSettings);
 
+    // Terrain has its own toggle handler (3D enable/disable, not a layer
+    // visibility flip). The landcover-9 opacity is the lone slider that has
+    // to land its value into a layer paint property directly.
     terrainToggle.addEventListener('change', () => setTerrainEnabled(terrainToggle.checked));
-    landcoverToggle.addEventListener('change', updateLayerVisibility);
-    landcover9Toggle.addEventListener('change', updateLayerVisibility);
     landcover9Opacity.addEventListener('input', () => {
-      setLandcover9Opacity(Number(landcover9Opacity.value) / 100);
+      setLandcover9Opacity(sliderPercent(landcover9Opacity));
     });
-    hillshadeToggle.addEventListener('change', updateLayerVisibility);
-    contoursToggle.addEventListener('change', updateLayerVisibility);
-    activityHotspotsToggle.addEventListener('change', updateLayerVisibility);
-    eventScheduleToggle.addEventListener('change', updateLayerVisibility);
-    satelliteToggle.addEventListener('change', updateLayerVisibility);
-    usdaNaipToggle.addEventListener('change', updateLayerVisibility);
-    ninePatchToggle.addEventListener('change', updateLayerVisibility);
-    lidarTilesToggle.addEventListener('change', updateLayerVisibility);
-    roadsToggle.addEventListener('change', updateLayerVisibility);
-    visitorContextToggle.addEventListener('change', updateLayerVisibility);
-    waterToggle.addEventListener('change', updateLayerVisibility);
-    springsToggle.addEventListener('change', updateLayerVisibility);
-    cemeteriesToggle.addEventListener('change', updateLayerVisibility);
-    buildingsToggle.addEventListener('change', updateLayerVisibility);
-    osmParkToggle.addEventListener('change', updateLayerVisibility);
-    osmTracksToggle.addEventListener('change', updateLayerVisibility);
-    osmServiceToggle.addEventListener('change', updateLayerVisibility);
-    osmNamedToggle.addEventListener('change', updateLayerVisibility);
-    sfwdaToggle.addEventListener('change', updateLayerVisibility);
-    trailToggle.addEventListener('change', updateLayerVisibility);
-    boundaryToggle.addEventListener('change', updateLayerVisibility);
-    trailheadToggle.addEventListener('change', updateLayerVisibility);
-    editorPoiToggle.addEventListener('change', updateLayerVisibility);
+    // Every other toggle just flips visibility. LAYER_TOGGLES is the single
+    // source of truth -- add a row there and the listener wires itself.
+    for (const [toggle] of LAYER_TOGGLES) {
+      toggle.addEventListener('change', updateLayerVisibility);
+    }
 
     for (const id of PRESET_TOGGLE_IDS) {
       const element = document.getElementById(id);

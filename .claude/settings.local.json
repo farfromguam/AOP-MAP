@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 mvp/scripts/playwright_verify_presets.py)"
+    ]
+  }
+}

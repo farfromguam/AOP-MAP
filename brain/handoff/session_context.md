@@ -19,6 +19,8 @@ The static viewer at `website/index.html` is the live work surface. It carries ~
 
 Last shipped: tag-driven event schedule sidebar (2026-05-22). Build card `tasks/01_mvp/event_schedule_layer.md`.
 
+Last code-health pass: Pass 2 closed (2026-05-22). Three sources-of-truth for the viewer toggle set collapsed to one (`LAYER_TOGGLES` is now authoritative). Playwright URL drift across 7 verifiers fixed; `WEBSITE_URL` env override now uniform. Pulse-animation constants named, `sliderPercent` helper extracted, two Python `except BaseException` blocks scoped, a NULL-edge-case in `import_gpx_track.sql` closed with `IS NOT DISTINCT FROM`. The three Pass 1 user-call items resolved (`import_geojson.sh` wired up, `secondary`/`ramp` road classes styled defensively, repo litter removed: `mvp/db-data-broken-*`, `mvp/website/`, 100 PNGs in `brain/output/`). Card: `tasks/01_mvp/code_health_pass.md`.
+
 ## Live preview ports
 
 - Human/manual preview: `cd website && python3 -m http.server 8000` → `http://localhost:8000/`
@@ -31,7 +33,7 @@ The MVP backlog is the source of truth — see `tasks/01_mvp/_readme.md`. Unstar
 1. Item 9 — replace demo `trail_centerlines` / `trailheads` placeholders with real source-backed AOP data, then re-export `publish.geojson`. This is the gap between "lots of context layers" and "actual AOP map."
 2. Item 3 — connect QGIS to `localhost:55432` and inspect `raw.arcgis_feature_captures`, `core.parcels`, `core.park_boundaries`, `source_register.feature_sources`.
 3. Item 8 — reconcile the 600+ acre official AOP claim against the imported `110 008.00` + `093 030.01` envelope (currently ~592 calc acres / ~573 deed acres).
-4. Item 11 — code-health remediation pass per `code_health_pass.md`.
+4. ~~Item 11 — code-health remediation pass per `code_health_pass.md`.~~ Pass 2 closed (2026-05-22). Cosmetic deferrals carried forward for a Pass 3 when adjacent code is being touched.
 5. Item 10 — swap the AWS Terrarium DEM for AOP-specific tiles from the USGS 3DEP 1 m DEM. Half-day toolchain + ~500 MB download; only worth it once the 10 m terrarium look has earned its keep.
 
 ## Loose ends not yet on a card

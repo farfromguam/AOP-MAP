@@ -109,3 +109,73 @@ Housekeeping pass, this session: unified the export script's DB connection style
 Still open, all needing a user call: whether to delete or wire up `import_geojson.sh`; whether to style or stop fetching the `secondary`/`ramp` road classes; and removing the repo litter (`mvp/db-data-broken-*`, `mvp/website/`, committed Playwright PNGs) -- the tracked-file removals are git work, left to the user.
 
 The `CHECK` constraints stay decided against (see Open Questions).
+
+-----
+
+## Pass 2 (2026-05-22)
+
+The viewer grew ~4x since Pass 1 (1000 → 4202 lines), plus 7 more importers and 9 more Playwright verifiers. Fresh smells.
+
+### Scope
+
+Viewer (`website/index.html`):
+
+[X] Toggle set lives in three places: the `LAYER_TOGGLES` table (`:591`), the `PRESET_TOGGLE_IDS` array of string ids (`:618`), and 25 hand-rolled `addEventListener` lines (`:4132-4159`). Same set, three forms, no enforcement they stay in sync. Add a `presetId` field to `LAYER_TOGGLES`, derive the other two, wire listeners in a loop.
+[X] Pulse-animation magic numbers (`:4030, 4039, 4041-4046`) -- `DURATION = 2600`, `Math.PI * 6`, the `0.2 + 0.7 * osc` family. Hoist to named constants near the top of the block.
+[X] Slider-to-percent `/100` pattern repeats at `:2338, :3617, :4135`. Trivial helper.
+
+Importers and shell:
+
+[X] Playwright URL drift -- 6 of 15 verifiers hardcode `WEBSITE_URL = "http://localhost:8001/"` ignoring the env override that `session_context.md` documents. `playwright_verify_sfwda_multiply.py:14` uses a different variable name (`URL`) entirely. Standardize on `os.environ.get("WEBSITE_URL", "http://localhost:8001/")`.
+[X] `except BaseException` in tempfile cleanup at `import_fema_buildings.py:296` and `import_marion_cemeteries.py:249`. Catches KeyboardInterrupt and SystemExit. Scope to `(OSError, IOError)`.
+[X] `import_gpx_track.sql:130` compares `recorded_start = NULLIF(...)::timestamptz` -- when both sides are NULL the EXISTS guard sees UNKNOWN and re-imports the row. Use `IS NOT DISTINCT FROM` instead.
+[X] Repeated `docker compose exec -T db psql -v ON_ERROR_STOP=1 -U aop -d aop_map` across 4 scripts; the SQL files already `\set ON_ERROR_STOP on`. Document the canonical form in `mvp/scripts/README.md` so future importers copy it correctly.
+
+User-call resolutions from Pass 1:
+
+[X] `import_geojson.sh` -- decided to wire it up. Point the example at a real table, document the GDAL dependency, surface the provenance hint after import.
+[X] `secondary` and `ramp` road classes -- decided to style them. Add casing + stroke layer pairs for each, extend the substrate presets, add to the roads toggle and tunable spec.
+[X] Repo litter -- all three remove paths approved. `rm -rf mvp/db-data-broken-*`, delete `mvp/website/`, `git rm` the committed Playwright PNGs in `brain/output/`.
+
+### Out of Scope
+
+- Cosmetic findings (the `!important` CSS cluster, inline `display: none` for search results, `a`/`b` zoom-band names). Worth fixing on a later pass when adjacent code is being touched. Not now.
+- A `playwright_base.py` shared module. The minimum fix (env-aware URL) doesn't require it; the bigger extraction is a Pass 3 candidate.
+- ON CONFLICT on `core.field_tracks`. Would require a UNIQUE constraint, which crosses into the no-limiting-code zone. The `IS NOT DISTINCT FROM` fix above closes the actual bug without adding a constraint.
+
+### Acceptance
+
+[X] `LAYER_TOGGLES` is the single source of truth for the toggle set; adding a layer is one edit.
+[X] All 15 Playwright verifiers honor `WEBSITE_URL` from the env.
+[X] The two `except BaseException` blocks are scoped.
+[X] Pulse animation constants are named.
+[X] Slider `/100` helper is extracted and used at all 4 sites (one site found beyond the original three).
+[X] `import_gpx_track.sql` uses `IS NOT DISTINCT FROM` for the timestamp guard.
+[X] `import_geojson.sh` example points at a real table; `mvp/scripts/README.md` reflects it.
+[X] Viewer styles `secondary` and `ramp` road classes. `import_usgs_roads.sh` left as-is; the data is no longer dropped, though the current 9-patch returns 0 features for both classes (defensive styling).
+[X] No `mvp/website/`, `mvp/db-data-broken-*`, or `brain/output/*.png` tracked.
+
+### Verification
+
+- Reload viewer; toggle every layer; confirm presets save/restore the same set.
+- Run a Playwright verifier with `WEBSITE_URL=http://localhost:8002/` against a viewer on port 8002 and confirm it hits.
+- Re-export `publish.geojson` via `export_publish_geojson.sh` to confirm the importer ecosystem still works end-to-end.
+- Playwright `playwright_verify_satellite.py` + a manual road-toggle pass to confirm secondary/ramp render.
+
+### Notes from implementation
+
+This session:
+
+- Slider helper: added `sliderPercent(element)` next to `setTerrainEnabled`. Replaced all four `Number(slider.value) / 100` sites (the original review only counted three; `sfwdaMultiply` was the fourth).
+- Toggle SoT: added a third positional field `presetId` to each `LAYER_TOGGLES` row, plus a single `[sfwdaToggle, [], 'showSfwda']` row for the SFWDA toggle (its visibility update is grid-driven, so it carries an empty layer list but still belongs in the preset/listener set). `PRESET_TOGGLE_IDS` is now `LAYER_TOGGLES.map(([,,id]) => id)`. The 27-line listener block collapsed to one loop plus the two genuinely special handlers (`terrainToggle` for 3D, `landcover9Opacity` for direct paint-property writes).
+- Pulse constants: `PULSE_DURATION_MS`, `PULSE_FLASHES`, four `*_MIN`/`*_RANGE` pairs. The `Math.PI * 6` term became `Math.PI * 2 * PULSE_FLASHES`; same value, named intent.
+- Roads: added `roads-secondary[-casing]` and `roads-ramp[-casing]` addLayer pairs between `roads-connecting` and `roads-controlled-casing` so MapLibre draw order matches network hierarchy. Extended the `roads` row of `LAYER_TOGGLES`, the `roads` entry in `TUNABLE_LAYERS`, both substrate paint presets (paper + trace), and the road popup binding. Did not trim `import_usgs_roads.sh`. Honest note: per `research/viewer.md:437`, the current 9-patch returns 0 features for both `secondary` and `ramp`, so the styling is defensive -- nothing renders today, but a future envelope expansion (or different AOI) will now light up correctly instead of silently dropping the data.
+- Playwright URL: 7 files updated to `os.environ.get("WEBSITE_URL", "http://localhost:8001/")`. `playwright_verify_sfwda_multiply.py` kept its local variable name (`URL`) but reads the same env var, so the override is uniform.
+- `import_geojson.sh`: header now documents purpose, the ogr2ogr property-mapping behaviour, and the provenance gap. Example switched from the non-existent `publish.publish_features` to `core.observations`. Added an ogr2ogr presence check up front; added a post-import hint that prints the source-link UPDATE pattern. `mvp/scripts/README.md` updated to match, and a new Canonical psql invocation section documents the importer wrapper form so future importers don't drift.
+- `import_gpx_track.sql`: the EXISTS guard's `recorded_start = ...` flipped to `IS NOT DISTINCT FROM ...`. Inline comment explains the NULL-equality trap.
+- Two `except BaseException` blocks scoped to `(OSError, IOError)`.
+- Cleanup: `mvp/db-data-broken-*` removed (untracked). `mvp/website/` was an orphan with one empty file; `git rm -r`'d. All 100 PNGs in `brain/output/` `git rm`'d (the original card called it ~30; the actual count was 100, including a handful of hand-made debug shots like `landcover_palette_*`, all confirmed with the user as ephemeral output).
+
+Verification: JS syntax check on the inline `<script>` (3942 lines after extraction) parses clean. Playwright preset verifier started in background to exercise the LAYER_TOGGLES <-> PRESET_TOGGLE_IDS coupling; result captured separately.
+
+The Pass 2 cosmetic findings (the `!important` cluster, inline `display: none`, single-letter zoom-band names) deliberately deferred -- not worth the touch without nearby work to amortize against.

@@ -7,11 +7,12 @@ Captures:
   brain/output/playwright_sfwda_after_hillshade_off.png
 """
 
+import os
 import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
-URL = "http://localhost:8001/"
+URL = os.environ.get("WEBSITE_URL", "http://localhost:8001/")
 REPO = Path(__file__).resolve().parents[2]
 OUT = REPO / "brain" / "output"
 OUT.mkdir(parents=True, exist_ok=True)

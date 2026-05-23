@@ -438,7 +438,7 @@ Recorded on 2026-05-20:
 - Excluded by design: layer `35` 4WD Roads, layer `36` Closed Roads, layer `37` Trails -- those would not be asphalt.
 - Importer: `mvp/scripts/import_usgs_roads.sh` (curl + jq, atomic write).
 - Output: `website/data/aop_roads.geojson` -- each feature tagged with `road_class` (`controlled_access`, `secondary`, `local_connecting`, `local`, `ramp`) plus `name`, `mtfcc_code`, `tnmfrc`, and route designators.
-- Viewer: toggle `Asphalt roads (USGS National Map)`, default-on. Stacked layers `roads-local-casing` + `roads-local`, `roads-connecting-casing` + `roads-connecting`, `roads-controlled-casing` + `roads-controlled`, plus a `roads-labels` symbol layer along the line. Click any class for a popup with name, MTFCC, and route designators.
+- Viewer: toggle `Asphalt roads (USGS National Map)`, default-on. Stacked layers `roads-local-casing` + `roads-local`, `roads-connecting-casing` + `roads-connecting`, `roads-secondary-casing` + `roads-secondary`, `roads-ramp-casing` + `roads-ramp`, `roads-controlled-casing` + `roads-controlled`, plus a `roads-labels` symbol layer along the line. `secondary` and `ramp` classes are styled defensively -- the importer fetches them, but the current 9-patch envelope returns 0 features in those classes. Click any class for a popup with name, MTFCC, and route designators.
 - Notable named features in-AOI: I-24, Ellis Cove Rd (the AOP access road), Ellis Rd, Battlecreek Rd, Fiery Gizzard Rd, Sweetens Cove Rd.
 - Picked over TNMap MAJOR_ROADS (too sparse -- interstates and state highways only, misses county/park-access roads) and Overpass/OSM (would require per-way `surface=*` filtering and local TN ways are not reliably tagged for surface).
 

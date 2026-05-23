@@ -124,10 +124,13 @@ inserted_tracks AS (
     now()
   FROM seg_rows
   WHERE NOT EXISTS (
+    -- IS NOT DISTINCT FROM treats NULL = NULL as TRUE; a plain `=` returns
+    -- UNKNOWN there and would silently re-import segments with no recorded_start.
     SELECT 1 FROM core.field_tracks existing
     WHERE existing.source_id = seg_rows.source_id
       AND existing.segment_index = (seg ->> 'segment_index')::integer
-      AND existing.recorded_start = NULLIF(seg ->> 'recorded_start', '')::timestamptz
+      AND existing.recorded_start IS NOT DISTINCT FROM
+          NULLIF(seg ->> 'recorded_start', '')::timestamptz
   )
   RETURNING id, segment_index, source_id
 )

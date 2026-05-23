@@ -293,7 +293,7 @@ def main() -> int:
             fh.write("\n")
         os.replace(tmp, OUT_FILE)
         os.chmod(OUT_FILE, 0o644)
-    except BaseException:
+    except (OSError, IOError):
         if os.path.exists(tmp):
             os.remove(tmp)
         raise
