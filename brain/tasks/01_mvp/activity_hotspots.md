@@ -56,6 +56,47 @@ The output is internal/raw evidence. It does not promote any track into
   - Verifies the toggle, hidden initial state, GeoJSON shape, render, popup, and
     console cleanliness.
 
+## Synthetic Saturday stress test
+
+Added 2026-05-23.
+
+- `mvp/scripts/simulate_saturday_activity.py`
+  - Deterministically generates many Saturday-afternoon RC activity tracks.
+  - All tracks start at `#pavilion`.
+  - Routes reuse the observed Saturday trail in `publish.geojson`, event
+    schedule anchors, existing GPX hotspot coordinates, and OSM
+    `highway=track` / `highway=service` linework from
+    `website/data/osm_aop_9patch.geojson`.
+  - Builds a small OSM route index and records per-track `osm_track_m`,
+    `osm_route_count`, and `osm_way_ids`.
+  - Rock-crawl behavior is modeled as repeated slow attempts, short reverse
+    moves, and dwell at technical anchors.
+- `brain/import/synthetic_saturday_activity.gpx`
+  - 72 synthetic user tracks / 13,713 timestamped points.
+  - Synthetic evidence only; not field data.
+- `website/data/aop_synthetic_activity_tracks.geojson`
+  - Viewer trace layer for inspecting the simulated user routes.
+- `website/data/aop_synthetic_activity_hotspots.geojson`
+  - Separate hotspot extraction output from the synthetic GPX.
+  - Current output: 18 cells / 36 features from 72 synthetic sessions.
+  - Synthetic extraction is intentionally ranked by stopped+slow time, filters
+    low-interest pass-through cells, and caps intensity at 120 minutes so the
+    pavilion does not flatten the other technical stops.
+- `website/data/aop_synthetic_activity_report.json`
+  - Records the scenario seed, persona counts, expected anchors, and overlap
+    with existing first-party GPX hotspots and OSM route usage.
+  - Current report: 72 / 72 tracks start at the pavilion; 7 planned anchors are
+    within 50 m of existing hotspot evidence; 70 / 72 tracks include OSM
+    route-following; 103.34 km of the synthetic traces are counted along OSM
+    line vertices across 19 OSM way IDs.
+- `website/index.html`
+  - Toggle `Simulated Saturday activity` under `Derived layers`, default OFF.
+  - Renders synthetic tracks plus hotspot heat/cells/labels.
+- `mvp/scripts/playwright_verify_synthetic_activity.py`
+  - Verifies hidden initial state, source metadata, all-pavilion starts,
+    OSM route-following, extraction coverage, overlap with existing GPX heat,
+    render, popup, and console cleanliness.
+
 ## Algorithm
 
 For each pair of consecutive points inside the same GPX segment:

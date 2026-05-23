@@ -3,7 +3,7 @@
 TL;DR:
 - `website/index.html` is the static MapLibre viewer -- one file, vendored
   libraries, no build step, runs offline.
-- It shows three publishable layers from `publish.geojson` plus ~18 toggleable
+- It shows three publishable layers from `publish.geojson` plus ~20 toggleable
   reference layers, has a feature search box, and an in-map POI/footprint editor.
 - This is the viewer's home doc: the layer catalog. Per-layer build detail that
   has its own task card is linked, not duplicated.
@@ -40,7 +40,7 @@ how the layer was built.
 
 The right panel separates processed map products from source/reference inputs:
 `Derived layers` holds land cover, hillshade, contours, activity hotspots, the
-event schedule overlay, and visitor callouts;
+simulated Saturday activity test layer, the event schedule overlay, and visitor callouts;
 `Source layers` holds imagery, acquisition indexes, roads, water, cemeteries,
 buildings, OSM, and the SFWDA paper map. `Publishable` and `Map editor` remain
 separate because they are workflow states, not source-vs-derived context.
@@ -59,6 +59,7 @@ separate because they are workflow states, not source-vs-derived context.
 | Lidar hillshade (USGS 3DEP) | AWS Terrain Tiles | off | "Lidar Hillshade and 3D Terrain Layers" below |
 | Lidar contours (5 ft, 1m DEM) | `aop_contours.geojson` | off | `tasks/01_mvp/lidar_contour_pipeline.md`; "Lidar Contour Layer" below |
 | Activity hotspots (GPX dwell) | `aop_activity_hotspots.geojson` | off | `tasks/01_mvp/activity_hotspots.md`; "Activity Hotspots Layer" below |
+| Simulated Saturday activity | `aop_synthetic_activity_tracks.geojson` + `aop_synthetic_activity_hotspots.geojson` | off | `tasks/01_mvp/activity_hotspots.md`; "Simulated Saturday Activity Layer" below |
 | Event schedule POIs | `aop_event_schedule.json` | off | `tasks/01_mvp/event_schedule_layer.md`; "Event Schedule Layer" below |
 | Satellite imagery (TNMap 2022) | TNMap XYZ tiles | off | "Satellite Imagery" below |
 | USDA NAIP imagery (TN 2023) | USDA FPAC `USDA_CONUS_PRIME` tiles | off | "USDA NAIP Imagery / Tracing Source" below |
@@ -233,6 +234,15 @@ Recorded on 2026-05-21:
   and South Pittsburg-to-Chattanooga drive-distance references. Times are
   planning estimates, not routed/live traffic data.
 - Verified with `mvp/scripts/playwright_verify_visitor_context.py`.
+- Drag-to-move: as of 2026-05-23 the callouts are repositionable through the
+  shared feature list panel (`brain/tasks/02_edit/poi_editor_v2.md`). Opening
+  the Visitor context callouts drawer surfaces a 2-row list with a ✋ move
+  button; clicking ✋ then clicking the map translates the polygon so its
+  centroid lands at the click. The new geometry is keyed by `name` in
+  `aop_visitor_context_overrides_v1` localStorage and replayed on next load
+  via `applyVisitorContextOverrides` before `addSource`. The source geojson
+  on disk is never mutated, so an override is always relative to the most
+  recent shipped data.
 
 ### Satellite Imagery (TNMap 2022)
 
@@ -402,6 +412,40 @@ Recorded on 2026-05-22:
 - Verification: `mvp/scripts/playwright_verify_activity_hotspots.py` -- PASS,
   0 console errors on 2026-05-22.
 - Roadmap: `tasks/01_mvp/activity_hotspots.md`.
+
+### Simulated Saturday Activity Layer
+
+Recorded on 2026-05-23:
+
+- Source: `mvp/scripts/simulate_saturday_activity.py`, seeded with event schedule
+  anchors, `publish.geojson` observed Saturday trail geometry, existing GPX
+  hotspot coordinates, and OSM `highway=track` / `highway=service` linework
+  from `website/data/osm_aop_9patch.geojson`.
+- Generated data:
+  - `brain/import/synthetic_saturday_activity.gpx`
+  - `website/data/aop_synthetic_activity_tracks.geojson`
+  - `website/data/aop_synthetic_activity_hotspots.geojson`
+  - `website/data/aop_synthetic_activity_report.json`
+- Current simulation: 72 pavilion-start synthetic users / 13,713 timestamped
+  GPX points / 8 route personas. 70 / 72 tracks include OSM route-following,
+  with 103.34 km counted along OSM line vertices across 19 OSM way IDs.
+  Hotspot extraction output is 18 cells / 36 features from 72 synthetic
+  sessions; it is ranked by stopped+slow time so OSM pass-through corridors do
+  not render as a dotted-line hotspot.
+- Behavior modeled: shared pavilion registration/start dwell, observed-trail
+  travel, OSM spine/connector travel, repeated rock-crawl attempts at technical
+  anchors, short reverse moves, social/regroup dwell, and varied route lengths.
+- Overlap test: report records 7 planned anchors within 50 m of existing
+  first-party GPX hotspot evidence; Playwright verifies extracted top synthetic
+  cells overlap existing heat and cover the strong planned anchors.
+- Viewer: toggle `Simulated Saturday activity`, default OFF, under `Derived
+  layers`. Layers: `synthetic-activity-tracks`,
+  `synthetic-activity-hotspots-heat`, `synthetic-activity-hotspots-fill`,
+  `synthetic-activity-hotspots-outline`, and
+  `synthetic-activity-hotspots-labels`.
+- Source discipline: synthetic test data only. It is useful for testing the
+  extraction and review workflow, not for validating trails or facilities.
+- Verification: `mvp/scripts/playwright_verify_synthetic_activity.py`.
 
 ### Event Schedule Layer
 

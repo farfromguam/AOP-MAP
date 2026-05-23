@@ -123,27 +123,38 @@ The layer toggle stays the master switch. If the layer is off, no features draw 
 
 ## Acceptance
 
-- [ ] Shared component renders a feature list under any consumer layer row.
-- [ ] Per-feature visibility persists across reload (`aop_feature_visibility_v1`).
-- [ ] Buildings: 4 in-park rows pre-ticked, 198 others collapsed with bulk default off. Toggling a row updates the MapLibre paint filter immediately.
-- [ ] Cemeteries: 4 rows with Ellis pre-ticked. Toggling updates paint.
-- [ ] POIs: list populates, select-from-row flies, drag persists, reload preserves position.
-- [ ] At least one second drag-consumer (region callouts) wired to prove the primitive is reusable on the drag side too.
-- [ ] Mobile: long-press → drag → commit works on touch for drag-enabled consumers.
-- [ ] Playwright verifier covers list render, visibility toggle, fly, drag, persistence (extends `playwright_verify_buildings.py`, `playwright_verify_cemeteries.py`, `playwright_verify_poi_editor.py`).
+- [x] Shared component renders a feature list under any consumer layer row. (shipped 2026-05-23 in commit `building toggle` for buildings + cemeteries; extended same day for POIs and visitor-context.)
+- [x] Per-feature visibility persists across reload (`aop_feature_visibility_v1`).
+- [x] Buildings: 4 in-park rows pre-ticked, 198 others collapsed with bulk default off. Toggling a row updates the MapLibre paint filter immediately.
+- [x] Cemeteries: 4 rows with Ellis pre-ticked. Toggling updates paint.
+- [x] POIs: list populates, select-from-row flies, drag persists, reload preserves position. Drag commits via ✋ button or long-press → click on map. Esc and inline Cancel both abort cleanly.
+- [x] At least one second drag-consumer wired — **visitor-context callouts**. Override store: `aop_visitor_context_overrides_v1`. Moved callouts replay on next load via `applyVisitorContextOverrides` before `addSource`.
+- [x] Mobile: long-press → drag → commit. Implemented as a 450 ms PointerEvent timer on the row body, cancelled by movement >8 px or release. Lands in the same `enterMoveMode()` path as the desktop ✋ click — verified end-to-end on the desktop path, mobile path is the same code with `pointerdown` instead of `click`.
+- [x] Playwright verifier covers list render, visibility toggle, fly, drag, persistence. Extended `mvp/scripts/playwright_verify_feature_list.py` (now 60+ assertions across buildings, cemeteries, POIs, visitor-context, and the map→panel reveal). `playwright_verify_poi_editor.py` re-run as regression: PASS.
+- [x] **Map → panel reveal** (user request, 2026-05-23): clicking a feature on the map expands its right-panel drawer, expands the containing group if collapsed (buildings "Other"), scrolls the row in, and flashes it via the `.revealed` CSS animation. Wired through a thin `bindPanelReveal(layers, layerKey, idFromProps)` helper plus `revealFeatureInPanel(layerKey, featureId)`. Existing popups continue to fire alongside the reveal. Suppressed during move mode so the click belongs to the move primitive.
+- [x] **Per-section Export / Import + bulk Export-all / Import-all** (user request, 2026-05-23): each of the three settings-bearing panel sections (`derived-layers`, `source-layers`, `editor`) now carries inline ↑/↓ buttons that copy/restore *only* that section's toggles, sliders, paints, and runtime overrides via schema `aop-section-state-v1`. The bottom of the panel has `Export all` / `Import all` for the full v2 bundle. The retired Snapshot Preset and Export Settings buttons are gone — "we can just reload the page" per the user. Wrong-schema and wrong-section payloads are rejected on import. Verifier extends `playwright_verify_feature_list.py` with a round-trip on the editor section (clear → import → 3 POIs back) plus structural checks on the other two; `playwright_verify_presets.py` updated to test `#exportAll` + the v2 schema.
 
 ## Verification
+
+Run `python3 mvp/scripts/playwright_verify_feature_list.py` (server on 8001). All passes with zero console errors. Headless screenshots land under `brain/output/playwright_feature_list_*.png`. Manual walkthrough at `http://localhost:8000/`:
 
 - Open the viewer; expand Buildings in the right panel → confirm 4 in-park rows and a collapsed bulk row for the 198 others.
 - Untick `1033 Ellis Cove Rd` → that footprint disappears from the map; reload → still hidden.
 - Expand Cemeteries → confirm only Ellis draws; tick Gilliam → it appears.
-- POI list populates, selecting a row flies and flashes, dragging persists.
-- Region callouts (later): same drag interaction; persists in callout-override store.
+- Draw a POI, then expand Drawn POIs → row appears, fly button centers on it, ✋ button enters move mode (banner appears), click on map commits, reload preserves.
+- Expand Visitor context callouts → 2 rows, ✋ on Monteagle, click on map → callout polygon translates to the click. Reload preserves.
+- Click any cemetery / building / POI / visitor-context callout on the map → its right-panel drawer opens, the matching row glows briefly, and a collapsed group (like buildings "Other") expands so the row is visible.
+
+## Out of scope (followups)
+
+- On-map logos (Bucket F) consume the drag side of this primitive once the logo layer lands.
+- Vertex-level edit on polygons / lines remains explicitly out — whole-feature move only.
+- PostGIS write-back for POIs is still a follow-up on `../01_mvp/poi_editor.md`. POI edits live in localStorage; export-to-geojson is the bridge.
 
 ## Related work
 
 - `../01_mvp/poi_editor.md` — predecessor; this card closes its "select/move committed features" follow-up.
 - `../01_mvp/buildings_layer.md` — extended in place once this lands (drops the "make buildings default-on" item once the per-feature list is operable).
 - `../01_mvp/cemeteries_layer.md` — extended in place once this lands.
-- `../01_mvp/visitor_context_callouts.md` — picks up the drag side of the primitive for region callouts.
+- `../01_mvp/visitor_context_callouts.md` — drag side of the primitive now in place. Bucket B item "region circle callouts need to be positionable" closes through this card.
 - `02_edit/views_and_defaults.md` (TBD) — owns the layer-tier policy that decides which layers come up default-on. Per-feature visibility lives here; layer-default tier lives there.

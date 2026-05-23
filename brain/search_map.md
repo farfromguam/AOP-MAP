@@ -16,10 +16,11 @@ TL;DR:
 - viewer, web map, `index.html`, layers, toggles, satellite, hillshade, 3D terrain, contours, roads, water, lidar tile index, search box, calendar, MapLibre: `research/viewer.md`
 - imagery tracing, USDA NAIP, 2023 NAIP, 2025 NAIP, MrSID, trace line, raw image traces: `tasks/01_mvp/imagery_tracing_layer.md`, then `research/viewer.md`
 - POI editor, draw, footprint, pavilion, building, Terra Draw, on-map editing: `tasks/01_mvp/poi_editor.md`
+- feature list panel, per-feature visibility, drag-to-move, move mode, ✋ button, long-press, fly to feature, `aop_feature_visibility_v1`, `aop_visitor_context_overrides_v1`, find and move, shared primitive, map-click panel reveal, revealFeatureInPanel, bindPanelReveal, .revealed flash, per-section export, import, ↑Export, ↓Import, Export all, Import all, `aop-section-state-v1`, `aop-viewer-preset-settings-v2`, retired Snapshot Preset: `tasks/02_edit/poi_editor_v2.md`
 - building footprints, FEMA USA Structures, structures layer, ORNL footprints: `tasks/01_mvp/buildings_layer.md`, then `research/viewer.md`
 - visitor context, support towns, South Pittsburg, Kimball, Monteagle, food, fuel, hotels, callout circles: `tasks/01_mvp/visitor_context_callouts.md`, then `research/viewer.md`
 - GPX, field track, ride recording, observation import: `import/_readme.md`, then `tasks/01_mvp/mvp_validation_loop.md`
-- activity hotspots, heatmap, dwell time, user-entered trail hotspots, timestamped GPX, GPS recorder: `tasks/01_mvp/activity_hotspots.md`, then `research/viewer.md`
+- activity hotspots, heatmap, dwell time, user-entered trail hotspots, timestamped GPX, synthetic Saturday activity, simulated users, OSM-following routes, GPS recorder: `tasks/01_mvp/activity_hotspots.md`, then `research/viewer.md`
 - event schedule, event calendar, RC event, G6, Pro-Line, schedule rows, `#pavilion`, `#registration`, event POI: `tasks/01_mvp/event_schedule_layer.md`, then `research/viewer.md`
 - database schema, `init_db.sql`, tables, raw/core/publish zones, publish views, status vocabularies: `tasks/01_mvp/code_health_pass.md`
 - contour build, gdal_contour, GDAL Docker, DEM clip: `tasks/01_mvp/lidar_contour_pipeline.md`, then `spinup/mvp_runbook.md`

@@ -86,6 +86,43 @@ python3 mvp/scripts/playwright_verify_activity_hotspots.py
 Playwright verifier scripts default to `http://localhost:8001/`. If that port is
 busy, start the viewer on another open port and pass `WEBSITE_URL=...`.
 
+## Simulated Saturday activity
+
+Generate a deterministic multi-user Saturday-afternoon test set, then extract a
+separate synthetic hotspot layer. The simulator uses the observed Saturday trail,
+event anchors, existing GPX hotspots, and nearby OSM `highway=track` /
+`highway=service` linework from `website/data/osm_aop_9patch.geojson`.
+
+```
+python3 mvp/scripts/simulate_saturday_activity.py
+python3 mvp/scripts/build_activity_hotspots.py \
+  brain/import/synthetic_saturday_activity.gpx \
+  --output website/data/aop_synthetic_activity_hotspots.geojson \
+  --name aop_synthetic_activity_hotspots \
+  --source-type synthetic_activity_gpx \
+  --confidence synthetic_multi_user_model \
+  --review-status "synthetic Saturday activity model; not field evidence or validated trail/facility data" \
+  --min-cell-seconds 90 \
+  --rank-by stop_slow \
+  --intensity-cap-seconds 7200 \
+  --min-stop-slow-seconds 300 \
+  --max-moving-fraction 0.7 \
+  --label-rank-limit 12 \
+  --label-min-seconds 1800
+```
+
+The simulator writes:
+- `brain/import/synthetic_saturday_activity.gpx`
+- `website/data/aop_synthetic_activity_tracks.geojson`
+- `website/data/aop_synthetic_activity_report.json`
+- `website/data/aop_synthetic_activity_hotspots.geojson`
+
+Viewer verification:
+
+```
+python3 mvp/scripts/playwright_verify_synthetic_activity.py
+```
+
 ## Event schedule sidebar verification
 
 The viewer schedule consumes `website/data/aop_event_schedule.json` directly.

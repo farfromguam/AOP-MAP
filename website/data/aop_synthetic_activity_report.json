@@ -1,0 +1,289 @@
+{
+  "schema": "aop-synthetic-saturday-activity-v1",
+  "generated_at": "2026-05-23T13:36:10.234835+00:00",
+  "simulation": {
+    "schema": "aop-synthetic-saturday-activity-v1",
+    "seed": 20260523,
+    "users": 72,
+    "start_local": "2026-05-23T13:00:00-05:00",
+    "local_timezone": "America/Chicago",
+    "saturday_date": "2026-05-23",
+    "scenario": "Many RC users start at the pavilion, follow observed trail evidence, crawl technical spots, dwell/socialize, and overlap existing raw GPX hotspots.",
+    "osm_route_index": {
+      "input": "/Users/christopherfryman/Documents/code/AOP MAP/website/data/osm_aop_9patch.geojson",
+      "feature_count": 51,
+      "track_feature_count": 47,
+      "service_feature_count": 4,
+      "indexed_osm_km": 18.87
+    },
+    "source_type": "synthetic_activity_gpx",
+    "permission": "internal",
+    "publish_status": "hold",
+    "review_status": "synthetic model for hotspot pipeline testing; not field evidence"
+  },
+  "inputs": {
+    "publish": "website/data/publish.geojson",
+    "event_schedule": "website/data/aop_event_schedule.json",
+    "existing_hotspots": "website/data/aop_activity_hotspots.geojson",
+    "osm_tracks": "website/data/osm_aop_9patch.geojson"
+  },
+  "summary": {
+    "users": 72,
+    "tracks_started_at_pavilion": 72,
+    "track_points": 13713,
+    "total_distance_km": 181.21,
+    "osm_track_km": 103.34,
+    "tracks_with_osm_route": 70,
+    "osm_route_count": 183,
+    "osm_way_ids_used": [
+      383693504,
+      1215497663,
+      1215497664,
+      1215497665,
+      1215497666,
+      1215497668,
+      1215497670,
+      1215497671,
+      1215497672,
+      1215497673,
+      1215497682,
+      1215497683,
+      1215497689,
+      1215497690,
+      1215497692,
+      1215497694,
+      1215497700,
+      1215497704,
+      1215497705
+    ],
+    "persona_counts": {
+      "checkpoint_loop": 7,
+      "mixed_sampler": 3,
+      "north_crawl": 11,
+      "osm_south_connector": 5,
+      "osm_spine_runner": 20,
+      "photo_short": 12,
+      "proving_ground": 9,
+      "trailhead_social": 5
+    },
+    "anchors_with_existing_hotspot_overlap_50m": 7
+  },
+  "expected_hotspots": [
+    {
+      "key": "#pavilion",
+      "label": "Pavilion / registration dwell",
+      "coordinates": [
+        -85.7482512,
+        35.0907264
+      ],
+      "source": "event schedule #pavilion and #registration",
+      "planned_user_count": 72,
+      "planned_visit_count": 149,
+      "planned_dwell_minutes": 927.2,
+      "planned_crawl_minutes": 0.0,
+      "nearest_existing_hotspot": {
+        "rank": 63,
+        "distance_m": 31.6,
+        "existing_dwell_minutes": 0.52,
+        "existing_class": "low"
+      }
+    },
+    {
+      "key": "#north-technical",
+      "label": "North technical crawl",
+      "coordinates": [
+        -85.7439989,
+        35.0979524
+      ],
+      "source": "event schedule #north-technical and existing hotspots #3/#5",
+      "planned_user_count": 15,
+      "planned_visit_count": 15,
+      "planned_dwell_minutes": 0.0,
+      "planned_crawl_minutes": 234.8,
+      "nearest_existing_hotspot": {
+        "rank": 3,
+        "distance_m": 0.0,
+        "existing_dwell_minutes": 3.78,
+        "existing_class": "high"
+      }
+    },
+    {
+      "key": "#proving-grounds",
+      "label": "Proving grounds rock-crawl branch",
+      "coordinates": [
+        -85.7456194,
+        35.087223
+      ],
+      "source": "event schedule #proving-grounds",
+      "planned_user_count": 14,
+      "planned_visit_count": 14,
+      "planned_dwell_minutes": 0.0,
+      "planned_crawl_minutes": 156.5,
+      "nearest_existing_hotspot": {
+        "rank": 1,
+        "distance_m": 419.1,
+        "existing_dwell_minutes": 6.65,
+        "existing_class": "peak"
+      }
+    },
+    {
+      "key": "#night-checkpoint",
+      "label": "Night checkpoint crawl shelf",
+      "coordinates": [
+        -85.7469876,
+        35.0923056
+      ],
+      "source": "event schedule #night-checkpoint and existing hotspot #6",
+      "planned_user_count": 16,
+      "planned_visit_count": 16,
+      "planned_dwell_minutes": 0.0,
+      "planned_crawl_minutes": 145.4,
+      "nearest_existing_hotspot": {
+        "rank": 6,
+        "distance_m": 0.0,
+        "existing_dwell_minutes": 2.61,
+        "existing_class": "medium"
+      }
+    },
+    {
+      "key": "#photo-waypoint",
+      "label": "Photo waypoint / pavilion approach",
+      "coordinates": [
+        -85.74876,
+        35.09156
+      ],
+      "source": "event schedule #photo-waypoint and existing hotspots #8/#9",
+      "planned_user_count": 25,
+      "planned_visit_count": 25,
+      "planned_dwell_minutes": 35.7,
+      "planned_crawl_minutes": 92.7,
+      "nearest_existing_hotspot": {
+        "rank": 8,
+        "distance_m": 0.0,
+        "existing_dwell_minutes": 1.66,
+        "existing_class": "medium"
+      }
+    },
+    {
+      "key": "#osm-north-loop",
+      "label": "OSM north loop crawl",
+      "coordinates": [
+        -85.7547755,
+        35.0971084
+      ],
+      "source": "OSM highway=track cluster around ways 1215497670 / 1215497704",
+      "planned_user_count": 14,
+      "planned_visit_count": 14,
+      "planned_dwell_minutes": 0.0,
+      "planned_crawl_minutes": 117.7,
+      "nearest_existing_hotspot": {
+        "rank": 55,
+        "distance_m": 643.4,
+        "existing_dwell_minutes": 0.57,
+        "existing_class": "low"
+      }
+    },
+    {
+      "key": "#osm-main-spine-west",
+      "label": "OSM main spine west turn",
+      "coordinates": [
+        -85.755586,
+        35.0919237
+      ],
+      "source": "OSM highway=track way 1215497663",
+      "planned_user_count": 20,
+      "planned_visit_count": 20,
+      "planned_dwell_minutes": 0.0,
+      "planned_crawl_minutes": 111.4,
+      "nearest_existing_hotspot": {
+        "rank": 22,
+        "distance_m": 370.5,
+        "existing_dwell_minutes": 0.99,
+        "existing_class": "low"
+      }
+    },
+    {
+      "key": "#observed-trailhead",
+      "label": "Observed trailhead social stop",
+      "coordinates": [
+        -85.751478,
+        35.091933
+      ],
+      "source": "event schedule #observed-trailhead",
+      "planned_user_count": 13,
+      "planned_visit_count": 13,
+      "planned_dwell_minutes": 72.5,
+      "planned_crawl_minutes": 0.0,
+      "nearest_existing_hotspot": {
+        "rank": 22,
+        "distance_m": 3.7,
+        "existing_dwell_minutes": 0.99,
+        "existing_class": "low"
+      }
+    },
+    {
+      "key": "#upper-ledges",
+      "label": "Upper ledge attempts",
+      "coordinates": [
+        -85.7439489,
+        35.0985351
+      ],
+      "source": "existing hotspot #7",
+      "planned_user_count": 8,
+      "planned_visit_count": 8,
+      "planned_dwell_minutes": 0.0,
+      "planned_crawl_minutes": 60.9,
+      "nearest_existing_hotspot": {
+        "rank": 7,
+        "distance_m": 0.0,
+        "existing_dwell_minutes": 2.3,
+        "existing_class": "medium"
+      }
+    },
+    {
+      "key": "#osm-south-connector",
+      "label": "OSM south connector crawl",
+      "coordinates": [
+        -85.750517,
+        35.0869504
+      ],
+      "source": "OSM highway=track ways 1215497666 / 1215497667",
+      "planned_user_count": 5,
+      "planned_visit_count": 5,
+      "planned_dwell_minutes": 0.0,
+      "planned_crawl_minutes": 59.6,
+      "nearest_existing_hotspot": {
+        "rank": 1,
+        "distance_m": 440.6,
+        "existing_dwell_minutes": 6.65,
+        "existing_class": "peak"
+      }
+    },
+    {
+      "key": "#mid-shelf",
+      "label": "Mid-shelf regroup",
+      "coordinates": [
+        -85.7447997,
+        35.0940636
+      ],
+      "source": "existing hotspot #13",
+      "planned_user_count": 3,
+      "planned_visit_count": 3,
+      "planned_dwell_minutes": 9.1,
+      "planned_crawl_minutes": 0.0,
+      "nearest_existing_hotspot": {
+        "rank": 13,
+        "distance_m": 0.0,
+        "existing_dwell_minutes": 1.3,
+        "existing_class": "medium"
+      }
+    }
+  ],
+  "notes": [
+    "All tracks are synthetic and start at #pavilion.",
+    "Routes reuse the observed Saturday Afternoon Activity trail, event schedule anchors, and OSM highway=track/service geometry.",
+    "OSM-following distance is counted only along OSM line vertices, not snap connectors from anchors to the nearest OSM node.",
+    "Rock-crawl behavior is modeled as repeated slow attempts, short reverse moves, and dwell near obstacle anchors.",
+    "Overlap is measured against the existing first-party GPX hotspot layer to test whether extraction finds familiar hot zones."
+  ]
+}

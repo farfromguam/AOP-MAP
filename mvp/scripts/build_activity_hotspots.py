@@ -203,6 +203,18 @@ def build_hotspots(
     sample_s: float,
     max_gap_s: float,
     min_cell_seconds: float,
+    min_stop_slow_seconds: float,
+    max_moving_fraction: float | None,
+    rank_by: str,
+    intensity_cap_seconds: float | None,
+    label_rank_limit: int,
+    label_min_seconds: float,
+    dataset_name: str,
+    source_type: str,
+    permission: str,
+    publish_status: str,
+    review_status: str,
+    confidence: str | None,
 ) -> dict:
     segments_by_source: list[list[TrackPoint]] = []
     for path in gpx_paths:
@@ -276,39 +288,62 @@ def build_hotspots(
                     previous_cell = cell_key
                     previous_visit_key = visit_key
 
-    kept = [(cell, stats) for cell, stats in cells.items() if stats.dwell_seconds >= min_cell_seconds]
-    kept.sort(key=lambda item: item[1].dwell_seconds, reverse=True)
-    max_dwell = kept[0][1].dwell_seconds if kept else 0.0
+    def interest_seconds(stats: CellStats) -> float:
+        if rank_by == "stop_slow":
+            return stats.stop_seconds + stats.slow_seconds
+        return stats.dwell_seconds
+
+    def moving_fraction(stats: CellStats) -> float:
+        return stats.moving_seconds / stats.dwell_seconds if stats.dwell_seconds else 0.0
+
+    kept = [
+        (cell, stats)
+        for cell, stats in cells.items()
+        if stats.dwell_seconds >= min_cell_seconds
+        and (stats.stop_seconds + stats.slow_seconds) >= min_stop_slow_seconds
+        and (max_moving_fraction is None or moving_fraction(stats) <= max_moving_fraction)
+    ]
+    kept.sort(key=lambda item: interest_seconds(item[1]), reverse=True)
+    max_interest = interest_seconds(kept[0][1]) if kept else 0.0
+    norm_denominator = min(max_interest, intensity_cap_seconds) if intensity_cap_seconds else max_interest
 
     features: list[dict] = []
     for rank, ((ix, iy), stats) in enumerate(kept, 1):
-        norm = stats.dwell_seconds / max_dwell if max_dwell else 0.0
+        interest = interest_seconds(stats)
+        intensity_seconds = min(interest, intensity_cap_seconds) if intensity_cap_seconds else interest
+        norm = intensity_seconds / norm_denominator if norm_denominator else 0.0
         center_x = stats.weighted_x / stats.dwell_seconds if stats.dwell_seconds else (ix + 0.5) * cell_m
         center_y = stats.weighted_y / stats.dwell_seconds if stats.dwell_seconds else (iy + 0.5) * cell_m
         center_lon, center_lat = to_lonlat(center_x, center_y)
         dwell_minutes = stats.dwell_seconds / 60.0
+        interest_minutes = interest / 60.0
         avg_speed = stats.distance_m / stats.dwell_seconds if stats.dwell_seconds else 0.0
         hot_class = intensity_class(norm)
-        label = f"{dwell_minutes:.1f} min" if rank <= 10 or stats.dwell_seconds >= 120 else ""
+        label = f"{interest_minutes:.1f} min" if rank <= label_rank_limit or interest >= label_min_seconds else ""
         common_props = {
             "id": f"activity_hotspot_{rank}",
             "layer": "activity_hotspots",
-            "source_type": "field_track_gpx",
+            "source_type": source_type,
             "source_files": sorted(stats.source_files),
             "track_names": sorted(stats.track_names),
-            "confidence": "single_track" if len(stats.source_files) == 1 else "multi_track",
-            "permission": "internal",
-            "publish_status": "hold",
-            "review_status": "raw activity evidence; not a validated trail or facility",
+            "confidence": confidence or ("single_track" if len(stats.source_files) == 1 else "multi_track"),
+            "permission": permission,
+            "publish_status": publish_status,
+            "review_status": review_status,
             "cell_m": cell_m,
             "rank": rank,
             "intensity_norm": round(norm, 4),
             "intensity_class": hot_class,
             "dwell_seconds": round(stats.dwell_seconds, 1),
             "dwell_minutes": round(dwell_minutes, 2),
+            "interest_seconds": round(interest, 1),
+            "interest_minutes": round(interest_minutes, 2),
+            "interest_mode": rank_by,
+            "intensity_seconds": round(intensity_seconds, 1),
             "stop_seconds": round(stats.stop_seconds, 1),
             "slow_seconds": round(stats.slow_seconds, 1),
             "moving_seconds": round(stats.moving_seconds, 1),
+            "moving_fraction": round(moving_fraction(stats), 4),
             "distance_m": round(stats.distance_m, 1),
             "avg_speed_mps": round(avg_speed, 3),
             "max_gap_seconds": round(stats.max_gap_seconds, 1),
@@ -340,16 +375,27 @@ def build_hotspots(
 
     return {
         "type": "FeatureCollection",
-        "name": "aop_activity_hotspots",
+        "name": dataset_name,
         "metadata": {
             "schema": "aop-activity-hotspots-v1",
             "generated_at": datetime.now(timezone.utc).isoformat(),
+            "source_type": source_type,
+            "permission": permission,
+            "publish_status": publish_status,
+            "review_status": review_status,
+            "confidence": confidence or ("single_track" if len(gpx_paths) == 1 else "multi_track"),
             "source_files": [path.name for path in gpx_paths],
             "cell_m": cell_m,
             "sample_m": sample_m,
             "sample_s": sample_s,
             "max_gap_s": max_gap_s,
             "min_cell_seconds": min_cell_seconds,
+            "min_stop_slow_seconds": min_stop_slow_seconds,
+            "max_moving_fraction": max_moving_fraction,
+            "rank_by": rank_by,
+            "intensity_cap_seconds": intensity_cap_seconds,
+            "label_rank_limit": label_rank_limit,
+            "label_min_seconds": label_min_seconds,
             "point_count": len(all_points),
             "segment_count": len(segments_by_source),
             "interval_count": interval_total,
@@ -370,6 +416,42 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sample-s", type=float, default=20.0, help="Max interpolation time in seconds.")
     parser.add_argument("--max-gap-s", type=float, default=600.0, help="Cap a single interval's contributed time.")
     parser.add_argument("--min-cell-seconds", type=float, default=30.0, help="Drop cells below this dwell time.")
+    parser.add_argument(
+        "--min-stop-slow-seconds",
+        type=float,
+        default=0.0,
+        help="Drop cells below this combined stopped+slow time.",
+    )
+    parser.add_argument(
+        "--max-moving-fraction",
+        type=float,
+        default=None,
+        help="Drop cells where moving_seconds / dwell_seconds exceeds this fraction.",
+    )
+    parser.add_argument(
+        "--rank-by",
+        choices=["total", "stop_slow"],
+        default="total",
+        help="Rank/intensity by total dwell time or by stopped+slow time.",
+    )
+    parser.add_argument(
+        "--intensity-cap-seconds",
+        type=float,
+        default=None,
+        help="Cap the value used for relative intensity so one extreme cell does not flatten the rest.",
+    )
+    parser.add_argument("--label-rank-limit", type=int, default=10, help="Always label cells up through this rank.")
+    parser.add_argument("--label-min-seconds", type=float, default=120.0, help="Also label cells above this rank metric.")
+    parser.add_argument("--name", default="aop_activity_hotspots", help="GeoJSON collection name.")
+    parser.add_argument("--source-type", default="field_track_gpx", help="Source type written to metadata and features.")
+    parser.add_argument("--permission", default="internal", help="Permission value written to hotspot features.")
+    parser.add_argument("--publish-status", default="hold", help="Publish status written to hotspot features.")
+    parser.add_argument(
+        "--review-status",
+        default="raw activity evidence; not a validated trail or facility",
+        help="Review status written to hotspot features.",
+    )
+    parser.add_argument("--confidence", default=None, help="Override hotspot confidence value.")
     return parser.parse_args()
 
 
@@ -385,6 +467,18 @@ def main() -> int:
         sample_s=args.sample_s,
         max_gap_s=args.max_gap_s,
         min_cell_seconds=args.min_cell_seconds,
+        min_stop_slow_seconds=args.min_stop_slow_seconds,
+        max_moving_fraction=args.max_moving_fraction,
+        rank_by=args.rank_by,
+        intensity_cap_seconds=args.intensity_cap_seconds,
+        label_rank_limit=args.label_rank_limit,
+        label_min_seconds=args.label_min_seconds,
+        dataset_name=args.name,
+        source_type=args.source_type,
+        permission=args.permission,
+        publish_status=args.publish_status,
+        review_status=args.review_status,
+        confidence=args.confidence,
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)

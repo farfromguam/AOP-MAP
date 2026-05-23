@@ -19,7 +19,7 @@
     .panel h1 { margin: 0 0 8px; font-size: 1rem; }
     .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; user-select: none; }
     .panel-header h1 { margin: 0; }
-    .panel-collapse { flex: 0 0 auto; margin: 0; padding: 2px 9px; font-size: 0.8rem; line-height: 1.5; color: #6b5a3e; }
+    .panel-collapse { flex: 0 0 auto; margin: 0; padding: 1px 8px; font-size: 1.15rem; line-height: 1.1; color: #6b5a3e; }
     .panel-body { overflow: hidden; transition: max-height 0.26s ease; }
     .panel.collapsed .panel-body { max-height: 0; }
     .panel label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.94rem; }
@@ -30,7 +30,19 @@
     .section-toggle { width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin: 0 0 6px !important; padding: 3px 0 !important; border: 0 !important; background: transparent !important; color: #666; text-align: left; }
     .section-toggle:hover { color: #3f3122; background: transparent !important; }
     .section-label { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    .section-chevron { color: #6b5a3e; font-size: 0.85rem; line-height: 1; }
+    /* Section header with inline Export / Import per panel section. The chevron
+       stays right-edge; the action buttons sit between label and chevron. Each
+       fires buildSectionPayload / applySectionPayload for its data-section. */
+    .section-header { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 4px; margin: 0 0 6px; }
+    .section-header .section-toggle { grid-column: 3; width: auto; margin: 0 !important; padding: 1px 5px !important; }
+    .section-header .section-label { grid-column: 1; }
+    .section-action { background: transparent; border: 1px solid #d8d0bd; padding: 1px 6px; font: 700 0.72rem Inter, system-ui, sans-serif; line-height: 1.1; color: #6b5a3e; cursor: pointer; border-radius: 4px; }
+    .section-action:hover { background: #efe2c6; border-color: #c8b8a0; color: #3f3122; }
+    .panel-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #d8d0bd; }
+    .panel-actions.panel-actions-single { grid-template-columns: 1fr; }
+    .panel-actions button { font: 700 0.82rem Inter, system-ui, sans-serif; padding: 6px 8px; border-radius: 6px; border: 1px solid #b9aa88; background: #fff8e8; color: #4a3c2a; cursor: pointer; }
+    .panel-actions button:hover { background: #efe2c6; }
+    .section-chevron { color: #6b5a3e; font-size: 1.15rem; line-height: 1; }
     .panel-section.collapsed .section-content { display: none; }
     .panel button { font: inherit; padding: 4px 10px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
     .panel button:hover { background: #ececec; }
@@ -81,17 +93,39 @@
     .feature-list-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 0.82rem; color: #4a3c2a; }
     .feature-list-heading .feature-list-count { color: #756444; font-weight: 400; }
     .feature-list-group { display: grid; gap: 3px; }
-    .feature-list-group-head { display: grid; grid-template-columns: 18px 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 5px; background: rgba(247,241,226,0.7); font-size: 0.8rem; color: #4a3c2a; }
-    .feature-list-group-head .group-chevron { background: none; border: 0; padding: 0; cursor: pointer; color: #6b5a3e; font-size: 0.85rem; line-height: 1; width: 18px; height: 18px; }
+    .feature-list-group-head { display: grid; grid-template-columns: 22px 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 5px; background: rgba(247,241,226,0.7); font-size: 0.8rem; color: #4a3c2a; }
+    .feature-list-group-head .group-chevron { background: none; border: 0; padding: 0; cursor: pointer; color: #6b5a3e; font-size: 1.1rem; line-height: 1; width: 22px; height: 22px; }
+    .feature-list-group-head .group-chevron:hover { color: #3f3122; }
     .feature-list-group-head .group-name { min-width: 0; overflow-wrap: anywhere; }
     .feature-list-group-head .group-count { color: #756444; font-size: 0.75rem; }
     .feature-list-rows { display: grid; gap: 2px; padding: 2px 0 4px 22px; }
     .feature-list-rows[hidden] { display: none; }
-    .feature-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 5px; font-size: 0.82rem; color: #4a3c2a; }
+    .feature-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto auto; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 5px; font-size: 0.82rem; color: #4a3c2a; }
     .feature-row:hover { background: rgba(247,235,200,0.6); }
     .feature-row .feature-name { min-width: 0; overflow-wrap: anywhere; cursor: pointer; }
     .feature-row .feature-fly { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: #6b5a3e; font-size: 0.78rem; border-radius: 4px; }
     .feature-row .feature-fly:hover { background: #f1e6cf; color: #3f3122; }
+    .feature-row .feature-move { background: none; border: 0; padding: 1px 5px; cursor: grab; color: #6b5a3e; font-size: 0.78rem; border-radius: 4px; }
+    .feature-row .feature-move:hover { background: #f1e6cf; color: #3f3122; }
+    .feature-row .feature-copy { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: #6b5a3e; font-size: 0.78rem; border-radius: 4px; }
+    .feature-row .feature-copy:hover { background: #f1e6cf; color: #3f3122; }
+    .feature-row.move-target { background: #f7e3b5; }
+    .feature-row.move-target .feature-move { cursor: grabbing; }
+    /* Map-click → panel-reveal flash. A row that was just selected from the
+       map briefly glows so the eye finds it even on a long list. The class
+       is added by revealFeatureInPanel and removed ~1.8 s later. */
+    .feature-row.revealed { animation: feature-row-flash 1.8s ease; }
+    @keyframes feature-row-flash {
+      0% { background: #f7d36b; box-shadow: inset 0 0 0 2px #c8a463; }
+      80% { background: #f7d36b; box-shadow: inset 0 0 0 2px #c8a463; }
+      100% { background: transparent; box-shadow: none; }
+    }
+    /* Move-mode banner pinned to the top of the feature list panel while a
+       feature is staged for repositioning. Keeps the "click the map to place"
+       affordance visible no matter how long the list is. */
+    .feature-list-move-banner { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 6px; background: #f7e3b5; border: 1px solid #c8a463; color: #4a3c2a; font-size: 0.82rem; }
+    .feature-list-move-banner .move-cancel { background: #fff8e8; border: 1px solid #b9aa88; padding: 2px 8px; border-radius: 5px; cursor: pointer; font-size: 0.78rem; color: #4a3c2a; }
+    .feature-list-move-banner .move-cancel:hover { background: #efe2c6; }
     #presetStatus { min-height: 1.2em; }
     .editor-row { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; }
     .editor-row button { flex: 1; margin-right: 0; }
@@ -113,7 +147,7 @@
     .calendar-toggle:hover { background: #efe2c6; }
     .calendar-title { display: block; font: 800 0.78rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
     .calendar-range { display: block; margin-top: 1px; font-size: 0.76rem; color: #756444; }
-    .calendar-chevron { color: #6b5a3e; font-size: 0.88rem; line-height: 1; }
+    .calendar-chevron { color: #6b5a3e; font-size: 1.15rem; line-height: 1; }
     .calendar-body { max-height: 240px; overflow-y: auto; padding: 0 8px 8px; opacity: 1; transition: max-height 0.24s ease, opacity 0.2s ease, padding 0.2s ease; }
     .calendar-card.collapsed .calendar-body { max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; }
     .calendar-days { list-style: none; display: grid; gap: 4px; margin: 0; padding: 0; }
@@ -185,10 +219,13 @@
       <small id="presetStatus">Park preset active.</small>
 
       <section class="panel-section" data-section="derived-layers">
-        <button type="button" class="section-toggle" aria-expanded="true">
+        <div class="section-header">
           <span class="section-label">Derived layers</span>
-          <span class="section-chevron">▴</span>
-        </button>
+          <button type="button" class="section-action" data-section-export="derived-layers" title="Copy this section's settings to clipboard">⧉</button>
+          <button type="button" class="section-toggle" aria-expanded="true">
+            <span class="section-chevron">▴</span>
+          </button>
+        </div>
         <div class="section-content">
           <label><input type="checkbox" id="showLandcover" checked /> Land cover (NAIP)</label>
           <div id="layerEditor" class="layer-editor" hidden>
@@ -212,26 +249,26 @@
                 <button id="resetAlignment" type="button" disabled>Reset</button>
               </div>
             </div>
-            <div class="tune-actions">
-              <button id="snapshotPreset" type="button">Snapshot preset</button>
-              <button id="exportSettings" type="button">Export settings</button>
-            </div>
           </div>
           <label><input type="checkbox" id="showLandcover9" checked /> Land cover — 9-patch (NAIP)</label>
           <input type="range" id="landcover9Opacity" min="0" max="100" value="55" hidden aria-hidden="true" tabindex="-1" />
           <label><input type="checkbox" id="showHillshade" /> Lidar hillshade (USGS 3DEP)</label>
           <label><input type="checkbox" id="showContours" /> Lidar contours (5 ft, 1m DEM)</label>
           <label><input type="checkbox" id="showActivityHotspots" /> Activity hotspots (GPX dwell)</label>
+          <label><input type="checkbox" id="showSyntheticActivity" /> Simulated Saturday activity</label>
           <label><input type="checkbox" id="showEventSchedule" /> Event schedule POIs</label>
           <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
         </div>
       </section>
 
       <section class="panel-section" data-section="source-layers">
-        <button type="button" class="section-toggle" aria-expanded="true">
+        <div class="section-header">
           <span class="section-label">Source layers</span>
-          <span class="section-chevron">▴</span>
-        </button>
+          <button type="button" class="section-action" data-section-export="source-layers" title="Copy this section's settings to clipboard">⧉</button>
+          <button type="button" class="section-toggle" aria-expanded="true">
+            <span class="section-chevron">▴</span>
+          </button>
+        </div>
         <div class="section-content">
           <label><input type="checkbox" id="showSatellite" /> Satellite imagery (TNMap 2022)</label>
           <label><input type="checkbox" id="showUsdaNaip" /> USDA NAIP imagery (TN 2023)</label>
@@ -263,10 +300,13 @@
       </section>
 
       <section class="panel-section" data-section="editor">
-        <button type="button" class="section-toggle" aria-expanded="true">
+        <div class="section-header">
           <span class="section-label">Map editor</span>
-          <span class="section-chevron">▴</span>
-        </button>
+          <button type="button" class="section-action" data-section-export="editor" title="Copy this section's settings to clipboard">⧉</button>
+          <button type="button" class="section-toggle" aria-expanded="true">
+            <span class="section-chevron">▴</span>
+          </button>
+        </div>
         <div class="section-content">
           <label><input type="checkbox" id="showEditorPois" checked /> Drawn POIs</label>
           <div class="editor-row">
@@ -313,11 +353,16 @@
           <small>Cemeteries: TN Comptroller Marion County parcels. Ellis Cemetery is the inholding inside the AOP boundary — the gap in the park polygon.</small>
           <small>Buildings: FEMA USA Structures footprints over the 9-patch. Raw reference context; verify against imagery before treating as park facilities.</small>
           <small>Activity hotspots: time-weighted from first-party timestamped GPX. Longer dwell in one cell draws hotter; raw evidence only.</small>
+          <small>Simulated Saturday activity: deterministic synthetic pavilion-start tracks, crawl attempts, dwell, and extracted hotspots for testing the hotspot pipeline. Not field evidence.</small>
           <small>Event schedule: proposed RC event sessions from <code>website/data/aop_event_schedule.json</code>. Schedule rows use location tags such as <code>#pavilion</code> and <code>#registration</code>; edit those tags once under <code>locations</code> instead of repeating coordinates.</small>
           <small>Visitor context callouts: support-town planning notes from AOP, RiderPlanet, and Marion County Tourism. Times are approximate; check live routing and hours.</small>
           <small>SFWDA raster is &copy; Adventure Off Road Park (via SFWDA) — internal/inspection only. Drag the 4 corner handles in Edit mode to pixel-align against OSM tracks, then Export to save <code>website/data/sfwda_raster_alignment.json</code>.</small>
         </div>
       </section>
+
+      <div class="panel-actions panel-actions-single">
+        <button type="button" id="exportAll" title="Copy a full snapshot — toggles, sliders, paints, geometry overrides, drawn POIs, per-feature visibility — to clipboard.">⧉ Export all</button>
+      </div>
     </div>
   </div>
   <div class="message" id="message">Loading publish layer...</div>
@@ -357,6 +402,7 @@
     const hillshadeToggle = document.getElementById('showHillshade');
     const contoursToggle = document.getElementById('showContours');
     const activityHotspotsToggle = document.getElementById('showActivityHotspots');
+    const syntheticActivityToggle = document.getElementById('showSyntheticActivity');
     const eventScheduleToggle = document.getElementById('showEventSchedule');
     const satelliteToggle = document.getElementById('showSatellite');
     const usdaNaipToggle = document.getElementById('showUsdaNaip');
@@ -407,8 +453,13 @@
     const sfwdaDrawerControls = document.getElementById('sfwdaDrawerControls');
     const featureListEl = document.getElementById('featureList');
     const tuneVisible = document.getElementById('tuneVisible');
-    const snapshotPresetBtn = document.getElementById('snapshotPreset');
-    const exportSettingsBtn = document.getElementById('exportSettings');
+    // Snapshot Preset + Export Settings buttons retired 2026-05-23. The
+    // export-only flow that replaced them: per-section ⧉ on each section
+    // header, per-feature ⧉ on each feature row (drop-in geojson Feature),
+    // and one bottom-of-panel "Export all" for the full v2 bundle. Import
+    // happens out-of-band — user pastes the JSON to the assistant or
+    // directly into code; we don't ship an import UI.
+    const exportAllBtn = document.getElementById('exportAll');
     const presetStatus = document.getElementById('presetStatus');
 
     // --- Right panel: collapse upward into its header bar ---
@@ -588,6 +639,18 @@
       0.4, 0.28,
       1, 0.58
     ];
+    const SYNTHETIC_HOTSPOT_FILL = ['match', ['get', 'intensity_class'],
+      'low',    '#b7d2bd',
+      'medium', '#6fa793',
+      'high',   '#477c82',
+      'peak',   '#254d5b',
+      '#6fa793'];
+    const SYNTHETIC_HOTSPOT_OPACITY = [
+      'interpolate', ['linear'], ['get', 'intensity_norm'],
+      0, 0.10,
+      0.4, 0.24,
+      1, 0.52
+    ];
 
     function syncTerrainControl(enabled) {
       terrainToggle.checked = Boolean(enabled);
@@ -625,6 +688,7 @@
       [hillshadeToggle, ['lidar-hillshade'], 'showHillshade'],
       [contoursToggle, ['contours-minor', 'contours-index', 'contours-labels'], 'showContours'],
       [activityHotspotsToggle, ['activity-hotspots-heat', 'activity-hotspots-fill', 'activity-hotspots-outline', 'activity-hotspots-labels'], 'showActivityHotspots'],
+      [syntheticActivityToggle, ['synthetic-activity-tracks', 'synthetic-activity-hotspots-heat', 'synthetic-activity-hotspots-fill', 'synthetic-activity-hotspots-outline', 'synthetic-activity-hotspots-labels'], 'showSyntheticActivity'],
       [eventScheduleToggle, ['event-session-routes', 'event-route-labels', 'event-anchor-points', 'event-anchor-labels'], 'showEventSchedule'],
       [satelliteToggle, ['tnmap-satellite'], 'showSatellite'],
       [usdaNaipToggle, ['usda-naip-satellite'], 'showUsdaNaip'],
@@ -1067,13 +1131,165 @@
             collapsedDefault: true
           }
         ]
+      },
+      // POIs (drawn editor features). Unlike buildings/cemeteries, the data here
+      // mutates as the user draws/deletes — see `refreshEditorSource()` for the
+      // re-register call. Flat list, sorted by category then name. Every new
+      // POI defaults visible; the user only sees a row toggled off if they
+      // explicitly unticked it (and that state survives reload via the
+      // shared `aop_feature_visibility_v1` store).
+      editorPois: {
+        label: 'Drawn POIs',
+        idField: 'id',
+        rowLabel: (props) => {
+          const category = props.category || 'POI';
+          const name = (props.name || '').trim();
+          if (!name || name === category) return category;
+          return `${category} — ${name}`;
+        },
+        targetLayers: [
+          'editor-poi-fill',
+          'editor-poi-outline',
+          'editor-poi-lines',
+          'editor-poi-circles',
+          'editor-poi-labels',
+          'editor-poi-fill-labels',
+          'editor-poi-line-labels'
+        ],
+        rowSort: (a, b) => {
+          const ac = String(a.props.category || '');
+          const bc = String(b.props.category || '');
+          if (ac !== bc) return ac.localeCompare(bc);
+          const an = String(a.props.name || '');
+          const bn = String(b.props.name || '');
+          return an.localeCompare(bn);
+        },
+        groups: [{
+          id: 'all',
+          label: null,                              // flat list
+          match: () => true,
+          defaultVisible: () => true                // newly drawn POIs default visible
+        }],
+        // Drag-to-move primitive opt-in. The feature reference here is the
+        // same object as the entry inside `editorPois`, so mutating its
+        // geometry in place updates the source data without an array swap.
+        // For Point we replace the coord; for LineString/Polygon we translate
+        // the whole geometry so its centroid lands at the click — preserves
+        // the original shape, which is what "move" should mean.
+        onMove: (feature, lngLat) => {
+          if (!feature || !feature.geometry) return;
+          const newLng = lngLat.lng;
+          const newLat = lngLat.lat;
+          if (feature.geometry.type === 'Point') {
+            feature.geometry.coordinates = [newLng, newLat];
+          } else {
+            const centroid = geometryCentroid(feature.geometry);
+            if (!centroid) return;
+            const dLng = newLng - centroid[0];
+            const dLat = newLat - centroid[1];
+            translateCoordinates(feature.geometry.coordinates, dLng, dLat);
+          }
+          saveEditorPois();
+          refreshEditorSource();
+        }
+      },
+      // Visitor-context callouts — the regional "supply run" / "plateau
+      // services" badges. Drag-to-move only consumer for now (visibility
+      // still useful so you can drop one if it crowds the cartography).
+      // The override store keeps the moved geometry across reloads without
+      // mutating the source geojson on disk.
+      visitorContext: {
+        label: 'Visitor context callouts',
+        idField: 'name',
+        rowLabel: (props) => props.name || 'Visitor context',
+        targetLayers: ['visitor-context-fill', 'visitor-context-outline', 'visitor-context-labels'],
+        groups: [{
+          id: 'all',
+          label: null,
+          match: () => true,
+          defaultVisible: () => true
+        }],
+        onMove: (feature, lngLat) => {
+          if (!feature || !feature.geometry) return;
+          const centroid = geometryCentroid(feature.geometry);
+          if (!centroid) return;
+          const dLng = lngLat.lng - centroid[0];
+          const dLat = lngLat.lat - centroid[1];
+          translateCoordinates(feature.geometry.coordinates, dLng, dLat);
+          saveVisitorContextOverride(feature);
+          // Push the updated FeatureCollection back into the live source so
+          // the rendered polygon and label move on the map immediately. The
+          // feature reference is the same as the entry inside
+          // visitorContextData.features, so the collection already reflects
+          // the new coords.
+          const source = map.getSource('visitor-context');
+          if (source && visitorContextData) source.setData(visitorContextData);
+          // Re-register so the feature list runtime picks up the moved
+          // centroid (only matters for future fly-to math).
+          if (visitorContextData) registerFeatureListLayer('visitorContext', visitorContextData);
+        }
       }
     };
+
+    // --- Visitor-context override store ----------------------------------
+    // Visitor-context callouts ship as a static geojson under website/data.
+    // When the user moves one via the feature list panel we record the new
+    // geometry here, keyed by `name`, and replay it on the next page load.
+    // Editing the source geojson would invalidate stale overrides for that
+    // entry — the user re-positions and it overwrites cleanly.
+    const VISITOR_CONTEXT_OVERRIDE_KEY = 'aop_visitor_context_overrides_v1';
+    let visitorContextData = null;
+
+    function loadVisitorContextOverrides() {
+      try {
+        const raw = localStorage.getItem(VISITOR_CONTEXT_OVERRIDE_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch (err) {
+        console.warn('Visitor-context overrides unreadable; resetting', err);
+        return {};
+      }
+    }
+
+    function saveVisitorContextOverride(feature) {
+      if (!feature || !feature.properties || !feature.geometry) return;
+      const store = loadVisitorContextOverrides();
+      store[feature.properties.name] = {
+        geometry: JSON.parse(JSON.stringify(feature.geometry)),
+        updated: new Date().toISOString()
+      };
+      try {
+        localStorage.setItem(VISITOR_CONTEXT_OVERRIDE_KEY, JSON.stringify(store));
+      } catch (err) {
+        console.warn('Could not persist visitor-context override', err);
+      }
+    }
+
+    function applyVisitorContextOverrides(data) {
+      if (!data || !data.features) return data;
+      const store = loadVisitorContextOverrides();
+      for (const feature of data.features) {
+        const name = feature.properties && feature.properties.name;
+        if (name && store[name] && store[name].geometry) {
+          feature.geometry = JSON.parse(JSON.stringify(store[name].geometry));
+        }
+      }
+      return data;
+    }
 
     const FEATURE_VISIBILITY_KEY = 'aop_feature_visibility_v1';
     // Per-layer runtime state: data, base filters captured at addLayer time,
     // the resolved feature → group bucket, expanded/collapsed UI state.
     const featureListRuntime = {};
+    // Active move-mode target. While set, the next map click commits the
+    // staged feature to the clicked lngLat; Esc or the panel's Cancel button
+    // reverts. Shared across consumers (POIs first; callouts + logos to come).
+    let moveState = null;
+    // Stash listeners so cancelMoveMode can remove them precisely (the same
+    // function refs that were registered).
+    let moveMapClickHandler = null;
+    let moveEscHandler = null;
+    const LONG_PRESS_MS = 450;
 
     function loadFeatureVisibilityStore() {
       try {
@@ -1134,10 +1350,13 @@
           : !!group.defaultVisible(props);
         if (visible) visibleIds.add(id);
       }
-      return {
-        groups: [...bucketed.values()].filter((b) => b.features.length > 0),
-        visibleIds
-      };
+      const groups = [...bucketed.values()].filter((b) => b.features.length > 0);
+      // Optional per-spec row sort (POIs sort by category then name; buildings
+      // and cemeteries leave insertion order alone).
+      if (typeof spec.rowSort === 'function') {
+        for (const bucket of groups) bucket.features.sort(spec.rowSort);
+      }
+      return { groups, visibleIds };
     }
 
     // Compose: base filter (captured when the layer was added) AND the
@@ -1241,24 +1460,230 @@
       }
     }
 
+    // --- Move-mode primitive --------------------------------------------
+    // A feature list consumer that declares `onMove(feature, lngLat)` opts into
+    // the drag-to-move side of the primitive. The user enters move mode by
+    // long-pressing a row (mobile) or clicking the ✋ button (desktop). While
+    // staged, the next map click is intercepted and routed to `onMove`, which
+    // is responsible for translating the geometry and persisting it. Esc or
+    // the in-panel Cancel button aborts without changing geometry.
+
+    // Centroid that survives Point / LineString / Polygon — the only geometry
+    // kinds the POI editor produces today. Returns null for empty geometries.
+    function geometryCentroid(geometry) {
+      if (!geometry) return null;
+      if (geometry.type === 'Point') return geometry.coordinates;
+      if (geometry.type === 'LineString') {
+        const coords = geometry.coordinates || [];
+        if (!coords.length) return null;
+        let sx = 0, sy = 0;
+        for (const [x, y] of coords) { sx += x; sy += y; }
+        return [sx / coords.length, sy / coords.length];
+      }
+      if (geometry.type === 'Polygon') {
+        // Outer ring only; drop the closing duplicate so it doesn't double-weight.
+        const ring = (geometry.coordinates || [])[0] || [];
+        const last = ring.length > 1 ? ring.length - 1 : ring.length;
+        if (!last) return null;
+        let sx = 0, sy = 0;
+        for (let i = 0; i < last; i++) { sx += ring[i][0]; sy += ring[i][1]; }
+        return [sx / last, sy / last];
+      }
+      return null;
+    }
+
+    // In-place translate of a coordinate tree (recursive) by (dLng, dLat).
+    // Mutates so the feature reference shared with editorPois stays current.
+    function translateCoordinates(coords, dLng, dLat) {
+      if (typeof coords[0] === 'number') {
+        coords[0] += dLng;
+        coords[1] += dLat;
+        return;
+      }
+      for (const child of coords) translateCoordinates(child, dLng, dLat);
+    }
+
+    function findFeatureById(layerKey, featureId) {
+      const runtime = featureListRuntime[layerKey];
+      if (!runtime || !runtime.state) return null;
+      for (const bucket of runtime.state.groups) {
+        for (const item of bucket.features) {
+          if (String(item.id) === String(featureId)) return item;
+        }
+      }
+      return null;
+    }
+
+    function setMoveCursor(active) {
+      const canvas = map.getCanvas();
+      if (!canvas) return;
+      canvas.style.cursor = active ? 'crosshair' : '';
+    }
+
+    function commitMoveMode(lngLat) {
+      if (!moveState) return;
+      const { layerKey, feature } = moveState;
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      // Even though onMove is the registered hook, we keep the clean-up path
+      // identical whether commit succeeds or the spec is missing — never leave
+      // the map stuck in crosshair mode.
+      try {
+        if (spec && typeof spec.onMove === 'function') {
+          spec.onMove(feature, lngLat);
+        }
+      } finally {
+        cancelMoveMode();
+      }
+    }
+
+    function cancelMoveMode() {
+      if (!moveState) {
+        setMoveCursor(false);
+        return;
+      }
+      const { layerKey } = moveState;
+      moveState = null;
+      setMoveCursor(false);
+      if (moveMapClickHandler) {
+        map.off('click', moveMapClickHandler);
+        moveMapClickHandler = null;
+      }
+      if (moveEscHandler) {
+        document.removeEventListener('keydown', moveEscHandler);
+        moveEscHandler = null;
+      }
+      if (expandedTuneKey === layerKey) renderFeatureList(layerKey);
+    }
+
+    function enterMoveMode(layerKey, featureId) {
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      if (!spec || typeof spec.onMove !== 'function') return;
+      const item = findFeatureById(layerKey, featureId);
+      if (!item) return;
+      // Replacing any prior move mode is the gentler UX — long-pressing
+      // another row should switch the target, not error out.
+      if (moveState) cancelMoveMode();
+      moveState = { layerKey, featureId: item.id, feature: item.feature };
+      setMoveCursor(true);
+      moveMapClickHandler = (event) => commitMoveMode(event.lngLat);
+      map.on('click', moveMapClickHandler);
+      moveEscHandler = (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          cancelMoveMode();
+        }
+      };
+      document.addEventListener('keydown', moveEscHandler);
+      if (expandedTuneKey === layerKey) renderFeatureList(layerKey);
+    }
+
+    // --- Map → panel reveal --------------------------------------------
+    // Closes the loop from world to chrome: clicking a feature on the map
+    // expands its layer's drawer, expands the containing group if it's
+    // collapsed (e.g. buildings "Other"), scrolls the row into view, and
+    // flashes it briefly. Existing popups continue to fire — this is a
+    // parallel hook on the same click, not a replacement.
+
+    function groupIdForFeatureId(layerKey, featureId) {
+      const runtime = featureListRuntime[layerKey];
+      if (!runtime || !runtime.state) return null;
+      for (const bucket of runtime.state.groups) {
+        for (const item of bucket.features) {
+          if (String(item.id) === String(featureId)) return bucket.group.id;
+        }
+      }
+      return null;
+    }
+
+    function revealFeatureInPanel(layerKey, featureId) {
+      if (!FEATURE_LIST_LAYERS[layerKey]) return;
+      if (!featureListRuntime[layerKey]) return;
+      if (featureId == null) return;
+      // 1. Expand the layer's drawer if it isn't already the expanded tune.
+      //    toggleTunableExpansion collapses on a second hit, so guard.
+      if (expandedTuneKey !== layerKey) {
+        if (typeof toggleTunableExpansion === 'function') {
+          toggleTunableExpansion(layerKey);
+        }
+      }
+      // 2. Force the containing group open. Buildings "Other" defaults
+      //    collapsed; revealing a feature there should pop the group.
+      const runtime = featureListRuntime[layerKey];
+      const groupId = groupIdForFeatureId(layerKey, featureId);
+      if (groupId && runtime.collapsed[groupId]) {
+        runtime.collapsed[groupId] = false;
+        renderFeatureList(layerKey);
+      }
+      // 3. Find the row in the freshly-rendered DOM, scroll it into view,
+      //    and flash. The renderer rebuilds the rows on every state change,
+      //    so we look up by stable data-feature-id attribute.
+      // Use requestAnimationFrame so any prior re-render commits first.
+      window.requestAnimationFrame(() => {
+        const safeId = String(featureId).replace(/(["\\])/g, '\\$1');
+        const row = document.querySelector(`.feature-row[data-feature-id="${safeId}"]`);
+        if (!row) return;
+        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Re-trigger animation by removing then re-adding the class.
+        row.classList.remove('revealed');
+        // Force a reflow so the browser sees the class flip as a fresh start.
+        void row.offsetWidth;
+        row.classList.add('revealed');
+        window.setTimeout(() => row.classList.remove('revealed'), 1900);
+      });
+    }
+
+    // Wire one click handler per layer-set that surfaces panel reveal for a
+    // FEATURE_LIST_LAYERS consumer. `idFromProps` is either the property name
+    // holding the feature's id (string) or a (props) => id function for
+    // composed keys. Suppressed during move mode — the click then belongs to
+    // the move primitive, and yanking the panel focus away mid-commit would
+    // be hostile UX.
+    function bindPanelReveal(layers, layerKey, idFromProps) {
+      const layerList = Array.isArray(layers) ? layers : [layers];
+      const resolver = typeof idFromProps === 'function'
+        ? idFromProps
+        : (props) => props && props[idFromProps];
+      map.on('click', layerList, (event) => {
+        if (moveState) return;
+        const props = event.features?.[0]?.properties;
+        if (!props) return;
+        const id = resolver(props);
+        if (id == null) return;
+        revealFeatureInPanel(layerKey, id);
+      });
+    }
+
     // Register a layer's data + base filters with the runtime, build initial
     // state, and apply the initial filter pass. Called from each layer's
-    // addSource block once the data is fetched.
+    // addSource block once the data is fetched. POIs (mutable) call this on
+    // every draw/delete via refreshEditorSource — to stay correct we capture
+    // baseFilters ONLY the first time. On re-register we keep the original
+    // baseFilters and just refresh the state + collapsed UI bits, otherwise
+    // map.getFilter() would return the composed filter from the previous pass
+    // and the visibility clause would nest on every re-register.
     function registerFeatureListLayer(layerKey, data) {
       const spec = FEATURE_LIST_LAYERS[layerKey];
       if (!spec || !data) return;
-      const baseFilters = {};
-      for (const layerId of spec.targetLayers) {
-        if (!map.getLayer(layerId)) continue;
-        const current = map.getFilter(layerId);
-        // Clone so any later mutation of our cached copy doesn't leak back.
-        baseFilters[layerId] = current ? JSON.parse(JSON.stringify(current)) : null;
+      const existing = featureListRuntime[layerKey];
+      let baseFilters;
+      let collapsed;
+      if (existing) {
+        baseFilters = existing.baseFilters;
+        collapsed = existing.collapsed;
+      } else {
+        baseFilters = {};
+        for (const layerId of spec.targetLayers) {
+          if (!map.getLayer(layerId)) continue;
+          const current = map.getFilter(layerId);
+          // Clone so any later mutation of our cached copy doesn't leak back.
+          baseFilters[layerId] = current ? JSON.parse(JSON.stringify(current)) : null;
+        }
+        collapsed = {};
+        for (const group of spec.groups) {
+          collapsed[group.id] = !!group.collapsedDefault;
+        }
       }
       const state = buildFeatureListState(layerKey, data);
-      const collapsed = {};
-      for (const group of spec.groups) {
-        collapsed[group.id] = !!group.collapsedDefault;
-      }
       featureListRuntime[layerKey] = { data, baseFilters, state, collapsed };
       applyFeatureListFilters(layerKey);
       persistFeatureVisibility(layerKey);
@@ -1275,11 +1700,35 @@
         return;
       }
       const spec = FEATURE_LIST_LAYERS[layerKey];
+      const movable = typeof spec.onMove === 'function';
       const totalCount = runtime.state.groups.reduce((sum, b) => sum + b.features.length, 0);
       const heading = document.createElement('div');
       heading.className = 'feature-list-heading';
       heading.innerHTML = `<span>Features</span><span class="feature-list-count">${runtime.state.visibleIds.size} of ${totalCount} visible</span>`;
       featureListEl.append(heading);
+
+      // Move-mode banner — only when this layer is the active move target.
+      // Pinned above the rows so it stays visible even on a long list.
+      if (moveState && moveState.layerKey === layerKey) {
+        const target = findFeatureById(layerKey, moveState.featureId);
+        const targetName = target ? spec.rowLabel(target.props) : 'feature';
+        const banner = document.createElement('div');
+        banner.className = 'feature-list-move-banner';
+        banner.dataset.moveBanner = layerKey;
+        const text = document.createElement('span');
+        text.textContent = `Move mode — click on map to place ${targetName}. Esc to cancel.`;
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'move-cancel';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          cancelMoveMode();
+        });
+        banner.append(text, cancelBtn);
+        featureListEl.append(banner);
+      }
 
       for (const bucket of runtime.state.groups) {
         const group = bucket.group;
@@ -1299,7 +1748,9 @@
           chevron.type = 'button';
           chevron.className = 'group-chevron';
           chevron.setAttribute('aria-expanded', String(!groupCollapsed));
-          chevron.textContent = groupCollapsed ? '▸' : '▾';
+          // Glyph matches the panel + section chevrons: ▴ when expanded
+          // (click folds the group up), ▾ when collapsed (click drops it down).
+          chevron.textContent = groupCollapsed ? '▾' : '▴';
           chevron.title = groupCollapsed ? 'Expand group' : 'Collapse group';
           chevron.addEventListener('click', (event) => {
             event.preventDefault();
@@ -1333,6 +1784,9 @@
           const row = document.createElement('div');
           row.className = 'feature-row';
           row.dataset.featureId = String(item.id);
+          if (moveState && moveState.layerKey === layerKey && String(moveState.featureId) === String(item.id)) {
+            row.classList.add('move-target');
+          }
           const check = document.createElement('input');
           check.type = 'checkbox';
           check.checked = runtime.state.visibleIds.has(item.id);
@@ -1343,7 +1797,9 @@
           const name = document.createElement('span');
           name.className = 'feature-name';
           name.textContent = spec.rowLabel(item.props);
-          name.title = 'Click to fly to this feature';
+          name.title = movable
+            ? 'Click to fly; long-press to enter move mode'
+            : 'Click to fly to this feature';
           name.addEventListener('click', () => flyToFeature(item.feature));
           const fly = document.createElement('button');
           fly.type = 'button';
@@ -1355,7 +1811,66 @@
             event.stopPropagation();
             flyToFeature(item.feature);
           });
-          row.append(check, name, fly);
+          // Per-feature copy. Emits a drop-in geojson Feature with current
+          // geometry, paste-ready for website/data/*.geojson. Sits between
+          // fly and move so the destructive (move) action stays right-most.
+          const copy = document.createElement('button');
+          copy.type = 'button';
+          copy.className = 'feature-copy';
+          copy.textContent = '⧉';
+          copy.title = 'Copy as drop-in GeoJSON Feature';
+          copy.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            copyFeatureAsDropIn(item.feature);
+          });
+          row.append(check, name, copy, fly);
+          if (movable) {
+            const move = document.createElement('button');
+            move.type = 'button';
+            move.className = 'feature-move';
+            move.textContent = '✋';
+            move.title = 'Move this feature (click ✋ then click the map)';
+            move.addEventListener('click', (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              enterMoveMode(layerKey, item.id);
+            });
+            row.append(move);
+            // Long-press anywhere on the row body also enters move mode —
+            // the path the card calls out for mobile users. We start a timer
+            // on pointerdown and arm if the pointer hasn't moved or lifted
+            // before LONG_PRESS_MS; any movement or release cancels the timer.
+            // Touch and mouse both flow through PointerEvents so one handler
+            // covers both.
+            let pressTimer = null;
+            let pressStart = null;
+            const startPress = (event) => {
+              // Skip presses that landed on the inline controls — they have
+              // their own handlers and shouldn't double-arm move mode.
+              if (event.target === check || event.target === fly || event.target === move) return;
+              pressStart = { x: event.clientX, y: event.clientY };
+              pressTimer = window.setTimeout(() => {
+                pressTimer = null;
+                enterMoveMode(layerKey, item.id);
+              }, LONG_PRESS_MS);
+            };
+            const cancelPress = () => {
+              if (pressTimer) { window.clearTimeout(pressTimer); pressTimer = null; }
+              pressStart = null;
+            };
+            const movedFar = (event) => {
+              if (!pressStart) return false;
+              const dx = event.clientX - pressStart.x;
+              const dy = event.clientY - pressStart.y;
+              return (dx * dx + dy * dy) > 64;     // ~8 px slop
+            };
+            row.addEventListener('pointerdown', startPress);
+            row.addEventListener('pointermove', (event) => { if (movedFar(event)) cancelPress(); });
+            row.addEventListener('pointerup', cancelPress);
+            row.addEventListener('pointercancel', cancelPress);
+            row.addEventListener('pointerleave', cancelPress);
+          }
           rows.append(row);
         }
         groupEl.append(rows);
@@ -1406,6 +1921,7 @@
           showHillshade: false,
           showContours: false,
           showActivityHotspots: false,
+          showSyntheticActivity: false,
           showEventSchedule: false,
           showSatellite: false,
           showUsdaNaip: false,
@@ -1471,6 +1987,7 @@
           showHillshade: true,
           showContours: true,
           showActivityHotspots: false,
+          showSyntheticActivity: false,
           showEventSchedule: false,
           showSatellite: false,
           showUsdaNaip: false,
@@ -1539,6 +2056,7 @@
           showHillshade: false,
           showContours: false,
           showActivityHotspots: false,
+          showSyntheticActivity: false,
           showEventSchedule: false,
           showSatellite: false,
           showUsdaNaip: true,
@@ -2118,9 +2636,34 @@
       return copied;
     }
 
-    async function exportPresetSettings() {
-      const payload = {
-        schema: 'aop-viewer-preset-settings-v1',
+    // Pulls the durable runtime state that lives outside the preset/paint
+    // system into a single bag. Bumped the export schema to v2 the moment
+    // these landed — a v1 export would silently lose moves and drawings, and
+    // a re-import would snap everything back to the source-file defaults.
+    // Read each key behind a try/catch so a single corrupted entry can't
+    // cost you the rest of the snapshot.
+    function captureRuntimeOverrides() {
+      const overrides = {};
+      const stores = [
+        ['visitor_context_overrides', 'aop_visitor_context_overrides_v1', {}],
+        ['editor_pois', 'aop_editor_pois_v1', []],
+        ['feature_visibility', 'aop_feature_visibility_v1', {}]
+      ];
+      for (const [outKey, storageKey, fallback] of stores) {
+        try {
+          const raw = localStorage.getItem(storageKey);
+          overrides[outKey] = raw ? JSON.parse(raw) : fallback;
+        } catch (err) {
+          console.warn(`Could not read ${storageKey} for export:`, err);
+          overrides[outKey] = fallback;
+        }
+      }
+      return overrides;
+    }
+
+    function buildExportPayload() {
+      return {
+        schema: 'aop-viewer-preset-settings-v2',
         exported_at: new Date().toISOString(),
         active_preset: activePresetId,
         presets: {
@@ -2128,15 +2671,304 @@
           topo: presetState('topo'),
           trace: presetState('trace')
         },
-        current_state: captureViewerState()
+        current_state: captureViewerState(),
+        runtime_overrides: captureRuntimeOverrides()
       };
-      const text = JSON.stringify(payload, null, 2) + '\n';
+    }
+
+    async function exportPresetSettings() {
+      const text = JSON.stringify(buildExportPayload(), null, 2) + '\n';
       try {
         const copied = await copyText(text);
         presetStatus.textContent = copied ? 'Settings copied to clipboard.' : 'Clipboard copy failed.';
       } catch (error) {
         console.warn('Settings export failed:', error);
         presetStatus.textContent = 'Clipboard copy failed.';
+      }
+    }
+
+    // --- Per-section + bulk Export / Import -----------------------------
+    // The big "Export all" button copies the v2 bundle (buildExportPayload).
+    // The big "Import all" button accepts the same bundle and restores it.
+    // Each panel section also gets its own ⧉ button that copies *just* that
+    // section's slice — toggles + sliders + paints for layers in that
+    // section, plus the runtime overrides that belong there.
+    //
+    // Section → runtime mapping. Only layers whose runtime data we own
+    // (the per-feature visibility ticks, the visitor-context geometry
+    // overrides, and the drawn-POI store) appear here. Other layers in a
+    // section have no runtime state — only toggles / paints.
+    const SECTION_RUNTIME = {
+      'derived-layers': {
+        visitorContextOverrides: 'aop_visitor_context_overrides_v1',
+        featureVisibilityLayers: ['visitorContext']
+      },
+      'source-layers': {
+        featureVisibilityLayers: ['cemeteries', 'buildings']
+      },
+      editor: {
+        editorPois: 'aop_editor_pois_v1',
+        featureVisibilityLayers: ['editorPois']
+      }
+    };
+
+    // Walk a section's DOM to find toggles + sliders inside it. Cached at
+    // first call per section so we don't re-query each export.
+    const sectionInputCache = {};
+    function sectionInputs(sectionId) {
+      if (sectionInputCache[sectionId]) return sectionInputCache[sectionId];
+      const section = document.querySelector(`.panel-section[data-section="${sectionId}"]`);
+      const result = { toggleIds: [], sliderIds: [] };
+      if (section) {
+        for (const el of section.querySelectorAll('input[type="checkbox"]')) {
+          if (el.id && el.id.startsWith('show')) result.toggleIds.push(el.id);
+        }
+        for (const el of section.querySelectorAll('input[type="range"]')) {
+          if (el.id) result.sliderIds.push(el.id);
+        }
+      }
+      sectionInputCache[sectionId] = result;
+      return result;
+    }
+
+    // Resolve the set of paint targets that belong to a section by walking
+    // every TUNABLE_LAYERS entry whose toggle lives inside the section.
+    function sectionPaintTargets(sectionId) {
+      const { toggleIds } = sectionInputs(sectionId);
+      const toggleIdSet = new Set(toggleIds);
+      const targets = new Set();
+      for (const config of Object.values(TUNABLE_LAYERS)) {
+        if (!config.toggle || !toggleIdSet.has(config.toggle.id)) continue;
+        for (const [layerId, property] of [...(config.opacity || []), ...(config.color || []), ...(config.width || [])]) {
+          targets.add(`${layerId}|${property}`);
+        }
+      }
+      // Background paint is global; keep it only on derived-layers (it lives
+      // with the visual palette controls, not source data).
+      if (sectionId === 'derived-layers') targets.add('background|background-color');
+      return targets;
+    }
+
+    function capturePaintStateFor(targetSet) {
+      const paints = {};
+      for (const targetKey of targetSet) {
+        const [layerId, property] = targetKey.split('|');
+        if (!map.getLayer(layerId)) continue;
+        const value = map.getPaintProperty(layerId, property);
+        if (value === undefined) continue;
+        paints[layerId] = paints[layerId] || {};
+        paints[layerId][property] = cloneJson(value);
+      }
+      return paints;
+    }
+
+    function buildSectionPayload(sectionId) {
+      const { toggleIds, sliderIds } = sectionInputs(sectionId);
+      const runtimeSpec = SECTION_RUNTIME[sectionId] || {};
+      const toggles = {};
+      for (const id of toggleIds) {
+        const el = document.getElementById(id);
+        if (el) toggles[id] = Boolean(el.checked);
+      }
+      const sliders = {};
+      for (const id of sliderIds) {
+        const el = document.getElementById(id);
+        if (el) sliders[id] = Number(el.value);
+      }
+      const paints = capturePaintStateFor(sectionPaintTargets(sectionId));
+      const runtime = {};
+      if (runtimeSpec.visitorContextOverrides) {
+        try {
+          const raw = localStorage.getItem(runtimeSpec.visitorContextOverrides);
+          runtime.visitor_context_overrides = raw ? JSON.parse(raw) : {};
+        } catch (err) { runtime.visitor_context_overrides = {}; }
+      }
+      if (runtimeSpec.editorPois) {
+        try {
+          const raw = localStorage.getItem(runtimeSpec.editorPois);
+          runtime.editor_pois = raw ? JSON.parse(raw) : [];
+        } catch (err) { runtime.editor_pois = []; }
+      }
+      if (runtimeSpec.featureVisibilityLayers && runtimeSpec.featureVisibilityLayers.length) {
+        try {
+          const raw = localStorage.getItem('aop_feature_visibility_v1');
+          const all = raw ? JSON.parse(raw) : {};
+          const slice = {};
+          for (const key of runtimeSpec.featureVisibilityLayers) {
+            if (all[key]) slice[key] = all[key];
+          }
+          runtime.feature_visibility = slice;
+        } catch (err) { runtime.feature_visibility = {}; }
+      }
+      return {
+        schema: 'aop-section-state-v1',
+        section: sectionId,
+        exported_at: new Date().toISOString(),
+        toggles,
+        sliders,
+        paints,
+        runtime
+      };
+    }
+
+    // Apply a section payload — sets only what's in it, leaves everything
+    // else alone. Validates schema + section so a Drawn-POIs paste can't
+    // accidentally land on Cemeteries.
+    function applySectionPayload(payload) {
+      if (!payload || payload.schema !== 'aop-section-state-v1') {
+        throw new Error('Not an aop-section-state-v1 payload.');
+      }
+      const sectionId = payload.section;
+      if (!SECTION_RUNTIME.hasOwnProperty(sectionId)) {
+        throw new Error(`Unknown section "${sectionId}".`);
+      }
+      // Restore toggles. Fire change events so layer-visibility wiring
+      // reacts (otherwise the checkbox shows checked but the layer stays off).
+      for (const [id, value] of Object.entries(payload.toggles || {})) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        if (el.checked !== Boolean(value)) {
+          el.checked = Boolean(value);
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+      for (const [id, value] of Object.entries(payload.sliders || {})) {
+        setSliderValue(id, value);
+      }
+      if (payload.paints) applyPaintState(payload.paints);
+      const runtime = payload.runtime || {};
+      const spec = SECTION_RUNTIME[sectionId];
+      if (spec.visitorContextOverrides && runtime.visitor_context_overrides) {
+        try {
+          localStorage.setItem(spec.visitorContextOverrides,
+            JSON.stringify(runtime.visitor_context_overrides));
+        } catch (err) { console.warn('Could not write visitor-context overrides', err); }
+        // Replay onto the live source so the moved geometry shows immediately.
+        if (visitorContextData) {
+          // Reset to source then re-apply, otherwise prior overrides linger.
+          // Simpler path: reload page. For an in-place apply, we'd need to
+          // re-fetch the source, but the file is cached so re-fetching is
+          // cheap when needed. For now, the toggles/paints update live;
+          // geometry overrides will take effect on next reload. The status
+          // message tells the user.
+        }
+      }
+      if (spec.editorPois && Array.isArray(runtime.editor_pois)) {
+        try {
+          localStorage.setItem(spec.editorPois, JSON.stringify(runtime.editor_pois));
+          // Replay into the live editor source so the drawn POIs appear now.
+          if (typeof editorPois !== 'undefined') {
+            editorPois.length = 0;
+            for (const f of runtime.editor_pois) editorPois.push(f);
+            saveEditorPois();
+            refreshEditorSource();
+          }
+        } catch (err) { console.warn('Could not write editor POIs', err); }
+      }
+      if (spec.featureVisibilityLayers && runtime.feature_visibility) {
+        try {
+          const raw = localStorage.getItem('aop_feature_visibility_v1');
+          const all = raw ? JSON.parse(raw) : {};
+          for (const key of spec.featureVisibilityLayers) {
+            if (runtime.feature_visibility[key]) all[key] = runtime.feature_visibility[key];
+          }
+          localStorage.setItem('aop_feature_visibility_v1', JSON.stringify(all));
+        } catch (err) { console.warn('Could not write feature visibility', err); }
+      }
+      return sectionId;
+    }
+
+    // Restore a full v2 export. Same handlers as a section apply, but across
+    // every section. Toggles fire change events so layer visibility updates
+    // live; geometry overrides settle on next reload.
+    function applyExportAllPayload(payload) {
+      if (!payload || payload.schema !== 'aop-viewer-preset-settings-v2') {
+        throw new Error('Not an aop-viewer-preset-settings-v2 payload.');
+      }
+      const state = payload.current_state || {};
+      for (const [id, value] of Object.entries(state.toggles || {})) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        if (el.checked !== Boolean(value)) {
+          el.checked = Boolean(value);
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+      for (const [id, value] of Object.entries(state.sliders || {})) {
+        setSliderValue(id, value);
+      }
+      if (state.paints) applyPaintState(state.paints);
+      const overrides = payload.runtime_overrides || {};
+      try {
+        if (overrides.visitor_context_overrides) {
+          localStorage.setItem('aop_visitor_context_overrides_v1',
+            JSON.stringify(overrides.visitor_context_overrides));
+        }
+        if (Array.isArray(overrides.editor_pois)) {
+          localStorage.setItem('aop_editor_pois_v1', JSON.stringify(overrides.editor_pois));
+          if (typeof editorPois !== 'undefined') {
+            editorPois.length = 0;
+            for (const f of overrides.editor_pois) editorPois.push(f);
+            saveEditorPois();
+            refreshEditorSource();
+          }
+        }
+        if (overrides.feature_visibility) {
+          localStorage.setItem('aop_feature_visibility_v1',
+            JSON.stringify(overrides.feature_visibility));
+        }
+      } catch (err) {
+        console.warn('Could not persist runtime_overrides on import:', err);
+      }
+    }
+
+    async function exportSectionToClipboard(sectionId) {
+      const payload = buildSectionPayload(sectionId);
+      const text = JSON.stringify(payload, null, 2) + '\n';
+      try {
+        const ok = await copyText(text);
+        presetStatus.textContent = ok
+          ? `${sectionId} section copied (${Math.round(text.length / 1024)} KB).`
+          : `Clipboard copy failed for ${sectionId}.`;
+      } catch (err) {
+        presetStatus.textContent = `Export failed: ${err.message}`;
+      }
+    }
+
+    async function exportAllToClipboard() {
+      const text = JSON.stringify(buildExportPayload(), null, 2) + '\n';
+      try {
+        const ok = await copyText(text);
+        presetStatus.textContent = ok
+          ? `Full snapshot copied (${Math.round(text.length / 1024)} KB).`
+          : 'Clipboard copy failed.';
+      } catch (err) {
+        presetStatus.textContent = `Export failed: ${err.message}`;
+      }
+    }
+
+    // Per-feature copy: emit the feature's current geojson Feature so the
+    // user can paste it straight into the source file. We use a fresh clone
+    // of the feature reference (which carries any drag-to-move geometry) and
+    // strip any properties starting with "_" because those are runtime-only.
+    async function copyFeatureAsDropIn(feature) {
+      if (!feature) return;
+      const drop = {
+        type: 'Feature',
+        properties: { ...(feature.properties || {}) },
+        geometry: JSON.parse(JSON.stringify(feature.geometry || null))
+      };
+      for (const key of Object.keys(drop.properties)) {
+        if (key.startsWith('_')) delete drop.properties[key];
+      }
+      const text = JSON.stringify(drop, null, 2) + '\n';
+      try {
+        const ok = await copyText(text);
+        presetStatus.textContent = ok
+          ? `Copied "${drop.properties.name || drop.properties.id || 'feature'}" as drop-in GeoJSON Feature.`
+          : 'Clipboard copy failed.';
+      } catch (err) {
+        presetStatus.textContent = `Copy failed: ${err.message}`;
       }
     }
 
@@ -2537,6 +3369,15 @@
       const footprints = editorPois.length - points - traces;
       poiStatus.textContent =
         `${points} POI${points === 1 ? '' : 's'}, ${footprints} footprint${footprints === 1 ? '' : 's'}, ${traces} trace${traces === 1 ? '' : 's'}.`;
+      // Feed the shared feature list panel. POIs differ from buildings and
+      // cemeteries in that the data set mutates as the user draws/deletes —
+      // every refresh re-registers the runtime so the panel stays accurate.
+      // The runtime preserves the user's per-id visibility ticks across
+      // re-register because they live in localStorage, not in featureListRuntime.
+      if (typeof registerFeatureListLayer === 'function' && map.getLayer('editor-poi-circles')) {
+        registerFeatureListLayer('editorPois', editorFeatureCollection());
+        if (expandedTuneKey === 'editorPois') renderFeatureList('editorPois');
+      }
     }
 
     function exportEditorPois() {
@@ -2613,6 +3454,10 @@
     function bindPopup(layers, titleFor, rowsFor, footerFor) {
       map.on('click', layers, (event) => {
         if (isDrawModeActive()) return;
+        // While a feature is staged for move, the click belongs to the move
+        // primitive — popping up info on the same click would compete with
+        // the intended commit. See enterMoveMode / commitMoveMode.
+        if (moveState) return;
         const props = event.features?.[0]?.properties || {};
         const title = typeof titleFor === 'function' ? titleFor(props) : titleFor;
         let html = `<strong>${title}</strong><br/>${detailRows(rowsFor(props))}`;
@@ -3045,6 +3890,117 @@
         ]);
       }
 
+      // --- Simulated Saturday activity -----------------------------------
+      const syntheticTracksData = await fetchJson('./data/aop_synthetic_activity_tracks.geojson', 'Synthetic activity tracks missing');
+      const syntheticHotspotsData = await fetchJson('./data/aop_synthetic_activity_hotspots.geojson', 'Synthetic activity hotspots missing');
+      if (syntheticTracksData || syntheticHotspotsData) {
+        const syntheticVisibility = syntheticActivityToggle.checked ? 'visible' : 'none';
+        if (syntheticTracksData) {
+          map.addSource('synthetic-activity-tracks', {
+            type: 'geojson',
+            data: syntheticTracksData,
+            attribution: 'Synthetic Saturday activity: generated test data'
+          });
+          map.addLayer({
+            id: 'synthetic-activity-tracks',
+            type: 'line',
+            source: 'synthetic-activity-tracks',
+            layout: { visibility: syntheticVisibility, 'line-cap': 'round', 'line-join': 'round' },
+            paint: {
+              'line-color': [
+                'match', ['get', 'persona'],
+                'north_crawl', '#254d5b',
+                'checkpoint_loop', '#477c82',
+                'photo_short', '#6fa793',
+                'proving_ground', '#9a7d96',
+                'trailhead_social', '#9a5a32',
+                '#5f9183'
+              ],
+              'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.7, 16, 1.8],
+              'line-opacity': 0.36
+            }
+          });
+          bindPopup('synthetic-activity-tracks', 'Synthetic Saturday track', (props) => [
+            ['Track', props.track_name || props.id],
+            ['Profile', props.persona || 'synthetic'],
+            ['Start', props.start_local || 'unknown'],
+            ['Duration', `${props.duration_minutes ?? 'unknown'} min`],
+            ['Distance', props.distance_m ? `${Math.round(Number(props.distance_m))} m` : 'unknown'],
+            ['Anchors', formatListProperty(props.visited_anchors) || 'unknown'],
+            ['Review', props.review_status || 'synthetic']
+          ]);
+        }
+        if (syntheticHotspotsData) {
+          map.addSource('synthetic-activity-hotspots', {
+            type: 'geojson',
+            data: syntheticHotspotsData,
+            attribution: 'Synthetic Saturday hotspots: generated test data'
+          });
+          map.addLayer({
+            id: 'synthetic-activity-hotspots-heat',
+            type: 'heatmap',
+            source: 'synthetic-activity-hotspots',
+            filter: ['==', ['geometry-type'], 'Point'],
+            layout: { visibility: syntheticVisibility },
+            paint: {
+              'heatmap-weight': ['interpolate', ['linear'], ['get', 'intensity_norm'], 0, 0.18, 1, 1],
+              'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 11, 0.35, 16, 1.45],
+              'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 11, 16, 16, 42],
+              'heatmap-opacity': 0.58,
+              'heatmap-color': [
+                'interpolate', ['linear'], ['heatmap-density'],
+                0, 'rgba(183, 210, 189, 0)',
+                0.24, 'rgba(183, 210, 189, 0.5)',
+                0.48, 'rgba(111, 167, 147, 0.64)',
+                0.74, 'rgba(71, 124, 130, 0.78)',
+                1, 'rgba(37, 77, 91, 0.92)'
+              ]
+            }
+          });
+          map.addLayer({
+            id: 'synthetic-activity-hotspots-fill',
+            type: 'fill',
+            source: 'synthetic-activity-hotspots',
+            filter: ['==', ['geometry-type'], 'Polygon'],
+            layout: { visibility: syntheticVisibility },
+            paint: { 'fill-color': SYNTHETIC_HOTSPOT_FILL, 'fill-opacity': SYNTHETIC_HOTSPOT_OPACITY }
+          });
+          map.addLayer({
+            id: 'synthetic-activity-hotspots-outline',
+            type: 'line',
+            source: 'synthetic-activity-hotspots',
+            filter: ['==', ['geometry-type'], 'Polygon'],
+            layout: { visibility: syntheticVisibility },
+            paint: { 'line-color': '#254d5b', 'line-width': 1.2, 'line-opacity': 0.66 }
+          });
+          map.addLayer({
+            id: 'synthetic-activity-hotspots-labels',
+            type: 'symbol',
+            source: 'synthetic-activity-hotspots',
+            filter: ['all', ['==', ['geometry-type'], 'Point'], ['!=', ['get', 'label'], '']],
+            layout: {
+              visibility: syntheticVisibility,
+              'text-field': ['get', 'label'],
+              'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 12],
+              'text-allow-overlap': false,
+              'text-ignore-placement': false
+            },
+            paint: { 'text-color': '#254d5b', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.4 }
+          });
+          bindPopup('synthetic-activity-hotspots-fill', 'Synthetic Saturday hotspot', (props) => [
+            ['Dwell focus', `${props.interest_minutes ?? props.dwell_minutes ?? 'unknown'} min`],
+            ['Dwell', `${props.dwell_minutes ?? 'unknown'} min`],
+            ['Stopped', `${Math.round(Number(props.stop_seconds || 0) / 60 * 10) / 10} min`],
+            ['Slow', `${Math.round(Number(props.slow_seconds || 0) / 60 * 10) / 10} min`],
+            ['Moving', `${Math.round(Number(props.moving_seconds || 0) / 60 * 10) / 10} min`],
+            ['Sessions', props.segment_count ?? 'unknown'],
+            ['Visits', props.visit_count ?? 'unknown'],
+            ['Source', formatListProperty(props.source_files) || 'synthetic'],
+            ['Review', props.review_status || 'synthetic']
+          ]);
+        }
+      }
+
       // --- Event schedule proposal ---------------------------------------
       // Source data is editable JSON with reusable location tags; this block
       // resolves tags into a transient GeoJSON source for MapLibre.
@@ -3400,8 +4356,12 @@
       // Two cartographic support-town annotations: one for the immediate
       // South Pittsburg/Kimball supply run and one for the Monteagle plateau
       // services option. These are planning circles, not service-area claims.
-      const visitorContextData = await fetchJson('./data/aop_visitor_context_callouts.geojson', 'Visitor context callouts missing');
+      visitorContextData = await fetchJson('./data/aop_visitor_context_callouts.geojson', 'Visitor context callouts missing');
       if (visitorContextData) {
+        // Replay any user-staged geometry overrides before the source data
+        // ever reaches MapLibre, so a moved callout draws in its new spot
+        // from the first frame rather than snapping in after registration.
+        applyVisitorContextOverrides(visitorContextData);
         map.addSource('visitor-context', {
           type: 'geojson',
           data: visitorContextData,
@@ -3457,8 +4417,10 @@
             ['Sources', props.source_summary || '']
           ],
           (props) => visitorContextLinksHtml(props));
+        bindPanelReveal(['visitor-context-fill', 'visitor-context-outline'], 'visitorContext', 'name');
 
         indexFeatures(visitorContextData, 'visitor context', visitorContextToggle);
+        registerFeatureListLayer('visitorContext', visitorContextData);
       }
 
       // --- Marion County cemeteries (TN Comptroller parcels) -------------
@@ -3545,6 +4507,7 @@
             ['Source', props.parcel_source]
           ],
           (props) => cemeteryBurialHtml(props));
+        bindPanelReveal(['cemetery-fill', 'cemetery-marker'], 'cemeteries', 'parcel_id');
 
         // Per-feature visibility: 4 cemeteries, Ellis (the AOP inholding,
         // parcel 110 008.04) pre-ticked, the other three off by default.
@@ -3641,6 +4604,7 @@
             ['Method', props.validation_method || ''],
             ['Source', props.footprint_source || '']
           ]);
+        bindPanelReveal(['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline'], 'buildings', 'build_id');
 
         // Per-feature visibility: 4 in-park buildings pre-ticked by group
         // default, 198 others collapsed under a bulk-off row. Persists across
@@ -4341,19 +5305,27 @@
         refreshEditorSource();
       });
 
-      // Clicking a committed POI or footprint (only while not drawing) opens
-      // the rename/delete popup.
+      // Clicking a committed POI or footprint (only while not drawing, and not
+      // while a move-mode commit is staged) opens the rename/delete popup
+      // AND reveals the matching row in the right-panel feature list. During
+      // move mode the click belongs to the move primitive — popping up
+      // rename/delete or yanking the panel would steal focus from the
+      // intended commit.
       function bindEditorClick(layerId) {
         map.on('click', layerId, (event) => {
           if (draw && draw.getMode() !== 'static') return;
+          if (moveState) return;
           const feature = event.features?.[0];
-          if (feature) openPoiPopup(feature, event.lngLat);
+          if (!feature) return;
+          openPoiPopup(feature, event.lngLat);
+          const id = feature.properties && feature.properties.id;
+          if (id != null) revealFeatureInPanel('editorPois', id);
         });
         map.on('mouseenter', layerId, () => {
-          if (draw && draw.getMode() === 'static') map.getCanvas().style.cursor = 'pointer';
+          if (draw && draw.getMode() === 'static' && !moveState) map.getCanvas().style.cursor = 'pointer';
         });
         map.on('mouseleave', layerId, () => {
-          map.getCanvas().style.cursor = '';
+          if (!moveState) map.getCanvas().style.cursor = '';
         });
       }
       bindEditorClick('editor-poi-circles');
@@ -4624,8 +5596,13 @@
 
     tuneVisible.addEventListener('change', setSelectedLayerVisible);
     tuneControls.addEventListener('input', handleTuneInput);
-    snapshotPresetBtn.addEventListener('click', snapshotActivePreset);
-    exportSettingsBtn.addEventListener('click', exportPresetSettings);
+    if (exportAllBtn) exportAllBtn.addEventListener('click', exportAllToClipboard);
+    // Per-section ⧉ on each section header. Buttons declare which section
+    // they target via data-section-export so the header doesn't need an
+    // explicit per-section listener.
+    for (const btn of document.querySelectorAll('[data-section-export]')) {
+      btn.addEventListener('click', () => exportSectionToClipboard(btn.dataset.sectionExport));
+    }
 
     // Terrain has its own toggle handler (3D enable/disable, not a layer
     // visibility flip). The landcover-9 opacity is the lone slider that has

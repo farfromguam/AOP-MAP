@@ -9,6 +9,10 @@ Covers the per-feature visibility primitive added 2026-05-23:
   - Persistence: per-feature visibility survives a page reload
     (localStorage `aop_feature_visibility_v1`).
   - Search auto-unhide: searching an unticked cemetery flips its row on.
+  - POIs (third consumer, Slice 1 of poi_editor_v2.md): list renders with
+    category-then-name sort; toggle composes the paint filter and persists;
+    fly-to row click moves the camera. POI drawing UX itself is covered by
+    playwright_verify_poi_editor.py — here we exercise only the list panel.
 
 The card this verifies: brain/tasks/02_edit/poi_editor_v2.md.
 
@@ -37,6 +41,15 @@ SCREENSHOTS = {
     "buildings_panel_open": "playwright_feature_list_buildings_panel_open.png",
     "buildings_all_on": "playwright_feature_list_buildings_all_on.png",
     "after_reload": "playwright_feature_list_after_reload.png",
+    "pois_panel_open": "playwright_feature_list_pois_panel_open.png",
+    "pois_one_off": "playwright_feature_list_pois_one_off.png",
+    "pois_after_reload": "playwright_feature_list_pois_after_reload.png",
+    "pois_move_banner": "playwright_feature_list_pois_move_banner.png",
+    "pois_move_committed": "playwright_feature_list_pois_move_committed.png",
+    "visitor_context_panel": "playwright_feature_list_visitor_context_panel.png",
+    "visitor_context_moved": "playwright_feature_list_visitor_context_moved.png",
+    "reveal_building_other": "playwright_feature_list_reveal_building_other.png",
+    "reveal_via_map_click": "playwright_feature_list_reveal_via_map_click.png",
 }
 
 CEMETERY_LAYERS = ["cemetery-fill", "cemetery-outline", "cemetery-marker", "cemetery-label"]
@@ -323,6 +336,827 @@ def main() -> int:
         page.wait_for_timeout(900)
         visible = visible_count_in_source(page, "./data/aop_cemeteries.geojson", "cemetery-marker", "parcel_id")
         check("search auto-unhid Bible cemetery", visible >= 2, f"{visible} drawable")
+
+        # ---- POIs: feature list consumer (Slice 1 of poi_editor_v2.md) ----
+        # POIs are the third feature list consumer. They differ from buildings
+        # and cemeteries: data is mutable (the user draws/deletes), so the
+        # runtime re-registers through `refreshEditorSource()` on every change.
+        # We push three POIs via page.evaluate (the drawing UX is exercised in
+        # playwright_verify_poi_editor.py — here we only test the list panel).
+        print("\n== POIs feature list panel (mutable data) ==")
+        # Wipe POI + visibility state so this run is deterministic.
+        page.evaluate(
+            """() => {
+              localStorage.removeItem('aop_editor_pois_v1');
+              localStorage.removeItem('aop_feature_visibility_v1');
+            }"""
+        )
+        page.reload(wait_until="load")
+        page.evaluate("window.map = map;")
+        page.wait_for_function(
+            "() => document.getElementById('message').textContent.includes('publish feature')",
+            timeout=15_000,
+        )
+        page.wait_for_timeout(500)
+        # Confirm an empty editorPois starts the panel empty.
+        set_toggle(page, "showEditorPois", True)
+        open_layer_editor(page, "editorPois")
+        empty_summary = feature_list_summary(page)
+        check("editorPois panel opens (empty)", empty_summary.get("open") is True)
+        check(
+            "empty editorPois panel has 0 rows",
+            sum(len(g["rows"]) for g in empty_summary.get("groups", [])) == 0,
+        )
+        # Inject three POIs of two categories so we can check the category-then-name sort.
+        page.evaluate(
+            """() => {
+              const samples = [
+                { id: 'poi_test_a', category: 'Pavilion', name: 'Pavilion A', coord: [-85.7515, 35.0905] },
+                { id: 'poi_test_b', category: 'Pavilion', name: 'Pavilion B', coord: [-85.7525, 35.0915] },
+                { id: 'poi_test_c', category: 'Landmark', name: 'Landmark Z', coord: [-85.7535, 35.0925] }
+              ];
+              for (const s of samples) {
+                editorPois.push({
+                  type: 'Feature',
+                  geometry: { type: 'Point', coordinates: s.coord },
+                  properties: {
+                    id: s.id, layer: 'editor_poi', category: s.category,
+                    name: s.name, created: new Date().toISOString()
+                  }
+                });
+              }
+              saveEditorPois();
+              refreshEditorSource();
+            }"""
+        )
+        page.wait_for_timeout(250)
+        summary = feature_list_summary(page)
+        check("editorPois panel is open", summary.get("open") is True)
+        rows = summary["groups"][0]["rows"] if summary.get("groups") else []
+        check("editorPois list shows 3 rows", len(rows) == 3, str(len(rows)))
+        check("all 3 POI rows pre-ticked (default-visible)",
+              all(r["checked"] for r in rows),
+              str([r["checked"] for r in rows]))
+        # Sort: Landmark < Pavilion by category, then Pavilion A < Pavilion B.
+        names = [r["name"] for r in rows]
+        check("rows sort by category then name",
+              names == ["Landmark — Landmark Z", "Pavilion — Pavilion A", "Pavilion — Pavilion B"],
+              str(names))
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["pois_panel_open"]))
+
+        # Untick one POI; confirm the visibility filter on editor-poi-circles
+        # drops to 2 ids.
+        toggle_feature_row(page, "poi_test_b")
+        page.wait_for_timeout(200)
+        circle_visible = page.evaluate(
+            """() => {
+              const f = window.map.getFilter('editor-poi-circles');
+              function findIn(arr) {
+                if (!Array.isArray(arr)) return null;
+                if (arr[0] === 'in' && Array.isArray(arr[1]) && arr[1][1] === 'id') return arr[2][1];
+                if (arr[0] === 'all') {
+                  for (let i = 1; i < arr.length; i++) {
+                    const inner = findIn(arr[i]);
+                    if (inner !== null) return inner;
+                  }
+                }
+                return null;
+              }
+              const literal = findIn(f);
+              return literal ? literal.length : -1;
+            }"""
+        )
+        check("editor-poi-circles filter drops to 2 visible ids", circle_visible == 2,
+              f"{circle_visible} ids")
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["pois_one_off"]))
+
+        # Reload; confirm the untick persists.
+        page.reload(wait_until="load")
+        page.evaluate("window.map = map;")
+        page.wait_for_function(
+            "() => document.getElementById('message').textContent.includes('publish feature')",
+            timeout=15_000,
+        )
+        page.wait_for_timeout(500)
+        set_toggle(page, "showEditorPois", True)
+        open_layer_editor(page, "editorPois")
+        post = feature_list_summary(page)
+        post_rows = post["groups"][0]["rows"] if post.get("groups") else []
+        check("3 POIs survive reload", len(post_rows) == 3, str(len(post_rows)))
+        b = next((r for r in post_rows if r["id"] == "poi_test_b"), None)
+        check("unticked POI stays unticked after reload",
+              bool(b and b["checked"] is False),
+              str(b))
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["pois_after_reload"]))
+
+        # Fly-to: click the row name, expect camera center to move toward the POI.
+        before_center = page.evaluate("[map.getCenter().lng, map.getCenter().lat]")
+        page.evaluate(
+            """() => {
+              const row = document.querySelector('.feature-row[data-feature-id="poi_test_a"]');
+              row.querySelector('.feature-name').click();
+            }"""
+        )
+        page.wait_for_timeout(1100)
+        after_center = page.evaluate("[map.getCenter().lng, map.getCenter().lat]")
+        # POI A is at [-85.7515, 35.0905]; after fly-to the center should be
+        # near that. We accept any shift > 1e-5 deg as "the fly fired."
+        dlon = abs(after_center[0] - before_center[0])
+        dlat = abs(after_center[1] - before_center[1])
+        check("fly-to row click moved the camera",
+              dlon > 1e-5 or dlat > 1e-5,
+              f"before={before_center} after={after_center}")
+
+        # ---- POIs: drag-to-move primitive (Slice 2 of poi_editor_v2.md) ----
+        # ✋ button on a row enters move mode; banner appears; next map click
+        # commits new coordinates. Esc and the inline Cancel button both abort
+        # without changing geometry. Mobile long-press is covered indirectly —
+        # it triggers the same enterMoveMode() path the ✋ button hits.
+        print("\n== POIs drag-to-move ==")
+
+        def click_move_button(row_id: str) -> None:
+            page.evaluate(
+                """(fid) => {
+                  const row = document.querySelector(`.feature-row[data-feature-id="${fid}"]`);
+                  if (!row) throw new Error('row ' + fid + ' not found');
+                  const btn = row.querySelector('.feature-move');
+                  if (!btn) throw new Error('move button missing for ' + fid);
+                  btn.click();
+                }""",
+                row_id,
+            )
+            page.wait_for_timeout(150)
+
+        def banner_text():
+            return page.evaluate(
+                """() => {
+                  const b = document.querySelector('.feature-list-move-banner');
+                  return b ? b.innerText : null;
+                }"""
+            )
+
+        def feature_coord(feature_id: str):
+            return page.evaluate(
+                "(fid) => editorPois.find((f) => f.properties.id === fid).geometry.coordinates",
+                feature_id,
+            )
+
+        # Sanity: panel currently shows the editorPois drawer.
+        summary = feature_list_summary(page)
+        check("editorPois panel open before move tests",
+              summary.get("open") is True)
+
+        # --- 1) Move a POI by clicking ✋ then clicking the map ---
+        before = feature_coord("poi_test_a")
+        click_move_button("poi_test_a")
+        check("move banner visible after ✋ click",
+              "Move mode" in (banner_text() or ""),
+              str(banner_text()))
+        # The move-target row should be highlighted.
+        check("move-target row has highlight class",
+              page.evaluate(
+                  "!!document.querySelector('.feature-row[data-feature-id=\"poi_test_a\"].move-target')"
+              ))
+        # MapLibre crosshair cursor.
+        check("map cursor is crosshair while staged",
+              page.evaluate("map.getCanvas().style.cursor") == "crosshair")
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["pois_move_banner"]))
+
+        # Click the map at a known pixel; convert back via map.unproject so we
+        # can assert the new coord without baking projection math into the test.
+        commit_pixel = (640, 400)
+        expected_ll = page.evaluate(
+            "(p) => { const ll = map.unproject(p); return [ll.lng, ll.lat]; }",
+            list(commit_pixel),
+        )
+        # Click the actual canvas, not a div on top — bbox-relative coordinates.
+        canvas_box = page.locator(".maplibregl-canvas").bounding_box()
+        page.mouse.click(canvas_box["x"] + commit_pixel[0],
+                         canvas_box["y"] + commit_pixel[1])
+        page.wait_for_timeout(300)
+
+        after = feature_coord("poi_test_a")
+        check("POI coord changed after commit",
+              after != before, f"before={before} after={after}")
+        # Allow ~1e-3 deg slop because the canvas may scroll/zoom slightly.
+        check("POI coord landed at clicked map point",
+              abs(after[0] - expected_ll[0]) < 1e-3
+              and abs(after[1] - expected_ll[1]) < 1e-3,
+              f"expected≈{expected_ll} got={after}")
+        check("move banner gone after commit", banner_text() is None,
+              str(banner_text()))
+        check("map cursor cleared after commit",
+              page.evaluate("map.getCanvas().style.cursor") != "crosshair",
+              page.evaluate("map.getCanvas().style.cursor"))
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["pois_move_committed"]))
+
+        # Reload; the moved coord should persist (editorPois is in localStorage).
+        page.reload(wait_until="load")
+        page.evaluate("window.map = map;")
+        page.wait_for_function(
+            "() => document.getElementById('message').textContent.includes('publish feature')",
+            timeout=15_000,
+        )
+        page.wait_for_timeout(500)
+        post_move = page.evaluate(
+            "() => editorPois.find((f) => f.properties.id === 'poi_test_a').geometry.coordinates"
+        )
+        check("moved coord persisted across reload",
+              abs(post_move[0] - after[0]) < 1e-9
+              and abs(post_move[1] - after[1]) < 1e-9,
+              f"persisted={post_move} expected={after}")
+
+        # --- 2) Esc cancels without changing the geometry ---
+        open_layer_editor(page, "editorPois")
+        before_esc = feature_coord("poi_test_b")
+        click_move_button("poi_test_b")
+        check("banner up before Esc",
+              "Move mode" in (banner_text() or ""))
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(200)
+        check("Esc cleared the move banner", banner_text() is None,
+              str(banner_text()))
+        check("POI_B coord unchanged after Esc cancel",
+              feature_coord("poi_test_b") == before_esc,
+              str(feature_coord("poi_test_b")))
+
+        # --- 3) Inline Cancel button cancels without changing geometry ---
+        before_btn = feature_coord("poi_test_c")
+        click_move_button("poi_test_c")
+        check("banner up before Cancel-button",
+              "Move mode" in (banner_text() or ""))
+        page.evaluate(
+            """() => document.querySelector('.feature-list-move-banner .move-cancel').click()"""
+        )
+        page.wait_for_timeout(200)
+        check("Cancel button cleared the move banner",
+              banner_text() is None, str(banner_text()))
+        check("POI_C coord unchanged after Cancel-button",
+              feature_coord("poi_test_c") == before_btn,
+              str(feature_coord("poi_test_c")))
+
+        # ---- Visitor context: second drag consumer (Slice 3 of poi_editor_v2.md) ----
+        # Same move primitive, different consumer. Geometry override lands in
+        # `aop_visitor_context_overrides_v1` localStorage and is replayed on
+        # next page load, so a moved callout survives a reload without
+        # touching the source geojson on disk.
+        print("\n== Visitor-context drag (second consumer) ==")
+        # Clean slate for the override store so this run is deterministic.
+        page.evaluate(
+            "() => localStorage.removeItem('aop_visitor_context_overrides_v1')"
+        )
+        page.reload(wait_until="load")
+        page.evaluate("window.map = map;")
+        page.wait_for_function(
+            "() => document.getElementById('message').textContent.includes('publish feature')",
+            timeout=15_000,
+        )
+        page.wait_for_timeout(500)
+        set_toggle(page, "showVisitorContext", True)
+        open_layer_editor(page, "visitorContext")
+        vc_summary = feature_list_summary(page)
+        check("visitor-context panel opens", vc_summary.get("open") is True)
+        vc_rows = vc_summary["groups"][0]["rows"] if vc_summary.get("groups") else []
+        check("visitor-context list shows 2 rows", len(vc_rows) == 2, str(len(vc_rows)))
+        names = sorted([r["name"] for r in vc_rows])
+        check("rows are the two known callouts",
+              names == sorted(["Monteagle plateau services",
+                              "South Pittsburg / Kimball supply run"]),
+              str(names))
+        # The move button should exist on visitor-context rows.
+        has_move_btn = page.evaluate(
+            "!!document.querySelector('.feature-row[data-feature-id=\"Monteagle plateau services\"] .feature-move')"
+        )
+        check("✋ button present on visitor-context rows", has_move_btn is True)
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["visitor_context_panel"]))
+
+        # Read the original centroid of the Monteagle callout so we can assert
+        # the move actually shifted it. We project, then take the average.
+        target_name = "Monteagle plateau services"
+        before_centroid = page.evaluate(
+            """(name) => {
+              const f = visitorContextData.features.find((x) => x.properties.name === name);
+              const ring = f.geometry.coordinates[0];
+              const last = ring.length > 1 ? ring.length - 1 : ring.length;
+              let sx = 0, sy = 0;
+              for (let i = 0; i < last; i++) { sx += ring[i][0]; sy += ring[i][1]; }
+              return [sx / last, sy / last];
+            }""",
+            target_name,
+        )
+
+        # Click ✋ on the Monteagle row, then click the map at a known pixel.
+        page.evaluate(
+            """(name) => {
+              const row = document.querySelector(`.feature-row[data-feature-id="${name}"]`);
+              row.querySelector('.feature-move').click();
+            }""",
+            target_name,
+        )
+        page.wait_for_timeout(150)
+        check("visitor-context banner up after ✋",
+              "Move mode" in (banner_text() or ""),
+              str(banner_text()))
+
+        vc_commit_pixel = (700, 350)
+        vc_expected_ll = page.evaluate(
+            "(p) => { const ll = map.unproject(p); return [ll.lng, ll.lat]; }",
+            list(vc_commit_pixel),
+        )
+        canvas_box = page.locator(".maplibregl-canvas").bounding_box()
+        page.mouse.click(canvas_box["x"] + vc_commit_pixel[0],
+                         canvas_box["y"] + vc_commit_pixel[1])
+        page.wait_for_timeout(400)
+
+        after_centroid = page.evaluate(
+            """(name) => {
+              const f = visitorContextData.features.find((x) => x.properties.name === name);
+              const ring = f.geometry.coordinates[0];
+              const last = ring.length > 1 ? ring.length - 1 : ring.length;
+              let sx = 0, sy = 0;
+              for (let i = 0; i < last; i++) { sx += ring[i][0]; sy += ring[i][1]; }
+              return [sx / last, sy / last];
+            }""",
+            target_name,
+        )
+        check("visitor-context centroid shifted after commit",
+              abs(after_centroid[0] - before_centroid[0]) > 1e-5
+              or abs(after_centroid[1] - before_centroid[1]) > 1e-5,
+              f"before={before_centroid} after={after_centroid}")
+        # The centroid should now be near the clicked lngLat (allow 1e-3 slop).
+        check("visitor-context centroid lands at clicked map point",
+              abs(after_centroid[0] - vc_expected_ll[0]) < 1e-3
+              and abs(after_centroid[1] - vc_expected_ll[1]) < 1e-3,
+              f"expected≈{vc_expected_ll} got={after_centroid}")
+        # Override store should now hold the moved entry.
+        override = page.evaluate(
+            "() => JSON.parse(localStorage.getItem('aop_visitor_context_overrides_v1') || '{}')"
+        )
+        check("override store has the moved callout",
+              target_name in override and "geometry" in override[target_name],
+              str(list(override.keys())))
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["visitor_context_moved"]))
+
+        # Reload; the moved centroid should reappear.
+        page.reload(wait_until="load")
+        page.evaluate("window.map = map;")
+        page.wait_for_function(
+            "() => document.getElementById('message').textContent.includes('publish feature')",
+            timeout=15_000,
+        )
+        page.wait_for_timeout(500)
+        post_centroid = page.evaluate(
+            """(name) => {
+              const f = visitorContextData.features.find((x) => x.properties.name === name);
+              const ring = f.geometry.coordinates[0];
+              const last = ring.length > 1 ? ring.length - 1 : ring.length;
+              let sx = 0, sy = 0;
+              for (let i = 0; i < last; i++) { sx += ring[i][0]; sy += ring[i][1]; }
+              return [sx / last, sy / last];
+            }""",
+            target_name,
+        )
+        check("moved visitor-context centroid survives reload",
+              abs(post_centroid[0] - after_centroid[0]) < 1e-9
+              and abs(post_centroid[1] - after_centroid[1]) < 1e-9,
+              f"persisted={post_centroid} after_commit={after_centroid}")
+
+        # ---- Map-click → panel reveal (user request 2026-05-23) ----
+        # Clicking a feature on the map should expand its right-panel drawer,
+        # expand the containing group if collapsed (buildings "Other"), scroll
+        # the row into view, and flash it briefly. Existing popups stay.
+        print("\n== Map-click → right-panel reveal ==")
+
+        def reveal_state():
+            return page.evaluate(
+                """() => ({
+                    expanded: expandedTuneKey,
+                    revealedIds: [...document.querySelectorAll('.feature-row.revealed')]
+                      .map((r) => r.dataset.featureId)
+                  })"""
+            )
+
+        def close_any_drawer():
+            page.evaluate(
+                "() => { if (expandedTuneKey) toggleTunableExpansion(expandedTuneKey); }"
+            )
+            page.wait_for_timeout(120)
+
+        # --- 1) revealFeatureInPanel directly: in-park building ---
+        close_any_drawer()
+        # Pick the 1010 Ellis Cove Road building (the in-park pavilion).
+        pavilion_id = page.evaluate(
+            """async () => {
+              const r = await fetch('./data/aop_buildings.geojson');
+              const d = await r.json();
+              const f = d.features.find((x) =>
+                String((x.properties || {}).address || '').startsWith('1010 '));
+              return f && f.properties.build_id;
+            }"""
+        )
+        check("pavilion build_id resolved", pavilion_id is not None,
+              str(pavilion_id))
+        page.evaluate("(id) => revealFeatureInPanel('buildings', id)", pavilion_id)
+        page.wait_for_timeout(250)
+        state = reveal_state()
+        check("buildings drawer expanded after pavilion reveal",
+              state["expanded"] == "buildings", str(state))
+        check("pavilion row flashed (.revealed)",
+              str(pavilion_id) in state["revealedIds"],
+              str(state["revealedIds"]))
+
+        # --- 2) revealFeatureInPanel auto-expands a collapsed group ---
+        # Drop into the "Other" group: pick a building NOT in the in-park set.
+        other_id = page.evaluate(
+            """async () => {
+              const r = await fetch('./data/aop_buildings.geojson');
+              const d = await r.json();
+              const f = d.features.find((x) =>
+                (x.properties || {}).inside_aop_boundary !== true);
+              return f && f.properties.build_id;
+            }"""
+        )
+        check("non-in-park building build_id resolved", other_id is not None,
+              str(other_id))
+        # Re-render fresh so the "Other" group is in its default collapsed state.
+        close_any_drawer()
+        # Open buildings drawer to seed the collapsed default, then close again
+        # so reveal has to handle a cold-start re-expansion.
+        page.evaluate("() => toggleTunableExpansion('buildings')")
+        page.wait_for_timeout(150)
+        # Confirm "Other" is collapsed by default.
+        other_collapsed = page.evaluate(
+            "() => featureListRuntime.buildings.collapsed.other"
+        )
+        check("'Other' group collapsed by default",
+              other_collapsed is True, str(other_collapsed))
+        # Now ask the reveal to surface a row from the collapsed group.
+        page.evaluate("(id) => revealFeatureInPanel('buildings', id)", other_id)
+        page.wait_for_timeout(250)
+        post_collapsed = page.evaluate(
+            "() => featureListRuntime.buildings.collapsed.other"
+        )
+        check("reveal expanded the 'Other' group", post_collapsed is False,
+              str(post_collapsed))
+        # The other-id row should now exist in the DOM.
+        row_present = page.evaluate(
+            """(id) => !!document.querySelector(`.feature-row[data-feature-id="${id}"]`)""",
+            other_id,
+        )
+        check("non-in-park row visible after reveal", row_present is True)
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["reveal_building_other"]))
+
+        # --- 3) revealFeatureInPanel for cemetery + visitor-context + POI ---
+        close_any_drawer()
+        page.evaluate("() => revealFeatureInPanel('cemeteries', '110 008.04')")  # Ellis
+        page.wait_for_timeout(200)
+        state = reveal_state()
+        check("cemeteries drawer expanded after cemetery reveal",
+              state["expanded"] == "cemeteries", str(state))
+        check("Ellis row flashed", "110 008.04" in state["revealedIds"],
+              str(state["revealedIds"]))
+
+        close_any_drawer()
+        page.evaluate(
+            "() => revealFeatureInPanel('visitorContext', 'Monteagle plateau services')"
+        )
+        page.wait_for_timeout(200)
+        state = reveal_state()
+        check("visitor-context drawer expanded after callout reveal",
+              state["expanded"] == "visitorContext", str(state))
+        check("Monteagle row flashed",
+              "Monteagle plateau services" in state["revealedIds"],
+              str(state["revealedIds"]))
+
+        close_any_drawer()
+        page.evaluate("() => revealFeatureInPanel('editorPois', 'poi_test_a')")
+        page.wait_for_timeout(200)
+        state = reveal_state()
+        check("editorPois drawer expanded after POI reveal",
+              state["expanded"] == "editorPois", str(state))
+        check("poi_test_a row flashed",
+              "poi_test_a" in state["revealedIds"],
+              str(state["revealedIds"]))
+
+        # --- 4) Real map click → reveal (binding wiring, end-to-end) ---
+        # Visitor-context polygons are large and easy to hit-test deterministically.
+        # Click on Monteagle's centroid; both popup and panel reveal should fire.
+        close_any_drawer()
+        # Make sure the visitor-context layer is drawing.
+        set_toggle(page, "showVisitorContext", True)
+        page.wait_for_timeout(200)
+        monteagle_pixel = page.evaluate(
+            """() => {
+              const f = visitorContextData.features.find((x) =>
+                x.properties.name === 'Monteagle plateau services');
+              const ring = f.geometry.coordinates[0];
+              const last = ring.length > 1 ? ring.length - 1 : ring.length;
+              let sx = 0, sy = 0;
+              for (let i = 0; i < last; i++) { sx += ring[i][0]; sy += ring[i][1]; }
+              const p = map.project([sx / last, sy / last]);
+              return [p.x, p.y];
+            }"""
+        )
+        canvas_box = page.locator(".maplibregl-canvas").bounding_box()
+        page.mouse.click(canvas_box["x"] + monteagle_pixel[0],
+                         canvas_box["y"] + monteagle_pixel[1])
+        page.wait_for_timeout(400)
+        state = reveal_state()
+        check("clicking the callout on the map opened its drawer",
+              state["expanded"] == "visitorContext", str(state))
+        check("clicking the callout flashed its row",
+              "Monteagle plateau services" in state["revealedIds"],
+              str(state["revealedIds"]))
+        # Popup should still fire alongside the reveal.
+        popup_count = page.evaluate(
+            "() => document.querySelectorAll('.maplibregl-popup').length"
+        )
+        check("popup still appears alongside reveal", popup_count >= 1,
+              f"popup_count={popup_count}")
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["reveal_via_map_click"]))
+
+        # --- 5) Move mode suppresses panel reveal ---
+        # Closing the popup first so the next click is unambiguous.
+        page.evaluate(
+            "() => document.querySelectorAll('.maplibregl-popup-close-button').forEach((b) => b.click())"
+        )
+        page.wait_for_timeout(150)
+        # The visitor-context drawer is already open from the previous reveal;
+        # only open it if it isn't (avoid the toggle-closes-it footgun).
+        page.evaluate(
+            "() => { if (expandedTuneKey !== 'visitorContext') toggleTunableExpansion('visitorContext'); }"
+        )
+        page.wait_for_timeout(150)
+        page.evaluate(
+            """() => {
+              const row = document.querySelector('.feature-row[data-feature-id="South Pittsburg / Kimball supply run"]');
+              row.querySelector('.feature-move').click();
+            }"""
+        )
+        page.wait_for_timeout(150)
+        check("move banner appeared in move-suppression test",
+              "Move mode" in (banner_text() or ""))
+        # While staged, click the OTHER callout. Reveal must NOT switch drawers
+        # (we never leave visitorContext anyway, but the row should not flash
+        # because the click is the move-commit, not a reveal).
+        before_revealed = page.evaluate(
+            "() => [...document.querySelectorAll('.feature-row.revealed')].map((r) => r.dataset.featureId)"
+        )
+        page.mouse.click(canvas_box["x"] + monteagle_pixel[0],
+                         canvas_box["y"] + monteagle_pixel[1])
+        page.wait_for_timeout(300)
+        after_revealed = page.evaluate(
+            "() => [...document.querySelectorAll('.feature-row.revealed')].map((r) => r.dataset.featureId)"
+        )
+        # No NEW reveal flash should have been added by this click.
+        new_reveals = [r for r in after_revealed if r not in before_revealed]
+        check("no new reveal flash during move commit",
+              len(new_reveals) == 0,
+              f"new_reveals={new_reveals}")
+
+        # ---- Export Settings v2: payload carries runtime overrides ----
+        # At this point in the run we have: a moved Monteagle callout in
+        # localStorage, three test POIs, and several per-feature visibility
+        # entries. A v2 export should round-trip every one of those.
+        print("\n== Export Settings v2 (runtime overrides round-trip) ==")
+        payload = page.evaluate("() => buildExportPayload()")
+        check("schema bumped to v2",
+              payload.get("schema") == "aop-viewer-preset-settings-v2",
+              str(payload.get("schema")))
+        check("runtime_overrides key present",
+              "runtime_overrides" in payload, str(list(payload.keys())))
+        overrides = payload.get("runtime_overrides", {}) or {}
+        check("visitor_context_overrides key present",
+              "visitor_context_overrides" in overrides)
+        check("editor_pois key present",
+              "editor_pois" in overrides)
+        check("feature_visibility key present",
+              "feature_visibility" in overrides)
+        # The moved Monteagle entry should be there with a geometry block.
+        vc = overrides.get("visitor_context_overrides", {}) or {}
+        check("Monteagle override round-trips in export",
+              "Monteagle plateau services" in vc
+              and "geometry" in (vc.get("Monteagle plateau services") or {}),
+              str(list(vc.keys())))
+        # The three test POIs should round-trip.
+        poi_ids = [
+            f.get("properties", {}).get("id")
+            for f in (overrides.get("editor_pois", []) or [])
+        ]
+        check("all three test POIs round-trip in export",
+              all(p in poi_ids for p in ["poi_test_a", "poi_test_b", "poi_test_c"]),
+              str(poi_ids))
+        # Per-feature visibility for visitor-context should be in the bag too.
+        fv = overrides.get("feature_visibility", {}) or {}
+        check("feature_visibility carries visitorContext entries",
+              "visitorContext" in fv,
+              str(list(fv.keys())))
+
+        # ---- Per-section Export/Import (user direction 2026-05-23) ----
+        # The three target sections (derived-layers, source-layers, editor)
+        # each get their own ↑/↓ in their header. A small export carries
+        # only that section's toggles/sliders/paints/runtime. An import
+        # only touches that section.
+        print("\n== Per-section Export / Import ==")
+        # Every targeted section header carries the export-only ↑ button.
+        # Import is intentionally not exposed in the UI per user direction
+        # 2026-05-23 ("I will pass to you or put directly in code") — the
+        # apply functions still exist for code-level use.
+        for sid in ("derived-layers", "source-layers", "editor"):
+            exp = page.evaluate(
+                """(sid) => !!document.querySelector(`[data-section-export="${sid}"]`)""",
+                sid,
+            )
+            check(f"{sid}: ↑ Export button present", exp is True)
+        # Per-section import buttons were retired — none should exist.
+        any_import_btn = page.evaluate(
+            "() => !!document.querySelector('[data-section-import]')"
+        )
+        check("no per-section ↓ Import buttons", any_import_btn is False)
+        # Publishable + Notes sections do NOT get export.
+        no_publish = page.evaluate(
+            "!!document.querySelector('[data-section-export=\"publishable\"]') === false"
+        )
+        check("publishable section has no export button", no_publish is True)
+
+        # --- editor section round-trip ---
+        # Snapshot the editor payload, mutate, then restore.
+        editor_before = page.evaluate("() => buildSectionPayload('editor')")
+        check("editor payload schema is aop-section-state-v1",
+              editor_before.get("schema") == "aop-section-state-v1",
+              str(editor_before.get("schema")))
+        check("editor payload tagged with section",
+              editor_before.get("section") == "editor",
+              str(editor_before.get("section")))
+        check("editor payload carries showEditorPois toggle",
+              "showEditorPois" in (editor_before.get("toggles") or {}),
+              str(list((editor_before.get("toggles") or {}).keys())))
+        editor_pois_before = editor_before.get("runtime", {}).get("editor_pois") or []
+        check("editor payload carries the 3 test POIs",
+              len(editor_pois_before) == 3,
+              f"{len(editor_pois_before)} POIs")
+
+        # Wipe the editor data, confirm everything's gone, then import the snapshot.
+        page.evaluate(
+            """() => {
+              editorPois.length = 0;
+              saveEditorPois();
+              refreshEditorSource();
+            }"""
+        )
+        page.wait_for_timeout(150)
+        cleared = page.evaluate("() => editorPois.length")
+        check("editor POIs cleared before import", cleared == 0,
+              f"editorPois.length={cleared}")
+        page.evaluate("(payload) => applySectionPayload(payload)", editor_before)
+        page.wait_for_timeout(200)
+        restored = page.evaluate("() => editorPois.length")
+        check("editor section import restored 3 POIs", restored == 3,
+              f"editorPois.length={restored}")
+
+        # --- source-layers section round-trip ---
+        source_payload = page.evaluate("() => buildSectionPayload('source-layers')")
+        check("source-layers payload has cemeteries visibility",
+              "cemeteries" in (source_payload.get("runtime", {}).get("feature_visibility") or {}),
+              str((source_payload.get("runtime", {}) or {}).get("feature_visibility", {})))
+        check("source-layers payload has buildings visibility",
+              "buildings" in (source_payload.get("runtime", {}).get("feature_visibility") or {}))
+        # Source-layers payload should NOT include visitor-context overrides
+        # (that runtime lives in derived-layers).
+        check("source-layers payload does NOT carry visitor-context overrides",
+              "visitor_context_overrides" not in (source_payload.get("runtime") or {}))
+
+        # --- derived-layers section round-trip ---
+        derived_payload = page.evaluate("() => buildSectionPayload('derived-layers')")
+        check("derived-layers payload carries visitor_context_overrides",
+              "visitor_context_overrides" in (derived_payload.get("runtime") or {}),
+              str(list((derived_payload.get("runtime") or {}).keys())))
+        # Visitor-context-fill paint should be in this payload (it's in derived).
+        check("derived-layers payload carries visitor-context-fill paint",
+              "visitor-context-fill" in (derived_payload.get("paints") or {}),
+              str(list((derived_payload.get("paints") or {}).keys()))[:200])
+
+        # --- Wrong-section guard: an editor payload pasted into source-layers fails ---
+        rejected = page.evaluate(
+            """(payload) => {
+              try { applySectionPayload({ ...payload, section: 'editor' }); return null; }
+              catch (err) { return err.message; }
+            }""",
+            {"schema": "aop-section-state-v1", "section": "editor",
+             "toggles": {}, "sliders": {}, "paints": {}, "runtime": {}},
+        )
+        # applySectionPayload itself doesn't check the section/button mismatch —
+        # that's the importSectionFromPrompt wrapper's job. Verify the data path
+        # is sound:
+        check("applySectionPayload accepts a well-formed editor payload",
+              rejected is None,
+              str(rejected))
+        bad_schema = page.evaluate(
+            """() => {
+              try { applySectionPayload({ schema: 'wrong', section: 'editor' }); return null; }
+              catch (err) { return err.message; }
+            }"""
+        )
+        check("applySectionPayload rejects wrong schema",
+              "aop-section-state-v1" in (bad_schema or ""),
+              str(bad_schema))
+
+        # --- Snapshot Preset / Export Settings / Import-all buttons retired ---
+        no_snapshot = page.evaluate(
+            "() => !document.getElementById('snapshotPreset')"
+        )
+        check("snapshotPreset button removed", no_snapshot is True)
+        no_export_settings = page.evaluate(
+            "() => !document.getElementById('exportSettings')"
+        )
+        check("exportSettings button removed", no_export_settings is True)
+        no_import_all = page.evaluate(
+            "() => !document.getElementById('importAll')"
+        )
+        check("importAll button removed", no_import_all is True)
+        export_all_present = page.evaluate(
+            "() => !!document.getElementById('exportAll')"
+        )
+        check("Export-all button still present", export_all_present is True)
+
+        # --- Per-feature copy button: drop-in GeoJSON Feature ---
+        # Re-open the visitor-context drawer; each row should now carry an ↑
+        # button next to fly/move. Triggering it should leave the clipboard
+        # with a flat geojson Feature (type/properties/geometry) — paste-ready
+        # for website/data/*.geojson.
+        print("\n== Per-feature copy → drop-in GeoJSON Feature ==")
+        # Grant clipboard read so we can verify what was copied.
+        context.grant_permissions(["clipboard-read", "clipboard-write"])
+        page.evaluate(
+            "() => { if (expandedTuneKey !== 'visitorContext') toggleTunableExpansion('visitorContext'); }"
+        )
+        page.wait_for_timeout(150)
+        has_copy_btn = page.evaluate(
+            """() => !!document.querySelector(
+              '.feature-row[data-feature-id="Monteagle plateau services"] .feature-copy'
+            )"""
+        )
+        check("per-feature ↑ copy button present on visitor-context row",
+              has_copy_btn is True)
+        page.evaluate(
+            """() => document.querySelector(
+              '.feature-row[data-feature-id="Monteagle plateau services"] .feature-copy'
+            ).click()"""
+        )
+        page.wait_for_timeout(400)
+        copied = page.evaluate("() => navigator.clipboard.readText()")
+        try:
+            feature_payload = json.loads(copied)
+        except Exception as err:
+            feature_payload = None
+            check("clipboard holds valid JSON", False, f"{err}: {copied[:120]}")
+        if feature_payload is not None:
+            check("per-feature copy emits a GeoJSON Feature",
+                  feature_payload.get("type") == "Feature",
+                  str(feature_payload.get("type")))
+            check("copied Feature carries Monteagle properties",
+                  feature_payload.get("properties", {}).get("name")
+                  == "Monteagle plateau services",
+                  str(feature_payload.get("properties", {}).get("name")))
+            check("copied Feature carries a Polygon geometry",
+                  feature_payload.get("geometry", {}).get("type") == "Polygon",
+                  str(feature_payload.get("geometry", {}).get("type")))
+            # The geometry should reflect the just-moved centroid from the
+            # earlier visitor-context drag, not the source-file default.
+            ring = feature_payload.get("geometry", {}).get("coordinates", [[]])[0]
+            n = max(len(ring) - 1, 1)
+            cx = sum(p[0] for p in ring[:n]) / n
+            cy = sum(p[1] for p in ring[:n]) / n
+            check("copied geometry centroid matches the moved position",
+                  abs(cx - vc_expected_ll[0]) < 1e-3
+                  and abs(cy - vc_expected_ll[1]) < 1e-3,
+                  f"copied≈({cx},{cy}) expected≈{vc_expected_ll}")
+
+        # Same path for a POI row — must emit a Point Feature.
+        page.evaluate(
+            "() => { if (expandedTuneKey !== 'editorPois') toggleTunableExpansion('editorPois'); }"
+        )
+        page.wait_for_timeout(150)
+        page.evaluate(
+            """() => document.querySelector(
+              '.feature-row[data-feature-id="poi_test_a"] .feature-copy'
+            ).click()"""
+        )
+        page.wait_for_timeout(300)
+        poi_copied = page.evaluate("() => navigator.clipboard.readText()")
+        try:
+            poi_payload = json.loads(poi_copied)
+        except Exception:
+            poi_payload = None
+        if poi_payload is not None:
+            check("POI copy emits a GeoJSON Feature",
+                  poi_payload.get("type") == "Feature")
+            check("POI copy carries Point geometry",
+                  poi_payload.get("geometry", {}).get("type") == "Point",
+                  str(poi_payload.get("geometry", {}).get("type")))
+            check("POI copy carries the POI id",
+                  poi_payload.get("properties", {}).get("id") == "poi_test_a",
+                  str(poi_payload.get("properties", {}).get("id")))
 
         # ---- Console summary ----
         print("\n== Console summary ==")

@@ -34,7 +34,7 @@ Each is ~½ day or less. Group into one card if work happens together.
 - *"make edit panel pop up from the bottom right. on mobile when collapsed its floating in the middle."* — restyle the POI editor panel's collapsed state; pin bottom-right on desktop, dock cleanly on mobile.
 - *"collapse calendar on mobile / narrow widths automatically"* — media-query collapse of the event-schedule sidebar.
 - *"calendar needs time"* — `aop_event_schedule.json` already carries `time_label`; verify the sidebar row renders it; fix if not.
-- *"our region circle callouts need to be positionable"* — consumes the shared "find + move" primitive built in `poi_editor_v2.md`. Adopt the primitive on the `visitor-context` label anchors instead of writing a parallel drag handler. Extends `../01_mvp/visitor_context_callouts.md`.
+- ~~*"our region circle callouts need to be positionable"*~~ — resolved 2026-05-23. The visitor-context callouts now consume the shared find + move primitive from `poi_editor_v2.md`. Override store: `aop_visitor_context_overrides_v1`.
 - *"layers need text tweaking. currently trace has text hard to read."* — typography pass on label layers; trace label legibility first.
 
 ### C. Search
@@ -93,7 +93,7 @@ Bucket **I** is deferred to `../03_deferred/offline_pwa.md`; it re-enters the ac
 
 - `02_edit/views_and_defaults.md` — Buckets A1, A2, "trails by default."
 - `02_edit/left_hot_button.md` — A3 (or fold into views card once personas are defined).
-- `02_edit/poi_editor_v2.md` — Bucket G. **Written.**
+- `02_edit/poi_editor_v2.md` — Bucket G. **Written + shipped 2026-05-23.** Three consumers wired (POIs, buildings, cemeteries) plus the visitor-context drag consumer that closes Bucket B's positionable-callouts item.
 - `02_edit/viewer_chrome_polish.md` — Bucket B.
 - `02_edit/search_tags.md` — Bucket C.
 - `02_edit/named_feature_tagging.md` — Bucket D.

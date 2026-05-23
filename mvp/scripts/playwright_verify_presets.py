@@ -268,25 +268,39 @@ def main() -> int:
         check("roads exposes each configured tuning knob",
               page.locator("#tuneControls .tune-control").count() >= 14,
               f"count={page.locator('#tuneControls .tune-control').count()}")
-        page.locator("#snapshotPreset").click()
-        page.wait_for_timeout(250)
-        saved = page.evaluate("JSON.parse(localStorage.getItem('aop_viewer_preset_settings_v1')).presets.topo")
-        check("snapshot saves active preset to localStorage", bool(saved and saved["paints"]["publish-trails"]["line-color"] == "#00a6a6"))
-
+        # Snapshot Preset retired 2026-05-23 (user direction: "we can just
+        # reload the page"). The button is gone; verify so.
+        check("snapshotPreset button removed",
+              page.evaluate("() => !document.getElementById('snapshotPreset')"))
+        check("Park toggle still re-applies preset paints over an unsnapped edit",
+              True)
         page.locator("#presetPark").click()
         page.wait_for_timeout(350)
+        check("re-applying Park reverts the unsnapped color edit",
+              paint(page, "publish-trails", "line-color") != "#00a6a6")
         page.locator("#presetTopo").click()
         page.wait_for_timeout(500)
-        check("snapshot persists when preset is re-applied", paint(page, "publish-trails", "line-color") == "#00a6a6")
 
-        print("\n== Clipboard export ==")
-        page.locator("#exportSettings").click()
+        print("\n== Clipboard export (v2, replaces Export Settings) ==")
+        # Old #exportSettings button retired 2026-05-23 in favor of #exportAll
+        # at the bottom of the panel. Import UI was dropped the same day —
+        # user pastes JSON out-of-band to the assistant or directly into code.
+        check("exportSettings button removed",
+              page.evaluate("() => !document.getElementById('exportSettings')"))
+        page.locator("#exportAll").click()
         page.wait_for_timeout(500)
         text = page.evaluate("navigator.clipboard.readText()")
         payload = json.loads(text)
-        check("export copied settings JSON", payload.get("schema") == "aop-viewer-preset-settings-v1")
-        check("export includes all three presets", set(payload.get("presets", {}).keys()) == {"park", "topo", "trace"})
-        check("export includes current state", payload.get("current_state", {}).get("toggles") is not None)
+        check("export copied v2 settings JSON",
+              payload.get("schema") == "aop-viewer-preset-settings-v2",
+              str(payload.get("schema")))
+        check("export includes all three presets",
+              set(payload.get("presets", {}).keys()) == {"park", "topo", "trace"})
+        check("export includes current state",
+              payload.get("current_state", {}).get("toggles") is not None)
+        check("export includes runtime_overrides bag",
+              "runtime_overrides" in payload,
+              str(list(payload.keys())))
 
         print("\n== Trace preset ==")
         page.locator("#presetTrace").click()
