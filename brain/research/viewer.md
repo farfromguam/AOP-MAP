@@ -65,10 +65,10 @@ separate because they are workflow states, not source-vs-derived context.
 | USDA NAIP imagery (TN 2023) | USDA FPAC `USDA_CONUS_PRIME` tiles | off | "USDA NAIP Imagery / Tracing Source" below |
 | 9-patch acquisition AOI | `aop_9_patch.geojson` | off | "9-Patch Acquisition AOI Overlay" below |
 | Lidar tile index (USGS 3DEP) | `aop_lidar_tiles.geojson` | off | "Lidar Tile Index Layer" below |
-| Streams & waterbodies (USGS NHD) | `aop_water.geojson` | off | "Hydrography / Water Layer" below |
+| Streams & waterbodies (USGS NHD) | `aop_water.geojson` | on (A2) | "Hydrography / Water Layer" below |
 | Springs & gages (USGS NHD) | `aop_water.geojson` | off | "Hydrography / Water Layer" below |
 | Cemeteries (TN Comptroller parcels) | `aop_cemeteries.geojson` | off | `tasks/01_mvp/cemeteries_layer.md`; "Cemeteries Layer" below |
-| Building footprints (FEMA USA Structures) | `aop_buildings.geojson` | off | `tasks/01_mvp/buildings_layer.md`; "Building Footprints Layer" below |
+| Building footprints (FEMA USA Structures) | `aop_buildings.geojson` | on (A2) | `tasks/01_mvp/buildings_layer.md`; "Building Footprints Layer" below |
 | OSM park polygon | `osm_aop_9patch.geojson` | off | `tasks/01_mvp/community_trails_import.md` |
 | OSM tracks (highway=track) | `osm_aop_9patch.geojson` | off | `tasks/01_mvp/community_trails_import.md` |
 | OSM service roads | `osm_aop_9patch.geojson` | off | `tasks/01_mvp/community_trails_import.md` |
@@ -86,12 +86,15 @@ Added 2026-05-21. The viewer has a top-left control cluster with search, three
 preset buttons (`Park`, `Topo`, and `Trace`), and a dedicated `3D` button.
 
 - `Park` is the clean Muted Earth vector map: land cover, roads, publishable
-  boundary/trails/trailheads.
-- `Topo` turns on hillshade, lidar contours, streams, and springs and retunes
-  the palette for relief reading.
-- `Trace` turns off land cover, turns on USDA NAIP imagery, SFWDA paper map,
-  OSM tracks/service roads, buildings, and high-contrast reference styling for
-  tracing/review.
+  boundary/trails/trailheads, visitor context callouts, water (streams +
+  waterbodies), and the FEMA building footprints (feature-list filter keeps
+  the 4 in-park footprints on by default, the 198 outside-park collapsed
+  off). Springs stay topo-only.
+- `Topo` is the relief read of Park: same payload plus hillshade, lidar
+  contours, and springs/gages.
+- `Trace` is the workbench: USDA NAIP imagery, SFWDA paper map, OSM
+  tracks/service roads, OSM named landmarks, buildings, with land cover off
+  and high-contrast reference styling for tracing/review.
 
 The `3D` button is independent of presets. Turning it on binds MapLibre terrain
 and pitches the camera; switching between `Park`, `Topo`, and `Trace` leaves the
@@ -180,6 +183,13 @@ already-loaded GeoJSON -- so it works offline.
   through it, so a tag query lands on the right anchor. A leading `#` flips
   the matcher into alias-only mode -- a `#tag` query no longer surfaces every
   session that happens to mention the tag. Card: `tasks/02_edit/search_tags.md`.
+- Stale-anchor refresh (added 2026-05-23, Sprint 02 Bucket D): when a
+  feature-tag binding moves and the schedule re-resolves,
+  `refreshEventScheduleSearchIndex` strips the prior event-schedule entries
+  from `searchIndex` and re-indexes the fresh anchors before calling
+  `buildSearchGroups`. So a newly-resolvable `#pavilion` anchor is
+  searchable immediately, no reload needed. Card:
+  `tasks/02_edit/named_feature_tagging.md`.
 - Verified: `mvp/scripts/playwright_verify_search.py` -- 12/12 PASS on
   2026-05-20; 2026-05-23 extension adds 11 tag-search assertions, all PASS,
   0 console errors. The two pre-existing FAILs ("multi-segment trail
@@ -481,7 +491,19 @@ Recorded on 2026-05-22:
 - Source discipline: proposed event planning context only. Facility placement,
   route choices, and activity labels need AOP confirmation before moving into a
   publishable event layer.
-- Verification: `mvp/scripts/playwright_verify_event_schedule.py`.
+- Tag-driven location resolution (added 2026-05-23, Sprint 02 Bucket D):
+  `locations[#tag].coordinates` is now optional. When absent, the viewer
+  resolves coordinates from a per-feature `#tag` binding maintained in the
+  shared feature list panel (Buildings + Drawn POIs are taggable). The
+  schedule ships with `#pavilion` having no `coordinates`; the viewer seeds
+  `#pavilion` → the 1010 Ellis Cove Rd building on first load
+  (`aop_feature_tags_v1` localStorage; one-time `aop_feature_tags_seeded_v1`
+  flag). Aliases inherit through the same path — `#registration` resolves
+  through `#pavilion`. Card: `tasks/02_edit/named_feature_tagging.md`.
+- Verification: `mvp/scripts/playwright_verify_event_schedule.py` -- 14 new
+  Bucket D assertions cover the seed, the lookup, the live re-bind, the
+  per-row tag input rendering, and the camera flight to the resolved
+  location. All PASS on 2026-05-23.
 
 ### Asphalt Roads Layer
 
@@ -506,7 +528,7 @@ Recorded on 2026-05-20:
 - Output: `website/data/aop_water.geojson` -- each feature tagged with `water_kind` (`flowline`, `water_area`, `waterbody`, `point`) and `water_class`, plus `name` (GNIS), `gnis_id`, `fcode`, `ftype`, `lengthkm`/`areasqkm`/`elevation`, `permanent_identifier`, and `nhd_layer_id`/`nhd_layer_name`.
 - Class breakdown: `55` stream, `30` artificial_path (flow paths through wide water), `1` stream_river_area, `3` lake_pond, `4` spring, `1` gage.
 - Named streams in-AOI: Battle Creek (the main creek through the AOP block, mostly modeled as artificial paths inside a 0.63 km² stream/river area polygon), Big Fiery Gizzard Creek, Kelly Cove Branch, Rogers Cove Branch, Sweden Creek, Tate Cove Creek. Named springs: Gilliam Spring, Bible Spring, Fish Trap Spring.
-- Viewer: two toggles in `website/index.html`, both default-off. `Streams & waterbodies (USGS NHD)` drives `streams` + `stream-labels` + `waterbody-fill`/`waterbody-outline` + `water-area-fill`; `Springs & gages (USGS NHD)` drives `water-points` + `water-point-labels`. Click any stream/waterbody/point for a popup with class, NHD ftype/fcode, and length or area.
+- Viewer: two toggles in `website/index.html`. `Streams & waterbodies (USGS NHD)` is default ON (Sprint 02 A2) in Park and Topo; it drives `streams` + `stream-labels` + `waterbody-fill`/`waterbody-outline` + `water-area-fill`. `Springs & gages (USGS NHD)` stays default off and is topo-only (drives `water-points` + `water-point-labels`). Click any stream/waterbody/point for a popup with class, NHD ftype/fcode, and length or area.
 - Verified with `mvp/scripts/playwright_verify_water.py` on 2026-05-20: 28 of 28 checks PASS, 0 console errors.
 - All NHD water features are raw-zone context. Before any are promoted into publish layers, attach a row in `source_register.sources` per `northstar/source_register.md` (USGS NHD is public domain; confidence: high for named perennial streams, lower for unnamed/intermittent; permission: public).
 - The 1m-DEM lidar contour pipeline (`brain/tasks/01_mvp/lidar_contour_pipeline.md`) is the natural cross-check: where NHD flowlines and lidar drainage scars disagree, trust the lidar for micro-terrain.
@@ -543,11 +565,15 @@ Recorded on 2026-05-21:
   Residential, 24 Agriculture, 7 Unclassified, 3 Assembly, 2 Government. Four
   footprint centroids fall inside the candidate AOP boundary: 1010, 1033, 665,
   and 880 Ellis Cove Road.
-- Viewer: toggle `Building footprints (FEMA USA Structures)`, default off.
-  Layers `building-footprint-fill`, `building-footprint-outline`, and
-  `building-footprint-aop-outline`; the inside-AOP outlines draw heavier.
-  Clicking a footprint opens occupancy, address, area, image date, validation
-  method, and source. Addressed footprints are searchable.
+- Viewer: toggle `Building footprints (FEMA USA Structures)`, default ON
+  (Sprint 02 A2) in Park, Topo, and Trace. Layers `building-footprint-fill`,
+  `building-footprint-outline`, and `building-footprint-aop-outline`; the
+  inside-AOP outlines draw heavier. The feature-list panel keeps the 4
+  in-park rows pre-ticked and the 198 outside-park rows collapsed under a
+  default-off bulk toggle, so the on-by-default Park view only draws the
+  in-park footprints unless the user expands the rest. Clicking a footprint
+  opens occupancy, address, area, image date, validation method, and source.
+  Addressed footprints are searchable.
 - Verified with `mvp/scripts/playwright_verify_buildings.py` on 2026-05-21:
   all checks PASS, 0 console errors.
 - Raw-zone context only. A footprint must be checked against imagery or field

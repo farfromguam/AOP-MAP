@@ -156,6 +156,10 @@ def main() -> int:
         check("Park starts active", page.locator("#presetPark").evaluate("el => el.classList.contains('active')"))
         check("Park keeps land cover on", is_checked(page, "showLandcover"))
         check("Park keeps topo overlays off", not is_checked(page, "showHillshade") and not is_checked(page, "showContours"))
+        # Sprint 02 A2: water + buildings join the default-on Park payload.
+        check("Park turns water on by default (A2)", is_checked(page, "showWater"))
+        check("Park turns buildings on by default (A2)", is_checked(page, "showBuildings"))
+        check("Park keeps springs off (A2 — topo-only)", not is_checked(page, "showSprings"))
         check("Park background is Muted Earth", paint(page, "background", "background-color") == "#efe7d5")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["park"]))
 
@@ -185,6 +189,7 @@ def main() -> int:
         check("Topo turns hillshade on", is_checked(page, "showHillshade") and layer_visibility(page, "lidar-hillshade") == "visible")
         check("Topo turns contours on", is_checked(page, "showContours") and layer_visibility(page, "contours-index") == "visible")
         check("Topo turns water and springs on", is_checked(page, "showWater") and is_checked(page, "showSprings"))
+        check("Topo turns buildings on by default (A2)", is_checked(page, "showBuildings"))
         check("Topo changes background", paint(page, "background", "background-color") == "#e7ddc4")
         check("Topo restyles index contours", paint(page, "contours-index", "line-color") == "#5f4934")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["topo"]))

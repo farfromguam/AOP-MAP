@@ -32,6 +32,13 @@ facility use.
     `location_tag`, and optional `route_tags`.
   - aliases: `#registration` resolves to `#pavilion`; `#pavillion` is accepted
     as a misspelling alias for `#pavilion`.
+- A location's `coordinates` field is optional as of Sprint 02 Bucket D
+  (2026-05-23). When absent, the viewer resolves coordinates from a
+  per-feature `#tag` binding in the shared feature list panel
+  (`aop_feature_tags_v1`). Explicit JSON `coordinates` still win when
+  present. The `#pavilion` entry now ships with no coordinates and resolves
+  through the 1010 Ellis Cove Rd building footprint (seeded on first load).
+  See `brain/tasks/02_edit/named_feature_tagging.md`.
 - `website/index.html` now fetches that JSON, resolves tags into an in-memory
   GeoJSON source, and renders:
   - sidebar schedule rows from the JSON sessions,

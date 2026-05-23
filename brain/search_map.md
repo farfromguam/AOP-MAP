@@ -22,6 +22,8 @@ TL;DR:
 - GPX, field track, ride recording, observation import: `import/_readme.md`, then `tasks/01_mvp/mvp_validation_loop.md`
 - activity hotspots, heatmap, dwell time, user-entered trail hotspots, timestamped GPX, synthetic Saturday activity, simulated users, OSM-following routes, GPS recorder: `tasks/01_mvp/activity_hotspots.md`, then `research/viewer.md`
 - event schedule, event calendar, RC event, G6, Pro-Line, schedule rows, `#pavilion`, `#registration`, event POI: `tasks/01_mvp/event_schedule_layer.md`, then `research/viewer.md`
+- feature tag binding, `#tag` on feature, `aop_feature_tags_v1`, tagToFeature, feature tag input, pavilion → 1010 building, schedule without coordinates, tag a building, tag a POI, named-feature tagging, seed `#pavilion`, refresh search index, refreshEventScheduleSearchIndex: `tasks/02_edit/named_feature_tagging.md`, then `research/viewer.md`
+- event app, CRUD, uploads, contributor submissions, trail submission, landmark submission, moderation queue, attachment model, invite codes: `tasks/03_event_app/full_loop_crud_upload_audit.md`
 - database schema, `init_db.sql`, tables, raw/core/publish zones, publish views, status vocabularies: `tasks/01_mvp/code_health_pass.md`
 - contour build, gdal_contour, GDAL Docker, DEM clip: `tasks/01_mvp/lidar_contour_pipeline.md`, then `spinup/mvp_runbook.md`
 - map build, PostGIS, QGIS, MapLibre, PMTiles, Cloudflare, Phoenix: `tasks/01_mvp/aop_south_pittsburg_map_build_card.md`

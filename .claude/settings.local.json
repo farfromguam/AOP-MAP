@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(python3 mvp/scripts/playwright_verify_presets.py)",
-      "Bash(python3 mvp/scripts/playwright_verify_feature_list.py)"
+      "Bash(python3 mvp/scripts/playwright_verify_feature_list.py)",
+      "Bash(python3 mvp/scripts/playwright_verify_water.py)"
     ]
   }
 }

@@ -56,9 +56,20 @@ check.failed = False  # type: ignore[attr-defined]
 
 
 def set_toggle(page, toggle_id: str, target: bool) -> None:
-    element = page.locator(f"#{toggle_id}")
-    if element.is_checked() != target:
-        element.click()
+    # Drive .checked + change directly so a collapsed `.panel-section` cannot
+    # hide the checkbox from a UI click — matches the Sprint 02 D fix in
+    # playwright_verify_event_schedule.py.
+    page.evaluate(
+        """({ id, target }) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          if (el.checked !== target) {
+            el.checked = target;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }""",
+        {"id": toggle_id, "target": target},
+    )
     page.wait_for_timeout(250)
 
 
@@ -137,14 +148,22 @@ def main() -> int:
         page.wait_for_timeout(500)
 
         print("\n== Initial state ==")
-        for name in ("water", "springs"):
-            tid = TOGGLE_IDS[name]
+        check(
+            "water toggle exists and starts ON (Bucket A2 default)",
+            page.locator(f"#{TOGGLE_IDS['water']}").count() == 1
+            and page.locator(f"#{TOGGLE_IDS['water']}").is_checked(),
+        )
+        check(
+            "springs toggle exists and starts off",
+            page.locator(f"#{TOGGLE_IDS['springs']}").count() == 1
+            and not page.locator(f"#{TOGGLE_IDS['springs']}").is_checked(),
+        )
+        for layer in WATER_LAYERS:
             check(
-                f"{name} toggle exists and starts off",
-                page.locator(f"#{tid}").count() == 1
-                and not page.locator(f"#{tid}").is_checked(),
+                f"{layer} starts visible (Bucket A2)",
+                layer_visibility(page, layer) == "visible",
             )
-        for layer in WATER_LAYERS + SPRING_LAYERS:
+        for layer in SPRING_LAYERS:
             check(
                 f"{layer} added with visibility=none",
                 layer_visibility(page, layer) == "none",

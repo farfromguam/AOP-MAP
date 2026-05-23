@@ -15,7 +15,11 @@ Imported FEMA USA Structures as the building-footprint reference layer.
 
 - Importer: `mvp/scripts/import_fema_buildings.py`
 - Output: `website/data/aop_buildings.geojson`
-- Viewer toggle: `Building footprints (FEMA USA Structures)`, default OFF
+- Viewer toggle: `Building footprints (FEMA USA Structures)`, default ON in
+  Park/Topo/Trace (Sprint 02 A2 + Bucket E). The feature-list panel keeps
+  the 4 in-park rows pre-ticked and the 198 outside-park rows collapsed
+  under a default-off bulk toggle, so a fresh Park view only draws the
+  in-park footprints unless the user expands the rest.
 - Viewer layers: `building-footprint-fill`, `building-footprint-outline`,
   `building-footprint-aop-outline`
 - Verification: `mvp/scripts/playwright_verify_buildings.py`
@@ -94,9 +98,12 @@ queries rejected the parameters. The importer therefore:
    representative point is inside the current AOP boundary.
 5. Writes atomically to `website/data/aop_buildings.geojson`.
 
-The layer is default OFF and indexed for search only where the FEMA feature has
-an address. Searching `1010 Ellis` lands on the corresponding footprint and
-turns the building layer on.
+As of Sprint 02 A2 (2026-05-23) the layer is default ON in Park, Topo, and
+Trace. The feature-list panel keeps only the 4 in-park rows pre-ticked, so a
+fresh Park view draws the in-park footprints while the 198 outside-park
+footprints stay collapsed off until the user expands them. Indexed for search
+only where the FEMA feature has an address. Searching `1010 Ellis` lands on
+the corresponding footprint and turns the building layer on if it is off.
 
 ## Source Register
 

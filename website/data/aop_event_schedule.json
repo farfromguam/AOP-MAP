@@ -15,8 +15,7 @@
       "label": "AOP Pavilion / G-Central",
       "map_label": "G-Central",
       "role": "pavilion",
-      "coordinates": [-85.74825124, 35.09072636],
-      "source": "User-confirmed pavilion; FEMA USA Structures footprint at 1010 Ellis Cove Road.",
+      "source": "User-confirmed pavilion; FEMA USA Structures footprint at 1010 Ellis Cove Road. Coordinates resolved at runtime through the #pavilion tag bound to the 1010 building in the viewer's feature list panel.",
       "confidence": "medium",
       "caveat": "FEMA footprint remains raw context; facility use should be confirmed by AOP."
     },

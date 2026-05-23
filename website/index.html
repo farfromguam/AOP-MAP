@@ -106,7 +106,7 @@
     .feature-list-group-head .group-count { color: #756444; font-size: 0.75rem; }
     .feature-list-rows { display: grid; gap: 2px; padding: 2px 0 4px 22px; }
     .feature-list-rows[hidden] { display: none; }
-    .feature-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto auto; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 5px; font-size: 0.82rem; color: #4a3c2a; }
+    .feature-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto auto auto; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 5px; font-size: 0.82rem; color: #4a3c2a; }
     .feature-row:hover { background: rgba(247,235,200,0.6); }
     .feature-row .feature-name { min-width: 0; overflow-wrap: anywhere; cursor: pointer; }
     .feature-row .feature-fly { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: #6b5a3e; font-size: 0.78rem; border-radius: 4px; }
@@ -115,6 +115,12 @@
     .feature-row .feature-move:hover { background: #f1e6cf; color: #3f3122; }
     .feature-row .feature-copy { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: #6b5a3e; font-size: 0.78rem; border-radius: 4px; }
     .feature-row .feature-copy:hover { background: #f1e6cf; color: #3f3122; }
+    /* Tag input on taggable rows (buildings, drawn POIs). Binds a #tag to the
+       feature so the event-schedule JSON can omit coordinates for that tag.
+       Card: brain/tasks/02_edit/named_feature_tagging.md. */
+    .feature-row .feature-tag { width: 84px; padding: 1px 4px; font-size: 0.74rem; border: 1px solid #c8b88d; border-radius: 4px; background: #fffcef; color: #4a3c2a; }
+    .feature-row .feature-tag:focus { outline: none; border-color: #8b5f38; background: #fff; }
+    .feature-row .feature-tag.bound { background: #f3e6c4; border-color: #b08a4a; }
     .feature-row.move-target { background: #f7e3b5; }
     .feature-row.move-target .feature-move { cursor: grabbing; }
     /* Map-click → panel-reveal flash. A row that was just selected from the
@@ -248,10 +254,10 @@
           <label><input type="checkbox" id="showNinePatch" /> 9-patch acquisition AOI</label>
           <label><input type="checkbox" id="showLidarTiles" /> Lidar tile index (USGS 3DEP)</label>
           <label><input type="checkbox" id="showRoads" checked /> Asphalt roads (USGS National Map)</label>
-          <label><input type="checkbox" id="showWater" /> Streams &amp; waterbodies (USGS NHD)</label>
+          <label><input type="checkbox" id="showWater" checked /> Streams &amp; waterbodies (USGS NHD)</label>
           <label><input type="checkbox" id="showSprings" /> Springs &amp; gages (USGS NHD)</label>
           <label><input type="checkbox" id="showCemeteries" /> Cemeteries (TN Comptroller parcels)</label>
-          <label><input type="checkbox" id="showBuildings" /> Building footprints (FEMA USA Structures)</label>
+          <label><input type="checkbox" id="showBuildings" checked /> Building footprints (FEMA USA Structures)</label>
           <label><input type="checkbox" id="showOsmPark" /> OSM park polygon</label>
           <label><input type="checkbox" id="showOsmTracks" /> OSM tracks (highway=track)</label>
           <label><input type="checkbox" id="showOsmService" /> OSM service roads</label>
@@ -1151,6 +1157,11 @@
       buildings: {
         label: 'Buildings',
         idField: 'build_id',
+        // Tag input on each row binds a #tag to the building so the event
+        // schedule can resolve coords through this binding. The 1010 building
+        // is auto-seeded as #pavilion on first ever load (one-time bootstrap
+        // gated by aop_feature_tags_seeded_v1). See maybeSeedFeatureTags.
+        taggable: true,
         rowLabel: (props) => {
           const base = props.building_label || props.address || `build_id ${props.build_id}`;
           // Annotate the 1010 pavilion so it reads at a glance.
@@ -1184,6 +1195,10 @@
       editorPois: {
         label: 'Drawn POIs',
         idField: 'id',
+        // Tag input on each row binds a #tag to the POI so the event
+        // schedule can resolve a location like #excavator-hill through a
+        // drawn POI without ever typing lat/long.
+        taggable: true,
         rowLabel: (props) => {
           const category = props.category || 'POI';
           const name = (props.name || '').trim();
@@ -1468,6 +1483,161 @@
       persistFeatureVisibility(layerKey);
     }
 
+    // --- Feature → #tag binding ------------------------------------------
+    // Lets a feature in the list (1010 building, a drawn POI) be bound to a
+    // #tag (e.g. #pavilion). The event-schedule resolver consumes the same
+    // tag to look up coordinates, so the schedule JSON can omit lat/long for
+    // any location whose key matches a binding. Card:
+    // brain/tasks/02_edit/named_feature_tagging.md.
+    const FEATURE_TAG_KEY = 'aop_feature_tags_v1';
+    // One-time seed flag: the 1010 building gets #pavilion bound on the
+    // very first load so the schedule's pavilion entry works out of the box
+    // with no coordinates. Subsequent loads respect whatever the user has
+    // done — including unbinding the seed.
+    const FEATURE_TAG_SEEDED_KEY = 'aop_feature_tags_seeded_v1';
+    // Inverted lookup, rebuilt whenever a layer registers or a tag changes.
+    // Shape: Map<"#tag", { layerKey, featureId, coordinates }>.
+    const tagToFeature = new Map();
+
+    function loadFeatureTagStore() {
+      try {
+        const raw = localStorage.getItem(FEATURE_TAG_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch (err) {
+        console.warn('Feature tag store unreadable; resetting', err);
+        return {};
+      }
+    }
+
+    function saveFeatureTagStore(store) {
+      try {
+        localStorage.setItem(FEATURE_TAG_KEY, JSON.stringify(store));
+      } catch (err) {
+        console.warn('Could not persist feature tags', err);
+      }
+    }
+
+    // Normalize input → `#tag` lowercase, no internal whitespace, leading #
+    // guaranteed. Empty string means "no tag" (clears the binding).
+    function normalizeFeatureTag(value) {
+      const trimmed = String(value || '').trim().toLowerCase().replace(/\s+/g, '-');
+      if (!trimmed) return '';
+      return trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+    }
+
+    function tagForFeature(layerKey, featureId) {
+      const store = loadFeatureTagStore();
+      const layerTags = store[layerKey];
+      const value = layerTags && layerTags[String(featureId)];
+      return value ? String(value) : '';
+    }
+
+    // Rebuild the inverted lookup from the persisted store and the currently
+    // registered layer runtimes. A binding to a layer that hasn't registered
+    // yet is preserved in the store but absent from the lookup until that
+    // layer comes online — so the store IS the source of truth, lookup is
+    // a derived index.
+    function rebuildTagLookup() {
+      tagToFeature.clear();
+      const store = loadFeatureTagStore();
+      for (const [layerKey, layerTags] of Object.entries(store)) {
+        if (!layerTags || typeof layerTags !== 'object') continue;
+        if (!featureListRuntime[layerKey]) continue;
+        for (const [featureId, tag] of Object.entries(layerTags)) {
+          const normalized = normalizeFeatureTag(tag);
+          if (!normalized) continue;
+          const item = findFeatureById(layerKey, featureId);
+          if (!item) continue;
+          const coords = geometryCentroid(item.feature.geometry);
+          if (!coords) continue;
+          tagToFeature.set(normalized, {
+            layerKey,
+            featureId: item.id,
+            coordinates: [coords[0], coords[1]]
+          });
+        }
+      }
+    }
+
+    // Drop tag bindings whose features no longer exist in the layer (e.g.
+    // POI "Clear all"). Called on every register pass — buildings won't ever
+    // shrink, but POIs do.
+    function pruneOrphanedTags(layerKey) {
+      const store = loadFeatureTagStore();
+      const layerTags = store[layerKey];
+      if (!layerTags) return;
+      let changed = false;
+      for (const featureId of Object.keys(layerTags)) {
+        if (!findFeatureById(layerKey, featureId)) {
+          delete layerTags[featureId];
+          changed = true;
+        }
+      }
+      if (changed) saveFeatureTagStore(store);
+    }
+
+    // Bind / re-bind / clear a tag for a feature. A tag is one-to-one: if
+    // the same tag was previously bound to another feature, the prior
+    // binding is moved (no two rows can both claim #pavilion). Triggers a
+    // schedule re-resolution so the calendar/anchor update live.
+    function setFeatureTag(layerKey, featureId, rawTag) {
+      const normalized = normalizeFeatureTag(rawTag);
+      const store = loadFeatureTagStore();
+      // Strip any prior holder of this tag across every layer.
+      if (normalized) {
+        for (const [otherLayer, otherTags] of Object.entries(store)) {
+          if (!otherTags || typeof otherTags !== 'object') continue;
+          for (const otherFeatureId of Object.keys(otherTags)) {
+            const sameRow = otherLayer === layerKey && String(otherFeatureId) === String(featureId);
+            if (!sameRow && normalizeFeatureTag(otherTags[otherFeatureId]) === normalized) {
+              delete otherTags[otherFeatureId];
+            }
+          }
+        }
+      }
+      if (!store[layerKey]) store[layerKey] = {};
+      if (normalized) store[layerKey][String(featureId)] = normalized;
+      else delete store[layerKey][String(featureId)];
+      saveFeatureTagStore(store);
+      rebuildTagLookup();
+      rebuildEventScheduleData();
+    }
+
+    // First-ever-load seed: bind #pavilion → the 1010 Ellis Cove Rd
+    // building so the schedule's #pavilion entry works without coords on a
+    // fresh viewer. After this fires once, the user owns the binding —
+    // unbinding or re-binding survives, because the seed flag is sticky.
+    function maybeSeedFeatureTags() {
+      try {
+        if (localStorage.getItem(FEATURE_TAG_SEEDED_KEY) === '1') return;
+        const runtime = featureListRuntime['buildings'];
+        if (!runtime || !runtime.state) return;
+        let pavilion = null;
+        for (const bucket of runtime.state.groups) {
+          for (const item of bucket.features) {
+            if (String(item.props.address || '').startsWith('1010 ')) {
+              pavilion = item;
+              break;
+            }
+          }
+          if (pavilion) break;
+        }
+        if (!pavilion) return;
+        const store = loadFeatureTagStore();
+        if (!store.buildings) store.buildings = {};
+        // Don't overwrite an existing binding (the user may have moved
+        // #pavilion to another row before the seed flag was set).
+        if (!store.buildings[pavilion.id]) {
+          store.buildings[pavilion.id] = '#pavilion';
+          saveFeatureTagStore(store);
+        }
+        localStorage.setItem(FEATURE_TAG_SEEDED_KEY, '1');
+      } catch (err) {
+        console.warn('Feature-tag bootstrap failed:', err);
+      }
+    }
+
     // Fly + flash a single feature. Mirrors gotoEventSession's camera math so
     // the flight lands inside the visible map slice (not under the right
     // panel). No popup — the row label is already on-screen.
@@ -1730,6 +1900,14 @@
       featureListRuntime[layerKey] = { data, baseFilters, state, collapsed };
       applyFeatureListFilters(layerKey);
       persistFeatureVisibility(layerKey);
+      // Tag bindings depend on a present runtime; rebuild after every
+      // register so a moved POI / deleted POI / freshly loaded buildings
+      // layer all flow through. Buildings is the seed surface for the
+      // #pavilion default.
+      pruneOrphanedTags(layerKey);
+      if (layerKey === 'buildings') maybeSeedFeatureTags();
+      rebuildTagLookup();
+      rebuildEventScheduleData();
     }
 
     // Render the feature list DOM into the shared #featureList container in
@@ -1867,7 +2045,32 @@
             event.stopPropagation();
             copyFeatureAsDropIn(item.feature);
           });
-          row.append(check, name, copy, fly);
+          row.append(check, name);
+          // Tag input on taggable layers (buildings, drawn POIs). Sits
+          // between the name and the action cluster so the binding reads
+          // alongside the label it modifies. Card:
+          // brain/tasks/02_edit/named_feature_tagging.md.
+          if (spec.taggable) {
+            const tagInput = document.createElement('input');
+            tagInput.type = 'text';
+            tagInput.className = 'feature-tag';
+            tagInput.placeholder = '#tag';
+            const currentTag = tagForFeature(layerKey, item.id);
+            tagInput.value = currentTag;
+            if (currentTag) tagInput.classList.add('bound');
+            tagInput.title = 'Bind a #tag (e.g. #pavilion). Used by the event-schedule resolver.';
+            tagInput.addEventListener('change', () => {
+              setFeatureTag(layerKey, item.id, tagInput.value);
+              // Re-render so a tag moved off another row visibly clears.
+              renderFeatureList(layerKey);
+            });
+            // Long-press to enter move mode listens on the row body via
+            // pointerdown. Typing in the input should not arm it.
+            tagInput.addEventListener('pointerdown', (event) => event.stopPropagation());
+            tagInput.addEventListener('click', (event) => event.stopPropagation());
+            row.append(tagInput);
+          }
+          row.append(copy, fly);
           if (movable) {
             const move = document.createElement('button');
             move.type = 'button';
@@ -1972,10 +2175,10 @@
           showLidarTiles: false,
           showRoads: true,
           showVisitorContext: true,
-          showWater: false,
+          showWater: true,
           showSprings: false,
           showCemeteries: false,
-          showBuildings: false,
+          showBuildings: true,
           showOsmPark: false,
           showOsmTracks: false,
           showOsmService: false,
@@ -2048,7 +2251,7 @@
           showWater: true,
           showSprings: true,
           showCemeteries: false,
-          showBuildings: false,
+          showBuildings: true,
           showOsmPark: false,
           showOsmTracks: false,
           showOsmService: false,
@@ -2704,7 +2907,8 @@
       const stores = [
         ['visitor_context_overrides', 'aop_visitor_context_overrides_v1', {}],
         ['editor_pois', 'aop_editor_pois_v1', []],
-        ['feature_visibility', 'aop_feature_visibility_v1', {}]
+        ['feature_visibility', 'aop_feature_visibility_v1', {}],
+        ['feature_tags', 'aop_feature_tags_v1', {}]
       ];
       for (const [outKey, storageKey, fallback] of stores) {
         try {
@@ -2761,11 +2965,15 @@
         featureVisibilityLayers: ['visitorContext']
       },
       'source-layers': {
-        featureVisibilityLayers: ['cemeteries', 'buildings']
+        featureVisibilityLayers: ['cemeteries', 'buildings'],
+        // Buildings is the only taggable source-layer consumer today.
+        featureTagLayers: ['buildings']
       },
       editor: {
         editorPois: 'aop_editor_pois_v1',
-        featureVisibilityLayers: ['editorPois']
+        featureVisibilityLayers: ['editorPois'],
+        // Drawn POIs are taggable: a #tag binding rides along with the POI.
+        featureTagLayers: ['editorPois']
       }
     };
 
@@ -2857,6 +3065,17 @@
           runtime.feature_visibility = slice;
         } catch (err) { runtime.feature_visibility = {}; }
       }
+      if (runtimeSpec.featureTagLayers && runtimeSpec.featureTagLayers.length) {
+        try {
+          const raw = localStorage.getItem(FEATURE_TAG_KEY);
+          const all = raw ? JSON.parse(raw) : {};
+          const slice = {};
+          for (const key of runtimeSpec.featureTagLayers) {
+            if (all[key]) slice[key] = all[key];
+          }
+          runtime.feature_tags = slice;
+        } catch (err) { runtime.feature_tags = {}; }
+      }
       return {
         schema: 'aop-section-state-v1',
         section: sectionId,
@@ -2932,6 +3151,18 @@
           localStorage.setItem('aop_feature_visibility_v1', JSON.stringify(all));
         } catch (err) { console.warn('Could not write feature visibility', err); }
       }
+      if (spec.featureTagLayers && runtime.feature_tags) {
+        try {
+          const raw = localStorage.getItem(FEATURE_TAG_KEY);
+          const all = raw ? JSON.parse(raw) : {};
+          for (const key of spec.featureTagLayers) {
+            if (runtime.feature_tags[key]) all[key] = runtime.feature_tags[key];
+          }
+          localStorage.setItem(FEATURE_TAG_KEY, JSON.stringify(all));
+          rebuildTagLookup();
+          rebuildEventScheduleData();
+        } catch (err) { console.warn('Could not write feature tags', err); }
+      }
       return sectionId;
     }
 
@@ -2973,6 +3204,12 @@
         if (overrides.feature_visibility) {
           localStorage.setItem('aop_feature_visibility_v1',
             JSON.stringify(overrides.feature_visibility));
+        }
+        if (overrides.feature_tags) {
+          localStorage.setItem(FEATURE_TAG_KEY,
+            JSON.stringify(overrides.feature_tags));
+          rebuildTagLookup();
+          rebuildEventScheduleData();
         }
       } catch (err) {
         console.warn('Could not persist runtime_overrides on import:', err);
@@ -3135,7 +3372,19 @@
           role: raw.role || base.role
         };
       }
-      return { ...raw, tag: normalized };
+      const resolved = { ...raw, tag: normalized };
+      // Coordinates priority: explicit coords in the JSON win. When absent,
+      // resolve through the per-feature #tag binding so a location like
+      // #pavilion picks up the 1010 building's representative point. Card:
+      // brain/tasks/02_edit/named_feature_tagging.md.
+      if (!resolved.coordinates) {
+        const bound = tagToFeature.get(normalized);
+        if (bound && bound.coordinates) {
+          resolved.coordinates = [bound.coordinates[0], bound.coordinates[1]];
+          resolved.bound_feature = { layer: bound.layerKey, feature_id: bound.featureId };
+        }
+      }
+      return resolved;
     }
 
     function buildEventLocationIndex(config) {
@@ -3231,6 +3480,51 @@
         },
         features
       };
+    }
+
+    // Re-resolve the schedule against the current tag bindings and push the
+    // new data into the live `event-schedule` source. Called when the user
+    // changes a feature's #tag — typing #pavilion on the 1010 building row
+    // should make the pavilion session row fly to the building immediately,
+    // not after a reload. Safe to call before the source is added (no-op).
+    // Card: brain/tasks/02_edit/named_feature_tagging.md.
+    function rebuildEventScheduleData() {
+      if (!eventScheduleConfig) return;
+      eventScheduleData = eventScheduleToGeojson(eventScheduleConfig);
+      const source = map.getSource('event-schedule');
+      if (source) source.setData(eventScheduleData);
+      // The calendar row label includes the resolved location label; if the
+      // location went from "Missing #pavilion" to "AOP Pavilion / G-Central",
+      // the row text needs to refresh.
+      if (typeof renderEventSchedule === 'function') {
+        renderEventSchedule(eventScheduleConfig, eventScheduleData);
+      }
+      // Search index slice for event-schedule features goes stale when a tag
+      // newly resolves (a previously-missing #pavilion anchor now exists).
+      // Strip the prior event-schedule entries from searchIndex and re-add
+      // them from the freshly-resolved data; then rebuild searchGroups so
+      // typing `#pavilion` finds the live anchor.
+      refreshEventScheduleSearchIndex();
+    }
+
+    function refreshEventScheduleSearchIndex() {
+      // searchIndex is a const-bound array; mutate in place. Drop any prior
+      // event-schedule entries so a re-resolve does not duplicate rows.
+      for (let i = searchIndex.length - 1; i >= 0; i--) {
+        const kind = searchIndex[i] && searchIndex[i].kind;
+        if (kind === 'event location' || kind === 'event session') {
+          searchIndex.splice(i, 1);
+        }
+      }
+      if (eventScheduleData && typeof indexFeatures === 'function'
+          && typeof eventScheduleToggle !== 'undefined') {
+        indexFeatures(eventScheduleData,
+          (props) => props.feature_kind === 'event_anchor' ? 'event location' : 'event session',
+          eventScheduleToggle,
+          undefined,
+          (props) => props.feature_kind === 'event_anchor' ? [props.location_tag] : null);
+      }
+      if (typeof buildSearchGroups === 'function') buildSearchGroups();
     }
 
     function renderEventSchedule(config, data) {

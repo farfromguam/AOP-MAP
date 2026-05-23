@@ -44,15 +44,17 @@ Each is ~½ day or less. Group into one card if work happens together.
 
 ### D. Named-feature tagging (one card, content not code)
 
-Data items, not features. Right home: a new card that uses the existing POI editor to enter and persist them. Some need source confirmation before they're publishable.
+Data items, not features. Right home: a card that uses the existing POI editor to enter and persist them. Some need source confirmation before they're publishable.
 
-- *"see if we can get trail names"* — research step; check SFWDA paper map, OSM, RiderPlanet, ask AOP.
+- *"see if we can get trail names"* — research step; check SFWDA paper map, OSM, RiderPlanet, ask AOP. The 9-patch OSM `highway=track`/`service` ways are all unnamed, so OSM is not a source. Stays on `../01_mvp/community_trails_import.md`'s SFWDA transcription follow-up.
 - *"tag cabins / campsites / pavillion bathrooms"*
 - *"tag excavator hill / big log / jeep entrance / buggy entrance"*
 
+The user direction (2026-05-23) narrowed the executable half: *"the 1010 building is the pavallion. events are at the pavaillion, I want to be able to edit the json scedule to say events are at #location and not have to enter lat and long."* Card `named_feature_tagging.md` shipped 2026-05-23 with that focus — per-feature `#tag` input on Buildings + Drawn POIs, `aop_feature_tags_v1` localStorage, schedule resolver falls back to the tag binding when `locations[#tag].coordinates` is absent, and the JSON now ships with no `#pavilion` coordinates (seeded once to the 1010 building on first load). Cabins / campsites / restrooms / on-park named features (excavator hill, big log, jeep/buggy entrance) can be entered by the user as drawn POIs with the appropriate `#tag`.
+
 ### E. Buildings layer tweaks (extend `../01_mvp/buildings_layer.md`)
 
-- *"make buildings show up by default"* — flip `showBuildings` to `checked` once Bucket A2 confirms it belongs in always-on.
+- *"make buildings show up by default"* — **shipped 2026-05-23 with Bucket A2** (`views_and_defaults.md`). `showBuildings` is `checked` in the fresh HTML, and the Park/Topo/Trace presets all default-on. The feature-list panel keeps only the 4 in-park rows pre-ticked, so a fresh Park view only draws those four; the 198 outside-park rows stay collapsed under a default-off bulk toggle.
 - *"prune buildings outside of bounds ???"* — resolved 2026-05-23: not a hard prune. The Bucket G feature list panel renders the 4 in-park buildings as named rows pre-ticked, with the 198 outside-park buildings collapsed under a bulk-toggle row default-off. The data stays full; only what draws is filtered. See `poi_editor_v2.md`.
 
 ### F. Branding
@@ -92,14 +94,19 @@ Bucket **I** is deferred to `../03_deferred/offline_pwa.md`; it re-enters the ac
 
 ## Cards to spawn (in this sprint)
 
-- `02_edit/views_and_defaults.md` — Buckets A1, A2, "trails by default."
+- `02_edit/views_and_defaults.md` — Buckets A1, A2, "trails by default." **Written + shipped 2026-05-23.** Park/fresh load now shows water + in-park buildings, Topo shows buildings too, Trace unchanged. Bucket E (buildings default-on) closes through this card.
 - `02_edit/left_hot_button.md` — A3 (or fold into views card once personas are defined).
 - `02_edit/poi_editor_v2.md` — Bucket G. **Written + shipped 2026-05-23.** Three consumers wired (POIs, buildings, cemeteries) plus the visitor-context drag consumer that closes Bucket B's positionable-callouts item.
 - `02_edit/viewer_chrome_polish.md` — Bucket B. **Written 2026-05-23.** B1 (calendar popup scroll-into-view) in progress; B6 (region callouts positionable) closed via `poi_editor_v2.md`.
 - `02_edit/search_tags.md` — Bucket C. **Written + shipped 2026-05-23.**
   Anchors from the event schedule now carry their `#tag` as a search alias;
   tag-only queries skip the name path so the dropdown stays tight.
-- `02_edit/named_feature_tagging.md` — Bucket D.
+- `02_edit/named_feature_tagging.md` — Bucket D. **Written + shipped 2026-05-23.**
+  Per-feature `#tag` input on Buildings + Drawn POIs; event-schedule
+  `locations[#tag]` may omit `coordinates` and resolve through the binding;
+  `#pavilion` JSON coordinates dropped (seed binds 1010 building on first
+  load). SFWDA trail-name transcription stays on
+  `../01_mvp/community_trails_import.md`.
 - Extend `../01_mvp/buildings_layer.md` in place — Bucket E.
 - `02_edit/branding.md` — Bucket F. **Written; raw asset drop staged.**
 - Bucket H folds into `../01_mvp/code_health_pass.md` Pass 3.

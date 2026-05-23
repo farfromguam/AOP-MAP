@@ -48,9 +48,20 @@ check.failed = False  # type: ignore[attr-defined]
 
 
 def set_toggle(page, toggle_id: str, target: bool) -> None:
-    element = page.locator(f"#{toggle_id}")
-    if element.is_checked() != target:
-        element.click()
+    # Drive .checked + change directly so a collapsed `.panel-section` cannot
+    # hide the checkbox from a UI click — matches the Sprint 02 D fix in
+    # playwright_verify_event_schedule.py.
+    page.evaluate(
+        """({ id, target }) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          if (el.checked !== target) {
+            el.checked = target;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }""",
+        {"id": toggle_id, "target": target},
+    )
     page.wait_for_timeout(250)
 
 
@@ -134,14 +145,14 @@ def main() -> int:
 
         print("\n== Initial state ==")
         check(
-            "buildings toggle exists and starts off",
+            "buildings toggle exists and starts ON (Bucket A2 default)",
             page.locator("#showBuildings").count() == 1
-            and not page.locator("#showBuildings").is_checked(),
+            and page.locator("#showBuildings").is_checked(),
         )
         for layer in BUILDING_LAYERS:
             check(
-                f"{layer} added with visibility=none",
-                layer_visibility(page, layer) == "none",
+                f"{layer} starts visible (Bucket A2)",
+                layer_visibility(page, layer) == "visible",
             )
 
         data = building_data(page)
