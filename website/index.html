@@ -70,6 +70,28 @@
     .tune-actions button { margin-right: 0; }
     .drawer-extra-controls { display: grid; gap: 7px; margin-top: 7px; padding-top: 8px; border-top: 1px solid #d8cdb4; }
     .drawer-extra-controls[hidden] { display: none; }
+    /* Feature list panel — per-feature visibility under a layer drawer.
+       Drops into #layerEditor when the active layer declares a feature list
+       (buildings, cemeteries, future: POIs, callouts). One row per feature
+       with a visibility checkbox and a click-to-fly target. Grouped lists
+       collapse the bulk row (e.g. "Other buildings in 9-patch") so a 200-row
+       layer stays operable. See brain/tasks/02_edit/poi_editor_v2.md. */
+    .feature-list { display: grid; gap: 6px; margin-bottom: 9px; padding-bottom: 8px; border-bottom: 1px solid #d8cdb4; }
+    .feature-list[hidden] { display: none; }
+    .feature-list-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 0.82rem; color: #4a3c2a; }
+    .feature-list-heading .feature-list-count { color: #756444; font-weight: 400; }
+    .feature-list-group { display: grid; gap: 3px; }
+    .feature-list-group-head { display: grid; grid-template-columns: 18px 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 5px; background: rgba(247,241,226,0.7); font-size: 0.8rem; color: #4a3c2a; }
+    .feature-list-group-head .group-chevron { background: none; border: 0; padding: 0; cursor: pointer; color: #6b5a3e; font-size: 0.85rem; line-height: 1; width: 18px; height: 18px; }
+    .feature-list-group-head .group-name { min-width: 0; overflow-wrap: anywhere; }
+    .feature-list-group-head .group-count { color: #756444; font-size: 0.75rem; }
+    .feature-list-rows { display: grid; gap: 2px; padding: 2px 0 4px 22px; }
+    .feature-list-rows[hidden] { display: none; }
+    .feature-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 5px; font-size: 0.82rem; color: #4a3c2a; }
+    .feature-row:hover { background: rgba(247,235,200,0.6); }
+    .feature-row .feature-name { min-width: 0; overflow-wrap: anywhere; cursor: pointer; }
+    .feature-row .feature-fly { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: #6b5a3e; font-size: 0.78rem; border-radius: 4px; }
+    .feature-row .feature-fly:hover { background: #f1e6cf; color: #3f3122; }
     #presetStatus { min-height: 1.2em; }
     .editor-row { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; }
     .editor-row button { flex: 1; margin-right: 0; }
@@ -174,6 +196,7 @@
               <strong id="layerEditorTitle">Land cover</strong>
               <label class="tune-visible"><input type="checkbox" id="tuneVisible" /> Visible</label>
             </div>
+            <div id="featureList" class="feature-list" hidden></div>
             <div id="tuneControls" class="tune-controls"></div>
             <div id="sfwdaDrawerControls" class="drawer-extra-controls" hidden>
               <input type="range" id="sfwdaOpacity" min="0" max="100" value="70" hidden aria-hidden="true" tabindex="-1" />
@@ -382,6 +405,7 @@
     const layerEditorTitle = document.getElementById('layerEditorTitle');
     const tuneControls = document.getElementById('tuneControls');
     const sfwdaDrawerControls = document.getElementById('sfwdaDrawerControls');
+    const featureListEl = document.getElementById('featureList');
     const tuneVisible = document.getElementById('tuneVisible');
     const snapshotPresetBtn = document.getElementById('snapshotPreset');
     const exportSettingsBtn = document.getElementById('exportSettings');
@@ -990,6 +1014,356 @@
       }
     };
 
+    // --- Feature list panel -------------------------------------------------
+    // A per-feature visibility primitive. Drops into the layer editor drawer
+    // for any layer that opts in: one row per feature, with a visibility
+    // checkbox and a click-to-fly target. Layers can group features (e.g.
+    // buildings → in-park named + others collapsed bulk). State persists in
+    // `aop_feature_visibility_v1` localStorage. Layer paint filters are
+    // recomposed from each layer's captured base filter plus the visibility
+    // set, so this primitive layers cleanly on top of existing per-layer
+    // filters (cemetery `geom_role`, building `inside_aop_boundary`).
+    //
+    // Card: brain/tasks/02_edit/poi_editor_v2.md.
+    // First consumers: buildings, cemeteries. Future consumers (POIs,
+    // visitor-context callouts, on-map logos) bolt the same shape onto their
+    // layers; drag-to-move is the next action added.
+    const FEATURE_LIST_LAYERS = {
+      cemeteries: {
+        label: 'Cemeteries',
+        idField: 'parcel_id',
+        rowLabel: (props) => `${props.name || 'Cemetery'} — ${props.parcel_id}`,
+        targetLayers: ['cemetery-fill', 'cemetery-outline', 'cemetery-marker', 'cemetery-label'],
+        groups: [{
+          id: 'all',
+          label: null,                              // flat list, no header row
+          match: () => true,
+          defaultVisible: (props) => props.aop_inholding === true
+        }]
+      },
+      buildings: {
+        label: 'Buildings',
+        idField: 'build_id',
+        rowLabel: (props) => {
+          const base = props.building_label || props.address || `build_id ${props.build_id}`;
+          // Annotate the 1010 pavilion so it reads at a glance.
+          if (String(props.address || '').startsWith('1010 ')) return `${base} — pavilion`;
+          return base;
+        },
+        targetLayers: ['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline'],
+        groups: [
+          {
+            id: 'in_park',
+            label: 'In park',
+            match: (props) => props.inside_aop_boundary === true,
+            defaultVisible: () => true,
+            collapsedDefault: false
+          },
+          {
+            id: 'other',
+            label: 'Other buildings in 9-patch',
+            match: () => true,                       // catches everything not already matched
+            defaultVisible: () => false,
+            collapsedDefault: true
+          }
+        ]
+      }
+    };
+
+    const FEATURE_VISIBILITY_KEY = 'aop_feature_visibility_v1';
+    // Per-layer runtime state: data, base filters captured at addLayer time,
+    // the resolved feature → group bucket, expanded/collapsed UI state.
+    const featureListRuntime = {};
+
+    function loadFeatureVisibilityStore() {
+      try {
+        const raw = localStorage.getItem(FEATURE_VISIBILITY_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch (err) {
+        console.warn('Feature visibility store unreadable; resetting', err);
+        return {};
+      }
+    }
+
+    function saveFeatureVisibilityStore(store) {
+      try {
+        localStorage.setItem(FEATURE_VISIBILITY_KEY, JSON.stringify(store));
+      } catch (err) {
+        console.warn('Could not persist feature visibility', err);
+      }
+    }
+
+    // Map a feature to its group inside a layer's `groups` array — first match
+    // wins, mirroring the order in FEATURE_LIST_LAYERS. The `other` catch-all
+    // depends on this ordering: it must be declared last.
+    function groupForFeature(layerKey, props) {
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      if (!spec) return null;
+      for (const group of spec.groups) {
+        if (group.match(props)) return group;
+      }
+      return null;
+    }
+
+    // Bucket features into their groups and compute the initial visibility set
+    // by overlaying any persisted user choices on top of the group defaults.
+    // Returns { groups: [{ group, features: [...] }], visibleIds: Set }.
+    function buildFeatureListState(layerKey, data) {
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      if (!spec || !data) return null;
+      const store = loadFeatureVisibilityStore();
+      const persisted = (store[layerKey] && typeof store[layerKey] === 'object') ? store[layerKey] : {};
+      const bucketed = new Map(spec.groups.map((g) => [g.id, { group: g, features: [] }]));
+      const visibleIds = new Set();
+      const seenIds = new Set();
+      for (const feature of data.features || []) {
+        const props = feature.properties || {};
+        const id = props[spec.idField];
+        if (id == null) continue;
+        // Dedupe by ID — cemeteries emit both parcel + marker per cemetery,
+        // sharing the same parcel_id. The list shows one row per cemetery.
+        if (seenIds.has(id)) continue;
+        seenIds.add(id);
+        const group = groupForFeature(layerKey, props);
+        if (!group) continue;
+        bucketed.get(group.id).features.push({ id, props, feature });
+        const persistedValue = persisted[String(id)];
+        const visible = typeof persistedValue === 'boolean'
+          ? persistedValue
+          : !!group.defaultVisible(props);
+        if (visible) visibleIds.add(id);
+      }
+      return {
+        groups: [...bucketed.values()].filter((b) => b.features.length > 0),
+        visibleIds
+      };
+    }
+
+    // Compose: base filter (captured when the layer was added) AND the
+    // visibility filter (membership in the visible-id set). When the visible
+    // set is empty we still emit `["in", id, ["literal", []]]` so nothing
+    // draws — matches the "untick everything" intent.
+    function composeFeatureFilter(baseFilter, idField, visibleIds) {
+      const visibilityFilter = ['in', ['get', idField], ['literal', [...visibleIds]]];
+      if (!baseFilter) return visibilityFilter;
+      // MapLibre's filter spec accepts ["all", ...subfilters].
+      if (Array.isArray(baseFilter) && baseFilter[0] === 'all') {
+        return ['all', ...baseFilter.slice(1), visibilityFilter];
+      }
+      return ['all', baseFilter, visibilityFilter];
+    }
+
+    // Apply the current visibility set to every target layer's paint filter.
+    // Called on init, on toggle, and on bulk group toggle.
+    function applyFeatureListFilters(layerKey) {
+      const runtime = featureListRuntime[layerKey];
+      if (!runtime || !runtime.state) return;
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      for (const layerId of spec.targetLayers) {
+        if (!map.getLayer(layerId)) continue;
+        const base = runtime.baseFilters[layerId] || null;
+        map.setFilter(layerId, composeFeatureFilter(base, spec.idField, runtime.state.visibleIds));
+      }
+    }
+
+    // Persist the current visibility set for this layer. We store an explicit
+    // per-id boolean rather than a sparse "visible only" list so a feature the
+    // user has *unticked* survives a reload (and isn't re-defaulted on).
+    function persistFeatureVisibility(layerKey) {
+      const runtime = featureListRuntime[layerKey];
+      if (!runtime || !runtime.state) return;
+      const store = loadFeatureVisibilityStore();
+      const layerEntry = {};
+      for (const bucket of runtime.state.groups) {
+        for (const item of bucket.features) {
+          layerEntry[String(item.id)] = runtime.state.visibleIds.has(item.id);
+        }
+      }
+      store[layerKey] = layerEntry;
+      saveFeatureVisibilityStore(store);
+    }
+
+    function setFeatureVisible(layerKey, id, visible) {
+      const runtime = featureListRuntime[layerKey];
+      if (!runtime || !runtime.state) return;
+      if (visible) runtime.state.visibleIds.add(id);
+      else runtime.state.visibleIds.delete(id);
+      applyFeatureListFilters(layerKey);
+      persistFeatureVisibility(layerKey);
+    }
+
+    function setGroupVisible(layerKey, groupId, visible) {
+      const runtime = featureListRuntime[layerKey];
+      if (!runtime || !runtime.state) return;
+      const bucket = runtime.state.groups.find((b) => b.group.id === groupId);
+      if (!bucket) return;
+      for (const item of bucket.features) {
+        if (visible) runtime.state.visibleIds.add(item.id);
+        else runtime.state.visibleIds.delete(item.id);
+      }
+      applyFeatureListFilters(layerKey);
+      persistFeatureVisibility(layerKey);
+    }
+
+    // Fly + flash a single feature. Mirrors gotoEventSession's camera math so
+    // the flight lands inside the visible map slice (not under the right
+    // panel). No popup — the row label is already on-screen.
+    function flyToFeature(feature) {
+      if (!feature || !feature.geometry) return;
+      const pad = visibleMapPadding(20);
+      const bounds = geojsonBounds({ type: 'FeatureCollection', features: [feature] });
+      if (bounds) {
+        const [[minLng, minLat], [maxLng, maxLat]] = bounds;
+        if (minLng === maxLng && minLat === maxLat) {
+          map.flyTo({
+            center: [minLng, minLat],
+            zoom: 18,
+            offset: visibleCenterOffset(pad),
+            duration: 900,
+            bearing: map.getBearing(),
+            pitch: map.getPitch()
+          });
+        } else {
+          map.fitBounds(bounds, {
+            padding: pad,
+            maxZoom: 18,
+            duration: 900,
+            bearing: map.getBearing(),
+            pitch: map.getPitch()
+          });
+        }
+      }
+      const highlight = map.getSource('search-highlight');
+      if (highlight) {
+        highlight.setData({ type: 'FeatureCollection', features: [feature] });
+        pulseHighlight();
+      }
+    }
+
+    // Register a layer's data + base filters with the runtime, build initial
+    // state, and apply the initial filter pass. Called from each layer's
+    // addSource block once the data is fetched.
+    function registerFeatureListLayer(layerKey, data) {
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      if (!spec || !data) return;
+      const baseFilters = {};
+      for (const layerId of spec.targetLayers) {
+        if (!map.getLayer(layerId)) continue;
+        const current = map.getFilter(layerId);
+        // Clone so any later mutation of our cached copy doesn't leak back.
+        baseFilters[layerId] = current ? JSON.parse(JSON.stringify(current)) : null;
+      }
+      const state = buildFeatureListState(layerKey, data);
+      const collapsed = {};
+      for (const group of spec.groups) {
+        collapsed[group.id] = !!group.collapsedDefault;
+      }
+      featureListRuntime[layerKey] = { data, baseFilters, state, collapsed };
+      applyFeatureListFilters(layerKey);
+      persistFeatureVisibility(layerKey);
+    }
+
+    // Render the feature list DOM into the shared #featureList container in
+    // the layer editor drawer. Called when the active tunable layer changes.
+    function renderFeatureList(layerKey) {
+      if (!featureListEl) return;
+      featureListEl.innerHTML = '';
+      const runtime = featureListRuntime[layerKey];
+      if (!runtime || !runtime.state) {
+        featureListEl.hidden = true;
+        return;
+      }
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      const totalCount = runtime.state.groups.reduce((sum, b) => sum + b.features.length, 0);
+      const heading = document.createElement('div');
+      heading.className = 'feature-list-heading';
+      heading.innerHTML = `<span>Features</span><span class="feature-list-count">${runtime.state.visibleIds.size} of ${totalCount} visible</span>`;
+      featureListEl.append(heading);
+
+      for (const bucket of runtime.state.groups) {
+        const group = bucket.group;
+        const groupEl = document.createElement('div');
+        groupEl.className = 'feature-list-group';
+        groupEl.dataset.groupId = group.id;
+
+        const visibleInGroup = bucket.features.filter((f) => runtime.state.visibleIds.has(f.id)).length;
+        const allOn = visibleInGroup === bucket.features.length;
+        const noneOn = visibleInGroup === 0;
+        const groupCollapsed = runtime.collapsed[group.id];
+
+        if (group.label) {
+          const head = document.createElement('div');
+          head.className = 'feature-list-group-head';
+          const chevron = document.createElement('button');
+          chevron.type = 'button';
+          chevron.className = 'group-chevron';
+          chevron.setAttribute('aria-expanded', String(!groupCollapsed));
+          chevron.textContent = groupCollapsed ? '▸' : '▾';
+          chevron.title = groupCollapsed ? 'Expand group' : 'Collapse group';
+          chevron.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            runtime.collapsed[group.id] = !runtime.collapsed[group.id];
+            renderFeatureList(layerKey);
+          });
+          const bulk = document.createElement('input');
+          bulk.type = 'checkbox';
+          bulk.checked = allOn;
+          bulk.indeterminate = !allOn && !noneOn;
+          bulk.title = 'Toggle every feature in this group';
+          bulk.addEventListener('change', () => {
+            setGroupVisible(layerKey, group.id, bulk.checked);
+            renderFeatureList(layerKey);
+          });
+          const name = document.createElement('span');
+          name.className = 'group-name';
+          name.textContent = group.label;
+          const count = document.createElement('span');
+          count.className = 'group-count';
+          count.textContent = `${visibleInGroup}/${bucket.features.length}`;
+          head.append(chevron, bulk, name, count);
+          groupEl.append(head);
+        }
+
+        const rows = document.createElement('div');
+        rows.className = 'feature-list-rows';
+        if (group.label && groupCollapsed) rows.hidden = true;
+        for (const item of bucket.features) {
+          const row = document.createElement('div');
+          row.className = 'feature-row';
+          row.dataset.featureId = String(item.id);
+          const check = document.createElement('input');
+          check.type = 'checkbox';
+          check.checked = runtime.state.visibleIds.has(item.id);
+          check.addEventListener('change', () => {
+            setFeatureVisible(layerKey, item.id, check.checked);
+            renderFeatureList(layerKey);
+          });
+          const name = document.createElement('span');
+          name.className = 'feature-name';
+          name.textContent = spec.rowLabel(item.props);
+          name.title = 'Click to fly to this feature';
+          name.addEventListener('click', () => flyToFeature(item.feature));
+          const fly = document.createElement('button');
+          fly.type = 'button';
+          fly.className = 'feature-fly';
+          fly.textContent = '🎯';
+          fly.title = 'Fly to feature';
+          fly.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            flyToFeature(item.feature);
+          });
+          row.append(check, name, fly);
+          rows.append(row);
+        }
+        groupEl.append(rows);
+        featureListEl.append(groupEl);
+      }
+      featureListEl.hidden = false;
+    }
+
     const EXTRA_PRESET_PAINTS = [
       ['background', 'background-color'],
       ['lidar-hillshade', 'hillshade-highlight-color'],
@@ -1593,6 +1967,7 @@
       updateLayerRowState();
       if (!expandedTuneKey) {
         if (sfwdaDrawerControls) sfwdaDrawerControls.hidden = true;
+        if (featureListEl) { featureListEl.hidden = true; featureListEl.innerHTML = ''; }
         layerEditor.hidden = true;
         return;
       }
@@ -1602,6 +1977,13 @@
       tuneVisible.checked = config.toggle.checked;
       renderTuneControls(config);
       if (sfwdaDrawerControls) sfwdaDrawerControls.hidden = config.drawerControls !== sfwdaDrawerControls;
+      // Feature list slot. Only layers registered in FEATURE_LIST_LAYERS show a list.
+      if (FEATURE_LIST_LAYERS[expandedTuneKey]) {
+        renderFeatureList(expandedTuneKey);
+      } else if (featureListEl) {
+        featureListEl.hidden = true;
+        featureListEl.innerHTML = '';
+      }
     }
 
     function selectTunable(key) {
@@ -3164,17 +3546,31 @@
           ],
           (props) => cemeteryBurialHtml(props));
 
-        indexFeatures(cemeteryData, 'cemetery', cemeteriesToggle);
+        // Per-feature visibility: 4 cemeteries, Ellis (the AOP inholding,
+        // parcel 110 008.04) pre-ticked, the other three off by default.
+        // User explicitly wants only in-park cemeteries by default; the
+        // out-of-park three remain operable from this list if needed.
+        registerFeatureListLayer('cemeteries', cemeteryData);
+
+        indexFeatures(
+          cemeteryData,
+          'cemetery',
+          cemeteriesToggle,
+          (props) => ({ featureListKey: 'cemeteries', featureId: props.parcel_id })
+        );
         // Index the county owner-of-record name too (e.g. searching
         // "Bryson & Ellis Cemetery" should also land on Ellis Cemetery).
         for (const feature of cemeteryData.features) {
-          const aka = feature.properties && feature.properties.aka;
+          const props = feature.properties || {};
+          const aka = props.aka;
           if (aka && feature.geometry) {
             searchIndex.push({
               name: String(aka),
               kind: 'cemetery',
               toggle: cemeteriesToggle,
-              geometry: feature.geometry
+              geometry: feature.geometry,
+              featureListKey: 'cemeteries',
+              featureId: props.parcel_id
             });
           }
         }
@@ -3246,7 +3642,17 @@
             ['Source', props.footprint_source || '']
           ]);
 
-        indexFeatures(buildingsData, 'building', buildingsToggle);
+        // Per-feature visibility: 4 in-park buildings pre-ticked by group
+        // default, 198 others collapsed under a bulk-off row. Persists across
+        // reload via `aop_feature_visibility_v1`. See FEATURE_LIST_LAYERS.
+        registerFeatureListLayer('buildings', buildingsData);
+
+        indexFeatures(
+          buildingsData,
+          'building',
+          buildingsToggle,
+          (props) => ({ featureListKey: 'buildings', featureId: props.build_id })
+        );
       }
 
       // --- Community OSM 9-patch vectors ---------------------------------
@@ -4001,18 +4407,31 @@
 
     // Register every named feature of a FeatureCollection. kindFor/toggleFor
     // may be a value or a (props) => value function.
-    function indexFeatures(data, kindFor, toggleFor) {
+    // featureListBindingFor (optional) returns { featureListKey, featureId }
+    // for features that are per-feature-toggleable via FEATURE_LIST_LAYERS.
+    // The search path uses this to auto-unhide a per-feature target on landing
+    // (otherwise a search lands the camera but nothing draws because the
+    // feature was unticked).
+    function indexFeatures(data, kindFor, toggleFor, featureListBindingFor) {
       if (!data || !data.features) return;
       for (const feature of data.features) {
         const props = feature.properties || {};
         const name = props.name || props.gnis_name;
         if (!name || !feature.geometry) continue;
-        searchIndex.push({
+        const entry = {
           name: String(name),
           kind: typeof kindFor === 'function' ? kindFor(props) : kindFor,
           toggle: typeof toggleFor === 'function' ? toggleFor(props) : toggleFor,
           geometry: feature.geometry
-        });
+        };
+        if (featureListBindingFor) {
+          const binding = featureListBindingFor(props);
+          if (binding && binding.featureListKey && binding.featureId != null) {
+            entry.featureListKey = binding.featureListKey;
+            entry.featureId = binding.featureId;
+          }
+        }
+        searchIndex.push(entry);
       }
     }
 
@@ -4031,10 +4450,16 @@
         const key = display.toLowerCase() + '|' + entry.kind;
         let group = byKey.get(key);
         if (!group) {
-          group = { name: display, kind: entry.kind, toggle: entry.toggle, geometries: [] };
+          group = { name: display, kind: entry.kind, toggle: entry.toggle, geometries: [], featureListKey: null, featureIds: [] };
           byKey.set(key, group);
         }
         group.geometries.push(entry.geometry);
+        if (entry.featureListKey) {
+          group.featureListKey = entry.featureListKey;
+          if (entry.featureId != null && !group.featureIds.includes(entry.featureId)) {
+            group.featureIds.push(entry.featureId);
+          }
+        }
       }
       searchGroups = [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name));
     }
@@ -4127,6 +4552,15 @@
       if (match.toggle && !match.toggle.checked) {
         match.toggle.checked = true;
         match.toggle.dispatchEvent(new Event('change'));
+      }
+      // Per-feature unhide: if this match is a target of FEATURE_LIST_LAYERS,
+      // the user may have unticked it. Searching for it expresses intent to
+      // see it, so we force its visibility on and refresh the panel if open.
+      if (match.featureListKey && Array.isArray(match.featureIds) && match.featureIds.length) {
+        for (const id of match.featureIds) {
+          setFeatureVisible(match.featureListKey, id, true);
+        }
+        if (expandedTuneKey === match.featureListKey) renderFeatureList(match.featureListKey);
       }
       if (bounds.minLng === bounds.maxLng && bounds.minLat === bounds.maxLat) {
         map.flyTo({ center: [bounds.minLng, bounds.minLat], zoom: 16, duration: 1100 });
