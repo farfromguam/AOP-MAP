@@ -1993,9 +1993,45 @@
         ]);
     }
 
+    // Close every popup currently on the map by triggering each one's own
+    // close button, so MapLibre runs its native cleanup (fires `close`,
+    // removes listeners) instead of leaving orphan DOM behind.
+    function closeAllMapPopups() {
+      map.getContainer()
+        .querySelectorAll('.maplibregl-popup-close-button')
+        .forEach((btn) => btn.click());
+    }
+
+    // Padding that reserves space for the fixed overlays (.left-controls
+    // strip on the left, .panel on the right) so a fitBounds/flyTo lands its
+    // target in the still-visible slice of the map — not under the calendar
+    // card or the layer panel where a popup would be clipped.
+    function visibleMapPadding(extra = 20) {
+      const container = map.getContainer().getBoundingClientRect();
+      const leftEl = document.querySelector('.left-controls');
+      const rightEl = document.querySelector('.panel');
+      const leftPad = leftEl
+        ? Math.max(0, leftEl.getBoundingClientRect().right - container.left) + extra
+        : 90;
+      const rightPad = rightEl
+        ? Math.max(0, container.right - rightEl.getBoundingClientRect().left) + extra
+        : 90;
+      return { top: 80, bottom: 60, left: leftPad, right: rightPad };
+    }
+
+    // Pixel offset that shifts a flyTo target from the full map center into
+    // the visible-map center (see visibleMapPadding). MapLibre interprets
+    // flyTo `offset` as: the supplied `center` lands at mapCenter + offset,
+    // so a negative x pulls the point left when the right panel is wider.
+    function visibleCenterOffset(pad) {
+      return [(pad.left - pad.right) / 2, (pad.top - pad.bottom) / 2];
+    }
+
     function gotoEventSession(sessionId) {
       const feature = eventSessionById.get(sessionId);
       if (!feature) return;
+      // Schedule link is a navigation: leave the viewer with one popup, not a stack.
+      closeAllMapPopups();
       activeEventSessionId = sessionId;
       if (eventScheduleConfig && eventScheduleData) renderEventSchedule(eventScheduleConfig, eventScheduleData);
 
@@ -2004,13 +2040,27 @@
         eventScheduleToggle.dispatchEvent(new Event('change', { bubbles: true }));
       }
 
+      const pad = visibleMapPadding(20);
       const bounds = geojsonBounds({ type: 'FeatureCollection', features: [feature] });
       if (bounds) {
         const [[minLng, minLat], [maxLng, maxLat]] = bounds;
         if (minLng === maxLng && minLat === maxLat) {
-          map.flyTo({ center: [minLng, minLat], zoom: 17, duration: 1000, bearing: map.getBearing(), pitch: map.getPitch() });
+          map.flyTo({
+            center: [minLng, minLat],
+            zoom: 17,
+            offset: visibleCenterOffset(pad),
+            duration: 1000,
+            bearing: map.getBearing(),
+            pitch: map.getPitch()
+          });
         } else {
-          map.fitBounds(bounds, { padding: 90, maxZoom: 16.8, duration: 1000, bearing: map.getBearing(), pitch: map.getPitch() });
+          map.fitBounds(bounds, {
+            padding: pad,
+            maxZoom: 16.8,
+            duration: 1000,
+            bearing: map.getBearing(),
+            pitch: map.getPitch()
+          });
         }
       }
 
