@@ -89,6 +89,11 @@ def main() -> int:
                 "gis.apfo.usda.gov" in text
                 or "tnmap.tn.gov" in text
                 or "Failed to load resource" in text
+                # Reloads after viewport resize abort in-flight tile / sprite
+                # fetches; MapLibre logs them as `AJAXError: Failed to fetch
+                # (0): data:image/webp;base64,...` and `TypeError: Failed to
+                # fetch`. Navigation artifacts, not real failures.
+                or "Failed to fetch" in text
             )
             if not ignored:
                 console_errors.append(text)
@@ -311,6 +316,29 @@ def main() -> int:
               is_checked(page, "showUsdaNaip") and is_checked(page, "showSfwda")
               and is_checked(page, "showOsmTracks") and is_checked(page, "showBuildings"))
         check("Trace applies high-contrast boundary color", paint(page, "publish-boundaries", "line-color") == "#fff0b8")
+        # Sprint 02 B5: trace label legibility — cream text on the SFWDA paper
+        # map needs a dark halo or it disappears into the imagery. Assert the
+        # four label layers picked up the dark halo override.
+        check(
+            "Trace gives roads-labels a dark halo",
+            paint(page, "roads-labels", "text-halo-color") == "#15110d"
+            and float(paint(page, "roads-labels", "text-halo-width") or 0) >= 2,
+        )
+        check(
+            "Trace gives osm-named-labels a dark halo",
+            paint(page, "osm-named-labels", "text-halo-color") == "#15110d"
+            and float(paint(page, "osm-named-labels", "text-halo-width") or 0) >= 1.5,
+        )
+        check(
+            "Trace gives activity-hotspots-labels a dark halo",
+            paint(page, "activity-hotspots-labels", "text-halo-color") == "#15110d"
+            and float(paint(page, "activity-hotspots-labels", "text-halo-width") or 0) >= 1.5,
+        )
+        check(
+            "Trace gives visitor-context-labels a dark halo",
+            paint(page, "visitor-context-labels", "text-halo-color") == "#15110d"
+            and float(paint(page, "visitor-context-labels", "text-halo-width") or 0) >= 1.5,
+        )
         page.locator('[data-tune-expand-key="sfwda"]').click()
         check("inline editor can expand SFWDA", page.locator("#layerEditorTitle").inner_text() == "SFWDA paper map")
         check("SFWDA alignment controls live in the drawer", page.locator("#sfwdaDrawerControls").is_visible())
@@ -325,21 +353,104 @@ def main() -> int:
         check("SFWDA drawer exposes alignment toggle", page.locator("#editSfwda").is_visible())
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["trace"]))
 
-        print("\n== Mobile layout ==")
+        # Sprint 02 B5: switching trace → park must reset halos. Without an
+        # explicit cream-halo override in park, the dark halo from trace
+        # would sit under park's dark text.
+        page.locator("#presetPark").click()
+        page.wait_for_timeout(800)
+        check(
+            "Park preset resets roads-labels halo to cream",
+            paint(page, "roads-labels", "text-halo-color") == "#f7f1e2",
+        )
+        check(
+            "Park preset resets osm-named-labels halo to cream",
+            paint(page, "osm-named-labels", "text-halo-color") == "#f7f1e2",
+        )
+        check(
+            "Park preset resets activity-hotspots-labels halo to cream",
+            paint(page, "activity-hotspots-labels", "text-halo-color") == "#f7f1e2",
+        )
+
+        print("\n== Mobile layout (B3 bottom-dock + B4 calendar auto-collapse) ==")
+        # Sprint 02 B3 dropped the fixed `top: 430px` on the mobile panel in
+        # favor of a bottom-dock that grows upward. Sprint 02 B4 auto-collapses
+        # the calendar on narrow viewports — the calendar must shrink before
+        # the panel layout below can clear. Reload after the resize so both
+        # behaviors apply.
         page.set_viewport_size({"width": 500, "height": 760})
-        page.wait_for_timeout(350)
+        page.evaluate(
+            "() => { try { localStorage.removeItem('aop_calendar_collapsed_v1'); } catch (_) {} }"
+        )
+        page.goto(WEBSITE_URL, wait_until="load")
+        page.evaluate("window.map = map;")
+        page.wait_for_timeout(700)
         boxes = page.evaluate(
             """() => {
               const bar = document.querySelector('.left-controls').getBoundingClientRect();
               const panel = document.querySelector('.panel').getBoundingClientRect();
+              const message = document.querySelector('.message').getBoundingClientRect();
               return {
                 bar: { x: bar.x, y: bar.y, width: bar.width, height: bar.height },
-                panel: { x: panel.x, y: panel.y, width: panel.width, height: panel.height }
+                panel: { x: panel.x, y: panel.y, width: panel.width, height: panel.height, bottom: panel.bottom },
+                message: { y: message.y, bottom: message.bottom },
+                viewport_height: window.innerHeight
               };
             }"""
         )
         separated = boxes["bar"]["y"] + boxes["bar"]["height"] <= boxes["panel"]["y"]
         check("left controls do not overlap panel on narrow screens", separated, str(boxes))
+        check(
+            "panel docks above the message bar (bottom-anchored)",
+            boxes["panel"]["bottom"] <= boxes["message"]["y"] + 2,
+            str(boxes),
+        )
+
+        print("\n== Collapsed panel docks to bottom-right (B3) ==")
+        # Wide viewport: collapse the panel and confirm its bottom edge is
+        # near the viewport bottom (the tray-style resting state).
+        page.set_viewport_size({"width": 1280, "height": 820})
+        page.goto(WEBSITE_URL, wait_until="load")
+        page.evaluate("window.map = map;")
+        page.wait_for_timeout(500)
+        # Make sure the panel starts expanded, then collapse via #panelCollapse.
+        is_collapsed = page.evaluate(
+            "() => document.querySelector('.panel').classList.contains('collapsed')"
+        )
+        if is_collapsed:
+            page.locator("#panelCollapse").click()
+            page.wait_for_timeout(300)
+        page.locator("#panelCollapse").click()
+        page.wait_for_timeout(400)
+        collapsed_geom = page.evaluate(
+            """() => {
+              const panel = document.querySelector('.panel');
+              const r = panel.getBoundingClientRect();
+              return {
+                collapsed: panel.classList.contains('collapsed'),
+                bottom: r.bottom,
+                right: r.right,
+                top: r.top,
+                viewport_height: window.innerHeight,
+                viewport_width: window.innerWidth
+              };
+            }"""
+        )
+        check("panel reports collapsed state", collapsed_geom.get("collapsed") is True, str(collapsed_geom))
+        check(
+            "collapsed panel sits within 24 px of viewport bottom",
+            (collapsed_geom["viewport_height"] - collapsed_geom["bottom"]) <= 24,
+            str(collapsed_geom),
+        )
+        check(
+            "collapsed panel sits within 24 px of viewport right",
+            (collapsed_geom["viewport_width"] - collapsed_geom["right"]) <= 24,
+            str(collapsed_geom),
+        )
+        check(
+            "collapsed panel top is below mid-screen (not floating up top)",
+            collapsed_geom["top"] >= collapsed_geom["viewport_height"] / 2,
+            str(collapsed_geom),
+        )
 
         print("\n== Console summary ==")
         check("no non-tile console errors", len(console_errors) == 0,

@@ -17,7 +17,21 @@ Read the archive only if you need to retrace why something was built. The durabl
 
 The static viewer at `website/index.html` is the live work surface. It carries ~25 toggleable layers, a POI / line-trace editor, a JSON-driven event schedule sidebar, and Region / Park / Pavilion zoom presets bounded to the 9-patch. The Docker/PostGIS MVP database is wired but only holds demo data and one source-backed AOP parcel boundary; everything else in the viewer reads from `website/data/*.geojson` exports and public imagery/terrain tiles.
 
-Last shipped: feature list panel — POI consumer + drag-to-move primitive + visitor-context drag + map→panel reveal + per-section/bulk Export-Import (2026-05-23). The shared find+move primitive has four consumers (POIs + buildings + cemeteries + visitor-context callouts) and a fifth panel-side hook (revealFeatureInPanel) closes the map-click → panel-row loop. Each panel section now has its own ↑/↓ Export/Import on its header (schema `aop-section-state-v1`); the panel footer has Export-all / Import-all (`aop-viewer-preset-settings-v2`). Snapshot Preset + the in-drawer Export Settings buttons retired. Build card `tasks/02_edit/poi_editor_v2.md`, verifier `mvp/scripts/playwright_verify_feature_list.py`. Bucket B's "region circle callouts need to be positionable" closes through this work. Sprint 02 branding asset drop is staged at `tasks/02_edit/assets/branding/raw/` awaiting placement + AOP permission decisions (Bucket F).
+Last shipped: Sprint 02 Bucket B chrome-polish wave (2026-05-23). All five items in `tasks/02_edit/viewer_chrome_polish.md` shipped in one session:
+
+- B1 — `visibleMapPadding` rewritten on a new `visibleMapRect()` helper; `panPopupIntoView` nudges the camera after `moveend` so the calendar-link popup lands inside the unoccluded slice; popup `maxWidth` clamped to slice width [200, 280] for cramped layouts.
+- B2 — inline SVG magnifier in `.search` shell, `pointer-events:none`, padding-left adjustment on `#searchInput`.
+- B3 — panel now docks bottom-right (anchor flipped from `top: 12px` → `bottom: 12px`), `box-sizing: border-box` so `max-height` includes padding, mobile reserve bumped to `calc(100vh - 280px)` and `width: auto` so the bottom-anchored panel clears the auto-collapsed calendar bar above and the message bar below.
+- B4 — calendar auto-collapses on ≤760 px first load, user expand/collapse persists in `aop_calendar_collapsed_v1`. Removed the stale unconditional `setCalendarCollapsed(false)` that was clobbering the new init.
+- B5 — trace preset gives `roads-labels`, `osm-named-labels`, `activity-hotspots-labels`, `visitor-context-labels` a dark `#15110d` halo so cream text reads against the busy SFWDA paper map; park/topo presets explicitly reset to cream `#f7f1e2` halo so `trace→park` reverts cleanly.
+
+Verifiers extended: `playwright_verify_event_schedule.py` (B1/B2/B4 — narrow popup, magnifier geometry, calendar auto-collapse + time-label per row), `playwright_verify_presets.py` (B3 — bottom-dock geometry on wide + mobile, B5 — trace halo + park revert). Both add a "Failed to fetch" filter for navigation-aborted MapLibre fetches triggered by viewport-resize reloads.
+
+Card: `brain/tasks/02_edit/viewer_chrome_polish.md` (all five items marked shipped, includes implementation + acceptance per item). Triage `brain/tasks/02_edit/_readme.md` reflects the new card. The two search-verifier FAILs ("multi-segment trail collapses to one result") are pre-existing on master, unrelated.
+
+Bucket A decisions (views/personas, always-on layer set, left-side hot button) still owed — confirmed by user to keep cutting through Bucket B before surfacing.
+
+Previous shipped: feature list panel — POI consumer + drag-to-move primitive + visitor-context drag + map→panel reveal + per-section/bulk Export-Import (2026-05-23). The shared find+move primitive has four consumers (POIs + buildings + cemeteries + visitor-context callouts) and a fifth panel-side hook (revealFeatureInPanel) closes the map-click → panel-row loop. Each panel section now has its own ↑/↓ Export/Import on its header (schema `aop-section-state-v1`); the panel footer has Export-all / Import-all (`aop-viewer-preset-settings-v2`). Snapshot Preset + the in-drawer Export Settings buttons retired. Build card `tasks/02_edit/poi_editor_v2.md`, verifier `mvp/scripts/playwright_verify_feature_list.py`. Bucket B's "region circle callouts need to be positionable" closes through this work. Sprint 02 branding asset drop is staged at `tasks/02_edit/assets/branding/raw/` awaiting placement + AOP permission decisions (Bucket F).
 
 Current synthetic activity work: `mvp/scripts/simulate_saturday_activity.py` generates the pavilion-start Saturday model; `mvp/scripts/build_activity_hotspots.py` extracts both raw GPX and synthetic hotspots. The current synthetic layer follows nearby OSM `highway=track` / `service` linework, then filters hotspot output to stopped+slow dwell/crawl cells (`rank_by=stop_slow`) so it no longer renders as a dotted route. Pickup docs: `tasks/01_mvp/activity_hotspots.md`, `research/viewer.md`, and `mvp/scripts/README.md`. Likely next tweak: add a region/AOI argument to the simulator or hotspot builder so a user can force activity into a smaller polygon/bbox and produce more crossover/localized hotspots.
 
@@ -28,7 +42,7 @@ Last code-health pass: Pass 2 closed (2026-05-22). Three sources-of-truth for th
 ## Live preview ports
 
 - Human/manual preview: `cd website && python3 -m http.server 8000` → `http://localhost:8000/`
-- Playwright verifiers: `cd website && python3 -m http.server 8001` → `http://localhost:8001/`. If 8001 is occupied, use the next open port and pass `WEBSITE_URL=http://localhost:<port>/`. Do not fall back to 8000 for Playwright.
+- Playwright verifiers: `cd website && python3 -m http.server 8001` → `http://localhost:8001/`. If 8001 is occupied, clean up the stale Playwright viewer and reload 8001 instead of starting a new numbered localhost. Do not fall back to 8000 for Playwright.
 
 ## What to pick up next
 

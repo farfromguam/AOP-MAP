@@ -15,7 +15,13 @@
     .preset-bar button.active { background: #8b5f38; border-color: #8b5f38; color: #fff8e8; }
     .preset-bar button.terrain-button { max-width: 58px; }
     .zoom-bar .zoom-label { flex: 0 0 auto; align-self: center; font: 700 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.06em; color: #6b5a3e; padding: 0 4px 0 2px; }
-    .panel { position: absolute; right: 12px; top: 12px; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); width: 380px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); overflow-y: auto; z-index: 2; }
+    /* Sprint 02 B3: panel docks at bottom-right so the collapsed state lives
+       at the bottom corner (a tray that "pops up" toward the top when
+       expanded) instead of leaving the header floating mid-screen on
+       narrow viewports. Expanded panel still fills the right column up to
+       max-height; the visual difference on a tall desktop is negligible
+       because the panel already filled top→bottom. */
+    .panel { position: absolute; right: 12px; bottom: 12px; top: auto; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); width: 380px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); overflow-y: auto; z-index: 2; box-sizing: border-box; }
     .panel h1 { margin: 0 0 8px; font-size: 1rem; }
     .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; user-select: none; }
     .panel-header h1 { margin: 0; }
@@ -135,8 +141,11 @@
     .search { position: relative; margin-bottom: 10px; }
     .left-controls .search { margin-bottom: 0; width: 100%; }
     .search-shell { display: block; }
-    .search input { width: 100%; box-sizing: border-box; padding: 7px 9px; font: inherit; border: 1px solid #bbb; border-radius: 8px; }
+    .search input { width: 100%; box-sizing: border-box; padding: 7px 9px 7px 30px; font: inherit; border: 1px solid #bbb; border-radius: 8px; }
     .search input:focus { outline: 2px solid #9a8a5a; border-color: #9a8a5a; }
+    /* Magnifier glyph anchored at the left of #searchInput. pointer-events:none
+       lets the click pass through to the input so focus still works. */
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #756444; pointer-events: none; }
     .search-results { position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 240px; overflow-y: auto; display: none; z-index: 5; }
     .search-item { display: flex; justify-content: space-between; gap: 10px; padding: 6px 9px; cursor: pointer; font-size: 0.9rem; }
     .search-item:hover, .search-item.active { background: #e8dcc3; }
@@ -168,7 +177,10 @@
     @media (max-width: 760px) {
       .left-controls { left: 8px; right: 8px; top: 8px; width: auto; max-width: none; }
       .calendar-body { max-height: 190px; }
-      .panel { left: 8px; right: 8px; top: 430px; max-width: none; max-height: calc(100vh - 438px); }
+      /* Panel docks above the message bar (which is at bottom: 8px, ~40 px
+         tall) and grows upward. max-height keeps a 220 px reserve at the
+         top so the auto-collapsed calendar strip stays uncovered. */
+      .panel { left: 8px; right: 8px; top: auto; bottom: 56px; width: auto; max-width: none; max-height: calc(100vh - 280px); }
       .message { left: 8px; right: 8px; max-width: none; }
     }
   </style>
@@ -178,6 +190,10 @@
   <div class="left-controls">
     <div class="search-shell">
       <div class="search">
+        <svg class="search-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+          <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M10.6 10.6 L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
         <input type="text" id="searchInput" placeholder="Search the map…" autocomplete="off" />
         <div class="search-results" id="searchResults"></div>
       </div>
@@ -218,7 +234,33 @@
     <div class="panel-body" id="panelBody">
       <small id="presetStatus">Park preset active.</small>
 
-      <section class="panel-section" data-section="derived-layers">
+      <section class="panel-section collapsed" data-section="source-layers">
+        <div class="section-header">
+          <span class="section-label">Source layers</span>
+          <button type="button" class="section-action" data-section-export="source-layers" title="Copy this section's settings to clipboard">⧉</button>
+          <button type="button" class="section-toggle" aria-expanded="true">
+            <span class="section-chevron">▴</span>
+          </button>
+        </div>
+        <div class="section-content">
+          <label><input type="checkbox" id="showSatellite" /> Satellite imagery (TNMap 2022)</label>
+          <label><input type="checkbox" id="showUsdaNaip" /> USDA NAIP imagery (TN 2023)</label>
+          <label><input type="checkbox" id="showNinePatch" /> 9-patch acquisition AOI</label>
+          <label><input type="checkbox" id="showLidarTiles" /> Lidar tile index (USGS 3DEP)</label>
+          <label><input type="checkbox" id="showRoads" checked /> Asphalt roads (USGS National Map)</label>
+          <label><input type="checkbox" id="showWater" /> Streams &amp; waterbodies (USGS NHD)</label>
+          <label><input type="checkbox" id="showSprings" /> Springs &amp; gages (USGS NHD)</label>
+          <label><input type="checkbox" id="showCemeteries" /> Cemeteries (TN Comptroller parcels)</label>
+          <label><input type="checkbox" id="showBuildings" /> Building footprints (FEMA USA Structures)</label>
+          <label><input type="checkbox" id="showOsmPark" /> OSM park polygon</label>
+          <label><input type="checkbox" id="showOsmTracks" /> OSM tracks (highway=track)</label>
+          <label><input type="checkbox" id="showOsmService" /> OSM service roads</label>
+          <label><input type="checkbox" id="showOsmNamed" /> OSM named landmarks</label>
+          <label><input type="checkbox" id="showSfwda" /> SFWDA paper trail map</label>
+        </div>
+      </section>
+
+      <section class="panel-section collapsed" data-section="derived-layers">
         <div class="section-header">
           <span class="section-label">Derived layers</span>
           <button type="button" class="section-action" data-section-export="derived-layers" title="Copy this section's settings to clipboard">⧉</button>
@@ -254,40 +296,10 @@
           <input type="range" id="landcover9Opacity" min="0" max="100" value="55" hidden aria-hidden="true" tabindex="-1" />
           <label><input type="checkbox" id="showHillshade" /> Lidar hillshade (USGS 3DEP)</label>
           <label><input type="checkbox" id="showContours" /> Lidar contours (5 ft, 1m DEM)</label>
-          <label><input type="checkbox" id="showActivityHotspots" /> Activity hotspots (GPX dwell)</label>
-          <label><input type="checkbox" id="showSyntheticActivity" /> Simulated Saturday activity</label>
-          <label><input type="checkbox" id="showEventSchedule" /> Event schedule POIs</label>
-          <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
         </div>
       </section>
 
-      <section class="panel-section" data-section="source-layers">
-        <div class="section-header">
-          <span class="section-label">Source layers</span>
-          <button type="button" class="section-action" data-section-export="source-layers" title="Copy this section's settings to clipboard">⧉</button>
-          <button type="button" class="section-toggle" aria-expanded="true">
-            <span class="section-chevron">▴</span>
-          </button>
-        </div>
-        <div class="section-content">
-          <label><input type="checkbox" id="showSatellite" /> Satellite imagery (TNMap 2022)</label>
-          <label><input type="checkbox" id="showUsdaNaip" /> USDA NAIP imagery (TN 2023)</label>
-          <label><input type="checkbox" id="showNinePatch" /> 9-patch acquisition AOI</label>
-          <label><input type="checkbox" id="showLidarTiles" /> Lidar tile index (USGS 3DEP)</label>
-          <label><input type="checkbox" id="showRoads" checked /> Asphalt roads (USGS National Map)</label>
-          <label><input type="checkbox" id="showWater" /> Streams &amp; waterbodies (USGS NHD)</label>
-          <label><input type="checkbox" id="showSprings" /> Springs &amp; gages (USGS NHD)</label>
-          <label><input type="checkbox" id="showCemeteries" /> Cemeteries (TN Comptroller parcels)</label>
-          <label><input type="checkbox" id="showBuildings" /> Building footprints (FEMA USA Structures)</label>
-          <label><input type="checkbox" id="showOsmPark" /> OSM park polygon</label>
-          <label><input type="checkbox" id="showOsmTracks" /> OSM tracks (highway=track)</label>
-          <label><input type="checkbox" id="showOsmService" /> OSM service roads</label>
-          <label><input type="checkbox" id="showOsmNamed" /> OSM named landmarks</label>
-          <label><input type="checkbox" id="showSfwda" /> SFWDA paper trail map</label>
-        </div>
-      </section>
-
-      <section class="panel-section" data-section="publishable">
+      <section class="panel-section collapsed" data-section="publishable">
         <button type="button" class="section-toggle" aria-expanded="true">
           <span class="section-label">Publishable</span>
           <span class="section-chevron">▴</span>
@@ -296,10 +308,14 @@
           <label><input type="checkbox" id="showTrails" checked /> Publishable trails</label>
           <label><input type="checkbox" id="showBoundaries" checked /> Publishable boundaries</label>
           <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
+          <label><input type="checkbox" id="showActivityHotspots" /> Activity hotspots (GPX dwell)</label>
+          <label><input type="checkbox" id="showSyntheticActivity" /> Simulated Saturday activity</label>
+          <label><input type="checkbox" id="showEventSchedule" /> Event schedule POIs</label>
+          <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
         </div>
       </section>
 
-      <section class="panel-section" data-section="editor">
+      <section class="panel-section collapsed" data-section="editor">
         <div class="section-header">
           <span class="section-label">Map editor</span>
           <button type="button" class="section-action" data-section-export="editor" title="Copy this section's settings to clipboard">⧉</button>
@@ -493,12 +509,37 @@
     panelCollapse.addEventListener('click', (e) => { e.stopPropagation(); togglePanel(); });
     panelHeader.addEventListener('click', togglePanel);
 
-    function setCalendarCollapsed(collapsed) {
+    // Sprint 02 B4: calendar starts collapsed on narrow viewports so the
+    // left-controls strip does not eat the visible map on mobile / tablet.
+    // User's manual choice survives across reloads via localStorage so a
+    // tablet driver who wants the calendar expanded stays expanded.
+    const CALENDAR_COLLAPSE_KEY = 'aop_calendar_collapsed_v1';
+    const NARROW_BREAKPOINT_PX = 760; // mirrors @media (max-width: 760px)
+
+    function setCalendarCollapsed(collapsed, persist = true) {
       calendarCard.classList.toggle('collapsed', collapsed);
       calendarToggle.setAttribute('aria-expanded', String(!collapsed));
       calendarToggle.title = collapsed ? 'Expand calendar' : 'Collapse calendar';
       calendarChevron.textContent = collapsed ? '▾' : '▴';
+      if (persist) {
+        try { localStorage.setItem(CALENDAR_COLLAPSE_KEY, collapsed ? '1' : '0'); }
+        catch (_) { /* localStorage unavailable — ignore */ }
+      }
     }
+
+    // First-load state: stored user choice wins; otherwise default-collapsed
+    // when the viewport is at or below the mobile breakpoint, default-expanded
+    // otherwise.
+    (() => {
+      let stored = null;
+      try { stored = localStorage.getItem(CALENDAR_COLLAPSE_KEY); } catch (_) { /* ignore */ }
+      if (stored === '1' || stored === '0') {
+        setCalendarCollapsed(stored === '1', false);
+      } else {
+        const narrow = window.matchMedia(`(max-width: ${NARROW_BREAKPOINT_PX}px)`).matches;
+        setCalendarCollapsed(narrow, false);
+      }
+    })();
 
     calendarToggle.addEventListener('click', () => {
       setCalendarCollapsed(!calendarCard.classList.contains('collapsed'));
@@ -507,7 +548,9 @@
       const row = event.target.closest('.calendar-row');
       if (row?.dataset.sessionId) gotoEventSession(row.dataset.sessionId);
     });
-    setCalendarCollapsed(false);
+    // (Initial collapse state is set by the IIFE above; do not call
+    // setCalendarCollapsed unconditionally here or it overrides the saved /
+    // narrow-default state with a persisted '0'.)
 
     function setSectionCollapsed(section, collapsed) {
       const button = section.querySelector('.section-toggle');
@@ -1962,7 +2005,9 @@
           'activity-hotspots-heat': { 'heatmap-opacity': 0.68 },
           'activity-hotspots-fill': { 'fill-opacity': ACTIVITY_HOTSPOT_OPACITY },
           'activity-hotspots-outline': { 'line-color': '#7f2f27', 'line-width': 1.1, 'line-opacity': 0.55 },
-          'activity-hotspots-labels': { 'text-color': '#5b2d25', 'text-opacity': 1 },
+          // Sprint 02 B5: reset to cream halo on park so a previous trace
+          // session does not leave dark halos sitting under dark text.
+          'activity-hotspots-labels': { 'text-color': '#5b2d25', 'text-opacity': 1, 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.4 },
           streams: { 'line-color': '#7fa3ac', 'line-opacity': 0.9 },
           'stream-labels': { 'text-color': '#4a6c73', 'text-opacity': 1 },
           'water-area-fill': { 'fill-color': '#a8c5c9', 'fill-opacity': 0.55 },
@@ -1970,13 +2015,18 @@
           'waterbody-outline': { 'line-color': '#6f9098', 'line-width': 1.2 },
           'visitor-context-fill': { 'fill-color': '#d8b173', 'fill-opacity': 0.18 },
           'visitor-context-outline': { 'line-color': '#8b5f38', 'line-width': 2.2, 'line-opacity': 0.9 },
-          'visitor-context-labels': { 'text-color': '#4a3c2a', 'text-opacity': 1 },
+          'visitor-context-labels': { 'text-color': '#4a3c2a', 'text-opacity': 1, 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 },
           'publish-boundary-fill': { 'fill-color': '#d8c8a2', 'fill-opacity': 0.1 },
           'publish-boundaries': { 'line-color': '#6e5a3c', 'line-width': 2.5, 'line-opacity': 1 },
           'publish-trails': { 'line-color': '#9a5a32', 'line-width': 3.5, 'line-opacity': 1 },
           'publish-trailheads': { 'circle-color': '#6f8a5c', 'circle-radius': 6, 'circle-opacity': 1 },
           'osm-tracks': { 'line-color': '#9a5a32', 'line-width': 2, 'line-opacity': 0.95 },
-          'osm-service': { 'line-color': '#a89a7e', 'line-width': 1.5, 'line-opacity': 0.85 }
+          'osm-service': { 'line-color': '#a89a7e', 'line-width': 1.5, 'line-opacity': 0.85 },
+          // Sprint 02 B5: explicit cream-halo reset for the labels that
+          // trace darkens. Without these a trace→park switch leaves the
+          // dark halo from trace sitting under park's dark text.
+          'roads-labels': { 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 },
+          'osm-named-labels': { 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 }
         }
       },
       topo: {
@@ -2028,7 +2078,7 @@
           'activity-hotspots-heat': { 'heatmap-opacity': 0.62 },
           'activity-hotspots-fill': { 'fill-opacity': ACTIVITY_HOTSPOT_OPACITY },
           'activity-hotspots-outline': { 'line-color': '#6e2a22', 'line-width': 1.25, 'line-opacity': 0.62 },
-          'activity-hotspots-labels': { 'text-color': '#4e2a22', 'text-opacity': 1 },
+          'activity-hotspots-labels': { 'text-color': '#4e2a22', 'text-opacity': 1, 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.4 },
           streams: { 'line-color': '#4d8792', 'line-opacity': 0.95 },
           'stream-labels': { 'text-color': '#2f6570', 'text-opacity': 1 },
           'water-area-fill': { 'fill-color': '#8eb7be', 'fill-opacity': 0.62 },
@@ -2045,7 +2095,10 @@
           'roads-controlled': { 'line-color': '#c99a5c', 'line-opacity': 0.94 },
           'visitor-context-fill': { 'fill-color': '#d2a95f', 'fill-opacity': 0.14 },
           'visitor-context-outline': { 'line-color': '#6f4e2e', 'line-width': 2.4, 'line-opacity': 0.86 },
-          'visitor-context-labels': { 'text-color': '#3f3122', 'text-opacity': 1 }
+          'visitor-context-labels': { 'text-color': '#3f3122', 'text-opacity': 1, 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 },
+          // Sprint 02 B5: cream halo reset (see park preset note).
+          'roads-labels': { 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 },
+          'osm-named-labels': { 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 }
         }
       },
       trace: {
@@ -2091,20 +2144,24 @@
           'osm-tracks': { 'line-color': '#ff6b3d', 'line-width': 3, 'line-opacity': 0.98 },
           'osm-service': { 'line-color': '#ffd166', 'line-width': 2.5, 'line-opacity': 0.95 },
           'osm-named-points': { 'circle-color': '#ffd166', 'circle-stroke-color': '#33251a' },
-          'osm-named-labels': { 'text-color': '#fff0b8' },
+          // Sprint 02 B5: trace runs cream/yellow text over the busy SFWDA
+          // paper-map. The default cream halo blends in; switch every label
+          // layer to a near-black halo (#15110d) at ~2 px so the text reads
+          // against tan paper, dark gridlines, and red trail strokes alike.
+          'osm-named-labels': { 'text-color': '#fff0b8', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
           'roads-local': { 'line-color': '#fff4cf', 'line-width': 2.4, 'line-opacity': 0.86 },
           'roads-connecting': { 'line-color': '#ffe08a', 'line-width': 3, 'line-opacity': 0.9 },
           'roads-secondary': { 'line-color': '#ffd072', 'line-width': 3.5, 'line-opacity': 0.92 },
           'roads-ramp': { 'line-color': '#f7bb5f', 'line-width': 2.6, 'line-opacity': 0.88 },
           'roads-controlled': { 'line-color': '#f7bb5f', 'line-width': 4.2, 'line-opacity': 0.95 },
-          'roads-labels': { 'text-color': '#fff4cf', 'text-opacity': 1 },
+          'roads-labels': { 'text-color': '#fff4cf', 'text-opacity': 1, 'text-halo-color': '#15110d', 'text-halo-width': 2.2 },
           'activity-hotspots-heat': { 'heatmap-opacity': 0.82 },
           'activity-hotspots-fill': { 'fill-opacity': ['interpolate', ['linear'], ['get', 'intensity_norm'], 0, 0.16, 1, 0.62] },
           'activity-hotspots-outline': { 'line-color': '#ff6b3d', 'line-width': 1.5, 'line-opacity': 0.82 },
-          'activity-hotspots-labels': { 'text-color': '#fff0b8', 'text-opacity': 1 },
+          'activity-hotspots-labels': { 'text-color': '#fff0b8', 'text-opacity': 1, 'text-halo-color': '#15110d', 'text-halo-width': 1.8 },
           'visitor-context-fill': { 'fill-color': '#ffe08a', 'fill-opacity': 0.1 },
           'visitor-context-outline': { 'line-color': '#ffe08a', 'line-width': 2.6, 'line-opacity': 0.9 },
-          'visitor-context-labels': { 'text-color': '#fff4cf', 'text-opacity': 1 },
+          'visitor-context-labels': { 'text-color': '#fff4cf', 'text-opacity': 1, 'text-halo-color': '#15110d', 'text-halo-width': 2 },
           'building-footprint-fill': { 'fill-color': '#ffe0a6', 'fill-opacity': 0.22 },
           'building-footprint-outline': { 'line-color': '#fff0b8', 'line-width': 1.6, 'line-opacity': 0.88 },
           'building-footprint-aop-outline': { 'line-color': '#ff9f5a', 'line-width': 3.2, 'line-opacity': 0.95 },
@@ -3234,21 +3291,57 @@
         .forEach((btn) => btn.click());
     }
 
-    // Padding that reserves space for the fixed overlays (.left-controls
-    // strip on the left, .panel on the right) so a fitBounds/flyTo lands its
-    // target in the still-visible slice of the map — not under the calendar
-    // card or the layer panel where a popup would be clipped.
-    function visibleMapPadding(extra = 20) {
+    // The unoccluded map slice — container minus any chrome that floats on
+    // top (`.left-controls`, `.panel`, `.message`). Returns a viewport rect
+    // in CSS pixels. Computes occlusion live from rects so a collapsed vs.
+    // expanded calendar card is reflected, and so the mobile layout (left
+    // strip spans top, right panel docked below) shifts top/bottom occlusion
+    // instead of left/right.
+    function visibleMapRect() {
       const container = map.getContainer().getBoundingClientRect();
+      const width = container.right - container.left;
+      let top = container.top;
+      let bottom = container.bottom;
+      let left = container.left;
+      let right = container.right;
       const leftEl = document.querySelector('.left-controls');
       const rightEl = document.querySelector('.panel');
-      const leftPad = leftEl
-        ? Math.max(0, leftEl.getBoundingClientRect().right - container.left) + extra
-        : 90;
-      const rightPad = rightEl
-        ? Math.max(0, container.right - rightEl.getBoundingClientRect().left) + extra
-        : 90;
-      return { top: 80, bottom: 60, left: leftPad, right: rightPad };
+      const bottomEl = document.querySelector('.message');
+      // Threshold: a chrome element spanning >70% of container width is
+      // treated as full-width and eats top/bottom rather than left/right.
+      const fullWidth = (r) => (r.right - r.left) >= width * 0.7;
+      if (leftEl) {
+        const r = leftEl.getBoundingClientRect();
+        if (fullWidth(r)) top = Math.max(top, r.bottom);
+        else left = Math.max(left, r.right);
+      }
+      if (rightEl) {
+        const r = rightEl.getBoundingClientRect();
+        if (fullWidth(r)) bottom = Math.min(bottom, r.top);
+        else right = Math.min(right, r.left);
+      }
+      if (bottomEl) {
+        const r = bottomEl.getBoundingClientRect();
+        // Always pinned bottom; treat its top edge as the visible bottom.
+        bottom = Math.min(bottom, r.top);
+      }
+      return { top, bottom, left, right };
+    }
+
+    // Padding that reserves space for the fixed overlays so a fitBounds /
+    // flyTo lands its target in the unoccluded slice — not under the
+    // calendar card, layer panel, or message bar where a popup would clip.
+    // Built off `visibleMapRect()` so wide-screen padding stays left/right
+    // and narrow-screen padding shifts to top/bottom automatically.
+    function visibleMapPadding(extra = 20) {
+      const container = map.getContainer().getBoundingClientRect();
+      const vis = visibleMapRect();
+      return {
+        top: Math.max(0, vis.top - container.top) + extra,
+        bottom: Math.max(0, container.bottom - vis.bottom) + extra,
+        left: Math.max(0, vis.left - container.left) + extra,
+        right: Math.max(0, container.right - vis.right) + extra
+      };
     }
 
     // Pixel offset that shifts a flyTo target from the full map center into
@@ -3257,6 +3350,31 @@
     // so a negative x pulls the point left when the right panel is wider.
     function visibleCenterOffset(pad) {
       return [(pad.left - pad.right) / 2, (pad.top - pad.bottom) / 2];
+    }
+
+    // After a popup is positioned, nudge the camera so the popup element
+    // sits fully inside the unoccluded map slice. Fix for the narrow-screen
+    // case where the chrome (top strip when calendar is expanded, bottom
+    // message bar) was clipping a `gotoEventSession` popup. Margin keeps
+    // a small gap from the chrome edges. Runs on the next animation frame
+    // so MapLibre has placed the popup element relative to the moved camera.
+    function panPopupIntoView(popup, margin = 14) {
+      if (!popup || typeof popup.getElement !== 'function') return;
+      const el = popup.getElement();
+      if (!el) return;
+      requestAnimationFrame(() => {
+        const popupRect = el.getBoundingClientRect();
+        if (!popupRect.width || !popupRect.height) return;
+        const vis = visibleMapRect();
+        let dx = 0;
+        let dy = 0;
+        if (popupRect.right > vis.right - margin) dx = popupRect.right - (vis.right - margin);
+        else if (popupRect.left < vis.left + margin) dx = popupRect.left - (vis.left + margin);
+        if (popupRect.bottom > vis.bottom - margin) dy = popupRect.bottom - (vis.bottom - margin);
+        else if (popupRect.top < vis.top + margin) dy = popupRect.top - (vis.top + margin);
+        if (dx === 0 && dy === 0) return;
+        map.panBy([dx, dy], { duration: 240 });
+      });
     }
 
     function gotoEventSession(sessionId) {
@@ -3305,10 +3423,24 @@
       const popupCoord = eventLocationByTag.get(feature.properties.location_tag)?.coordinates
         || firstCoordinate(feature.geometry);
       if (popupCoord) {
-        new maplibregl.Popup({ maxWidth: '280px' })
+        // Cap the popup so it never exceeds the unoccluded slice. On narrow
+        // chrome-heavy layouts the slice can shrink below the default 280 px;
+        // a wider popup would inevitably overlap the calendar strip or layer
+        // panel no matter how much we pan. Lower-bound 200 px so the popup
+        // stays legible on the cramp end.
+        const slice = visibleMapRect();
+        const sliceWidth = Math.max(0, slice.right - slice.left);
+        const popupMax = Math.max(200, Math.min(280, sliceWidth - 28));
+        const popup = new maplibregl.Popup({ maxWidth: `${popupMax}px` })
           .setLngLat(popupCoord)
           .setHTML(sessionPopupHtml(feature.properties))
           .addTo(map);
+        // After the fitBounds/flyTo settles, scroll the popup into the
+        // unoccluded slice if narrow-screen chrome is clipping it. Belt-and-
+        // braces: a second pan ~1.2 s in catches the case where moveend
+        // fired before the popup element finished sizing.
+        map.once('moveend', () => panPopupIntoView(popup));
+        setTimeout(() => panPopupIntoView(popup), 1200);
       }
     }
 

@@ -186,7 +186,7 @@ The current source-backed state should export one publishable
 
 ## Static viewer
 
-Serve the viewer from `website/`:
+Serve the manual viewer from `website/` on port `8000`:
 
 ```bash
 cd website
@@ -199,13 +199,12 @@ Then open:
 http://localhost:8000/
 ```
 
-The viewer reads `website/data/publish.geojson`. If port `8000` is already in
-use, pick another port and document the current one in
-`brain/handoff/session_context.md`.
+The viewer reads `website/data/publish.geojson`. Port `8000` is reserved for
+the human/user preview. Do not borrow it for Playwright runs.
 
 ### Playwright viewer convention
 
-Use port `8001` for Playwright/browser automation by default:
+Use port `8001` for Playwright/browser automation:
 
 ```bash
 cd website
@@ -220,13 +219,21 @@ http://localhost:8001/
 
 The Playwright scripts in `mvp/scripts/playwright_verify_*.py` default to
 `http://localhost:8001/` unless a script says otherwise. Do not try `8000`
-first for Playwright runs; `8000` is commonly used for manual preview or an
-existing listener on this machine. If `8001` is occupied, use the next open
-port and pass it explicitly:
+first for Playwright runs; `8000` is the user's manual preview port.
+
+If `8001` is occupied, clean up the stale Playwright viewer and reload it on
+`8001` instead of starting `8002`, `8010`, or another drifting localhost port:
 
 ```bash
-WEBSITE_URL=http://localhost:8010/ python3 mvp/scripts/playwright_verify_<layer>.py
+lsof -nP -iTCP:8001 -sTCP:LISTEN
+kill <pid>
+cd website
+python3 -m http.server 8001
 ```
+
+Only stop a listener you recognize as an old viewer/test server. If `8001` is
+occupied by an unrelated process, record the conflict in
+`brain/handoff/session_context.md` before using any temporary override.
 
 ## Do not lose local data
 
