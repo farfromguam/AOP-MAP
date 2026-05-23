@@ -174,8 +174,18 @@ already-loaded GeoJSON -- so it works offline.
   navigation, Enter selects, Escape clears.
 - On select it `fitBounds`/`flyTo`s to the feature, auto-enables the feature's
   layer toggle if it was off, and flashes a yellow highlight pulse.
+- Tag aliases (added 2026-05-23): `indexFeatures` accepts an optional
+  `aliasesFor(props)` that adds extra search terms per entry. Event-schedule
+  anchors pass their `location_tag` (e.g. `#pavilion`, `#registration`)
+  through it, so a tag query lands on the right anchor. A leading `#` flips
+  the matcher into alias-only mode -- a `#tag` query no longer surfaces every
+  session that happens to mention the tag. Card: `tasks/02_edit/search_tags.md`.
 - Verified: `mvp/scripts/playwright_verify_search.py` -- 12/12 PASS on
-  2026-05-20, 0 console errors.
+  2026-05-20; 2026-05-23 extension adds 11 tag-search assertions, all PASS,
+  0 console errors. The two pre-existing FAILs ("multi-segment trail
+  collapses to one result") are unrelated -- they trip on the event-anchor
+  "Trailhead - Saturday Afternoon segment 2" sharing a substring with the
+  observed trail and reproduce identically on master before this diff.
 
 ### POI / footprint / trace editor
 

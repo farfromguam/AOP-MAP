@@ -4229,7 +4229,13 @@
           ]);
         indexFeatures(eventScheduleData,
           (props) => props.feature_kind === 'event_anchor' ? 'event location' : 'event session',
-          eventScheduleToggle);
+          eventScheduleToggle,
+          undefined,
+          // Anchors carry their `#tag` as a search alias so a tag query
+          // (e.g. `#pavilion`) lands on the location. Sessions stay
+          // searchable by title only — surfacing every session under a
+          // shared tag would drown the dropdown.
+          (props) => props.feature_kind === 'event_anchor' ? [props.location_tag] : null);
       } else {
         calendarDays.innerHTML = '<li class="calendar-empty">Schedule unavailable.</li>';
       }
@@ -5516,7 +5522,10 @@
     // The search path uses this to auto-unhide a per-feature target on landing
     // (otherwise a search lands the camera but nothing draws because the
     // feature was unticked).
-    function indexFeatures(data, kindFor, toggleFor, featureListBindingFor) {
+    // aliasesFor (optional) returns an array of extra search terms for the
+    // entry (e.g. `#pavilion` for the pavilion anchor) so a tag query lands
+    // the feature even when the display name does not contain the tag.
+    function indexFeatures(data, kindFor, toggleFor, featureListBindingFor, aliasesFor) {
       if (!data || !data.features) return;
       for (const feature of data.features) {
         const props = feature.properties || {};
@@ -5535,6 +5544,13 @@
             entry.featureId = binding.featureId;
           }
         }
+        if (aliasesFor) {
+          const raw = aliasesFor(props);
+          const aliases = (Array.isArray(raw) ? raw : [raw])
+            .map((a) => String(a || '').trim())
+            .filter(Boolean);
+          if (aliases.length) entry.aliases = aliases;
+        }
         searchIndex.push(entry);
       }
     }
@@ -5547,6 +5563,8 @@
 
     // Collapse per-segment entries into one group per name+kind, so a
     // multi-segment creek or trail is a single result framed by its full extent.
+    // Aliases (e.g. event-schedule `#pavilion`) carry per-entry and union
+    // into the group so any segment's tag matches the whole group.
     function buildSearchGroups() {
       const byKey = new Map();
       for (const entry of searchIndex) {
@@ -5554,7 +5572,7 @@
         const key = display.toLowerCase() + '|' + entry.kind;
         let group = byKey.get(key);
         if (!group) {
-          group = { name: display, kind: entry.kind, toggle: entry.toggle, geometries: [], featureListKey: null, featureIds: [] };
+          group = { name: display, kind: entry.kind, toggle: entry.toggle, geometries: [], featureListKey: null, featureIds: [], aliases: [] };
           byKey.set(key, group);
         }
         group.geometries.push(entry.geometry);
@@ -5562,6 +5580,11 @@
           group.featureListKey = entry.featureListKey;
           if (entry.featureId != null && !group.featureIds.includes(entry.featureId)) {
             group.featureIds.push(entry.featureId);
+          }
+        }
+        if (entry.aliases) {
+          for (const alias of entry.aliases) {
+            if (!group.aliases.includes(alias)) group.aliases.push(alias);
           }
         }
       }
@@ -5575,6 +5598,21 @@
       searchActive = -1;
     }
 
+    // Match the query against the group's display name OR any alias.
+    // A leading `#` flags a deliberate tag query — match aliases only so
+    // the dropdown stays tight and an unrelated name substring does not
+    // shadow the tagged anchor.
+    function searchGroupMatchesQuery(group, query) {
+      const tagOnly = query.startsWith('#');
+      if (!tagOnly && group.name.toLowerCase().includes(query)) return true;
+      if (group.aliases && group.aliases.length) {
+        for (const alias of group.aliases) {
+          if (alias.toLowerCase().includes(query)) return true;
+        }
+      }
+      return false;
+    }
+
     function renderSearchResults() {
       const query = searchInput.value.trim().toLowerCase();
       if (query.length < 2) {
@@ -5583,7 +5621,7 @@
         return;
       }
       searchMatches = searchGroups
-        .filter((group) => group.name.toLowerCase().includes(query))
+        .filter((group) => searchGroupMatchesQuery(group, query))
         .slice(0, 8);
       if (!searchMatches.length) {
         searchResults.innerHTML = '<div class="search-empty">No match</div>';

@@ -96,7 +96,9 @@ Bucket **I** is deferred to `../03_deferred/offline_pwa.md`; it re-enters the ac
 - `02_edit/left_hot_button.md` — A3 (or fold into views card once personas are defined).
 - `02_edit/poi_editor_v2.md` — Bucket G. **Written + shipped 2026-05-23.** Three consumers wired (POIs, buildings, cemeteries) plus the visitor-context drag consumer that closes Bucket B's positionable-callouts item.
 - `02_edit/viewer_chrome_polish.md` — Bucket B. **Written 2026-05-23.** B1 (calendar popup scroll-into-view) in progress; B6 (region callouts positionable) closed via `poi_editor_v2.md`.
-- `02_edit/search_tags.md` — Bucket C.
+- `02_edit/search_tags.md` — Bucket C. **Written + shipped 2026-05-23.**
+  Anchors from the event schedule now carry their `#tag` as a search alias;
+  tag-only queries skip the name path so the dropdown stays tight.
 - `02_edit/named_feature_tagging.md` — Bucket D.
 - Extend `../01_mvp/buildings_layer.md` in place — Bucket E.
 - `02_edit/branding.md` — Bucket F. **Written; raw asset drop staged.**

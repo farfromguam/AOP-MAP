@@ -27,6 +27,8 @@ SCREENSHOTS = {
     "results": "playwright_search_results.png",
     "sweden_creek": "playwright_search_sweden_creek.png",
     "ellis_rd": "playwright_search_ellis_rd.png",
+    "tag_pavilion": "playwright_search_tag_pavilion.png",
+    "tag_registration": "playwright_search_tag_registration.png",
 }
 
 
@@ -187,6 +189,121 @@ def main() -> int:
         moved_r = abs(after_r["lng"] - before_r["lng"]) + abs(after_r["lat"] - before_r["lat"])
         check("Enter selects first result and moves the map", moved_r > 0.0005, f"delta={moved_r:.5f}")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["ellis_rd"]))
+
+        print("\n== Tag search: '#pavilion' ==")
+        page.locator("#searchInput").fill("")
+        page.locator("#searchInput").fill("#pavilion")
+        page.wait_for_timeout(300)
+        tag_items = page.locator(".search-item")
+        tag_texts = [tag_items.nth(i).inner_text() for i in range(tag_items.count())]
+        check(
+            "#pavilion returns the pavilion anchor",
+            any("Pavilion" in t for t in tag_texts),
+            f"results={tag_texts}",
+        )
+        # The dropdown should not be flooded with every session that used
+        # the #pavilion tag (sessions are not indexed by tag, anchors are).
+        # Anchor count today: pavilion + observed-finish ("Observed trail
+        # finish near pavilion") both contain "pavilion" — but only the
+        # pavilion anchor carries `#pavilion` as an alias. Tag-only mode
+        # therefore returns exactly one result.
+        check(
+            "#pavilion tag-only query stays tight (one anchor, not every session)",
+            tag_items.count() == 1,
+            f"count={tag_items.count()} results={tag_texts}",
+        )
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["tag_pavilion"]))
+
+        print("\n== Tag search: '#registration' (alias_of #pavilion) ==")
+        page.locator("#searchInput").fill("")
+        page.locator("#searchInput").fill("#registration")
+        page.wait_for_timeout(300)
+        reg_items = page.locator(".search-item")
+        reg_texts = [reg_items.nth(i).inner_text() for i in range(reg_items.count())]
+        check(
+            "#registration returns the Registration Desk anchor",
+            any("Registration" in t for t in reg_texts),
+            f"results={reg_texts}",
+        )
+        check(
+            "#registration tag-only query stays tight (one anchor)",
+            reg_items.count() == 1,
+            f"count={reg_items.count()} results={reg_texts}",
+        )
+        page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["tag_registration"]))
+
+        print("\n== Tag search: '#observed-trailhead' ==")
+        page.locator("#searchInput").fill("")
+        page.locator("#searchInput").fill("#observed-trailhead")
+        page.wait_for_timeout(300)
+        oh_items = page.locator(".search-item")
+        oh_texts = [oh_items.nth(i).inner_text() for i in range(oh_items.count())]
+        check(
+            "#observed-trailhead returns the trailhead anchor",
+            any("Trailhead" in t for t in oh_texts),
+            f"results={oh_texts}",
+        )
+        check(
+            "#observed-trailhead tag-only query stays tight (one anchor)",
+            oh_items.count() == 1,
+            f"count={oh_items.count()} results={oh_texts}",
+        )
+
+        print("\n== Tag prefix: '#pav' ==")
+        page.locator("#searchInput").fill("")
+        page.locator("#searchInput").fill("#pav")
+        page.wait_for_timeout(300)
+        pre_items = page.locator(".search-item")
+        pre_texts = [pre_items.nth(i).inner_text() for i in range(pre_items.count())]
+        check(
+            "leading-# prefix substrings into aliases",
+            any("Pavilion" in t for t in pre_texts),
+            f"results={pre_texts}",
+        )
+
+        print("\n== Bare 'pavilion' still resolves the anchor (name path) ==")
+        page.locator("#searchInput").fill("")
+        page.locator("#searchInput").fill("pavilion")
+        page.wait_for_timeout(300)
+        bare_items = page.locator(".search-item")
+        bare_texts = [bare_items.nth(i).inner_text() for i in range(bare_items.count())]
+        check(
+            "bare 'pavilion' surfaces the pavilion anchor by name",
+            any("Pavilion" in t for t in bare_texts),
+            f"results={bare_texts}",
+        )
+
+        print("\n== Tag-search lands on the pavilion (fly + auto-enable) ==")
+        page.locator("#searchInput").fill("")
+        # Ensure the event-schedule layer is off, so we can verify the
+        # tag-search auto-enables it on landing.
+        page.evaluate(
+            """() => {
+              const t = document.getElementById('showEventSchedule');
+              if (t && t.checked) { t.checked = false; t.dispatchEvent(new Event('change')); }
+            }"""
+        )
+        check(
+            "event-schedule layer starts off before tag click",
+            not page.locator("#showEventSchedule").is_checked(),
+        )
+        page.locator("#searchInput").fill("#pavilion")
+        page.wait_for_timeout(300)
+        before_tag = map_view(page)
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(1400)
+        after_tag = map_view(page)
+        moved_tag = abs(after_tag["lng"] - before_tag["lng"]) + abs(after_tag["lat"] - before_tag["lat"])
+        zoomed_tag = abs(after_tag["zoom"] - before_tag["zoom"])
+        check(
+            "tag search re-focuses the map",
+            moved_tag > 0.001 or zoomed_tag > 0.3,
+            f"center delta={moved_tag:.5f}, zoom delta={zoomed_tag:.2f}",
+        )
+        check(
+            "tag search auto-enabled the event-schedule layer",
+            page.locator("#showEventSchedule").is_checked(),
+        )
 
         print("\n== Console summary ==")
         check(
