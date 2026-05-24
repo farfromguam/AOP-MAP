@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
-from playwright_base import WEBSITE_URL as URL
+from playwright_base import WEBSITE_URL as URL, set_toggle
 
 REPO = Path(__file__).resolve().parents[2]
 OUT = REPO / "brain" / "output"
@@ -47,22 +47,25 @@ def main() -> int:
             timeout=15000,
         )
 
-        # SFWDA on, hillshade off.
-        page.check("#showSfwda")
+        # SFWDA on, hillshade off. The toggles sit inside a collapsed
+        # `.panel-section`, so route through the shared `set_toggle` helper —
+        # `page.check`/`page.click` would time out waiting for the hidden
+        # checkbox to become visible.
+        set_toggle(page, "showSfwda", True)
         page.wait_for_timeout(1500)
         record("SFWDA toggle on", page.is_checked("#showSfwda"))
         record("Hillshade toggle off (baseline)", not page.is_checked("#showHillshade"))
         page.screenshot(path=str(OUT / "playwright_sfwda_no_hillshade.png"))
 
         # Flip hillshade on -> SFWDA tiles should rebake with alpha keying.
-        page.check("#showHillshade")
+        set_toggle(page, "showHillshade", True)
         # Rebake walks the source image pixel by pixel and re-emits 36 webp tiles.
         page.wait_for_timeout(3500)
         record("Hillshade toggle on", page.is_checked("#showHillshade"))
         page.screenshot(path=str(OUT / "playwright_sfwda_with_hillshade.png"))
 
         # Flip hillshade off -> revert to opaque paper.
-        page.uncheck("#showHillshade")
+        set_toggle(page, "showHillshade", False)
         page.wait_for_timeout(3500)
         record("Hillshade toggle off (after revert)", not page.is_checked("#showHillshade"))
         page.screenshot(path=str(OUT / "playwright_sfwda_after_hillshade_off.png"))

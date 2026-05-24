@@ -135,9 +135,19 @@ re-enter the sprint as a focused pass.
 
 - `[]` See if we can get trail names — they are numbered. No new card; this
   is the existing SFWDA transcription follow-up on
-  `../01_mvp/_done/community_trails_import.md`. Listed here so the carryover
-  doesn't quietly drop the user's directive. Owner stays with the community
-  trails card; this card just points.
+`../01_mvp/_done/community_trails_import.md`. Listed here so the carryover
+doesn't quietly drop the user's directive. Owner stays with the community
+trails card; this card just points.
+
+### Misc pickup — Preset camera reset
+
+From `misc.md`, 2026-05-24:
+
+- Park / Topo / Trace should reset tilt and rotation of map.
+
+This is viewer polish, so it lands here rather than the event-app CRUD card.
+Layer presets now return the camera to flat north-up and turn off the 3D state;
+the 3D button remains available after any preset.
 
 ## Already closed
 
@@ -146,6 +156,61 @@ These `[]` markers in `tasks.md` are already done; left in the dump per the
 
 - `[] add aop logo` → shipped in `../02_edit/_done/branding.md`.
 - `[] add rock warblers logo` → shipped in `../02_edit/_done/branding.md`.
+
+## Shipped 2026-05-24
+
+Lanes 1-5 are closed.
+
+- **Lane 1** was already shipped in
+  `../02_edit/_done/hot_control_two_lane.md`. This carryover card was stale,
+  not the implementation.
+- **Lane 2** shipped in `../../../website/index.html`: wide first-load still
+  opens the calendar when no saved user choice exists; narrow first-load still
+  auto-collapses; opening / rendering / ticking the calendar now scrolls the
+  `happening` or `upcoming_next` row into the visible calendar pane with
+  `scrollIntoView({ block: 'nearest' })`.
+- **Lane 3** shipped in `../../../website/index.html`: right-panel collapse
+  controls now use the same convention, collapsed `▸` and expanded `▾`, across
+  panel, section, layer drawer, and feature-list group chevrons. Section
+  toggles now use the same small bordered button treatment as the layer drawer
+  collapse buttons.
+- **Lane 4** shipped as documentation: `../../research/viewer.md` now has a
+  default-layer audit table for Fresh, Park, Topo, and Trace. No code gap was
+  found against the user line: buildings / water / roads are on in
+  Fresh/Park/Topo; Trace intentionally drops water while keeping roads,
+  buildings, trails, trailheads, and raw tracing references on.
+- **Lane 5** shipped in `../../../website/index.html` and docs: Brand-logo rows
+  now expose per-logo size sliders that update live `icon_size` values and
+  persist in `aop_brand_logos_overrides_v1`; the viewer-side add-image workflow
+  is documented at `../../spinup/add_image_to_viewer.md`. The raw slider range
+  is `0.02-0.20` for the current large raster assets rather than the original
+  carryover sketch of `0.25-2.0`.
+- **Lane 6 routing** shipped as `code_health_pass_4.md`. The CSS /
+  theme / code-smell work now has its own executable card; this carryover card
+  stops being the holder.
+- **Misc preset reset** shipped in `../../../website/index.html`: Park, Topo,
+  and Trace now reset the map camera to flat north-up and clear the 3D button
+  state. The preset verifier covers Park / Topo / Trace camera reset.
+- **Critique pickup** shipped in `../../../website/index.html`: Brand logos are
+  now default-off on fresh load and Park / Topo / Trace until AOP confirms badge
+  reuse. Internal review can still enable the Brand logos toggle.
+
+Verification:
+
+```text
+python3 -m py_compile mvp/scripts/playwright_verify_event_schedule.py
+python3 mvp/scripts/playwright_verify_event_schedule.py
+python3 -m py_compile mvp/scripts/playwright_verify_brand_logos.py
+python3 mvp/scripts/playwright_verify_brand_logos.py
+python3 -m py_compile mvp/scripts/playwright_verify_presets.py
+python3 -u mvp/scripts/playwright_verify_presets.py
+```
+
+The event-schedule verifier was extended for Lane 2 current-row scroll and Lane
+3 right-panel chevron / button styling. The brand-logo verifier was extended
+for Lane 5 size editing / persistence and the default-off permission posture.
+The presets verifier now covers the Park / Topo / Trace camera reset and passes
+end-to-end.
 
 ## Recommended order
 
@@ -170,22 +235,23 @@ chrome on top of half-finished chrome.
 Lane-level — each lane's individual card carries the per-item acceptance. This
 card is closed when:
 
-- [ ] `hot_control_two_lane.md` acceptance is all `[X]`.
-- [ ] Wide-viewport first load shows the calendar expanded, narrow still
+- [x] `hot_control_two_lane.md` acceptance is all `[X]`.
+- [x] Wide-viewport first load shows the calendar expanded, narrow still
       auto-collapses, persisted user choice survives reload either way.
-- [ ] On load and on each 60 s tick, the `happening` / `upcoming_next` row
+- [x] On load and on each 60 s tick, the `happening` / `upcoming_next` row
       sits inside the visible calendar pane.
-- [ ] Every collapse chevron in the right rail uses the same icon convention
+- [x] Every collapse chevron in the right rail uses the same icon convention
       and the same border treatment.
-- [ ] A short default-layer table exists in `research/viewer.md` (or extends
+- [x] A short default-layer table exists in `research/viewer.md` (or extends
       `views_and_defaults.md`) and matches what the viewer actually ships on
       fresh load + each preset.
-- [ ] Brand logos have a working size slider; `aop_brand_logos_overrides_v1`
+- [x] Brand logos have a working size slider; `aop_brand_logos_overrides_v1`
       persists `icon_size`; reload survives.
-- [ ] A short add-image runbook exists somewhere a human can find it
+- [x] A short add-image runbook exists somewhere a human can find it
       (branding card or `spinup/`).
-- [ ] A Pass 4 card exists under `01_mvp/` carrying the CSS + theme + code-smell
+- [x] A Pass 4 card exists under `01_mvp/` carrying the CSS + theme + code-smell
       scope; this card stops being the holder.
+- [x] Park / Topo / Trace reset tilt and rotation.
 
 Numbered-trail-name research is **not** part of this card's acceptance — it
 lives on the community-trails card.

@@ -17,7 +17,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from playwright_base import WEBSITE_URL, layer_visibility
+from playwright_base import WEBSITE_URL, layer_visibility, set_toggle
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -93,8 +93,14 @@ def main() -> int:
             "search-highlight-line layer added hidden",
             layer_visibility(page, "search-highlight-line") == "none",
         )
+        # Water is default-on as of Sprint 02 A2 (views_and_defaults.md). Flip
+        # it off so we can verify that selecting a Sweden Creek result actually
+        # re-enables it through the search auto-toggle path — otherwise the
+        # later "auto-enabled by search" assertion would be trivially true.
+        if page.locator("#showWater").is_checked():
+            set_toggle(page, "showWater", False)
         check(
-            "water layer starts off (so search must enable it)",
+            "water layer toggled off before search",
             not page.locator("#showWater").is_checked(),
         )
 

@@ -120,14 +120,24 @@ def main() -> int:
         page = context.new_page()
         # `page.reload` aborts in-flight tile / sprite / data: requests; the
         # browser then logs them as `TypeError: Failed to fetch` (network) or
-        # `AJAXError: Failed to fetch (0): ...` (MapLibre's loader). They are
-        # navigation artifacts, not real failures, and the verifier reloads
-        # several times for narrow / wide / persist passes. Filter both.
+        # `AJAXError: Failed to fetch (0): ...` (MapLibre's loader; `(0)` is
+        # the placeholder HTTP status for an aborted request). They are
+        # navigation artifacts, not real failures. A real 404/500 from
+        # MapLibre would emit `AJAXError: Failed to fetch (404): ...` and is
+        # NOT filtered out. The verifier reloads several times for narrow /
+        # wide / persist passes.
+        def _is_aborted_fetch(text: str) -> bool:
+            return (
+                "AJAXError: Failed to fetch (0):" in text
+                or text.endswith("TypeError: Failed to fetch")
+                or text == "TypeError: Failed to fetch"
+            )
+
         def _record_error(msg):
             if msg.type != "error":
                 return
             text = (msg.text or "").strip()
-            if "Failed to fetch" in text:
+            if _is_aborted_fetch(text):
                 return
             console_errors.append(text)
 
@@ -386,6 +396,96 @@ def main() -> int:
         )
         check("calendar starts expanded on wide viewport", wide_default.get("has_collapsed") is False, str(wide_default))
         check("auto-expand does not persist by itself", wide_default.get("stored") is None, str(wide_default))
+
+        print("\n== Calendar current-row scroll (Sprint 03 Lane 2) ==")
+        page.goto(WEBSITE_URL + "?clock=2026-05-24T10:30", wait_until="load")
+        page.wait_for_function(
+            "() => document.getElementById('message').textContent.includes('publish feature')",
+            timeout=45_000,
+            polling=500,
+        )
+        page.wait_for_timeout(800)
+        current_scroll = page.evaluate(
+            """() => {
+              const body = document.getElementById('calendarBody');
+              const target = document.querySelector('#calendarDays li[data-session-state="happening"]')
+                || document.querySelector('#calendarDays li[data-session-state="upcoming_next"]');
+              if (!body || !target) return { ok: false };
+              const b = body.getBoundingClientRect();
+              const t = target.getBoundingClientRect();
+              return {
+                ok: true,
+                state: target.dataset.sessionState,
+                text: target.textContent.trim().replace(/\\s+/g, ' '),
+                scroll_top: body.scrollTop,
+                target_top: t.top,
+                target_bottom: t.bottom,
+                body_top: b.top,
+                body_bottom: b.bottom,
+                inside: t.top >= b.top - 2 && t.bottom <= b.bottom + 2
+              };
+            }"""
+        )
+        check("calendar has a happening/upcoming row", current_scroll.get("ok") is True, str(current_scroll))
+        check("current calendar row is scrolled into the visible pane",
+              current_scroll.get("inside") is True,
+              str(current_scroll))
+        check("calendar scroll moved down for a late-list Sunday fixture",
+              current_scroll.get("scroll_top", 0) > 0,
+              str(current_scroll))
+
+        print("\n== Right-panel collapse controls (Sprint 03 Lane 3) ==")
+        chrome_state = page.evaluate(
+            """() => {
+              const sourceSection = document.querySelector('.panel-section[data-section="source-layers"]');
+              const sourceButton = sourceSection && sourceSection.querySelector('.section-toggle');
+              if (sourceButton) sourceButton.click();
+              const sampleControls = [
+                document.querySelector('#panelCollapse'),
+                document.querySelector('.panel-section[data-section="source-layers"] .section-toggle'),
+                document.querySelector('.layer-expand')
+              ].filter(Boolean);
+              const styled = sampleControls.map((el) => {
+                const cs = getComputedStyle(el);
+                return {
+                  text: el.textContent.trim(),
+                  border_style: cs.borderTopStyle,
+                  border_width: cs.borderTopWidth,
+                  background: cs.backgroundColor,
+                  width: cs.width,
+                  height: cs.height
+                };
+              });
+              return {
+                panel_expanded_icon: document.querySelector('#panelCollapse')?.textContent.trim(),
+                expanded_section_icon: sourceSection?.querySelector('.section-chevron')?.textContent.trim(),
+                expanded_section_aria: sourceButton?.getAttribute('aria-expanded'),
+                collapsed_section_icons: Array.from(document.querySelectorAll('.panel-section.collapsed .section-chevron'))
+                  .map((el) => el.textContent.trim()),
+                collapsed_layer_icons: Array.from(document.querySelectorAll('.layer-expand'))
+                  .map((el) => el.textContent.trim()),
+                styled
+              };
+            }"""
+        )
+        check("expanded panel uses down chevron", chrome_state.get("panel_expanded_icon") == "▾", str(chrome_state))
+        check("expanded section uses down chevron",
+              chrome_state.get("expanded_section_icon") == "▾"
+              and chrome_state.get("expanded_section_aria") == "true",
+              str(chrome_state))
+        check("collapsed sections use right chevron",
+              len(chrome_state.get("collapsed_section_icons", [])) > 0
+              and all(icon == "▸" for icon in chrome_state.get("collapsed_section_icons", [])),
+              str(chrome_state))
+        check("collapsed layer drawers use right chevron",
+              len(chrome_state.get("collapsed_layer_icons", [])) > 0
+              and all(icon == "▸" for icon in chrome_state.get("collapsed_layer_icons", [])),
+              str(chrome_state))
+        check("sample collapse buttons have visible bordered treatment",
+              len(chrome_state.get("styled", [])) == 3
+              and all(item.get("border_style") != "none" and item.get("border_width") != "0px"
+                      for item in chrome_state.get("styled", [])),
+              str(chrome_state))
 
         print("\n== Tag-driven location resolution (Bucket D) ==")
         # The wide-viewport reload just above already cleared localStorage via

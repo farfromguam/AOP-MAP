@@ -15,17 +15,28 @@
       --brown-dark: #3f3122;   /* hover/active text */
       --brown-soft: #756444;   /* tertiary labels, captions */
       --cream-hover: #efe2c6;  /* button hover, active row */
+      --cream-surface: rgba(250, 246, 235, 0.96);
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --control-border: #b9aa88;
+      --moss: #5f7157;
+      --moss-dark: #384833;
+      --moss-soft: #e3ebdc;
       --rust: #9a5a32;         /* primary accent / active border */
     }
     body, html { margin: 0; padding: 0; height: 100%; font-family: Inter, system-ui, sans-serif; }
     #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-    .left-controls { position: absolute; left: 12px; top: 12px; z-index: 3; width: 320px; max-width: calc(100vw - 368px); display: grid; gap: 8px; }
-    .preset-bar, .search-shell, .calendar-card { display: flex; gap: 6px; padding: 6px; border-radius: 8px; background: rgba(247,241,226,0.94); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
-    .preset-bar button { flex: 1; min-width: 0; font: 700 0.86rem Inter, system-ui, sans-serif; padding: 7px 10px; border-radius: 6px; border: 1px solid #b9aa88; background: #fff8e8; color: var(--brown-ink); cursor: pointer; }
+    .left-controls { position: absolute; left: 12px; top: 12px; z-index: 3; width: 340px; max-width: calc(100vw - 392px); display: grid; gap: 8px; }
+    .left-controls * { box-sizing: border-box; letter-spacing: 0; }
+    .search-shell, .preset-bar, .left-context-card, .hot-control { border: 1px solid rgba(155,132,92,0.34); border-radius: 8px; background: var(--cream-surface); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .preset-bar, .search-shell { display: flex; gap: 6px; padding: 6px; }
+    .preset-bar { align-items: center; }
+    .preset-bar button { flex: 1; min-width: 0; min-height: 36px; font: 700 0.84rem Inter, system-ui, sans-serif; padding: 7px 8px; border-radius: 6px; border: 1px solid var(--control-border); background: var(--control-bg); color: var(--brown-ink); cursor: pointer; }
     .preset-bar button:hover { background: var(--cream-hover); }
-    .preset-bar button.active { background: #8b5f38; border-color: #8b5f38; color: #fff8e8; }
+    .preset-bar button.active { background: var(--moss); border-color: var(--moss); color: #fffdf5; }
     .preset-bar button.terrain-button { max-width: 58px; }
-    .zoom-bar .zoom-label { flex: 0 0 auto; align-self: center; font: 700 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.06em; color: var(--brown-mid); padding: 0 4px 0 2px; }
+    .zoom-bar { display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)); }
+    .zoom-bar .zoom-label { flex: 0 0 auto; align-self: center; font: 700 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; color: var(--brown-mid); padding: 0 4px 0 2px; }
     /* Sprint 02 B3: panel docks at bottom-right so the collapsed state lives
        at the bottom corner (a tray that "pops up" toward the top when
        expanded) instead of leaving the header floating mid-screen on
@@ -44,14 +55,14 @@
     .panel hr { border: 0; border-top: 1px solid #d8d8d8; margin: 10px 0; }
     .panel-section { border-top: 1px solid #d8d0bd; padding-top: 8px; margin-top: 10px; }
     .panel-section:first-of-type { margin-top: 8px; }
-    .section-toggle { width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin: 0 0 6px !important; padding: 3px 0 !important; border: 0 !important; background: transparent !important; color: #666; text-align: left; }
-    .section-toggle:hover { color: var(--brown-dark); background: transparent !important; }
+    .section-toggle, .layer-expand, .panel-collapse, .group-chevron { display: inline-grid; place-items: center; width: 28px; height: 24px; margin: 0 !important; padding: 0 !important; border: 1px solid #d8d0bd !important; border-radius: 6px; background: #fff8e8 !important; color: var(--brown-mid); cursor: pointer; line-height: 1; }
+    .section-toggle:hover, .layer-expand:hover, .panel-collapse:hover, .group-chevron:hover { color: var(--brown-dark); border-color: #c8b8a0 !important; background: var(--cream-hover) !important; }
     .section-label { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
     /* Section header with inline Export / Import per panel section. The chevron
        stays right-edge; the action buttons sit between label and chevron. Each
        fires buildSectionPayload / applySectionPayload for its data-section. */
     .section-header { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 4px; margin: 0 0 6px; }
-    .section-header .section-toggle { grid-column: 3; width: auto; margin: 0 !important; padding: 1px 5px !important; }
+    .section-header .section-toggle { grid-column: 3; }
     .section-header .section-label { grid-column: 1; }
     .section-action { background: transparent; border: 1px solid #d8d0bd; padding: 1px 6px; font: 700 0.72rem Inter, system-ui, sans-serif; line-height: 1.1; color: var(--brown-mid); cursor: pointer; border-radius: 4px; }
     .section-action:hover { background: var(--cream-hover); border-color: #c8b8a0; color: var(--brown-dark); }
@@ -59,7 +70,7 @@
     .panel-actions.panel-actions-single { grid-template-columns: 1fr; }
     .panel-actions button { font: 700 0.82rem Inter, system-ui, sans-serif; padding: 6px 8px; border-radius: 6px; border: 1px solid #b9aa88; background: #fff8e8; color: var(--brown-ink); cursor: pointer; }
     .panel-actions button:hover { background: var(--cream-hover); }
-    .section-chevron { color: var(--brown-mid); font-size: 1.15rem; line-height: 1; }
+    .section-chevron { font-size: 1.05rem; line-height: 1; }
     .panel-section.collapsed .section-content { display: none; }
     .panel button { font: inherit; padding: 4px 10px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
     .panel button:hover { background: #ececec; }
@@ -70,7 +81,7 @@
     .layer-row.active { background: #f6edda; color: var(--brown-dark); }
     .layer-row.expanded { background: var(--cream-hover); color: var(--brown-dark); }
     .layer-row label { min-width: 0; margin: 0; cursor: pointer; }
-    .layer-expand { min-width: 30px; margin: 0 !important; padding: 2px 7px !important; color: var(--brown-mid); }
+    .layer-expand { font-size: 1.05rem; }
     .panel label.tune-visible { margin: 0; white-space: nowrap; }
     .layer-editor { margin: 0 0 10px 18px; padding: 10px; border-left: 3px solid var(--rust); border-radius: 8px; background: rgba(247,241,226,0.92); }
     .layer-editor[hidden] { display: none; }
@@ -111,8 +122,7 @@
     .feature-list-heading .feature-list-count { color: var(--brown-soft); font-weight: 400; }
     .feature-list-group { display: grid; gap: 3px; }
     .feature-list-group-head { display: grid; grid-template-columns: 22px 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 5px; background: rgba(247,241,226,0.7); font-size: 0.8rem; color: var(--brown-ink); }
-    .feature-list-group-head .group-chevron { background: none; border: 0; padding: 0; cursor: pointer; color: var(--brown-mid); font-size: 1.1rem; line-height: 1; width: 22px; height: 22px; }
-    .feature-list-group-head .group-chevron:hover { color: var(--brown-dark); }
+    .feature-list-group-head .group-chevron { width: 22px; height: 22px; font-size: 0.95rem; }
     .feature-list-group-head .group-name { min-width: 0; overflow-wrap: anywhere; }
     .feature-list-group-head .group-count { color: var(--brown-soft); font-size: 0.75rem; }
     .feature-list-rows { display: grid; gap: 2px; padding: 2px 0 4px 22px; }
@@ -126,6 +136,9 @@
     .feature-row .feature-move:hover { background: #f1e6cf; color: var(--brown-dark); }
     .feature-row .feature-copy { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; }
     .feature-row .feature-copy:hover { background: #f1e6cf; color: var(--brown-dark); }
+    .feature-row .feature-size-control { display: grid; grid-template-columns: 64px 34px; align-items: center; gap: 4px; width: 102px; }
+    .feature-row .feature-size-control input { width: 64px; min-width: 0; }
+    .feature-row .feature-size-control output { font-size: 0.72rem; color: var(--brown-soft); text-align: right; }
     /* Tag input on taggable rows (buildings, drawn POIs). Binds a #tag to the
        feature so the event-schedule JSON can omit coordinates for that tag.
        Card: brain/tasks/02_edit/named_feature_tagging.md. */
@@ -158,8 +171,8 @@
     .search { position: relative; margin-bottom: 10px; }
     .left-controls .search { margin-bottom: 0; width: 100%; }
     .search-shell { display: block; }
-    .search input { width: 100%; box-sizing: border-box; padding: 7px 9px 7px 30px; font: inherit; border: 1px solid #bbb; border-radius: 8px; }
-    .search input:focus { outline: 2px solid #9a8a5a; border-color: #9a8a5a; }
+    .search input { width: 100%; box-sizing: border-box; padding: 8px 9px 8px 30px; font: inherit; border: 1px solid var(--control-border); border-radius: 7px; background: var(--control-bg); color: var(--brown-ink); }
+    .search input:focus { outline: 2px solid rgba(95,113,87,0.35); border-color: var(--moss); }
     /* Magnifier glyph anchored at the left of #searchInput. pointer-events:none
        lets the click pass through to the input so focus still works. */
     .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--brown-soft); pointer-events: none; }
@@ -168,10 +181,17 @@
     .search-item:hover, .search-item.active { background: #e8dcc3; }
     .search-kind { color: #888; font-size: 0.78rem; }
     .search-empty { padding: 6px 9px; color: #999; font-size: 0.88rem; }
-    .calendar-card { display: block; padding: 0; overflow: hidden; }
+    .left-context-card { display: block; overflow: hidden; }
+    .calendar-card { display: block; padding: 0; overflow: hidden; background: transparent; }
+    .left-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; padding: 5px; border-bottom: 1px solid var(--cream-border); background: rgba(227, 235, 220, 0.62); }
+    .left-tab { min-width: 0; min-height: 32px; margin: 0; padding: 5px 4px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--brown-mid); cursor: pointer; font: 800 0.76rem Inter, system-ui, sans-serif; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .left-tab:hover { background: rgba(255,253,245,0.7); color: var(--brown-dark); }
+    .left-tab[aria-selected="true"] { background: var(--control-bg); border-color: #b9c7ad; color: var(--moss-dark); box-shadow: inset 0 -2px 0 var(--moss); }
+    .left-tab-panel[hidden] { display: none; }
+    .left-controls button:focus-visible, .calendar-row:focus-visible, .search input:focus-visible { outline: 2px solid rgba(95,113,87,0.42); outline-offset: 2px; }
     .calendar-toggle { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; margin: 0; padding: 8px 10px; border: 0; background: transparent; color: var(--brown-ink); cursor: pointer; text-align: left; }
     .calendar-toggle:hover { background: var(--cream-hover); }
-    .calendar-title { display: block; font: 800 0.78rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+    .calendar-title { display: block; font: 800 0.78rem Inter, system-ui, sans-serif; text-transform: uppercase; }
     .calendar-range { display: block; margin-top: 1px; font-size: 0.76rem; color: var(--brown-soft); }
     .calendar-chevron { color: var(--brown-mid); font-size: 1.15rem; line-height: 1; }
     .calendar-body { max-height: 240px; overflow-y: auto; padding: 0 8px 8px; opacity: 1; transition: max-height 0.24s ease, opacity 0.2s ease, padding 0.2s ease; }
@@ -180,7 +200,7 @@
     .calendar-days li { margin: 0; padding: 0; border-top: 1px solid #d8cdb4; color: var(--brown-ink); }
     .calendar-row { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 8px; margin: 0; padding: 7px 8px; border: 0; border-radius: 0; background: transparent; color: var(--brown-ink); cursor: pointer; text-align: left; }
     .calendar-row:hover, .calendar-row.active { background: var(--cream-hover); }
-    .calendar-day { padding-top: 2px; font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; color: var(--brown-mid); }
+    .calendar-day { padding-top: 2px; font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; color: var(--brown-mid); }
     .calendar-time { display: block; min-width: 0; font: 700 0.74rem Inter, system-ui, sans-serif; line-height: 1.15; color: var(--brown-soft); overflow-wrap: anywhere; }
     .calendar-name { display: block; margin-top: 1px; font-size: 0.88rem; line-height: 1.18; overflow-wrap: anywhere; }
     .calendar-location { display: block; margin-top: 2px; font-size: 0.74rem; line-height: 1.15; color: var(--brown-soft); overflow-wrap: anywhere; }
@@ -193,18 +213,25 @@
     .calendar-days li[data-session-state="happening"] .calendar-name { font-weight: 700; }
     .calendar-days li[data-session-state="upcoming_next"] .calendar-name { font-weight: 400; }
     .cal-live-badge, .cal-soon-badge { position: absolute; top: 8px; right: 8px; padding: 1px 6px; border-radius: 3px;
-      font: 700 9px Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em;
+      font: 700 9px Inter, system-ui, sans-serif; text-transform: uppercase;
       color: #f7f1e2; white-space: nowrap; pointer-events: none; }
     .cal-live-badge { background: var(--rust); }
     .cal-soon-badge { background: var(--brown-dark); }
+    .info-panel { max-height: 280px; overflow-y: auto; padding: 10px; border-top: 1px solid rgba(216,205,180,0.78); color: var(--brown-ink); }
+    .info-panel h2 { margin: 0 0 6px; font-size: 0.95rem; line-height: 1.15; }
+    .info-copy { margin: 0 0 9px; font-size: 0.86rem; line-height: 1.36; }
+    .info-list { list-style: none; display: grid; gap: 6px; margin: 0; padding: 0; }
+    .info-list li { display: grid; gap: 2px; padding-top: 6px; border-top: 1px solid rgba(216,205,180,0.78); font-size: 0.82rem; line-height: 1.28; }
+    .info-label { font-weight: 800; color: var(--moss-dark); }
+    .info-note { margin: 10px 0 0; padding-top: 7px; border-top: 1px solid rgba(216,205,180,0.78); font-size: 0.78rem; line-height: 1.3; color: var(--brown-soft); }
     /* Two-lane hot control: Event and Trails are separate actions so schedule
        users and trail-heat users do not fight one fallback button. Card:
        brain/tasks/02_edit/hot_control_two_lane.md. */
-    .hot-control { display: grid; gap: 5px; }
+    .hot-control { display: grid; gap: 6px; padding: 7px; }
     .hot-control[hidden] { display: none; }
     .hot-control-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 2px;
       color: var(--brown-ink); }
-    .hot-control-title { font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+    .hot-control-title { font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; }
     .hot-control-status { min-width: 0; font: 600 0.68rem Inter, system-ui, sans-serif; color: var(--brown-soft);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .hot-lanes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
@@ -212,7 +239,7 @@
     .hot-button { width: 100%; min-height: 64px; display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 7px;
       margin: 0; padding: 8px 9px; border: 1px solid rgba(85, 67, 44, 0.25); border-radius: 8px; background: var(--brown-mid);
       color: #f7f1e2; cursor: pointer; text-align: left; font: 700 0.74rem Inter, system-ui, sans-serif;
-      text-transform: uppercase; letter-spacing: 0.04em; }
+      text-transform: uppercase; }
     .hot-button[hidden] { display: none; }
     .hot-button:hover:not(:disabled) { filter: brightness(1.06); }
     .hot-button:disabled { cursor: default; opacity: 0.55; filter: saturate(0.7); }
@@ -224,9 +251,9 @@
     .hot-button-glyph { display: inline-flex; align-items: center; justify-content: center;
       width: 24px; height: 24px; font-size: 1.1rem; line-height: 1; }
     .hot-button-text { display: block; min-width: 0; }
-    .hot-button-title { display: block; }
+    .hot-button-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .hot-button-detail { display: block; margin-top: 1px; font: 400 0.72rem Inter, system-ui, sans-serif;
-      text-transform: none; letter-spacing: 0; color: rgba(247, 241, 226, 0.88); overflow-wrap: anywhere; }
+      text-transform: none; letter-spacing: 0; color: rgba(247, 241, 226, 0.88); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .align-handle { background: #ff3366; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #000, 0 2px 6px rgba(0,0,0,0.4); cursor: grab; }
     .align-handle:active { cursor: grabbing; filter: brightness(1.15); }
     .align-handle-corner { width: 18px; height: 18px; background: #ff3366; }
@@ -234,13 +261,24 @@
     .align-handle-interior { width: 11px; height: 11px; background: #ffd400; }
     .align-handle::after { content: attr(data-label); position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none; }
     @media (max-width: 760px) {
-      .left-controls { left: 8px; right: 8px; top: 8px; width: auto; max-width: none; }
-      .calendar-body { max-height: 190px; }
+      .left-controls { left: 8px; right: 8px; top: 8px; width: auto; max-width: none; gap: 6px; }
+      .preset-bar, .search-shell { padding: 4px; }
+      .preset-bar button { min-height: 32px; padding: 6px 6px; font-size: 0.8rem; }
+      .left-tabs { padding: 4px; }
+      .left-tab { min-height: 30px; font-size: 0.74rem; }
+      .calendar-body { max-height: 160px; }
+      .info-panel { max-height: 178px; padding: 9px; }
+      .hot-button { min-height: 54px; padding: 7px 8px; }
       /* Panel docks above the message bar (which is at bottom: 8px, ~40 px
          tall) and grows upward. max-height keeps a 220 px reserve at the
          top so the auto-collapsed calendar strip stays uncovered. */
-      .panel { left: 8px; right: 8px; top: auto; bottom: 56px; width: auto; max-width: none; max-height: calc(100vh - 280px); }
+      .panel { left: 8px; right: 8px; top: auto; bottom: 56px; width: auto; max-width: none; max-height: clamp(220px, calc(100vh - 360px), 420px); }
       .message { left: 8px; right: 8px; max-width: none; }
+    }
+    @media (min-width: 1024px) {
+      .left-controls { width: 360px; }
+      .calendar-body { max-height: min(42vh, 360px); }
+      .info-panel { max-height: min(42vh, 360px); }
     }
   </style>
 </head>
@@ -292,25 +330,55 @@
         </button>
       </div>
     </section>
-    <section class="calendar-card" id="calendarCard" aria-label="Event calendar">
-      <button id="calendarToggle" class="calendar-toggle" type="button" aria-expanded="true" aria-controls="calendarBody">
-        <span>
-          <span class="calendar-title">Event calendar</span>
-          <span class="calendar-range" id="calendarRange">Draft Fri-Sun schedule</span>
-        </span>
-        <span id="calendarChevron" class="calendar-chevron">▴</span>
-      </button>
-      <div id="calendarBody" class="calendar-body">
-        <ol class="calendar-days" id="calendarDays">
-          <li class="calendar-empty">Loading schedule...</li>
-        </ol>
+    <section class="calendar-card" id="calendarCard" aria-label="Events and park information">
+      <div class="left-tabs" role="tablist" aria-label="Left panel content">
+        <button id="leftTabEvents" class="left-tab" type="button" role="tab" aria-selected="true" aria-controls="eventsTabPanel" data-left-tab="events">Events</button>
+        <button id="leftTabPark" class="left-tab" type="button" role="tab" aria-selected="false" aria-controls="parkTabPanel" data-left-tab="park" tabindex="-1">Park</button>
+        <button id="leftTabAbout" class="left-tab" type="button" role="tab" aria-selected="false" aria-controls="aboutTabPanel" data-left-tab="about" tabindex="-1">About</button>
+      </div>
+      <div id="eventsTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabEvents">
+        <button id="calendarToggle" class="calendar-toggle" type="button" aria-expanded="true" aria-controls="calendarBody">
+          <span>
+            <span class="calendar-title">Event calendar</span>
+            <span class="calendar-range" id="calendarRange">Draft Fri-Sun schedule</span>
+          </span>
+          <span id="calendarChevron" class="calendar-chevron">▾</span>
+        </button>
+        <div id="calendarBody" class="calendar-body">
+          <ol class="calendar-days" id="calendarDays">
+            <li class="calendar-empty">Loading schedule...</li>
+          </ol>
+        </div>
+      </div>
+      <div id="parkTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabPark" hidden>
+        <div class="info-panel">
+          <h2>About the park</h2>
+          <p class="info-copy">Adventure Off Road Park is private land in South Pittsburg, Tennessee, mapped here for scale RC trail trucking and rock crawling.</p>
+          <ul class="info-list">
+            <li><span class="info-label">Map posture</span><span>Source-backed working map first; draft labels and event placements stay review context until confirmed.</span></li>
+            <li><span class="info-label">Trail use</span><span>This is not a full-size OHV trail map. Trails and terrain are read for 1/10-scale RC drivers and event crews.</span></li>
+            <li><span class="info-label">Event day</span><span>Use the Events tab for proposed session locations, then confirm final schedule and facility details with AOP or event staff.</span></li>
+          </ul>
+        </div>
+      </div>
+      <div id="aboutTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabAbout" hidden>
+        <div class="info-panel">
+          <h2>About us</h2>
+          <p class="info-copy">This map project is focused on a trustworthy AOP map for drivers, trail buddies, visitors, and event staff.</p>
+          <ul class="info-list">
+            <li><span class="info-label">Trust first</span><span>Map features carry source, confidence, permission, and review status before they become publishable truth.</span></li>
+            <li><span class="info-label">Field loop</span><span>Board marks, GPX rides, photos, and rider notes are evidence. Staff review promotes the parts that hold up.</span></li>
+            <li><span class="info-label">Event support</span><span>Schedules, route tags, hot jumps, and park context are built to help people find the right place at the right time.</span></li>
+          </ul>
+          <p class="info-note">The current viewer is a static working map. Public submissions and upload moderation belong to the later app loop.</p>
+        </div>
       </div>
     </section>
   </div>
   <div class="panel">
     <div class="panel-header" id="panelHeader" title="Collapse panel">
       <h1>AOP edit panel</h1>
-      <button type="button" id="panelCollapse" class="panel-collapse" aria-expanded="true" aria-controls="panelBody" title="Collapse panel">▴</button>
+      <button type="button" id="panelCollapse" class="panel-collapse" aria-expanded="true" aria-controls="panelBody" title="Collapse panel">▾</button>
     </div>
     <div class="panel-body" id="panelBody">
       <small id="presetStatus">Park preset active.</small>
@@ -319,8 +387,8 @@
         <div class="section-header">
           <span class="section-label">Source layers</span>
           <button type="button" class="section-action" data-section-export="source-layers" title="Copy this section's settings to clipboard">⧉</button>
-          <button type="button" class="section-toggle" aria-expanded="true">
-            <span class="section-chevron">▴</span>
+          <button type="button" class="section-toggle" aria-expanded="false">
+            <span class="section-chevron">▸</span>
           </button>
         </div>
         <div class="section-content">
@@ -345,8 +413,8 @@
         <div class="section-header">
           <span class="section-label">Derived layers</span>
           <button type="button" class="section-action" data-section-export="derived-layers" title="Copy this section's settings to clipboard">⧉</button>
-          <button type="button" class="section-toggle" aria-expanded="true">
-            <span class="section-chevron">▴</span>
+          <button type="button" class="section-toggle" aria-expanded="false">
+            <span class="section-chevron">▸</span>
           </button>
         </div>
         <div class="section-content">
@@ -381,10 +449,12 @@
       </section>
 
       <section class="panel-section collapsed" data-section="publishable">
-        <button type="button" class="section-toggle" aria-expanded="true">
+        <div class="section-header">
           <span class="section-label">Publishable</span>
-          <span class="section-chevron">▴</span>
-        </button>
+          <button type="button" class="section-toggle" aria-expanded="false">
+            <span class="section-chevron">▸</span>
+          </button>
+        </div>
         <div class="section-content">
           <label><input type="checkbox" id="showTrails" checked /> Publishable trails</label>
           <label><input type="checkbox" id="showBoundaries" checked /> Publishable boundaries</label>
@@ -393,7 +463,7 @@
           <label><input type="checkbox" id="showSyntheticActivity" /> Simulated Saturday activity</label>
           <label><input type="checkbox" id="showEventSchedule" /> Event schedule POIs</label>
           <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
-          <label><input type="checkbox" id="showBrandLogos" checked /> Brand logos (AOP &amp; Rock Warblers)</label>
+          <label><input type="checkbox" id="showBrandLogos" /> Brand logos (AOP &amp; Rock Warblers)</label>
         </div>
       </section>
 
@@ -401,8 +471,8 @@
         <div class="section-header">
           <span class="section-label">Map editor</span>
           <button type="button" class="section-action" data-section-export="editor" title="Copy this section's settings to clipboard">⧉</button>
-          <button type="button" class="section-toggle" aria-expanded="true">
-            <span class="section-chevron">▴</span>
+          <button type="button" class="section-toggle" aria-expanded="false">
+            <span class="section-chevron">▸</span>
           </button>
         </div>
         <div class="section-content">
@@ -439,10 +509,12 @@
       </section>
 
       <section class="panel-section collapsed" data-section="notes">
-        <button type="button" class="section-toggle" aria-expanded="false">
+        <div class="section-header">
           <span class="section-label">Layer notes</span>
-          <span class="section-chevron">▾</span>
-        </button>
+          <button type="button" class="section-toggle" aria-expanded="false">
+            <span class="section-chevron">▸</span>
+          </button>
+        </div>
         <div class="section-content">
           <small>Terrain: use the 3D button with any preset. AWS Terrain Tiles, derived from USGS 3DEP. Drag with right-click (or two-finger drag) to tilt and rotate.</small>
           <small>Satellite tiles served by TDOT/TNMap — inspection use only, not for redistribution.</small>
@@ -594,8 +666,11 @@
     const calendarCard = document.getElementById('calendarCard');
     const calendarToggle = document.getElementById('calendarToggle');
     const calendarRange = document.getElementById('calendarRange');
+    const calendarBody = document.getElementById('calendarBody');
     const calendarDays = document.getElementById('calendarDays');
     const calendarChevron = document.getElementById('calendarChevron');
+    const leftTabButtons = [...document.querySelectorAll('.left-tab[data-left-tab]')];
+    const leftTabPanels = [...document.querySelectorAll('.left-tab-panel')];
     const presetButtons = [...document.querySelectorAll('.preset-bar button[data-preset]')];
     const terrainButton = document.getElementById('terrainButton');
     const layerEditor = document.getElementById('layerEditor');
@@ -623,7 +698,7 @@
     function togglePanel() {
       panelCollapsed = !panelCollapsed;
       panel.classList.toggle('collapsed', panelCollapsed);
-      panelCollapse.textContent = panelCollapsed ? '▾' : '▴';
+      panelCollapse.textContent = panelCollapsed ? '▸' : '▾';
       panelCollapse.setAttribute('aria-expanded', String(!panelCollapsed));
       panelHeader.title = panelCollapse.title = panelCollapsed ? 'Expand panel' : 'Collapse panel';
       if (panelCollapsed) {
@@ -644,6 +719,36 @@
     panelCollapse.addEventListener('click', (e) => { e.stopPropagation(); togglePanel(); });
     panelHeader.addEventListener('click', togglePanel);
 
+    function setLeftTab(tabKey) {
+      for (const button of leftTabButtons) {
+        const selected = button.dataset.leftTab === tabKey;
+        button.setAttribute('aria-selected', String(selected));
+        button.tabIndex = selected ? 0 : -1;
+      }
+      for (const panel of leftTabPanels) {
+        panel.hidden = panel.id !== `${tabKey}TabPanel`;
+      }
+      if (tabKey === 'events') scrollCalendarCurrentRowIntoView();
+    }
+
+    for (const button of leftTabButtons) {
+      button.addEventListener('click', () => setLeftTab(button.dataset.leftTab));
+      button.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const current = leftTabButtons.indexOf(button);
+        let next = current;
+        if (event.key === 'Home') next = 0;
+        else if (event.key === 'End') next = leftTabButtons.length - 1;
+        else next = (current + (event.key === 'ArrowRight' ? 1 : -1) + leftTabButtons.length) % leftTabButtons.length;
+        const nextButton = leftTabButtons[next];
+        if (nextButton) {
+          setLeftTab(nextButton.dataset.leftTab);
+          nextButton.focus();
+        }
+      });
+    }
+
     // Sprint 02 B4: calendar starts collapsed on narrow viewports so the
     // left-controls strip does not eat the visible map on mobile / tablet.
     // User's manual choice survives across reloads via localStorage so a
@@ -655,13 +760,14 @@
       calendarCard.classList.toggle('collapsed', collapsed);
       calendarToggle.setAttribute('aria-expanded', String(!collapsed));
       calendarToggle.title = collapsed ? 'Expand calendar' : 'Collapse calendar';
-      calendarChevron.textContent = collapsed ? '▾' : '▴';
+      calendarChevron.textContent = collapsed ? '▸' : '▾';
       // Stored as a raw '1'/'0' (not JSON) so the read-side `stored === '1'`
       // check stays trivial; the JSON-store helpers would wrap it in quotes.
       if (persist) {
         try { localStorage.setItem(CALENDAR_COLLAPSE_KEY, collapsed ? '1' : '0'); }
         catch (_) { /* localStorage unavailable — ignore */ }
       }
+      if (!collapsed) scrollCalendarCurrentRowIntoView();
     }
 
     // First-load state: stored user choice wins; otherwise default-collapsed
@@ -694,7 +800,7 @@
       const chevron = section.querySelector('.section-chevron');
       section.classList.toggle('collapsed', collapsed);
       if (button) button.setAttribute('aria-expanded', String(!collapsed));
-      if (chevron) chevron.textContent = collapsed ? '▾' : '▴';
+      if (chevron) chevron.textContent = collapsed ? '▸' : '▾';
     }
 
     for (const section of document.querySelectorAll('.panel-section')) {
@@ -851,6 +957,15 @@
         if (map.setSky) map.setSky(undefined);
         map.easeTo({ pitch: 0, duration: 600 });
       }
+    }
+
+    function resetLayerPresetCamera() {
+      syncTerrainControl(false);
+      if (map.getSource('aws-terrain-dem')) {
+        map.setTerrain(null);
+        if (map.setSky) map.setSky(undefined);
+      }
+      map.easeTo({ pitch: 0, bearing: 0, duration: 600 });
     }
 
     // Slider markup uses 0-100; layer paint properties want 0-1. One helper so
@@ -1257,9 +1372,8 @@
         ],
         width: [['editor-poi-circles', 'circle-radius']]
       },
-      // Brand logos: visibility + drag-to-move only. No paint tuners on the
-      // drawer since the icons are raster images (no color/width to tune);
-      // icon-opacity could go here later if a logo dim slider becomes useful.
+      // Brand logos: opacity lives in the normal layer tuner; per-logo size
+      // lives beside each feature row because icon-size is data-driven.
       brandLogos: {
         label: 'Brand logos',
         toggle: brandLogosToggle,
@@ -1439,6 +1553,7 @@
         label: 'Brand logos',
         idField: 'logo_id',
         rowLabel: (props) => props.name || 'Logo',
+        sizeEditable: true,
         targetLayers: ['brand-logos-icons'],
         groups: [{
           id: 'all',
@@ -1500,6 +1615,29 @@
     // by `logo_id` (aop_badge, rock_warblers) — the on-disk file can be
     // re-edited and any orphaned override key is simply ignored on load.
     let brandLogosData = null;
+    const BRAND_LOGO_SIZE_MIN = 0.02;
+    const BRAND_LOGO_SIZE_MAX = 0.20;
+    const BRAND_LOGO_SIZE_STEP = 0.005;
+    const BRAND_LOGO_SIZE_DEFAULT = 0.06;
+
+    function brandLogoSize(feature) {
+      const value = Number(feature?.properties?.icon_size);
+      return Number.isFinite(value) ? value : BRAND_LOGO_SIZE_DEFAULT;
+    }
+
+    function formatBrandLogoSize(value) {
+      return Number(value).toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+    }
+
+    function setBrandLogoSize(feature, value) {
+      if (!feature || !feature.properties) return;
+      const clamped = Math.min(BRAND_LOGO_SIZE_MAX, Math.max(BRAND_LOGO_SIZE_MIN, Number(value)));
+      if (!Number.isFinite(clamped)) return;
+      feature.properties.icon_size = Number(clamped.toFixed(3));
+      saveBrandLogoOverride(feature);
+      const source = map.getSource('brand-logos');
+      if (source && brandLogosData) source.setData(brandLogosData);
+    }
 
     function loadBrandLogoOverrides() {
       const parsed = readJsonStore(BRAND_LOGOS_OVERRIDE_KEY, () => ({}));
@@ -1508,9 +1646,11 @@
 
     function saveBrandLogoOverride(feature) {
       if (!feature || !feature.properties || !feature.geometry) return;
+      const size = brandLogoSize(feature);
       const store = loadBrandLogoOverrides();
       store[feature.properties.logo_id] = {
         geometry: JSON.parse(JSON.stringify(feature.geometry)),
+        icon_size: size,
         updated: new Date().toISOString()
       };
       writeJsonStore(BRAND_LOGOS_OVERRIDE_KEY, store);
@@ -1523,6 +1663,9 @@
         const id = feature.properties && feature.properties.logo_id;
         if (id && store[id] && store[id].geometry) {
           feature.geometry = JSON.parse(JSON.stringify(store[id].geometry));
+        }
+        if (id && store[id] && Number.isFinite(Number(store[id].icon_size))) {
+          feature.properties.icon_size = Number(store[id].icon_size);
         }
       }
       return data;
@@ -2138,9 +2281,9 @@
           chevron.type = 'button';
           chevron.className = 'group-chevron';
           chevron.setAttribute('aria-expanded', String(!groupCollapsed));
-          // Glyph matches the panel + section chevrons: ▴ when expanded
-          // (click folds the group up), ▾ when collapsed (click drops it down).
-          chevron.textContent = groupCollapsed ? '▾' : '▴';
+          // Glyph matches the panel + section chevrons: ▾ when expanded,
+          // ▸ when collapsed.
+          chevron.textContent = groupCollapsed ? '▸' : '▾';
           chevron.title = groupCollapsed ? 'Expand group' : 'Collapse group';
           chevron.addEventListener('click', (event) => {
             event.preventDefault();
@@ -2238,6 +2381,29 @@
             tagInput.addEventListener('pointerdown', (event) => event.stopPropagation());
             tagInput.addEventListener('click', (event) => event.stopPropagation());
             row.append(tagInput);
+          }
+          if (spec.sizeEditable) {
+            const sizeWrap = document.createElement('label');
+            sizeWrap.className = 'feature-size-control';
+            sizeWrap.title = 'Logo size';
+            const sizeInput = document.createElement('input');
+            sizeInput.type = 'range';
+            sizeInput.className = 'feature-size';
+            sizeInput.min = String(BRAND_LOGO_SIZE_MIN);
+            sizeInput.max = String(BRAND_LOGO_SIZE_MAX);
+            sizeInput.step = String(BRAND_LOGO_SIZE_STEP);
+            sizeInput.value = String(brandLogoSize(item.feature));
+            const sizeOutput = document.createElement('output');
+            sizeOutput.textContent = formatBrandLogoSize(sizeInput.value);
+            sizeInput.addEventListener('input', () => {
+              setBrandLogoSize(item.feature, sizeInput.value);
+              sizeOutput.textContent = formatBrandLogoSize(sizeInput.value);
+            });
+            // Keep row long-press/move handling from arming while the slider is used.
+            sizeInput.addEventListener('pointerdown', (event) => event.stopPropagation());
+            sizeInput.addEventListener('click', (event) => event.stopPropagation());
+            sizeWrap.append(sizeInput, sizeOutput);
+            row.append(sizeWrap);
           }
           row.append(copy, fly);
           if (movable) {
@@ -2344,7 +2510,7 @@
           showLidarTiles: false,
           showRoads: true,
           showVisitorContext: true,
-          showBrandLogos: true,
+          showBrandLogos: false,
           showWater: true,
           showSprings: false,
           showCemeteries: false,
@@ -2418,7 +2584,7 @@
           showLidarTiles: false,
           showRoads: true,
           showVisitorContext: true,
-          showBrandLogos: true,
+          showBrandLogos: false,
           showWater: true,
           showSprings: true,
           showCemeteries: false,
@@ -2630,7 +2796,7 @@
         setSliderValue(id, value);
       }
       updateLayerVisibility();
-      setTerrainEnabled(terrainToggle.checked);
+      resetLayerPresetCamera();
       applyPaintState(state.paints);
       presetButtons.forEach((button) => {
         button.classList.toggle('active', button.dataset.preset === presetId);
@@ -2725,7 +2891,7 @@
         row.classList.toggle('active', activeTuneKey === key);
         row.classList.toggle('expanded', expanded);
         if (button) {
-          button.textContent = expanded ? '▴' : '▾';
+          button.textContent = expanded ? '▾' : '▸';
           button.setAttribute('aria-expanded', String(expanded));
           button.title = expanded ? `Hide ${config.label} controls` : `Show ${config.label} controls`;
         }
@@ -2978,7 +3144,7 @@
         expandButton.className = 'layer-expand';
         expandButton.dataset.tuneExpandKey = key;
         expandButton.setAttribute('aria-expanded', 'false');
-        expandButton.textContent = '▾';
+        expandButton.textContent = '▸';
         row.append(expandButton);
         config.row = row;
         config.expandButton = expandButton;
@@ -3120,14 +3286,18 @@
     // overrides, and the drawn-POI store) appear here. Other layers in a
     // section have no runtime state — only toggles / paints.
     const SECTION_RUNTIME = {
-      'derived-layers': {
-        visitorContextOverrides: VISITOR_CONTEXT_OVERRIDE_KEY,
-        featureVisibilityLayers: ['visitorContext']
-      },
+      'derived-layers': {},
       'source-layers': {
         featureVisibilityLayers: ['cemeteries', 'buildings'],
         // Buildings is the only taggable source-layer consumer today.
         featureTagLayers: ['buildings']
+      },
+      // Visitor-context callouts live in this section's HTML
+      // (#showVisitorContext); the override + per-feature visibility slice
+      // ride with the toggle so per-section round-trips stay coherent.
+      publishable: {
+        visitorContextOverrides: VISITOR_CONTEXT_OVERRIDE_KEY,
+        featureVisibilityLayers: ['visitorContext']
       },
       editor: {
         editorPois: POI_STORAGE_KEY,
@@ -3737,6 +3907,22 @@
       return rem === 0 ? `${h}h` : `${h}h ${rem}m`;
     }
 
+    function calendarCurrentItem() {
+      return calendarDays?.querySelector('li[data-session-state="happening"]')
+        || calendarDays?.querySelector('li[data-session-state="upcoming_next"]')
+        || null;
+    }
+
+    function scrollCalendarCurrentRowIntoView() {
+      if (!calendarBody || !calendarDays || calendarCard?.classList.contains('collapsed')) return;
+      const target = calendarCurrentItem();
+      if (!target) return;
+      window.requestAnimationFrame(() => {
+        if (!target.isConnected) return;
+        target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      });
+    }
+
     // Walk the rendered rows and stamp data-session-state + badges. Called
     // immediately after render and every 60s (plus on visibilitychange).
     function refreshEventScheduleSessionStates() {
@@ -3786,6 +3972,7 @@
       // tag-rebind path (rebuildEventScheduleData -> renderEventSchedule
       // -> refreshEventScheduleSessionStates -> here).
       if (typeof refreshHotButton === 'function') refreshHotButton();
+      scrollCalendarCurrentRowIntoView();
     }
 
     let eventScheduleStateTimer = null;

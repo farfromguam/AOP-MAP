@@ -146,12 +146,26 @@ def main() -> int:
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["placing"]))
 
         page.select_option("#poiCategory", "Pavilion")
-        for x, y in PLACE_POINTS[:2]:
+
+        def _place_point(x: int, y: int) -> None:
+            # Sprint 02 default-on buildings + visitor-context callouts +
+            # event-schedule anchors mean any prior map click may have opened
+            # a stack of popups whose DOM nodes can intercept the next click.
+            # Close any open popup and confirm we are still in 'point' mode
+            # before each placement, so the test never silently lands a click
+            # on a popup or in static mode.
+            page.evaluate(
+                "() => document.querySelectorAll('.maplibregl-popup').forEach((el) => el.remove())"
+            )
+            if page.evaluate("draw.getMode()") != "point":
+                page.evaluate("draw.setMode('point')")
             page.mouse.click(x, y)
-            page.wait_for_timeout(350)
+            page.wait_for_timeout(400)
+
+        for x, y in PLACE_POINTS[:2]:
+            _place_point(x, y)
         page.select_option("#poiCategory", "Building")
-        page.mouse.click(*PLACE_POINTS[2])
-        page.wait_for_timeout(350)
+        _place_point(*PLACE_POINTS[2])
         check("three POIs placed", kind_count(page, "Point") == 3, f"points={kind_count(page, 'Point')}")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["placed"]))
 

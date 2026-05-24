@@ -48,7 +48,7 @@ brain/
 
 `spinup/mvp_runbook.md` is the durable local MVP runbook. Use it for CWC checks, Docker/PostGIS startup, QGIS connection settings, port collisions, publish export checks, and viewer spinup.
 
-`tasks/01_mvp/aop_south_pittsburg_map_build_card.md` is the current build card. It is direction, not gospel; update it as the map learns.
+`tasks/03_event_app/viewer_polish_carryover.md` is the Sprint 02 carryover router. Lanes 1–5 shipped, Lane 6 now lives at `tasks/03_event_app/code_health_pass_4.md`, and Lane 7 stays on `tasks/01_mvp/_done/community_trails_import.md`. `tasks/03_event_app/full_loop_crud_upload_audit.md` is the parallel Sprint 03 thrust, with `tasks/03_event_app/dev_db_snapshot_reseed.md` carrying the dev DB dump/reseed need. `tasks/01_mvp/_done/aop_south_pittsburg_map_build_card.md` is the closed Sprint 01 build card, kept as the historical promise. Cards are direction, not gospel; update them as the map learns.
 
 `voice/voice_guide.md` and `voice/style_guide.md` govern docs.
 

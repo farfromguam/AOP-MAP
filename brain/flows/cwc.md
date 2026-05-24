@@ -9,9 +9,11 @@ This flow is the brain-level anchor for continuing the MVP without losing the se
 - Invoke as `~~cwc` in conversation.
 - Optional local helper: run `./cwc` from the repo root for a non-mutating MVP continuation check.
 - For local spinup and troubleshooting, use `brain/spinup/mvp_runbook.md`.
+- Use `brain/brain_map.md` to find the current active task card.
 - Follow the current session handoff in `brain/handoff/session_context.md`.
 - Respect the validation loop in `brain/northstar/validation_loop.md`.
-- Use the current build card in `brain/tasks/01_mvp/aop_south_pittsburg_map_build_card.md`.
+- Do not hardcode the old Sprint 01 build card as the current work. It is a
+  historical card under `_done/`; the active card moves with the sprint.
 
 ## Purpose
 

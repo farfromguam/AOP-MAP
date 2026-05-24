@@ -22,7 +22,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from playwright_base import WEBSITE_URL
+from playwright_base import WEBSITE_URL, set_toggle, click_in_section
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -66,9 +66,11 @@ def main() -> int:
         # Expose map via a one-shot injection: the script uses `const map = new maplibregl.Map(...)`.
         # We instead query layer visibility through DOM toggles + raster element presence.
 
-        # Toggle OSM tracks ON.
-        page.click("#showOsmTracks")
-        page.wait_for_timeout(400)
+        # Toggle OSM tracks ON. These toggles live inside a collapsed
+        # `.panel-section`, so route through `set_toggle` rather than a raw
+        # `.click()` that would time out waiting for the hidden checkbox.
+        set_toggle(page, "showOsmTracks", True)
+        page.wait_for_timeout(200)
         # Visibility check via canvas pixel sampling is overkill; verify the input is checked
         # and the corresponding layer exists by checking source layers via a small probe.
 
@@ -101,17 +103,19 @@ def main() -> int:
         check("OSM tracks toggle is checked", ok)
 
         # Check 2: SFWDA toggle, edit mode produces 4 handles
-        page.click("#showSfwda")
-        page.wait_for_timeout(300)
+        set_toggle(page, "showSfwda", True)
+        page.wait_for_timeout(200)
         ok = page.is_checked("#showSfwda")
         check("SFWDA paper map toggle on", ok)
 
-        page.click('[data-tune-expand-key="sfwda"]')
+        # The layer drawer expander is a button inside the collapsed section;
+        # `click_in_section` opens the section first so the button is hittable.
+        click_in_section(page, '[data-tune-expand-key="sfwda"]')
         page.wait_for_timeout(300)
         check("SFWDA edit controls live in the layer drawer",
               page.is_visible("#sfwdaDrawerControls"))
 
-        page.click("#editSfwda")
+        set_toggle(page, "editSfwda", True)
         page.wait_for_timeout(800)
         handles = page.query_selector_all(".align-handle")
         check("Edit mode renders 49 grid handles (6x6)", len(handles) == 49)
@@ -126,12 +130,13 @@ def main() -> int:
         labels = [h.get_attribute("data-label") for h in corner_handles]
         check("Corner handles labeled NW/NE/SE/SW", set(labels) == {"NW", "NE", "SE", "SW"})
 
-        # Toggle interior handles off -> only 4 corners
-        page.click("#showInterior")
+        # Toggle interior handles off -> only 4 corners. `showInterior` is the
+        # checkbox that lives inside the SFWDA drawer (opened above).
+        set_toggle(page, "showInterior", False)
         page.wait_for_timeout(400)
         h2 = page.query_selector_all(".align-handle")
         check("Hiding interior leaves 4 corner handles only", len(h2) == 4)
-        page.click("#showInterior")
+        set_toggle(page, "showInterior", True)
         page.wait_for_timeout(400)
         handles = page.query_selector_all(".align-handle")
 
@@ -143,17 +148,17 @@ def main() -> int:
         check("Reset button enabled in edit mode", reset_disabled is None)
 
         # OSM named toggle
-        page.click("#showOsmNamed")
+        set_toggle(page, "showOsmNamed", True)
         page.wait_for_timeout(200)
         check("OSM named landmarks toggle on", page.is_checked("#showOsmNamed"))
 
         # Park polygon toggle
-        page.click("#showOsmPark")
+        set_toggle(page, "showOsmPark", True)
         page.wait_for_timeout(200)
         check("OSM park polygon toggle on", page.is_checked("#showOsmPark"))
 
         # OSM service toggle
-        page.click("#showOsmService")
+        set_toggle(page, "showOsmService", True)
         page.wait_for_timeout(200)
         check("OSM service roads toggle on", page.is_checked("#showOsmService"))
 
@@ -188,8 +193,20 @@ def main() -> int:
         else:
             check("Handle drag completes without error", False)
 
-        # Console errors check (ignore network warnings)
-        meaningful = [e for e in console_errors if "401" not in e and "Failed to fetch" not in e]
+        # Console errors check. Filter benign aborted-fetch noise (MapLibre's
+        # `AJAXError: Failed to fetch (0): ...` and the browser's bare
+        # `TypeError: Failed to fetch` from camera-resize / reload navigations)
+        # but keep real HTTP errors like `(404)`. Also drop ArcGIS 401s from
+        # the public NAIP tile service.
+        def _is_aborted_fetch(text: str) -> bool:
+            stripped = (text or "").strip()
+            return (
+                "AJAXError: Failed to fetch (0):" in stripped
+                or stripped.endswith("TypeError: Failed to fetch")
+                or stripped == "TypeError: Failed to fetch"
+            )
+
+        meaningful = [e for e in console_errors if "401" not in e and not _is_aborted_fetch(e)]
         check("No meaningful console errors", len(meaningful) == 0)
         if meaningful:
             for e in meaningful:

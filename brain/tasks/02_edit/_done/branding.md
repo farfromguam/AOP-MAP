@@ -37,8 +37,9 @@ Viewer-served copies live at `website/assets/branding/aop-badge.png` and
   logos draw at their new spot from the first frame.
 - Feature list panel: `brandLogos` consumer in `FEATURE_LIST_LAYERS` with
   visibility + drag-to-move + fly-to. `TUNABLE_LAYERS.brandLogos` exposes
-  only the toggle + an `icon-opacity` slider (no color/width on raster
-  icons).
+  the layer toggle + an `icon-opacity` slider; each feature-list row also has
+  a per-logo size slider that writes `icon_size` into the same override store
+  as moved coordinates.
 - Bulk Export/Import: brand-logos overrides ride along in the v2 bundle
   via `captureRuntimeOverrides` / `applyExportAllPayload`.
 
@@ -63,20 +64,36 @@ work surface.
   board / event map / all) and surface the asset's publish status in the
   popup once confirmed.
 
+## Sprint 03 Follow-up Shipped
+
+2026-05-24:
+
+- Brand-logo rows now have a size slider. The slider edits each feature's
+  `icon_size`, updates the live `brand-logos` source, and persists the value in
+  `aop_brand_logos_overrides_v1` beside the moved geometry.
+- The practical slider range is `0.02-0.20` in MapLibre `icon-size` units,
+  because the current source rasters are large (`1000x1000` AOP badge and
+  `2048x1160` Rock Warblers JPEG). The earlier Sprint 03 carryover note's
+  `0.25-2.0` raw range would make first-pass logos too large for the current
+  assets.
+- Image-add workflow documented at `../../spinup/add_image_to_viewer.md`.
+
 ## Verification
 
 `python3 mvp/scripts/playwright_verify_brand_logos.py` (server on 8001).
-18 assertions cover: toggle defaults on, both icons register via
-`map.addImage`, both icons render, layer hides on toggle off, feature
-list panel opens with two move-enabled rows, drag-to-move commits the new
-coordinate, override store persists, moved position survives a reload, no
-console errors.
+Expanded assertions cover: toggle defaults off while AOP reuse is pending,
+both icons register via `map.addImage`, icons render when explicitly enabled,
+layer hides on toggle off, feature list panel opens with two move-enabled rows,
+per-logo size sliders update
+`icon_size` and persist through reload, drag-to-move commits the new coordinate,
+override store persists, moved position survives a reload, no console errors.
 
 Screenshots land under `brain/output/playwright_brand_logos_*.png`.
 
 ## Related work
 
 - `assets/branding/README.md` — raw asset manifest, provenance, hashes.
+- `../../spinup/add_image_to_viewer.md` — viewer-side image-add runbook.
 - `poi_editor_v2.md` — the shared drag-to-move primitive this consumer
   bolts onto. Brand logos close the "logos consume the drag side of the
   primitive once they land" follow-up from that card.

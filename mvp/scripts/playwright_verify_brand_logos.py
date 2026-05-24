@@ -71,6 +71,7 @@ def feature_rows(page) -> list[dict]:
             id: r.dataset.featureId,
             name: r.querySelector('.feature-name')?.textContent || '',
             hasMove: !!r.querySelector('.feature-move'),
+            hasSize: !!r.querySelector('.feature-size'),
             checked: !!r.querySelector('input[type=checkbox]')?.checked
           }));
         }"""
@@ -107,12 +108,12 @@ def main() -> int:
 
         print("\n== Initial state ==")
         check(
-            "showBrandLogos toggle present and on by default",
+            "showBrandLogos toggle present and off by default",
             page.locator("#showBrandLogos").count() == 1
-            and page.locator("#showBrandLogos").is_checked(),
+            and not page.locator("#showBrandLogos").is_checked(),
         )
         vis = layer_visibility(page, LOGO_LAYER)
-        check(f"{LOGO_LAYER} visible at load", vis == "visible", f"visibility={vis}")
+        check(f"{LOGO_LAYER} hidden at load until permission is confirmed", vis == "none", f"visibility={vis}")
 
         data = page.evaluate(
             """async () => {
@@ -148,9 +149,31 @@ def main() -> int:
         rendered_count = page.evaluate(
             "() => map.queryRenderedFeatures({ layers: ['brand-logos-icons'] }).length"
         )
-        check("both logo icons render", rendered_count == 2, f"{rendered_count} rendered")
+        check("logo icons do not render while default-off", rendered_count == 0, f"{rendered_count} rendered")
 
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["initial"]))
+
+        print("\n== Toggle ON ==")
+        set_toggle(page, "showBrandLogos", True)
+        check(
+            f"{LOGO_LAYER} visible when toggle is on",
+            layer_visibility(page, LOGO_LAYER) == "visible",
+        )
+        # Symbol placement runs on the next render frame after a visibility
+        # flip from 'none' to 'visible'. The shared `set_toggle` waits 250ms,
+        # which is not always enough on the first ever placement — poll for
+        # the icons to appear before asserting.
+        try:
+            page.wait_for_function(
+                "() => map.queryRenderedFeatures({ layers: ['brand-logos-icons'] }).length === 2",
+                timeout=3000,
+            )
+        except Exception:
+            pass
+        rendered_count = page.evaluate(
+            "() => map.queryRenderedFeatures({ layers: ['brand-logos-icons'] }).length"
+        )
+        check("both logo icons render when enabled", rendered_count == 2, f"{rendered_count} rendered")
 
         print("\n== Toggle OFF ==")
         set_toggle(page, "showBrandLogos", False)
@@ -173,11 +196,53 @@ def main() -> int:
             str(ids),
         )
         check("each row carries a ✋ move button", all(r["hasMove"] for r in rows), str(rows))
+        check("each row carries a size slider", all(r["hasSize"] for r in rows), str(rows))
         check("each row defaults checked", all(r["checked"] for r in rows), str(rows))
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["panel"]))
 
-        print("\n== Drag-to-move commits and persists ==")
+        print("\n== Size slider commits and persists ==")
         target = "aop_badge"
+        before_size = page.evaluate(
+            "(id) => brandLogosData.features.find((f) => f.properties.logo_id === id).properties.icon_size",
+            target,
+        )
+        new_size = 0.12 if abs(float(before_size) - 0.12) > 1e-6 else 0.09
+        size_result = page.evaluate(
+            """({ id, value }) => {
+              const row = document.querySelector(`.feature-row[data-feature-id="${id}"]`);
+              if (!row) throw new Error('row not found');
+              const input = row.querySelector('.feature-size');
+              const output = row.querySelector('.feature-size-control output');
+              if (!input) throw new Error('size slider not found');
+              input.value = String(value);
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              const feature = brandLogosData.features.find((f) => f.properties.logo_id === id);
+              const store = JSON.parse(localStorage.getItem('aop_brand_logos_overrides_v1') || '{}');
+              return {
+                source_size: feature && feature.properties.icon_size,
+                output: output && output.textContent,
+                stored_size: store[id] && store[id].icon_size
+              };
+            }""",
+            {"id": target, "value": new_size},
+        )
+        check(
+            "size slider updates live feature icon_size",
+            abs(size_result.get("source_size", 0) - new_size) < 1e-9,
+            str(size_result),
+        )
+        check(
+            "size slider writes icon_size to override store",
+            abs(size_result.get("stored_size", 0) - new_size) < 1e-9,
+            str(size_result),
+        )
+        check(
+            "size slider output reflects the chosen size",
+            str(size_result.get("output")) == f"{new_size:.2f}",
+            str(size_result),
+        )
+
+        print("\n== Drag-to-move commits and persists ==")
         before = page.evaluate(
             "(id) => brandLogosData.features.find((f) => f.properties.logo_id === id).geometry.coordinates",
             target,
@@ -241,19 +306,40 @@ def main() -> int:
         )
         page.wait_for_timeout(500)
         post = page.evaluate(
-            "(id) => brandLogosData.features.find((f) => f.properties.logo_id === id).geometry.coordinates",
+            """(id) => {
+              const f = brandLogosData.features.find((feat) => feat.properties.logo_id === id);
+              return { coordinates: f.geometry.coordinates, icon_size: f.properties.icon_size };
+            }""",
             target,
         )
         check(
             "moved AOP badge survives reload",
-            abs(post[0] - after[0]) < 1e-9 and abs(post[1] - after[1]) < 1e-9,
+            abs(post["coordinates"][0] - after[0]) < 1e-9
+            and abs(post["coordinates"][1] - after[1]) < 1e-9,
             f"after_commit={after} after_reload={post}",
+        )
+        check(
+            "resized AOP badge survives reload",
+            abs(post["icon_size"] - new_size) < 1e-9,
+            f"expected={new_size} after_reload={post}",
         )
 
         print("\n== Console summary ==")
-        # Filter benign "Failed to fetch" caused by camera-resize navigations
-        # (same filter used by event_schedule + presets verifiers).
-        meaningful = [e for e in console_errors if "Failed to fetch" not in e]
+        # Filter benign aborted-fetch errors caused by camera-resize navigations
+        # (MapLibre emits `AJAXError: Failed to fetch (0): ...` and the browser
+        # emits a bare `TypeError: Failed to fetch` when a fetch is aborted).
+        # Real HTTP failures from MapLibre carry a real status (e.g. `(404):`)
+        # and are NOT filtered out. Same shape used by event_schedule + presets
+        # + community_trails verifiers.
+        def _is_aborted_fetch(text: str) -> bool:
+            stripped = (text or "").strip()
+            return (
+                "AJAXError: Failed to fetch (0):" in stripped
+                or stripped.endswith("TypeError: Failed to fetch")
+                or stripped == "TypeError: Failed to fetch"
+            )
+
+        meaningful = [e for e in console_errors if not _is_aborted_fetch(e)]
         check(
             "no console errors",
             len(meaningful) == 0,

@@ -78,6 +78,47 @@ separate because they are workflow states, not source-vs-derived context.
 The viewer also has a feature search box and the POI/footprint/trace editor -- see
 "Viewer capabilities" below.
 
+### Default-layer audit
+
+Recorded 2026-05-24 for Sprint 03 carryover Lane 4. Fresh load matches the
+`Park` layer preset unless the browser has a saved custom preset override.
+
+| Toggle | Fresh | Park | Topo | Trace |
+| --- | --- | --- | --- | --- |
+| Satellite imagery (TNMap 2022) | off | off | off | off |
+| USDA NAIP imagery (TN 2023) | off | off | off | on |
+| 9-patch acquisition AOI | off | off | off | off |
+| Lidar tile index (USGS 3DEP) | off | off | off | off |
+| Asphalt roads (USGS National Map) | on | on | on | on |
+| Streams & waterbodies (USGS NHD) | on | on | on | off |
+| Springs & gages (USGS NHD) | off | off | on | off |
+| Cemeteries (TN Comptroller parcels) | off | off | off | off |
+| Building footprints (FEMA USA Structures) | on | on | on | on |
+| OSM park polygon | off | off | off | on |
+| OSM tracks (highway=track) | off | off | off | on |
+| OSM service roads | off | off | off | on |
+| OSM named landmarks | off | off | off | on |
+| SFWDA paper trail map | off | off | off | on |
+| Land cover (NAIP) | on | on | on | off |
+| Land cover -- 9-patch (NAIP) | on | on | on | off |
+| Lidar hillshade (USGS 3DEP) | off | off | on | off |
+| Lidar contours (5 ft, 1m DEM) | off | off | on | off |
+| Publishable trails | on | on | on | on |
+| Publishable boundaries | on | on | on | on |
+| Publishable trailheads | on | on | on | on |
+| Activity hotspots (GPX dwell) | off | off | off | off |
+| Simulated Saturday activity | off | off | off | off |
+| Event schedule POIs | off | off | off | off |
+| Visitor context callouts | on | on | on | off |
+| Brand logos (AOP & Rock Warblers) | off | off | off | off |
+| Drawn POIs | on | on | on | on |
+
+Audit read: the user's always-on set (`buildings`, `water`, `road`) is true
+for Fresh/Park/Topo, with Trace intentionally dropping water for the imagery /
+SFWDA workbench. Bottom/topo layers are preset-scoped: Topo adds hillshade,
+contours, and springs; Trace adds NAIP, SFWDA, OSM references, and keeps trails /
+waypoints visible for tracing context.
+
 ## Viewer capabilities
 
 ### UI presets and layer tuning

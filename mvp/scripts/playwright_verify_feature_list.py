@@ -1015,18 +1015,31 @@ def main() -> int:
         check("source-layers payload has buildings visibility",
               "buildings" in (source_payload.get("runtime", {}).get("feature_visibility") or {}))
         # Source-layers payload should NOT include visitor-context overrides
-        # (that runtime lives in derived-layers).
+        # (the runtime + toggle live together in the publishable section now).
         check("source-layers payload does NOT carry visitor-context overrides",
               "visitor_context_overrides" not in (source_payload.get("runtime") or {}))
 
+        # --- publishable section round-trip ---
+        # The #showVisitorContext toggle lives in the publishable section, so
+        # the visitor-context override + per-feature visibility slice live here
+        # too. No per-section export *button* is exposed for publishable, but
+        # buildSectionPayload still works for code-level round-trips.
+        publishable_payload = page.evaluate("() => buildSectionPayload('publishable')")
+        check("publishable payload carries visitor_context_overrides",
+              "visitor_context_overrides" in (publishable_payload.get("runtime") or {}),
+              str(list((publishable_payload.get("runtime") or {}).keys())))
+        check("publishable payload carries visitor-context-fill paint",
+              "visitor-context-fill" in (publishable_payload.get("paints") or {}),
+              str(list((publishable_payload.get("paints") or {}).keys()))[:200])
+
         # --- derived-layers section round-trip ---
+        # After the SECTION_RUNTIME move, derived-layers no longer carries any
+        # visitor-context state; the background paint stays under derived.
         derived_payload = page.evaluate("() => buildSectionPayload('derived-layers')")
-        check("derived-layers payload carries visitor_context_overrides",
-              "visitor_context_overrides" in (derived_payload.get("runtime") or {}),
-              str(list((derived_payload.get("runtime") or {}).keys())))
-        # Visitor-context-fill paint should be in this payload (it's in derived).
-        check("derived-layers payload carries visitor-context-fill paint",
-              "visitor-context-fill" in (derived_payload.get("paints") or {}),
+        check("derived-layers payload does NOT carry visitor_context_overrides",
+              "visitor_context_overrides" not in (derived_payload.get("runtime") or {}))
+        check("derived-layers payload still carries background paint",
+              "background" in (derived_payload.get("paints") or {}),
               str(list((derived_payload.get("paints") or {}).keys()))[:200])
 
         # --- Wrong-section guard: an editor payload pasted into source-layers fails ---

@@ -34,7 +34,7 @@
       "caveat": "Create as event POI only after AOP confirms registration placement."
     },
     "#observed-trailhead": {
-      "label": "Trailhead - Saturday Afternoon segment 2",
+      "label": "Observed Trailhead — segment 2",
       "map_label": "Trailhead",
       "role": "event_stage_start",
       "coordinates": [-85.751478, 35.091933],

@@ -13,7 +13,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from playwright_base import WEBSITE_URL, layer_visibility
+from playwright_base import WEBSITE_URL, click_in_section, layer_visibility
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -50,6 +50,26 @@ def is_checked(page, toggle_id: str) -> bool:
     return page.locator(f"#{toggle_id}").is_checked()
 
 
+def camera_state(page):
+    return page.evaluate(
+        """() => {
+          const bearing = window.map.getBearing();
+          const normalizedBearing = Math.abs((((bearing + 180) % 360) + 360) % 360 - 180);
+          return {
+            pitch: window.map.getPitch(),
+            bearing,
+            normalizedBearing,
+            terrainPressed: document.getElementById('terrainButton')?.getAttribute('aria-pressed'),
+            terrainChecked: document.getElementById('showTerrain')?.checked
+          };
+        }"""
+    )
+
+
+def is_flat_north(camera: dict) -> bool:
+    return abs(float(camera["pitch"])) < 0.75 and float(camera["normalizedBearing"]) < 0.75
+
+
 def panel_section_for(page, toggle_id: str) -> str | None:
     return page.evaluate(
         """(id) => {
@@ -82,9 +102,14 @@ def main() -> int:
                 or "Failed to load resource" in text
                 # Reloads after viewport resize abort in-flight tile / sprite
                 # fetches; MapLibre logs them as `AJAXError: Failed to fetch
-                # (0): data:image/webp;base64,...` and `TypeError: Failed to
-                # fetch`. Navigation artifacts, not real failures.
-                or "Failed to fetch" in text
+                # (0): data:image/webp;base64,...` (the `(0)` is the
+                # placeholder HTTP status for an aborted request) or the
+                # browser emits `TypeError: Failed to fetch`. Real HTTP
+                # failures from MapLibre carry a real status (e.g. `(404):`)
+                # and are NOT filtered out.
+                or "AJAXError: Failed to fetch (0):" in text
+                or text.strip().endswith("TypeError: Failed to fetch")
+                or text.strip() == "TypeError: Failed to fetch"
             )
             if not ignored:
                 console_errors.append(text)
@@ -105,6 +130,30 @@ def main() -> int:
         check("dedicated 3D button exists", page.locator("#terrainButton").count() == 1)
         check("search input sits in the left control cluster", page.locator(".left-controls #searchInput").count() == 1)
         check("calendar sits in the left control cluster", page.locator(".left-controls #calendarCard").count() == 1)
+        tab_labels = page.locator(".left-controls .left-tab").evaluate_all(
+            "els => els.map((el) => el.textContent.trim())"
+        )
+        check("left card exposes Events, Park, and About tabs", tab_labels == ["Events", "Park", "About"], str(tab_labels))
+        check(
+            "Events tab is selected by default",
+            page.locator("#leftTabEvents").get_attribute("aria-selected") == "true"
+            and page.locator("#eventsTabPanel").is_visible(),
+        )
+        page.locator("#leftTabPark").click()
+        check(
+            "Park tab shows source-cautious park copy",
+            page.locator("#parkTabPanel").is_visible()
+            and "scale RC trail trucking" in page.locator("#parkTabPanel").inner_text()
+            and "not a full-size OHV trail map" in page.locator("#parkTabPanel").inner_text(),
+        )
+        page.locator("#leftTabAbout").click()
+        check(
+            "About tab shows map-project posture",
+            page.locator("#aboutTabPanel").is_visible()
+            and "Trust first" in page.locator("#aboutTabPanel").inner_text()
+            and "Public submissions" in page.locator("#aboutTabPanel").inner_text(),
+        )
+        page.locator("#leftTabEvents").click()
         schedule_rows = page.locator("#calendarBody .calendar-row").evaluate_all(
             "els => els.map((el) => el.textContent.trim().replace(/\\s+/g, ' '))"
         )
@@ -152,6 +201,8 @@ def main() -> int:
         check("Park turns buildings on by default (A2)", is_checked(page, "showBuildings"))
         check("Park keeps springs off (A2 — topo-only)", not is_checked(page, "showSprings"))
         check("Park background is Muted Earth", paint(page, "background", "background-color") == "#efe7d5")
+        park_camera = camera_state(page)
+        check("Park preset starts flat and north-up", is_flat_north(park_camera), str(park_camera))
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["park"]))
 
         print("\n== Right panel layer grouping ==")
@@ -165,8 +216,9 @@ def main() -> int:
               str(labels))
         check("land-cover outputs live under Derived layers",
               panel_section_for(page, "showLandcover") == "derived-layers"
-              and panel_section_for(page, "showContours") == "derived-layers"
-              and panel_section_for(page, "showVisitorContext") == "derived-layers")
+              and panel_section_for(page, "showContours") == "derived-layers")
+        check("visitor context lives with publishable map layers",
+              panel_section_for(page, "showVisitorContext") == "publishable")
         check("source/reference inputs live under Source layers",
               panel_section_for(page, "showSatellite") == "source-layers"
               and panel_section_for(page, "showNinePatch") == "source-layers"
@@ -174,6 +226,7 @@ def main() -> int:
               and panel_section_for(page, "showSfwda") == "source-layers")
 
         print("\n== Topo preset ==")
+        page.evaluate("() => { window.map.jumpTo({ bearing: 37, pitch: 42 }); }")
         page.locator("#presetTopo").click()
         page.wait_for_timeout(900)
         check("Topo button becomes active", page.locator("#presetTopo").evaluate("el => el.classList.contains('active')"))
@@ -183,6 +236,12 @@ def main() -> int:
         check("Topo turns buildings on by default (A2)", is_checked(page, "showBuildings"))
         check("Topo changes background", paint(page, "background", "background-color") == "#e7ddc4")
         check("Topo restyles index contours", paint(page, "contours-index", "line-color") == "#5f4934")
+        topo_camera = camera_state(page)
+        check(
+            "Topo preset resets tilt and rotation",
+            is_flat_north(topo_camera),
+            str(topo_camera),
+        )
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["topo"]))
 
         print("\n== Zoom presets + contour fade ==")
@@ -213,7 +272,7 @@ def main() -> int:
         check("Region zooms out wide", region_zoom < pav["z"] - 2,
               f"region={region_zoom:.2f} pavilion={pav['z']:.2f}")
 
-        page.evaluate("() => window.map.jumpTo({ center: [-85.45, 35.42], zoom: 7 })")
+        page.evaluate("() => { window.map.jumpTo({ center: [-85.45, 35.42], zoom: 7 }); }")
         page.wait_for_timeout(400)
         leashed = page.evaluate("() => ({ z: map.getZoom(), c: map.getCenter() })")
         check("camera is leashed to the 9-patch (cannot pan/zoom past it)",
@@ -229,10 +288,19 @@ def main() -> int:
               region_zoom < park_zoom < pav["z"], f"park={park_zoom:.2f}")
 
         print("\n== Inline layer tuning + snapshot ==")
+        page.evaluate(
+            """() => {
+              const el = document.querySelector('[data-tune-key="trails"]');
+              const section = el?.closest('.panel-section');
+              if (section && section.classList.contains('collapsed')) {
+                section.querySelector('.section-toggle')?.click();
+              }
+            }"""
+        )
         page.locator('[data-tune-key="trails"]').click(position={"x": 2, "y": 2})
         check("selecting a layer row does not expand the editor",
               page.locator("#layerEditor").evaluate("el => el.hidden"))
-        page.locator('[data-tune-expand-key="trails"]').click()
+        click_in_section(page, '[data-tune-expand-key="trails"]')
         check("inline editor can expand trails", page.locator("#layerEditorTitle").inner_text() == "Trails")
         check(
             "editor sits under the expanded layer row",
@@ -265,7 +333,7 @@ def main() -> int:
         check("width knob updates selected layer", abs(float(paint(page, "publish-trails", "line-width")) - 5.2) < 0.01)
         check("opacity knob updates selected layer", abs(float(paint(page, "publish-trails", "line-opacity")) - 0.63) < 0.01)
         check("status shows unsaved preset modification", "modified" in page.locator("#presetStatus").inner_text())
-        page.locator('[data-tune-expand-key="roads"]').click()
+        click_in_section(page, '[data-tune-expand-key="roads"]')
         check("roads exposes each configured tuning knob",
               page.locator("#tuneControls .tune-control").count() >= 14,
               f"count={page.locator('#tuneControls .tune-control').count()}")
@@ -304,6 +372,7 @@ def main() -> int:
               str(list(payload.keys())))
 
         print("\n== Trace preset ==")
+        page.evaluate("() => { window.map.jumpTo({ bearing: -51, pitch: 35 }); }")
         page.locator("#presetTrace").click()
         page.wait_for_timeout(900)
         check("Trace button becomes active", page.locator("#presetTrace").evaluate("el => el.classList.contains('active')"))
@@ -312,6 +381,8 @@ def main() -> int:
               is_checked(page, "showUsdaNaip") and is_checked(page, "showSfwda")
               and is_checked(page, "showOsmTracks") and is_checked(page, "showBuildings"))
         check("Trace applies high-contrast boundary color", paint(page, "publish-boundaries", "line-color") == "#fff0b8")
+        trace_camera = camera_state(page)
+        check("Trace preset resets tilt and rotation", is_flat_north(trace_camera), str(trace_camera))
         # Sprint 02 B5: trace label legibility — cream text on the SFWDA paper
         # map needs a dark halo or it disappears into the imagery. Assert the
         # four label layers picked up the dark halo override.
@@ -335,7 +406,7 @@ def main() -> int:
             paint(page, "visitor-context-labels", "text-halo-color") == "#15110d"
             and float(paint(page, "visitor-context-labels", "text-halo-width") or 0) >= 1.5,
         )
-        page.locator('[data-tune-expand-key="sfwda"]').click()
+        click_in_section(page, '[data-tune-expand-key="sfwda"]')
         check("inline editor can expand SFWDA", page.locator("#layerEditorTitle").inner_text() == "SFWDA paper map")
         check("SFWDA alignment controls live in the drawer", page.locator("#sfwdaDrawerControls").is_visible())
         page.locator("#tuneOpacity").evaluate(
@@ -352,8 +423,11 @@ def main() -> int:
         # Sprint 02 B5: switching trace → park must reset halos. Without an
         # explicit cream-halo override in park, the dark halo from trace
         # would sit under park's dark text.
+        page.evaluate("() => { window.map.jumpTo({ bearing: 28, pitch: 32 }); }")
         page.locator("#presetPark").click()
         page.wait_for_timeout(800)
+        park_reset_camera = camera_state(page)
+        check("Park preset resets tilt and rotation", is_flat_north(park_reset_camera), str(park_reset_camera))
         check(
             "Park preset resets roads-labels halo to cream",
             paint(page, "roads-labels", "text-halo-color") == "#f7f1e2",

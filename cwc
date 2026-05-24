@@ -9,9 +9,10 @@ DB_URL="postgresql://aop:aop@localhost:${DB_PORT}/aop_map"
 echo "CWC: AOP MVP continuation check"
 echo
 echo "Context:"
+echo "  - brain/brain_map.md"
 echo "  - brain/handoff/session_context.md"
 echo "  - brain/northstar/validation_loop.md"
-echo "  - brain/tasks/01_mvp/aop_south_pittsburg_map_build_card.md"
+echo "  - current active task card named in brain/brain_map.md"
 echo
 
 echo "Docker:"
