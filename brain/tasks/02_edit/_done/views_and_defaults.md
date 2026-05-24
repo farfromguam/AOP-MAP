@@ -11,7 +11,7 @@ TL;DR:
 
 ## Source
 
-- `personas.md`
+- `../../../northstar/personas.md`
 - `_readme.md` Bucket A
 - `../../research/viewer.md`
 - `../01_mvp/buildings_layer.md`
@@ -96,7 +96,7 @@ and buildings, add a separate `Approach` / `Region` layer preset later.
 - `../01_mvp/buildings_layer.md`
   - outcome line from "default OFF" to "default ON in Park/Topo, filtered by
     feature-list visibility"
-- `personas.md`
+- `../../../northstar/personas.md`
   - optional: change "Candidate policy" to "Proposed policy" once shipped
 
 ## Verification

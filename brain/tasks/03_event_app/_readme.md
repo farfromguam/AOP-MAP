@@ -11,6 +11,7 @@ TL;DR:
 ## Current contents
 
 - `full_loop_crud_upload_audit.md` - audit report for event setup, CRUD surfaces, upload capabilities, and the submission-to-review-to-publish loop.
+- `viewer_polish_carryover.md` - the Sprint 02 `[]` punchlist that didn't ship, organized into seven lanes with recommended order. Lanes 1-3 should land before the event-app work piles new chrome on top.
 
 ## Shape
 

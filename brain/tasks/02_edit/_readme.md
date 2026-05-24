@@ -13,6 +13,7 @@ Center of gravity: editing and curation. Getting AOP-specific named features int
 - `../01_mvp/poi_editor.md` — existing editor card; several Sprint 02 items extend it.
 - `../01_mvp/buildings_layer.md`, `visitor_context_callouts.md`, `event_schedule_layer.md` — existing cards touched by Sprint 02 items.
 - `../../northstar/whats_this_for.md` — view/persona work has to start here.
+- `../../northstar/personas.md` — durable persona filter for view defaults and hot/heatmap behavior.
 
 ## Triage
 
@@ -95,8 +96,10 @@ Bucket **I** is deferred to `../10_deferred/offline_pwa.md`; it re-enters the ac
 ## Cards to spawn (in this sprint)
 
 - `02_edit/views_and_defaults.md` — Buckets A1, A2, "trails by default." **Written + shipped 2026-05-23.** Park/fresh load now shows water + in-park buildings, Topo shows buildings too, Trace unchanged. Bucket E (buildings default-on) closes through this card.
-- `02_edit/preset_persona_review.md` — follow-up preset review against `personas.md`. **Written 2026-05-24.** Park/Topo/Trace fit the broad reader/editor jobs; event-ops personas need Approach / Event HQ / Stage-Marshal style views once facility and event geometry exists.
+- `02_edit/preset_persona_review.md` — follow-up preset review against `../../northstar/personas.md`. **Written 2026-05-24.** Park/Topo/Trace fit the broad reader/editor jobs; event-ops personas need Approach / Event HQ / Stage-Marshal style views once facility and event geometry exists.
 - `02_edit/left_hot_button.md` — A3. **Written 2026-05-23, shipped 2026-05-24.** Three states (hot-now ≤30 min, coming-up across days via new forward anchor, heatmap-fallback when schedule is empty). Click reuses `gotoEventSession` or flips activity-hotspots + fits to densest cluster bbox. Verifier extended with 20 new assertions; 85 PASS / 0 FAIL / 0 console errors.
+- `02_edit/hot_button_heatmap_review.md` — follow-up review against `../../northstar/personas.md`. **Written 2026-05-24.** Main follow-ups: fallback copy should say activity evidence rather than imply live heat; heatmap target should use a real cluster instead of top-K bbox; first-party hotspot GeoJSON should be regenerated from the current builder and verified for source metadata.
+- `02_edit/hot_control_two_lane.md` — follow-up implementation card. **Written + shipped 2026-05-24.** Keeps Event hot and Trail heat as sibling lanes so trail-first users can reach hotspots even when a schedule exists. Verifier updated and passing.
 - `02_edit/poi_editor_v2.md` — Bucket G. **Written + shipped 2026-05-23.** Three consumers wired (POIs, buildings, cemeteries) plus the visitor-context drag consumer that closes Bucket B's positionable-callouts item.
 - `02_edit/viewer_chrome_polish.md` — Bucket B. **Written 2026-05-23.** B1 (calendar popup scroll-into-view) in progress; B6 (region callouts positionable) closed via `poi_editor_v2.md`.
 - `02_edit/search_tags.md` — Bucket C. **Written + shipped 2026-05-23.**
@@ -109,9 +112,23 @@ Bucket **I** is deferred to `../10_deferred/offline_pwa.md`; it re-enters the ac
   load). SFWDA trail-name transcription stays on
   `../01_mvp/community_trails_import.md`.
 - Extend `../01_mvp/buildings_layer.md` in place — Bucket E.
-- `02_edit/branding.md` — Bucket F. **Written; raw asset drop staged.**
+- `02_edit/branding.md` — Bucket F. **Shipped 2026-05-24.** Both logos
+  render as MapLibre icon symbols, draggable through the shared move
+  primitive; override store persists per-logo positions. AOP badge stays
+  reference-only until AOP confirms public reuse; Rock Warblers cleared.
 - Bucket H folds into `../01_mvp/code_health_pass.md` Pass 3.
 
 ## Deferred (sister sprint)
 
 - `../10_deferred/offline_pwa.md` — Bucket I.
+
+## Carryover (next sprint)
+
+The `[]` punchlist items in `tasks.md` that didn't ship in Sprint 02 are
+pulled forward into `../03_event_app/viewer_polish_carryover.md`. Seven
+lanes, organized + prioritized: two-lane hot control finish, calendar
+expand + scroll-into-view, collapse-icon uniformity, default-layer audit,
+brand-logo size slider + add-image runbook, Pass 4 CSS + theme review, and
+a pointer to the numbered-trail-name research that stays on the community
+trails card. AOP + Rock Warblers logo `[]` lines are already closed under
+Bucket F; left in the dump per `preserve_card_directives`.

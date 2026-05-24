@@ -197,18 +197,30 @@
       color: #f7f1e2; white-space: nowrap; pointer-events: none; }
     .cal-live-badge { background: var(--rust); }
     .cal-soon-badge { background: var(--brown-dark); }
-    /* Hot button (A3): single button under the calendar that always has an
-       action. Three states: hot-now (live/imminent), coming-up (next session
-       on the schedule), heatmap-fallback (empty schedule -> show activity
-       hotspots). Card: brain/tasks/02_edit/left_hot_button.md. */
-    .hot-button { width: 100%; display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; gap: 8px;
-      margin: 0; padding: 9px 11px; border: 0; border-radius: 8px; background: var(--brown-mid); color: #f7f1e2;
-      cursor: pointer; text-align: left; font: 700 0.78rem Inter, system-ui, sans-serif;
+    /* Two-lane hot control: Event and Trails are separate actions so schedule
+       users and trail-heat users do not fight one fallback button. Card:
+       brain/tasks/02_edit/hot_control_two_lane.md. */
+    .hot-control { display: grid; gap: 5px; }
+    .hot-control[hidden] { display: none; }
+    .hot-control-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 2px;
+      color: var(--brown-ink); }
+    .hot-control-title { font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+    .hot-control-status { min-width: 0; font: 600 0.68rem Inter, system-ui, sans-serif; color: var(--brown-soft);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hot-lanes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .hot-lanes[data-lane-count="1"] { grid-template-columns: minmax(0, 1fr); }
+    .hot-button { width: 100%; min-height: 64px; display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 7px;
+      margin: 0; padding: 8px 9px; border: 1px solid rgba(85, 67, 44, 0.25); border-radius: 8px; background: var(--brown-mid);
+      color: #f7f1e2; cursor: pointer; text-align: left; font: 700 0.74rem Inter, system-ui, sans-serif;
       text-transform: uppercase; letter-spacing: 0.04em; }
-    .hot-button:hover { filter: brightness(1.06); }
-    .hot-button[data-hot-state="hot-now"] { background: var(--rust); box-shadow: 0 0 0 2px rgba(191, 90, 54, 0.35); }
+    .hot-button[hidden] { display: none; }
+    .hot-button:hover:not(:disabled) { filter: brightness(1.06); }
+    .hot-button:disabled { cursor: default; opacity: 0.55; filter: saturate(0.7); }
+    .hot-button[data-hot-state="hot-now"] { background: var(--rust); }
     .hot-button[data-hot-state="coming-up"] { background: var(--brown-dark); }
-    .hot-button[data-hot-state="heatmap-fallback"] { background: var(--brown-mid); }
+    .hot-button[data-hot-state="trail-hot"] { background: #5f7157; }
+    .hot-button[data-hot-selected="true"] { box-shadow: 0 0 0 2px rgba(247, 241, 226, 0.82), 0 0 0 4px rgba(42, 33, 22, 0.16); }
+    .hot-button[data-hot-priority="alert"][data-hot-selected="false"] { box-shadow: 0 0 0 2px rgba(191, 90, 54, 0.4); }
     .hot-button-glyph { display: inline-flex; align-items: center; justify-content: center;
       width: 24px; height: 24px; font-size: 1.1rem; line-height: 1; }
     .hot-button-text { display: block; min-width: 0; }
@@ -258,6 +270,28 @@
       <button id="zoomPark" type="button" data-view="park" title="Fit the AOP park boundary">Park</button>
       <button id="zoomPavilion" type="button" data-view="pavilion" title="Zoom in tight on the pavilion">Pavilion</button>
     </div>
+    <section id="hotControl" class="hot-control" aria-label="Hot now" hidden>
+      <div class="hot-control-head">
+        <span class="hot-control-title">Hot now</span>
+        <span id="hotControlStatus" class="hot-control-status">Loading</span>
+      </div>
+      <div id="hotLanes" class="hot-lanes" data-lane-count="2">
+        <button id="hotButton" type="button" class="hot-button" data-hot-lane="event" data-hot-state="empty" data-hot-selected="false" aria-label="Event hot lane">
+          <span class="hot-button-glyph" id="hotButtonGlyph" aria-hidden="true">·</span>
+          <span class="hot-button-text">
+            <span class="hot-button-title" id="hotButtonTitle">Event</span>
+            <span class="hot-button-detail" id="hotButtonDetail"></span>
+          </span>
+        </button>
+        <button id="hotTrailButton" type="button" class="hot-button" data-hot-lane="trails" data-hot-state="trail-hot" data-hot-selected="false" aria-label="Trail heat lane">
+          <span class="hot-button-glyph" id="hotTrailButtonGlyph" aria-hidden="true">❖</span>
+          <span class="hot-button-text">
+            <span class="hot-button-title" id="hotTrailButtonTitle">Trail heat</span>
+            <span class="hot-button-detail" id="hotTrailButtonDetail">Activity evidence</span>
+          </span>
+        </button>
+      </div>
+    </section>
     <section class="calendar-card" id="calendarCard" aria-label="Event calendar">
       <button id="calendarToggle" class="calendar-toggle" type="button" aria-expanded="true" aria-controls="calendarBody">
         <span>
@@ -272,13 +306,6 @@
         </ol>
       </div>
     </section>
-    <button id="hotButton" type="button" class="hot-button" data-hot-state="empty" hidden aria-label="Hot button">
-      <span class="hot-button-glyph" id="hotButtonGlyph" aria-hidden="true">·</span>
-      <span class="hot-button-text">
-        <span class="hot-button-title" id="hotButtonTitle">Hot</span>
-        <span class="hot-button-detail" id="hotButtonDetail"></span>
-      </span>
-    </button>
   </div>
   <div class="panel">
     <div class="panel-header" id="panelHeader" title="Collapse panel">
@@ -1229,6 +1256,17 @@
           ['editor-poi-labels', 'text-color']
         ],
         width: [['editor-poi-circles', 'circle-radius']]
+      },
+      // Brand logos: visibility + drag-to-move only. No paint tuners on the
+      // drawer since the icons are raster images (no color/width to tune);
+      // icon-opacity could go here later if a logo dim slider becomes useful.
+      brandLogos: {
+        label: 'Brand logos',
+        toggle: brandLogosToggle,
+        defaults: { opacity: 100, color: '#ffffff', width: 1 },
+        opacity: [['brand-logos-icons', 'icon-opacity']],
+        color: [],
+        width: []
       }
     };
 
@@ -3434,12 +3472,13 @@
     let eventScheduleData = null;
     let eventScheduleConfig = null;
     // Activity-hotspots feature collection is hoisted to module scope so the
-    // A3 hot button's heatmap-fallback path can bbox the densest cells
-    // without re-fetching. Card: brain/tasks/02_edit/left_hot_button.md.
+    // Trails lane can bbox the densest cells without re-fetching.
+    // Card: brain/tasks/02_edit/hot_control_two_lane.md.
     let aopActivityHotspotsData = null;
     const eventLocationByTag = new Map();
     const eventSessionById = new Map();
     let activeEventSessionId = null;
+    let preferredHotLane = null;
 
     function normalizeLocationTag(tag) {
       const value = String(tag || '').trim();
@@ -3741,7 +3780,7 @@
           r.li.appendChild(badge);
         }
       }
-      // Hot button shares the clock/anchor + 60s tick + visibilitychange
+      // Hot control shares the clock/anchor + 60s tick + visibilitychange
       // signals with the calendar refresh, so piggybacking here keeps both
       // in lockstep without standing up a second timer. Also covers the
       // tag-rebind path (rebuildEventScheduleData -> renderEventSchedule
@@ -3760,11 +3799,11 @@
       });
     }
 
-    // --- Hot button (A3): state engine -----------------------------------
-    // Three states: hot-now (live or starts in <=30 min), coming-up (next
-    // scheduled session, any day forward), heatmap-fallback (schedule empty
-    // -> surfaces the activity-hotspots layer). The button always has an
-    // action. Card: brain/tasks/02_edit/left_hot_button.md.
+    // --- Hot control: Event + Trails lanes -------------------------------
+    // Event lane: hot-now (live or starts in <=30 min) or coming-up (next
+    // scheduled session, any day forward). Trails lane is a sibling action
+    // whenever activity-hotspot data is present. Card:
+    // brain/tasks/02_edit/hot_control_two_lane.md.
     const HOT_BUTTON_IMMINENT_MIN = 30;
     const HOT_BUTTON_SESSION_LEN_MIN = 90;
 
@@ -3823,7 +3862,7 @@
       if (live) return { state: 'hot-now', target: live, kind: 'live' };
       if (imminent) return { state: 'hot-now', target: imminent, kind: 'imminent' };
       if (nextFuture) return { state: 'coming-up', target: nextFuture };
-      return { state: 'heatmap-fallback' };
+      return { state: 'no-event' };
     }
 
     // Pick the densest few hotspot polygons by intensity_norm and return
@@ -3861,74 +3900,122 @@
       });
     }
 
+    function hotEventAvailable(decision) {
+      return decision.state === 'hot-now' || decision.state === 'coming-up';
+    }
+
+    function selectedHotLane(decision, haveHotspots) {
+      const eventAvailable = hotEventAvailable(decision);
+      if (preferredHotLane === 'event' && eventAvailable) return 'event';
+      if (preferredHotLane === 'trails' && haveHotspots) return 'trails';
+      if (decision.state === 'hot-now') return 'event';
+      if (haveHotspots) return 'trails';
+      if (eventAvailable) return 'event';
+      return '';
+    }
+
     function attachHotButton() {
-      const btn = document.getElementById('hotButton');
-      if (!btn || btn.dataset.bound === '1') return;
-      btn.dataset.bound = '1';
-      btn.addEventListener('click', () => {
-        const state = btn.dataset.hotState;
-        if (state === 'hot-now' || state === 'coming-up') {
-          const id = btn.dataset.targetSessionId;
+      const eventBtn = document.getElementById('hotButton');
+      const trailBtn = document.getElementById('hotTrailButton');
+      if (eventBtn && eventBtn.dataset.bound !== '1') {
+        eventBtn.dataset.bound = '1';
+        eventBtn.addEventListener('click', () => {
+          if (eventBtn.disabled) return;
+          preferredHotLane = 'event';
+          refreshHotButton();
+          const id = eventBtn.dataset.targetSessionId;
           if (id) gotoEventSession(id);
-        } else if (state === 'heatmap-fallback') {
+        });
+      }
+      if (trailBtn && trailBtn.dataset.bound !== '1') {
+        trailBtn.dataset.bound = '1';
+        trailBtn.addEventListener('click', () => {
+          if (trailBtn.disabled) return;
+          preferredHotLane = 'trails';
+          refreshHotButton();
           hotButtonFlyToHotspots();
-        }
-      });
+        });
+      }
     }
 
     function refreshHotButton() {
       attachHotButton();
-      const btn = document.getElementById('hotButton');
-      if (!btn) return;
+      const control = document.getElementById('hotControl');
+      const lanes = document.getElementById('hotLanes');
+      const status = document.getElementById('hotControlStatus');
+      const eventBtn = document.getElementById('hotButton');
+      const trailBtn = document.getElementById('hotTrailButton');
+      if (!control || !eventBtn || !trailBtn) return;
       const glyph = document.getElementById('hotButtonGlyph');
       const title = document.getElementById('hotButtonTitle');
       const detail = document.getElementById('hotButtonDetail');
+      const trailTitle = document.getElementById('hotTrailButtonTitle');
+      const trailDetail = document.getElementById('hotTrailButtonDetail');
       const decision = computeHotButtonTarget();
       const haveHotspots = !!(aopActivityHotspotsData?.features?.length);
-      // Empty state: schedule is empty AND no hotspots loaded -> hide.
-      if (decision.state === 'heatmap-fallback' && !haveHotspots) {
-        btn.dataset.hotState = 'empty';
-        btn.dataset.targetSessionId = '';
-        btn.hidden = true;
-        btn.setAttribute('aria-label', 'Hot button (no target)');
+      const eventAvailable = hotEventAvailable(decision);
+      if (!eventAvailable && !haveHotspots) {
+        control.hidden = true;
+        eventBtn.dataset.hotState = 'empty';
+        eventBtn.dataset.targetSessionId = '';
+        trailBtn.dataset.hotSelected = 'false';
         return;
       }
-      btn.hidden = false;
-      btn.dataset.hotState = decision.state;
+
+      control.hidden = false;
+      const selected = selectedHotLane(decision, haveHotspots);
+      if (lanes) lanes.dataset.laneCount = haveHotspots ? '2' : '1';
+      eventBtn.dataset.hotSelected = selected === 'event' ? 'true' : 'false';
+      trailBtn.dataset.hotSelected = selected === 'trails' ? 'true' : 'false';
+      trailBtn.hidden = !haveHotspots;
+      trailBtn.disabled = !haveHotspots;
+      trailBtn.dataset.hotState = 'trail-hot';
+      if (trailTitle) trailTitle.textContent = 'Trail heat';
+      if (trailDetail) trailDetail.textContent = 'Activity evidence';
+      trailBtn.setAttribute('aria-label', 'Show trail activity heat');
+
+      eventBtn.dataset.hotState = decision.state;
+      eventBtn.dataset.hotPriority = decision.state === 'hot-now' ? 'alert' : '';
       const now = eventScheduleNow();
       if (decision.state === 'hot-now') {
         const props = decision.target.feature.properties || {};
-        btn.dataset.targetSessionId = props.session_id || '';
+        eventBtn.disabled = false;
+        eventBtn.dataset.targetSessionId = props.session_id || '';
         if (glyph) glyph.textContent = '🔥'; // fire emoji
         if (decision.kind === 'live') {
           const mins = (decision.target.endMs - now.getTime()) / 60000;
-          if (title) title.textContent = 'Live now';
+          if (title) title.textContent = 'Live event';
           if (detail) detail.textContent = `${props.title || 'Session'} · ${eventScheduleFormatMinutes(mins)} left`;
+          if (status) status.textContent = selected === 'event' ? 'Event live' : 'Event live';
         } else {
           const mins = (decision.target.startMs - now.getTime()) / 60000;
-          if (title) title.textContent = 'Hot - starting soon';
+          if (title) title.textContent = 'Starting soon';
           if (detail) detail.textContent = `${props.title || 'Session'} · in ${eventScheduleFormatMinutes(mins)}`;
+          if (status) status.textContent = selected === 'event' ? 'Event soon' : 'Event soon';
         }
-        btn.setAttribute('aria-label', `Hot now: ${props.title || 'session'}`);
+        eventBtn.setAttribute('aria-label', `Event hot: ${props.title || 'session'}`);
       } else if (decision.state === 'coming-up') {
         const props = decision.target.feature.properties || {};
-        btn.dataset.targetSessionId = props.session_id || '';
+        eventBtn.disabled = false;
+        eventBtn.dataset.targetSessionId = props.session_id || '';
         const mins = (decision.target.startMs - now.getTime()) / 60000;
         if (glyph) glyph.textContent = '◷'; // upper-right circular sector
-        if (title) title.textContent = 'Coming up';
+        if (title) title.textContent = 'Next event';
         if (detail) {
           const dayPart = props.day ? `${props.day} ` : '';
           const timePart = props.window || props.start_local || '';
           detail.textContent = `${dayPart}${timePart} · in ${eventScheduleFormatMinutes(mins)}`;
         }
-        btn.setAttribute('aria-label', `Coming up: ${props.title || 'session'}`);
+        if (status) status.textContent = selected === 'trails' ? 'Trail heat' : 'Next event';
+        eventBtn.setAttribute('aria-label', `Next event: ${props.title || 'session'}`);
       } else {
-        // heatmap-fallback with hotspots present
-        btn.dataset.targetSessionId = '';
-        if (glyph) glyph.textContent = '❖'; // black diamond minus white X
-        if (title) title.textContent = 'Activity hotspots';
-        if (detail) detail.textContent = 'Show where rigs ran';
-        btn.setAttribute('aria-label', 'Show activity hotspots');
+        eventBtn.disabled = true;
+        eventBtn.dataset.targetSessionId = '';
+        if (glyph) glyph.textContent = '◷';
+        if (title) title.textContent = 'No event';
+        if (detail) detail.textContent = 'Trail heat available';
+        if (status) status.textContent = haveHotspots ? 'Trail heat' : 'No target';
+        eventBtn.setAttribute('aria-label', 'No event target');
       }
     }
 
@@ -4647,8 +4734,8 @@
       // --- Activity hotspots (timestamped GPX dwell) ----------------------
       const activityData = await fetchJson('./data/aop_activity_hotspots.geojson', 'Activity hotspot layer missing');
       if (activityData) {
-        // Hoist the collection so the A3 hot button's heatmap-fallback path
-        // can bbox the densest cells. See refreshHotButton.
+        // Hoist the collection so the Trails hot lane can bbox the densest
+        // cells. See refreshHotButton.
         aopActivityHotspotsData = activityData;
         const activityVisibility = activityHotspotsToggle.checked ? 'visible' : 'none';
         map.addSource('activity-hotspots', {
@@ -4719,8 +4806,7 @@
         ]);
         // Hotspots may load before or after the schedule; either way the
         // button needs a refresh once aopActivityHotspotsData is populated
-        // so the heatmap-fallback path (or any decision that depends on
-        // having hotspots) renders correctly.
+        // so the Trails lane renders correctly.
         if (typeof refreshHotButton === 'function') refreshHotButton();
       }
 

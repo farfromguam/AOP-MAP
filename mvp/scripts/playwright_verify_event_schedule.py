@@ -590,7 +590,7 @@ def main() -> int:
         page.locator("#searchInput").fill("")
 
         # ----------------------------------------------------------------
-        # Hot button (Sprint 02 Bucket A3)
+        # Hot control (Sprint 02 Bucket A3 + two-lane follow-up)
         # ----------------------------------------------------------------
         # Three states driven by ?clock= fixtures so the same clock-override
         # contract the calendar uses also pins the button. The forward
@@ -624,21 +624,39 @@ def main() -> int:
         def button_snapshot() -> dict:
             return page.evaluate(
                 """() => {
+                  const control = document.getElementById('hotControl');
                   const btn = document.getElementById('hotButton');
-                  if (!btn) return { present: false };
+                  const trail = document.getElementById('hotTrailButton');
+                  if (!control || !btn || !trail) return { present: false };
+                  const buttonData = (el, titleId, detailId, glyphId) => ({
+                    hidden: el.hidden,
+                    disabled: el.disabled,
+                    state: el.dataset.hotState || '',
+                    selected: el.dataset.hotSelected || '',
+                    targetSessionId: el.dataset.targetSessionId || '',
+                    title: (document.getElementById(titleId) || {}).textContent || '',
+                    detail: (document.getElementById(detailId) || {}).textContent || '',
+                    glyph: (document.getElementById(glyphId) || {}).textContent || ''
+                  });
+                  const event = buttonData(btn, 'hotButtonTitle', 'hotButtonDetail', 'hotButtonGlyph');
+                  const trails = buttonData(trail, 'hotTrailButtonTitle', 'hotTrailButtonDetail', 'hotTrailButtonGlyph');
                   return {
                     present: true,
-                    hidden: btn.hidden,
-                    state: btn.dataset.hotState || '',
-                    targetSessionId: btn.dataset.targetSessionId || '',
-                    title: (document.getElementById('hotButtonTitle') || {}).textContent || '',
-                    detail: (document.getElementById('hotButtonDetail') || {}).textContent || '',
-                    glyph: (document.getElementById('hotButtonGlyph') || {}).textContent || ''
+                    hidden: control.hidden,
+                    status: (document.getElementById('hotControlStatus') || {}).textContent || '',
+                    event,
+                    trails,
+                    // Back-compat aliases for the Event lane.
+                    state: event.state,
+                    targetSessionId: event.targetSessionId,
+                    title: event.title,
+                    detail: event.detail,
+                    glyph: event.glyph
                   };
                 }"""
             )
 
-        print("\n== Hot button: state=hot-now (live) ==")
+        print("\n== Hot control: Event lane state=hot-now (live) ==")
         # 2026-05-23 13:45 sits inside sat-proving-grounds (13:30 + 90 min).
         load_with_clock("2026-05-23T13:45")
         snap = button_snapshot()
@@ -646,7 +664,9 @@ def main() -> int:
         check("hot button is visible", snap.get("hidden") is False, str(snap))
         check("hot-now state on live fixture", snap.get("state") == "hot-now", str(snap))
         check("targets sat-proving-grounds", snap.get("targetSessionId") == "sat-proving-grounds", str(snap))
-        check("title reads Live now", "Live now" in (snap.get("title") or ""), str(snap))
+        check("event lane selected for live fixture", snap.get("event", {}).get("selected") == "true", str(snap))
+        check("trail lane is available alongside live event", snap.get("trails", {}).get("disabled") is False, str(snap))
+        check("title reads Live event", "Live event" in (snap.get("title") or ""), str(snap))
         check("detail mentions session title", "Proving Grounds" in (snap.get("detail") or ""), str(snap))
 
         # Click in hot-now should fly to the resolved session's location and
@@ -667,36 +687,57 @@ def main() -> int:
         live_popup = " | ".join(page.locator(".maplibregl-popup").all_inner_texts())
         check("hot-now click opens the session popup", "Proving Grounds" in live_popup, live_popup)
 
-        print("\n== Hot button: state=hot-now (imminent, <=30 min) ==")
+        print("\n== Hot control: Event lane state=hot-now (imminent, <=30 min) ==")
         # 13:15 puts the same session 15 min in the future (still imminent).
         load_with_clock("2026-05-23T13:15")
         snap = button_snapshot()
         check("hot-now state on imminent fixture", snap.get("state") == "hot-now", str(snap))
         check("targets sat-proving-grounds", snap.get("targetSessionId") == "sat-proving-grounds", str(snap))
         check("title reads starting soon", "starting soon" in (snap.get("title") or "").lower(), str(snap))
+        check("event lane selected for imminent fixture", snap.get("event", {}).get("selected") == "true", str(snap))
 
-        print("\n== Hot button: state=coming-up (same-day, >30 min) ==")
+        print("\n== Hot control: Event lane state=coming-up (same-day, >30 min) ==")
         # 19:45 sits between sat-awards (18:00 + 90m -> 19:30) and
         # sat-night-crawl (20:30) — 45 min until night crawl.
         load_with_clock("2026-05-23T19:45")
         snap = button_snapshot()
-        check("coming-up state when no session is imminent", snap.get("state") == "coming-up", str(snap))
+        check("event lane stays in coming-up state when no session is imminent", snap.get("state") == "coming-up", str(snap))
         check("targets sat-night-crawl", snap.get("targetSessionId") == "sat-night-crawl", str(snap))
-        check("title reads Coming up", "Coming up" in (snap.get("title") or ""), str(snap))
+        check("title reads Next event", "Next event" in (snap.get("title") or ""), str(snap))
         check("detail mentions countdown",
               "in " in (snap.get("detail") or "") and ("m" in (snap.get("detail") or "")),
               str(snap))
+        check("trail lane selected by default when event is future",
+              snap.get("trails", {}).get("selected") == "true", str(snap))
 
-        print("\n== Hot button: coming-up across days (Mon fixture) ==")
+        # Trail-first users should not have to wait for an empty schedule. The
+        # Trails lane is a direct action while the Event lane still points at
+        # the next scheduled session.
+        before_check = page.evaluate("() => document.getElementById('showActivityHotspots').checked")
+        page.locator("#hotTrailButton").click()
+        page.wait_for_timeout(1300)
+        after_check = page.evaluate("() => document.getElementById('showActivityHotspots').checked")
+        hotspots_vis = layer_visibility(page, "activity-hotspots-fill")
+        snap_after_trail = button_snapshot()
+        check("trail lane click turns activity-hotspots toggle on while schedule exists",
+              before_check is False and after_check is True, f"before={before_check} after={after_check}")
+        check("trail lane click makes activity-hotspots visible while schedule exists",
+              hotspots_vis == "visible", f"visibility={hotspots_vis}")
+        check("trail lane remains selected after trail click",
+              snap_after_trail.get("trails", {}).get("selected") == "true", str(snap_after_trail))
+
+        print("\n== Hot control: Event lane coming-up across days (Mon fixture) ==")
         # Forward anchor: a Monday clock should wrap the template to the
         # upcoming weekend (fri-registration ~4 days out). This proves the
         # "Friday should already light up for a Saturday evening session"
         # promise from the card.
         load_with_clock("2026-05-25T12:00")
         snap = button_snapshot()
-        check("coming-up state on Monday fixture", snap.get("state") == "coming-up", str(snap))
+        check("event lane coming-up state on Monday fixture", snap.get("state") == "coming-up", str(snap))
         check("Monday fixture targets first weekend session (fri-registration)",
               snap.get("targetSessionId") == "fri-registration", str(snap))
+        check("trail lane selected on Monday when no event is imminent",
+              snap.get("trails", {}).get("selected") == "true", str(snap))
 
         # Click in coming-up should also fly + popup, like a calendar row.
         page.locator("#hotButton").click()
@@ -706,10 +747,10 @@ def main() -> int:
               "Registration" in coming_popup or "Wristband" in coming_popup or "wristband" in coming_popup.lower(),
               coming_popup)
 
-        print("\n== Hot button: state=heatmap-fallback (empty schedule) ==")
+        print("\n== Hot control: Trails lane when schedule is empty ==")
         # Forward-anchoring means a weekday-template schedule never goes
-        # "all past" — heatmap-fallback fires when the schedule itself is
-        # empty. Simulate by clearing eventSessionById and refreshing.
+        # "all past"; with the two-lane control, clearing the schedule disables
+        # Event but leaves Trails usable.
         load_with_clock("2026-05-23T13:45")
         page.evaluate(
             """() => {
@@ -719,18 +760,20 @@ def main() -> int:
         )
         page.wait_for_timeout(150)
         snap = button_snapshot()
-        check("heatmap-fallback state when schedule is empty", snap.get("state") == "heatmap-fallback", str(snap))
-        check("title reads Activity hotspots", "Activity hotspots" in (snap.get("title") or ""), str(snap))
-        check("no session target in fallback state", snap.get("targetSessionId") == "", str(snap))
+        check("event lane has no-event state when schedule is empty", snap.get("state") == "no-event", str(snap))
+        check("event lane disabled when schedule is empty", snap.get("event", {}).get("disabled") is True, str(snap))
+        check("trail lane selected when schedule is empty", snap.get("trails", {}).get("selected") == "true", str(snap))
+        check("trail title reads Trail heat", "Trail heat" in (snap.get("trails", {}).get("title") or ""), str(snap))
+        check("no session target in empty-schedule state", snap.get("targetSessionId") == "", str(snap))
 
-        # Click in fallback should toggle activity hotspots on and fit to
-        # the densest cluster bbox.
+        # Click in Trails should toggle activity hotspots on and fit to the
+        # hotspot target.
         before_check = page.evaluate("() => document.getElementById('showActivityHotspots').checked")
-        page.locator("#hotButton").click()
+        page.locator("#hotTrailButton").click()
         page.wait_for_timeout(1300)
         after_check = page.evaluate("() => document.getElementById('showActivityHotspots').checked")
         hotspots_vis = layer_visibility(page, "activity-hotspots-fill")
-        check("fallback click turns activity-hotspots toggle on",
+        check("empty-schedule Trails click turns activity-hotspots toggle on",
               before_check is False and after_check is True, f"before={before_check} after={after_check}")
         check("activity-hotspots layer becomes visible after fallback click",
               hotspots_vis == "visible", f"visibility={hotspots_vis}")

@@ -96,3 +96,9 @@ New tasks
 when following a link from the calendar the item is selected and a tooltip pops up. this is good. however there is overlap on some screens. 
 
 we need to make sure that we scroll to make tehe tooltip in view.
+
+[] hot coming up being a calendar notification does not make sense....
+I think hot should be only activate the heatmap 
+
+[] ability to edit size on images.
+[] document workflow for adding images.

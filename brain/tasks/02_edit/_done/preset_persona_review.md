@@ -11,7 +11,7 @@ TL;DR:
 
 ## Reviewed
 
-- `personas.md`
+- `../../../northstar/personas.md`
 - `views_and_defaults.md`
 - `left_hot_button.md`
 - `../../research/viewer.md`
@@ -64,7 +64,7 @@ operators. They need role-specific event/facility layers that do not exist yet.
 ## What is working
 
 - **Park is the right default.** It now turns on buildings and water, which
-  closes the biggest mismatch from `personas.md`.
+  closes the biggest mismatch from `../../../northstar/personas.md`.
 - **Topo has the right audience.** It is the terrain/course-planning view. Keep
   it dense enough for drivers and stage designers.
 - **Trace is correctly not visitor-facing.** It carries raw evidence and

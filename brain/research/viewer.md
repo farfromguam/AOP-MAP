@@ -143,8 +143,15 @@ leaving just the title bar so the map underneath is visible; clicking again
 expands it back down. The body (`#panelBody`) animates via a `max-height`
 transition. Default state is expanded.
 
-The left control stack also hosts a collapsible `Event calendar` card
-(`#calendarCard`) under the search, preset, and zoom controls. It opens by
+The left control stack also hosts a two-lane `Hot now` control (`#hotControl`)
+under the zoom controls and above the calendar. The Event lane (`#hotButton`)
+selects the live/imminent/next scheduled session and reuses the calendar
+`gotoEventSession` popup path. The Trails lane (`#hotTrailButton`) turns on the
+activity-hotspots layer and fits the hotspot target, so trail-first users do not
+have to wait for the schedule to be empty. Card:
+`tasks/02_edit/hot_control_two_lane.md`.
+
+Below that, a collapsible `Event calendar` card (`#calendarCard`) opens by
 default and renders the proposed session rows from
 `website/data/aop_event_schedule.json`. The JSON is intentionally schedule-first:
 rows carry `date_label`, `time_label`, `title`, and a `location_tag` such as

@@ -3,7 +3,7 @@
 TL;DR:
 - A single button on the left chrome that answers "what's hot right now?" without the user reading the calendar.
 - Three states: **hot-now**, **coming-up**, **heatmap-fallback**. The button always has an action; the state and icon change with the schedule.
-- Spec is locked, build is not started. Card written 2026-05-23 from the personas.md decision; A3 originally deferred while H (code-health Pass 3) is in flight.
+- Spec is locked, build is not started. Card written 2026-05-23 from the northstar persona decision; A3 originally deferred while H (code-health Pass 3) is in flight.
 
 #aop #tasks #02_edit #left_hot_button #views
 
@@ -11,7 +11,7 @@ TL;DR:
 
 ## Source chain
 
-- `personas.md` — "Left hot button" row carries the locked decision.
+- `../../../northstar/personas.md` — "Left hot button" row carries the durable persona decision.
 - `_readme.md` — Bucket A3 triage.
 - `tasks.md` — original line: *"need a dedicated hot button on the left. fire icon???"*
 - `../01_mvp/event_schedule_layer.md` — schedule data shape + resolver.
@@ -71,7 +71,7 @@ But the coming-up middle state matters because the button is for **people on the
 
 ## Placement
 
-- **Left chrome.** The triage line said "left." `personas.md` puts it at the bottom of the user list because it serves everyone on-site during an event.
+- **Left chrome.** The triage line said "left." `../../../northstar/personas.md` treats it as a shared on-site action because it serves everyone during an event.
 - Below the existing preset bar / search shell / calendar card stack (`.left-controls` in `website/index.html`).
 - Single round/large button, ~44×44 px minimum touch target. Same chrome palette as the preset bar.
 - Icon swap by state (see Visual table above). The fire icon the user originally suggested only fits hot-now; coming-up and heatmap-fallback need their own glyphs.

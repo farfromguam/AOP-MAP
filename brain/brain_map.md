@@ -38,6 +38,8 @@ brain/
 
 `northstar/source_register.md` is the data-integrity contract. It decides how source, confidence, permission, and publishability are carried through the map.
 
+`northstar/personas.md` is the durable persona filter for view defaults, schedule surfaces, hot-button behavior, activity heat, and print handouts.
+
 `research/aop_south_pittsburg_sources.md` is the current source stack for Adventure Off Road Park in South Pittsburg, Tennessee.
 
 `research/aop_data_bounds.md` records the current two-parcel working envelope and the 9-patch data acquisition AOI for imagery, topo, DEM, and lidar pulls.

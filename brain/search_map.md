@@ -12,6 +12,7 @@ TL;DR:
 ## Map project
 
 - AOP, Adventure Off Road Park, South Pittsburg, Ellis Cove Road: `research/aop_south_pittsburg_sources.md`
+- personas, users, driver, marshal, spectator, volunteer, vendor, sponsor, kid crawl, hot button audience, view defaults: `northstar/personas.md`
 - bounds, AOI, 9-patch, current parcel envelope, data acquisition: `research/aop_data_bounds.md`, then `research/aop_south_pittsburg_sources.md`
 - viewer, web map, `index.html`, layers, toggles, satellite, hillshade, 3D terrain, contours, roads, water, lidar tile index, search box, calendar, MapLibre: `research/viewer.md`
 - imagery tracing, USDA NAIP, 2023 NAIP, 2025 NAIP, MrSID, trace line, raw image traces: `tasks/01_mvp/imagery_tracing_layer.md`, then `research/viewer.md`
