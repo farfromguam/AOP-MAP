@@ -38,6 +38,46 @@ facility use.
     rule (see `../02_edit/left_hot_button.md`). Helpers:
     `formatEventStartLocal()` + `composeEventWindowLabel()` in
     `website/index.html` next to `eventScheduleToGeojson`.
+
+## Current-time indicator (2026-05-24)
+
+The calendar sidebar now classifies each session row against "now" and
+tints the two active rows. Picked from a 4×4 spawn of style variations
+(`B4-info`, the badges-carry-timing variant).
+
+- **Clock source.** `eventScheduleNow()` reads `?clock=YYYY-MM-DDTHH:MM`
+  as a local datetime when present (test fixture / Playwright verifier);
+  otherwise the system wall clock. A fixed-clock URL is the contract the
+  upcoming left-hot-button verifier already plans to use.
+- **Date anchor.** Each session's `date_label` ("Friday"/"Saturday"/
+  "Sunday") is anchored against the most-recent Saturday on/before now
+  (Fri = Sat−1, Sun = Sat+1). Sessions assume a 90-minute default duration
+  because the schema has no `end_local` field.
+- **Classification.** Each `<li>` carries `data-session-state` of
+  `past` | `happening` | `upcoming_next` | `future`. Exactly one row is
+  `upcoming_next` (the earliest session with `session_start > now`).
+- **Treatment.** Happening row: sage `#dde2cf` background, 3px rust
+  inset left bar, bold title, top-right `LIVE · 45m LEFT` badge
+  (solid rust, cream text, time-remaining updates every 60s). Upcoming-
+  next row: sand `#ecd9b1` background, 3px brown-dark inset left bar,
+  top-right `SOON · IN 45m` badge (solid brown-dark, cream text,
+  countdown updates every 60s). Past rows: opacity 0.5. No countdown
+  banner, no blur/glow, no animations.
+- **Tick.** Recompute every 60s and on `visibilitychange`.
+- **Code.** CSS at lines 188-199, JS engine (`eventScheduleNow`,
+  `eventScheduleAnchor`, `eventScheduleFormatMinutes`,
+  `refreshEventScheduleSessionStates`, `ensureEventScheduleStateTicker`)
+  at lines 3545-3650 in `website/index.html`; render hook in
+  `renderEventSchedule` emits `data-session-day` + `data-session-start`
+  per `<li>` and calls the refresh after innerHTML swap.
+- **Demo posture.** At `?clock=2026-05-23T14:15`, `sat-proving-grounds`
+  (13:30) is `happening` showing `LIVE · 45m LEFT`; `sat-king-of-hill`
+  (15:00) is `upcoming_next` showing `SOON · IN 45m`. Fri × 3 + Sat 8 AM
+  + Sat 9 AM are `past`.
+- **Status.** Shipped as "simple enough and has the info" — the user
+  flagged it may not be 100% the final aesthetic; revisits acceptable
+  if the look needs tuning. Hot-button (A3) overlap noted in
+  `../02_edit/left_hot_button.md`.
   - aliases: `#registration` resolves to `#pavilion`; `#pavillion` is accepted
     as a misspelling alias for `#pavilion`.
 - A location's `coordinates` field is optional as of Sprint 02 Bucket D

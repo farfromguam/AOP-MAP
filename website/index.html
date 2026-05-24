@@ -185,6 +185,18 @@
     .calendar-name { display: block; margin-top: 1px; font-size: 0.88rem; line-height: 1.18; overflow-wrap: anywhere; }
     .calendar-location { display: block; margin-top: 2px; font-size: 0.74rem; line-height: 1.15; color: var(--brown-soft); overflow-wrap: anywhere; }
     .calendar-empty { padding: 8px; font-size: 0.86rem; color: var(--brown-soft); }
+    /* Variation B4-info: badges carry timing info; structure identical to B4. */
+    .calendar-days li[data-session-state] { position: relative; }
+    .calendar-days li[data-session-state="happening"] { background: #dde2cf; box-shadow: inset 3px 0 0 0 var(--rust); }
+    .calendar-days li[data-session-state="upcoming_next"] { background: #ecd9b1; box-shadow: inset 3px 0 0 0 var(--brown-dark); }
+    .calendar-days li[data-session-state="past"] { opacity: 0.5; }
+    .calendar-days li[data-session-state="happening"] .calendar-name { font-weight: 700; }
+    .calendar-days li[data-session-state="upcoming_next"] .calendar-name { font-weight: 400; }
+    .cal-live-badge, .cal-soon-badge { position: absolute; top: 8px; right: 8px; padding: 1px 6px; border-radius: 3px;
+      font: 700 9px Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em;
+      color: #f7f1e2; white-space: nowrap; pointer-events: none; }
+    .cal-live-badge { background: var(--rust); }
+    .cal-soon-badge { background: var(--brown-dark); }
     .align-handle { background: #ff3366; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #000, 0 2px 6px rgba(0,0,0,0.4); cursor: grab; }
     .align-handle:active { cursor: grabbing; filter: brightness(1.15); }
     .align-handle-corner { width: 18px; height: 18px; background: #ff3366; }
@@ -3532,6 +3544,116 @@
       if (typeof buildSearchGroups === 'function') buildSearchGroups();
     }
 
+    // --- Variation B4-info: session "now" computation ---------------------
+    // Returns the Date treated as "now". Reads ?clock=YYYY-MM-DDTHH:MM as a
+    // local datetime when present (test fixture); otherwise wall-clock.
+    function eventScheduleNow() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const raw = params.get('clock');
+        if (raw) {
+          const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{1,2}):(\d{2})$/.exec(raw.trim());
+          if (m) {
+            const d = new Date(
+              Number(m[1]), Number(m[2]) - 1, Number(m[3]),
+              Number(m[4]), Number(m[5]), 0, 0
+            );
+            if (!isNaN(d.getTime())) return d;
+          }
+        }
+      } catch (_) { /* fall through */ }
+      return new Date();
+    }
+
+    // Anchor a session's date_label onto the calendar week. Saturday maps to
+    // the most-recent Saturday on/before `now`; Friday is that Sat -1d;
+    // Sunday is that Sat +1d. Returns the session-start Date or null.
+    function eventScheduleAnchor(dayLabel, startLocal, now) {
+      const day = String(dayLabel || '').trim().toLowerCase();
+      const tm = /^(\d{1,2}):(\d{2})$/.exec(String(startLocal || '').trim());
+      if (!tm) return null;
+      const hour = Number(tm[1]);
+      const minute = Number(tm[2]);
+      if (!Number.isFinite(hour) || hour < 0 || hour > 23) return null;
+      if (!Number.isFinite(minute) || minute < 0 || minute > 59) return null;
+      const refSaturday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      const dow = refSaturday.getDay(); // 0=Sun..6=Sat
+      const daysBack = (dow - 6 + 7) % 7; // Sat=0
+      refSaturday.setDate(refSaturday.getDate() - daysBack);
+      let offset = 0;
+      if (day === 'friday') offset = -1;
+      else if (day === 'sunday') offset = 1;
+      else if (day !== 'saturday') return null;
+      const start = new Date(refSaturday.getFullYear(), refSaturday.getMonth(),
+        refSaturday.getDate() + offset, hour, minute, 0, 0);
+      return start;
+    }
+
+    // Format remaining minutes as "Xm" (<60) or "Xh Ym" (>=60).
+    function eventScheduleFormatMinutes(minutes) {
+      const m = Math.max(0, Math.round(minutes));
+      if (m < 60) return `${m}m`;
+      const h = Math.floor(m / 60);
+      const rem = m % 60;
+      return rem === 0 ? `${h}h` : `${h}h ${rem}m`;
+    }
+
+    // Walk the rendered rows and stamp data-session-state + badges. Called
+    // immediately after render and every 60s (plus on visibilitychange).
+    function refreshEventScheduleSessionStates() {
+      if (!calendarDays) return;
+      const now = eventScheduleNow();
+      const nowMs = now.getTime();
+      const rows = Array.from(calendarDays.querySelectorAll('li[data-session-day]'));
+      const computed = rows.map((li) => {
+        const day = li.getAttribute('data-session-day') || '';
+        const start = li.getAttribute('data-session-start') || '';
+        const startDate = eventScheduleAnchor(day, start, now);
+        if (!startDate) return { li, state: 'future', startMs: Infinity, endMs: Infinity };
+        const startMs = startDate.getTime();
+        const endMs = startMs + 90 * 60 * 1000;
+        let state = 'future';
+        if (nowMs >= startMs && nowMs < endMs) state = 'happening';
+        else if (nowMs >= endMs) state = 'past';
+        return { li, state, startMs, endMs };
+      });
+      // Promote the first future row to upcoming_next (exactly one).
+      const firstFuture = computed.find((r) => r.state === 'future');
+      if (firstFuture) firstFuture.state = 'upcoming_next';
+      for (const r of computed) {
+        r.li.setAttribute('data-session-state', r.state);
+        // Remove any prior badges; we re-create only for happening/upcoming.
+        const prior = r.li.querySelector('.cal-live-badge, .cal-soon-badge');
+        if (prior) prior.remove();
+        if (r.state === 'happening') {
+          const leftMin = (r.endMs - nowMs) / 60000;
+          const badge = document.createElement('span');
+          badge.className = 'cal-live-badge';
+          badge.setAttribute('data-badge', 'live');
+          badge.textContent = `LIVE · ${eventScheduleFormatMinutes(leftMin)} LEFT`;
+          r.li.appendChild(badge);
+        } else if (r.state === 'upcoming_next') {
+          const untilMin = (r.startMs - nowMs) / 60000;
+          const badge = document.createElement('span');
+          badge.className = 'cal-soon-badge';
+          badge.setAttribute('data-badge', 'soon');
+          badge.textContent = `SOON · IN ${eventScheduleFormatMinutes(untilMin)}`;
+          r.li.appendChild(badge);
+        }
+      }
+    }
+
+    let eventScheduleStateTimer = null;
+    function ensureEventScheduleStateTicker() {
+      if (eventScheduleStateTimer != null) return;
+      eventScheduleStateTimer = window.setInterval(() => {
+        refreshEventScheduleSessionStates();
+      }, 60 * 1000);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) refreshEventScheduleSessionStates();
+      });
+    }
+
     function renderEventSchedule(config, data) {
       const event = config?.event || {};
       calendarRange.textContent = event.date_range_label
@@ -3549,7 +3671,9 @@
         const tag = props.location_tag || '';
         const location = props.location_label || tag;
         const active = props.session_id === activeEventSessionId ? ' active' : '';
-        return '<li>'
+        // data-session-day + data-session-start let refreshEventScheduleSessionStates
+        // recompute LIVE / SOON without re-rendering the whole list.
+        return `<li data-session-day="${escapeHtml(props.day || '')}" data-session-start="${escapeHtml(props.start_local || '')}">`
           + `<button type="button" class="calendar-row${active}" data-session-id="${escapeHtml(props.session_id)}">`
           + `<span class="calendar-day">${escapeHtml(props.day_short || props.day || '')}</span>`
           + '<span>'
@@ -3558,6 +3682,8 @@
           + `<span class="calendar-location">${escapeHtml(tag)} - ${escapeHtml(location)}</span>`
           + '</span></button></li>';
       }).join('');
+      refreshEventScheduleSessionStates();
+      ensureEventScheduleStateTicker();
     }
 
     function firstCoordinate(geometry) {
