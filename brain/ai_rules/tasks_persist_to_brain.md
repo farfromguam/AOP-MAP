@@ -17,7 +17,7 @@ How to apply:
 - Default homes:
   - `tasks/02_edit/_readme.md` and the cards beside it — the active sprint.
   - `tasks/01_mvp/_readme.md` "Immediate next work" checklist — pending MVP items.
-  - `tasks/03_deferred/` — work with a known shape but waiting on a gating decision.
+  - `tasks/10_deferred/` — work with a known shape but waiting on a gating decision.
   - `tasks/backlog/` — research and feature-review notes.
   - `handoff/session_context.md` — short pointer for the next session; durable record lives in the cards.
 

@@ -2,7 +2,7 @@
 
 Add a generalized **feature list panel** to the viewer: one row per feature under a layer's right-panel row, with per-feature actions (visibility, fly-to, drag-to-move) opted into by the consuming layer. POI editor v2 is the first consumer (all three actions). Buildings and Cemeteries are the next two consumers (visibility + fly-to only). Region callouts and the AOP / Rock Warblers logos consume the drag side of the primitive when they land.
 
-Promoted out of `../03_deferred/` on 2026-05-23. Scope broadened the same day (2026-05-23) from "POI list with drag" to "feature list panel" after a user direction that **buildings should be operable as a per-feature list under the layer row**, not as a filter expression. The same shape generalizes cleanly to cemeteries and any other small-named-feature layer.
+Promoted out of the deferred bucket (now `../10_deferred/`) on 2026-05-23. Scope broadened the same day (2026-05-23) from "POI list with drag" to "feature list panel" after a user direction that **buildings should be operable as a per-feature list under the layer row**, not as a filter expression. The same shape generalizes cleanly to cemeteries and any other small-named-feature layer.
 
 #aop #tasks #02_edit #editor #poi #positioning #feature-list
 

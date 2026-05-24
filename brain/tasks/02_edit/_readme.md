@@ -79,7 +79,7 @@ Fold into a Pass 3 on the existing `../01_mvp/code_health_pass.md` (which alread
 
 ### I. Performance & offline — deferred
 
-Largest bucket; multi-phase; waits for a stable layer set so the measurement isn't against a moving target. Parked at `../03_deferred/offline_pwa.md`. Covers all four dump items: site weight measurement, reduction, caching, and PWA.
+Largest bucket; multi-phase; waits for a stable layer set so the measurement isn't against a moving target. Parked at `../10_deferred/offline_pwa.md`. Covers all four dump items: site weight measurement, reduction, caching, and PWA.
 
 ## Recommended order
 
@@ -90,12 +90,13 @@ Largest bucket; multi-phase; waits for a stable layer set so the measurement isn
 5. **E / F** — small dependent items.
 6. **H** code/CSS pass after the above churn settles.
 
-Bucket **I** is deferred to `../03_deferred/offline_pwa.md`; it re-enters the active sprint when the layer set stabilizes.
+Bucket **I** is deferred to `../10_deferred/offline_pwa.md`; it re-enters the active sprint when the layer set stabilizes.
 
 ## Cards to spawn (in this sprint)
 
 - `02_edit/views_and_defaults.md` — Buckets A1, A2, "trails by default." **Written + shipped 2026-05-23.** Park/fresh load now shows water + in-park buildings, Topo shows buildings too, Trace unchanged. Bucket E (buildings default-on) closes through this card.
-- `02_edit/left_hot_button.md` — A3. **Written 2026-05-23, build not started.** Spec locked: three states (hot-now ≤30 min, coming-up across days, heatmap-fallback). Ready to pick up after H closes.
+- `02_edit/preset_persona_review.md` — follow-up preset review against `personas.md`. **Written 2026-05-24.** Park/Topo/Trace fit the broad reader/editor jobs; event-ops personas need Approach / Event HQ / Stage-Marshal style views once facility and event geometry exists.
+- `02_edit/left_hot_button.md` — A3. **Written 2026-05-23, shipped 2026-05-24.** Three states (hot-now ≤30 min, coming-up across days via new forward anchor, heatmap-fallback when schedule is empty). Click reuses `gotoEventSession` or flips activity-hotspots + fits to densest cluster bbox. Verifier extended with 20 new assertions; 85 PASS / 0 FAIL / 0 console errors.
 - `02_edit/poi_editor_v2.md` — Bucket G. **Written + shipped 2026-05-23.** Three consumers wired (POIs, buildings, cemeteries) plus the visitor-context drag consumer that closes Bucket B's positionable-callouts item.
 - `02_edit/viewer_chrome_polish.md` — Bucket B. **Written 2026-05-23.** B1 (calendar popup scroll-into-view) in progress; B6 (region callouts positionable) closed via `poi_editor_v2.md`.
 - `02_edit/search_tags.md` — Bucket C. **Written + shipped 2026-05-23.**
@@ -113,4 +114,4 @@ Bucket **I** is deferred to `../03_deferred/offline_pwa.md`; it re-enters the ac
 
 ## Deferred (sister sprint)
 
-- `../03_deferred/offline_pwa.md` — Bucket I.
+- `../10_deferred/offline_pwa.md` — Bucket I.

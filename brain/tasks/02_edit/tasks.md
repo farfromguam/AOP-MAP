@@ -4,13 +4,14 @@
 make edit panel pop up from the bottom right. 
 on mobile when collapsed its floating in the middle.
 
-
+[] expand calendar on large screens
 
 make buildings show up by default
 prune buildings outside of bounds ???
 
 
-come up with a list of always on.
+come up with a list of always on. 
+[] ON ALL LAYERS
 -buildings
 -water
 -road
@@ -28,8 +29,10 @@ tighten in on their needs.
 our region circle callouts need to be positionable 
 
 calendar needs time
+[] scroll to current calendar item 
 
 one view needs trails by default.
+[] Improve view
 
 need a dedicated hot button on the left.
 fire icon???
@@ -42,15 +45,28 @@ ability to search tags
 layers need text tweaking.
 currently trace has text hard to read.
 
-css needs a review top to bottom
+[] css needs a review top to bottom
+[] theme. review
 
-code needs a review for smells.
+
+[] code needs a review for smells.
 
 
 we need a editor for points of intrest.
 
+[] invert all collapse icons on right toolbar
+[] fix styles on 
 
-see if we can get trail names
+section headeader
+<button type="button" class="section-toggle" aria-expanded="false">
+    <span class="section-chevron">▾</span>
+</button>
+
+*buttons dont have the same border treatment as the other collapse icons.
+we want all buttons to be uniform in style and format. only thing that can be different is icon or color.
+
+
+[] see if we can get trail names they are numbered
 
 tag cabins
 tag campsites
@@ -62,9 +78,9 @@ tag big log
 tag jeep entrance
 tag buggy entrance
 
-add aop logo
+[] add aop logo
 
-add rock warblers logo
+[] add rock warblers logo
 
 figure out how much data the site takes
 figure out how to reduce that amount

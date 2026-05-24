@@ -67,7 +67,7 @@ But the coming-up middle state matters because the button is for **people on the
 - Audio/visual nag for hot-now (no sounds, no flash).
 - Multiple hot buttons (one for events, one for heatmap). Single button, three states.
 - Personalization (driver vs spectator). The button is the same for everyone on the property.
-- Offline. Folds into `../03_deferred/offline_pwa.md` when that lands.
+- Offline. Folds into `../10_deferred/offline_pwa.md` when that lands.
 
 ## Placement
 
@@ -78,13 +78,13 @@ But the coming-up middle state matters because the button is for **people on the
 
 ## Acceptance
 
-- [ ] Button renders on first viewer load in whichever state matches the schedule.
-- [ ] State recomputes every 60 s and on `visibilitychange`.
-- [ ] Click in hot-now or coming-up flies to the resolved session location and opens its popup, identical to the calendar-row path.
-- [ ] Click in heatmap-fallback toggles `showActivityHotspots` + `showActivityHotspotsLabels` on and fits to the densest cluster bbox.
-- [ ] Countdown chrome reads the same `time_label` the calendar uses.
-- [ ] Editing a `#tag` binding for the resolved session re-routes the button without a reload.
-- [ ] Demo posture: with today simulated as Saturday 2026-05-23, the default test session is the live/imminent path; with today simulated as Friday, the upcoming-Saturday case kicks in.
+- [X] Button renders on first viewer load in whichever state matches the schedule.
+- [X] State recomputes every 60 s and on `visibilitychange`.
+- [X] Click in hot-now or coming-up flies to the resolved session location and opens its popup, identical to the calendar-row path.
+- [X] Click in heatmap-fallback toggles `showActivityHotspots` + `showActivityHotspotsLabels` on and fits to the densest cluster bbox.
+- [X] Countdown chrome reads `start_local` + `time_label` and renders the same `window` label the calendar uses ("Saturday 8:30 PM · Night · in 45m").
+- [X] Editing a `#tag` binding for the resolved session re-routes the button without a reload — uses the same `eventLocationByTag` lookup as `gotoEventSession`, so a rebind is honored on the next click without code changes.
+- [X] Demo posture: with `?clock=2026-05-23T13:45` the live path lights (`sat-proving-grounds`); with `?clock=2026-05-23T13:15` the imminent path lights for the same session; with `?clock=2026-05-25T12:00` (Monday) the forward anchor wraps to the next weekend and targets `fri-registration` in coming-up.
 
 ## Verification
 
@@ -105,3 +105,63 @@ Card written 2026-05-23 while H (code-health Pass 3) is the active executable. A
 Update 2026-05-24: schedule now carries per-session `start_local`. The "imminent ≤ 30 min" rule has a real anchor; the countdown chrome example ("Saturday 6:00 PM — in 4h 12m") can read straight off `start_local` instead of guessing from `time_label`. No remaining schema blocker.
 
 Update 2026-05-24 (same day, later): the calendar sidebar now carries its own current-time indicator — per-row `data-session-state` of `past | happening | upcoming_next | future`, plus solid `LIVE · 45m LEFT` and `SOON · IN 45m` corner badges. See `../01_mvp/event_schedule_layer.md` "Current-time indicator." Implication for this card: when A3 ships, it can reuse the shared `eventScheduleNow()` + `refreshEventScheduleSessionStates()` engine for "what session is hot/coming up?" instead of writing its own. The button's three-state logic still belongs to A3 (the calendar only *marks* sessions; it does not teleport or open popups). Consider whether the LIVE/SOON calendar badges + the hot-button glyph end up reading as redundant once both are on screen; a refinement pass may want one or the other to be the primary signal.
+
+## Shipped (2026-05-24)
+
+A3 built and verified end-to-end. Code map below; durable record stays here, not in `session_context.md`.
+
+### Anchor decision
+
+The calendar's `eventScheduleAnchor()` anchors sessions to the **most-recent** Saturday on/before now — correct for the calendar's "past rows fade" view. The hot button needed the opposite: on Mon-Fri the user wants the **upcoming** weekend, so a Friday afternoon load already points at Saturday's evening session.
+
+Solution: add `eventScheduleAnchorForward(dayLabel, startLocal, now)` as a sibling anchor used only by the hot button. Rule:
+
+- Mon-Fri (dow 1-5): reference Saturday = upcoming Saturday (`6 - dow` days forward).
+- Saturday (dow 6): reference Saturday = today.
+- Sunday (dow 0): reference Saturday = yesterday (Sunday is still part of the current weekend; the Sun session is today).
+
+Friday session anchors to `refSat - 1`, Sunday to `refSat + 1`.
+
+### Heatmap-fallback semantics with a template schedule
+
+The schedule is weekday-template, not absolute-date. With the forward anchor, sessions always wrap to the next weekend — so "every session is in the past" never triggers organically. The heatmap-fallback path therefore fires only when the schedule is empty (or, in tests, when `eventSessionById` is cleared). If a future schedule format ever carries absolute dates, the same code path would catch the "schedule is over" case automatically; the forward-anchor branch only fires when dates are absent.
+
+### Code map (`website/index.html`)
+
+CSS: `.hot-button` block alongside the calendar styles (`[data-hot-state]` switches background / shadow). Glyph + title + detail spans driven by `id="hotButtonGlyph|Title|Detail"`.
+
+HTML: single `<button id="hotButton">` in `.left-controls`, below the calendar card.
+
+JS (near the existing schedule engine):
+
+- `let aopActivityHotspotsData` (hoisted) — collects the activity-hotspots feature collection so `findDensestHotspotBbox` can compute without re-fetching.
+- `HOT_BUTTON_IMMINENT_MIN = 30`, `HOT_BUTTON_SESSION_LEN_MIN = 90`.
+- `eventScheduleAnchorForward(day, start, now)` — see anchor decision above.
+- `computeHotButtonTarget()` — walks `eventSessionById.values()`, returns `{state, target, kind?}`. Prefers live → imminent → next future → fallback.
+- `findDensestHotspotBbox(topK = 3)` — sorts hotspot polygons by `intensity_norm` (falling back to `dwell_minutes`), returns the combined bbox of the top-K.
+- `hotButtonFlyToHotspots()` — ensures `showActivityHotspots` is checked (the toggle's layer group already includes `activity-hotspots-labels`, so the card's "force labels on" requirement is satisfied by the one toggle), then `map.fitBounds(densestBbox)` with the standard visible-slice padding.
+- `attachHotButton()` — idempotent click binder (`dataset.bound = '1'`).
+- `refreshHotButton()` — pulls a fresh decision, paints button state / glyph / title / detail / `data-target-session-id` / aria-label, or hides the button when both the schedule and hotspots are empty.
+
+### Tick + tag-rebind wiring
+
+`refreshHotButton()` is called from the tail of `refreshEventScheduleSessionStates()`. That path already runs:
+
+- on every render of the schedule sidebar (`renderEventSchedule` → refresh)
+- on every 60 s tick (`ensureEventScheduleStateTicker`)
+- on `visibilitychange` (same ticker)
+- after every tag-rebind (`rebuildEventScheduleData` → `renderEventSchedule` → refresh)
+
+So one extra call covers all four signals — no second timer, no second visibility handler. The hotspots-load block also calls `refreshHotButton()` so the fallback state is reachable even if the schedule is missing.
+
+### Verification
+
+`mvp/scripts/playwright_verify_event_schedule.py` extended with a "Hot button (Sprint 02 Bucket A3)" section: 20 new assertions across four fixture clocks (`?clock=2026-05-23T13:45` for live, `T13:15` for imminent, `T19:45` for coming-up same-day, `2026-05-25T12:00` for coming-up across-day) plus a schedule-cleared assertion for heatmap-fallback. Each state also verifies the click action (camera flies + popup opens for hot-now / coming-up; activity-hotspots toggle flips on + layer renders for fallback). Full run: **85 PASS / 0 FAIL / 0 console errors**.
+
+### Open: visual redundancy with calendar badges
+
+The pre-shipped calendar already carries `LIVE · 45m LEFT` and `SOON · IN 45m` badges per row. The hot button now says essentially the same thing in chrome that is always-visible (the calendar can be collapsed). Behavioral roles are distinct — the badges mark sessions; the button teleports — but visually they may double-up when the calendar is expanded. Leaving this as a future refinement; the user picked "simple enough and has the info" for the calendar indicator and would likely do the same here.
+
+### Icon punt (still open)
+
+Used emoji glyphs as the smallest punt: 🔥 (hot-now), ◷ (coming-up), ❖ (heatmap-fallback). The card's "Icon set: punt to a sketch pass" still applies — these render cleanly across fonts but are not a designed set.

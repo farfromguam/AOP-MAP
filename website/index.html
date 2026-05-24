@@ -197,6 +197,24 @@
       color: #f7f1e2; white-space: nowrap; pointer-events: none; }
     .cal-live-badge { background: var(--rust); }
     .cal-soon-badge { background: var(--brown-dark); }
+    /* Hot button (A3): single button under the calendar that always has an
+       action. Three states: hot-now (live/imminent), coming-up (next session
+       on the schedule), heatmap-fallback (empty schedule -> show activity
+       hotspots). Card: brain/tasks/02_edit/left_hot_button.md. */
+    .hot-button { width: 100%; display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; gap: 8px;
+      margin: 0; padding: 9px 11px; border: 0; border-radius: 8px; background: var(--brown-mid); color: #f7f1e2;
+      cursor: pointer; text-align: left; font: 700 0.78rem Inter, system-ui, sans-serif;
+      text-transform: uppercase; letter-spacing: 0.04em; }
+    .hot-button:hover { filter: brightness(1.06); }
+    .hot-button[data-hot-state="hot-now"] { background: var(--rust); box-shadow: 0 0 0 2px rgba(191, 90, 54, 0.35); }
+    .hot-button[data-hot-state="coming-up"] { background: var(--brown-dark); }
+    .hot-button[data-hot-state="heatmap-fallback"] { background: var(--brown-mid); }
+    .hot-button-glyph { display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; font-size: 1.1rem; line-height: 1; }
+    .hot-button-text { display: block; min-width: 0; }
+    .hot-button-title { display: block; }
+    .hot-button-detail { display: block; margin-top: 1px; font: 400 0.72rem Inter, system-ui, sans-serif;
+      text-transform: none; letter-spacing: 0; color: rgba(247, 241, 226, 0.88); overflow-wrap: anywhere; }
     .align-handle { background: #ff3366; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #000, 0 2px 6px rgba(0,0,0,0.4); cursor: grab; }
     .align-handle:active { cursor: grabbing; filter: brightness(1.15); }
     .align-handle-corner { width: 18px; height: 18px; background: #ff3366; }
@@ -254,6 +272,13 @@
         </ol>
       </div>
     </section>
+    <button id="hotButton" type="button" class="hot-button" data-hot-state="empty" hidden aria-label="Hot button">
+      <span class="hot-button-glyph" id="hotButtonGlyph" aria-hidden="true">·</span>
+      <span class="hot-button-text">
+        <span class="hot-button-title" id="hotButtonTitle">Hot</span>
+        <span class="hot-button-detail" id="hotButtonDetail"></span>
+      </span>
+    </button>
   </div>
   <div class="panel">
     <div class="panel-header" id="panelHeader" title="Collapse panel">
@@ -341,6 +366,7 @@
           <label><input type="checkbox" id="showSyntheticActivity" /> Simulated Saturday activity</label>
           <label><input type="checkbox" id="showEventSchedule" /> Event schedule POIs</label>
           <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
+          <label><input type="checkbox" id="showBrandLogos" checked /> Brand logos (AOP &amp; Rock Warblers)</label>
         </div>
       </section>
 
@@ -425,6 +451,7 @@
     // northstar/source_register.md warns about, applied to local persistence).
     const CALENDAR_COLLAPSE_KEY = 'aop_calendar_collapsed_v1';
     const VISITOR_CONTEXT_OVERRIDE_KEY = 'aop_visitor_context_overrides_v1';
+    const BRAND_LOGOS_OVERRIDE_KEY = 'aop_brand_logos_overrides_v1';
     const FEATURE_VISIBILITY_KEY = 'aop_feature_visibility_v1';
     const FEATURE_TAG_KEY = 'aop_feature_tags_v1';
     const FEATURE_TAG_SEEDED_KEY = 'aop_feature_tags_seeded_v1';
@@ -506,6 +533,7 @@
     const lidarTilesToggle = document.getElementById('showLidarTiles');
     const roadsToggle = document.getElementById('showRoads');
     const visitorContextToggle = document.getElementById('showVisitorContext');
+    const brandLogosToggle = document.getElementById('showBrandLogos');
     const waterToggle = document.getElementById('showWater');
     const springsToggle = document.getElementById('showSprings');
     const cemeteriesToggle = document.getElementById('showCemeteries');
@@ -821,6 +849,7 @@
       [lidarTilesToggle, ['lidar-tiles-fill', 'lidar-tiles-outline', 'lidar-tiles-labels'], 'showLidarTiles'],
       [roadsToggle, ['roads-local-casing', 'roads-local', 'roads-connecting-casing', 'roads-connecting', 'roads-secondary-casing', 'roads-secondary', 'roads-ramp-casing', 'roads-ramp', 'roads-controlled-casing', 'roads-controlled', 'roads-labels'], 'showRoads'],
       [visitorContextToggle, ['visitor-context-fill', 'visitor-context-outline', 'visitor-context-labels'], 'showVisitorContext'],
+      [brandLogosToggle, ['brand-logos-icons'], 'showBrandLogos'],
       [waterToggle, ['water-area-fill', 'waterbody-fill', 'waterbody-outline', 'streams', 'stream-labels'], 'showWater'],
       [springsToggle, ['water-points', 'water-point-labels'], 'showSprings'],
       [cemeteriesToggle, ['cemetery-fill', 'cemetery-outline', 'cemetery-marker', 'cemetery-label'], 'showCemeteries'],
@@ -1362,6 +1391,31 @@
           // centroid (only matters for future fly-to math).
           if (visitorContextData) registerFeatureListLayer('visitorContext', visitorContextData);
         }
+      },
+      // Brand logos — on-map AOP badge + Rock Warblers logo. Drag-to-move is
+      // the whole point of this consumer (placement gets nudged once the user
+      // sees how the logo lands against the cartography); visibility is here
+      // so a single logo can be hidden without flipping the layer toggle.
+      // Override store keeps moved Points across reloads.
+      brandLogos: {
+        label: 'Brand logos',
+        idField: 'logo_id',
+        rowLabel: (props) => props.name || 'Logo',
+        targetLayers: ['brand-logos-icons'],
+        groups: [{
+          id: 'all',
+          label: null,
+          match: () => true,
+          defaultVisible: () => true
+        }],
+        onMove: (feature, lngLat) => {
+          if (!feature || !feature.geometry || feature.geometry.type !== 'Point') return;
+          feature.geometry.coordinates = [lngLat.lng, lngLat.lat];
+          saveBrandLogoOverride(feature);
+          const source = map.getSource('brand-logos');
+          if (source && brandLogosData) source.setData(brandLogosData);
+          if (brandLogosData) registerFeatureListLayer('brandLogos', brandLogosData);
+        }
       }
     };
 
@@ -1396,6 +1450,41 @@
         const name = feature.properties && feature.properties.name;
         if (name && store[name] && store[name].geometry) {
           feature.geometry = JSON.parse(JSON.stringify(store[name].geometry));
+        }
+      }
+      return data;
+    }
+
+    // --- Brand-logos override store --------------------------------------
+    // Mirrors the visitor-context pattern: the seed geometry ships in
+    // website/data/aop_brand_logos.geojson, and each drag commits a new
+    // Point to localStorage so the user's placement survives reload. Keyed
+    // by `logo_id` (aop_badge, rock_warblers) — the on-disk file can be
+    // re-edited and any orphaned override key is simply ignored on load.
+    let brandLogosData = null;
+
+    function loadBrandLogoOverrides() {
+      const parsed = readJsonStore(BRAND_LOGOS_OVERRIDE_KEY, () => ({}));
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    }
+
+    function saveBrandLogoOverride(feature) {
+      if (!feature || !feature.properties || !feature.geometry) return;
+      const store = loadBrandLogoOverrides();
+      store[feature.properties.logo_id] = {
+        geometry: JSON.parse(JSON.stringify(feature.geometry)),
+        updated: new Date().toISOString()
+      };
+      writeJsonStore(BRAND_LOGOS_OVERRIDE_KEY, store);
+    }
+
+    function applyBrandLogoOverrides(data) {
+      if (!data || !data.features) return data;
+      const store = loadBrandLogoOverrides();
+      for (const feature of data.features) {
+        const id = feature.properties && feature.properties.logo_id;
+        if (id && store[id] && store[id].geometry) {
+          feature.geometry = JSON.parse(JSON.stringify(store[id].geometry));
         }
       }
       return data;
@@ -2217,6 +2306,7 @@
           showLidarTiles: false,
           showRoads: true,
           showVisitorContext: true,
+          showBrandLogos: true,
           showWater: true,
           showSprings: false,
           showCemeteries: false,
@@ -2290,6 +2380,7 @@
           showLidarTiles: false,
           showRoads: true,
           showVisitorContext: true,
+          showBrandLogos: true,
           showWater: true,
           showSprings: true,
           showCemeteries: false,
@@ -2362,6 +2453,7 @@
           showLidarTiles: false,
           showRoads: true,
           showVisitorContext: false,
+          showBrandLogos: false,
           showWater: false,
           showSprings: false,
           showCemeteries: false,
@@ -2941,6 +3033,7 @@
       const overrides = {};
       const stores = [
         ['visitor_context_overrides', VISITOR_CONTEXT_OVERRIDE_KEY, () => ({})],
+        ['brand_logos_overrides', BRAND_LOGOS_OVERRIDE_KEY, () => ({})],
         ['editor_pois', POI_STORAGE_KEY, () => []],
         ['feature_visibility', FEATURE_VISIBILITY_KEY, () => ({})],
         ['feature_tags', FEATURE_TAG_KEY, () => ({})]
@@ -3191,6 +3284,9 @@
       if (overrides.visitor_context_overrides) {
         writeJsonStore(VISITOR_CONTEXT_OVERRIDE_KEY, overrides.visitor_context_overrides);
       }
+      if (overrides.brand_logos_overrides) {
+        writeJsonStore(BRAND_LOGOS_OVERRIDE_KEY, overrides.brand_logos_overrides);
+      }
       if (Array.isArray(overrides.editor_pois)) {
         writeJsonStore(POI_STORAGE_KEY, overrides.editor_pois);
         if (typeof editorPois !== 'undefined') {
@@ -3337,6 +3433,10 @@
     // so future schedule edits do not repeat coordinates in every row.
     let eventScheduleData = null;
     let eventScheduleConfig = null;
+    // Activity-hotspots feature collection is hoisted to module scope so the
+    // A3 hot button's heatmap-fallback path can bbox the densest cells
+    // without re-fetching. Card: brain/tasks/02_edit/left_hot_button.md.
+    let aopActivityHotspotsData = null;
     const eventLocationByTag = new Map();
     const eventSessionById = new Map();
     let activeEventSessionId = null;
@@ -3641,6 +3741,12 @@
           r.li.appendChild(badge);
         }
       }
+      // Hot button shares the clock/anchor + 60s tick + visibilitychange
+      // signals with the calendar refresh, so piggybacking here keeps both
+      // in lockstep without standing up a second timer. Also covers the
+      // tag-rebind path (rebuildEventScheduleData -> renderEventSchedule
+      // -> refreshEventScheduleSessionStates -> here).
+      if (typeof refreshHotButton === 'function') refreshHotButton();
     }
 
     let eventScheduleStateTimer = null;
@@ -3652,6 +3758,178 @@
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden) refreshEventScheduleSessionStates();
       });
+    }
+
+    // --- Hot button (A3): state engine -----------------------------------
+    // Three states: hot-now (live or starts in <=30 min), coming-up (next
+    // scheduled session, any day forward), heatmap-fallback (schedule empty
+    // -> surfaces the activity-hotspots layer). The button always has an
+    // action. Card: brain/tasks/02_edit/left_hot_button.md.
+    const HOT_BUTTON_IMMINENT_MIN = 30;
+    const HOT_BUTTON_SESSION_LEN_MIN = 90;
+
+    // Forward-leaning anchor: when now is Mon-Fri the upcoming Saturday
+    // anchors the weekend so Friday sessions resolve to TODAY-Sat-1 not
+    // PRIOR-Sat-1. Sat/Sun anchor to the current weekend. Calendar keeps
+    // the most-recent anchor (it wants to show past rows fading); hot
+    // button wants the *next* live/upcoming thing.
+    function eventScheduleAnchorForward(dayLabel, startLocal, now) {
+      const day = String(dayLabel || '').trim().toLowerCase();
+      const tm = /^(\d{1,2}):(\d{2})$/.exec(String(startLocal || '').trim());
+      if (!tm) return null;
+      const hour = Number(tm[1]);
+      const minute = Number(tm[2]);
+      if (!Number.isFinite(hour) || hour < 0 || hour > 23) return null;
+      if (!Number.isFinite(minute) || minute < 0 || minute > 59) return null;
+      const ref = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      const dow = ref.getDay(); // 0=Sun..6=Sat
+      let daysToSat;
+      if (dow === 6) daysToSat = 0;        // today is Sat
+      else if (dow === 0) daysToSat = -1;  // today is Sun -> Sat was yesterday
+      else daysToSat = 6 - dow;             // Mon-Fri -> upcoming Sat
+      ref.setDate(ref.getDate() + daysToSat);
+      let offset = 0;
+      if (day === 'friday') offset = -1;
+      else if (day === 'sunday') offset = 1;
+      else if (day !== 'saturday') return null;
+      return new Date(ref.getFullYear(), ref.getMonth(),
+        ref.getDate() + offset, hour, minute, 0, 0);
+    }
+
+    function computeHotButtonTarget() {
+      const now = eventScheduleNow();
+      const nowMs = now.getTime();
+      let live = null;
+      let imminent = null;
+      let nextFuture = null;
+      for (const feature of eventSessionById.values()) {
+        const props = feature.properties || {};
+        const start = eventScheduleAnchorForward(props.day, props.start_local, now);
+        if (!start) continue;
+        const startMs = start.getTime();
+        const endMs = startMs + HOT_BUTTON_SESSION_LEN_MIN * 60 * 1000;
+        if (nowMs >= startMs && nowMs < endMs) {
+          if (!live || startMs < live.startMs) live = { feature, startMs, endMs };
+          continue;
+        }
+        if (startMs > nowMs) {
+          const minsUntil = (startMs - nowMs) / 60000;
+          if (minsUntil <= HOT_BUTTON_IMMINENT_MIN) {
+            if (!imminent || startMs < imminent.startMs) imminent = { feature, startMs, endMs };
+          }
+          if (!nextFuture || startMs < nextFuture.startMs) nextFuture = { feature, startMs, endMs };
+        }
+      }
+      if (live) return { state: 'hot-now', target: live, kind: 'live' };
+      if (imminent) return { state: 'hot-now', target: imminent, kind: 'imminent' };
+      if (nextFuture) return { state: 'coming-up', target: nextFuture };
+      return { state: 'heatmap-fallback' };
+    }
+
+    // Pick the densest few hotspot polygons by intensity_norm and return
+    // their combined bbox. Polygon features carry intensity_norm; if the
+    // dataset is heatmap-points only, fall back to whole-collection bbox.
+    function findDensestHotspotBbox(topK = 3) {
+      const data = aopActivityHotspotsData;
+      if (!data?.features?.length) return null;
+      const polys = data.features.filter((f) => f.geometry?.type === 'Polygon' && f.properties);
+      const ranked = polys
+        .map((f) => ({ f, score: Number(f.properties.intensity_norm ?? f.properties.dwell_minutes ?? 0) }))
+        .filter((r) => Number.isFinite(r.score))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, Math.max(1, topK));
+      const subset = ranked.length
+        ? { type: 'FeatureCollection', features: ranked.map((r) => r.f) }
+        : data;
+      return geojsonBounds(subset);
+    }
+
+    function hotButtonFlyToHotspots() {
+      if (activityHotspotsToggle && !activityHotspotsToggle.checked) {
+        activityHotspotsToggle.checked = true;
+        activityHotspotsToggle.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      const bbox = findDensestHotspotBbox();
+      if (!bbox) return;
+      const pad = visibleMapPadding(20);
+      map.fitBounds(bbox, {
+        padding: pad,
+        maxZoom: 16.2,
+        duration: 1000,
+        bearing: map.getBearing(),
+        pitch: map.getPitch()
+      });
+    }
+
+    function attachHotButton() {
+      const btn = document.getElementById('hotButton');
+      if (!btn || btn.dataset.bound === '1') return;
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', () => {
+        const state = btn.dataset.hotState;
+        if (state === 'hot-now' || state === 'coming-up') {
+          const id = btn.dataset.targetSessionId;
+          if (id) gotoEventSession(id);
+        } else if (state === 'heatmap-fallback') {
+          hotButtonFlyToHotspots();
+        }
+      });
+    }
+
+    function refreshHotButton() {
+      attachHotButton();
+      const btn = document.getElementById('hotButton');
+      if (!btn) return;
+      const glyph = document.getElementById('hotButtonGlyph');
+      const title = document.getElementById('hotButtonTitle');
+      const detail = document.getElementById('hotButtonDetail');
+      const decision = computeHotButtonTarget();
+      const haveHotspots = !!(aopActivityHotspotsData?.features?.length);
+      // Empty state: schedule is empty AND no hotspots loaded -> hide.
+      if (decision.state === 'heatmap-fallback' && !haveHotspots) {
+        btn.dataset.hotState = 'empty';
+        btn.dataset.targetSessionId = '';
+        btn.hidden = true;
+        btn.setAttribute('aria-label', 'Hot button (no target)');
+        return;
+      }
+      btn.hidden = false;
+      btn.dataset.hotState = decision.state;
+      const now = eventScheduleNow();
+      if (decision.state === 'hot-now') {
+        const props = decision.target.feature.properties || {};
+        btn.dataset.targetSessionId = props.session_id || '';
+        if (glyph) glyph.textContent = '🔥'; // fire emoji
+        if (decision.kind === 'live') {
+          const mins = (decision.target.endMs - now.getTime()) / 60000;
+          if (title) title.textContent = 'Live now';
+          if (detail) detail.textContent = `${props.title || 'Session'} · ${eventScheduleFormatMinutes(mins)} left`;
+        } else {
+          const mins = (decision.target.startMs - now.getTime()) / 60000;
+          if (title) title.textContent = 'Hot - starting soon';
+          if (detail) detail.textContent = `${props.title || 'Session'} · in ${eventScheduleFormatMinutes(mins)}`;
+        }
+        btn.setAttribute('aria-label', `Hot now: ${props.title || 'session'}`);
+      } else if (decision.state === 'coming-up') {
+        const props = decision.target.feature.properties || {};
+        btn.dataset.targetSessionId = props.session_id || '';
+        const mins = (decision.target.startMs - now.getTime()) / 60000;
+        if (glyph) glyph.textContent = '◷'; // upper-right circular sector
+        if (title) title.textContent = 'Coming up';
+        if (detail) {
+          const dayPart = props.day ? `${props.day} ` : '';
+          const timePart = props.window || props.start_local || '';
+          detail.textContent = `${dayPart}${timePart} · in ${eventScheduleFormatMinutes(mins)}`;
+        }
+        btn.setAttribute('aria-label', `Coming up: ${props.title || 'session'}`);
+      } else {
+        // heatmap-fallback with hotspots present
+        btn.dataset.targetSessionId = '';
+        if (glyph) glyph.textContent = '❖'; // black diamond minus white X
+        if (title) title.textContent = 'Activity hotspots';
+        if (detail) detail.textContent = 'Show where rigs ran';
+        btn.setAttribute('aria-label', 'Show activity hotspots');
+      }
     }
 
     function renderEventSchedule(config, data) {
@@ -4369,6 +4647,9 @@
       // --- Activity hotspots (timestamped GPX dwell) ----------------------
       const activityData = await fetchJson('./data/aop_activity_hotspots.geojson', 'Activity hotspot layer missing');
       if (activityData) {
+        // Hoist the collection so the A3 hot button's heatmap-fallback path
+        // can bbox the densest cells. See refreshHotButton.
+        aopActivityHotspotsData = activityData;
         const activityVisibility = activityHotspotsToggle.checked ? 'visible' : 'none';
         map.addSource('activity-hotspots', {
           type: 'geojson',
@@ -4436,6 +4717,11 @@
           ['Source', formatListProperty(props.source_files) || 'unknown'],
           ['Review', props.review_status || 'raw']
         ]);
+        // Hotspots may load before or after the schedule; either way the
+        // button needs a refresh once aopActivityHotspotsData is populated
+        // so the heatmap-fallback path (or any decision that depends on
+        // having hotspots) renders correctly.
+        if (typeof refreshHotButton === 'function') refreshHotButton();
       }
 
       // --- Simulated Saturday activity -----------------------------------
@@ -5729,6 +6015,91 @@
         ['Elevation (m)', props.ele || ''],
         ['OSM id', props.osm_id || '']
       ]);
+
+      // --- Brand logos (AOP badge + Rock Warblers) -----------------------
+      // Two on-map logos rendered as MapLibre symbol icons from a Point
+      // FeatureCollection. Each feature carries icon_image (matches the
+      // map.addImage name we register below) and icon_size (data-driven so
+      // the round AOP badge and wider Rock Warblers logo can carry
+      // different on-screen sizes from the same layer).
+      //
+      // Permission posture: AOP badge is reference-only until AOP confirms
+      // reuse; Rock Warblers cleared by user grant. Provenance + license
+      // notes live in brain/tasks/02_edit/assets/branding/README.md. The
+      // raw assets stay in brain/...; website/assets/branding/ holds the
+      // viewer-served copies.
+      //
+      // Edit posture: positions are draggable from the feature list panel
+      // and persist in BRAND_LOGOS_OVERRIDE_KEY. Editing the seed file just
+      // moves the first-load coords; overrides win on next load. Card:
+      // brain/tasks/02_edit/branding.md.
+      brandLogosData = await fetchJson('./data/aop_brand_logos.geojson', 'Brand logos missing');
+      if (brandLogosData) {
+        applyBrandLogoOverrides(brandLogosData);
+
+        // Load each icon image and register it under the property name the
+        // features reference. Done in parallel so a slow asset can't gate
+        // the whole layer. Width/height are inferred by the browser; we
+        // pass the loaded element straight to map.addImage.
+        const logoImages = [
+          { name: 'brand-aop-badge', url: './assets/branding/aop-badge.png' },
+          { name: 'brand-rock-warblers', url: './assets/branding/rock-warblers.jpg' }
+        ];
+        await Promise.all(logoImages.map(({ name, url }) => new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            if (!map.hasImage(name)) {
+              try {
+                map.addImage(name, img, { pixelRatio: 2 });
+              } catch (err) {
+                console.warn(`Could not register logo image ${name}:`, err);
+              }
+            }
+            resolve();
+          };
+          img.onerror = () => {
+            console.warn(`Brand logo image failed to load: ${url}`);
+            resolve();
+          };
+          img.src = url;
+        })));
+
+        map.addSource('brand-logos', {
+          type: 'geojson',
+          data: brandLogosData,
+          attribution: 'Brand logos: AOP, Rock Warblers'
+        });
+
+        map.addLayer({
+          id: 'brand-logos-icons',
+          type: 'symbol',
+          source: 'brand-logos',
+          layout: {
+            'icon-image': ['get', 'icon_image'],
+            'icon-size': ['coalesce', ['get', 'icon_size'], 0.06],
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+            'icon-anchor': 'center'
+          }
+        });
+
+        bindPopup('brand-logos-icons',
+          (props) => escapeHtml(props.name || 'Logo'),
+          (props) => [
+            ['Attribution', props.attribution || ''],
+            ['Source', props.source_url || '']
+          ]);
+        bindPanelReveal(['brand-logos-icons'], 'brandLogos', 'logo_id');
+
+        indexFeatures(
+          brandLogosData,
+          'logo',
+          brandLogosToggle,
+          (props) => ({ featureListKey: 'brandLogos', featureId: props.logo_id })
+        );
+        registerFeatureListLayer('brandLogos', brandLogosData);
+      }
 
       // --- Map editor: Terra Draw POI + footprint drawing ---------------
       loadEditorPois();

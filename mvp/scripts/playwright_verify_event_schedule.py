@@ -589,6 +589,152 @@ def main() -> int:
               results_text)
         page.locator("#searchInput").fill("")
 
+        # ----------------------------------------------------------------
+        # Hot button (Sprint 02 Bucket A3)
+        # ----------------------------------------------------------------
+        # Three states driven by ?clock= fixtures so the same clock-override
+        # contract the calendar uses also pins the button. The forward
+        # anchor (eventScheduleAnchorForward) makes Mon-Fri "look ahead" to
+        # the upcoming weekend, so a Monday fixture still yields coming-up
+        # against the schedule's weekend template.
+
+        def load_with_clock(clock: str) -> None:
+            page.set_viewport_size({"width": 1280, "height": 820})
+            page.goto(WEBSITE_URL + f"?clock={clock}", wait_until="load")
+            page.evaluate(
+                """() => {
+                  window.map = map;
+                  window.eventSessionById = eventSessionById;
+                  window.eventLocationByTag = eventLocationByTag;
+                  window.refreshHotButton = refreshHotButton;
+                  window.computeHotButtonTarget = computeHotButtonTarget;
+                }"""
+            )
+            page.wait_for_function(
+                "() => document.getElementById('message').textContent.includes('publish feature')",
+                timeout=45_000,
+                polling=500,
+            )
+            page.wait_for_timeout(700)
+            # Refresh once more after init settles — covers the case where
+            # schedule/hotspots load order races the initial refresh.
+            page.evaluate("() => window.refreshHotButton && window.refreshHotButton()")
+            page.wait_for_timeout(150)
+
+        def button_snapshot() -> dict:
+            return page.evaluate(
+                """() => {
+                  const btn = document.getElementById('hotButton');
+                  if (!btn) return { present: false };
+                  return {
+                    present: true,
+                    hidden: btn.hidden,
+                    state: btn.dataset.hotState || '',
+                    targetSessionId: btn.dataset.targetSessionId || '',
+                    title: (document.getElementById('hotButtonTitle') || {}).textContent || '',
+                    detail: (document.getElementById('hotButtonDetail') || {}).textContent || '',
+                    glyph: (document.getElementById('hotButtonGlyph') || {}).textContent || ''
+                  };
+                }"""
+            )
+
+        print("\n== Hot button: state=hot-now (live) ==")
+        # 2026-05-23 13:45 sits inside sat-proving-grounds (13:30 + 90 min).
+        load_with_clock("2026-05-23T13:45")
+        snap = button_snapshot()
+        check("hot button is present", snap.get("present") is True, str(snap))
+        check("hot button is visible", snap.get("hidden") is False, str(snap))
+        check("hot-now state on live fixture", snap.get("state") == "hot-now", str(snap))
+        check("targets sat-proving-grounds", snap.get("targetSessionId") == "sat-proving-grounds", str(snap))
+        check("title reads Live now", "Live now" in (snap.get("title") or ""), str(snap))
+        check("detail mentions session title", "Proving Grounds" in (snap.get("detail") or ""), str(snap))
+
+        # Click in hot-now should fly to the resolved session's location and
+        # open its popup — identical to a calendar row click.
+        page.locator("#hotButton").click()
+        page.wait_for_timeout(1500)
+        cam_after_live_click = page.evaluate("() => { const c = window.map.getCenter(); return [c.lng, c.lat]; }")
+        proving_coords = page.evaluate(
+            "() => { const l = window.eventLocationByTag.get('#proving-grounds'); return l ? l.coordinates : null; }"
+        )
+        check(
+            "hot-now click flies the camera near #proving-grounds",
+            proving_coords is not None
+            and (abs(cam_after_live_click[0] - proving_coords[0])
+                 + abs(cam_after_live_click[1] - proving_coords[1])) < 5e-4,
+            f"camera={cam_after_live_click} target={proving_coords}",
+        )
+        live_popup = " | ".join(page.locator(".maplibregl-popup").all_inner_texts())
+        check("hot-now click opens the session popup", "Proving Grounds" in live_popup, live_popup)
+
+        print("\n== Hot button: state=hot-now (imminent, <=30 min) ==")
+        # 13:15 puts the same session 15 min in the future (still imminent).
+        load_with_clock("2026-05-23T13:15")
+        snap = button_snapshot()
+        check("hot-now state on imminent fixture", snap.get("state") == "hot-now", str(snap))
+        check("targets sat-proving-grounds", snap.get("targetSessionId") == "sat-proving-grounds", str(snap))
+        check("title reads starting soon", "starting soon" in (snap.get("title") or "").lower(), str(snap))
+
+        print("\n== Hot button: state=coming-up (same-day, >30 min) ==")
+        # 19:45 sits between sat-awards (18:00 + 90m -> 19:30) and
+        # sat-night-crawl (20:30) — 45 min until night crawl.
+        load_with_clock("2026-05-23T19:45")
+        snap = button_snapshot()
+        check("coming-up state when no session is imminent", snap.get("state") == "coming-up", str(snap))
+        check("targets sat-night-crawl", snap.get("targetSessionId") == "sat-night-crawl", str(snap))
+        check("title reads Coming up", "Coming up" in (snap.get("title") or ""), str(snap))
+        check("detail mentions countdown",
+              "in " in (snap.get("detail") or "") and ("m" in (snap.get("detail") or "")),
+              str(snap))
+
+        print("\n== Hot button: coming-up across days (Mon fixture) ==")
+        # Forward anchor: a Monday clock should wrap the template to the
+        # upcoming weekend (fri-registration ~4 days out). This proves the
+        # "Friday should already light up for a Saturday evening session"
+        # promise from the card.
+        load_with_clock("2026-05-25T12:00")
+        snap = button_snapshot()
+        check("coming-up state on Monday fixture", snap.get("state") == "coming-up", str(snap))
+        check("Monday fixture targets first weekend session (fri-registration)",
+              snap.get("targetSessionId") == "fri-registration", str(snap))
+
+        # Click in coming-up should also fly + popup, like a calendar row.
+        page.locator("#hotButton").click()
+        page.wait_for_timeout(1500)
+        coming_popup = " | ".join(page.locator(".maplibregl-popup").all_inner_texts())
+        check("coming-up click opens the upcoming session popup",
+              "Registration" in coming_popup or "Wristband" in coming_popup or "wristband" in coming_popup.lower(),
+              coming_popup)
+
+        print("\n== Hot button: state=heatmap-fallback (empty schedule) ==")
+        # Forward-anchoring means a weekday-template schedule never goes
+        # "all past" — heatmap-fallback fires when the schedule itself is
+        # empty. Simulate by clearing eventSessionById and refreshing.
+        load_with_clock("2026-05-23T13:45")
+        page.evaluate(
+            """() => {
+              eventSessionById.clear();
+              refreshHotButton();
+            }"""
+        )
+        page.wait_for_timeout(150)
+        snap = button_snapshot()
+        check("heatmap-fallback state when schedule is empty", snap.get("state") == "heatmap-fallback", str(snap))
+        check("title reads Activity hotspots", "Activity hotspots" in (snap.get("title") or ""), str(snap))
+        check("no session target in fallback state", snap.get("targetSessionId") == "", str(snap))
+
+        # Click in fallback should toggle activity hotspots on and fit to
+        # the densest cluster bbox.
+        before_check = page.evaluate("() => document.getElementById('showActivityHotspots').checked")
+        page.locator("#hotButton").click()
+        page.wait_for_timeout(1300)
+        after_check = page.evaluate("() => document.getElementById('showActivityHotspots').checked")
+        hotspots_vis = layer_visibility(page, "activity-hotspots-fill")
+        check("fallback click turns activity-hotspots toggle on",
+              before_check is False and after_check is True, f"before={before_check} after={after_check}")
+        check("activity-hotspots layer becomes visible after fallback click",
+              hotspots_vis == "visible", f"visibility={hotspots_vis}")
+
         print("\n== Console summary ==")
         check("no console errors", len(console_errors) == 0, f"{len(console_errors)} error(s): {console_errors[:3]}")
 

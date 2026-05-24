@@ -1,0 +1,34 @@
+{
+  "type": "FeatureCollection",
+  "name": "aop_brand_logos",
+  "metadata": {
+    "description": "On-map brand logo overlays for AOP and the Rock Warblers. Seed coordinates are nudged off the 1010 pavilion so both logos read at first load; positions are draggable via the feature list panel and persist in the aop_brand_logos_overrides_v1 store.",
+    "permission_note": "AOP badge is reference-only until AOP confirms reuse. Rock Warblers logo cleared for this project per user grant (the user is Rock Warblers). See brain/tasks/02_edit/assets/branding/README.md."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "logo_id": "aop_badge",
+        "name": "AOP badge",
+        "icon_image": "brand-aop-badge",
+        "icon_size": 0.08,
+        "attribution": "Adventure Off Road Park",
+        "source_url": "https://adventureoffroadpark.com/"
+      },
+      "geometry": { "type": "Point", "coordinates": [-85.7510, 35.0930] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "logo_id": "rock_warblers",
+        "name": "Rock Warblers",
+        "icon_image": "brand-rock-warblers",
+        "icon_size": 0.05,
+        "attribution": "Team Rock Warblers RC Rock Crawling",
+        "source_url": "https://www.facebook.com/events/adventure-offroad-park-nature-center/rock-warblers-trail-blazing-invitational/4541595172728436/"
+      },
+      "geometry": { "type": "Point", "coordinates": [-85.7510, 35.0880] }
+    }
+  ]
+}
