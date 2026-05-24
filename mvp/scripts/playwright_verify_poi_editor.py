@@ -19,14 +19,14 @@ Run after `python3 -m http.server 8001` is serving the `website/` directory.
 from __future__ import annotations
 
 import sys
-import os
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
+from playwright_base import WEBSITE_URL, click_in_section, layer_visibility
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8001/")
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 POI_STORAGE_KEY = "aop_editor_pois_v1"
 
@@ -75,16 +75,6 @@ def wait_for_viewer(page) -> None:
     )
     page.wait_for_timeout(600)
     page.evaluate("window.map = map; window.draw = draw;")
-
-
-def layer_visibility(page, layer_id: str) -> str | None:
-    return page.evaluate(
-        """(id) => {
-          if (!window.map || !window.map.getLayer || !window.map.getLayer(id)) return null;
-          return window.map.getLayoutProperty(id, 'visibility') || 'visible';
-        }""",
-        layer_id,
-    )
 
 
 def feature_count(page) -> int:
@@ -146,7 +136,7 @@ def main() -> int:
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["initial"]))
 
         print("\n== Place POIs (point mode) ==")
-        page.locator("#placePoiBtn").click()
+        click_in_section(page, "#placePoiBtn")
         page.wait_for_timeout(200)
         check("draw mode is 'point' after Place POI", page.evaluate("draw.getMode()") == "point")
         check(

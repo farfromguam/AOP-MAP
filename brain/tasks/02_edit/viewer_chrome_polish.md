@@ -160,6 +160,14 @@ Implementation:
 - Verified `props.window = session.time_label || ''` flows through the row
   template `<span class="calendar-time">…</span>` and that `.calendar-time`
   has weight 700 + color #756444 in the chrome CSS.
+- **Follow-up shipped 2026-05-24:** the day-part `time_label` alone was not
+  enough to read the calendar at a glance and could not anchor the
+  left-hot-button "imminent ≤ 30 min" rule. Each session now also carries
+  `start_local` (`HH:MM` 24h). The row's `window` is composed as
+  `"5:00 PM · Evening"` (12-hour clock · day-part); `time_label` stays as
+  the display vocabulary. Schema + render details on
+  `../01_mvp/event_schedule_layer.md`. The verifier's per-row
+  non-empty-`.calendar-time` assertion still holds (12/12).
 
 Acceptance:
 

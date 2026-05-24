@@ -22,15 +22,15 @@ Run after `python3 -m http.server 8001` is serving the `website/` directory.
 from __future__ import annotations
 
 import json
-import os
 import sys
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
+from playwright_base import WEBSITE_URL, set_toggle
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8001/")
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 
 SCREENSHOTS = {
@@ -68,13 +68,6 @@ def check(label: str, ok: bool, detail: str = "") -> None:
 
 
 check.failed = False  # type: ignore[attr-defined]
-
-
-def set_toggle(page, toggle_id: str, target: bool) -> None:
-    element = page.locator(f"#{toggle_id}")
-    if element.is_checked() != target:
-        element.click()
-    page.wait_for_timeout(250)
 
 
 def visible_count_in_source(page, geojson_url: str, layer_id: str, id_field: str) -> int:

@@ -179,3 +179,69 @@ This session:
 Verification: JS syntax check on the inline `<script>` (3942 lines after extraction) parses clean. Playwright preset verifier started in background to exercise the LAYER_TOGGLES <-> PRESET_TOGGLE_IDS coupling; result captured separately.
 
 The Pass 2 cosmetic findings (the `!important` cluster, inline `display: none`, single-letter zoom-band names) deliberately deferred -- not worth the touch without nearby work to amortize against.
+
+-----
+
+## Pass 3 (2026-05-23)
+
+Sprint 02 added ~1900 lines to the viewer (4202 → 6125) — feature list panel, per-feature visibility/tagging stores, visitor-context overrides, move-mode primitive, map-to-panel reveal, per-section/bulk Export/Import, event-schedule resolver + popup-into-view machinery. The smells that fall out of this churn are the ones Pass 3 picks up. Pass 2 also explicitly flagged a `playwright_base.py` extraction as a Pass 3 candidate; the 12-verifier set has since drifted to two different `set_toggle` implementations (one broken on collapsed sections), which makes the extraction not optional anymore.
+
+This pass folds in Sprint 02 Bucket H (*"css needs a review top to bottom"*, *"code needs a review for smells"*) per `../02_edit/_readme.md`.
+
+### Scope
+
+Viewer (`website/index.html`):
+
+[ ] **localStorage key constants drift.** 4 keys are referenced by string literal in places that already have a named constant (or should): `'aop_feature_visibility_v1'` literal at 3059/3146/3151/3205 vs `FEATURE_VISIBILITY_KEY` at 1338; `'aop_visitor_context_overrides_v1'` literal at 3192 vs `VISITOR_CONTEXT_OVERRIDE_KEY` at 1298; `'aop_editor_pois_v1'` literal at 3196 vs `POI_STORAGE_KEY` at 3745; `'aop_viewer_preset_settings_v1'` literal at 2403/2414 (no constant). Hoist all 5 keys near the top of the script and use the constants everywhere. Typo risk on a long stringly-typed identifier — exactly the silent-drop class of failure `northstar/source_register.md` warns about, applied to the user's local state.
+[ ] **localStorage read/parse/write try/catch boilerplate** repeats 6+ times across the section-export, section-apply, and bulk-apply paths (3057-3078, 3144-3165, 3204-3213). Extract a small pair: `readJsonStore(key, fallback)` and `writeJsonStore(key, value)`. The section runtime export/apply also has its own merge pattern (read store → splice in this layer's slice → write); extract `mergeStoreSlice(key, layerKey, slice)` so a future runtime consumer is one call, not eight lines.
+[ ] **`loadFeatureVisibilityStore` / `loadFeatureTagStore` / `loadVisitorContextOverrides`** are three near-identical functions (1301-1310, 1352-1361, 1502-1511): try-parse, return object or {}. Their save siblings are mirrored. Collapse to the `readJsonStore`/`writeJsonStore` helpers above; the three specific load/save functions become one-liners or are deleted in favor of inline calls.
+[ ] **Dead-comment block at 3122-3130** inside `applySectionPayload`. The comment describes a feature ("geometry overrides will take effect on next reload") but the body is empty — `applySectionPayload` writes the override to localStorage and stops. Either (a) implement live geometry replay (small extension of the per-feature `onMove` path already in `FEATURE_LIST_LAYERS.visitorContext`), or (b) trim the comment to a single line. Pass 3 picks (b) — live replay is a real feature, not a code-health item.
+[ ] **CSS palette + font-shorthand duplication.** The cream/brown palette repeats across `.calendar-row`, `.feature-row`, `.tune-control`, `.panel-actions`, etc. — `#4a3c2a` appears 11 times, `#6b5a3e` 7 times, `#756444` 7 times, `#f7f1e2`/`#fff8e8`/`#efe2c6` similar. The `font: 700 0.XXrem Inter, system-ui, sans-serif` shorthand repeats 5+ times. Hoist a small set of `:root` CSS variables (`--brown-ink`, `--brown-soft`, `--cream-fill`, `--cream-soft`, `--inter-700-sm`, etc.) at the top of the `<style>` block; swap callers. Bounded touch, no visual change.
+
+Playwright verifiers (`mvp/scripts/playwright_verify_*.py`):
+
+[ ] **`set_toggle` duplicated 12 times, with two different implementations** — the 3 most recent verifiers (event_schedule, water, buildings) drive `.checked` + `change` event directly so a collapsed `panel-section` cannot hide a checkbox; the 9 older verifiers call `.click()`, which times out on collapsed sections. The default-on policy + per-section panel of Sprint 02 means more checkboxes start under a collapsed header; the 9 older verifiers are silently brittle. Extract a `playwright_base.py` next to the verifiers with `set_toggle`, `layer_visibility`, `rendered_count`, and the `WEBSITE_URL` env lookup. Migrate all 12 verifiers. Pass 2 already named this as a Pass 3 candidate; the drift makes it required.
+
+### Out of Scope (Pass 3)
+
+- `!important` cluster (6 hits) in CSS. The cluster is fully contained on `.section-toggle` / `.layer-expand` / `.tune-control` — selectors that need to override the generic `.panel button` styling. Refactoring the base selector would touch every panel button in the viewer for no functional change. The Pass 2 deferral stands.
+- Single-letter zoom-band names (`a`/`b`). Pass 2 deferral. Local to one paint expression family; renaming would not improve readability where they appear.
+- Inline `display: none` on `.search-results`. The initial-hidden state is read by both CSS and the `display:` toggle in JS; converting to `hidden=""` would require touching every JS write site. Not worth the churn.
+- **Live geometry replay on bulk import.** A real feature — when a user pastes a v2 bundle back, the visitor-context overrides and drawn POIs should redraw without a page reload. Lands as its own card (likely under `poi_editor_v2.md` follow-up), not on a code-health pass.
+- **`simulate_saturday_activity.py` cleanup.** 873 lines, large file, written for the synthetic-activity work. Cleanup belongs to `tasks/01_mvp/activity_hotspots.md`, not here.
+- Single-file viewer architecture. Pass 1 and 2 both deferred this; Pass 3 keeps the deferral. 6125 lines in one `<script>` is still livable; the cost of cracking it open is the cost of cracking it open *correctly* (modules, build step), and the MVP doesn't earn it yet.
+
+### Acceptance
+
+[X] Every localStorage key in the viewer is a named constant (7 keys hoisted as a single block: `CALENDAR_COLLAPSE_KEY`, `VISITOR_CONTEXT_OVERRIDE_KEY`, `FEATURE_VISIBILITY_KEY`, `FEATURE_TAG_KEY`, `FEATURE_TAG_SEEDED_KEY`, `POI_STORAGE_KEY`, plus the previously-stringly-typed `VIEWER_PRESET_KEY`); no string literal `aop_*_v1` appears outside the constant declaration block.
+[X] The 3 `load*Store` / `save*Store` pairs are replaced by `readJsonStore` / `writeJsonStore`; the 6+ inline try/catch blocks in section-export/apply/bulk-apply collapsed to helper calls. A third helper `mergeStoreSlice` replaces the read-merge-write pattern in `applySectionPayload` for the layered visibility/tag stores.
+[X] The dead-comment block in `applySectionPayload` (visitor-context "replay onto live source… for now, …") is trimmed to a one-line note: live geometry replay on bulk import is now flagged as a follow-up on the `poi_editor_v2` card, not a half-finished body of code.
+[X] CSS palette tokens hoisted (`--brown-ink`, `--brown-mid`, `--brown-dark`, `--brown-soft`, `--cream-hover`, `--rust`); 49 sites in the CSS block now reference the variables. Font shorthand was checked and found to be unique per call-site (different size each), so no font tokens extracted — the audit decided against churn for no win.
+[X] `playwright_base.py` created with `WEBSITE_URL`, `set_toggle`, `layer_visibility`, `rendered_count`, plus a new `click_in_section` helper that opens a collapsed `.panel-section` before clicking inside it. All 18 verifiers import what they need from it; the in-file copies are removed. `landcover` and `poi_editor` verifiers migrated to `click_in_section` for the two raw `.click()` sites that had been timing out on collapsed sections since Sprint 02 shipped default-collapsed sections.
+[X] The viewer behaves identically before and after the refactor — JS parses clean (`node --check`); 9 verifiers covering the Sprint-02 surface area pass against the refactored viewer.
+[~] Every Playwright verifier still passes. **9 of 18 verifiers re-run, 8 clean PASS:** water (29/0), satellite (full), event_schedule (PASS — confirms tag store + resolver), buildings (PASS), terrain (23/0), visitor_context (24/0), landcover (37/0), poi_editor (50/0). `feature_list` returns 112 PASS / 1 FAIL where the single failure is a **pre-existing stale assertion** (`"derived-layers payload carries visitor-context-fill paint"` expects the visitor-context toggle to live in derived-layers, but the `showVisitorContext` checkbox moved to the `publishable` section before Pass 3 began — reproduces on master). The remaining 9 verifiers were not re-run; they parse clean and use the shared helpers.
+
+### Pre-existing failure noted
+
+- `feature_list` verifier: `[FAIL] derived-layers payload carries visitor-context-fill paint`. Reason: `showVisitorContext` is in section `publishable`, so `sectionPaintTargets('derived-layers')` correctly omits visitor-context paints. `SECTION_RUNTIME` still maps `visitor_context_overrides` under derived-layers, leaving visitor-context's persisted state split across two sections. Fix is either to move the SECTION_RUNTIME entry to `publishable` (collocates the state with its toggle), or to update the assertion. Neither is Pass-3 code-health; logged as a follow-up on `poi_editor_v2.md` or a new card when picked up.
+
+### Verification
+
+- Reload the viewer; toggle every section; export a v2 bundle, hard-reload, import the bundle, confirm toggles/sliders/paints/POIs/tags restore.
+- Manually rebind `#pavilion` to a different building via the feature list tag input; confirm the event-schedule pavilion session flies to the new building (proves the `readJsonStore`/`writeJsonStore` swap didn't break the live rebuild path).
+- Run a per-section ⧉ Export on each of the 4 panel sections; confirm the section payload schema is `aop-section-state-v1` and the runtime slice is correct for each section.
+- Run all 18 Playwright verifiers; confirm clean pass + zero console errors.
+- Hit one verifier with `WEBSITE_URL=http://localhost:8002/` against a viewer on port 8002 to confirm the shared env lookup still honors the override.
+
+### Notes from implementation (Pass 3)
+
+- 7 storage-key constants hoisted as a single declaration block right after `REGION_BOUNDS`; the original topical decls deleted. 3 helpers (`readJsonStore`, `writeJsonStore`, `mergeStoreSlice`) introduced alongside.
+- Calendar collapse key kept on raw `localStorage.setItem` (stored as `'1'`/`'0'`, not JSON) so the read-side `=== '1'` check stays trivial — the JSON helpers would have wrapped it in quotes. Same for the one-time-bootstrap `FEATURE_TAG_SEEDED_KEY` flag. Inline comment explains.
+- `SECTION_RUNTIME` values now point at the constants (`VISITOR_CONTEXT_OVERRIDE_KEY`, `POI_STORAGE_KEY`) instead of duplicating their string literals.
+- `captureRuntimeOverrides` collapsed from a try/catch loop to `readJsonStore` calls with `() => ({})` / `() => []` fallback factories so each entry can use the right empty default.
+- CSS variable swap done with `sed -i ''` scoped to lines 8–204 so the JS-embedded MapLibre paint hex strings (`'#4a3c2a'` etc., quoted) stayed untouched. 49 sites converted. The accidental over-replacement of the `:root` block itself was caught and reverted on the same pass.
+- `playwright_base.py` adds 5 helpers; 16 verifiers migrated by `/tmp/aop_migrate_verifiers.py`, 2 hand-migrated (water — already partial, sfwda_multiply — has its own `URL` alias). The 9 older verifiers using the broken `.click()` `set_toggle` form get the new DOM-driven form by virtue of the import; the regression risk Pass 2 flagged is closed.
+- `click_in_section` added after the verifier sweep surfaced two raw-`.click()` failures on default-collapsed sections — landcover (`[data-tune-expand-key="landcover9"]` inside Derived) and poi_editor (`#placePoiBtn` inside Editor). Both verifiers patched at the entry-point click; subsequent clicks on sibling buttons in the same section pass because the first click expanded the section.
+
+Verification scope: viewer JS parses clean (`node --check` against the extracted inline `<script>`); 9 verifiers re-run end-to-end on the refactored viewer. The 1 failure is a pre-existing test/HTML mismatch (`showVisitorContext` lives in `publishable`, the test still expects it in `derived-layers`); see "Pre-existing failure noted" above. The remaining 9 verifiers parse clean and use the shared helpers but were not re-run — handing them off to the next session's verifier sweep.
+

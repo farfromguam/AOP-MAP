@@ -13,9 +13,10 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
+from playwright_base import WEBSITE_URL, layer_visibility
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8001/")
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 
 SCREENSHOTS = {
@@ -33,16 +34,6 @@ def check(label: str, ok: bool, detail: str = "") -> None:
 
 
 check.failed = False  # type: ignore[attr-defined]
-
-
-def layer_visibility(page, layer_id: str) -> str | None:
-    return page.evaluate(
-        """(id) => {
-          if (!window.map || !window.map.getLayer || !window.map.getLayer(id)) return null;
-          return window.map.getLayoutProperty(id, 'visibility') || 'visible';
-        }""",
-        layer_id,
-    )
 
 
 def paint(page, layer_id: str, prop: str):

@@ -6,15 +6,26 @@
   <title>AOP Map Viewer</title>
   <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
   <style>
+    /* Palette tokens. Cream/brown stack used by the panel chrome, calendar
+       card, feature list, and tune controls. Hoisted so the dark-text ink
+       and the rust accent aren't typed by hand at every selector. */
+    :root {
+      --brown-ink: #4a3c2a;    /* dark text on cream */
+      --brown-mid: #6b5a3e;    /* secondary text, icons, chevrons */
+      --brown-dark: #3f3122;   /* hover/active text */
+      --brown-soft: #756444;   /* tertiary labels, captions */
+      --cream-hover: #efe2c6;  /* button hover, active row */
+      --rust: #9a5a32;         /* primary accent / active border */
+    }
     body, html { margin: 0; padding: 0; height: 100%; font-family: Inter, system-ui, sans-serif; }
     #map { position: absolute; top: 0; bottom: 0; width: 100%; }
     .left-controls { position: absolute; left: 12px; top: 12px; z-index: 3; width: 320px; max-width: calc(100vw - 368px); display: grid; gap: 8px; }
     .preset-bar, .search-shell, .calendar-card { display: flex; gap: 6px; padding: 6px; border-radius: 8px; background: rgba(247,241,226,0.94); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
-    .preset-bar button { flex: 1; min-width: 0; font: 700 0.86rem Inter, system-ui, sans-serif; padding: 7px 10px; border-radius: 6px; border: 1px solid #b9aa88; background: #fff8e8; color: #4a3c2a; cursor: pointer; }
-    .preset-bar button:hover { background: #efe2c6; }
+    .preset-bar button { flex: 1; min-width: 0; font: 700 0.86rem Inter, system-ui, sans-serif; padding: 7px 10px; border-radius: 6px; border: 1px solid #b9aa88; background: #fff8e8; color: var(--brown-ink); cursor: pointer; }
+    .preset-bar button:hover { background: var(--cream-hover); }
     .preset-bar button.active { background: #8b5f38; border-color: #8b5f38; color: #fff8e8; }
     .preset-bar button.terrain-button { max-width: 58px; }
-    .zoom-bar .zoom-label { flex: 0 0 auto; align-self: center; font: 700 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.06em; color: #6b5a3e; padding: 0 4px 0 2px; }
+    .zoom-bar .zoom-label { flex: 0 0 auto; align-self: center; font: 700 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.06em; color: var(--brown-mid); padding: 0 4px 0 2px; }
     /* Sprint 02 B3: panel docks at bottom-right so the collapsed state lives
        at the bottom corner (a tray that "pops up" toward the top when
        expanded) instead of leaving the header floating mid-screen on
@@ -25,7 +36,7 @@
     .panel h1 { margin: 0 0 8px; font-size: 1rem; }
     .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; user-select: none; }
     .panel-header h1 { margin: 0; }
-    .panel-collapse { flex: 0 0 auto; margin: 0; padding: 1px 8px; font-size: 1.15rem; line-height: 1.1; color: #6b5a3e; }
+    .panel-collapse { flex: 0 0 auto; margin: 0; padding: 1px 8px; font-size: 1.15rem; line-height: 1.1; color: var(--brown-mid); }
     .panel-body { overflow: hidden; transition: max-height 0.26s ease; }
     .panel.collapsed .panel-body { max-height: 0; }
     .panel label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.94rem; }
@@ -34,7 +45,7 @@
     .panel-section { border-top: 1px solid #d8d0bd; padding-top: 8px; margin-top: 10px; }
     .panel-section:first-of-type { margin-top: 8px; }
     .section-toggle { width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin: 0 0 6px !important; padding: 3px 0 !important; border: 0 !important; background: transparent !important; color: #666; text-align: left; }
-    .section-toggle:hover { color: #3f3122; background: transparent !important; }
+    .section-toggle:hover { color: var(--brown-dark); background: transparent !important; }
     .section-label { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
     /* Section header with inline Export / Import per panel section. The chevron
        stays right-edge; the action buttons sit between label and chevron. Each
@@ -42,33 +53,33 @@
     .section-header { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 4px; margin: 0 0 6px; }
     .section-header .section-toggle { grid-column: 3; width: auto; margin: 0 !important; padding: 1px 5px !important; }
     .section-header .section-label { grid-column: 1; }
-    .section-action { background: transparent; border: 1px solid #d8d0bd; padding: 1px 6px; font: 700 0.72rem Inter, system-ui, sans-serif; line-height: 1.1; color: #6b5a3e; cursor: pointer; border-radius: 4px; }
-    .section-action:hover { background: #efe2c6; border-color: #c8b8a0; color: #3f3122; }
+    .section-action { background: transparent; border: 1px solid #d8d0bd; padding: 1px 6px; font: 700 0.72rem Inter, system-ui, sans-serif; line-height: 1.1; color: var(--brown-mid); cursor: pointer; border-radius: 4px; }
+    .section-action:hover { background: var(--cream-hover); border-color: #c8b8a0; color: var(--brown-dark); }
     .panel-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #d8d0bd; }
     .panel-actions.panel-actions-single { grid-template-columns: 1fr; }
-    .panel-actions button { font: 700 0.82rem Inter, system-ui, sans-serif; padding: 6px 8px; border-radius: 6px; border: 1px solid #b9aa88; background: #fff8e8; color: #4a3c2a; cursor: pointer; }
-    .panel-actions button:hover { background: #efe2c6; }
-    .section-chevron { color: #6b5a3e; font-size: 1.15rem; line-height: 1; }
+    .panel-actions button { font: 700 0.82rem Inter, system-ui, sans-serif; padding: 6px 8px; border-radius: 6px; border: 1px solid #b9aa88; background: #fff8e8; color: var(--brown-ink); cursor: pointer; }
+    .panel-actions button:hover { background: var(--cream-hover); }
+    .section-chevron { color: var(--brown-mid); font-size: 1.15rem; line-height: 1; }
     .panel-section.collapsed .section-content { display: none; }
     .panel button { font: inherit; padding: 4px 10px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
     .panel button:hover { background: #ececec; }
     .panel button[disabled] { opacity: 0.4; cursor: not-allowed; }
-    .panel button.active { background: #9a5a32; color: #fff; border-color: #9a5a32; }
+    .panel button.active { background: var(--rust); color: #fff; border-color: var(--rust); }
     .panel select { font: inherit; padding: 3px 5px; border-radius: 6px; border: 1px solid #bbb; }
     .layer-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; margin: 0 0 4px; padding: 3px 4px 3px 6px; border-radius: 6px; }
-    .layer-row.active { background: #f6edda; color: #3f3122; }
-    .layer-row.expanded { background: #efe2c6; color: #3f3122; }
+    .layer-row.active { background: #f6edda; color: var(--brown-dark); }
+    .layer-row.expanded { background: var(--cream-hover); color: var(--brown-dark); }
     .layer-row label { min-width: 0; margin: 0; cursor: pointer; }
-    .layer-expand { min-width: 30px; margin: 0 !important; padding: 2px 7px !important; color: #6b5a3e; }
+    .layer-expand { min-width: 30px; margin: 0 !important; padding: 2px 7px !important; color: var(--brown-mid); }
     .panel label.tune-visible { margin: 0; white-space: nowrap; }
-    .layer-editor { margin: 0 0 10px 18px; padding: 10px; border-left: 3px solid #9a5a32; border-radius: 8px; background: rgba(247,241,226,0.92); }
+    .layer-editor { margin: 0 0 10px 18px; padding: 10px; border-left: 3px solid var(--rust); border-radius: 8px; background: rgba(247,241,226,0.92); }
     .layer-editor[hidden] { display: none; }
     .layer-editor-heading { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
-    .layer-editor-heading strong { font-size: 0.9rem; color: #4a3c2a; }
+    .layer-editor-heading strong { font-size: 0.9rem; color: var(--brown-ink); }
     .tune-controls { display: grid; gap: 7px; }
     .tune-control { display: grid !important; grid-template-columns: minmax(84px, 1fr) minmax(92px, 1.35fr) 42px; gap: 8px !important; align-items: center; margin-bottom: 0 !important; }
     .tune-control[hidden] { display: none !important; }
-    .tune-label { min-width: 0; overflow-wrap: anywhere; color: #4a3c2a; font-size: 0.82rem; line-height: 1.15; }
+    .tune-label { min-width: 0; overflow-wrap: anywhere; color: var(--brown-ink); font-size: 0.82rem; line-height: 1.15; }
     .tune-control input[type="range"] { width: 100%; min-width: 0; }
     .tune-control input[type="color"] { width: 100%; height: 28px; padding: 0; border: 1px solid #bbb; border-radius: 5px; background: #fff; }
     .tune-control output { text-align: right; font-size: 0.82rem; color: #5c5548; }
@@ -78,12 +89,12 @@
     .tune-band-head output { text-align: right; font-size: 0.82rem; color: #5c5548; white-space: nowrap; }
     .dual-range { position: relative; height: 24px; }
     .dual-range .dual-track { position: absolute; top: 10px; left: 0; right: 0; height: 4px; border-radius: 2px; background: #d8cdb4; }
-    .dual-range .dual-fill { position: absolute; top: 10px; height: 4px; border-radius: 2px; background: #9a5a32; }
+    .dual-range .dual-fill { position: absolute; top: 10px; height: 4px; border-radius: 2px; background: var(--rust); }
     .dual-range input[type="range"] { position: absolute; top: 0; left: 0; width: 100%; height: 24px; margin: 0; -webkit-appearance: none; appearance: none; background: none; pointer-events: none; }
     .dual-range input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: transparent; }
     .dual-range input[type="range"]::-moz-range-track { height: 4px; background: transparent; }
-    .dual-range input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; pointer-events: auto; margin-top: -5.5px; width: 15px; height: 15px; border-radius: 50%; background: #f7f1e2; border: 2px solid #9a5a32; cursor: pointer; }
-    .dual-range input[type="range"]::-moz-range-thumb { pointer-events: auto; box-sizing: border-box; width: 15px; height: 15px; border-radius: 50%; background: #f7f1e2; border: 2px solid #9a5a32; cursor: pointer; }
+    .dual-range input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; pointer-events: auto; margin-top: -5.5px; width: 15px; height: 15px; border-radius: 50%; background: #f7f1e2; border: 2px solid var(--rust); cursor: pointer; }
+    .dual-range input[type="range"]::-moz-range-thumb { pointer-events: auto; box-sizing: border-box; width: 15px; height: 15px; border-radius: 50%; background: #f7f1e2; border: 2px solid var(--rust); cursor: pointer; }
     .tune-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
     .tune-actions button { margin-right: 0; }
     .drawer-extra-controls { display: grid; gap: 7px; margin-top: 7px; padding-top: 8px; border-top: 1px solid #d8cdb4; }
@@ -96,29 +107,29 @@
        layer stays operable. See brain/tasks/02_edit/poi_editor_v2.md. */
     .feature-list { display: grid; gap: 6px; margin-bottom: 9px; padding-bottom: 8px; border-bottom: 1px solid #d8cdb4; }
     .feature-list[hidden] { display: none; }
-    .feature-list-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 0.82rem; color: #4a3c2a; }
-    .feature-list-heading .feature-list-count { color: #756444; font-weight: 400; }
+    .feature-list-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 0.82rem; color: var(--brown-ink); }
+    .feature-list-heading .feature-list-count { color: var(--brown-soft); font-weight: 400; }
     .feature-list-group { display: grid; gap: 3px; }
-    .feature-list-group-head { display: grid; grid-template-columns: 22px 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 5px; background: rgba(247,241,226,0.7); font-size: 0.8rem; color: #4a3c2a; }
-    .feature-list-group-head .group-chevron { background: none; border: 0; padding: 0; cursor: pointer; color: #6b5a3e; font-size: 1.1rem; line-height: 1; width: 22px; height: 22px; }
-    .feature-list-group-head .group-chevron:hover { color: #3f3122; }
+    .feature-list-group-head { display: grid; grid-template-columns: 22px 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 5px; background: rgba(247,241,226,0.7); font-size: 0.8rem; color: var(--brown-ink); }
+    .feature-list-group-head .group-chevron { background: none; border: 0; padding: 0; cursor: pointer; color: var(--brown-mid); font-size: 1.1rem; line-height: 1; width: 22px; height: 22px; }
+    .feature-list-group-head .group-chevron:hover { color: var(--brown-dark); }
     .feature-list-group-head .group-name { min-width: 0; overflow-wrap: anywhere; }
-    .feature-list-group-head .group-count { color: #756444; font-size: 0.75rem; }
+    .feature-list-group-head .group-count { color: var(--brown-soft); font-size: 0.75rem; }
     .feature-list-rows { display: grid; gap: 2px; padding: 2px 0 4px 22px; }
     .feature-list-rows[hidden] { display: none; }
-    .feature-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto auto auto; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 5px; font-size: 0.82rem; color: #4a3c2a; }
+    .feature-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto auto auto; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 5px; font-size: 0.82rem; color: var(--brown-ink); }
     .feature-row:hover { background: rgba(247,235,200,0.6); }
     .feature-row .feature-name { min-width: 0; overflow-wrap: anywhere; cursor: pointer; }
-    .feature-row .feature-fly { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: #6b5a3e; font-size: 0.78rem; border-radius: 4px; }
-    .feature-row .feature-fly:hover { background: #f1e6cf; color: #3f3122; }
-    .feature-row .feature-move { background: none; border: 0; padding: 1px 5px; cursor: grab; color: #6b5a3e; font-size: 0.78rem; border-radius: 4px; }
-    .feature-row .feature-move:hover { background: #f1e6cf; color: #3f3122; }
-    .feature-row .feature-copy { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: #6b5a3e; font-size: 0.78rem; border-radius: 4px; }
-    .feature-row .feature-copy:hover { background: #f1e6cf; color: #3f3122; }
+    .feature-row .feature-fly { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; }
+    .feature-row .feature-fly:hover { background: #f1e6cf; color: var(--brown-dark); }
+    .feature-row .feature-move { background: none; border: 0; padding: 1px 5px; cursor: grab; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; }
+    .feature-row .feature-move:hover { background: #f1e6cf; color: var(--brown-dark); }
+    .feature-row .feature-copy { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; }
+    .feature-row .feature-copy:hover { background: #f1e6cf; color: var(--brown-dark); }
     /* Tag input on taggable rows (buildings, drawn POIs). Binds a #tag to the
        feature so the event-schedule JSON can omit coordinates for that tag.
        Card: brain/tasks/02_edit/named_feature_tagging.md. */
-    .feature-row .feature-tag { width: 84px; padding: 1px 4px; font-size: 0.74rem; border: 1px solid #c8b88d; border-radius: 4px; background: #fffcef; color: #4a3c2a; }
+    .feature-row .feature-tag { width: 84px; padding: 1px 4px; font-size: 0.74rem; border: 1px solid #c8b88d; border-radius: 4px; background: #fffcef; color: var(--brown-ink); }
     .feature-row .feature-tag:focus { outline: none; border-color: #8b5f38; background: #fff; }
     .feature-row .feature-tag.bound { background: #f3e6c4; border-color: #b08a4a; }
     .feature-row.move-target { background: #f7e3b5; }
@@ -135,9 +146,9 @@
     /* Move-mode banner pinned to the top of the feature list panel while a
        feature is staged for repositioning. Keeps the "click the map to place"
        affordance visible no matter how long the list is. */
-    .feature-list-move-banner { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 6px; background: #f7e3b5; border: 1px solid #c8a463; color: #4a3c2a; font-size: 0.82rem; }
-    .feature-list-move-banner .move-cancel { background: #fff8e8; border: 1px solid #b9aa88; padding: 2px 8px; border-radius: 5px; cursor: pointer; font-size: 0.78rem; color: #4a3c2a; }
-    .feature-list-move-banner .move-cancel:hover { background: #efe2c6; }
+    .feature-list-move-banner { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 6px; background: #f7e3b5; border: 1px solid #c8a463; color: var(--brown-ink); font-size: 0.82rem; }
+    .feature-list-move-banner .move-cancel { background: #fff8e8; border: 1px solid #b9aa88; padding: 2px 8px; border-radius: 5px; cursor: pointer; font-size: 0.78rem; color: var(--brown-ink); }
+    .feature-list-move-banner .move-cancel:hover { background: var(--cream-hover); }
     #presetStatus { min-height: 1.2em; }
     .editor-row { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; }
     .editor-row button { flex: 1; margin-right: 0; }
@@ -151,29 +162,29 @@
     .search input:focus { outline: 2px solid #9a8a5a; border-color: #9a8a5a; }
     /* Magnifier glyph anchored at the left of #searchInput. pointer-events:none
        lets the click pass through to the input so focus still works. */
-    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #756444; pointer-events: none; }
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--brown-soft); pointer-events: none; }
     .search-results { position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 240px; overflow-y: auto; display: none; z-index: 5; }
     .search-item { display: flex; justify-content: space-between; gap: 10px; padding: 6px 9px; cursor: pointer; font-size: 0.9rem; }
     .search-item:hover, .search-item.active { background: #e8dcc3; }
     .search-kind { color: #888; font-size: 0.78rem; }
     .search-empty { padding: 6px 9px; color: #999; font-size: 0.88rem; }
     .calendar-card { display: block; padding: 0; overflow: hidden; }
-    .calendar-toggle { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; margin: 0; padding: 8px 10px; border: 0; background: transparent; color: #4a3c2a; cursor: pointer; text-align: left; }
-    .calendar-toggle:hover { background: #efe2c6; }
+    .calendar-toggle { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; margin: 0; padding: 8px 10px; border: 0; background: transparent; color: var(--brown-ink); cursor: pointer; text-align: left; }
+    .calendar-toggle:hover { background: var(--cream-hover); }
     .calendar-title { display: block; font: 800 0.78rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
-    .calendar-range { display: block; margin-top: 1px; font-size: 0.76rem; color: #756444; }
-    .calendar-chevron { color: #6b5a3e; font-size: 1.15rem; line-height: 1; }
+    .calendar-range { display: block; margin-top: 1px; font-size: 0.76rem; color: var(--brown-soft); }
+    .calendar-chevron { color: var(--brown-mid); font-size: 1.15rem; line-height: 1; }
     .calendar-body { max-height: 240px; overflow-y: auto; padding: 0 8px 8px; opacity: 1; transition: max-height 0.24s ease, opacity 0.2s ease, padding 0.2s ease; }
     .calendar-card.collapsed .calendar-body { max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; }
     .calendar-days { list-style: none; display: grid; gap: 4px; margin: 0; padding: 0; }
-    .calendar-days li { margin: 0; padding: 0; border-top: 1px solid #d8cdb4; color: #4a3c2a; }
-    .calendar-row { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 8px; margin: 0; padding: 7px 8px; border: 0; border-radius: 0; background: transparent; color: #4a3c2a; cursor: pointer; text-align: left; }
-    .calendar-row:hover, .calendar-row.active { background: #efe2c6; }
-    .calendar-day { padding-top: 2px; font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; color: #6b5a3e; }
-    .calendar-time { display: block; min-width: 0; font: 700 0.74rem Inter, system-ui, sans-serif; line-height: 1.15; color: #756444; overflow-wrap: anywhere; }
+    .calendar-days li { margin: 0; padding: 0; border-top: 1px solid #d8cdb4; color: var(--brown-ink); }
+    .calendar-row { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 8px; margin: 0; padding: 7px 8px; border: 0; border-radius: 0; background: transparent; color: var(--brown-ink); cursor: pointer; text-align: left; }
+    .calendar-row:hover, .calendar-row.active { background: var(--cream-hover); }
+    .calendar-day { padding-top: 2px; font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; color: var(--brown-mid); }
+    .calendar-time { display: block; min-width: 0; font: 700 0.74rem Inter, system-ui, sans-serif; line-height: 1.15; color: var(--brown-soft); overflow-wrap: anywhere; }
     .calendar-name { display: block; margin-top: 1px; font-size: 0.88rem; line-height: 1.18; overflow-wrap: anywhere; }
-    .calendar-location { display: block; margin-top: 2px; font-size: 0.74rem; line-height: 1.15; color: #756444; overflow-wrap: anywhere; }
-    .calendar-empty { padding: 8px; font-size: 0.86rem; color: #756444; }
+    .calendar-location { display: block; margin-top: 2px; font-size: 0.74rem; line-height: 1.15; color: var(--brown-soft); overflow-wrap: anywhere; }
+    .calendar-empty { padding: 8px; font-size: 0.86rem; color: var(--brown-soft); }
     .align-handle { background: #ff3366; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #000, 0 2px 6px rgba(0,0,0,0.4); cursor: grab; }
     .align-handle:active { cursor: grabbing; filter: brightness(1.15); }
     .align-handle-corner { width: 18px; height: 18px; background: #ff3366; }
@@ -397,6 +408,57 @@
     // stops users panning or zooming out past where there is any map data.
     const REGION_BOUNDS = [[-85.782935283, 35.067164188], [-85.717154097, 35.117928496]];
 
+    // Every localStorage key the viewer owns. Centralized so a typo on a
+    // string literal cannot silently lose user state (the silent-drop class
+    // northstar/source_register.md warns about, applied to local persistence).
+    const CALENDAR_COLLAPSE_KEY = 'aop_calendar_collapsed_v1';
+    const VISITOR_CONTEXT_OVERRIDE_KEY = 'aop_visitor_context_overrides_v1';
+    const FEATURE_VISIBILITY_KEY = 'aop_feature_visibility_v1';
+    const FEATURE_TAG_KEY = 'aop_feature_tags_v1';
+    const FEATURE_TAG_SEEDED_KEY = 'aop_feature_tags_seeded_v1';
+    const POI_STORAGE_KEY = 'aop_editor_pois_v1';
+    const VIEWER_PRESET_KEY = 'aop_viewer_preset_settings_v1';
+
+    // Shared JSON-store helpers — every persisted feature in the viewer
+    // (calendar collapse, visitor-context overrides, per-feature visibility,
+    // tag bindings, drawn POIs, preset settings) reads and writes through
+    // these. Quiet on a localStorage-unavailable browser; logs on a parse
+    // failure so a corrupt store does not vanish without notice.
+    function readJsonStore(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw == null) return typeof fallback === 'function' ? fallback() : fallback;
+        const parsed = JSON.parse(raw);
+        return parsed == null ? (typeof fallback === 'function' ? fallback() : fallback) : parsed;
+      } catch (err) {
+        console.warn(`[${key}] unreadable, resetting`, err);
+        return typeof fallback === 'function' ? fallback() : fallback;
+      }
+    }
+
+    function writeJsonStore(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+        return true;
+      } catch (err) {
+        console.warn(`[${key}] could not persist`, err);
+        return false;
+      }
+    }
+
+    // Read a layered store (a flat object keyed by layerKey), merge a subset
+    // of layer slices in, and write it back. Used by section-export / -apply
+    // for `aop_feature_visibility_v1` and `aop_feature_tags_v1`, which both
+    // bucket data by consumer layer.
+    function mergeStoreSlice(key, slice) {
+      if (!slice || typeof slice !== 'object') return;
+      const all = readJsonStore(key, () => ({}));
+      for (const [layerKey, layerSlice] of Object.entries(slice)) {
+        if (layerSlice) all[layerKey] = layerSlice;
+      }
+      writeJsonStore(key, all);
+    }
+
     const map = new maplibregl.Map({
       container: 'map',
       style: {
@@ -519,7 +581,7 @@
     // left-controls strip does not eat the visible map on mobile / tablet.
     // User's manual choice survives across reloads via localStorage so a
     // tablet driver who wants the calendar expanded stays expanded.
-    const CALENDAR_COLLAPSE_KEY = 'aop_calendar_collapsed_v1';
+    // Storage key declared at the top of the script with the others.
     const NARROW_BREAKPOINT_PX = 760; // mirrors @media (max-width: 760px)
 
     function setCalendarCollapsed(collapsed, persist = true) {
@@ -527,6 +589,8 @@
       calendarToggle.setAttribute('aria-expanded', String(!collapsed));
       calendarToggle.title = collapsed ? 'Expand calendar' : 'Collapse calendar';
       calendarChevron.textContent = collapsed ? '▾' : '▴';
+      // Stored as a raw '1'/'0' (not JSON) so the read-side `stored === '1'`
+      // check stays trivial; the JSON-store helpers would wrap it in quotes.
       if (persist) {
         try { localStorage.setItem(CALENDAR_COLLAPSE_KEY, collapsed ? '1' : '0'); }
         catch (_) { /* localStorage unavailable — ignore */ }
@@ -1294,19 +1358,13 @@
     // When the user moves one via the feature list panel we record the new
     // geometry here, keyed by `name`, and replay it on the next page load.
     // Editing the source geojson would invalidate stale overrides for that
-    // entry — the user re-positions and it overwrites cleanly.
-    const VISITOR_CONTEXT_OVERRIDE_KEY = 'aop_visitor_context_overrides_v1';
+    // entry — the user re-positions and it overwrites cleanly. Storage key
+    // declared at the top of the script with the others.
     let visitorContextData = null;
 
     function loadVisitorContextOverrides() {
-      try {
-        const raw = localStorage.getItem(VISITOR_CONTEXT_OVERRIDE_KEY);
-        const parsed = raw ? JSON.parse(raw) : {};
-        return parsed && typeof parsed === 'object' ? parsed : {};
-      } catch (err) {
-        console.warn('Visitor-context overrides unreadable; resetting', err);
-        return {};
-      }
+      const parsed = readJsonStore(VISITOR_CONTEXT_OVERRIDE_KEY, () => ({}));
+      return parsed && typeof parsed === 'object' ? parsed : {};
     }
 
     function saveVisitorContextOverride(feature) {
@@ -1316,11 +1374,7 @@
         geometry: JSON.parse(JSON.stringify(feature.geometry)),
         updated: new Date().toISOString()
       };
-      try {
-        localStorage.setItem(VISITOR_CONTEXT_OVERRIDE_KEY, JSON.stringify(store));
-      } catch (err) {
-        console.warn('Could not persist visitor-context override', err);
-      }
+      writeJsonStore(VISITOR_CONTEXT_OVERRIDE_KEY, store);
     }
 
     function applyVisitorContextOverrides(data) {
@@ -1335,9 +1389,10 @@
       return data;
     }
 
-    const FEATURE_VISIBILITY_KEY = 'aop_feature_visibility_v1';
     // Per-layer runtime state: data, base filters captured at addLayer time,
     // the resolved feature → group bucket, expanded/collapsed UI state.
+    // Storage key for the persisted visibility set lives at the top of the
+    // script with the others.
     const featureListRuntime = {};
     // Active move-mode target. While set, the next map click commits the
     // staged feature to the clicked lngLat; Esc or the panel's Cancel button
@@ -1350,22 +1405,12 @@
     const LONG_PRESS_MS = 450;
 
     function loadFeatureVisibilityStore() {
-      try {
-        const raw = localStorage.getItem(FEATURE_VISIBILITY_KEY);
-        const parsed = raw ? JSON.parse(raw) : {};
-        return parsed && typeof parsed === 'object' ? parsed : {};
-      } catch (err) {
-        console.warn('Feature visibility store unreadable; resetting', err);
-        return {};
-      }
+      const parsed = readJsonStore(FEATURE_VISIBILITY_KEY, () => ({}));
+      return parsed && typeof parsed === 'object' ? parsed : {};
     }
 
     function saveFeatureVisibilityStore(store) {
-      try {
-        localStorage.setItem(FEATURE_VISIBILITY_KEY, JSON.stringify(store));
-      } catch (err) {
-        console.warn('Could not persist feature visibility', err);
-      }
+      writeJsonStore(FEATURE_VISIBILITY_KEY, store);
     }
 
     // Map a feature to its group inside a layer's `groups` array — first match
@@ -1488,34 +1533,19 @@
     // #tag (e.g. #pavilion). The event-schedule resolver consumes the same
     // tag to look up coordinates, so the schedule JSON can omit lat/long for
     // any location whose key matches a binding. Card:
-    // brain/tasks/02_edit/named_feature_tagging.md.
-    const FEATURE_TAG_KEY = 'aop_feature_tags_v1';
-    // One-time seed flag: the 1010 building gets #pavilion bound on the
-    // very first load so the schedule's pavilion entry works out of the box
-    // with no coordinates. Subsequent loads respect whatever the user has
-    // done — including unbinding the seed.
-    const FEATURE_TAG_SEEDED_KEY = 'aop_feature_tags_seeded_v1';
+    // brain/tasks/02_edit/named_feature_tagging.md. Storage keys (the tag
+    // store and the one-time seed flag) live at the top of the script.
     // Inverted lookup, rebuilt whenever a layer registers or a tag changes.
     // Shape: Map<"#tag", { layerKey, featureId, coordinates }>.
     const tagToFeature = new Map();
 
     function loadFeatureTagStore() {
-      try {
-        const raw = localStorage.getItem(FEATURE_TAG_KEY);
-        const parsed = raw ? JSON.parse(raw) : {};
-        return parsed && typeof parsed === 'object' ? parsed : {};
-      } catch (err) {
-        console.warn('Feature tag store unreadable; resetting', err);
-        return {};
-      }
+      const parsed = readJsonStore(FEATURE_TAG_KEY, () => ({}));
+      return parsed && typeof parsed === 'object' ? parsed : {};
     }
 
     function saveFeatureTagStore(store) {
-      try {
-        localStorage.setItem(FEATURE_TAG_KEY, JSON.stringify(store));
-      } catch (err) {
-        console.warn('Could not persist feature tags', err);
-      }
+      writeJsonStore(FEATURE_TAG_KEY, store);
     }
 
     // Normalize input → `#tag` lowercase, no internal whitespace, leading #
@@ -2399,23 +2429,18 @@
     }
 
     function loadSavedPresetStates() {
-      try {
-        const parsed = JSON.parse(localStorage.getItem('aop_viewer_preset_settings_v1') || '{}');
-        return parsed && typeof parsed.presets === 'object' ? parsed.presets : {};
-      } catch (error) {
-        console.warn('Preset settings failed to load:', error);
-        return {};
-      }
+      const parsed = readJsonStore(VIEWER_PRESET_KEY, () => ({}));
+      return parsed && typeof parsed.presets === 'object' ? parsed.presets : {};
     }
 
     let savedPresetStates = loadSavedPresetStates();
 
     function savePresetStates() {
-      localStorage.setItem('aop_viewer_preset_settings_v1', JSON.stringify({
+      writeJsonStore(VIEWER_PRESET_KEY, {
         schema: 'aop-viewer-preset-settings-v1',
         saved_at: new Date().toISOString(),
         presets: savedPresetStates
-      }));
+      });
     }
 
     function presetState(presetId) {
@@ -2900,24 +2925,16 @@
     // system into a single bag. Bumped the export schema to v2 the moment
     // these landed — a v1 export would silently lose moves and drawings, and
     // a re-import would snap everything back to the source-file defaults.
-    // Read each key behind a try/catch so a single corrupted entry can't
-    // cost you the rest of the snapshot.
     function captureRuntimeOverrides() {
       const overrides = {};
       const stores = [
-        ['visitor_context_overrides', 'aop_visitor_context_overrides_v1', {}],
-        ['editor_pois', 'aop_editor_pois_v1', []],
-        ['feature_visibility', 'aop_feature_visibility_v1', {}],
-        ['feature_tags', 'aop_feature_tags_v1', {}]
+        ['visitor_context_overrides', VISITOR_CONTEXT_OVERRIDE_KEY, () => ({})],
+        ['editor_pois', POI_STORAGE_KEY, () => []],
+        ['feature_visibility', FEATURE_VISIBILITY_KEY, () => ({})],
+        ['feature_tags', FEATURE_TAG_KEY, () => ({})]
       ];
       for (const [outKey, storageKey, fallback] of stores) {
-        try {
-          const raw = localStorage.getItem(storageKey);
-          overrides[outKey] = raw ? JSON.parse(raw) : fallback;
-        } catch (err) {
-          console.warn(`Could not read ${storageKey} for export:`, err);
-          overrides[outKey] = fallback;
-        }
+        overrides[outKey] = readJsonStore(storageKey, fallback);
       }
       return overrides;
     }
@@ -2961,7 +2978,7 @@
     // section have no runtime state — only toggles / paints.
     const SECTION_RUNTIME = {
       'derived-layers': {
-        visitorContextOverrides: 'aop_visitor_context_overrides_v1',
+        visitorContextOverrides: VISITOR_CONTEXT_OVERRIDE_KEY,
         featureVisibilityLayers: ['visitorContext']
       },
       'source-layers': {
@@ -2970,7 +2987,7 @@
         featureTagLayers: ['buildings']
       },
       editor: {
-        editorPois: 'aop_editor_pois_v1',
+        editorPois: POI_STORAGE_KEY,
         featureVisibilityLayers: ['editorPois'],
         // Drawn POIs are taggable: a #tag binding rides along with the POI.
         featureTagLayers: ['editorPois']
@@ -3043,38 +3060,26 @@
       const paints = capturePaintStateFor(sectionPaintTargets(sectionId));
       const runtime = {};
       if (runtimeSpec.visitorContextOverrides) {
-        try {
-          const raw = localStorage.getItem(runtimeSpec.visitorContextOverrides);
-          runtime.visitor_context_overrides = raw ? JSON.parse(raw) : {};
-        } catch (err) { runtime.visitor_context_overrides = {}; }
+        runtime.visitor_context_overrides = readJsonStore(runtimeSpec.visitorContextOverrides, () => ({}));
       }
       if (runtimeSpec.editorPois) {
-        try {
-          const raw = localStorage.getItem(runtimeSpec.editorPois);
-          runtime.editor_pois = raw ? JSON.parse(raw) : [];
-        } catch (err) { runtime.editor_pois = []; }
+        runtime.editor_pois = readJsonStore(runtimeSpec.editorPois, () => []);
       }
       if (runtimeSpec.featureVisibilityLayers && runtimeSpec.featureVisibilityLayers.length) {
-        try {
-          const raw = localStorage.getItem('aop_feature_visibility_v1');
-          const all = raw ? JSON.parse(raw) : {};
-          const slice = {};
-          for (const key of runtimeSpec.featureVisibilityLayers) {
-            if (all[key]) slice[key] = all[key];
-          }
-          runtime.feature_visibility = slice;
-        } catch (err) { runtime.feature_visibility = {}; }
+        const all = readJsonStore(FEATURE_VISIBILITY_KEY, () => ({}));
+        const slice = {};
+        for (const key of runtimeSpec.featureVisibilityLayers) {
+          if (all[key]) slice[key] = all[key];
+        }
+        runtime.feature_visibility = slice;
       }
       if (runtimeSpec.featureTagLayers && runtimeSpec.featureTagLayers.length) {
-        try {
-          const raw = localStorage.getItem(FEATURE_TAG_KEY);
-          const all = raw ? JSON.parse(raw) : {};
-          const slice = {};
-          for (const key of runtimeSpec.featureTagLayers) {
-            if (all[key]) slice[key] = all[key];
-          }
-          runtime.feature_tags = slice;
-        } catch (err) { runtime.feature_tags = {}; }
+        const all = readJsonStore(FEATURE_TAG_KEY, () => ({}));
+        const slice = {};
+        for (const key of runtimeSpec.featureTagLayers) {
+          if (all[key]) slice[key] = all[key];
+        }
+        runtime.feature_tags = slice;
       }
       return {
         schema: 'aop-section-state-v1',
@@ -3114,54 +3119,38 @@
       if (payload.paints) applyPaintState(payload.paints);
       const runtime = payload.runtime || {};
       const spec = SECTION_RUNTIME[sectionId];
+      // Visitor-context geometry overrides write through to localStorage; the
+      // moved geometry takes effect on next page reload (the live source is
+      // not re-rendered here — a future live-replay extension lives on the
+      // poi_editor_v2 follow-up card).
       if (spec.visitorContextOverrides && runtime.visitor_context_overrides) {
-        try {
-          localStorage.setItem(spec.visitorContextOverrides,
-            JSON.stringify(runtime.visitor_context_overrides));
-        } catch (err) { console.warn('Could not write visitor-context overrides', err); }
-        // Replay onto the live source so the moved geometry shows immediately.
-        if (visitorContextData) {
-          // Reset to source then re-apply, otherwise prior overrides linger.
-          // Simpler path: reload page. For an in-place apply, we'd need to
-          // re-fetch the source, but the file is cached so re-fetching is
-          // cheap when needed. For now, the toggles/paints update live;
-          // geometry overrides will take effect on next reload. The status
-          // message tells the user.
-        }
+        writeJsonStore(spec.visitorContextOverrides, runtime.visitor_context_overrides);
       }
       if (spec.editorPois && Array.isArray(runtime.editor_pois)) {
-        try {
-          localStorage.setItem(spec.editorPois, JSON.stringify(runtime.editor_pois));
-          // Replay into the live editor source so the drawn POIs appear now.
-          if (typeof editorPois !== 'undefined') {
-            editorPois.length = 0;
-            for (const f of runtime.editor_pois) editorPois.push(f);
-            saveEditorPois();
-            refreshEditorSource();
-          }
-        } catch (err) { console.warn('Could not write editor POIs', err); }
+        writeJsonStore(spec.editorPois, runtime.editor_pois);
+        // Replay into the live editor source so the drawn POIs appear now.
+        if (typeof editorPois !== 'undefined') {
+          editorPois.length = 0;
+          for (const f of runtime.editor_pois) editorPois.push(f);
+          saveEditorPois();
+          refreshEditorSource();
+        }
       }
       if (spec.featureVisibilityLayers && runtime.feature_visibility) {
-        try {
-          const raw = localStorage.getItem('aop_feature_visibility_v1');
-          const all = raw ? JSON.parse(raw) : {};
-          for (const key of spec.featureVisibilityLayers) {
-            if (runtime.feature_visibility[key]) all[key] = runtime.feature_visibility[key];
-          }
-          localStorage.setItem('aop_feature_visibility_v1', JSON.stringify(all));
-        } catch (err) { console.warn('Could not write feature visibility', err); }
+        const slice = {};
+        for (const key of spec.featureVisibilityLayers) {
+          if (runtime.feature_visibility[key]) slice[key] = runtime.feature_visibility[key];
+        }
+        mergeStoreSlice(FEATURE_VISIBILITY_KEY, slice);
       }
       if (spec.featureTagLayers && runtime.feature_tags) {
-        try {
-          const raw = localStorage.getItem(FEATURE_TAG_KEY);
-          const all = raw ? JSON.parse(raw) : {};
-          for (const key of spec.featureTagLayers) {
-            if (runtime.feature_tags[key]) all[key] = runtime.feature_tags[key];
-          }
-          localStorage.setItem(FEATURE_TAG_KEY, JSON.stringify(all));
-          rebuildTagLookup();
-          rebuildEventScheduleData();
-        } catch (err) { console.warn('Could not write feature tags', err); }
+        const slice = {};
+        for (const key of spec.featureTagLayers) {
+          if (runtime.feature_tags[key]) slice[key] = runtime.feature_tags[key];
+        }
+        mergeStoreSlice(FEATURE_TAG_KEY, slice);
+        rebuildTagLookup();
+        rebuildEventScheduleData();
       }
       return sectionId;
     }
@@ -3187,32 +3176,25 @@
       }
       if (state.paints) applyPaintState(state.paints);
       const overrides = payload.runtime_overrides || {};
-      try {
-        if (overrides.visitor_context_overrides) {
-          localStorage.setItem('aop_visitor_context_overrides_v1',
-            JSON.stringify(overrides.visitor_context_overrides));
+      if (overrides.visitor_context_overrides) {
+        writeJsonStore(VISITOR_CONTEXT_OVERRIDE_KEY, overrides.visitor_context_overrides);
+      }
+      if (Array.isArray(overrides.editor_pois)) {
+        writeJsonStore(POI_STORAGE_KEY, overrides.editor_pois);
+        if (typeof editorPois !== 'undefined') {
+          editorPois.length = 0;
+          for (const f of overrides.editor_pois) editorPois.push(f);
+          saveEditorPois();
+          refreshEditorSource();
         }
-        if (Array.isArray(overrides.editor_pois)) {
-          localStorage.setItem('aop_editor_pois_v1', JSON.stringify(overrides.editor_pois));
-          if (typeof editorPois !== 'undefined') {
-            editorPois.length = 0;
-            for (const f of overrides.editor_pois) editorPois.push(f);
-            saveEditorPois();
-            refreshEditorSource();
-          }
-        }
-        if (overrides.feature_visibility) {
-          localStorage.setItem('aop_feature_visibility_v1',
-            JSON.stringify(overrides.feature_visibility));
-        }
-        if (overrides.feature_tags) {
-          localStorage.setItem(FEATURE_TAG_KEY,
-            JSON.stringify(overrides.feature_tags));
-          rebuildTagLookup();
-          rebuildEventScheduleData();
-        }
-      } catch (err) {
-        console.warn('Could not persist runtime_overrides on import:', err);
+      }
+      if (overrides.feature_visibility) {
+        writeJsonStore(FEATURE_VISIBILITY_KEY, overrides.feature_visibility);
+      }
+      if (overrides.feature_tags) {
+        writeJsonStore(FEATURE_TAG_KEY, overrides.feature_tags);
+        rebuildTagLookup();
+        rebuildEventScheduleData();
       }
     }
 
@@ -3400,6 +3382,27 @@
       return clean.length <= 3 ? clean : clean.slice(0, 3);
     }
 
+    function formatEventStartLocal(start) {
+      const text = String(start || '').trim();
+      if (!text) return '';
+      const match = /^(\d{1,2}):(\d{2})$/.exec(text);
+      if (!match) return text;
+      const hour = Number(match[1]);
+      const minute = Number(match[2]);
+      if (!Number.isFinite(hour) || hour < 0 || hour > 23 || !Number.isFinite(minute) || minute < 0 || minute > 59) return text;
+      const period = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = ((hour + 11) % 12) + 1;
+      const minuteStr = String(minute).padStart(2, '0');
+      return `${hour12}:${minuteStr} ${period}`;
+    }
+
+    function composeEventWindowLabel(start, timeLabel) {
+      const clock = formatEventStartLocal(start);
+      const label = String(timeLabel || '').trim();
+      if (clock && label) return `${clock} · ${label}`;
+      return clock || label;
+    }
+
     function eventRouteCoordinates(session) {
       const tags = Array.isArray(session.route_tags) ? session.route_tags : [];
       const coords = [];
@@ -3451,7 +3454,9 @@
           sort_order: Number(session.sort_order || 0),
           day: session.date_label || '',
           day_short: session.day_short || eventDayShort(session.date_label),
-          window: session.time_label || '',
+          start_local: session.start_local || '',
+          time_label: session.time_label || '',
+          window: composeEventWindowLabel(session.start_local, session.time_label),
           name: session.title || '',
           title: session.title || '',
           location_tag: tag,
@@ -3742,7 +3747,7 @@
     // Terra Draw supplies the click-to-place interaction; committed POIs live
     // in our own `editor-poi` GeoJSON source so they carry category styling
     // and labels, and survive reloads via localStorage (works offline).
-    const POI_STORAGE_KEY = 'aop_editor_pois_v1';
+    // Storage key declared at the top of the script with the others.
     const POI_COLORS = {
       'Pavilion': '#c47a44',
       'Building': '#a07442',
@@ -3766,21 +3771,12 @@
     let draw = null;
 
     function loadEditorPois() {
-      try {
-        const parsed = JSON.parse(localStorage.getItem(POI_STORAGE_KEY) || '[]');
-        editorPois = Array.isArray(parsed) ? parsed : [];
-      } catch (error) {
-        console.warn('Drawn POIs failed to load from storage:', error);
-        editorPois = [];
-      }
+      const parsed = readJsonStore(POI_STORAGE_KEY, () => []);
+      editorPois = Array.isArray(parsed) ? parsed : [];
     }
 
     function saveEditorPois() {
-      try {
-        localStorage.setItem(POI_STORAGE_KEY, JSON.stringify(editorPois));
-      } catch (error) {
-        console.warn('Drawn POIs failed to save to storage:', error);
-      }
+      writeJsonStore(POI_STORAGE_KEY, editorPois);
     }
 
     function editorFeatureCollection() {

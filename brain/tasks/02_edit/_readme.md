@@ -95,7 +95,7 @@ Bucket **I** is deferred to `../03_deferred/offline_pwa.md`; it re-enters the ac
 ## Cards to spawn (in this sprint)
 
 - `02_edit/views_and_defaults.md` — Buckets A1, A2, "trails by default." **Written + shipped 2026-05-23.** Park/fresh load now shows water + in-park buildings, Topo shows buildings too, Trace unchanged. Bucket E (buildings default-on) closes through this card.
-- `02_edit/left_hot_button.md` — A3 (or fold into views card once personas are defined).
+- `02_edit/left_hot_button.md` — A3. **Written 2026-05-23, build not started.** Spec locked: three states (hot-now ≤30 min, coming-up across days, heatmap-fallback). Ready to pick up after H closes.
 - `02_edit/poi_editor_v2.md` — Bucket G. **Written + shipped 2026-05-23.** Three consumers wired (POIs, buildings, cemeteries) plus the visitor-context drag consumer that closes Bucket B's positionable-callouts item.
 - `02_edit/viewer_chrome_polish.md` — Bucket B. **Written 2026-05-23.** B1 (calendar popup scroll-into-view) in progress; B6 (region callouts positionable) closed via `poi_editor_v2.md`.
 - `02_edit/search_tags.md` — Bucket C. **Written + shipped 2026-05-23.**

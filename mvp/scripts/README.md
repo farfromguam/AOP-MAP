@@ -86,6 +86,19 @@ python3 mvp/scripts/playwright_verify_activity_hotspots.py
 Playwright verifier scripts default to `http://localhost:8001/`. If that port is
 busy, start the viewer on another open port and pass `WEBSITE_URL=...`.
 
+Shared helpers live in `playwright_base.py` next to the verifiers. A new
+verifier imports what it needs:
+
+```python
+from playwright_base import WEBSITE_URL, set_toggle, layer_visibility, rendered_count
+```
+
+`set_toggle` drives `.checked` + a bubbling `change` event so a checkbox
+inside a collapsed `.panel-section` still flips correctly (a `.click()`
+call would time out on the hidden element). Never inline copies of these
+helpers — the Sprint 02 viewer grew enough collapsed panels that two
+divergent `set_toggle` forms became a real regression risk.
+
 ## Simulated Saturday activity
 
 Generate a deterministic multi-user Saturday-afternoon test set, then extract a

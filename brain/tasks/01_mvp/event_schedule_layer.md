@@ -29,7 +29,15 @@ facility use.
     `#registration`, `#observed-trailhead`, `#north-technical`, and
     `#photo-waypoint`.
   - `sessions`: schedule rows with `date_label`, `time_label`, `title`,
-    `location_tag`, and optional `route_tags`.
+    `location_tag`, and optional `route_tags`. As of 2026-05-24 each session
+    also carries `start_local` (24h `HH:MM` local time). The viewer formats
+    it as 12-hour clock time and composes the calendar row's `window` as
+    `"5:00 PM · Evening"` (clock · day-part). `time_label` stays as the
+    day-part vocabulary the sister-event research produced; `start_local`
+    unblocks the Sprint 02 Bucket A3 left-hot-button "imminent ≤ 30 min"
+    rule (see `../02_edit/left_hot_button.md`). Helpers:
+    `formatEventStartLocal()` + `composeEventWindowLabel()` in
+    `website/index.html` next to `eventScheduleToGeojson`.
   - aliases: `#registration` resolves to `#pavilion`; `#pavillion` is accepted
     as a misspelling alias for `#pavilion`.
 - A location's `coordinates` field is optional as of Sprint 02 Bucket D

@@ -3,7 +3,11 @@
     "allow": [
       "Bash(python3 mvp/scripts/playwright_verify_presets.py)",
       "Bash(python3 mvp/scripts/playwright_verify_feature_list.py)",
-      "Bash(python3 mvp/scripts/playwright_verify_water.py)"
+      "Bash(python3 mvp/scripts/playwright_verify_water.py)",
+      "Bash(lsof -i :8001 -sTCP:LISTEN)",
+      "Bash(lsof -i :8000 -sTCP:LISTEN)",
+      "Bash(python3 -c \"import playwright; print\\('playwright ok:', playwright.__file__\\)\")",
+      "Bash(python3 -m http.server 8001)"
     ]
   }
 }
