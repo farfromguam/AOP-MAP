@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Left rail v4 — dynamic / dimensional</title>
+  <style>
+    :root {
+      --brown-ink: #4a3c2a;
+      --brown-mid: #6b5a3e;
+      --brown-dark: #3f3122;
+      --brown-soft: #756444;
+      --cream-hover: #efe2c6;
+      --cream-surface: rgba(250, 246, 235, 0.96);
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --control-border: #b9aa88;
+      --moss: #5f7157;
+      --moss-dark: #384833;
+      --moss-soft: #e3ebdc;
+      --rust: #9a5a32;
+
+      /* motion tokens — the spring lives here so the whole rail moves as one
+         instrument. cubic-bezier with overshoot gives the icon a tactile
+         "tab pulled from a manilla folder" feeling. */
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --t-fast: 0.18s;
+      --t-mid:  0.24s;
+      --t-slow: 0.32s;
+    }
+    * { box-sizing: border-box; }
+    body, html { margin: 0; padding: 0; height: 100%; font-family: Inter, system-ui, sans-serif; color: var(--brown-ink); }
+
+    /* ── Faux map background ──────────────────────────────────────────────── */
+    .map {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 70% 40%, rgba(95,113,87,0.42), transparent 70%),
+        radial-gradient(ellipse 45% 35% at 30% 70%, rgba(154,90,50,0.22), transparent 70%),
+        repeating-linear-gradient(120deg, rgba(74,60,42,0.05) 0 1px, transparent 1px 22px),
+        repeating-linear-gradient(60deg, rgba(74,60,42,0.04) 0 1px, transparent 1px 28px),
+        linear-gradient(180deg, #e2dcc6 0%, #d8cfb0 60%, #c8bf9c 100%);
+    }
+    .map svg.contours { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.42; }
+    .map .corner-attrib { position: absolute; bottom: 6px; left: 8px; font-size: 0.7rem; color: rgba(74,60,42,0.65); z-index: 1; }
+    .map .zoom-controls { position: absolute; right: 18px; bottom: 18px; display: grid; gap: 4px; }
+    .map .zoom-controls button { width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--control-border);
+      background: var(--control-bg); color: var(--brown-ink); font-size: 1rem; cursor: default; }
+
+    /* ── Hint strip + state chip ─────────────────────────────────────────── */
+    .hint-strip { position: absolute; top: 12px; right: 12px; z-index: 6;
+      padding: 8px 14px; border-radius: 999px; font-size: 0.82rem;
+      background: var(--cream-surface); border: 1px solid var(--cream-border);
+      color: var(--brown-mid); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .hint-strip strong { color: var(--moss-dark); }
+    .state-chip { position: absolute; top: 52px; right: 12px; z-index: 6;
+      padding: 6px 12px; border-radius: 999px; font-size: 0.76rem;
+      background: var(--cream-surface); border: 1px solid var(--cream-border);
+      color: var(--brown-soft); box-shadow: 0 6px 20px rgba(0,0,0,0.14);
+      font-family: 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: 0.02em; }
+    .state-chip b { color: var(--moss-dark); font-weight: 700; }
+
+    /* ── Pill bar (untouched, kept for context) ───────────────────────────── */
+    .pill-bar { position: absolute; top: 12px; left: 12px; z-index: 4;
+      width: 360px; display: grid; grid-template-columns: 3fr 3fr 1fr; gap: 8px; align-items: stretch; }
+    .pill { display: flex; width: 100%; border: 1px solid var(--control-border); border-radius: 999px;
+      background: var(--control-bg); overflow: hidden; box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .pill > button { flex: 1; min-width: 0; min-height: 36px; padding: 6px 8px; border: 0;
+      background: transparent; color: var(--brown-ink); cursor: default;
+      display: inline-flex; align-items: center; justify-content: center; }
+    .pill > button + button { border-left: 1px solid var(--control-border); }
+    .pill > button.active { background: var(--moss); color: #f7f1e2; border-left-color: transparent; }
+    .pill > button svg { width: 22px; height: 22px; }
+    .pill .terrain { font: 800 0.86rem Inter, system-ui, sans-serif; letter-spacing: 0.04em; }
+
+    /* ── Drawer shell ─────────────────────────────────────────────────────────
+       One unified container. Left column = 44px icon strip (always all 3
+       icons visible). Right column = 360px when at least one card is open;
+       0px when all are collapsed (drawer becomes just the icon strip).
+       The grid here defines outer chrome only; segments inside are positioned
+       by an inner CSS grid driven by JS spans. */
+    .drawer { position: absolute; left: 12px; top: 68px; z-index: 3;
+      display: grid; grid-template-columns: 44px 360px;
+      border-radius: 10px; overflow: hidden;
+      border: 1px solid rgba(155,132,92,0.34);
+      background: var(--cream-surface);
+      box-shadow: 0 14px 38px rgba(0,0,0,0.22), 0 2px 6px rgba(0,0,0,0.08);
+      transition:
+        grid-template-columns var(--t-slow) var(--ease-out),
+        box-shadow var(--t-mid) var(--ease-out);
+    }
+    .drawer.all-closed { grid-template-columns: 44px 0px; }
+
+    /* ── Icon column ───────────────────────────────────────────────────────── */
+    .icon-col {
+      display: grid;
+      /* row heights are mirrored from segment heights via --row-h-N */
+      grid-template-rows: var(--row-h-0, 44px) var(--row-h-1, 44px) var(--row-h-2, 44px);
+      background: linear-gradient(180deg, rgba(247,241,226,0.6) 0%, rgba(232,222,196,0.4) 100%);
+      border-right: 1px solid rgba(155,132,92,0.22);
+      transition: grid-template-rows var(--t-slow) var(--ease-out);
+    }
+    .icon-slot {
+      position: relative;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding-top: 11px;
+    }
+    .icon-slot + .icon-slot::before {
+      /* divider between icons — drawn on the slot, NOT on the icon */
+      content: ""; position: absolute; left: 8px; right: 8px; top: 0;
+      height: 1px; background: rgba(155,132,92,0.28);
+    }
+    .card-icon { width: 36px; height: 36px;
+      display: grid; place-items: center; position: relative;
+      background: transparent; border: 0; color: var(--brown-mid);
+      cursor: pointer; border-radius: 8px;
+      transition:
+        transform var(--t-mid) var(--ease-spring),
+        box-shadow var(--t-mid) var(--ease-out),
+        color var(--t-fast),
+        background var(--t-fast);
+    }
+    .card-icon:hover { color: var(--brown-dark); }
+    .card-icon:focus-visible { outline: 2px solid rgba(95,113,87,0.5); outline-offset: 2px; }
+    .card-icon svg { width: 22px; height: 22px; }
+
+    /* Closed-state hover hint: subtle 1px tug left, telegraphing "pull me out". */
+    .icon-slot.is-closed .card-icon:hover { transform: translateX(-1px); }
+
+    /* Open state: icon shifts left 3px and casts a soft brown shadow,
+       like a tab pulled forward from the folder behind it. */
+    .icon-slot.is-open .card-icon {
+      transform: translateX(-3px);
+      box-shadow:
+        -2px 2px 5px rgba(63, 49, 34, 0.20),
+        -1px 1px 2px rgba(63, 49, 34, 0.14);
+    }
+
+    /* Active-card ribbon — 2px rust accent on the right edge of the icon,
+       only on the *most recently opened* card. Reads like a bookmark
+       ribbon hanging from the active folder. */
+    .icon-slot.is-active .card-icon::after {
+      content: ""; position: absolute;
+      right: -7px; top: 6px; bottom: 6px; width: 2px;
+      background: var(--rust); border-radius: 1px;
+      box-shadow: 0 0 0 1px rgba(154,90,50,0.18);
+    }
+
+    /* Live-state pulse on the hot icon. */
+    .live-dot { position: absolute; top: 2px; right: 2px; width: 9px; height: 9px;
+      border-radius: 50%; background: var(--rust);
+      box-shadow: 0 0 0 2px var(--cream-surface);
+      animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 2px var(--cream-surface), 0 0 0 0 rgba(154,90,50,0.5); }
+      50%      { box-shadow: 0 0 0 2px var(--cream-surface), 0 0 0 6px rgba(154,90,50,0); }
+    }
+    .day-cap { position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+      font: 800 0.55rem Inter, system-ui, sans-serif; color: var(--moss-dark);
+      background: var(--moss-soft); padding: 1px 4px; border-radius: 3px; letter-spacing: 0.04em; }
+
+    /* Tooltip when row is closed. */
+    .card-icon .label { position: absolute; left: calc(100% + 14px); top: 50%;
+      transform: translate(-6px, -50%); padding: 4px 9px; border-radius: 6px;
+      background: var(--brown-dark); color: #f7f1e2; font-size: 0.75rem; white-space: nowrap;
+      opacity: 0; pointer-events: none;
+      transition: opacity var(--t-fast) ease, transform var(--t-fast) ease;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.22); z-index: 7; }
+    .icon-slot.is-closed .card-icon:hover .label { opacity: 1; transform: translate(0, -50%); }
+
+    /* Wobble: applied for ~150ms on close, then JS removes the class.
+       Gives the row a "snapped back into the folder stack" feeling. */
+    .icon-slot.wobble .card-icon { animation: wobble 0.18s var(--ease-out); }
+    @keyframes wobble {
+      0%   { transform: translateX(0) rotateY(0); }
+      40%  { transform: translateX(0) rotateY(-1deg); }
+      100% { transform: translateX(0) rotateY(0); }
+    }
+
+    /* ── Content column ────────────────────────────────────────────────────
+       Mirrors the icon column's row template, so segment N is aligned with
+       icon-slot N. Each segment can span multiple rows via grid-row, which
+       is how an open card "absorbs upward" any closed cards above it. */
+    .content-col {
+      display: grid;
+      grid-template-rows: var(--row-h-0, 44px) var(--row-h-1, 44px) var(--row-h-2, 44px);
+      transition: grid-template-rows var(--t-slow) var(--ease-out);
+      min-width: 0;
+    }
+    .segment {
+      position: relative; min-width: 0;
+      background: var(--cream-surface);
+      overflow: hidden;
+      /* unfurl: each segment fades+expands into view */
+      animation: segment-in var(--t-mid) var(--ease-out);
+      /* inset top shadow — content reads as "pulled out of a slot below". */
+      box-shadow: inset 0 4px 6px -3px rgba(63, 49, 34, 0.22);
+    }
+    .segment + .segment {
+      border-top: 1px solid rgba(155,132,92,0.28);
+    }
+    @keyframes segment-in {
+      0%   { opacity: 0; transform: translateX(-6px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+    .segment.empty { background: transparent; box-shadow: none; pointer-events: none; }
+
+    .card-body { min-width: 0; padding: 0; }
+
+    /* ── Inner card chrome ─────────────────────────────────────────────────── */
+    .search-shell { padding: 8px 10px; }
+    .search-shell input { width: 100%; box-sizing: border-box; padding: 8px 10px;
+      font: inherit; border: 1px solid var(--control-border); border-radius: 7px;
+      background: var(--control-bg); color: var(--brown-ink); }
+    .search-shell input::placeholder { color: var(--brown-soft); }
+
+    .hot-control { display: grid; gap: 6px; padding: 8px 10px; }
+    .hot-control-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 2px; min-height: 24px; }
+    .hot-control-title { font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+    .hot-control-status { font: 600 0.68rem Inter, system-ui, sans-serif; color: var(--brown-soft); }
+    .hot-lanes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .hot-button { width: 100%; min-height: 64px; display: grid; grid-template-columns: 22px minmax(0, 1fr);
+      align-items: center; gap: 7px; padding: 8px 9px; border: 1px solid rgba(85, 67, 44, 0.25);
+      border-radius: 8px; color: #f7f1e2; cursor: default; text-align: left;
+      font: 700 0.74rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+    .hot-button.hot-now { background: var(--rust);
+      box-shadow: 0 0 0 2px rgba(247, 241, 226, 0.82), 0 0 0 4px rgba(42, 33, 22, 0.16); }
+    .hot-button.trail-hot { background: var(--moss); }
+    .hot-glyph { display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; font-size: 1.1rem; line-height: 1; }
+    .hot-text { display: block; min-width: 0; }
+    .hot-title { display: block; }
+    .hot-detail { display: block; margin-top: 1px; font: 400 0.72rem Inter, system-ui, sans-serif;
+      text-transform: none; letter-spacing: 0; color: rgba(247, 241, 226, 0.88); }
+
+    .calendar-card { overflow: hidden; }
+    .left-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px;
+      padding: 5px; border-bottom: 1px solid var(--cream-border); background: rgba(227, 235, 220, 0.62); }
+    .left-tab { min-width: 0; min-height: 32px; padding: 5px 4px; border: 1px solid transparent;
+      border-radius: 6px; background: transparent; color: var(--brown-mid); cursor: default;
+      font: 800 0.76rem Inter, system-ui, sans-serif; text-align: center; }
+    .left-tab.active { background: var(--control-bg); border-color: #b9c7ad; color: var(--moss-dark);
+      box-shadow: inset 0 -2px 0 var(--moss); }
+    .calendar-toggle { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center; gap: 8px; padding: 8px 10px; border: 0; background: transparent;
+      color: var(--brown-ink); cursor: default; text-align: left; }
+    .calendar-title { display: block; font: 800 0.78rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+    .calendar-range { display: block; margin-top: 1px; font-size: 0.76rem; color: var(--brown-soft); }
+    .calendar-chevron { color: var(--brown-mid); font-size: 1.15rem; line-height: 1; }
+    .calendar-body { max-height: 320px; overflow-y: auto; padding: 0 8px 8px; }
+    .calendar-days { list-style: none; display: grid; gap: 4px; margin: 0; padding: 0; }
+    .calendar-days li { padding: 0; border-top: 1px solid var(--cream-border); position: relative; }
+    .calendar-row { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr);
+      align-items: start; gap: 8px; padding: 7px 8px; border: 0; background: transparent;
+      color: var(--brown-ink); text-align: left; cursor: default; }
+    .calendar-day { padding-top: 2px; font: 800 0.68rem Inter, system-ui, sans-serif;
+      text-transform: uppercase; color: var(--brown-mid); }
+    .calendar-time { display: block; font: 700 0.74rem Inter, system-ui, sans-serif;
+      line-height: 1.15; color: var(--brown-soft); }
+    .calendar-name { display: block; margin-top: 1px; font-size: 0.88rem; line-height: 1.18; }
+    .calendar-location { display: block; margin-top: 2px; font-size: 0.74rem;
+      line-height: 1.15; color: var(--brown-soft); }
+    .calendar-days li[data-state="happening"] { background: #dde2cf; box-shadow: inset 3px 0 0 0 var(--rust); }
+    .calendar-days li[data-state="happening"] .calendar-name { font-weight: 700; }
+    .calendar-days li[data-state="upcoming_next"] { background: #ecd9b1; box-shadow: inset 3px 0 0 0 var(--brown-dark); }
+    .cal-live-badge, .cal-soon-badge { position: absolute; top: 8px; right: 8px; padding: 1px 6px;
+      border-radius: 3px; font: 700 9px Inter, system-ui, sans-serif; text-transform: uppercase;
+      color: #f7f1e2; pointer-events: none; }
+    .cal-live-badge { background: var(--rust); }
+    .cal-soon-badge { background: var(--brown-dark); }
+
+    /* ── Reduced motion: cut everything to a hair, drop the wobble. ─────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01s !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01s !important;
+      }
+      .icon-slot.wobble .card-icon { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Faux map background -->
+  <div class="map">
+    <svg class="contours" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <g fill="none" stroke="#5a4630" stroke-width="0.15">
+        <path d="M0 30 Q 20 25, 40 32 T 80 28 T 100 30" />
+        <path d="M0 40 Q 25 35, 45 42 T 85 38 T 100 41" />
+        <path d="M0 50 Q 30 45, 50 52 T 90 48 T 100 51" />
+        <path d="M0 60 Q 22 56, 48 62 T 88 58 T 100 61" />
+        <path d="M0 70 Q 28 67, 52 72 T 92 68 T 100 71" />
+      </g>
+      <g fill="none" stroke="#9a5a32" stroke-width="0.3" stroke-linecap="round">
+        <path d="M22 78 Q 38 60, 52 56 T 78 38" />
+        <path d="M58 80 Q 64 64, 70 50 T 80 32" />
+      </g>
+    </svg>
+    <div class="corner-attrib">© OpenStreetMap · NAIP · AOP private — mockup background</div>
+    <div class="zoom-controls"><button>+</button><button>−</button></div>
+  </div>
+
+  <div class="hint-strip">
+    Click any tab — <strong>feel it open</strong>
+  </div>
+  <div class="state-chip" id="stateChip">open: <b>search · hot · calendar</b></div>
+
+  <!-- Pill bar -->
+  <div class="pill-bar">
+    <div class="pill">
+      <button title="Region zoom"><svg viewBox="0 0 22 22"><path d="M3 8V3h5M14 3h5v5M19 14v5h-5M8 19H3v-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+      <button title="Park zoom"><svg viewBox="0 0 22 22"><path d="M4 7L7 3L15 4L18 9L17 16L9 18L4 14Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/></svg></button>
+      <button title="Pavilion zoom"><svg viewBox="0 0 22 22"><path d="M3 9L11 3L19 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 9V18M9 9V18M13 9V18M17 9V18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 18H19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="pill">
+      <button class="active" title="Park preset"><svg viewBox="0 0 22 22"><path d="M3 6L8 4L14 6L19 4V16L14 18L8 16L3 18Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 4V16M14 6V18" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></button>
+      <button title="Topo preset"><svg viewBox="0 0 22 22"><path d="M3 7c3-2 6-2 9 0s5 2 7 0M3 11c3-2 6-2 9 0s5 2 7 0M3 15c3-2 6-2 9 0s5 2 7 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+      <button title="Trace preset"><svg viewBox="0 0 22 22"><rect x="3" y="3" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5 16c2-1 3-4 6-4s4 3 6 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="16" r="1.3" fill="currentColor"/><circle cx="17" cy="14" r="1.3" fill="currentColor"/></svg></button>
+    </div>
+    <div class="pill"><button class="terrain" title="3D toggle">3D</button></div>
+  </div>
+
+  <!-- One unified drawer. Left column = icon strip (always 3 icons).
+       Right column = segmented content. JS computes, on every toggle, how
+       segments should span the rows so each open card's segment absorbs any
+       closed-above neighbors (or, at the bottom edge, closed-below). -->
+  <div class="drawer" id="drawer">
+    <div class="icon-col" id="iconCol">
+      <div class="icon-slot" data-row="search">
+        <button class="card-icon" type="button" aria-expanded="true" title="Toggle search">
+          <svg viewBox="0 0 22 22" fill="none">
+            <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+          </svg>
+          <span class="label">Search</span>
+        </button>
+      </div>
+      <div class="icon-slot" data-row="hot">
+        <button class="card-icon" type="button" aria-expanded="true" title="Toggle Hot now">
+          <svg viewBox="0 0 22 22" fill="none">
+            <path d="M7 18 C 4 16, 4.5 12, 7 10 C 7 13, 8.5 12, 8 9 C 9 11, 10.5 14, 9 18 Z"
+                  fill="#9a5a32" stroke="#9a5a32" stroke-width="0.6" stroke-linejoin="round"/>
+            <path d="M14 18 C 11 16, 11.5 12, 14 10 C 14 13, 15.5 12, 15 9 C 16 11, 17.5 14, 16 18 Z"
+                  fill="#9a5a32" stroke="#9a5a32" stroke-width="0.6" stroke-linejoin="round" opacity="0.78"/>
+          </svg>
+          <span class="live-dot" aria-hidden="true" title="Stage 3 LIVE"></span>
+          <span class="label">Hot now · Stage 3 LIVE</span>
+        </button>
+      </div>
+      <div class="icon-slot" data-row="calendar">
+        <button class="card-icon" type="button" aria-expanded="true" title="Toggle calendar">
+          <svg viewBox="0 0 22 22" fill="none">
+            <rect x="3" y="5" width="16" height="14" rx="1.8" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M3 9 H 19" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M7 3 V 7 M15 3 V 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <path d="M6 13 H 10 M12 13 H 16 M6 16 H 10 M12 16 H 16"
+                  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+          <span class="day-cap">SAT</span>
+          <span class="label">Sat 2:00pm Stage 3 — Mud Pit</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bodies live here (one per row). JS hoists them into segments that
+         span the right grid rows according to the closed/open layout. -->
+    <div class="content-col" id="contentCol">
+      <!-- Segments are (re)built by JS. The card bodies below are templates,
+           hidden from layout until placed inside a segment. -->
+    </div>
+
+    <!-- Card body templates — kept out of layout, cloned into segments. -->
+    <template id="tpl-search">
+      <div class="card-body">
+        <div class="search-shell">
+          <input type="text" placeholder="Search the map…" />
+        </div>
+      </div>
+    </template>
+    <template id="tpl-hot">
+      <div class="card-body">
+        <section class="hot-control" aria-label="Hot now">
+          <div class="hot-control-head">
+            <span class="hot-control-title">Hot now</span>
+            <span class="hot-control-status">Sat 2:14 pm</span>
+          </div>
+          <div class="hot-lanes">
+            <button class="hot-button hot-now">
+              <span class="hot-glyph">●</span>
+              <span class="hot-text">
+                <span class="hot-title">Stage 3</span>
+                <span class="hot-detail">Running now</span>
+              </span>
+            </button>
+            <button class="hot-button trail-hot">
+              <span class="hot-glyph">❖</span>
+              <span class="hot-text">
+                <span class="hot-title">Trail activity</span>
+                <span class="hot-detail">Where rigs spent time</span>
+              </span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </template>
+    <template id="tpl-calendar">
+      <div class="card-body">
+        <section class="calendar-card">
+          <div class="left-tabs">
+            <button class="left-tab active">Events</button>
+            <button class="left-tab">Park</button>
+            <button class="left-tab">About</button>
+          </div>
+          <button class="calendar-toggle">
+            <span>
+              <span class="calendar-title">Event calendar</span>
+              <span class="calendar-range">Draft Fri-Sun schedule</span>
+            </span>
+            <span class="calendar-chevron">▾</span>
+          </button>
+          <div class="calendar-body">
+            <ol class="calendar-days">
+              <li>
+                <div class="calendar-row">
+                  <span class="calendar-day">FRI</span>
+                  <span>
+                    <span class="calendar-time">6:00 pm</span>
+                    <span class="calendar-name">Driver check-in</span>
+                    <span class="calendar-location">Pavilion</span>
+                  </span>
+                </div>
+              </li>
+              <li data-state="happening">
+                <span class="cal-live-badge">Live</span>
+                <div class="calendar-row">
+                  <span class="calendar-day">SAT</span>
+                  <span>
+                    <span class="calendar-time">2:00 pm</span>
+                    <span class="calendar-name">Stage 3 — Mud Pit</span>
+                    <span class="calendar-location">Lower trace</span>
+                  </span>
+                </div>
+              </li>
+              <li data-state="upcoming_next">
+                <span class="cal-soon-badge">Next</span>
+                <div class="calendar-row">
+                  <span class="calendar-day">SAT</span>
+                  <span>
+                    <span class="calendar-time">4:00 pm</span>
+                    <span class="calendar-name">Stage 4 — Cliff Loop</span>
+                    <span class="calendar-location">Upper trace</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="calendar-row">
+                  <span class="calendar-day">SUN</span>
+                  <span>
+                    <span class="calendar-time">10:00 am</span>
+                    <span class="calendar-name">Awards + Pull-Sled</span>
+                    <span class="calendar-location">Pavilion</span>
+                  </span>
+                </div>
+              </li>
+            </ol>
+          </div>
+        </section>
+      </div>
+    </template>
+  </div>
+
+  <script>
+  (function () {
+    /* ── Drawer model ────────────────────────────────────────────────────
+       The drawer is one shell. We track per-row open/closed state and on
+       every toggle we (re)build the right-column segments so:
+         • each open card's segment spans its own row + any closed
+           contiguous rows above it (absorb-upward rule);
+         • if the bottom row is closed but a row above it is open, the
+           open row's segment extends downward to swallow the closed
+           bottom row (bottom edge case);
+         • icon-slot rows always exist on the left and keep their
+           dividers; closed icons sit as "islands" inside their segment;
+         • when ALL three are closed, the right column collapses to 0
+           and the drawer becomes just the 44px icon strip.
+       Row-height variables (--row-h-0/1/2) mirror the segment heights
+       so the icon column tracks them and dividers stay aligned. */
+
+    const ROW_IDS = ['search', 'hot', 'calendar'];
+    const drawer   = document.getElementById('drawer');
+    const iconCol  = document.getElementById('iconCol');
+    const contentCol = document.getElementById('contentCol');
+    const stateChip  = document.getElementById('stateChip');
+
+    // initial state — everything open
+    const open = { search: true, hot: true, calendar: true };
+    // active = most-recently-opened (drives the rust ribbon)
+    let active = 'calendar';
+
+    function build() {
+      // 1. icon-slot classes
+      ROW_IDS.forEach((id) => {
+        const slot = iconCol.querySelector(`.icon-slot[data-row="${id}"]`);
+        slot.classList.toggle('is-open', !!open[id]);
+        slot.classList.toggle('is-closed', !open[id]);
+        slot.classList.toggle('is-active', id === active && open[id]);
+        const btn = slot.querySelector('.card-icon');
+        btn.setAttribute('aria-expanded', open[id] ? 'true' : 'false');
+      });
+
+      // 2. compute segments. Walk top→bottom and group closed rows under
+      //    the next open row. If we reach the end with closed rows still
+      //    ungrouped (i.e. no open row below them), attach them to the
+      //    last open row (bottom-edge: open extends downward).
+      const anyOpen = ROW_IDS.some((id) => open[id]);
+      drawer.classList.toggle('all-closed', !anyOpen);
+
+      contentCol.innerHTML = '';
+      if (!anyOpen) {
+        // reset row heights so icon-col rows are 44px each
+        ROW_IDS.forEach((_, i) => contentCol.style.setProperty(`--row-h-${i}`, '44px'));
+        ROW_IDS.forEach((_, i) => iconCol.style.setProperty(`--row-h-${i}`, '44px'));
+        updateChip();
+        return;
+      }
+
+      const segments = []; // { owner, rows:[indices] }
+      let pendingClosed = [];
+      ROW_IDS.forEach((id, i) => {
+        if (open[id]) {
+          segments.push({ owner: id, rows: [...pendingClosed, i] });
+          pendingClosed = [];
+        } else {
+          pendingClosed.push(i);
+        }
+      });
+      // bottom-edge: dangling closed rows fold into the last open segment
+      if (pendingClosed.length && segments.length) {
+        segments[segments.length - 1].rows.push(...pendingClosed);
+      }
+
+      // 3. render segments into the content-col. Each segment is one
+      //    grid item with grid-row spanning its row indices.
+      segments.forEach((seg) => {
+        const ownerIdx = ROW_IDS.indexOf(seg.owner);
+        const firstRow = Math.min(...seg.rows) + 1; // grid rows are 1-based
+        const lastRow  = Math.max(...seg.rows) + 1;
+        const div = document.createElement('div');
+        div.className = 'segment';
+        div.dataset.owner = seg.owner;
+        div.style.gridRow = `${firstRow} / ${lastRow + 1}`;
+        const tpl = document.getElementById('tpl-' + seg.owner);
+        div.appendChild(tpl.content.cloneNode(true));
+        contentCol.appendChild(div);
+      });
+
+      // 4. after layout, mirror segment heights → row-h vars so icon-col
+      //    matches. Closed rows inside a segment get a share of 44px each;
+      //    the owner row gets the remainder. This keeps dividers aligned
+      //    and icons at the top of their slot.
+      requestAnimationFrame(() => {
+        const rowHeights = [0, 0, 0];
+        segments.forEach((seg) => {
+          const segEl = contentCol.querySelector(`.segment[data-owner="${seg.owner}"]`);
+          const h = segEl ? segEl.getBoundingClientRect().height : 44;
+          const ownerIdx = ROW_IDS.indexOf(seg.owner);
+          const closedRows = seg.rows.filter((r) => r !== ownerIdx);
+          closedRows.forEach((r) => { rowHeights[r] = 44; });
+          // owner row absorbs the remainder
+          rowHeights[ownerIdx] = Math.max(44, h - closedRows.length * 44);
+        });
+        rowHeights.forEach((h, i) => {
+          const v = h + 'px';
+          contentCol.style.setProperty(`--row-h-${i}`, v);
+          iconCol.style.setProperty(`--row-h-${i}`, v);
+        });
+      });
+
+      updateChip();
+    }
+
+    function updateChip() {
+      const opens = ROW_IDS.filter((id) => open[id]);
+      stateChip.innerHTML = opens.length
+        ? 'open: <b>' + opens.join(' · ') + '</b>'
+        : 'open: <b>(none — drawer is just the icon strip)</b>';
+    }
+
+    // ── click handling ──────────────────────────────────────────────────
+    iconCol.addEventListener('click', (e) => {
+      const slot = e.target.closest('.icon-slot');
+      if (!slot) return;
+      const id = slot.dataset.row;
+      const wasOpen = open[id];
+      open[id] = !wasOpen;
+
+      if (open[id]) {
+        active = id;
+      } else {
+        // wobble on close — folder snapping back into place
+        slot.classList.add('wobble');
+        setTimeout(() => slot.classList.remove('wobble'), 200);
+        // if we just closed the active one, hand the ribbon to the
+        // next-most-recent open row (or none).
+        if (active === id) {
+          const stillOpen = ROW_IDS.filter((r) => open[r]);
+          active = stillOpen[stillOpen.length - 1] || null;
+        }
+      }
+      build();
+    });
+
+    // Keyboard parity: Enter/Space on a focused icon already triggers click,
+    // but make sure focus rings land on the button, not the slot.
+    iconCol.querySelectorAll('.card-icon').forEach((btn) => {
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); }
+      });
+    });
+
+    build();
+  })();
+  </script>
+</body>
+</html>

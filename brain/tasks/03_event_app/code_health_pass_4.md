@@ -116,9 +116,13 @@ shape.
 - [x] `website/index.html` parses cleanly after the pass. (Node `--check`
       PASS on the extracted inline script.)
 - [x] The full Playwright verifier sweep is rerun, or every skipped verifier
-      has a reason. (`playwright_verify_event_schedule.py` and
-      `playwright_verify_presets.py` PASS post-merge; full 19-verifier sweep
-      owed before the card is closed.)
+      has a reason. **2026-05-25:** full 19-of-19 verifier sweep green
+      post-contrast-cleanup and post-C3-hotspot-regen
+      (`activity_hotspots`, `brand_logos`, `buildings`, `cemeteries`,
+      `community_trails`, `event_schedule`, `feature_list`, `landcover`,
+      `lidar_tiles`, `poi_editor`, `presets`, `satellite`, `search`,
+      `sfwda_multiply`, `synthetic_activity`, `terrain`, `trails`,
+      `visitor_context`, `water` — all PASS).
 
 ## Verification
 
@@ -690,20 +694,50 @@ deltas and the open follow-ups.
 
 ### Open follow-ups (named, not in this card's scope)
 
-- **`--brown-soft` AA contrast tweak.** Theme review found three contexts
-  (`--cream-hover`, calendar `happening`, calendar `upcoming_next`) where
-  `#756444` sits at 4.13–4.47:1 on small text — marginally under AA 4.5:1
-  for the timestamp/location strings on the live and next calendar rows.
-  Suggested one-token bump to `#6a5638`. Holding for a follow-up bite — a
-  palette token change is the kind of edit that wants its own verifier
-  sweep, not a rider on this commit.
-- **Focus-visible outline alpha.** Pass 4 Theme Review flagged the
-  `rgba(95,113,87,0.42)` outline as too low contrast for sun-glance focus
-  state. Holding for the same follow-up.
-- **`.layer-row.active` vs `.expanded` distinction.** Two cream tints at
-  ~1.10:1 bg-vs-bg. Suggested fix is an inset rust stripe (mirroring the
-  calendar "happening" treatment). Holding.
+- ~~**`--brown-soft` AA contrast tweak.**~~ **Shipped 2026-05-25.** Token
+  bumped to `#6a5638` at `website/index.html:16`. Closes theme review §1
+  TWEAK and §4 FIX #3 in one edit; all four marginal contexts (cream-hover,
+  calendar happening, calendar upcoming, calendar past) now sit ≥5.0:1.
+- ~~**Focus-visible outline alpha.**~~ **Shipped 2026-05-25.** Outline
+  changed to `var(--moss-dark)` at `website/index.html:188` (`.search
+  input:focus`) and `:204` (`.left-controls button:focus-visible,
+  .calendar-row:focus-visible, .search input:focus-visible`). 9.07:1
+  ratio, well above WCAG 1.4.11 3:1 floor.
+- ~~**`.layer-row.active` vs `.expanded` distinction.**~~ **Shipped
+  2026-05-25.** Added `box-shadow: inset 3px 0 0 0 var(--rust)` to
+  `.layer-row.active` at `website/index.html:89`. Mirrors the calendar
+  "happening" treatment; rust-on-`#f6edda` is 4.65:1.
 - **Four remaining ≥3-count hex literals.** `#d8d0bd`, `#bbb`, `#f7f1e2`,
   `#fff8e8`. Each wants a new role name — `--cream-border-soft`,
   `--cream-fg`, `--control-bg-warm`, or similar — before tokenization.
   Held out of this pass to keep the audit scope honest.
+
+### Shipped 2026-05-25 (follow-up wave)
+
+Five additional contrast / readability ships landed against the Theme Review
+recommendations, plus five trace-preset label-halo overrides closing
+theme review §6:
+
+- **Calendar badge font 9px → 10px** at `website/index.html:229`
+  (`.cal-live-badge, .cal-soon-badge`). Theme review §3 TWEAK.
+- **`.panel button[disabled]` opacity 0.4 → 0.55 + `filter: saturate(0.7)`**
+  at `website/index.html:85`. Disabled rust-filled buttons now desaturate
+  rather than just fade. Theme review §8 TWEAK.
+- **Trace-preset label halos** for `editor-poi-labels`,
+  `editor-poi-fill-labels`, `editor-poi-line-labels`, `cemetery-label`,
+  and `nine-patch-labels`. Added inside `BUILT_IN_PRESETS.trace.paints`
+  near `website/index.html:2713`, mirroring the `osm-named-labels`
+  cream-text + near-black halo pattern. Closes theme review §6 TWEAK
+  (text-vs-halo 16.5+ on the dark trace background).
+
+Verification: Node `--check` on the extracted inline script PASS;
+`playwright_verify_event_schedule.py` PASS (now includes the J3 manual-scroll
+fixture); `playwright_verify_presets.py` PASS (asserts the three existing
+trace halo entries reset to cream on Park — the five new entries follow the
+same shape); `playwright_verify_brand_logos.py` PASS. The Park-preset halo
+reset assertions cover `roads-labels`, `osm-named-labels`,
+`activity-hotspots-labels`; an extended assertion for the five new label
+overrides should ride along with the next presets-verifier touch.
+
+Adjacent-JS-smells acceptance row stays deferred; no JS smell surfaced
+under the contrast work.

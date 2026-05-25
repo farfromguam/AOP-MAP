@@ -49,6 +49,10 @@ Settled: on-map overlay, draggable. Default seed coordinates are nudged
 off the 1010 Ellis Cove Road pavilion (north and south) so both logos are
 visible at first load without overlapping the pavilion building.
 
+The 1010 building is also the `#pavilion` tag binding
+(`_done/named_feature_tagging.md`); seating a brand-logo seed back onto its
+footprint will stack on the pavilion popup target.
+
 Chrome placement (header / footer / attribution corner) intentionally
 **not** done. On-map placement is the demonstrative artifact the user
 asked for; chrome can layer on top later without affecting the on-map

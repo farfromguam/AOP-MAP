@@ -13,7 +13,7 @@
       --brown-ink: #4a3c2a;    /* dark text on cream */
       --brown-mid: #6b5a3e;    /* secondary text, icons, chevrons */
       --brown-dark: #3f3122;   /* hover/active text */
-      --brown-soft: #756444;   /* tertiary labels, captions */
+      --brown-soft: #6a5638;   /* tertiary labels, captions — Pass 4 AA bump from #756444 */
       --cream-hover: #efe2c6;  /* button hover, active row */
       --cream-surface: rgba(250, 246, 235, 0.96);
       --cream-border: #d8cdb4;
@@ -82,11 +82,11 @@
     .panel-section.collapsed .section-content { display: none; }
     .panel button { font: inherit; padding: 4px 10px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
     .panel button:hover { background: #ececec; }
-    .panel button[disabled] { opacity: 0.4; cursor: not-allowed; }
+    .panel button[disabled] { opacity: 0.55; filter: saturate(0.7); cursor: not-allowed; }
     .panel button.active { background: var(--rust); color: #fff; border-color: var(--rust); }
     .panel select { font: inherit; padding: 3px 5px; border-radius: 6px; border: 1px solid #bbb; }
     .layer-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; margin: 0 0 4px; padding: 3px 4px 3px 6px; border-radius: 6px; }
-    .layer-row.active { background: #f6edda; color: var(--brown-dark); }
+    .layer-row.active { background: #f6edda; color: var(--brown-dark); box-shadow: inset 3px 0 0 0 var(--rust); }
     .layer-row.expanded { background: var(--cream-hover); color: var(--brown-dark); }
     .layer-row label { min-width: 0; margin: 0; cursor: pointer; }
     .layer-expand { font-size: 1.05rem; }
@@ -185,7 +185,7 @@
     .left-controls .search { margin-bottom: 0; width: 100%; }
     .search-shell { display: block; }
     .search input { width: 100%; box-sizing: border-box; padding: 8px 9px 8px 30px; font: inherit; border: 1px solid var(--control-border); border-radius: 7px; background: var(--control-bg); color: var(--brown-ink); }
-    .search input:focus { outline: 2px solid rgba(95,113,87,0.35); border-color: var(--moss); }
+    .search input:focus { outline: 2px solid var(--moss-dark); border-color: var(--moss); }
     /* Magnifier glyph anchored at the left of #searchInput. pointer-events:none
        lets the click pass through to the input so focus still works. */
     .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--brown-soft); pointer-events: none; }
@@ -201,7 +201,31 @@
     .left-tab:hover { background: rgba(255,253,245,0.7); color: var(--brown-dark); }
     .left-tab[aria-selected="true"] { background: var(--control-bg); border-color: #b9c7ad; color: var(--moss-dark); box-shadow: inset 0 -2px 0 var(--moss); }
     .left-tab-panel[hidden] { display: none; }
-    .left-controls button:focus-visible, .calendar-row:focus-visible, .search input:focus-visible { outline: 2px solid rgba(95,113,87,0.42); outline-offset: 2px; }
+    /* POI tab — left-rail browseable directory of places. Mirrors the
+       feature-list-group convention from the right panel so the two
+       inventories read the same. Card: brain/tasks/03_event_app/left_panel_poi_browser.md.
+       Visitor copy + placeholder revisit notes are sourced from
+       website/data/aop_poi_index.json. */
+    .poi-list { max-height: min(48vh, 360px); overflow-y: auto; padding: 8px 8px 10px; display: grid; gap: 8px; }
+    .poi-list-group { display: grid; gap: 3px; }
+    .poi-list-group-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 3px 4px 2px; border-bottom: 1px solid var(--cream-border); font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; color: var(--brown-mid); }
+    .poi-list-group-count { color: var(--brown-soft); font: 700 0.72rem Inter, system-ui, sans-serif; text-transform: none; letter-spacing: 0; }
+    .poi-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; margin: 0; padding: 7px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--brown-ink); cursor: pointer; text-align: left; font: inherit; }
+    .poi-row:hover, .poi-row:focus-visible { background: var(--cream-hover); border-color: var(--cream-border); outline: none; }
+    .poi-row-name { font: 700 0.88rem Inter, system-ui, sans-serif; line-height: 1.2; overflow-wrap: anywhere; }
+    .poi-row-subtitle { margin-top: 2px; font-size: 0.78rem; line-height: 1.3; color: var(--brown-soft); overflow-wrap: anywhere; }
+    .poi-row-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; font: 600 0.66rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.03em; color: var(--brown-soft); }
+    .poi-row-meta span { padding: 1px 5px; background: rgba(247, 241, 226, 0.7); border: 1px solid var(--cream-border); border-radius: 4px; }
+    .poi-row-meta .poi-placeholder-chip { background: #ecd9b1; color: var(--brown-dark); border-color: rgba(85, 67, 44, 0.35); }
+    .poi-empty { padding: 14px 10px; font-size: 0.86rem; line-height: 1.35; color: var(--brown-soft); text-align: center; }
+    .poi-tab-popup .poi-popup-title { margin: 0 0 4px; font: 800 0.92rem Inter, system-ui, sans-serif; line-height: 1.2; color: var(--brown-ink); }
+    .poi-tab-popup .poi-popup-subtitle { margin: 0 0 6px; font-size: 0.82rem; line-height: 1.3; color: var(--brown-ink); }
+    .poi-tab-popup .poi-popup-placeholder { margin: 0 0 6px; padding: 6px 7px; border-radius: 5px; background: #ecd9b1; color: var(--brown-dark); font-size: 0.78rem; line-height: 1.3; }
+    .poi-tab-popup .poi-popup-meta { margin: 0; padding: 0; font-size: 0.74rem; color: var(--brown-soft); }
+    .poi-tab-popup .poi-popup-meta dt { display: inline; font-weight: 700; }
+    .poi-tab-popup .poi-popup-meta dd { display: inline; margin: 0 8px 0 4px; }
+    .poi-tab-popup .poi-popup-meta dt::before { content: ""; display: block; }
+    .left-controls button:focus-visible, .calendar-row:focus-visible, .search input:focus-visible { outline: 2px solid var(--moss-dark); outline-offset: 2px; }
     .calendar-toggle { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; margin: 0; padding: 8px 10px; border: 0; background: transparent; color: var(--brown-ink); cursor: pointer; text-align: left; }
     .calendar-toggle:hover { background: var(--cream-hover); }
     .calendar-title { display: block; font: 800 0.78rem Inter, system-ui, sans-serif; text-transform: uppercase; }
@@ -226,10 +250,18 @@
     .calendar-days li[data-session-state="happening"] .calendar-name { font-weight: 700; }
     .calendar-days li[data-session-state="upcoming_next"] .calendar-name { font-weight: 400; }
     .cal-live-badge, .cal-soon-badge { position: absolute; top: 8px; right: 8px; padding: 1px 6px; border-radius: 3px;
-      font: 700 9px Inter, system-ui, sans-serif; text-transform: uppercase;
+      font: 700 10px Inter, system-ui, sans-serif; text-transform: uppercase;
       color: #f7f1e2; white-space: nowrap; pointer-events: none; }
     .cal-live-badge { background: var(--rust); }
     .cal-soon-badge { background: var(--brown-dark); }
+    /* Pre-event banner (State A). Hidden in 'live' and 'post' states; the
+       refresh-loop flips [hidden] to match data-calendar-state. */
+    .calendar-countdown { display: flex; align-items: baseline; justify-content: space-between;
+      gap: 8px; margin: 4px 0 6px; padding: 7px 10px; border-radius: 6px;
+      background: #ecd9b1; color: var(--brown-dark); box-shadow: inset 3px 0 0 0 var(--brown-dark); }
+    .calendar-countdown[hidden] { display: none; }
+    .calendar-countdown-label { font: 800 0.66rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+    .calendar-countdown-value { font: 800 0.92rem Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums; }
     .info-panel { max-height: 280px; overflow-y: auto; padding: 10px; border-top: 1px solid rgba(216,205,180,0.78); color: var(--brown-ink); }
     .info-panel h2 { margin: 0 0 6px; font-size: 0.95rem; line-height: 1.15; }
     .info-copy { margin: 0 0 9px; font-size: 0.86rem; line-height: 1.36; }
@@ -363,44 +395,47 @@
     <section class="calendar-card" id="calendarCard" aria-label="Events and park information">
       <div class="left-tabs" role="tablist" aria-label="Left panel content">
         <button id="leftTabEvents" class="left-tab" type="button" role="tab" aria-selected="true" aria-controls="eventsTabPanel" data-left-tab="events">Events</button>
-        <button id="leftTabPark" class="left-tab" type="button" role="tab" aria-selected="false" aria-controls="parkTabPanel" data-left-tab="park" tabindex="-1">Park</button>
+        <button id="leftTabPoi" class="left-tab" type="button" role="tab" aria-selected="false" aria-controls="poiTabPanel" data-left-tab="poi" tabindex="-1">POI</button>
         <button id="leftTabAbout" class="left-tab" type="button" role="tab" aria-selected="false" aria-controls="aboutTabPanel" data-left-tab="about" tabindex="-1">About</button>
       </div>
       <div id="eventsTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabEvents">
         <button id="calendarToggle" class="calendar-toggle" type="button" aria-expanded="true" aria-controls="calendarBody">
           <span>
-            <span class="calendar-title">Event calendar</span>
-            <span class="calendar-range" id="calendarRange">Draft Fri-Sun schedule</span>
+            <span class="calendar-title">Rock Warblers Trail Blazing Invitational</span>
+            <span class="calendar-range" id="calendarRange">Friday, June 19, 2026</span>
           </span>
           <span id="calendarChevron" class="calendar-chevron">▾</span>
         </button>
         <div id="calendarBody" class="calendar-body">
+          <div id="calendarCountdown" class="calendar-countdown" hidden>
+            <span class="calendar-countdown-label">Gates open in</span>
+            <span class="calendar-countdown-value" id="calendarCountdownValue">--</span>
+          </div>
           <ol class="calendar-days" id="calendarDays">
             <li class="calendar-empty">Loading schedule...</li>
           </ol>
         </div>
       </div>
-      <div id="parkTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabPark" hidden>
-        <div class="info-panel">
-          <h2>About the park</h2>
-          <p class="info-copy">Adventure Off Road Park is private land in South Pittsburg, Tennessee, mapped here for scale RC trail trucking and rock crawling.</p>
-          <ul class="info-list">
-            <li><span class="info-label">Map posture</span><span>Source-backed working map first; draft labels and event placements stay review context until confirmed.</span></li>
-            <li><span class="info-label">Trail use</span><span>This is not a full-size OHV trail map. Trails and terrain are read for 1/10-scale RC drivers and event crews.</span></li>
-            <li><span class="info-label">Event day</span><span>Use the Events tab for proposed session locations, then confirm final schedule and facility details with AOP or event staff.</span></li>
-          </ul>
+      <div id="poiTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabPoi" hidden>
+        <div id="poiList" class="poi-list" aria-live="polite">
+          <p class="poi-empty">Loading places…</p>
         </div>
       </div>
       <div id="aboutTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabAbout" hidden>
         <div class="info-panel">
-          <h2>About us</h2>
-          <p class="info-copy">This map project is focused on a trustworthy AOP map for drivers, trail buddies, visitors, and event staff.</p>
+          <h2>About the Rock Warblers</h2>
+          <p class="info-copy">Friday, June 19, 2026 we host the Trail Blazing Invitational at Adventure Off Road Park &mdash; a Rock Warblers crawl on the Tennessee ridge with gated stages, real terrain, and a campfire night run to close it out.</p>
           <ul class="info-list">
-            <li><span class="info-label">Trust first</span><span>Map features carry source, confidence, permission, and review status before they become publishable truth.</span></li>
-            <li><span class="info-label">Field loop</span><span>Board marks, GPX rides, photos, and rider notes are evidence. Staff review promotes the parts that hold up.</span></li>
-            <li><span class="info-label">Event support</span><span>Schedules, route tags, hot jumps, and park context are built to help people find the right place at the right time.</span></li>
+            <li><span class="info-label">Format</span><span>Three numbered stages, time-run. Gate touches, rolls, and driver assists cost you. Winching is free.</span></li>
+            <li><span class="info-label">Mandatory skills</span><span>Water, a grade pull, and a taco-stand inside every stage.</span></li>
+            <li><span class="info-label">Trail buddies</span><span>Required. Walk, mark, swap. Penalty winch travels with whoever isn&rsquo;t carrying one.</span></li>
+            <li><span class="info-label">Rigs</span><span>1/10 electric scale. 1.9&Prime; and 1.55&Prime; wheel classes. No dig, no rear steer. Five scale accessories minimum.</span></li>
+            <li><span class="info-label">Night crawl</span><span>Lights on after dusk. Leaves the pavilion, finishes at the fire.</span></li>
+            <li><span class="info-label">The park</span><span>Adventure Off Road Park &amp; Nature Center, South Pittsburg, TN. Six hundred acres of private ridge. Pavilion is base camp: registration, driver meeting, awards, and the fire pit. Camping on-site, first come.</span></li>
+            <li><span class="info-label">The map</span><span>On-day reference built from real terrain data and our own ride evidence. Use it in staging, at the pavilion, and walking a stage. Every line traces back to where it came from.</span></li>
+            <li><span class="info-label">The crew</span><span>Rock Warblers. We build the rigs, walk the stages, throw the days. Find us at the pavilion or out walking a stage.</span></li>
           </ul>
-          <p class="info-note">The current viewer is a static working map. Public submissions and upload moderation belong to the later app loop.</p>
+          <p class="info-note">Built by Rock Warblers, for Rock Warblers. See you at the pavilion.</p>
         </div>
       </div>
     </section>
@@ -494,6 +529,30 @@
           <label><input type="checkbox" id="showEventSchedule" /> Event schedule POIs</label>
           <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
           <label><input type="checkbox" id="showBrandLogos" /> Brand logos (AOP &amp; Rock Warblers)</label>
+        </div>
+      </section>
+
+      <!-- POI section: parallel to the left #poiTabPanel. Each row toggles
+           the source layer that backs that POI group, so a user can hide all
+           Event anchors / Cemeteries / etc. without hunting through Source /
+           Derived / Publishable. Two-way bound to the underlying toggles, so
+           changing visibility from any surface keeps the group state in sync.
+           Card: brain/tasks/03_event_app/left_panel_poi_browser.md. -->
+      <section class="panel-section collapsed" data-section="poi">
+        <div class="section-header">
+          <span class="section-label">POI</span>
+          <button type="button" class="section-toggle" aria-expanded="false">
+            <span class="section-chevron">▸</span>
+          </button>
+        </div>
+        <div class="section-content" id="poiGroupToggles">
+          <label><input type="checkbox" id="poiGroupEventAnchors" data-poi-group="event_anchors" data-poi-target="showEventSchedule" /> Event anchors</label>
+          <label><input type="checkbox" id="poiGroupBuildings" data-poi-group="buildings" data-poi-target="showBuildings" /> Buildings in the park</label>
+          <label><input type="checkbox" id="poiGroupTrails" data-poi-group="trails" data-poi-target="showTrails" /> Trails</label>
+          <label><input type="checkbox" id="poiGroupCemeteries" data-poi-group="cemeteries" data-poi-target="showCemeteries" /> Cemeteries</label>
+          <label><input type="checkbox" id="poiGroupVisitorSupport" data-poi-group="visitor_support" data-poi-target="showVisitorContext" /> Visitor support</label>
+          <label><input type="checkbox" id="poiGroupDrawnPois" data-poi-group="drawn_pois" data-poi-target="showEditorPois" /> Drawn POIs</label>
+          <small>Toggles global visibility for each POI group. Wired to the same source-layer toggles in Source / Derived / Publishable / Map editor so any change syncs both ways.</small>
         </div>
       </section>
 
@@ -699,6 +758,8 @@
     const calendarBody = document.getElementById('calendarBody');
     const calendarDays = document.getElementById('calendarDays');
     const calendarChevron = document.getElementById('calendarChevron');
+    const calendarCountdown = document.getElementById('calendarCountdown');
+    const calendarCountdownValue = document.getElementById('calendarCountdownValue');
     const leftTabButtons = [...document.querySelectorAll('.left-tab[data-left-tab]')];
     const leftTabPanels = [...document.querySelectorAll('.left-tab-panel')];
     const presetButtons = [...document.querySelectorAll('.preset-bar button[data-preset]')];
@@ -759,6 +820,385 @@
         panel.hidden = panel.id !== `${tabKey}TabPanel`;
       }
       if (tabKey === 'events') scrollCalendarCurrentRowIntoView();
+      if (tabKey === 'poi') renderPoiTab();
+    }
+
+    // POI tab data caches. publishDataCache shadows the async-local publishData
+    // so the left-rail POI browser can read trails after they land. poiIndex
+    // is the fetched aop_poi_index.json (visitor blurbs + revisit notes).
+    // Declared here (not lower in the file) so the POI module below is not in
+    // its temporal-dead-zone when the immediate fetchPoiIndex() call fires.
+    let publishDataCache = null;
+    let poiIndex = null;
+
+    function isPoiTabActive() {
+      const panel = document.getElementById('poiTabPanel');
+      return !!panel && !panel.hidden;
+    }
+
+    function renderPoiTabIfActive() {
+      if (isPoiTabActive()) renderPoiTab();
+    }
+
+    async function fetchPoiIndex() {
+      if (poiIndex) return poiIndex;
+      try {
+        const response = await fetch('./data/aop_poi_index.json');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        poiIndex = await response.json();
+        console.info('POI index loaded', poiIndex && poiIndex.entries && poiIndex.entries.length, 'entries');
+      } catch (error) {
+        console.error('POI index load failed', error);
+        poiIndex = { schema: 'aop-poi-index-v1', entries: [], groups: [] };
+      }
+      renderPoiTabIfActive();
+      return poiIndex;
+    }
+    // Kick off the fetch immediately; the renderer is resilient to a null index.
+    fetchPoiIndex();
+
+    // Right-panel POI section: two-way bind each group checkbox to the source
+    // layer toggle that backs it, so a user can flip global visibility per POI
+    // group and the state stays in sync no matter which surface the change
+    // happened on. Idempotent: safe to call once at module init.
+    function wirePoiPanel() {
+      const rows = document.querySelectorAll('#poiGroupToggles input[data-poi-target]');
+      if (!rows.length) return;
+      // Suppress feedback loops while we mirror state across surfaces.
+      let echoing = false;
+      for (const row of rows) {
+        const target = document.getElementById(row.dataset.poiTarget);
+        if (!target) {
+          row.disabled = true;
+          continue;
+        }
+        // Initial state mirrors the underlying source toggle.
+        row.checked = !!target.checked;
+        row.addEventListener('change', () => {
+          if (echoing) return;
+          if (target.checked === row.checked) return;
+          target.checked = row.checked;
+          target.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        target.addEventListener('change', () => {
+          if (row.checked === target.checked) return;
+          echoing = true;
+          row.checked = target.checked;
+          echoing = false;
+        });
+      }
+    }
+    wirePoiPanel();
+
+    function poiIndexLookup(matchKey) {
+      if (!poiIndex || !Array.isArray(poiIndex.entries)) return null;
+      for (const entry of poiIndex.entries) {
+        const m = entry.match || {};
+        let ok = true;
+        for (const k of Object.keys(m)) {
+          if (matchKey[k] !== m[k]) { ok = false; break; }
+        }
+        if (ok) return entry;
+      }
+      return null;
+    }
+
+    function poiGroupLabel(groupId) {
+      const groups = poiIndex && Array.isArray(poiIndex.groups) ? poiIndex.groups : [];
+      const found = groups.find((g) => g.id === groupId);
+      return found && found.label ? found.label : groupId;
+    }
+
+    function poiGroupOrder() {
+      const groups = poiIndex && Array.isArray(poiIndex.groups) ? poiIndex.groups : [];
+      return groups.map((g) => g.id);
+    }
+
+    function buildPoiGroups() {
+      // Each row: { id, name, kind, blurb, revisitNote, status, source, caveat,
+      //             feature, toggle, popupCoord }
+      const groups = new Map();
+      function pushRow(groupId, row) {
+        if (!groups.has(groupId)) groups.set(groupId, []);
+        groups.get(groupId).push(row);
+      }
+
+      // --- Event anchors -----------------------------------------------
+      if (eventScheduleConfig && eventScheduleConfig.locations) {
+        for (const [tag, location] of Object.entries(eventScheduleConfig.locations)) {
+          if (!location || location.hidden) continue;
+          // Render aliases too (e.g. #registration aliases #pavilion) so
+          // visitor-relevant distinct goals stay visible — but only if the
+          // alias resolves to coordinates and has its own label.
+          const normalizedTag = normalizeLocationTag(tag);
+          const resolved = eventLocationByTag.get(normalizedTag);
+          if (!resolved || !resolved.coordinates) continue;
+          const entry = poiIndexLookup({ source: 'event_schedule', location_tag: tag });
+          const feature = {
+            type: 'Feature',
+            properties: { kind: 'event_anchor', location_tag: tag, label: location.label || tag },
+            geometry: { type: 'Point', coordinates: resolved.coordinates }
+          };
+          pushRow('event_anchors', {
+            id: `event:${tag}`,
+            name: location.label || tag,
+            kind: location.role ? location.role.replace(/_/g, ' ') : 'event anchor',
+            blurb: entry && entry.blurb ? entry.blurb : null,
+            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
+            status: location.confidence || 'proposed',
+            source: location.source || 'event schedule',
+            caveat: location.caveat || null,
+            feature,
+            toggle: eventScheduleToggle,
+            popupCoord: resolved.coordinates
+          });
+        }
+      }
+
+      // --- Buildings (in-park only) ------------------------------------
+      const buildingsRt = featureListRuntime && featureListRuntime.buildings;
+      if (buildingsRt && buildingsRt.data && Array.isArray(buildingsRt.data.features)) {
+        for (const feature of buildingsRt.data.features) {
+          const props = feature.properties || {};
+          if (props.inside_aop_boundary !== true) continue;
+          const entry = poiIndexLookup({ source: 'buildings', address: props.address });
+          pushRow('buildings', {
+            id: `building:${props.uuid || props.address}`,
+            name: props.name || props.address || 'Building',
+            kind: props.primary_occupancy ? props.primary_occupancy.toLowerCase() : 'building',
+            blurb: entry && entry.blurb ? entry.blurb : null,
+            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
+            status: props.confidence || 'unknown',
+            source: props.footprint_source || 'FEMA USA Structures',
+            caveat: null,
+            feature,
+            toggle: buildingsToggle,
+            popupCoord: (props.centroid_lng != null && props.centroid_lat != null)
+              ? [props.centroid_lng, props.centroid_lat]
+              : null
+          });
+        }
+      }
+
+      // --- Trails (publish.geojson trail_centerlines) ------------------
+      if (publishDataCache && Array.isArray(publishDataCache.features)) {
+        for (const feature of publishDataCache.features) {
+          const props = feature.properties || {};
+          if (props.layer !== 'trail_centerlines') continue;
+          const entry = poiIndexLookup({ source: 'publish', layer: 'trail_centerlines', name: props.name });
+          pushRow('trails', {
+            id: `trail:${props.id || props.name}`,
+            name: props.name || 'Trail',
+            kind: props.difficulty ? `trail · ${props.difficulty}` : 'trail',
+            blurb: entry && entry.blurb ? entry.blurb : null,
+            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
+            status: props.status || props.confidence || 'observed',
+            source: 'publish.geojson',
+            caveat: null,
+            feature,
+            toggle: trailToggle,
+            popupCoord: firstCoordinate(feature.geometry)
+          });
+        }
+      }
+
+      // --- Cemeteries (marker rows only, so each site appears once) -----
+      const cemeteriesRt = featureListRuntime && featureListRuntime.cemeteries;
+      if (cemeteriesRt && cemeteriesRt.data && Array.isArray(cemeteriesRt.data.features)) {
+        for (const feature of cemeteriesRt.data.features) {
+          const props = feature.properties || {};
+          if (props.geom_role !== 'marker') continue;
+          const entry = poiIndexLookup({ source: 'cemeteries', geom_role: 'marker', parcel_id: props.parcel_id });
+          pushRow('cemeteries', {
+            id: `cemetery:${props.parcel_id || props.name}`,
+            name: props.name || 'Cemetery',
+            kind: props.cemetery_type || 'cemetery',
+            blurb: entry && entry.blurb ? entry.blurb : null,
+            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
+            status: 'parcel record',
+            source: 'TN Comptroller parcels',
+            caveat: null,
+            feature,
+            toggle: cemeteriesToggle,
+            popupCoord: firstCoordinate(feature.geometry)
+          });
+        }
+      }
+
+      // --- Visitor support (off-park callouts) -------------------------
+      if (visitorContextData && Array.isArray(visitorContextData.features)) {
+        for (const feature of visitorContextData.features) {
+          const props = feature.properties || {};
+          const entry = poiIndexLookup({ source: 'visitor_context', name: props.name });
+          pushRow('visitor_support', {
+            id: `visitor:${props.name}`,
+            name: props.name || 'Visitor support',
+            kind: props.kind ? props.kind.replace(/_/g, ' ') : 'visitor support',
+            blurb: entry && entry.blurb ? entry.blurb : (props.services || null),
+            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
+            status: 'planning callout',
+            source: 'AOP / RiderPlanet / Marion County Tourism',
+            caveat: props.drive_time_note || null,
+            feature,
+            toggle: visitorContextToggle,
+            popupCoord: geometryCentroid(feature.geometry)
+          });
+        }
+      }
+
+      // --- Drawn POIs (user's own work, per-browser localStorage) -------
+      if (Array.isArray(editorPois) && editorPois.length) {
+        for (const feature of editorPois) {
+          const props = feature.properties || {};
+          pushRow('drawn_pois', {
+            id: `drawn:${props.id || props.name || Math.random()}`,
+            name: props.name || props.category || 'Drawn POI',
+            kind: props.category || 'drawn',
+            blurb: props.notes || null,
+            revisitNote: null,
+            status: 'user-drawn',
+            source: 'editor — this browser',
+            caveat: null,
+            feature,
+            toggle: editorPoiToggle,
+            popupCoord: firstCoordinate(feature.geometry) || geometryCentroid(feature.geometry)
+          });
+        }
+      }
+
+      // Return groups in the order declared by poi_index.json (falls back to
+      // insertion order if the index doesn't list a group).
+      const orderedIds = poiGroupOrder();
+      const seen = new Set();
+      const out = [];
+      for (const id of orderedIds) {
+        if (!groups.has(id)) continue;
+        out.push({ id, label: poiGroupLabel(id), rows: groups.get(id) });
+        seen.add(id);
+      }
+      for (const [id, rows] of groups.entries()) {
+        if (seen.has(id)) continue;
+        out.push({ id, label: poiGroupLabel(id), rows });
+      }
+      return out;
+    }
+
+    function renderPoiTab() {
+      const container = document.getElementById('poiList');
+      if (!container) return;
+      const groups = buildPoiGroups();
+      const totalRows = groups.reduce((sum, g) => sum + g.rows.length, 0);
+      container.innerHTML = '';
+      if (totalRows === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'poi-empty';
+        empty.textContent = poiIndex
+          ? 'No places loaded yet. Toggle layers in the right panel, or wait for the map to finish loading.'
+          : 'Loading places…';
+        container.append(empty);
+        return;
+      }
+      for (const group of groups) {
+        const groupEl = document.createElement('div');
+        groupEl.className = 'poi-list-group';
+        groupEl.dataset.groupId = group.id;
+
+        const head = document.createElement('div');
+        head.className = 'poi-list-group-head';
+        const label = document.createElement('span');
+        label.textContent = group.label;
+        const count = document.createElement('span');
+        count.className = 'poi-list-group-count';
+        count.textContent = `${group.rows.length}`;
+        head.append(label, count);
+        groupEl.append(head);
+
+        for (const row of group.rows) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'poi-row';
+          btn.dataset.poiId = row.id;
+          btn.setAttribute('aria-label', `Fly to ${row.name}`);
+
+          const name = document.createElement('span');
+          name.className = 'poi-row-name';
+          name.textContent = row.name;
+          btn.append(name);
+
+          const subtitle = document.createElement('span');
+          subtitle.className = 'poi-row-subtitle';
+          if (row.blurb) {
+            subtitle.textContent = row.blurb;
+          } else if (row.revisitNote) {
+            subtitle.textContent = row.revisitNote;
+          } else {
+            subtitle.textContent = `${row.kind} · ${row.source}`;
+          }
+          btn.append(subtitle);
+
+          const meta = document.createElement('span');
+          meta.className = 'poi-row-meta';
+          const kindChip = document.createElement('span');
+          kindChip.textContent = row.kind;
+          meta.append(kindChip);
+          if (row.status) {
+            const statusChip = document.createElement('span');
+            statusChip.textContent = row.status;
+            meta.append(statusChip);
+          }
+          if (!row.blurb && row.revisitNote) {
+            const placeholderChip = document.createElement('span');
+            placeholderChip.className = 'poi-placeholder-chip';
+            placeholderChip.textContent = 'info needed — revisit';
+            placeholderChip.title = row.revisitNote;
+            meta.append(placeholderChip);
+          }
+          btn.append(meta);
+
+          btn.addEventListener('click', () => gotoPoi(row));
+          groupEl.append(btn);
+        }
+        container.append(groupEl);
+      }
+    }
+
+    function gotoPoi(row) {
+      if (!row || !row.feature) return;
+      closeAllMapPopups();
+      // Auto-enable the source layer if it was off, mirroring the schedule pattern.
+      if (row.toggle && !row.toggle.checked) {
+        row.toggle.checked = true;
+        row.toggle.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      flyToFeature(row.feature);
+      const coord = row.popupCoord || firstCoordinate(row.feature.geometry) || geometryCentroid(row.feature.geometry);
+      if (!coord) return;
+      const slice = visibleMapRect();
+      const sliceWidth = Math.max(0, slice.right - slice.left);
+      const popupMax = Math.max(200, Math.min(300, sliceWidth - 28));
+      const popup = new maplibregl.Popup({ maxWidth: `${popupMax}px`, className: 'poi-tab-popup' })
+        .setLngLat(coord)
+        .setHTML(poiPopupHtml(row))
+        .addTo(map);
+      map.once('moveend', () => panPopupIntoView(popup));
+      setTimeout(() => panPopupIntoView(popup), 1200);
+    }
+
+    function poiPopupHtml(row) {
+      const lines = [];
+      lines.push(`<p class="poi-popup-title">${escapeHtml(row.name)}</p>`);
+      if (row.blurb) {
+        lines.push(`<p class="poi-popup-subtitle">${escapeHtml(row.blurb)}</p>`);
+      } else if (row.revisitNote) {
+        lines.push(`<p class="poi-popup-placeholder">Info needed — revisit. ${escapeHtml(row.revisitNote)}</p>`);
+      }
+      const meta = [];
+      meta.push(`<dt>Kind</dt><dd>${escapeHtml(row.kind || 'unknown')}</dd>`);
+      if (row.status) meta.push(`<dt>Status</dt><dd>${escapeHtml(row.status)}</dd>`);
+      if (row.source) meta.push(`<dt>Source</dt><dd>${escapeHtml(row.source)}</dd>`);
+      if (row.caveat) meta.push(`<dt>Caveat</dt><dd>${escapeHtml(row.caveat)}</dd>`);
+      lines.push(`<dl class="poi-popup-meta">${meta.join('')}</dl>`);
+      return lines.join('');
     }
 
     for (const button of leftTabButtons) {
@@ -2241,6 +2681,7 @@
       if (layerKey === 'buildings') maybeSeedFeatureTags();
       rebuildTagLookup();
       rebuildEventScheduleData();
+      renderPoiTabIfActive();
     }
 
     // Render the feature list DOM into the shared #featureList container in
@@ -2711,6 +3152,15 @@
           // layer to a near-black halo (#15110d) at ~2 px so the text reads
           // against tan paper, dark gridlines, and red trail strokes alike.
           'osm-named-labels': { 'text-color': '#fff0b8', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
+          // Pass 4 theme review §6: trace-preset overrides for editor-POI,
+          // cemetery, and nine-patch labels — defaults sit on the
+          // #4a3c2a + #f7f1e2 combo and disappear against the #1d1a16
+          // trace background. Flip to cream-on-dark like osm-named-labels.
+          'editor-poi-labels': { 'text-color': '#fff0b8', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
+          'editor-poi-fill-labels': { 'text-color': '#fff0b8', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
+          'editor-poi-line-labels': { 'text-color': '#fff0b8', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
+          'cemetery-label': { 'text-color': '#fff0b8', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
+          'nine-patch-labels': { 'text-color': '#fff4cf', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
           'roads-local': { 'line-color': '#fff4cf', 'line-width': 2.4, 'line-opacity': 0.86 },
           'roads-connecting': { 'line-color': '#ffe08a', 'line-width': 3, 'line-opacity': 0.9 },
           'roads-secondary': { 'line-color': '#ffd072', 'line-width': 3.5, 'line-opacity': 0.92 },
@@ -3851,6 +4301,7 @@
       // them from the freshly-resolved data; then rebuild searchGroups so
       // typing `#pavilion` finds the live anchor.
       refreshEventScheduleSearchIndex();
+      renderPoiTabIfActive();
     }
 
     function refreshEventScheduleSearchIndex() {
@@ -3894,10 +4345,34 @@
       return new Date();
     }
 
-    // Anchor a session's date_label onto the calendar week. Saturday maps to
-    // the most-recent Saturday on/before `now`; Friday is that Sat -1d;
-    // Sunday is that Sat +1d. Returns the session-start Date or null.
-    function eventScheduleAnchor(dayLabel, startLocal, now) {
+    // Default session duration for end-time math (schema has no end_local).
+    // Kept in sync with the hot button's HOT_BUTTON_SESSION_LEN_MIN below.
+    const CALENDAR_SESSION_DURATION_MIN = 90;
+    // Monday-morning rollover. Before this hour on a Monday, the calendar
+    // stays anchored to the just-finished weekend (post-event window). After
+    // it, the anchor flips forward to the upcoming weekend (countdown mode).
+    const CALENDAR_MONDAY_RESET_HOUR = 6;
+
+    // Resolve "the Saturday this calendar anchors to" for now. Mon-Fri (and
+    // Sat) point at the current/upcoming weekend; Sun stays on yesterday's
+    // Sat. On Monday, the 06:00 cutover swings the anchor from prior Sat to
+    // upcoming Sat — that's what makes the post-event window expire and the
+    // pre-event countdown begin.
+    function resolveCalendarAnchorSat(now) {
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      const dow = today.getDay(); // 0=Sun..6=Sat
+      let daysToSat;
+      if (dow === 6) daysToSat = 0;
+      else if (dow === 0) daysToSat = -1;
+      else if (dow === 1) daysToSat = now.getHours() < CALENDAR_MONDAY_RESET_HOUR ? -2 : 5;
+      else if (dow === 5) daysToSat = 1;
+      else daysToSat = 6 - dow; // Tue–Thu → upcoming Sat
+      today.setDate(today.getDate() + daysToSat);
+      return today;
+    }
+
+    // Session-start Date for a row given a resolved anchor Saturday.
+    function eventScheduleStartFromAnchor(dayLabel, startLocal, anchorSat) {
       const day = String(dayLabel || '').trim().toLowerCase();
       const tm = /^(\d{1,2}):(\d{2})$/.exec(String(startLocal || '').trim());
       if (!tm) return null;
@@ -3905,26 +4380,87 @@
       const minute = Number(tm[2]);
       if (!Number.isFinite(hour) || hour < 0 || hour > 23) return null;
       if (!Number.isFinite(minute) || minute < 0 || minute > 59) return null;
-      const refSaturday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-      const dow = refSaturday.getDay(); // 0=Sun..6=Sat
-      const daysBack = (dow - 6 + 7) % 7; // Sat=0
-      refSaturday.setDate(refSaturday.getDate() - daysBack);
-      let offset = 0;
+      let offset;
       if (day === 'friday') offset = -1;
+      else if (day === 'saturday') offset = 0;
       else if (day === 'sunday') offset = 1;
-      else if (day !== 'saturday') return null;
-      const start = new Date(refSaturday.getFullYear(), refSaturday.getMonth(),
-        refSaturday.getDate() + offset, hour, minute, 0, 0);
-      return start;
+      else return null;
+      return new Date(anchorSat.getFullYear(), anchorSat.getMonth(),
+        anchorSat.getDate() + offset, hour, minute, 0, 0);
     }
 
-    // Format remaining minutes as "Xm" (<60) or "Xh Ym" (>=60).
+    // Scan rendered rows to derive the schedule's edges as minutes-past-
+    // midnight: gates-open = earliest Friday start; weekend-end = latest
+    // Sunday start + default session length. Fallbacks match the JSON
+    // baseline (Fri 17:00 / Sun 18:30) so the state machine still works
+    // before render or with an empty schedule.
+    function computeCalendarScheduleEdges() {
+      let gatesOpen = null;
+      let weekendEnd = null;
+      if (calendarDays) {
+        for (const li of calendarDays.querySelectorAll('li[data-session-day]')) {
+          const day = (li.getAttribute('data-session-day') || '').toLowerCase();
+          const tm = /^(\d{1,2}):(\d{2})$/.exec((li.getAttribute('data-session-start') || '').trim());
+          if (!tm) continue;
+          const minutes = Number(tm[1]) * 60 + Number(tm[2]);
+          if (day === 'friday') {
+            if (gatesOpen === null || minutes < gatesOpen) gatesOpen = minutes;
+          } else if (day === 'sunday') {
+            const end = minutes + CALENDAR_SESSION_DURATION_MIN;
+            if (weekendEnd === null || end > weekendEnd) weekendEnd = end;
+          }
+        }
+      }
+      return {
+        gatesOpenMin: gatesOpen != null ? gatesOpen : 17 * 60,
+        weekendEndMin: weekendEnd != null ? weekendEnd : 18 * 60 + 30,
+      };
+    }
+
+    // Classify the current moment against the anchored weekend. Three states:
+    //   'pre'  — Mon 06:00 → Fri gates open. Countdown banner active.
+    //   'live' — Fri gates open → end of last Sun session. Per-row badges.
+    //   'post' — Sun last session → Mon 06:00. All rows past, banner hidden.
+    function computeCalendarState(now) {
+      const edges = computeCalendarScheduleEdges();
+      const anchorSat = resolveCalendarAnchorSat(now);
+      const gatesH = Math.floor(edges.gatesOpenMin / 60);
+      const gatesM = edges.gatesOpenMin % 60;
+      const endH = Math.floor(edges.weekendEndMin / 60);
+      const endM = edges.weekendEndMin % 60;
+      const gatesOpen = new Date(anchorSat.getFullYear(), anchorSat.getMonth(),
+        anchorSat.getDate() - 1, gatesH, gatesM, 0, 0);
+      const weekendEnd = new Date(anchorSat.getFullYear(), anchorSat.getMonth(),
+        anchorSat.getDate() + 1, endH, endM, 0, 0);
+      const mondayReset = new Date(anchorSat.getFullYear(), anchorSat.getMonth(),
+        anchorSat.getDate() + 2, CALENDAR_MONDAY_RESET_HOUR, 0, 0, 0);
+      const nowMs = now.getTime();
+      let state;
+      if (nowMs < gatesOpen.getTime()) state = 'pre';
+      else if (nowMs < weekendEnd.getTime()) state = 'live';
+      else state = 'post';
+      return {
+        state,
+        anchorSat,
+        gatesOpenMs: gatesOpen.getTime(),
+        weekendEndMs: weekendEnd.getTime(),
+        mondayResetMs: mondayReset.getTime(),
+        countdownTargetMs: state === 'pre' ? gatesOpen.getTime() : null,
+      };
+    }
+
+    // Format remaining minutes as "Xm" (<60), "Xh Ym" (<1d), or "Xd Yh" (>=1d).
     function eventScheduleFormatMinutes(minutes) {
       const m = Math.max(0, Math.round(minutes));
       if (m < 60) return `${m}m`;
-      const h = Math.floor(m / 60);
-      const rem = m % 60;
-      return rem === 0 ? `${h}h` : `${h}h ${rem}m`;
+      if (m < 1440) {
+        const h = Math.floor(m / 60);
+        const rem = m % 60;
+        return rem === 0 ? `${h}h` : `${h}h ${rem}m`;
+      }
+      const d = Math.floor(m / 1440);
+      const remH = Math.floor((m % 1440) / 60);
+      return remH === 0 ? `${d}d` : `${d}d ${remH}h`;
     }
 
     function calendarCurrentItem() {
@@ -3949,22 +4485,28 @@
       if (!calendarDays) return;
       const now = eventScheduleNow();
       const nowMs = now.getTime();
+      const calendar = computeCalendarState(now);
+      if (calendarCard) calendarCard.setAttribute('data-calendar-state', calendar.state);
       const rows = Array.from(calendarDays.querySelectorAll('li[data-session-day]'));
       const computed = rows.map((li) => {
         const day = li.getAttribute('data-session-day') || '';
         const start = li.getAttribute('data-session-start') || '';
-        const startDate = eventScheduleAnchor(day, start, now);
+        const startDate = eventScheduleStartFromAnchor(day, start, calendar.anchorSat);
         if (!startDate) return { li, state: 'future', startMs: Infinity, endMs: Infinity };
         const startMs = startDate.getTime();
-        const endMs = startMs + 90 * 60 * 1000;
+        const endMs = startMs + CALENDAR_SESSION_DURATION_MIN * 60 * 1000;
         let state = 'future';
         if (nowMs >= startMs && nowMs < endMs) state = 'happening';
         else if (nowMs >= endMs) state = 'past';
         return { li, state, startMs, endMs };
       });
-      // Promote the first future row to upcoming_next (exactly one).
-      const firstFuture = computed.find((r) => r.state === 'future');
-      if (firstFuture) firstFuture.state = 'upcoming_next';
+      // In 'pre' state the top countdown banner carries the signal, so per-
+      // row upcoming_next promotion is suppressed to avoid two countdowns
+      // racing each other. 'live' and 'post' use the normal row treatment.
+      if (calendar.state !== 'pre') {
+        const firstFuture = computed.find((r) => r.state === 'future');
+        if (firstFuture) firstFuture.state = 'upcoming_next';
+      }
       for (const r of computed) {
         r.li.setAttribute('data-session-state', r.state);
         // Remove any prior badges; we re-create only for happening/upcoming.
@@ -3984,6 +4526,15 @@
           badge.setAttribute('data-badge', 'soon');
           badge.textContent = `SOON · IN ${eventScheduleFormatMinutes(untilMin)}`;
           r.li.appendChild(badge);
+        }
+      }
+      if (calendarCountdown && calendarCountdownValue) {
+        if (calendar.state === 'pre' && calendar.countdownTargetMs != null) {
+          const untilMin = (calendar.countdownTargetMs - nowMs) / 60000;
+          calendarCountdownValue.textContent = eventScheduleFormatMinutes(untilMin).toUpperCase();
+          calendarCountdown.hidden = false;
+        } else {
+          calendarCountdown.hidden = true;
         }
       }
       // Hot control shares the clock/anchor + 60s tick + visibilitychange
@@ -4228,9 +4779,7 @@
 
     function renderEventSchedule(config, data) {
       const event = config?.event || {};
-      calendarRange.textContent = event.date_range_label
-        ? `Draft ${event.date_range_label} schedule`
-        : 'Draft schedule';
+      calendarRange.textContent = event.date_range_label || '';
       const sessions = (data?.features || [])
         .filter((feature) => feature.properties?.feature_kind === 'event_session')
         .sort((a, b) => Number(a.properties.sort_order || 0) - Number(b.properties.sort_order || 0));
@@ -6257,6 +6806,9 @@
         message.textContent = 'Publish layer failed to load.';
         return;
       }
+
+      publishDataCache = publishData;
+      renderPoiTabIfActive();
 
       map.addSource('publish-data', {
         type: 'geojson',

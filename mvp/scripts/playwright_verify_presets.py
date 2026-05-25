@@ -148,25 +148,70 @@ def main() -> int:
         tab_labels = page.locator(".left-controls .left-tab").evaluate_all(
             "els => els.map((el) => el.textContent.trim())"
         )
-        check("left card exposes Events, Park, and About tabs", tab_labels == ["Events", "Park", "About"], str(tab_labels))
+        check("left card exposes Events, POI, and About tabs", tab_labels == ["Events", "POI", "About"], str(tab_labels))
         check(
             "Events tab is selected by default",
             page.locator("#leftTabEvents").get_attribute("aria-selected") == "true"
             and page.locator("#eventsTabPanel").is_visible(),
         )
-        page.locator("#leftTabPark").click()
-        check(
-            "Park tab shows source-cautious park copy",
-            page.locator("#parkTabPanel").is_visible()
-            and "scale RC trail trucking" in page.locator("#parkTabPanel").inner_text()
-            and "not a full-size OHV trail map" in page.locator("#parkTabPanel").inner_text(),
-        )
         page.locator("#leftTabAbout").click()
+        about_text = page.locator("#aboutTabPanel").inner_text()
         check(
-            "About tab shows map-project posture",
+            "About tab carries the merged Trail Blazing Invitational + Rock Warblers copy",
             page.locator("#aboutTabPanel").is_visible()
-            and "Trust first" in page.locator("#aboutTabPanel").inner_text()
-            and "Public submissions" in page.locator("#aboutTabPanel").inner_text(),
+            and "Trail Blazing Invitational" in about_text
+            and "Rock Warblers" in about_text
+            and "See you at the pavilion" in about_text,
+        )
+        # POI tab — left-rail browseable directory.
+        # Card: brain/tasks/03_event_app/left_panel_poi_browser.md.
+        page.locator("#leftTabPoi").click()
+        page.wait_for_timeout(400)
+        poi_rows_count = page.locator("#poiList .poi-row").count()
+        check(
+            "POI tab renders at least one POI row after data loads",
+            page.locator("#poiTabPanel").is_visible() and poi_rows_count >= 1,
+            f"rows={poi_rows_count}",
+        )
+        check(
+            "POI tab groups list at least one labelled section",
+            page.locator("#poiList .poi-list-group").count() >= 1,
+        )
+        # Right-panel POI section — parallel to the left tab, group-level
+        # visibility toggles two-way bound to source-layer toggles.
+        page.locator('section[data-section="poi"] .section-toggle').click()
+        poi_section_rows = page.locator('#poiGroupToggles input[data-poi-target]').count()
+        check(
+            "right-panel POI section exposes six group toggles",
+            poi_section_rows == 6,
+            f"rows={poi_section_rows}",
+        )
+        # Flip Cemeteries on via the POI section, confirm the source toggle mirrors.
+        cem_before = page.evaluate(
+            "() => ({ poi: document.getElementById('poiGroupCemeteries').checked, src: document.getElementById('showCemeteries').checked })"
+        )
+        page.locator("#poiGroupCemeteries").click()
+        page.wait_for_timeout(150)
+        cem_after = page.evaluate(
+            "() => ({ poi: document.getElementById('poiGroupCemeteries').checked, src: document.getElementById('showCemeteries').checked, layer: map.getLayoutProperty('cemetery-fill', 'visibility') })"
+        )
+        check(
+            "POI section -> source toggle propagates",
+            (not cem_before["poi"]) and cem_after["poi"] and cem_after["src"] and cem_after["layer"] == "visible",
+            f"before={cem_before} after={cem_after}",
+        )
+        # Reverse direction — flip source toggle from JS, POI section mirrors.
+        page.evaluate(
+            "() => { const c = document.getElementById('showCemeteries'); c.checked = false; c.dispatchEvent(new Event('change', { bubbles: true })); }"
+        )
+        page.wait_for_timeout(150)
+        cem_after2 = page.evaluate(
+            "() => ({ poi: document.getElementById('poiGroupCemeteries').checked, src: document.getElementById('showCemeteries').checked })"
+        )
+        check(
+            "source toggle -> POI section mirrors",
+            (not cem_after2["poi"]) and (not cem_after2["src"]),
+            f"after={cem_after2}",
         )
         page.locator("#leftTabEvents").click()
         schedule_rows = page.locator("#calendarBody .calendar-row").evaluate_all(

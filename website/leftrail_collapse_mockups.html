@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Left rail collapse — mockup review</title>
+  <style>
+    :root {
+      --brown-ink: #4a3c2a;
+      --brown-mid: #6b5a3e;
+      --brown-dark: #3f3122;
+      --brown-soft: #756444;
+      --cream-hover: #efe2c6;
+      --cream-surface: #faf6eb;
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --control-border: #b9aa88;
+      --moss: #5f7157;
+      --moss-dark: #384833;
+      --moss-soft: #e3ebdc;
+      --rust: #9a5a32;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; background: var(--cream-surface); color: var(--brown-ink);
+      font: 16px/1.55 Inter, system-ui, -apple-system, sans-serif; }
+    header { position: sticky; top: 0; z-index: 10; background: rgba(250, 246, 235, 0.96); backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--cream-border); padding: 14px 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    header h1 { margin: 0; font-size: 1.1rem; color: var(--moss-dark); }
+    header .meta { color: var(--brown-soft); font-size: 0.82rem; margin-top: 2px; }
+    nav.jump { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    nav.jump a { color: var(--brown-mid); text-decoration: none; padding: 4px 10px;
+      border: 1px solid var(--cream-border); border-radius: 999px; font-size: 0.82rem; background: #fff; }
+    nav.jump a:hover { background: var(--cream-hover); color: var(--brown-dark); border-color: var(--control-border); }
+    main { max-width: 1140px; margin: 0 auto; padding: 24px 24px 80px; }
+    section.mockup { background: #fff; border: 1px solid var(--cream-border); border-radius: 12px;
+      padding: 28px; margin-bottom: 32px; box-shadow: 0 4px 14px rgba(0,0,0,0.06); scroll-margin-top: 110px; }
+    section.mockup > h2 { margin: 0 0 4px; color: var(--moss-dark); font-size: 1.5rem; }
+    section.mockup .angle { color: var(--brown-soft); font-style: italic; margin: 0 0 18px; }
+    section.mockup h3 { margin: 28px 0 10px; color: var(--brown-dark); font-size: 0.85rem;
+      text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--cream-border); padding-bottom: 4px; }
+    section.mockup h3:first-of-type { margin-top: 18px; }
+    section.mockup p { margin: 8px 0; }
+    pre.ascii { background: var(--control-bg); border: 1px solid var(--cream-border); border-radius: 8px;
+      padding: 14px 16px; overflow-x: auto; font: 12.5px/1.25 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      color: var(--brown-ink); white-space: pre; tab-size: 2; }
+    table { border-collapse: collapse; width: 100%; margin: 10px 0 14px; }
+    th, td { border: 1px solid var(--cream-border); padding: 7px 10px; text-align: left;
+      font-size: 0.86rem; vertical-align: top; }
+    th { background: var(--moss-soft); color: var(--moss-dark); font-weight: 700; }
+    .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.72rem;
+      font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; vertical-align: middle; margin-right: 6px; }
+    .tag.rationale { background: rgba(107,90,62,0.16); color: var(--brown-dark); }
+    .tag.risk { background: rgba(154,90,50,0.16); color: var(--rust); }
+    .tag.delight { background: rgba(95,113,87,0.22); color: var(--moss-dark); }
+    .summary-table th, .summary-table td { font-size: 0.82rem; }
+    .summary-table tr td:first-child { font-weight: 700; color: var(--moss-dark); background: var(--control-bg); }
+    .footnote { font-size: 0.8rem; color: var(--brown-soft); margin-top: 14px; padding-top: 10px;
+      border-top: 1px dashed var(--cream-border); }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 16px; }
+    .badge-row .b { font-size: 0.78rem; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--cream-border);
+      background: var(--control-bg); color: var(--brown-mid); }
+    @media (max-width: 700px) {
+      pre.ascii { font-size: 10.5px; }
+      main { padding: 16px; }
+      section.mockup { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Left rail collapse — mockup review</h1>
+    <div class="meta">Four parallel agents · ASCII mockups · 2026-05-25</div>
+    <nav class="jump">
+      <a href="#summary">Comparison</a>
+      <a href="#edge">1 · Edge dock</a>
+      <a href="#accordion">2 · Accordion</a>
+      <a href="#metaphor">3 · Map metaphor</a>
+      <a href="#power">4 · Power-user</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ─────────────────────────  SUMMARY  ───────────────────────── -->
+    <section id="summary" class="mockup">
+      <h2>The four directions at a glance</h2>
+      <p class="angle">Behavior locked by the user: desktop ≥1024px = one master toggle for all three cards together. Mobile ≤760px = each card independent. Top-left collapse icon per card.</p>
+
+      <div class="badge-row">
+        <span class="b">Cards in scope: search shell, hot lanes, calendar card</span>
+        <span class="b">Pill bar stays visible</span>
+        <span class="b">Palette: cream / brown / rust / moss</span>
+      </div>
+
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>1 · Edge dock</th>
+            <th>2 · Accordion</th>
+            <th>3 · Map metaphor</th>
+            <th>4 · Power-user</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Collapsed footprint</td>
+            <td>44px icon rail on viewport edge</td>
+            <td>~120px stack of in-place strips</td>
+            <td>Binder-spine strip top-left</td>
+            <td>44px VS-Code style strip + overlays</td>
+          </tr>
+          <tr>
+            <td>Master toggle glyph</td>
+            <td><code>◧</code> / <code>▸</code></td>
+            <td><code>«</code> / <code>»</code></td>
+            <td><code>⟨⟨</code> / <code>⟩⟩</code> on binder rings</td>
+            <td><code>‹‹</code> / <code>››</code></td>
+          </tr>
+          <tr>
+            <td>Per-card glyphs</td>
+            <td><code>⌕</code> <code>🔥</code> <code>▦</code></td>
+            <td><code>⌕</code> <code>▲</code> <code>▦</code></td>
+            <td><code>◢</code> dog-ear everywhere</td>
+            <td><code>⌕³⁷</code> <code>⚡●</code> <code>▤ⁿ</code> with state badges</td>
+          </tr>
+          <tr>
+            <td>Live state survives collapse</td>
+            <td>Pulsing red dot on flame handle</td>
+            <td><code>●</code> rust dot persists on strip</td>
+            <td>Rust ribbon hangs out of binder spine</td>
+            <td>Red dot + live result-count badge</td>
+          </tr>
+          <tr>
+            <td>Mobile mixed</td>
+            <td>Per-card 44px tile pinned left</td>
+            <td>Per-card strip, no master</td>
+            <td>Per-card dog-ear, calendar folds to spine</td>
+            <td>Bottom-sheet handle row, swipeable</td>
+          </tr>
+          <tr>
+            <td>Signature delight</td>
+            <td>Heartbeat sync between rail dot and calendar row</td>
+            <td>Single-open auto-collapse + persistent state badges</td>
+            <td>Paper streamer rust ribbon extends when a stage flips LIVE</td>
+            <td>Focus ring color matches active map preset</td>
+          </tr>
+          <tr>
+            <td>Biggest risk</td>
+            <td>Collides with MapLibre attribution / zoom corner</td>
+            <td>3 collapsed strips still eat ~150px</td>
+            <td>Slides into twee if shadows/textures creep in</td>
+            <td>Discoverability for one-time visitors</td>
+          </tr>
+          <tr>
+            <td>Best fit if…</td>
+            <td>Drivers read the map mid-stage one-handed</td>
+            <td>Muscle memory of card position matters most</td>
+            <td>You lean into the AOP field-binder character</td>
+            <td>Event staff live on this viewer all weekend</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="footnote">My read: the four sit on a spectrum from <strong>most map real-estate</strong> (edge dock) → <strong>most familiar</strong> (accordion) → <strong>most on-brand</strong> (map metaphor) → <strong>most information-dense</strong> (power-user). The strongest <em>single idea</em> across all four — "live state survives the collapse" — is compatible with any skeleton.</p>
+    </section>
+
+    <!-- ─────────────────────────  1 · EDGE DOCK  ───────────────────────── -->
+    <section id="edge" class="mockup">
+      <h2>1 · Edge dock</h2>
+      <p class="angle">Cards slide fully off the left edge, leaving a thin vertical rail of icon handles pinned to the viewport edge so the map gets maximum real estate.</p>
+
+      <h3>Desktop expanded (~1280×720)</h3>
+      <p>Master collapse handle is the small <code>◧</code> glyph in the top-left of the rail, just above the pill bar. One click slides every card off to the left.</p>
+      <pre class="ascii">
+┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ┌──────────────────────────────────────┐                                                       │
+│ │ ◧  ┌────────────┐┌────────────┐┌────┐│   &lt;- master collapse handle (◧) sits on top-left      │
+│ │    │ ⌖   ⛰   ⌂ ││ ▦   ≋   ◰ ││ 3D ││      corner of rail; pill bar reads as nav.            │
+│ │    └────────────┘└────────────┘└────┘│                                                       │
+│ ├──────────────────────────────────────┤                                                       │
+│ │ ⌕  Search the map…                   │                                                       │
+│ ├──────────────────────────────────────┤                                                       │
+│ │ HOT NOW                  Sat 2:14 pm │                                                       │
+│ │ ┌────────────────┐ ┌────────────────┐│                                                       │
+│ │ │● Stage 3       │ │❖ Trail activity││                                                       │
+│ │ │  Running now   │ │  Where rigs    ││                  M  A  P     C  A  N  V  A  S         │
+│ │ └────────────────┘ └────────────────┘│                                                       │
+│ ├──────────────────────────────────────┤                                                       │
+│ │  Events │  Park  │  About            │                                                       │
+│ ├──────────────────────────────────────┤                                                       │
+│ │  EVENT CALENDAR              ▾       │                                                       │
+│ │  Draft Fri–Sun schedule              │                                                       │
+│ │ ─────────────────────────────────────│                                                       │
+│ │ FRI  6:00p  Driver check-in          │                                                       │
+│ │      Pavilion                        │                                                       │
+│ │ ─────────────────────────────────────│                                                       │
+│ │ SAT  9:00a  Stage 1 — Cliff Loop  ●  │   &lt;- "happening" badge top-right of row              │
+│ │      Upper Trace                     │                                                       │
+│ │ ─────────────────────────────────────│                                                       │
+│ │ SAT  2:00p  Stage 3 — Mud Pit        │                                                       │
+│ │ ─────────────────────────────────────│                                                       │
+│ │ SUN  10:00a Awards + Pull-Sled       │                                                       │
+│ └──────────────────────────────────────┘                                       ┌───┐ ┌───┐    │
+│   ~360 px wide, 12 px gutter from edge                                         │ + │ │ − │    │
+│                                                                                └───┘ └───┘    │
+│                                                                              MapLibre zoom →   │
+│                                                          © OpenStreetMap · NAIP · AOP private  │
+└────────────────────────────────────────────────────────────────────────────────────────────────┘</pre>
+
+      <h3>Desktop collapsed (~1280×720)</h3>
+      <p>Cards have slid off-screen left. A 44px icon rail remains pinned to the viewport edge. Pill bar stays full-width because it's nav, not collapsible.</p>
+      <pre class="ascii">
+┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+│┌──┐ ┌────────────┐┌────────────┐┌────┐                                                         │
+││▸ │ │ ⌖   ⛰   ⌂ ││ ▦   ≋   ◰ ││ 3D │   &lt;- pill bar still reads at top, master ▸ at far left   │
+│└──┘ └────────────┘└────────────┘└────┘      (▸ = expand-rail; was ◧ when expanded)             │
+│┌──┐                                                                                            │
+││⌕ │ ← search icon handle                                                                       │
+│└──┘                                                                                            │
+│┌──┐                                                                                            │
+││🔥│ ← hot-now handle (with red dot badge if a stage is HAPPENING)                              │
+││● │   the dot is the live indicator — pulses softly                                            │
+│└──┘                                                                                            │
+│┌──┐                  M    A    P    —    F   U   L   L     W   I   D   T   H                  │
+││📅│ ← calendar handle (with small "SAT" cap when an active day is selected)                    │
+││SA│                                                                                            │
+│└──┘                                                                                            │
+│                                                                                                │
+│                                                                                                │
+│  ~44 px rail, flush left, 6 px gap between handles                                             │
+│                                                                                                │
+│                                                                                  ┌───┐ ┌───┐  │
+│                                                                                  │ + │ │ − │  │
+│                                                                                  └───┘ └───┘  │
+│                                                            © OSM · NAIP · AOP private  44×Map │
+└────────────────────────────────────────────────────────────────────────────────────────────────┘</pre>
+
+      <h3>Per-card glyph proposals</h3>
+      <table>
+        <tr><th>Card</th><th>Glyph</th><th>Rationale</th></tr>
+        <tr><td>Search</td><td><code>⌕</code> (U+2315)</td><td>Reads as magnifier at 20px; fallback SVG matches the existing in-input glyph (circle r=5 + diagonal stroke).</td></tr>
+        <tr><td>Hot control</td><td>Custom 2-flame SVG</td><td>Filled <code>var(--rust)</code> with inset red dot (4px) bottom-right when a stage is happening. Two-flame echoes "hot lane × 2" (event + trail).</td></tr>
+        <tr><td>Calendar</td><td>3-line calendar glyph</td><td>16×14 rectangle with 2px top bar and three horizontal day-rules. Tiny <code>SAT</code> cap when a day is active. Recognizable at 20px without text dependence.</td></tr>
+      </table>
+
+      <h3>Mobile mixed (~400×844)</h3>
+      <p>Hot card is collapsed individually; search and calendar are expanded. Each card has its own <code>◧</code> handle in its top-left. On mobile the rail concept becomes a per-card affordance because there's no horizontal room for a side rail.</p>
+      <pre class="ascii">
+┌────────────────────────────────────┐
+│ ┌────────────┐┌────────────┐┌────┐ │
+│ │ ⌖   ⛰   ⌂ ││ ▦   ≋   ◰ ││ 3D │ │  &lt;- pill bar full width, no master toggle on mobile
+│ └────────────┘└────────────┘└────┘ │
+│ ┌────────────────────────────────┐ │
+│ │ ◧  ⌕  Search the map…          │ │  &lt;- search expanded, ◧ in top-left of card
+│ └────────────────────────────────┘ │
+│ ┌──┐                               │
+│ │🔥│ ← HOT collapsed; rest of      │  &lt;- hot card collapsed: just a 44 px tile
+│ │● │   row is map (peek-through)  │     pinned left, red dot = live
+│ └──┘                               │
+│ ┌────────────────────────────────┐ │
+│ │ ◧  Events │ Park │ About       │ │  &lt;- calendar expanded, tabs visible
+│ ├────────────────────────────────┤ │
+│ │  EVENT CALENDAR            ▾   │ │
+│ │  Draft Fri–Sun                 │ │
+│ │ ───────────────────────────────│ │
+│ │ SAT 9:00a  Stage 1 — Cliff  ●  │ │
+│ │     Upper Trace                │ │
+│ │ ───────────────────────────────│ │
+│ │ SAT 2:00p  Stage 3 — Mud Pit   │ │
+│ │ ───────────────────────────────│ │
+│ │ SUN 10:00a Awards + Pull-Sled  │ │
+│ └────────────────────────────────┘ │
+│                                    │
+│           M A P   B E L O W        │
+│           (rest of viewport)       │
+│                                    │
+│ ┌────────────────────────────────┐ │
+│ │ AOP edit panel             ▾   │ │  &lt;- existing bottom panel
+│ └────────────────────────────────┘ │
+└────────────────────────────────────┘</pre>
+
+      <h3>Rationale</h3>
+      <p><span class="tag rationale">Why edge-dock for AOP</span> Drivers and trail buddies read this map mid-stage with one hand on a transmitter. They need terrain — contour, gates, mandatory-skill boundaries — to fill the screen at zoom 18+, not to peek out from behind a 360px panel. Edge-dock buys back the full canvas without forcing users to remember a keyboard shortcut; the icon rail keeps re-expand to one click.</p>
+      <p><span class="tag risk">Risk</span> The icon rail competes with MapLibre's bottom-left attribution and (if added later) a scalebar. Pin the rail to top-left only, leave the bottom 80px of viewport-left clear, and the rail can co-exist.</p>
+      <p><span class="tag delight">Delight detail</span> When a stage is in <code>happening</code> state and the hot card is collapsed, the flame handle's red dot pulses on the same 2-second cadence as the calendar row badge — the rail mirrors the live state without the user opening it. Same heartbeat, two surfaces.</p>
+    </section>
+
+    <!-- ─────────────────────────  2 · ACCORDION  ───────────────────────── -->
+    <section id="accordion" class="mockup">
+      <h2>2 · Header-strip accordion</h2>
+      <p class="angle">Collapsed cards shrink in place to a slim title strip. Stack order never changes (pill bar › search › hot › calendar). Only height changes. Every card always present, only the active one expanded.</p>
+
+      <h3>Glyph &amp; status proposals</h3>
+      <table>
+        <tr><th>Card</th><th>Top-left glyph</th><th>Glyph rationale</th><th>Collapsed-strip status text</th></tr>
+        <tr><td>Search shell</td><td><code>⌕</code> (U+2315)</td><td>Already-a-magnifier shape; collapse to "the lookup tool" identity</td><td><code>⌕  Search the map…</code> (placeholder echo; if a query is active: <code>⌕  "skull rock" · 3 hits</code>)</td></tr>
+        <tr><td>Hot control</td><td><code>▲</code> filled triangle</td><td>Reads as "flare" / "active call-out"; map idiom for active marker</td><td><code>▲  Hot · Sat 9:00 Rock Crawl · Trail heat: low</code></td></tr>
+        <tr><td>Calendar card</td><td><code>▦</code> (U+25A6)</td><td>Mini grid = calendar without fighting the active-day badge</td><td><code>▦ Events · Sat 9:00a Rock Crawl ●LIVE</code> or <code>▦ Park</code> / <code>▦ About</code></td></tr>
+        <tr><td>Master (desktop)</td><td><code>«</code> double-left chevron</td><td>"Pull the rail in" — matches "collapse to the left" without literally sliding off</td><td>n/a — master toggle, no state text</td></tr>
+      </table>
+
+      <p>A tiny <strong>state dot</strong> sits at the right edge of each collapsed strip: <code>●</code> rust = live now; <code>○</code> brown = upcoming next; <code>·</code> cream = idle.</p>
+
+      <h3>Desktop expanded (≥1024px, ~360px rail on a 1280×720 canvas)</h3>
+      <p>Master collapse <code>«</code> lives at the right end of the pill bar — that row already spans the rail and is the natural "rail header."</p>
+      <pre class="ascii">
+┌─ 1280 × 720 ─────────────────────────────────────────────────────────────────┐
+│ ┌── left-controls (360w) ───────┐                                            │
+│ │ ┌─pill bar─────────────────┐  │                                            │
+│ │ │ ⊞ ⬡ ⌂ │ ◉ ≈ ▥ │ 3D │ « │  │     (master collapse on the right)         │
+│ │ └──────────────────────────┘  │                                            │
+│ │ ┌──────────────────────────┐  │                                            │
+│ │ │ ⌕  Search the map…       │  │      ← search shell                        │
+│ │ └──────────────────────────┘  │                                            │
+│ │ ┌─ ▲ Hot now ─────── 11:14 ┐  │                                            │
+│ │ ├──────────────────────────┤  │                                            │
+│ │ │ ┌──────────┐┌──────────┐ │  │                                            │
+│ │ │ │ ◉ EVENT  ││ ❖ TRAILS │ │  │      ← hot control (two lanes)             │
+│ │ │ │ Sat 9:00 ││ Where    │ │  │                                            │
+│ │ │ │ Rock craw││ rigs sat │ │  │                                            │
+│ │ │ └──────────┘└──────────┘ │  │                  ┌──── map canvas ───┐    │
+│ │ └──────────────────────────┘  │                  │                   │    │
+│ │ ┌─ ▦ ┬──────┬─────┬─────┐    │                   │   (rendered map   │    │
+│ │ │    │EVENTS│ Park│About│    │                   │    visible to     │    │
+│ │ │    ├──────┴─────┴─────┤    │                   │    the right)     │    │
+│ │ │  ▾ Event calendar         │    │               │                   │    │
+│ │ │    Draft Fri–Sun schedule │    │               │                   │    │
+│ │ ├──────────────────────────┤  │                  │                   │    │
+│ │ │ SAT  9:00a Rock Crawl ●  │  │                  │                   │    │
+│ │ │      Pavilion field      │  │                  │                   │    │
+│ │ │ SAT  1:00p Comp gates  ○ │  │                  │                   │    │
+│ │ │ SUN  9:00a Trail loop    │  │                  │                   │    │
+│ │ │ SUN  2:00p G6 finale     │  │                  │                   │    │
+│ │ └──────────────────────────┘  │                  └───────────────────┘    │
+│ └───────────────────────────────┘                                            │
+└──────────────────────────────────────────────────────────────────────────────┘</pre>
+
+      <h3>Desktop collapsed (≥1024px)</h3>
+      <p>All three cards are header strips, same width, same x-position. Strips carry status so collapsing isn't blind.</p>
+      <pre class="ascii">
+┌─ 1280 × 720 ─────────────────────────────────────────────────────────────────┐
+│ ┌── left-controls (360w) ───────┐                                            │
+│ │ ┌─pill bar─────────────────┐  │                                            │
+│ │ │ ⊞ ⬡ ⌂ │ ◉ ≈ ▥ │ 3D │ » │  │   master toggle flipped — » expands all     │
+│ │ └──────────────────────────┘  │                                            │
+│ │ ┌──────────────────────────┐  │                                            │
+│ │ │ ⌕  Search the map…       │  │   search strip (idle placeholder)          │
+│ │ └──────────────────────────┘  │                                            │
+│ │ ┌──────────────────────────┐  │                                            │
+│ │ │ ▲ Hot · Sat 9:00 Rock ● │  │   hot strip carries the live lane          │
+│ │ └──────────────────────────┘  │                                            │
+│ │ ┌──────────────────────────┐  │           ┌──── map canvas ────────┐      │
+│ │ │ ▦ Events · 9:00a Rock ● │  │           │                        │      │
+│ │ └──────────────────────────┘  │           │   (much more visible   │      │
+│ └───────────────────────────────┘           │    map than expanded   │      │
+│                                              │    state)              │      │
+│                                              │                        │      │
+│                                              └────────────────────────┘      │
+└──────────────────────────────────────────────────────────────────────────────┘</pre>
+      <p>~120px of rail total instead of ~520px. Each strip retains the most-important live cue. If search has an active query, its strip swaps placeholder for <code>⌕ "skull rock" · 3 hits ●</code>.</p>
+
+      <h3>Mobile mixed (≤760px, 400×844 canvas)</h3>
+      <p>Per-card glyph in the top-left is now the click target. Master <code>«</code> is hidden below 1024px. Calendar is collapsed; search and hot stay expanded.</p>
+      <pre class="ascii">
+┌── 400 × 844 ─────────────────────────┐
+│ ┌─pill bar───────────────────────┐   │
+│ │ ⊞ ⬡ ⌂ │ ◉ ≈ ▥ │ 3D            │   │   (no master « on mobile)
+│ └─────────────────────────────────┘   │
+│ ┌─────────────────────────────────┐   │
+│ │ ⌕  Search the map…              │   │   search expanded
+│ └─────────────────────────────────┘   │
+│ ┌─ ▲ Hot now ───────────── 11:14 ┐   │
+│ ├─────────────────────────────────┤   │
+│ │ ┌─────────────┐ ┌─────────────┐ │   │
+│ │ │ ◉ EVENT     │ │ ❖ TRAILS    │ │   │   hot expanded
+│ │ │ Sat 9:00    │ │ Where rigs  │ │   │
+│ │ │ Rock crawl  │ │ spent time  │ │   │
+│ │ └─────────────┘ └─────────────┘ │   │
+│ └─────────────────────────────────┘   │
+│ ┌─────────────────────────────────┐   │
+│ │ ▦ Events · 9:00a Rock crawl ● │   │   calendar COLLAPSED (tap ▦ to open)
+│ └─────────────────────────────────┘   │
+│                                       │
+│         ┌─── map canvas ───┐          │
+│         │                  │          │
+│         │   visible map    │          │
+│         │   between rail   │          │
+│         │   and msg bar    │          │
+│         └──────────────────┘          │
+│ ┌─ message bar ────────────────────┐  │
+│ │ Tip: tap a trail name to focus.  │  │
+│ └──────────────────────────────────┘  │
+└───────────────────────────────────────┘</pre>
+
+      <h3>Hybrid expand-on-hover (desktop bonus)</h3>
+      <p>A collapsed strip <em>peeks</em> on hover into a 1-row preview; click on the glyph locks it open. Pointer-out without a click returns to collapsed. Touch users get a normal click toggle.</p>
+      <pre class="ascii">
+strip idle:
+┌──────────────────────────────────┐
+│ ▦ Events · 9:00a Rock crawl  ● │
+└──────────────────────────────────┘
+
+hover (peek, ~120ms ease-out):
+┌──────────────────────────────────┐
+│ ▦ Events · 9:00a Rock crawl  ● │
+├──────────────────────────────────┤
+│ ┌──────┬─────┬─────┐             │   tabs visible
+│ │EVENTS│ Park│About│             │
+│ └──────┴─────┴─────┘             │
+│ SAT  9:00a Rock Crawl       ●   │   only the live row
+│ SAT  1:00p Comp gates       ○   │   + the upcoming-next row
+│ … 3 more …                       │   (peek = preview, not full)
+└──────────────────────────────────┘
+
+click ▦ to lock open (no auto-close):
+┌─ ▦ Events ─────────────── pin ▣ ┐
+│ ┌──────┬─────┬─────┐             │
+│ │EVENTS│ Park│About│             │
+│ └──────┴─────┴─────┘             │
+│ SAT  9:00a Rock Crawl       ●   │
+│ SAT  1:00p Comp gates       ○   │
+│ SUN  9:00a Trail loop            │
+│ SUN  2:00p G6 finale             │
+└──────────────────────────────────┘</pre>
+
+      <h3>Rationale</h3>
+      <p><span class="tag rationale">Why accordion beats edge-dock</span> Drivers and stage buddies use this rail in two modes: planning ("what's happening Sat morning?") and orienting on the map ("where is that?"). Both modes return to the same three cards in the same order — the eye learns the stack. Edge-dock breaks that learned position. Accordion keeps <code>pill → search → hot → calendar</code> locked vertically so muscle memory survives the collapse, and composes with the existing <code>.calendar-card.collapsed</code> / <code>.panel-section.collapsed</code> patterns.</p>
+      <p><span class="tag risk">Real-estate risk</span> Three collapsed strips at ~36px each + gaps + 44px pill bar = ~150px on desktop, ~135px on mobile. That's ~21% of a 720-tall viewport. Mitigation: collapsed strips compose into a single 28px row only when <strong>all three are idle</strong> (no active query, no hot event, no live session) — saves another ~70px when the park is quiet.</p>
+      <p><span class="tag delight">Delight detail</span> Single-open behavior + state-badge persistence: tap one strip open and the others auto-collapse, but every strip keeps its live <code>●</code> dot so a Rock Crawl about to start never disappears behind a search expansion.</p>
+    </section>
+
+    <!-- ─────────────────────────  3 · MAP METAPHOR  ───────────────────────── -->
+    <section id="metaphor" class="mockup">
+      <h2>3 · Map-room metaphor</h2>
+      <p class="angle">The left rail is a corner of the AOP map room — the wall by the registration trailer where the kiosk print board lives. Each card is a paper artifact pinned, clipped, or tabbed to that wall. Collapsing isn't "hide a panel" — it's "fold the map" or "flip the tab spine-out."</p>
+
+      <h3>Desktop expanded (≈1280×720)</h3>
+      <pre class="ascii">
+ ┌──────────────────────────────────────────────────────────────┐
+ │                                                              │
+ │ ┌── pill bar ────────────────────────────────────────────┐   │
+ │ │ ( ⌧  ◆  ⌂ )   ( ▤  ≈  ◳ )   ( 3D )                     │   │
+ │ └────────────────────────────────────────────────────────┘   │
+ │                                                              │
+ │  ╔═[ ⟨⟨ ]═══════════════════════ FOLD ALL ═════════════╗     │
+ │  ║                                                      ║    │
+ │  ║   ┌─◢ Search the map…                          🔍 ┐  ║    │
+ │  ║   │  ___________________________________________ │  ║    │
+ │  ║   └───────────────────────────────────────────────┘  ║    │
+ │  ║   (corner-clipped index card, magnifier glyph)       ║    │
+ │  ║                                                      ║    │
+ │  ║   ┌─◢ HOT NOW                  Sat · 14:02 (live) ┐  ║    │
+ │  ║   │ ┌──────────────┐  ┌──────────────┐            │  ║    │
+ │  ║   │ │ ▶ EVENT      │  │ ❖ TRAIL      │            │  ║    │
+ │  ║   │ │ Stage 2 live │  │ activity     │            │  ║    │
+ │  ║   │ │ Pavilion N   │  │ Where rigs   │            │  ║    │
+ │  ║   │ └──────────────┘  └──────────────┘            │  ║    │
+ │  ║   │  (rust ribbon hanging from Event lane)        │  ║    │
+ │  ║   └───────────────────────────────────────────────┘  ║    │
+ │  ║                                                      ║    │
+ │  ║   ┌─◢ ╭────────╮╭──────╮╭────────╮                ┐  ║    │
+ │  ║   │   │ EVENTS │ park  │ about  │ ← tab spines    │  ║    │
+ │  ║   │   ╰────────╯╰──────╯╰────────╯                │  ║    │
+ │  ║   │  ────────────────────────────────────────────  │  ║   │
+ │  ║   │  EVENT CALENDAR        Draft Fri-Sun     ▾    │  ║    │
+ │  ║   │ ┌────────────────────────────────────────────┐ │  ║   │
+ │  ║   │ │ FRI  09:00  Driver check-in                │ │  ║   │
+ │  ║   │ │      Pavilion · west bay                   │ │  ║   │
+ │  ║   │ ├────────────────────────────────────────────┤ │  ║   │
+ │  ║   │ │ ●LIVE  Stage 2 — Taco stand run            │ │  ║   │
+ │  ║   │ │  rust edge, paper torn between days        │ │  ║   │
+ │  ║   │ ├────────────────────────────────────────────┤ │  ║   │
+ │  ║   │ │ SAT  16:00  Dusk run brief                 │ │  ║   │
+ │  ║   │ ├────────────────────────────────────────────┤ │  ║   │
+ │  ║   │ │ SUN  08:30  Mandatory skills · mud         │ │  ║   │
+ │  ║   │ └────────────────────────────────────────────┘ │  ║   │
+ │  ║   └───────────────────────────────────────────────┘  ║    │
+ │  ║                                                      ║    │
+ │  ╚════════ binder rings ═════ AOP · field binder ══════╝     │
+ │                                                              │
+ │                                                              │
+ │                       (map fills behind)                     │
+ │                                                              │
+ └──────────────────────────────────────────────────────────────┘</pre>
+
+      <p><strong>Reading it</strong></p>
+      <ul>
+        <li>The <code>╔══╗</code> outer rule is the <strong>binder ring spine</strong> of a three-ring field binder hanging on the wall. The three cards inside are loose-leaf pages clipped onto the rings. One master toggle at the top — <code>[ ⟨⟨ ]</code> "fold spine closed" — collapses every page at once.</li>
+        <li><strong>Search</strong> → <code>◢</code> paper-clip-and-folded-corner. The dog-ear is the affordance.</li>
+        <li><strong>Hot Now</strong> → <code>◢</code> same dog-ear, but the Event lane carries a thin <strong>rust ribbon</strong> that hangs out the right side when a stage is live.</li>
+        <li><strong>Calendar</strong> → <code>◢</code> dog-ear, plus the three tabs render as <strong>field-tag spines</strong> sticking up out of the top of the card. The active tab's spine sits flush; inactive ones recede.</li>
+        <li>Calendar days are rendered with a horizontal tear between dates — perforation, like a tear-off pad.</li>
+      </ul>
+
+      <h3>Desktop collapsed via master toggle</h3>
+      <pre class="ascii">
+ ┌──────────────────────────────────────────────────────────────┐
+ │                                                              │
+ │ ┌── pill bar ────────────────────────────────────────────┐   │
+ │ │ ( ⌧  ◆  ⌂ )   ( ▤  ≈  ◳ )   ( 3D )                     │   │
+ │ └────────────────────────────────────────────────────────┘   │
+ │                                                              │
+ │  ╔══[ ⟩⟩ ]══════ unfold ══════════════════════════════╗      │
+ │  ║                                                      ║    │
+ │  ║   ╱╲    Search                                       ║    │
+ │  ║   ◢◣ ●  Hot now · Stage 2 LIVE  ┄ rust ribbon ┄┄    ║    │
+ │  ║   ╱╲    Events · Park · About                        ║    │
+ │  ║                                                      ║    │
+ │  ╚══ binder closed · 3 pages clipped ════════════════════╝   │
+ │                                                              │
+ │                                                              │
+ │                       (map fills behind)                     │
+ │                                                              │
+ │                  (vast empty space — abbreviated)            │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ │                                                              │
+ └──────────────────────────────────────────────────────────────┘</pre>
+      <p><strong>Reading it</strong> — Binder is <strong>closed</strong>. Three cards have folded into spine-only state — each spine is <code>◢◣</code> (two clipped corners meeting). Live state still leaks through: the Event spine keeps its rust ribbon poking out. Master toggle <code>[ ⟩⟩ ]</code> (fingers prying the binder open) sits where <code>[ ⟨⟨ ]</code> was. Caption underneath: <code>binder closed · 3 pages clipped</code>.</p>
+
+      <h3>Mobile mixed (≈400×844, ≤760px)</h3>
+      <pre class="ascii">
+ ┌────────────────────────────────┐
+ │ ( ⌧ ◆ ⌂ )( ▤ ≈ ◳ )( 3D )       │
+ ├────────────────────────────────┤
+ │                                │
+ │ ┌─◢───────────────────────────┐│
+ │ │ 🔍 Search the map…          ││  Search — open (dog-ear up-left)
+ │ │ ___________________________ ││
+ │ └─────────────────────────────┘│
+ │                                │
+ │ ┌─◢─────────────── ● rust ─┐   │  Hot now — open (always open when LIVE)
+ │ │ HOT NOW   Sat 14:02 live │   │
+ │ │ ┌──────────┐ ┌──────────┐│   │
+ │ │ │▶ EVENT   │ │❖ TRAILS  ││   │
+ │ │ │Stage 2   │ │activity  ││   │
+ │ │ │LIVE · N  │ │heatmap   ││   │
+ │ │ └──────────┘ └──────────┘│   │
+ │ └──────────────────────────┘   │
+ │                                │
+ │ ┌─◢◣  Events · Park · About ──┐│  Calendar — folded (spine-only)
+ │ └─ 3 sessions today ┄┄┄┄┄┄┄┄┄ ┘│  tap the dog-ear to unfold
+ │                                │
+ │                                │
+ │       (map fills below)        │
+ │                                │
+ │                                │
+ ├────────────────────────────────┤
+ │ AOP edit panel              ▾  │  (right-rail panel docked bottom)
+ └────────────────────────────────┘</pre>
+
+      <p>No master toggle on mobile. Each card has its own dog-ear <code>◢</code> top-left. The binder-ring chrome drops at this width. The Calendar collapses to a single <strong>tab-spine strip</strong> showing the three tab names + a peek-line (<code>3 sessions today</code>). <strong>Hot Now refuses to collapse when a stage is LIVE.</strong></p>
+
+      <h3>Glyph table</h3>
+      <table>
+        <tr><th>Card</th><th>Glyph</th><th>What it is</th></tr>
+        <tr><td>Search</td><td><code>◢</code></td><td>Dog-eared corner of an index card. Magnifier inside the input stays.</td></tr>
+        <tr><td>Hot Now</td><td><code>◢</code> + ribbon</td><td>Same dog-ear; thin rust ribbon hanging out the Event lane when LIVE.</td></tr>
+        <tr><td>Calendar</td><td><code>◢</code> + tabs</td><td>Dog-ear plus three field-tag spines for Events/Park/About sticking up.</td></tr>
+        <tr><td>Master</td><td><code>⟨⟨</code> / <code>⟩⟩</code></td><td>Binder rings closing/opening — only present on desktop ≥1024px.</td></tr>
+      </table>
+      <p>The three card glyphs share the dog-ear base so the <em>verb</em> (fold) reads consistently, but the <em>noun</em> differs (plain card, ribboned card, tabbed folder). One language, three artifacts.</p>
+
+      <h3>Rationale</h3>
+      <p><span class="tag rationale">Metaphor in one line</span> The left rail is a three-page field binder hanging on the wall of the AOP registration trailer — search slip on top, today's hot-stage card in the middle, the weekend's schedule folder on the bottom.</p>
+      <p><span class="tag rationale">Why it reinforces the source-traceable promise</span> Paper artifacts carry attribution by default. A taped corner says "someone clipped this here." A ribbon says "this is live right now." A tab spine says "there's more behind this." The map's whole northstar — every line carrying where it came from, how much we trust it, whether it's publishable — already wants to look like a working binder, not a SaaS dashboard.</p>
+      <p><span class="tag risk">Risk</span> Twee. If the dog-ear gets drawn with a literal shadow gradient and a paper-fiber texture it slides into Etsy-card territory. Hold it to the existing cream/brown/rust/moss palette and one-pixel borders. No drop shadows beyond what's already in the CSS.</p>
+      <p><span class="tag delight">Delight detail</span> When a stage flips to LIVE, the Event-lane rust ribbon on the collapsed binder <em>extends</em> by ~12px with a slow ease — a paper streamer being clipped on by an invisible hand. No sound. No bounce. Just a quiet "something new is pinned up."</p>
+    </section>
+
+    <!-- ─────────────────────────  4 · POWER-USER  ───────────────────────── -->
+    <section id="power" class="mockup">
+      <h2>4 · Power-user / dense</h2>
+      <p class="angle">Operator profile: event staff / map curator running the viewer all weekend. Keyboard-first, terse labels, every glyph earns its pixels. Persona anchors: <strong>Host/AOP Staff</strong> (provenance visible, dense layer stack) and <strong>Driver</strong> (next-session-aware).</p>
+
+      <h3>Desktop expanded (1280×720, rail = 360px)</h3>
+      <p>Master collapse glyph <code>‹‹</code> sits top-left of the rail. Persistent footer strip shows global state (zoom, preset, source mode).</p>
+      <pre class="ascii">
+┌─ 1280 ─────────────────────────────────────────────────────────────────────┐
+│┌── 360 ──────────────────────────┐                                         │
+││ ‹‹  AOP · Park · 17.4z · src✓   │  ← master collapse + global state strip │
+│├─────────────────────────────────┤                                         │
+││ ⌖ Region │ ⛺ Park │ ⌂ Pav │ 3D │  ← pill bar (unchanged)                  │
+│├─────────────────────────────────┤                                         │
+││ [⌘] ⌕  search the map…   37  ▾ │  ← search shell                          │
+││     └─ [g] Pavilion  ·  poi    │     • [⌘] = focus hint (⌘K / /)         │
+││     └─ [g] N. Trailhead · poi  │     • "37" = live result count badge    │
+││     └─ [g] Cemetery 4   · feat │     • [g] prefix = goto-result kbd      │
+│├─────────────────────────────────┤                                         │
+││ ⚡ HOT NOW            Sat 14:02 │  ← clock anchored right                  │
+││ ┌─────────────┐ ┌─────────────┐│                                         │
+││ │ ● LIVE  [h] │ │ ❖ TRAIL [t] ││  ← key hints baked into buttons         │
+││ │ Rock Pit    │ │ activity    ││                                         │
+││ │ 13:30–15:00 │ │ 6 rigs · 1h ││  ← "6 rigs / 1h" = source confidence    │
+││ └─────────────┘ └─────────────┘│                                         │
+│├─────────────────────────────────┤                                         │
+││ ▼ [1]Events  [2]Park  [3]About │  ← tab kbd hints inline                  │
+││ ─────────────────────────────── │                                         │
+││ Event calendar      Fri–Sun  ▾ │                                         │
+││ ┌─ FRI ─────────────────────── │                                         │
+││ │ 09:00  Driver check-in       │                                         │
+││ │ 19:00  Night run    ☾        │                                         │
+││ ├─ SAT ─────────────────────── │                                         │
+││ │▌13:30  Rock Pit qual  ● LIVE │  ← rust stripe, jump w/ [n] = now       │
+││ │▌15:30  Kid crawl     ◐ NEXT │  ← brown-dark, jump w/ [N] = next       │
+││ │ 18:00  Awards                │                                         │
+││ └─ SUN ─────────────────────── │                                         │
+││   …                            │                                         │
+││ ─────────────────────────────── │                                         │
+││ src · obs · draft · planning   │  ← provenance legend always visible      │
+│└─────────────────────────────────┘                                         │
+│                                                                            │
+│              (map canvas fills remaining 920 px)                           │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘</pre>
+
+      <p><strong>What's surfaced that isn't there today</strong></p>
+      <ul>
+        <li><code>17.4z</code> zoom readout + preset name — staff reference these on radio.</li>
+        <li><code>src✓</code> chip = current source-mode (publish / observed / draft / planning).</li>
+        <li>Live result count <code>37</code> on the search shell.</li>
+        <li>Kbd hints <code>[⌘]</code> inside the input, <code>[h] [t] [1] [2] [3] [n] [N]</code> baked into controls.</li>
+        <li>Source-confidence sub-line on hot buttons (<code>6 rigs · 1h</code>).</li>
+        <li>Persistent provenance legend at rail footer.</li>
+      </ul>
+
+      <h3>Desktop collapsed — activity-bar style (strip = 44px)</h3>
+      <p>Master <code>‹‹</code> was clicked → all three cards collapse into a single vertical strip glued to the left edge. Clicking a strip icon slides that card out as a 320px overlay above the map. Esc / second click closes.</p>
+      <pre class="ascii">
+┌─ 1280 ─────────────────────────────────────────────────────────────────────┐
+│┌44┐                                                                        │
+││ ››│  ← expand-all (mirror of ‹‹)                                          │
+│├──┤                                                                        │
+││▦ │  ← pill bar collapsed → hover or [p] re-expands                        │
+│├──┤                                                                        │
+││⌕³⁷│  ← search · glyph = magnifier · badge = result count                  │
+│├──┤                                                                        │
+││⚡●│  ← hot · red dot when event is live, none when nothing's hot          │
+│├──┤                                                                        │
+││❖ │  ← trail activity lane                                                 │
+│├──┤                                                                        │
+││▤ⁿ│  ← calendar · badge = "next" sticker (small clock)                    │
+││  │     hover preview: "Sat 13:30 Rock Pit"                                │
+│├──┤                                                                        │
+││ℹ │  ← park / about (merged, since these are info-only)                   │
+│└──┘                                                                        │
+│                                                                            │
+│      ┌─ overlay slides out when hot icon is selected ─┐                   │
+│      │ ⚡ HOT NOW                  Sat 14:02   [x] │                       │
+│      │ ┌──────────────┐ ┌──────────────┐         │                       │
+│      │ │● LIVE        │ │❖ TRAIL       │         │                       │
+│      │ │Rock Pit qual │ │activity      │         │                       │
+│      │ │13:30–15:00   │ │6 rigs · 1h   │         │                       │
+│      │ └──────────────┘ └──────────────┘         │                       │
+│      └─────────────────────────────────────────────┘                       │
+│                                                                            │
+│      (map canvas otherwise full-bleed)                                     │
+└────────────────────────────────────────────────────────────────────────────┘</pre>
+
+      <h3>Per-card glyph + collapsed-state badge</h3>
+      <table>
+        <tr><th>Card</th><th>Glyph</th><th>Collapsed badge</th></tr>
+        <tr><td>Search</td><td><code>⌕</code></td><td>Live result count when input is non-empty (<code>³⁷</code>)</td></tr>
+        <tr><td>Hot</td><td><code>⚡</code></td><td>Red dot (<code>var(--rust)</code>) iff an event is happening now</td></tr>
+        <tr><td>Trail activity</td><td><code>❖</code></td><td>None when zero, dot count <code>· · ·</code> when 1-3+ active rigs</td></tr>
+        <tr><td>Calendar</td><td><code>▤</code></td><td>Next-session peek on hover: "Sat 13:30 Rock Pit"</td></tr>
+        <tr><td>Park</td><td><code>⛺</code></td><td>None (static)</td></tr>
+        <tr><td>About</td><td><code>ℹ</code></td><td>None (static)</td></tr>
+      </table>
+      <p>Selection highlight = 2px moss left-stripe (matches existing <code>var(--moss)</code> tab indicator). Closing the overlay leaves the strip — VS Code activity-bar behavior.</p>
+
+      <h3>Mobile collapsed — bottom-sheet handles (400×844)</h3>
+      <pre class="ascii">
+┌─ 400 ──────────────────────────┐
+│ ⌖ │ ⛺ │ ⌂ │  3D     │ ‹‹ all │ ← pill bar + per-card master toggle row
+│                                 │
+│                                 │
+│         M A P   C A N V A S    │
+│                                 │
+│                                 │
+│  ┌── peeked card: HOT ────────┐│
+│  │ ⚡ HOT NOW         14:02   ││ ← peek = ~40% viewport
+│  │ ┌────────────┐ ┌─────────┐ ││
+│  │ │● Rock Pit  │ │❖ Trail  │ ││
+│  │ │13:30–15:00 │ │6r · 1h  │ ││
+│  │ └────────────┘ └─────────┘ ││
+│  │  drag-down to dismiss ↓    ││
+│  └────────────────────────────┘│
+│ ─── ─── ─── ─── ─── ─── ─── ── │ ← drag handle bar
+│┌──┐┌──┐┌─⚡●┐┌──┐┌──┐┌──┐      │ ← strip of card chips
+││⌕³⁷││▦ ││ ⚡●││▤ⁿ││⛺ ││ℹ │ ‹›  │   selected (⚡) raised + rust dot
+│└──┘└──┘└────┘└──┘└──┘└──┘      │
+├────────────────────────────────┤
+│  panel / message bar           │
+└────────────────────────────────┘</pre>
+      <p>Chips wear the same glyph + badge vocabulary as the desktop strip. The strip is horizontally swipeable when chip count &gt; 4. One-finger drag on the peeked card's top handle reorders the strip (long-press to pick up).</p>
+
+      <h3>Keyboard map</h3>
+      <pre class="ascii">
+┌─ GLOBAL ─────────────────────────────────────────────────────────────────┐
+│ key      │ action                                              │ scope    │
+├──────────┼─────────────────────────────────────────────────────┼──────────┤
+│ ⌘K  /  / │ focus search input                                  │ global   │
+│ Esc      │ blur search · close overlay · collapse peek         │ global   │
+│ \        │ master collapse / expand all cards (desktop only)   │ desktop  │
+│ 1        │ focus Events tab                                    │ global   │
+│ 2        │ focus Park tab                                       │ global   │
+│ 3        │ focus About tab                                      │ global   │
+│ Tab / ⇧⇥ │ cycle tabs within calendar card                     │ in-card  │
+│ h        │ toggle Hot lane (Event)                              │ global   │
+│ t        │ toggle Hot lane (Trail activity)                    │ global   │
+│ n        │ jump calendar to NOW (happening session)            │ global   │
+│ N        │ jump calendar to NEXT (upcoming_next)               │ global   │
+│ p        │ flash / expand pill bar in collapsed strip          │ global   │
+│ [        │ collapse rail one card (top→bottom order)           │ desktop  │
+│ ]        │ expand rail one card                                 │ desktop  │
+│ ?        │ show this keyboard map as a HUD overlay             │ global   │
+└──────────┴─────────────────────────────────────────────────────┴──────────┘
+
+┌─ INSIDE SEARCH ──────────────────────────────────────────────────────────┐
+│ ↑ / ↓    │ move through results                                          │
+│ Enter    │ fly-to selected · close results                               │
+│ g + ↵    │ "goto" — fly-to without closing the panel                     │
+│ Esc      │ blur                                                          │
+└───────────────────────────────────────────────────────────────────────────┘
+
+┌─ INSIDE CALENDAR ────────────────────────────────────────────────────────┐
+│ ↑ / ↓    │ move row                                                      │
+│ ⏎        │ fly-to session location                                       │
+│ j / k    │ vim-style row nav (power-user fallback)                       │
+│ d        │ cycle day (Fri → Sat → Sun)                                   │
+│ .        │ re-snap to NOW                                                │
+└───────────────────────────────────────────────────────────────────────────┘</pre>
+      <p>Discoverability: every bound key is mirrored in a tooltip on its control AND echoed in the bracketed hints visible in expanded view (<code>[h]</code>, <code>[t]</code>, <code>[1]</code>, <code>[n]</code>). <code>?</code> opens the full HUD.</p>
+
+      <h3>Rationale</h3>
+      <p><span class="tag rationale">Why power-user defaults fit this map</span> Event staff and the map curator live on this viewer for hours during a busy weekend, plus dense iteration during code-health passes. Persona work names Host/AOP Staff as a primary user with provenance needs and a Driver who navigates by next-session anchors. Both benefit from terse, state-rich chrome (zoom readout, source-mode chip, rig-count freshness) and keyboard jumps to "now" / "next" — the things a radio-holding marshal asks for.</p>
+      <p><span class="tag risk">Risk</span> First-time visitors and families will not discover <code>h</code>, <code>t</code>, <code>n</code>, or the strip glyphs. Mitigation: every kbd hint is mirrored in tooltips, the <code>?</code> HUD is one keystroke away, and the mobile bottom-sheet pattern is touch-native — no shortcut required to operate.</p>
+      <p><span class="tag delight">Subtle delight</span> The focus-visible outline (today a uniform moss alpha) becomes a <em>preset-aware</em> ring: moss in Park, slate in Topo, rust in Trace. The rail tells you which map you're driving without a label.</p>
+    </section>
+
+  </main>
+</body>
+</html>

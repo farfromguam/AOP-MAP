@@ -168,9 +168,18 @@ shape itself landed.
       now records the rename.
 - [ ] **Switch the heatmap-fallback target from top-K bbox to a densest-cluster
       polygon.** Review card's call.
-- [ ] **Regenerate the first-party hotspot GeoJSON from the current builder**
+- [x] **Regenerate the first-party hotspot GeoJSON from the current builder**
       and confirm source metadata is intact. `../02_edit/_done/hot_button_heatmap_review.md`
       flagged this and it was not addressed in the two-lane ship.
+      **2026-05-25:** `python3 mvp/scripts/build_activity_hotspots.py` re-run.
+      130 → 130 features, all 7 feature-level provenance fields preserved
+      verbatim, 11 new top-level metadata fields gained (`source_type`,
+      `permission`, `publish_status`, `review_status`, `confidence`,
+      `rank_by`, `min_stop_slow_seconds`, `max_moving_fraction`,
+      `intensity_cap_seconds`, `label_rank_limit`, `label_min_seconds`), 4
+      new per-feature fields (`intensity_seconds`, `interest_seconds`,
+      `interest_minutes`, `interest_mode`), nothing lost.
+      `playwright_verify_activity_hotspots.py` PASS.
 - [ ] **Decide the synthetic-vs-real boundary.** Activity hotspots come from
       the 873-line `simulate_saturday_activity.py`; the new left hot button
       treats them as a user-facing target. Either badge the popup `(synthetic)`
@@ -210,15 +219,19 @@ shape itself landed.
       Sprint-02-driven scope (CSS, theme, smells from `../02_edit/tasks.md`).
       Either move it to `02_edit/` or treat it as Sprint 03 carryover under
       `03_event_app/`. Moved to `code_health_pass_4.md` 2026-05-24.
-- [ ] **Reconcile the duplicate `personas.md`** at `02_edit/_done/personas.md`
+- [x] **Reconcile the duplicate `personas.md`** at `02_edit/_done/personas.md`
       and `../../northstar/personas.md`. `brain_map.md` points at northstar;
       the 02_edit copy needs either a "this is the working draft, northstar is
-      authority" header or to be deleted.
-- [ ] **`tasks.md` dump punchline drift.** Closed items still show as `[]`
+      authority" header or to be deleted. **2026-05-25:** header added on the
+      02_edit stub pointing at the northstar authority; stub kept per
+      `preserve_card_directives.md`.
+- [x] **`tasks.md` dump punchline drift.** Closed items still show as `[]`
       ("add aop logo", "add rock warblers logo"); `preserve_card_directives`
       keeps them in the dump. Either rule that the dump can carry `[shipped]`
       annotations, or add a closing index inside the dump file so a reader
-      knows what's still owed.
+      knows what's still owed. **2026-05-25:** Option A — added a "Status
+      index" section at the end of `02_edit/tasks.md` mapping each `[]` line
+      to its current status and owning card. Original lines untouched.
 
 ### G. Decision rationale capture
 
@@ -256,14 +269,21 @@ goals, but Sprint 03 should not pile new chrome on top of them either.
 
 ### J. Smaller stuff (do whenever adjacent code is touched)
 
-- [ ] Brand-logo seed coordinates are "nudged off" the 1010 building, which is
+- [x] Brand-logo seed coordinates are "nudged off" the 1010 building, which is
       also the `#pavilion` tag binding. Add a one-line note in `_done/branding.md`
       or `_done/named_feature_tagging.md` so the coupling is visible.
+      **2026-05-25:** one-liner added to `_done/branding.md` "Placement
+      Decision" section pointing at `_done/named_feature_tagging.md`.
 - [ ] Named-feature tagging verifier camera-distance tolerance is 5e-4°
       (~55 m). Fine for now; tighten when data densifies.
-- [ ] Lane 2 `scrollIntoView` on every 60s tick uses `block: 'nearest'`
+- [x] Lane 2 `scrollIntoView` on every 60s tick uses `block: 'nearest'`
       correctly. No fixture covers manual-scroll -> tick. One fixture closes
-      it.
+      it. **2026-05-25:** four-check fixture added to
+      `mvp/scripts/playwright_verify_event_schedule.py:437-512` covering
+      tick-fn callable, manual-scroll moves the pane, row remains fully
+      visible after safe-range scroll, and the tick is a no-op
+      (`tick_delta=0`). Tests the actual `block:'nearest'` contract:
+      no-op only when the row is fully visible.
 - [x] Preset camera policy corrected 2026-05-25. Zoom shortcuts reset to flat
       west-up; Park / Topo / Trace layer presets preserve zoom, pitch, bearing,
       and independent 3D state. `research/viewer.md` now states the camera/3D

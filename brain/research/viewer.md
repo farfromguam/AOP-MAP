@@ -216,6 +216,29 @@ publication, and public submissions deferred to the later moderated app loop.
 Both info tabs share the same card footprint as the calendar so mobile keeps one
 left-side context surface instead of another drawer.
 
+The third tab is `POI` (shipped 2026-05-25, card
+`tasks/03_event_app/left_panel_poi_browser.md`). It renders a grouped,
+scrollable directory of places already drawn on the map: event anchors,
+in-park buildings, observed trails, cemeteries, off-park visitor support, and
+the user's drawn POIs. Each row shows a name, a 1-2 sentence visitor blurb,
+and chips for kind / status / source. Click a row to fly the map, auto-enable
+the source layer if it was off, and open a popup with the same fields. Rows
+where the blurb is still owed render a yellow `info needed — revisit` chip;
+the subtitle on those rows carries the explicit revisit note. Visitor copy
+and revisit notes live in a single file, `website/data/aop_poi_index.json`,
+so the source GeoJSONs (`aop_buildings.geojson`, `aop_cemeteries.geojson`,
+`publish.geojson`) can be re-exported without losing authored copy, and so
+gaps stay auditable in git rather than hiding as TODOs in code. The index
+file's `owed_work` array summarizes every gap in one place.
+
+A parallel `POI` section in the right edit panel (sits between
+`Publishable` and `Map editor`) carries six group-level visibility toggles —
+Event anchors, Buildings in the park, Trails, Cemeteries, Visitor support,
+Drawn POIs. Each box is two-way bound to the source-layer toggle that
+backs the group (`#showEventSchedule`, `#showBuildings`, `#showTrails`,
+`#showCemeteries`, `#showVisitorContext`, `#showEditorPois`), so flipping
+visibility from any surface stays in sync.
+
 Verification: `mvp/scripts/playwright_verify_presets.py` and
 `mvp/scripts/playwright_verify_event_schedule.py`.
 
@@ -541,8 +564,13 @@ Recorded on 2026-05-22:
   `location_tag`, and optional `route_tags`, instead of embedding coordinates.
   `#registration` is an alias of `#pavilion`; `#pavillion` is accepted as a
   misspelling alias so future edits do not silently break.
-- Viewer: the left `Event calendar` card renders 12 proposed Fri-Sun rows from
-  the JSON. Selecting a row turns on the default-off `Event schedule POIs`
+- Viewer: the left calendar card (titled `Rock Warblers Trail Blazing
+  Invitational`, subtitle `Friday, June 19, 2026`) renders 12 schedule rows from
+  the JSON. The left context card carries three tabs: `Events` (the calendar),
+  `POI` (left-rail browseable directory of places — shipped 2026-05-25 via
+  `brain/tasks/03_event_app/left_panel_poi_browser.md`), and `About` (merged
+  event detail + Rock Warblers team copy). Selecting a row turns on the default-off
+  `Event schedule POIs`
   overlay, flies to the tagged point or route, flashes the highlight layer, and
   opens a popup with date, time, location tag, status, and source vocabulary.
 - Map layers: `event-session-routes`, `event-route-labels`,

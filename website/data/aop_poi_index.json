@@ -1,0 +1,172 @@
+{
+  "schema": "aop-poi-index-v1",
+  "updated_at": "2026-05-25",
+  "purpose": "Visitor-facing blurbs for the left-panel POI tab. The viewer reads this file to attach short, person-readable copy to features that already exist on the map. Blurbs live here, not on the source GeoJSONs, so a re-export of buildings/cemeteries/publish data does not overwrite this content. Entries with blurb=null carry a revisit_note explaining what info is missing; the viewer surfaces those as 'info needed' placeholders so the gaps stay auditable in git instead of hiding as TODOs in code.",
+  "match_fields": "Each entry matches a feature by `source` (which layer/dataset it lives in) plus one identifying property. Order in `entries` is the order rows render under each group when no other sort is applied.",
+  "groups": [
+    {
+      "id": "event_anchors",
+      "label": "Event anchors",
+      "note": "Friday 2026-06-19 Rock Warblers schedule. All currently 'proposed' until AOP confirms; see aop_event_schedule.json."
+    },
+    {
+      "id": "buildings",
+      "label": "Buildings in the park",
+      "note": "FEMA USA Structures footprints with their representative point inside the AOP working envelope. AOP confirms 1010 as the pavilion; the other three remain unconfirmed-purpose."
+    },
+    {
+      "id": "trails",
+      "label": "Trails",
+      "note": "Currently observed-ride evidence from the Saturday Afternoon GPX. SFWDA paper-map numbered trails are still owed; see brain/tasks/01_mvp/_done/community_trails_import.md."
+    },
+    {
+      "id": "cemeteries",
+      "label": "Cemeteries (in and around the park)",
+      "note": "Tennessee Comptroller parcel records, classed religious. Ellis is the AOP inholding; the other three sit in the 9-patch but outside the working envelope."
+    },
+    {
+      "id": "visitor_support",
+      "label": "Visitor support (off-park)",
+      "note": "Regional supply / lodging / fuel orientation. These already carry rich content in their GeoJSON properties; the index entries just point to a reading order."
+    },
+    {
+      "id": "drawn_pois",
+      "label": "Drawn POIs (your edits)",
+      "note": "Per-browser localStorage. Visible only to the user who placed them; not shipped data."
+    }
+  ],
+  "entries": [
+    {
+      "group": "event_anchors",
+      "match": { "source": "event_schedule", "location_tag": "#pavilion" },
+      "blurb": "AOP Pavilion / G-Central. Registration, driver meeting, awards, and the campfire all happen here. Resolved to the 1010 Ellis Cove Road building footprint via the #pavilion tag.",
+      "revisit_note": null
+    },
+    {
+      "group": "event_anchors",
+      "match": { "source": "event_schedule", "location_tag": "#registration" },
+      "blurb": "Registration desk. Wristband pickup, tech check, late entries. Colocated with the pavilion via the #registration alias.",
+      "revisit_note": null
+    },
+    {
+      "group": "event_anchors",
+      "match": { "source": "event_schedule", "location_tag": "#observed-trailhead" },
+      "blurb": "Where the recorded Saturday Afternoon ride started its second segment. Used as the event-day stage start until AOP names an official trailhead.",
+      "revisit_note": null
+    },
+    {
+      "group": "event_anchors",
+      "match": { "source": "event_schedule", "location_tag": "#observed-finish" },
+      "blurb": "Where the recorded Saturday Afternoon ride ended its second segment, just shy of the pavilion. Stand-in finish until AOP marks one.",
+      "revisit_note": null
+    },
+    {
+      "group": "event_anchors",
+      "match": { "source": "event_schedule", "location_tag": "#proving-grounds" },
+      "blurb": null,
+      "revisit_note": "Proving Grounds candidate is anchored to 665 Ellis Cove from a hotspot read — confirm with AOP whether the comp-gate course actually lives there before writing a visitor blurb."
+    },
+    {
+      "group": "event_anchors",
+      "match": { "source": "event_schedule", "location_tag": "#north-technical" },
+      "blurb": null,
+      "revisit_note": "North Technical Hotspot is GPX-dwell evidence #3, not a named obstacle yet. Walk the area and confirm what the rocks are before writing visitor copy."
+    },
+    {
+      "group": "event_anchors",
+      "match": { "source": "event_schedule", "location_tag": "#night-checkpoint" },
+      "blurb": null,
+      "revisit_note": "Night checkpoint is GPX hotspot #6. Confirm AOP wants this on the night-run route and what the spot actually is (regroup? technical bottleneck?) before writing copy."
+    },
+    {
+      "group": "event_anchors",
+      "match": { "source": "event_schedule", "location_tag": "#photo-waypoint" },
+      "blurb": null,
+      "revisit_note": "Photo waypoint candidate from hotspots #8/#9 near the pavilion approach. Confirm the photo prompt with the photo-scavenge lead before writing copy."
+    },
+    {
+      "group": "buildings",
+      "match": { "source": "buildings", "address": "1010 Ellis Cove Road" },
+      "blurb": "AOP Pavilion / G-Central. The on-site building hosting registration, awards, and the campfire. FEMA-derived footprint; confirmed by the user as the pavilion.",
+      "revisit_note": null
+    },
+    {
+      "group": "buildings",
+      "match": { "source": "buildings", "address": "1033 Ellis Cove Road" },
+      "blurb": null,
+      "revisit_note": "What is at 1033 Ellis Cove? FEMA tags it Residential / Single Family — verify whether it is a residence, an outbuilding the event uses, or off-limits before writing visitor copy."
+    },
+    {
+      "group": "buildings",
+      "match": { "source": "buildings", "address": "665 Ellis Cove Road" },
+      "blurb": null,
+      "revisit_note": "What is at 665 Ellis Cove? FEMA tags it Residential / Single Family but the event schedule lists it as a Proving Grounds candidate. Confirm actual use with AOP."
+    },
+    {
+      "group": "buildings",
+      "match": { "source": "buildings", "address": "880 Ellis Cove Road" },
+      "blurb": null,
+      "revisit_note": "What is at 880 Ellis Cove? FEMA-derived footprint, residential class, no known event role. Confirm whether it matters to visitors."
+    },
+    {
+      "group": "trails",
+      "match": { "source": "publish", "layer": "trail_centerlines", "name": "Saturday Afternoon Activity (segment 1)" },
+      "blurb": "Observed ride evidence — recorded GPX of one Saturday afternoon at AOP. Drawn as published trail evidence; the real trail name, difficulty, and authority are still owed.",
+      "revisit_note": "Promote to a real trail row once the SFWDA numbered-trail-name research lands (see brain/tasks/01_mvp/_done/community_trails_import.md)."
+    },
+    {
+      "group": "trails",
+      "match": { "source": "publish", "layer": "trail_centerlines", "name": "Saturday Afternoon Activity (segment 2)" },
+      "blurb": "Second segment of the recorded Saturday Afternoon ride. Connects the trailhead toward the pavilion area; same evidence-only status as segment 1.",
+      "revisit_note": "Promote to a real trail row once SFWDA numbered trail names land."
+    },
+    {
+      "group": "cemeteries",
+      "match": { "source": "cemeteries", "geom_role": "marker", "parcel_id": "110 008.04" },
+      "blurb": "Ellis Cemetery — the AOP inholding. A 0.12-acre family cemetery carved out of the working envelope (the interior ring in the park boundary). Treat as private; stay clear of the parcel.",
+      "revisit_note": null
+    },
+    {
+      "group": "cemeteries",
+      "match": { "source": "cemeteries", "geom_role": "marker", "parcel_id": "093 029.00" },
+      "blurb": null,
+      "revisit_note": "Gilliam Cemetery sits in the 9-patch outside the AOP working envelope. Add visitor context once we know whether it is accessible from any AOP route and what the rider should know about it."
+    },
+    {
+      "group": "cemeteries",
+      "match": { "source": "cemeteries", "geom_role": "marker", "parcel_id": "093 003.00" },
+      "blurb": null,
+      "revisit_note": "Bible Cemetery sits in the 9-patch outside the AOP working envelope. Same gap as Gilliam — accessibility and visitor relevance still owed."
+    },
+    {
+      "group": "cemeteries",
+      "match": { "source": "cemeteries", "geom_role": "marker", "parcel_id": "093 001.02" },
+      "blurb": null,
+      "revisit_note": "Tate Cemetery sits in the 9-patch outside the AOP working envelope. Same gap as Gilliam / Bible."
+    },
+    {
+      "group": "visitor_support",
+      "match": { "source": "visitor_context", "name": "South Pittsburg / Kimball supply run" },
+      "blurb": "Closest supply town, 5-8 mi southeast (~10-15 min via Ellis Cove Road). Food, fuel, convenience, hotels, I-24 interchange. Chattanooga metro another ~30 mi for airport, big-box, and full city services.",
+      "revisit_note": null
+    },
+    {
+      "group": "visitor_support",
+      "match": { "source": "visitor_context", "name": "Monteagle plateau services" },
+      "blurb": "Plateau services, ~30 min northwest via I-24. Lodging cluster (Smokehouse Lodge & Cabins, Monteagle hotels) and food (Mountain Goat Market, High Point, Smokehouse Restaurant).",
+      "revisit_note": null
+    },
+    {
+      "group": "drawn_pois",
+      "match": { "source": "editor_pois" },
+      "blurb": null,
+      "revisit_note": "Per-row blurbs are not authored here — drawn POIs render their own category as the subtitle."
+    }
+  ],
+  "owed_work": [
+    "Field-confirm purposes for the three non-pavilion in-park buildings (1033, 665, 880 Ellis Cove).",
+    "Confirm or relocate the four event anchors flagged 'raw evidence' (proving grounds, north technical, night checkpoint, photo waypoint).",
+    "Promote Saturday Afternoon segments to a real trail row once SFWDA numbered names land.",
+    "Decide whether Gilliam / Bible / Tate cemeteries need any visitor context, or if a single 'nearby cemeteries' note covers them."
+  ]
+}

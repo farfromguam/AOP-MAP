@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Left rail v6 — pill-bar absorption</title>
+
+  <!-- DESIGN NOTES ============================================================
+  PREMISE
+  The existing .pill-bar (zoom-bar | preset-bar | 3D) is already the strongest
+  UI element on the map: three grouped pills in one horizontal row, each with a
+  clear job. v6 takes that pattern and absorbs the rest of the left rail into
+  it. Search, Hot, and Calendar each become a pill-button living in a SECOND
+  pill row directly beneath the original. There is no vertical card stack at
+  all. Clicking a Tools-row pill opens an arrow-pointing popover that hangs in
+  space over the map; clicking it again, clicking another pill, or pressing Esc
+  closes it. The left rail is now ONE horizontal control bar with optional
+  fly-down panels. The map gets back the entire vertical strip the old stack
+  used to occupy.
+
+  ASCII SKETCHES
+  ───────────────
+  All closed (drawer-less default — map is wide open below the bars):
+    ┌─────────────────────┬───────────────────────┬─────┐
+    │ ⛶  ◇  ⌂   (zoom)    │  ☘  ≋  ▤  (preset)    │  3D │   ← row 1 (existing pill-bar)
+    └─────────────────────┴───────────────────────┴─────┘
+    ┌─────────────────────────────────────┬─────────────┐
+    │  🔍 Search    🔥 Hot    📅 Calendar │             │   ← row 2 (NEW tools pill)
+    └─────────────────────────────────────┴─────────────┘
+    (map below, no card stack)
+
+  Hot open (popover hangs below, arrow points up at the Hot pill):
+    ┌─────────────────────┬───────────────────────┬─────┐
+    │ ⛶  ◇  ⌂            │  ☘  ≋  ▤              │ 3D  │
+    └─────────────────────┴───────────────────────┴─────┘
+    ┌─────────────────────────────────────┐
+    │  🔍 Search   [🔥 Hot●]  📅 Calendar │  ← Hot is active
+    └────────────────┬────────────────────┘
+                  ◢ ┴ ◣    ← arrow points at Hot
+       ┌──────────────────────────────┐
+       │ HOT NOW              Sat 2pm │
+       │ ┌────────────┬────────────┐  │
+       │ │ Stage 3    │ Trail      │  │
+       │ │ Running    │ activity   │  │
+       │ └────────────┴────────────┘  │
+       └──────────────────────────────┘
+
+  Calendar open (taller popover, scrolls internally):
+    ┌─────────────────────┬───────────────────────┬─────┐
+    │ ⛶  ◇  ⌂            │  ☘  ≋  ▤              │ 3D  │
+    └─────────────────────┴───────────────────────┴─────┘
+    ┌─────────────────────────────────────┐
+    │  🔍 Search   🔥 Hot   [📅 Calendar] │
+    └─────────────────────────────────┬───┘
+                                   ◢ ┴ ◣
+                      ┌──────────────────────────┐
+                      │ [Events] Park  About     │
+                      │ Rock Warblers Invitational│
+                      │ ─────────────────────────│
+                      │ FRI 6pm  Driver check-in │
+                      │ SAT 2pm  Stage 3 — LIVE  │ ⇡
+                      │ SAT 4pm  Stage 4 — Cliff │ │ scroll
+                      │ SUN 10am Awards          │ ⇣
+                      └──────────────────────────┘
+
+  Search open (short popover, results below input):
+    Pill row:   🔍[Search        ]  🔥 Hot   📅 Calendar
+                  Search input is INLINE in its pill, not in popover.
+                  Popover only opens when there are results / focus.
+
+  Mobile (narrow, ≤760px) — pill rows wrap, popovers full-width:
+    [⛶ ◇ ⌂][☘ ≋ ▤][3D]
+    [🔍 Search] [🔥] [📅]
+    ────────────────────
+    │ popover full width │
+    ────────────────────
+
+  STEAL-WORTHY ATTRIBUTES
+  -----------------------
+  • Two-row pill arrangement — extending the existing 3-pill row metaphor into
+    a second 3-pill row reads as "more of the same good thing" instead of
+    introducing a new shell.
+  • Inline search field — the Search pill is the input itself, no popover
+    needed for the empty-state. Results dropdown is the only fly-down.
+  • Arrow-on-popover — each fly-down has a small triangle pointing at its
+    parent pill, so the popover never feels disconnected from its trigger.
+  • Radio-style open-one-at-a-time — opening Hot auto-closes Calendar. No
+    z-index fights, no "two overlapping panels" problem.
+  • Map gets the whole left vertical strip back — the only chrome at rest is
+    two thin horizontal bars at the top.
+  • Live-dot persists on the Hot pill — the existing rust pip lives on the
+    pill itself, so users see "something is happening" without opening it.
+
+  COSTS
+  -----
+  • Calendar content (which is tall) becomes a popover, which means it
+    competes with map content vertically instead of sitting in its own dedicated
+    left-rail column. Users who want the calendar permanently visible while
+    scrolling the map lose that.
+  • Three states (search / hot / cal) cannot all be visible at the same time —
+    you have to pick one. v5 lets you have all three open simultaneously.
+  • Adds one more horizontal row of chrome at the top of the map vs. v5, which
+    only uses 44px of icon-strip width on the left edge.
+  • Search results dropdown stacking under the Search pill conflicts with the
+    Hot/Calendar popover positions if a user tabs through quickly — closing
+    rule is needed (implemented: opening one closes others).
+  ============================================================================ -->
+
+  <style>
+    /* ── Palette (verbatim from index.html:13-25) ─────────────────────────── */
+    :root {
+      --brown-ink: #4a3c2a;
+      --brown-mid: #6b5a3e;
+      --brown-dark: #3f3122;
+      --brown-soft: #6a5638;
+      --cream-hover: #efe2c6;
+      --cream-surface: rgba(250, 246, 235, 0.98);
+      --cream-surface-solid: #faf6eb;
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --control-border: #b9aa88;
+      --moss: #5f7157;
+      --moss-dark: #384833;
+      --moss-soft: #e3ebdc;
+      --rust: #9a5a32;
+      --hairline: rgba(74, 60, 42, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body, html { margin: 0; padding: 0; height: 100%;
+      font-family: Inter, system-ui, sans-serif; color: var(--brown-ink); }
+
+    /* ── Faux map background (lifted from leftrail_v5_hybrid.html) ────────── */
+    .map {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 70% 40%, rgba(95,113,87,0.42), transparent 70%),
+        radial-gradient(ellipse 45% 35% at 30% 70%, rgba(154,90,50,0.22), transparent 70%),
+        repeating-linear-gradient(120deg, rgba(74,60,42,0.05) 0 1px, transparent 1px 22px),
+        repeating-linear-gradient(60deg, rgba(74,60,42,0.04) 0 1px, transparent 1px 28px),
+        linear-gradient(180deg, #e2dcc6 0%, #d8cfb0 60%, #c8bf9c 100%);
+    }
+    .map svg.contours { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.42; }
+    .map .corner-attrib { position: absolute; bottom: 6px; left: 8px; font-size: 0.7rem;
+      color: rgba(74,60,42,0.65); z-index: 1; }
+    .map .zoom-controls { position: absolute; right: 18px; bottom: 18px; display: grid; gap: 4px; }
+    .map .zoom-controls button { width: 30px; height: 30px; border-radius: 6px;
+      border: 1px solid var(--control-border); background: var(--control-bg);
+      color: var(--brown-ink); font-size: 1rem; cursor: default; }
+
+    /* ── Hint strip top-right ─────────────────────────────────────────────── */
+    .hint-strip { position: absolute; top: 12px; right: 12px; z-index: 6;
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 7px 14px; border-radius: 999px; font-size: 0.82rem;
+      background: var(--cream-surface); border: 1px solid var(--cream-border);
+      color: var(--brown-mid); }
+    .hint-strip strong { color: var(--moss-dark); font-weight: 700; }
+    .hint-strip .sep { width: 1px; height: 14px; background: var(--hairline); }
+    .hint-strip .state-chip { font: 700 0.74rem Inter, system-ui, sans-serif;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      padding: 2px 8px; border-radius: 999px;
+      background: var(--moss-soft); color: var(--moss-dark); }
+
+    /* ── Left controls: two-row pill stack ───────────────────────────────── */
+    .left-controls { position: absolute; left: 12px; top: 12px; z-index: 5;
+      width: 480px; max-width: calc(100vw - 24px); display: grid; gap: 8px; }
+
+    /* ── ROW 1: existing pill-bar (markup verbatim from index.html:335-362) ─ */
+    .pill-bar { display: grid; grid-template-columns: 3fr 3fr 1fr; gap: 8px; align-items: stretch; }
+    .pill-bar .pill { display: flex; width: 100%; border: 1px solid var(--control-border);
+      border-radius: 999px; background: var(--control-bg); overflow: hidden;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .pill-bar .pill > button { flex: 1; min-width: 0; min-height: 36px; padding: 6px 8px;
+      border: 0; background: transparent; color: var(--brown-ink); cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; }
+    .pill-bar .pill > button + button { border-left: 1px solid var(--control-border); }
+    .pill-bar .pill > button:hover:not(.active):not(:disabled) { background: var(--cream-hover); }
+    .pill-bar .pill > button.active { background: var(--moss); color: var(--control-bg);
+      border-left-color: transparent; }
+    .pill-bar .pill > button svg { width: 22px; height: 22px; }
+    .pill-bar .pill > button.terrain-button { font: 800 0.86rem Inter, system-ui, sans-serif;
+      letter-spacing: 0.04em; }
+
+    /* ── ROW 2: tools pill-bar (NEW — same chrome, different contents) ───── */
+    .tools-bar { display: grid; grid-template-columns: 6fr 1fr; gap: 8px; align-items: stretch; }
+    .tools-bar .pill { display: flex; width: 100%; border: 1px solid var(--control-border);
+      border-radius: 999px; background: var(--control-bg); overflow: hidden;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+
+    /* tools-pill children stretch with grid so the inline search can grow */
+    .tools-pill { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: stretch; }
+    .tools-pill > * + * { border-left: 1px solid var(--control-border); }
+
+    /* Search segment is the input itself, inline */
+    .tools-search { position: relative; display: flex; align-items: center; min-width: 0;
+      padding: 0 0 0 30px; }
+    .tools-search .search-icon { position: absolute; left: 10px; top: 50%;
+      transform: translateY(-50%); width: 14px; height: 14px; color: var(--brown-soft);
+      pointer-events: none; }
+    .tools-search input { width: 100%; border: 0; background: transparent;
+      padding: 8px 10px 8px 4px; font: inherit; color: var(--brown-ink); min-width: 0; }
+    .tools-search input::placeholder { color: var(--brown-soft); }
+    .tools-search input:focus { outline: none; }
+    .tools-search.is-active { background: var(--cream-hover); }
+
+    /* Hot + Cal segments are pill-buttons */
+    .tools-btn { min-height: 36px; padding: 6px 14px; border: 0; background: transparent;
+      color: var(--brown-ink); cursor: pointer; display: inline-flex; align-items: center;
+      gap: 6px; font: 700 0.78rem Inter, system-ui, sans-serif; letter-spacing: 0.02em;
+      white-space: nowrap; position: relative; }
+    .tools-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .tools-btn:hover:not(.is-active) { background: var(--cream-hover); }
+    .tools-btn.is-active { background: var(--moss); color: var(--control-bg); }
+    .tools-btn .tools-btn-label { display: inline; }
+
+    /* Live dot on Hot pill */
+    .tools-btn .live-dot { position: absolute; top: 6px; right: 8px;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--rust); box-shadow: 0 0 0 1.5px var(--control-bg);
+      animation: pulse 2s ease-in-out infinite; pointer-events: none; }
+    .tools-btn.is-active .live-dot { box-shadow: 0 0 0 1.5px var(--moss); }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.18); }
+    }
+
+    /* Right cluster of tools-bar: collapse-all (×) and reserved spacing */
+    .tools-bar .close-all-pill { display: flex; align-items: stretch; justify-content: stretch; }
+    .tools-bar .close-all-pill button { flex: 1; min-height: 36px; border: 0;
+      background: transparent; color: var(--brown-mid); cursor: pointer;
+      font: 800 0.92rem Inter, system-ui, sans-serif; }
+    .tools-bar .close-all-pill button:hover { background: var(--cream-hover); color: var(--brown-dark); }
+    .tools-bar .close-all-pill button:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Popover (fly-down panel hanging below a pill) ───────────────────── */
+    .popover-wrap { position: absolute; left: 12px; z-index: 4; pointer-events: none; }
+    .popover { pointer-events: auto; position: absolute;
+      background: var(--cream-surface);
+      border: 1px solid var(--cream-border);
+      border-radius: 10px;
+      box-shadow: 0 14px 36px rgba(0,0,0,0.22);
+      min-width: 280px; max-width: 420px;
+      transform-origin: top center;
+      animation: popover-in 0.14s ease-out;
+    }
+    .popover[hidden] { display: none; }
+    @keyframes popover-in {
+      from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    /* Arrow notch pointing up at the parent pill */
+    .popover::before, .popover::after {
+      content: ""; position: absolute; bottom: 100%;
+      width: 0; height: 0; border-style: solid;
+    }
+    .popover::before {
+      left: var(--arrow-x, 24px);
+      border-width: 0 8px 8px 8px;
+      border-color: transparent transparent var(--cream-border) transparent;
+      transform: translateX(-8px);
+    }
+    .popover::after {
+      left: var(--arrow-x, 24px);
+      border-width: 0 7px 7px 7px;
+      border-color: transparent transparent var(--cream-surface-solid) transparent;
+      transform: translateX(-7px) translateY(1px);
+    }
+
+    /* Popover sizing per card */
+    .popover.popover-search { width: 360px; max-height: 280px; overflow-y: auto; padding: 4px 0; }
+    .popover.popover-hot    { width: 360px; padding: 8px; }
+    .popover.popover-cal    { width: 384px; max-height: min(60vh, 460px); overflow-y: auto; }
+
+    /* ── Search results inside popover-search ────────────────────────────── */
+    .search-results-list { display: grid; gap: 0; }
+    .search-item { display: flex; justify-content: space-between; gap: 10px;
+      padding: 8px 12px; cursor: pointer; font-size: 0.9rem;
+      border-bottom: 1px solid var(--hairline); }
+    .search-item:last-child { border-bottom: 0; }
+    .search-item:hover, .search-item.active { background: var(--cream-hover); }
+    .search-kind { color: var(--brown-soft); font-size: 0.78rem; }
+    .search-empty { padding: 10px 12px; color: var(--brown-soft); font-size: 0.88rem; }
+
+    /* ── Hot control inside popover (real chrome from index.html) ────────── */
+    .hot-control { display: grid; gap: 6px; padding: 7px; }
+    .hot-control-head { display: flex; align-items: baseline; justify-content: space-between;
+      gap: 8px; padding: 0 2px; color: var(--brown-ink); }
+    .hot-control-title { font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+    .hot-control-status { min-width: 0; font: 600 0.68rem Inter, system-ui, sans-serif;
+      color: var(--brown-soft); }
+    .hot-lanes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .hot-button { width: 100%; min-height: 64px; display: grid;
+      grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 7px;
+      margin: 0; padding: 8px 9px; border: 1px solid rgba(85, 67, 44, 0.25);
+      border-radius: 8px; background: var(--brown-mid);
+      color: #f7f1e2; cursor: pointer; text-align: left;
+      font: 700 0.74rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+    .hot-button:hover { filter: brightness(1.06); }
+    .hot-button[data-hot-state="hot-now"] { background: var(--rust); }
+    .hot-button[data-hot-state="trail-hot"] { background: var(--moss); }
+    .hot-button-glyph { display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; font-size: 1.1rem; line-height: 1; }
+    .hot-button-text { display: block; min-width: 0; }
+    .hot-button-title { display: block; }
+    .hot-button-detail { display: block; margin-top: 1px;
+      font: 400 0.72rem Inter, system-ui, sans-serif;
+      text-transform: none; letter-spacing: 0; color: rgba(247, 241, 226, 0.88); }
+
+    /* ── Calendar card inside popover (real chrome from index.html) ──────── */
+    .calendar-card { display: block; padding: 0; overflow: hidden; }
+    .left-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 3px; padding: 5px; border-bottom: 1px solid var(--cream-border);
+      background: rgba(227, 235, 220, 0.62); }
+    .left-tab { min-width: 0; min-height: 32px; margin: 0; padding: 5px 4px;
+      border: 1px solid transparent; border-radius: 6px; background: transparent;
+      color: var(--brown-mid); cursor: pointer;
+      font: 800 0.76rem Inter, system-ui, sans-serif; text-align: center; }
+    .left-tab:hover { background: rgba(255,253,245,0.7); color: var(--brown-dark); }
+    .left-tab[aria-selected="true"] { background: var(--control-bg);
+      border-color: #b9c7ad; color: var(--moss-dark);
+      box-shadow: inset 0 -2px 0 var(--moss); }
+    .calendar-toggle { width: 100%; display: grid;
+      grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px;
+      margin: 0; padding: 8px 10px; border: 0; background: transparent;
+      color: var(--brown-ink); cursor: pointer; text-align: left; }
+    .calendar-toggle:hover { background: var(--cream-hover); }
+    .calendar-title { display: block; font: 800 0.78rem Inter, system-ui, sans-serif;
+      text-transform: uppercase; }
+    .calendar-range { display: block; margin-top: 1px; font-size: 0.76rem; color: var(--brown-soft); }
+    .calendar-chevron { color: var(--brown-mid); font-size: 1.15rem; line-height: 1; }
+    .calendar-body { max-height: 380px; overflow-y: auto; padding: 0 8px 8px; }
+    .calendar-days { list-style: none; display: grid; gap: 4px; margin: 0; padding: 0; }
+    .calendar-days li { margin: 0; padding: 0; border-top: 1px solid var(--cream-border);
+      color: var(--brown-ink); position: relative; }
+    .calendar-row { width: 100%; display: grid;
+      grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 8px;
+      margin: 0; padding: 7px 8px; border: 0; background: transparent;
+      color: var(--brown-ink); cursor: pointer; text-align: left; }
+    .calendar-row:hover { background: var(--cream-hover); }
+    .calendar-day { padding-top: 2px; font: 800 0.68rem Inter, system-ui, sans-serif;
+      text-transform: uppercase; color: var(--brown-mid); }
+    .calendar-time { display: block; font: 700 0.74rem Inter, system-ui, sans-serif;
+      line-height: 1.15; color: var(--brown-soft); }
+    .calendar-name { display: block; margin-top: 1px; font-size: 0.88rem; line-height: 1.18; }
+    .calendar-location { display: block; margin-top: 2px; font-size: 0.74rem;
+      line-height: 1.15; color: var(--brown-soft); }
+    .calendar-days li[data-state="happening"] { background: #dde2cf; box-shadow: inset 3px 0 0 0 var(--rust); }
+    .calendar-days li[data-state="happening"] .calendar-name { font-weight: 700; }
+    .calendar-days li[data-state="upcoming_next"] { background: #ecd9b1; box-shadow: inset 3px 0 0 0 var(--brown-dark); }
+    .cal-live-badge, .cal-soon-badge { position: absolute; top: 8px; right: 8px;
+      padding: 1px 6px; border-radius: 3px;
+      font: 700 9px Inter, system-ui, sans-serif; text-transform: uppercase;
+      color: #f7f1e2; pointer-events: none; }
+    .cal-live-badge { background: var(--rust); }
+    .cal-soon-badge { background: var(--brown-dark); }
+
+    /* ── Mobile ──────────────────────────────────────────────────────────── */
+    @media (max-width: 760px) {
+      .left-controls { left: 8px; right: 8px; top: 8px; width: auto; max-width: none; gap: 6px; }
+      .pill-bar { gap: 6px; }
+      .pill-bar .pill > button { min-height: 32px; padding: 4px 6px; }
+      .pill-bar .pill > button svg { width: 20px; height: 20px; }
+      .tools-bar { grid-template-columns: 1fr; gap: 6px; }
+      .tools-bar .close-all-pill { display: none; }
+      .tools-pill { grid-template-columns: minmax(0, 1fr) auto auto; }
+      .tools-btn .tools-btn-label { display: none; }
+      .popover { left: 8px; right: 8px; width: auto; max-width: none; min-width: 0; }
+      .popover.popover-search,
+      .popover.popover-hot,
+      .popover.popover-cal { width: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Faux map background -->
+  <div class="map">
+    <svg class="contours" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <g fill="none" stroke="#5a4630" stroke-width="0.15">
+        <path d="M0 30 Q 20 25, 40 32 T 80 28 T 100 30" />
+        <path d="M0 40 Q 25 35, 45 42 T 85 38 T 100 41" />
+        <path d="M0 50 Q 30 45, 50 52 T 90 48 T 100 51" />
+        <path d="M0 60 Q 22 56, 48 62 T 88 58 T 100 61" />
+        <path d="M0 70 Q 28 67, 52 72 T 92 68 T 100 71" />
+      </g>
+      <g fill="none" stroke="#9a5a32" stroke-width="0.3" stroke-linecap="round">
+        <path d="M22 78 Q 38 60, 52 56 T 78 38" />
+        <path d="M58 80 Q 64 64, 70 50 T 80 32" />
+      </g>
+    </svg>
+    <div class="corner-attrib">© OpenStreetMap · NAIP · AOP private — mockup background</div>
+    <div class="zoom-controls"><button>+</button><button>−</button></div>
+  </div>
+
+  <div class="hint-strip">
+    <span>Click <strong>Search</strong> · <strong>Hot</strong> · <strong>Calendar</strong> to fly down</span>
+    <span class="sep" aria-hidden="true"></span>
+    <span class="state-chip" id="stateChip">open: none</span>
+  </div>
+
+  <!-- ── Left controls: two pill rows ────────────────────────────────────── -->
+  <div class="left-controls">
+
+    <!-- ROW 1: existing pill-bar (markup VERBATIM from index.html:335-362,
+         IDs preserved so existing Playwright + handlers still bind) -->
+    <div class="pill-bar" role="group" aria-label="Map view controls">
+      <div class="pill zoom-bar" role="group" aria-label="Zoom to area">
+        <button id="zoomRegion" type="button" data-view="region" title="Zoom out to the full 9-patch region" aria-label="Region zoom">
+          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 8V3h5M14 3h5v5M19 14v5h-5M8 19H3v-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <button id="zoomPark" type="button" data-view="park" title="Fit the AOP park boundary" aria-label="Fit park boundary">
+          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M4 7L7 3L15 4L18 9L17 16L9 18L4 14Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/></svg>
+        </button>
+        <button id="zoomPavilion" type="button" data-view="pavilion" title="Zoom in tight on the pavilion" aria-label="Pavilion zoom">
+          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 9L11 3L19 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 9V18M9 9V18M13 9V18M17 9V18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 18H19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="pill preset-bar" role="group" aria-label="Map preset">
+        <button id="presetPark" type="button" data-preset="park" class="active" title="Park preset (default map)" aria-label="Park preset">
+          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 6L8 4L14 6L19 4V16L14 18L8 16L3 18Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 4V16M14 6V18" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+        </button>
+        <button id="presetTopo" type="button" data-preset="topo" title="Topo preset (contour-led)" aria-label="Topo preset">
+          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 7c3-2 6-2 9 0s5 2 7 0M3 11c3-2 6-2 9 0s5 2 7 0M3 15c3-2 6-2 9 0s5 2 7 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </button>
+        <button id="presetTrace" type="button" data-preset="trace" title="Trace preset (NAIP aerial)" aria-label="Trace preset">
+          <svg viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="3" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5 16c2-1 3-4 6-4s4 3 6 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="16" r="1.3" fill="currentColor"/><circle cx="17" cy="14" r="1.3" fill="currentColor"/></svg>
+        </button>
+      </div>
+      <div class="pill" role="group" aria-label="3D toggle">
+        <button id="terrainButton" type="button" class="terrain-button" aria-pressed="false" title="Toggle 3D terrain view">3D</button>
+      </div>
+      <input type="checkbox" id="showTerrain" hidden />
+    </div>
+
+    <!-- ROW 2: NEW tools-bar — search (inline) + hot pill + calendar pill -->
+    <div class="tools-bar" role="group" aria-label="Tools">
+      <div class="pill tools-pill">
+
+        <!-- SEARCH segment: input lives inline in the pill -->
+        <label class="tools-search" id="toolsSearchSeg" for="searchInput">
+          <svg class="search-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M10.6 10.6 L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Search the map…" autocomplete="off" />
+        </label>
+
+        <!-- HOT pill-button -->
+        <button id="hotPill" class="tools-btn" type="button" aria-pressed="false"
+                aria-controls="hotPopover" title="Hot now — Stage 3 LIVE">
+          <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <path d="M11 3.5 C 12 6.5, 14.5 7.5, 14.5 11
+                     C 14.5 14, 12.7 16, 11 16
+                     C 9.3 16, 7.5 14, 7.5 11.5
+                     C 7.5 10, 8.2 9.4, 8.8 10
+                     C 9.4 10.6, 9.5 9.5, 9 8 C 8.7 6.5, 9.5 5, 11 3.5 Z"
+                  stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+          <span class="tools-btn-label">Hot</span>
+          <span class="live-dot" aria-hidden="true"></span>
+        </button>
+
+        <!-- CALENDAR pill-button -->
+        <button id="calPill" class="tools-btn" type="button" aria-pressed="false"
+                aria-controls="calPopover" title="Event calendar">
+          <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <rect x="3.2" y="5.2" width="15.6" height="13.6" rx="1.6"
+                  stroke="currentColor" stroke-width="1.5"/>
+            <path d="M3.2 9.2 H 18.8" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M7.5 3 V 7 M14.5 3 V 7"
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span class="tools-btn-label">Calendar</span>
+        </button>
+      </div>
+
+      <!-- Close-all pill (only enabled when something is open) -->
+      <div class="pill close-all-pill">
+        <button id="closeAll" type="button" title="Close open panel" disabled>×</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Popovers (hang in space below their parent pill) ────────────────── -->
+  <div class="popover-wrap">
+
+    <!-- SEARCH popover: search results dropdown -->
+    <div class="popover popover-search" id="searchPopover" hidden role="listbox" aria-label="Search results">
+      <div class="search-results-list">
+        <div class="search-item"><span>Stage 3 — Mud Pit</span><span class="search-kind">stage</span></div>
+        <div class="search-item"><span>Stage 4 — Cliff Loop</span><span class="search-kind">stage</span></div>
+        <div class="search-item"><span>Pavilion</span><span class="search-kind">place</span></div>
+        <div class="search-item"><span>Ellis cemetery</span><span class="search-kind">cemetery</span></div>
+        <div class="search-item"><span>Lower trace</span><span class="search-kind">trail</span></div>
+      </div>
+    </div>
+
+    <!-- HOT popover: real hot-control chrome with #hotButton + #hotTrailButton -->
+    <div class="popover popover-hot" id="hotPopover" hidden>
+      <section id="hotControl" class="hot-control" aria-label="Hot now">
+        <div class="hot-control-head">
+          <span class="hot-control-title">Hot now</span>
+          <span id="hotControlStatus" class="hot-control-status">Sat 2:14 pm</span>
+        </div>
+        <div id="hotLanes" class="hot-lanes" data-lane-count="2">
+          <button id="hotButton" type="button" class="hot-button"
+                  data-hot-lane="event" data-hot-state="hot-now"
+                  data-hot-selected="false" aria-label="Event hot lane">
+            <span class="hot-button-glyph" id="hotButtonGlyph" aria-hidden="true">●</span>
+            <span class="hot-button-text">
+              <span class="hot-button-title" id="hotButtonTitle">Stage 3</span>
+              <span class="hot-button-detail" id="hotButtonDetail">Running now</span>
+            </span>
+          </button>
+          <button id="hotTrailButton" type="button" class="hot-button"
+                  data-hot-lane="trails" data-hot-state="trail-hot"
+                  data-hot-selected="false" aria-label="Trail activity lane">
+            <span class="hot-button-glyph" id="hotTrailButtonGlyph" aria-hidden="true">❖</span>
+            <span class="hot-button-text">
+              <span class="hot-button-title" id="hotTrailButtonTitle">Trail activity</span>
+              <span class="hot-button-detail" id="hotTrailButtonDetail">Where rigs spent time</span>
+            </span>
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <!-- CALENDAR popover: real calendar-card chrome with all required IDs -->
+    <div class="popover popover-cal" id="calPopover" hidden>
+      <section class="calendar-card" id="calendarCard" aria-label="Events and park information">
+        <div class="left-tabs" role="tablist" aria-label="Left panel content">
+          <button id="leftTabEvents" class="left-tab" type="button" role="tab"
+                  aria-selected="true" data-left-tab="events">Events</button>
+          <button id="leftTabPoi" class="left-tab" type="button" role="tab"
+                  aria-selected="false" data-left-tab="poi" tabindex="-1">POI</button>
+          <button id="leftTabAbout" class="left-tab" type="button" role="tab"
+                  aria-selected="false" data-left-tab="about" tabindex="-1">About</button>
+        </div>
+        <button id="calendarToggle" class="calendar-toggle" type="button"
+                aria-expanded="true" aria-controls="calendarBody">
+          <span>
+            <span class="calendar-title">Rock Warblers Invitational</span>
+            <span class="calendar-range" id="calendarRange">Friday, June 19, 2026</span>
+          </span>
+          <span id="calendarChevron" class="calendar-chevron">▾</span>
+        </button>
+        <div id="calendarBody" class="calendar-body">
+          <ol class="calendar-days" id="calendarDays">
+            <li>
+              <div class="calendar-row">
+                <span class="calendar-day">FRI</span>
+                <span>
+                  <span class="calendar-time">6:00 pm</span>
+                  <span class="calendar-name">Driver check-in</span>
+                  <span class="calendar-location">Pavilion</span>
+                </span>
+              </div>
+            </li>
+            <li data-state="happening">
+              <span class="cal-live-badge">Live</span>
+              <div class="calendar-row">
+                <span class="calendar-day">SAT</span>
+                <span>
+                  <span class="calendar-time">2:00 pm</span>
+                  <span class="calendar-name">Stage 3 — Mud Pit</span>
+                  <span class="calendar-location">Lower trace</span>
+                </span>
+              </div>
+            </li>
+            <li data-state="upcoming_next">
+              <span class="cal-soon-badge">Next</span>
+              <div class="calendar-row">
+                <span class="calendar-day">SAT</span>
+                <span>
+                  <span class="calendar-time">4:00 pm</span>
+                  <span class="calendar-name">Stage 4 — Cliff Loop</span>
+                  <span class="calendar-location">Upper trace</span>
+                </span>
+              </div>
+            </li>
+            <li>
+              <div class="calendar-row">
+                <span class="calendar-day">SUN</span>
+                <span>
+                  <span class="calendar-time">10:00 am</span>
+                  <span class="calendar-name">Awards + Pull-Sled</span>
+                  <span class="calendar-location">Pavilion</span>
+                </span>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+  <script>
+    // ── v6 controller ─────────────────────────────────────────────────────
+    //
+    // Three pills (search / hot / cal). One can be "open" at a time. Opening
+    // one closes the others. Click the active pill again, click outside, or
+    // press Esc to close. Each popover hangs below its trigger with an arrow
+    // notch pointing back at it.
+    //
+    // Search is special: typing in the input opens the popover with results;
+    // the field itself stays in the pill (no popover input). Clicking the
+    // input also opens the popover (treats it like a focus event).
+
+    const pills = {
+      search: { btn: document.getElementById('toolsSearchSeg'),
+                pop: document.getElementById('searchPopover'),
+                input: document.getElementById('searchInput') },
+      hot:    { btn: document.getElementById('hotPill'),
+                pop: document.getElementById('hotPopover') },
+      cal:    { btn: document.getElementById('calPill'),
+                pop: document.getElementById('calPopover') },
+    };
+    const stateChip   = document.getElementById('stateChip');
+    const closeAllBtn = document.getElementById('closeAll');
+    const popWrap     = document.querySelector('.popover-wrap');
+
+    let openKey = null;
+
+    function positionPopover(key) {
+      const { btn, pop } = pills[key];
+      const btnRect = btn.getBoundingClientRect();
+      const wrapRect = popWrap.getBoundingClientRect();
+      // Position popover top just below the pill, with a 10px gap for the arrow.
+      const top  = (btnRect.bottom - wrapRect.top) + 10;
+      // Horizontal: left-align with the pill button, but clamp so the popover
+      // does not run off the right edge of the viewport.
+      let left = btnRect.left - wrapRect.left;
+      const popW = pop.offsetWidth || 360;
+      const viewportRight = window.innerWidth - 12;
+      if (left + popW > viewportRight) {
+        left = Math.max(12, viewportRight - popW);
+      }
+      pop.style.top  = top + 'px';
+      pop.style.left = left + 'px';
+      // Arrow x-offset: center it on the trigger button, relative to popover.
+      const arrowX = Math.max(16,
+        Math.min(popW - 16, (btnRect.left + btnRect.width / 2) - (wrapRect.left + left)));
+      pop.style.setProperty('--arrow-x', arrowX + 'px');
+    }
+
+    function setState(key) {
+      // Close all
+      Object.keys(pills).forEach(k => {
+        const { btn, pop } = pills[k];
+        pop.hidden = true;
+        if (btn.classList) btn.classList.remove('is-active');
+        if (btn.setAttribute && k !== 'search') btn.setAttribute('aria-pressed', 'false');
+      });
+      // Search seg uses a different active class
+      pills.search.btn.classList.remove('is-active');
+
+      openKey = key;
+      if (key) {
+        const { btn, pop } = pills[key];
+        pop.hidden = false;
+        positionPopover(key);
+        if (key === 'search') {
+          pills.search.btn.classList.add('is-active');
+        } else {
+          btn.classList.add('is-active');
+          btn.setAttribute('aria-pressed', 'true');
+        }
+      }
+      closeAllBtn.disabled = !openKey;
+      stateChip.textContent = openKey ? ('open: ' + openKey) : 'open: none';
+    }
+
+    // Pill click handlers
+    pills.hot.btn.addEventListener('click', () => setState(openKey === 'hot' ? null : 'hot'));
+    pills.cal.btn.addEventListener('click', () => setState(openKey === 'cal' ? null : 'cal'));
+
+    // Search behaviour: focus opens, blur+empty closes; clicking on the input
+    // segment also opens (since the label wraps the input).
+    pills.search.input.addEventListener('focus', () => setState('search'));
+    pills.search.input.addEventListener('input', () => {
+      if (openKey !== 'search') setState('search');
+      // Cheap filter on the static demo items so the popover feels alive.
+      const q = pills.search.input.value.toLowerCase().trim();
+      const items = pills.search.pop.querySelectorAll('.search-item');
+      let any = false;
+      items.forEach(it => {
+        const txt = it.textContent.toLowerCase();
+        const show = !q || txt.includes(q);
+        it.style.display = show ? '' : 'none';
+        if (show) any = true;
+      });
+      let empty = pills.search.pop.querySelector('.search-empty');
+      if (!any) {
+        if (!empty) {
+          empty = document.createElement('div');
+          empty.className = 'search-empty';
+          empty.textContent = 'No matches.';
+          pills.search.pop.querySelector('.search-results-list').appendChild(empty);
+        }
+        empty.hidden = false;
+      } else if (empty) {
+        empty.hidden = true;
+      }
+    });
+
+    // Esc closes
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && openKey) {
+        if (openKey === 'search') pills.search.input.blur();
+        setState(null);
+      }
+    });
+
+    // Click outside closes
+    document.addEventListener('mousedown', (e) => {
+      if (!openKey) return;
+      const insidePill = Object.values(pills).some(p => p.btn.contains(e.target));
+      const insidePop  = Object.values(pills).some(p => p.pop.contains(e.target));
+      if (!insidePill && !insidePop) {
+        if (openKey === 'search') pills.search.input.blur();
+        setState(null);
+      }
+    });
+
+    // Close-all pill
+    closeAllBtn.addEventListener('click', () => {
+      if (openKey === 'search') pills.search.input.blur();
+      setState(null);
+    });
+
+    // Reposition popover on resize so the arrow stays under its trigger.
+    window.addEventListener('resize', () => { if (openKey) positionPopover(openKey); });
+
+    // Demo: pre-open the Hot popover so the screenshot reads on first load.
+    setState('hot');
+  </script>
+</body>
+</html>

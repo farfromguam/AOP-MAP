@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.topografix.com/GPX/1/1" xmlns:onx="http://www.onxmaps.com" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd " version="1.1" creator="onXmaps offroad ios">
+	<rte>
+		<name>Route 05/25/26, 10:23 fire place to track</name>
+		<desc>Fire to track </desc>
+		<type>Route</type>
+		<extensions>
+			<onx:style>solid</onx:style>
+			<onx:weight>4.0</onx:weight>
+			<onx:color>rgba(0, 255, 255, 1)</onx:color>
+		</extensions>
+		<rtept lat="35.09046" lon="-85.74828">
+			<time>2026-05-25T15:26:17Z</time>
+		</rtept>
+		<rtept lat="35.091120000000004" lon="-85.74766">
+			<time>2026-05-25T15:26:17Z</time>
+		</rtept>
+		<rtept lat="35.091060000000006" lon="-85.74637">
+			<time>2026-05-25T15:26:17Z</time>
+		</rtept>
+		<rtept lat="35.09082000000001" lon="-85.74558">
+			<time>2026-05-25T15:26:17Z</time>
+		</rtept>
+		<rtept lat="35.090630000000004" lon="-85.74438">
+			<time>2026-05-25T15:26:17Z</time>
+		</rtept>
+		<rtept lat="35.090520000000005" lon="-85.74334">
+			<time>2026-05-25T15:26:17Z</time>
+		</rtept>
+		<rtept lat="35.09033" lon="-85.74231">
+			<time>2026-05-25T15:26:17Z</time>
+		</rtept>
+	</rte>
+</gpx>

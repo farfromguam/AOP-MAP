@@ -102,3 +102,34 @@ I think hot should be only activate the heatmap
 
 [] ability to edit size on images.
 [] document workflow for adding images.
+
+-----
+
+## Status index (do not edit dump lines above)
+
+Per `../../ai_rules/preserve_card_directives.md`, the user-written `[]` lines
+above stay verbatim. This index records the current status of each one and
+points at the card that owns the truth. Read the owning card before treating
+any line as still-open.
+
+| Dump line | Status | Owning card |
+| --- | --- | --- |
+| `[] expand calendar on large screens` | shipped | `../03_event_app/viewer_polish_carryover.md` (Lane 2) |
+| `[] ON ALL LAYERS` (buildings / water / road audit) | shipped | `../03_event_app/viewer_polish_carryover.md` (Lane 4) — table in `../../research/viewer.md` |
+| `[] scroll to current calendar item` | shipped | `../03_event_app/viewer_polish_carryover.md` (Lane 2) |
+| `[] Improve view` (trails-default view) | shipped | `_done/preset_persona_review.md` |
+| `[] css needs a review top to bottom` | open | `../03_event_app/code_health_pass_4.md` |
+| `[] theme. review` | open | `../03_event_app/code_health_pass_4.md` |
+| `[] code needs a review for smells.` | open | `../03_event_app/code_health_pass_4.md` |
+| `[] invert all collapse icons on right toolbar` | shipped | `../03_event_app/viewer_polish_carryover.md` (Lane 3) |
+| `[] fix styles on` (section-toggle chevron) | shipped | `../03_event_app/viewer_polish_carryover.md` (Lane 3) |
+| `[] see if we can get trail names they are numbered` | open (research) | `../01_mvp/_done/community_trails_import.md` |
+| `[] add aop logo` | shipped | `_done/branding.md` |
+| `[] add rock warblers logo` | shipped | `_done/branding.md` |
+| `[] hot coming up being a calendar notification does not make sense....` | shipped | `_done/hot_control_two_lane.md` |
+| `[] ability to edit size on images.` | shipped | `../03_event_app/viewer_polish_carryover.md` (Lane 5) — `_done/branding.md` "Sprint 03 Follow-up Shipped" |
+| `[] document workflow for adding images.` | shipped | `../../spinup/add_image_to_viewer.md` |
+
+Non-`[]` directives in the dump (free-form lines) are out of scope for this
+index; they routed through the Sprint 02 triage in `_readme.md` and the
+Sprint 03 carryover.

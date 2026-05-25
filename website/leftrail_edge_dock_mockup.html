@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Per-card left rail — live mockup</title>
+  <style>
+    :root {
+      --brown-ink: #4a3c2a;
+      --brown-mid: #6b5a3e;
+      --brown-dark: #3f3122;
+      --brown-soft: #756444;
+      --cream-hover: #efe2c6;
+      --cream-surface: rgba(250, 246, 235, 0.96);
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --control-border: #b9aa88;
+      --moss: #5f7157;
+      --moss-dark: #384833;
+      --moss-soft: #e3ebdc;
+      --rust: #9a5a32;
+    }
+    * { box-sizing: border-box; }
+    body, html { margin: 0; padding: 0; height: 100%; font-family: Inter, system-ui, sans-serif; color: var(--brown-ink); }
+
+    /* ── Faux map background ──────────────────────────────────────────────── */
+    .map {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 70% 40%, rgba(95,113,87,0.42), transparent 70%),
+        radial-gradient(ellipse 45% 35% at 30% 70%, rgba(154,90,50,0.22), transparent 70%),
+        repeating-linear-gradient(120deg, rgba(74,60,42,0.05) 0 1px, transparent 1px 22px),
+        repeating-linear-gradient(60deg, rgba(74,60,42,0.04) 0 1px, transparent 1px 28px),
+        linear-gradient(180deg, #e2dcc6 0%, #d8cfb0 60%, #c8bf9c 100%);
+    }
+    .map svg.contours { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.42; }
+    .map .corner-attrib { position: absolute; bottom: 6px; left: 8px; font-size: 0.7rem; color: rgba(74,60,42,0.65); z-index: 1; }
+    .map .zoom-controls { position: absolute; right: 18px; bottom: 18px; display: grid; gap: 4px; }
+    .map .zoom-controls button { width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--control-border);
+      background: var(--control-bg); color: var(--brown-ink); font-size: 1rem; cursor: default; }
+
+    /* ── Hint strip ───────────────────────────────────────────────────────── */
+    .hint-strip { position: absolute; top: 12px; right: 12px; z-index: 6;
+      padding: 8px 14px; border-radius: 999px; font-size: 0.82rem;
+      background: var(--cream-surface); border: 1px solid var(--cream-border);
+      color: var(--brown-mid); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .hint-strip strong { color: var(--moss-dark); }
+
+    /* ── Pill bar (replicated from index.html) ────────────────────────────── */
+    .pill-bar { position: absolute; top: 12px; left: 12px; z-index: 4;
+      width: 360px; display: grid; grid-template-columns: 3fr 3fr 1fr; gap: 8px; align-items: stretch; }
+    .pill { display: flex; width: 100%; border: 1px solid var(--control-border); border-radius: 999px;
+      background: var(--control-bg); overflow: hidden; box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .pill > button { flex: 1; min-width: 0; min-height: 36px; padding: 6px 8px; border: 0;
+      background: transparent; color: var(--brown-ink); cursor: default;
+      display: inline-flex; align-items: center; justify-content: center; }
+    .pill > button + button { border-left: 1px solid var(--control-border); }
+    .pill > button.active { background: var(--moss); color: #f7f1e2; border-left-color: transparent; }
+    .pill > button svg { width: 22px; height: 22px; }
+    .pill .terrain { font: 800 0.86rem Inter, system-ui, sans-serif; letter-spacing: 0.04em; }
+
+    /* ── Left rail: three rows, each a unified [icon | content] shell ─────── */
+    .left-controls { position: absolute; left: 12px; top: 68px; z-index: 3;
+      display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+
+    .rail-row { display: grid; grid-template-columns: 44px 360px;
+      border-radius: 8px; overflow: hidden;
+      border: 1px solid rgba(155,132,92,0.34);
+      background: var(--cream-surface);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+      transition: grid-template-columns 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                  border-color 0.2s, background 0.2s, box-shadow 0.2s; }
+    /* Collapsed: row shrinks to just the icon, shell stays around it */
+    .rail-row:not(.open) { grid-template-columns: 44px; }
+    /* When collapsed, hide the body (which lives in column 2 that no longer exists) */
+    .rail-row:not(.open) .card-body { display: none; }
+
+    .card-icon { width: 44px; height: 44px; align-self: start;
+      display: grid; place-items: center; position: relative;
+      background: transparent; border: 0; color: var(--brown-mid);
+      cursor: pointer;
+      transition: color 0.18s, background 0.18s; }
+    .card-icon:hover { color: var(--brown-dark); background: rgba(74, 60, 42, 0.06); }
+    .card-icon:focus-visible { outline: 2px solid rgba(95,113,87,0.42); outline-offset: -2px; }
+    .card-icon svg { width: 22px; height: 22px; }
+
+    /* Live-state dot on the hot icon — pulses when an event is happening */
+    .live-dot { position: absolute; top: 4px; right: 4px; width: 9px; height: 9px;
+      border-radius: 50%; background: var(--rust); box-shadow: 0 0 0 2px var(--cream-surface);
+      animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 2px var(--cream-surface), 0 0 0 0 rgba(154,90,50,0.5); }
+      50%      { box-shadow: 0 0 0 2px var(--cream-surface), 0 0 0 6px rgba(154,90,50,0); }
+    }
+    .day-cap { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
+      font: 800 0.55rem Inter, system-ui, sans-serif; color: var(--moss-dark);
+      background: var(--moss-soft); padding: 1px 4px; border-radius: 3px; letter-spacing: 0.04em; }
+
+    /* Tooltip — only shown when the row is collapsed (the card itself labels it when open) */
+    .card-icon .label { position: absolute; left: 100%; margin-left: 10px; top: 50%;
+      transform: translate(-6px, -50%); padding: 4px 9px; border-radius: 6px;
+      background: var(--brown-dark); color: #f7f1e2; font-size: 0.75rem; white-space: nowrap;
+      opacity: 0; pointer-events: none; transition: opacity 0.18s ease, transform 0.18s ease;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.2); z-index: 7; }
+    .rail-row:not(.open) .card-icon:hover .label { opacity: 1; transform: translate(0, -50%); }
+
+    /* Card body — sits in the second grid column. Inner cards lose their own shells
+       so the row's shell is the only visible boundary. */
+    .card-body { min-width: 0; padding: 0; }
+    .card-body .search-shell,
+    .card-body .hot-control,
+    .card-body .calendar-card { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+
+    /* ── Inner card chrome (carried from index.html, with shell stripped) ──── */
+    .search-shell { padding: 6px 10px 6px 0; }
+    .search-shell input { width: 100%; box-sizing: border-box; padding: 8px 10px;
+      font: inherit; border: 1px solid var(--control-border); border-radius: 7px;
+      background: var(--control-bg); color: var(--brown-ink); }
+    .search-shell input::placeholder { color: var(--brown-soft); }
+
+    .hot-control { display: grid; gap: 6px; padding: 7px 10px 7px 0; }
+    .hot-control-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 2px; min-height: 24px; }
+    .hot-control-title { font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+    .hot-control-status { font: 600 0.68rem Inter, system-ui, sans-serif; color: var(--brown-soft); }
+    .hot-lanes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .hot-button { width: 100%; min-height: 64px; display: grid; grid-template-columns: 22px minmax(0, 1fr);
+      align-items: center; gap: 7px; padding: 8px 9px; border: 1px solid rgba(85, 67, 44, 0.25);
+      border-radius: 8px; color: #f7f1e2; cursor: default; text-align: left;
+      font: 700 0.74rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+    .hot-button.hot-now { background: var(--rust);
+      box-shadow: 0 0 0 2px rgba(247, 241, 226, 0.82), 0 0 0 4px rgba(42, 33, 22, 0.16); }
+    .hot-button.trail-hot { background: var(--moss); }
+    .hot-glyph { display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; font-size: 1.1rem; line-height: 1; }
+    .hot-text { display: block; min-width: 0; }
+    .hot-title { display: block; }
+    .hot-detail { display: block; margin-top: 1px; font: 400 0.72rem Inter, system-ui, sans-serif;
+      text-transform: none; letter-spacing: 0; color: rgba(247, 241, 226, 0.88); }
+
+    .calendar-card { overflow: hidden; }
+    .left-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px;
+      padding: 5px; border-bottom: 1px solid var(--cream-border); background: rgba(227, 235, 220, 0.62); }
+    .left-tab { min-width: 0; min-height: 32px; padding: 5px 4px; border: 1px solid transparent;
+      border-radius: 6px; background: transparent; color: var(--brown-mid); cursor: default;
+      font: 800 0.76rem Inter, system-ui, sans-serif; text-align: center; }
+    .left-tab.active { background: var(--control-bg); border-color: #b9c7ad; color: var(--moss-dark);
+      box-shadow: inset 0 -2px 0 var(--moss); }
+    .calendar-toggle { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center; gap: 8px; padding: 8px 10px; border: 0; background: transparent;
+      color: var(--brown-ink); cursor: default; text-align: left; }
+    .calendar-title { display: block; font: 800 0.78rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+    .calendar-range { display: block; margin-top: 1px; font-size: 0.76rem; color: var(--brown-soft); }
+    .calendar-chevron { color: var(--brown-mid); font-size: 1.15rem; line-height: 1; }
+    .calendar-body { max-height: 320px; overflow-y: auto; padding: 0 8px 8px; }
+    .calendar-days { list-style: none; display: grid; gap: 4px; margin: 0; padding: 0; }
+    .calendar-days li { padding: 0; border-top: 1px solid var(--cream-border); position: relative; }
+    .calendar-row { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr);
+      align-items: start; gap: 8px; padding: 7px 8px; border: 0; background: transparent;
+      color: var(--brown-ink); text-align: left; cursor: default; }
+    .calendar-day { padding-top: 2px; font: 800 0.68rem Inter, system-ui, sans-serif;
+      text-transform: uppercase; color: var(--brown-mid); }
+    .calendar-time { display: block; font: 700 0.74rem Inter, system-ui, sans-serif;
+      line-height: 1.15; color: var(--brown-soft); }
+    .calendar-name { display: block; margin-top: 1px; font-size: 0.88rem; line-height: 1.18; }
+    .calendar-location { display: block; margin-top: 2px; font-size: 0.74rem;
+      line-height: 1.15; color: var(--brown-soft); }
+    .calendar-days li[data-state="happening"] { background: #dde2cf; box-shadow: inset 3px 0 0 0 var(--rust); }
+    .calendar-days li[data-state="happening"] .calendar-name { font-weight: 700; }
+    .calendar-days li[data-state="upcoming_next"] { background: #ecd9b1; box-shadow: inset 3px 0 0 0 var(--brown-dark); }
+    .cal-live-badge, .cal-soon-badge { position: absolute; top: 8px; right: 8px; padding: 1px 6px;
+      border-radius: 3px; font: 700 9px Inter, system-ui, sans-serif; text-transform: uppercase;
+      color: #f7f1e2; pointer-events: none; }
+    .cal-live-badge { background: var(--rust); }
+    .cal-soon-badge { background: var(--brown-dark); }
+  </style>
+</head>
+<body>
+
+  <!-- Faux map background -->
+  <div class="map">
+    <svg class="contours" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <g fill="none" stroke="#5a4630" stroke-width="0.15">
+        <path d="M0 30 Q 20 25, 40 32 T 80 28 T 100 30" />
+        <path d="M0 40 Q 25 35, 45 42 T 85 38 T 100 41" />
+        <path d="M0 50 Q 30 45, 50 52 T 90 48 T 100 51" />
+        <path d="M0 60 Q 22 56, 48 62 T 88 58 T 100 61" />
+        <path d="M0 70 Q 28 67, 52 72 T 92 68 T 100 71" />
+      </g>
+      <g fill="none" stroke="#9a5a32" stroke-width="0.3" stroke-linecap="round">
+        <path d="M22 78 Q 38 60, 52 56 T 78 38" />
+        <path d="M58 80 Q 64 64, 70 50 T 80 32" />
+      </g>
+    </svg>
+    <div class="corner-attrib">© OpenStreetMap · NAIP · AOP private — mockup background</div>
+    <div class="zoom-controls"><button>+</button><button>−</button></div>
+  </div>
+
+  <div class="hint-strip">
+    Click any <strong>icon on the left</strong> to collapse or expand that card
+  </div>
+
+  <!-- Pill bar -->
+  <div class="pill-bar">
+    <div class="pill">
+      <button title="Region zoom"><svg viewBox="0 0 22 22"><path d="M3 8V3h5M14 3h5v5M19 14v5h-5M8 19H3v-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+      <button title="Park zoom"><svg viewBox="0 0 22 22"><path d="M4 7L7 3L15 4L18 9L17 16L9 18L4 14Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/></svg></button>
+      <button title="Pavilion zoom"><svg viewBox="0 0 22 22"><path d="M3 9L11 3L19 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 9V18M9 9V18M13 9V18M17 9V18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 18H19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="pill">
+      <button class="active" title="Park preset"><svg viewBox="0 0 22 22"><path d="M3 6L8 4L14 6L19 4V16L14 18L8 16L3 18Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 4V16M14 6V18" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></button>
+      <button title="Topo preset"><svg viewBox="0 0 22 22"><path d="M3 7c3-2 6-2 9 0s5 2 7 0M3 11c3-2 6-2 9 0s5 2 7 0M3 15c3-2 6-2 9 0s5 2 7 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+      <button title="Trace preset"><svg viewBox="0 0 22 22"><rect x="3" y="3" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5 16c2-1 3-4 6-4s4 3 6 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="16" r="1.3" fill="currentColor"/><circle cx="17" cy="14" r="1.3" fill="currentColor"/></svg></button>
+    </div>
+    <div class="pill"><button class="terrain" title="3D toggle">3D</button></div>
+  </div>
+
+  <!-- Card stack: each row = one unified [icon | body] shell -->
+  <div class="left-controls">
+
+    <div class="rail-row open" data-row="search">
+      <button class="card-icon" type="button" aria-expanded="true" aria-controls="searchBody" title="Toggle search">
+        <svg viewBox="0 0 22 22" fill="none">
+          <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+        </svg>
+        <span class="label">Search</span>
+      </button>
+      <div class="card-body" id="searchBody">
+        <div class="search-shell">
+          <input type="text" placeholder="Search the map…" />
+        </div>
+      </div>
+    </div>
+
+    <div class="rail-row open" data-row="hot">
+      <button class="card-icon" type="button" aria-expanded="true" aria-controls="hotBody" title="Toggle Hot now">
+        <svg viewBox="0 0 22 22" fill="none">
+          <path d="M7 18 C 4 16, 4.5 12, 7 10 C 7 13, 8.5 12, 8 9 C 9 11, 10.5 14, 9 18 Z"
+                fill="#9a5a32" stroke="#9a5a32" stroke-width="0.6" stroke-linejoin="round"/>
+          <path d="M14 18 C 11 16, 11.5 12, 14 10 C 14 13, 15.5 12, 15 9 C 16 11, 17.5 14, 16 18 Z"
+                fill="#9a5a32" stroke="#9a5a32" stroke-width="0.6" stroke-linejoin="round" opacity="0.78"/>
+        </svg>
+        <span class="live-dot" aria-hidden="true" title="Stage 3 LIVE"></span>
+        <span class="label">Hot now · Stage 3 LIVE</span>
+      </button>
+      <div class="card-body" id="hotBody">
+        <section class="hot-control" aria-label="Hot now">
+          <div class="hot-control-head">
+            <span class="hot-control-title">Hot now</span>
+            <span class="hot-control-status">Sat 2:14 pm</span>
+          </div>
+          <div class="hot-lanes">
+            <button class="hot-button hot-now">
+              <span class="hot-glyph">●</span>
+              <span class="hot-text">
+                <span class="hot-title">Stage 3</span>
+                <span class="hot-detail">Running now</span>
+              </span>
+            </button>
+            <button class="hot-button trail-hot">
+              <span class="hot-glyph">❖</span>
+              <span class="hot-text">
+                <span class="hot-title">Trail activity</span>
+                <span class="hot-detail">Where rigs spent time</span>
+              </span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="rail-row open" data-row="calendar">
+      <button class="card-icon" type="button" aria-expanded="true" aria-controls="calendarBody" title="Toggle calendar">
+        <svg viewBox="0 0 22 22" fill="none">
+          <rect x="3" y="5" width="16" height="14" rx="1.8" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M3 9 H 19" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M7 3 V 7 M15 3 V 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M6 13 H 10 M12 13 H 16 M6 16 H 10 M12 16 H 16"
+                stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        <span class="day-cap">SAT</span>
+        <span class="label">Sat 2:00pm Stage 3 — Mud Pit</span>
+      </button>
+      <div class="card-body" id="calendarBody">
+        <section class="calendar-card">
+          <div class="left-tabs">
+            <button class="left-tab active">Events</button>
+            <button class="left-tab">Park</button>
+            <button class="left-tab">About</button>
+          </div>
+          <button class="calendar-toggle">
+            <span>
+              <span class="calendar-title">Event calendar</span>
+              <span class="calendar-range">Draft Fri-Sun schedule</span>
+            </span>
+            <span class="calendar-chevron">▾</span>
+          </button>
+          <div class="calendar-body">
+            <ol class="calendar-days">
+              <li>
+                <div class="calendar-row">
+                  <span class="calendar-day">FRI</span>
+                  <span>
+                    <span class="calendar-time">6:00 pm</span>
+                    <span class="calendar-name">Driver check-in</span>
+                    <span class="calendar-location">Pavilion</span>
+                  </span>
+                </div>
+              </li>
+              <li data-state="happening">
+                <span class="cal-live-badge">Live</span>
+                <div class="calendar-row">
+                  <span class="calendar-day">SAT</span>
+                  <span>
+                    <span class="calendar-time">2:00 pm</span>
+                    <span class="calendar-name">Stage 3 — Mud Pit</span>
+                    <span class="calendar-location">Lower trace</span>
+                  </span>
+                </div>
+              </li>
+              <li data-state="upcoming_next">
+                <span class="cal-soon-badge">Next</span>
+                <div class="calendar-row">
+                  <span class="calendar-day">SAT</span>
+                  <span>
+                    <span class="calendar-time">4:00 pm</span>
+                    <span class="calendar-name">Stage 4 — Cliff Loop</span>
+                    <span class="calendar-location">Upper trace</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="calendar-row">
+                  <span class="calendar-day">SUN</span>
+                  <span>
+                    <span class="calendar-time">10:00 am</span>
+                    <span class="calendar-name">Awards + Pull-Sled</span>
+                    <span class="calendar-location">Pavilion</span>
+                  </span>
+                </div>
+              </li>
+            </ol>
+          </div>
+        </section>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    document.querySelectorAll('.rail-row .card-icon').forEach(icon => {
+      icon.addEventListener('click', () => {
+        const row = icon.closest('.rail-row');
+        const open = row.classList.toggle('open');
+        icon.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    });
+  </script>
+</body>
+</html>

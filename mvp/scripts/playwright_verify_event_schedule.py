@@ -434,6 +434,176 @@ def main() -> int:
               current_scroll.get("scroll_top", 0) > 0,
               str(current_scroll))
 
+        # Manual-scroll -> 60s tick contract (Sprint 02 critique J3).
+        # `scrollIntoView({ block: 'nearest' })` is specifically chosen so the
+        # tick does NOT yank the pane back to its initial position once the
+        # user has scrolled it themselves, AS LONG AS the active row remains
+        # FULLY within the visible band. ('nearest' re-scrolls whenever the
+        # row is even partially clipped — that's the documented contract.)
+        # The fixture computes the row's safe scroll zone (the range of
+        # scrollTop deltas where the row stays fully visible), nudges within
+        # that zone, then invokes the tick handler and asserts scrollTop did
+        # not move (within ~2px layout tolerance).
+        manual_scroll = page.evaluate(
+            """async () => {
+              const body = document.getElementById('calendarBody');
+              const target = document.querySelector('#calendarDays li[data-session-state="happening"]')
+                || document.querySelector('#calendarDays li[data-session-state="upcoming_next"]');
+              if (!body || !target) return { ok: false };
+              const initialScroll = body.scrollTop;
+              const rowRect0 = target.getBoundingClientRect();
+              const bodyRect0 = body.getBoundingClientRect();
+              // Safe-zone budgets in two directions (in scrollTop space):
+              //   scrollUpBudget  = how many px we can INCREASE scrollTop
+              //                     before the row top exits at the top edge.
+              //                     ('Scroll up' = content moves up = row
+              //                     migrates toward the top of the band.)
+              //   scrollDownBudget = how many px we can DECREASE scrollTop
+              //                     before the row bottom exits at the
+              //                     bottom edge.
+              const scrollUpBudget = Math.max(0, Math.floor(rowRect0.top - bodyRect0.top));
+              const scrollDownBudget = Math.max(0, Math.floor(bodyRect0.bottom - rowRect0.bottom));
+              const maxScrollTop = body.scrollHeight - body.clientHeight;
+              // Pick the direction with more safe runway, then clamp by the
+              // scrollable parent's own runway too.
+              let delta = 0;
+              if (scrollUpBudget >= scrollDownBudget) {
+                delta = Math.min(scrollUpBudget, maxScrollTop - initialScroll, 8);
+              } else {
+                delta = -Math.min(scrollDownBudget, initialScroll, 8);
+              }
+              if (delta === 0) {
+                return { ok: false, reason: 'no safe scroll runway in either direction',
+                         scrollUpBudget, scrollDownBudget, initialScroll, maxScrollTop };
+              }
+              body.scrollTop = initialScroll + delta;
+              await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+              const afterManualScroll = body.scrollTop;
+              const rRect = target.getBoundingClientRect();
+              const bRect = body.getBoundingClientRect();
+              const rowFullyVisible = rRect.top >= bRect.top - 1
+                && rRect.bottom <= bRect.bottom + 1;
+              if (typeof refreshEventScheduleSessionStates !== 'function') {
+                return { ok: false, reason: 'tick fn not callable' };
+              }
+              refreshEventScheduleSessionStates();
+              // scrollCalendarCurrentRowIntoView() schedules the actual
+              // scrollIntoView inside requestAnimationFrame, so we wait two
+              // frames to be sure the rAF callback has run and any scroll
+              // side-effect has flushed.
+              await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+              const afterTick = body.scrollTop;
+              return {
+                ok: true,
+                initial_scroll: initialScroll,
+                scroll_up_budget: scrollUpBudget,
+                scroll_down_budget: scrollDownBudget,
+                delta_applied: afterManualScroll - initialScroll,
+                manual_scroll: afterManualScroll,
+                tick_scroll: afterTick,
+                tick_delta: afterTick - afterManualScroll,
+                row_fully_visible: rowFullyVisible
+              };
+            }"""
+        )
+        check("manual-scroll fixture set up (tick fn callable, row has safe scroll runway)",
+              manual_scroll.get("ok") is True,
+              str(manual_scroll))
+        check("manual scroll moved the pane off its initial position",
+              abs(manual_scroll.get("delta_applied", 0)) >= 1,
+              str(manual_scroll))
+        check("active row stayed fully visible after manual scroll (within safe range)",
+              manual_scroll.get("row_fully_visible") is True,
+              str(manual_scroll))
+        check("60s tick did NOT yank scroll back (block:'nearest' is a no-op when row is fully visible)",
+              abs(manual_scroll.get("tick_delta", 999)) <= 2,
+              str(manual_scroll))
+
+        print("\n== Calendar state machine: Monday morning State A (pre-event) ==")
+        # 2026-05-25 is a Monday. After the 06:00 reset the calendar anchor
+        # flips forward to the upcoming weekend (Sat 2026-05-30); the gates-
+        # open banner counts down to Fri 2026-05-29 17:00 (fri-registration).
+        page.goto(WEBSITE_URL + "?clock=2026-05-25T08:00", wait_until="load")
+        page.wait_for_function(
+            "() => document.getElementById('message').textContent.includes('publish feature')",
+            timeout=45_000,
+            polling=500,
+        )
+        page.wait_for_timeout(700)
+        pre_state = page.evaluate(
+            """() => {
+              const card = document.getElementById('calendarCard');
+              const banner = document.getElementById('calendarCountdown');
+              const value = document.getElementById('calendarCountdownValue');
+              const rows = Array.from(document.querySelectorAll('#calendarDays li[data-session-day]'));
+              const stateCounts = rows.reduce((acc, li) => {
+                const s = li.getAttribute('data-session-state') || 'unset';
+                acc[s] = (acc[s] || 0) + 1;
+                return acc;
+              }, {});
+              return {
+                calendar_state: card ? card.getAttribute('data-calendar-state') : null,
+                banner_hidden: banner ? banner.hidden : null,
+                banner_value: value ? value.textContent.trim() : null,
+                row_states: stateCounts,
+                row_count: rows.length
+              };
+            }"""
+        )
+        check("Monday-morning calendar state is 'pre'",
+              pre_state.get("calendar_state") == "pre", str(pre_state))
+        check("gates-open banner is visible in pre-event state",
+              pre_state.get("banner_hidden") is False, str(pre_state))
+        # Mon 08:00 → Fri 17:00 = 4 days 9 hours. Format: "4D 9H" after upper.
+        check("banner reads '4D 9H' for the Mon 08:00 fixture",
+              pre_state.get("banner_value") == "4D 9H", str(pre_state))
+        check("no row carries 'past' state in pre (forward anchor)",
+              pre_state.get("row_states", {}).get("past", 0) == 0, str(pre_state))
+        check("no row carries 'happening' in pre (no live session)",
+              pre_state.get("row_states", {}).get("happening", 0) == 0, str(pre_state))
+        check("no row carries 'upcoming_next' in pre (banner is the signal)",
+              pre_state.get("row_states", {}).get("upcoming_next", 0) == 0, str(pre_state))
+        check("all rows are 'future' in pre",
+              pre_state.get("row_states", {}).get("future", 0) == pre_state.get("row_count", 0),
+              str(pre_state))
+
+        print("\n== Calendar state machine: Sunday evening State C (post-event) ==")
+        # 2026-05-24 (Sun) 19:00 sits after sun-checkout's window (17:00 + 90m
+        # = 18:30), so the just-finished weekend is in the post-event window
+        # until Mon 06:00. Banner hidden, every row should be 'past'.
+        page.goto(WEBSITE_URL + "?clock=2026-05-24T19:00", wait_until="load")
+        page.wait_for_function(
+            "() => document.getElementById('message').textContent.includes('publish feature')",
+            timeout=45_000,
+            polling=500,
+        )
+        page.wait_for_timeout(700)
+        post_state = page.evaluate(
+            """() => {
+              const card = document.getElementById('calendarCard');
+              const banner = document.getElementById('calendarCountdown');
+              const rows = Array.from(document.querySelectorAll('#calendarDays li[data-session-day]'));
+              const stateCounts = rows.reduce((acc, li) => {
+                const s = li.getAttribute('data-session-state') || 'unset';
+                acc[s] = (acc[s] || 0) + 1;
+                return acc;
+              }, {});
+              return {
+                calendar_state: card ? card.getAttribute('data-calendar-state') : null,
+                banner_hidden: banner ? banner.hidden : null,
+                row_states: stateCounts,
+                row_count: rows.length
+              };
+            }"""
+        )
+        check("Sunday-evening calendar state is 'post'",
+              post_state.get("calendar_state") == "post", str(post_state))
+        check("gates-open banner is hidden in post state",
+              post_state.get("banner_hidden") is True, str(post_state))
+        check("every row is 'past' in post (just-finished weekend)",
+              post_state.get("row_states", {}).get("past", 0) == post_state.get("row_count", 0),
+              str(post_state))
+
         print("\n== Right-panel collapse controls (Sprint 03 Lane 3) ==")
         chrome_state = page.evaluate(
             """() => {
