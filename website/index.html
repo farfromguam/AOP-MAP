@@ -28,15 +28,19 @@
     #map { position: absolute; top: 0; bottom: 0; width: 100%; }
     .left-controls { position: absolute; left: 12px; top: 12px; z-index: 3; width: 340px; max-width: calc(100vw - 392px); display: grid; gap: 8px; }
     .left-controls * { box-sizing: border-box; letter-spacing: 0; }
-    .search-shell, .preset-bar, .left-context-card, .calendar-card, .hot-control { border: 1px solid rgba(155,132,92,0.34); border-radius: 8px; background: var(--cream-surface); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
-    .preset-bar, .search-shell { display: flex; gap: 6px; padding: 6px; }
-    .preset-bar { align-items: center; }
-    .preset-bar button { flex: 1; min-width: 0; min-height: 36px; font: 700 0.84rem Inter, system-ui, sans-serif; padding: 7px 8px; border-radius: 6px; border: 1px solid var(--control-border); background: var(--control-bg); color: var(--brown-ink); cursor: pointer; }
-    .preset-bar button:hover { background: var(--cream-hover); }
-    .preset-bar button.active { background: var(--moss); border-color: var(--moss); color: var(--control-bg); }
-    .preset-bar button.terrain-button { max-width: 58px; }
-    .zoom-bar { display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)); }
-    .zoom-bar .zoom-label { flex: 0 0 auto; align-self: center; font: 700 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; color: var(--brown-mid); padding: 0 4px 0 2px; }
+    .search-shell, .left-context-card, .calendar-card, .hot-control { border: 1px solid rgba(155,132,92,0.34); border-radius: 8px; background: var(--cream-surface); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .search-shell { display: flex; gap: 6px; padding: 6px; }
+    /* Pill bar above the search — three pill groups in one row:
+       [Region · Park · Pavilion]  [Park-style · Topo · Trace]  [3D]
+       No vertical pipes between groups; grouping reads from the pill chrome. */
+    .pill-bar { display: grid; grid-template-columns: 3fr 3fr 1fr; gap: 8px; align-items: stretch; }
+    .pill-bar .pill { display: flex; width: 100%; border: 1px solid var(--control-border); border-radius: 999px; background: var(--control-bg); overflow: hidden; box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .pill-bar .pill > button { flex: 1; min-width: 0; min-height: 36px; padding: 6px 8px; border: 0; background: transparent; color: var(--brown-ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+    .pill-bar .pill > button + button { border-left: 1px solid var(--control-border); }
+    .pill-bar .pill > button:hover:not(.active):not(:disabled) { background: var(--cream-hover); }
+    .pill-bar .pill > button.active { background: var(--moss); color: var(--control-bg); border-left-color: transparent; }
+    .pill-bar .pill > button svg { width: 22px; height: 22px; }
+    .pill-bar .pill > button.terrain-button { font: 800 0.86rem Inter, system-ui, sans-serif; letter-spacing: 0.04em; }
     /* Sprint 02 B3: panel docks at bottom-right so the collapsed state lives
        at the bottom corner (a tray that "pops up" toward the top when
        expanded) instead of leaving the header floating mid-screen on
@@ -271,8 +275,10 @@
     .align-handle::after { content: attr(data-label); position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none; }
     @media (max-width: 760px) {
       .left-controls { left: 8px; right: 8px; top: 8px; width: auto; max-width: none; gap: 6px; }
-      .preset-bar, .search-shell { padding: 4px; }
-      .preset-bar button { min-height: 32px; padding: 6px 6px; font-size: 0.8rem; }
+      .search-shell { padding: 4px; }
+      .pill-bar { gap: 6px; }
+      .pill-bar .pill > button { min-height: 32px; padding: 4px 6px; }
+      .pill-bar .pill > button svg { width: 20px; height: 20px; }
       .left-tabs { padding: 4px; }
       .left-tab { min-height: 30px; font-size: 0.74rem; }
       .calendar-body { max-height: 160px; }
@@ -294,6 +300,34 @@
 <body>
   <div id="map"></div>
   <div class="left-controls">
+    <div class="pill-bar" role="group" aria-label="Map view controls">
+      <div class="pill zoom-bar" role="group" aria-label="Zoom to area">
+        <button id="zoomRegion" type="button" data-view="region" title="Zoom out to the full 9-patch region" aria-label="Region zoom">
+          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 8V3h5M14 3h5v5M19 14v5h-5M8 19H3v-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <button id="zoomPark" type="button" data-view="park" title="Fit the AOP park boundary" aria-label="Fit park boundary">
+          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M4 7L7 3L15 4L18 9L17 16L9 18L4 14Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/></svg>
+        </button>
+        <button id="zoomPavilion" type="button" data-view="pavilion" title="Zoom in tight on the pavilion" aria-label="Pavilion zoom">
+          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 9L11 3L19 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 9V18M9 9V18M13 9V18M17 9V18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 18H19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="pill preset-bar" role="group" aria-label="Map preset">
+        <button id="presetPark" type="button" data-preset="park" class="active" title="Park preset (default map)" aria-label="Park preset">
+          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 6L8 4L14 6L19 4V16L14 18L8 16L3 18Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 4V16M14 6V18" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+        </button>
+        <button id="presetTopo" type="button" data-preset="topo" title="Topo preset (contour-led)" aria-label="Topo preset">
+          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 7c3-2 6-2 9 0s5 2 7 0M3 11c3-2 6-2 9 0s5 2 7 0M3 15c3-2 6-2 9 0s5 2 7 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </button>
+        <button id="presetTrace" type="button" data-preset="trace" title="Trace preset (NAIP aerial)" aria-label="Trace preset">
+          <svg viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="3" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5 16c2-1 3-4 6-4s4 3 6 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="16" r="1.3" fill="currentColor"/><circle cx="17" cy="14" r="1.3" fill="currentColor"/></svg>
+        </button>
+      </div>
+      <div class="pill" role="group" aria-label="3D toggle">
+        <button id="terrainButton" type="button" class="terrain-button" aria-pressed="false" title="Toggle 3D terrain view">3D</button>
+      </div>
+      <input type="checkbox" id="showTerrain" hidden />
+    </div>
     <div class="search-shell">
       <div class="search">
         <svg class="search-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
@@ -303,19 +337,6 @@
         <input type="text" id="searchInput" placeholder="Search the map…" autocomplete="off" />
         <div class="search-results" id="searchResults"></div>
       </div>
-    </div>
-    <div class="preset-bar" role="group" aria-label="Map presets and 3D view">
-      <button id="presetPark" type="button" data-preset="park" class="active">Park</button>
-      <button id="presetTopo" type="button" data-preset="topo">Topo</button>
-      <button id="presetTrace" type="button" data-preset="trace">Trace</button>
-      <button id="terrainButton" type="button" class="terrain-button" aria-pressed="false" title="Toggle 3D terrain view">3D</button>
-      <input type="checkbox" id="showTerrain" hidden />
-    </div>
-    <div class="preset-bar zoom-bar" role="group" aria-label="Zoom to area">
-      <span class="zoom-label">Zoom</span>
-      <button id="zoomRegion" type="button" data-view="region" title="Zoom out to the full 9-patch region">Region</button>
-      <button id="zoomPark" type="button" data-view="park" title="Fit the AOP park boundary">Park</button>
-      <button id="zoomPavilion" type="button" data-view="pavilion" title="Zoom in tight on the pavilion">Pavilion</button>
     </div>
     <section id="hotControl" class="hot-control" aria-label="Hot now" hidden>
       <div class="hot-control-head">
