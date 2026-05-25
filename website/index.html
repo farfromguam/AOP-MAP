@@ -28,12 +28,12 @@
     #map { position: absolute; top: 0; bottom: 0; width: 100%; }
     .left-controls { position: absolute; left: 12px; top: 12px; z-index: 3; width: 340px; max-width: calc(100vw - 392px); display: grid; gap: 8px; }
     .left-controls * { box-sizing: border-box; letter-spacing: 0; }
-    .search-shell, .preset-bar, .left-context-card, .hot-control { border: 1px solid rgba(155,132,92,0.34); border-radius: 8px; background: var(--cream-surface); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .search-shell, .preset-bar, .left-context-card, .calendar-card, .hot-control { border: 1px solid rgba(155,132,92,0.34); border-radius: 8px; background: var(--cream-surface); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
     .preset-bar, .search-shell { display: flex; gap: 6px; padding: 6px; }
     .preset-bar { align-items: center; }
     .preset-bar button { flex: 1; min-width: 0; min-height: 36px; font: 700 0.84rem Inter, system-ui, sans-serif; padding: 7px 8px; border-radius: 6px; border: 1px solid var(--control-border); background: var(--control-bg); color: var(--brown-ink); cursor: pointer; }
     .preset-bar button:hover { background: var(--cream-hover); }
-    .preset-bar button.active { background: var(--moss); border-color: var(--moss); color: #fffdf5; }
+    .preset-bar button.active { background: var(--moss); border-color: var(--moss); color: var(--control-bg); }
     .preset-bar button.terrain-button { max-width: 58px; }
     .zoom-bar { display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)); }
     .zoom-bar .zoom-label { flex: 0 0 auto; align-self: center; font: 700 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; color: var(--brown-mid); padding: 0 4px 0 2px; }
@@ -55,8 +55,12 @@
     .panel hr { border: 0; border-top: 1px solid #d8d8d8; margin: 10px 0; }
     .panel-section { border-top: 1px solid #d8d0bd; padding-top: 8px; margin-top: 10px; }
     .panel-section:first-of-type { margin-top: 8px; }
-    .section-toggle, .layer-expand, .panel-collapse, .group-chevron { display: inline-grid; place-items: center; width: 28px; height: 24px; margin: 0 !important; padding: 0 !important; border: 1px solid #d8d0bd !important; border-radius: 6px; background: #fff8e8 !important; color: var(--brown-mid); cursor: pointer; line-height: 1; }
-    .section-toggle:hover, .layer-expand:hover, .panel-collapse:hover, .group-chevron:hover { color: var(--brown-dark); border-color: #c8b8a0 !important; background: var(--cream-hover) !important; }
+    /* Compact chevron-buttons in the right rail. Scoped under .panel so the
+       (0,2,0) class+class specificity beats the generic `.panel button` rule
+       at (0,1,1) without needing !important. Pass 4 dropped 6 !important
+       declarations here by raising specificity instead of overriding. */
+    .panel .section-toggle, .panel .layer-expand, .panel .panel-collapse, .panel .group-chevron { display: inline-grid; place-items: center; width: 28px; height: 24px; margin: 0; padding: 0; border: 1px solid #d8d0bd; border-radius: 6px; background: #fff8e8; color: var(--brown-mid); cursor: pointer; line-height: 1; }
+    .panel .section-toggle:hover, .panel .layer-expand:hover, .panel .panel-collapse:hover, .panel .group-chevron:hover { color: var(--brown-dark); border-color: #c8b8a0; background: var(--cream-hover); }
     .section-label { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
     /* Section header with inline Export / Import per panel section. The chevron
        stays right-edge; the action buttons sit between label and chevron. Each
@@ -68,7 +72,7 @@
     .section-action:hover { background: var(--cream-hover); border-color: #c8b8a0; color: var(--brown-dark); }
     .panel-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #d8d0bd; }
     .panel-actions.panel-actions-single { grid-template-columns: 1fr; }
-    .panel-actions button { font: 700 0.82rem Inter, system-ui, sans-serif; padding: 6px 8px; border-radius: 6px; border: 1px solid #b9aa88; background: #fff8e8; color: var(--brown-ink); cursor: pointer; }
+    .panel-actions button { font: 700 0.82rem Inter, system-ui, sans-serif; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--control-border); background: #fff8e8; color: var(--brown-ink); cursor: pointer; }
     .panel-actions button:hover { background: var(--cream-hover); }
     .section-chevron { font-size: 1.05rem; line-height: 1; }
     .panel-section.collapsed .section-content { display: none; }
@@ -88,8 +92,13 @@
     .layer-editor-heading { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
     .layer-editor-heading strong { font-size: 0.9rem; color: var(--brown-ink); }
     .tune-controls { display: grid; gap: 7px; }
-    .tune-control { display: grid !important; grid-template-columns: minmax(84px, 1fr) minmax(92px, 1.35fr) 42px; gap: 8px !important; align-items: center; margin-bottom: 0 !important; }
-    .tune-control[hidden] { display: none !important; }
+    /* .tune-control is rendered as a <label>, so `.panel label` (0,1,1) wins
+       over a bare `.tune-control` (0,1,0). Scope to `.panel .tune-control`
+       (0,2,0) so the grid layout, gap, and zero margin land without
+       !important. The [hidden] variant is already (0,2,0) on its own — same
+       specificity, declared later, so display:none still wins when hidden. */
+    .panel .tune-control { display: grid; grid-template-columns: minmax(84px, 1fr) minmax(92px, 1.35fr) 42px; gap: 8px; align-items: center; margin-bottom: 0; }
+    .panel .tune-control[hidden] { display: none; }
     .tune-label { min-width: 0; overflow-wrap: anywhere; color: var(--brown-ink); font-size: 0.82rem; line-height: 1.15; }
     .tune-control input[type="range"] { width: 100%; min-width: 0; }
     .tune-control input[type="color"] { width: 100%; height: 28px; padding: 0; border: 1px solid #bbb; border-radius: 5px; background: #fff; }
@@ -99,7 +108,7 @@
     .tune-band-head .tune-label { font-size: 0.82rem; }
     .tune-band-head output { text-align: right; font-size: 0.82rem; color: #5c5548; white-space: nowrap; }
     .dual-range { position: relative; height: 24px; }
-    .dual-range .dual-track { position: absolute; top: 10px; left: 0; right: 0; height: 4px; border-radius: 2px; background: #d8cdb4; }
+    .dual-range .dual-track { position: absolute; top: 10px; left: 0; right: 0; height: 4px; border-radius: 2px; background: var(--cream-border); }
     .dual-range .dual-fill { position: absolute; top: 10px; height: 4px; border-radius: 2px; background: var(--rust); }
     .dual-range input[type="range"] { position: absolute; top: 0; left: 0; width: 100%; height: 24px; margin: 0; -webkit-appearance: none; appearance: none; background: none; pointer-events: none; }
     .dual-range input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: transparent; }
@@ -108,7 +117,7 @@
     .dual-range input[type="range"]::-moz-range-thumb { pointer-events: auto; box-sizing: border-box; width: 15px; height: 15px; border-radius: 50%; background: #f7f1e2; border: 2px solid var(--rust); cursor: pointer; }
     .tune-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
     .tune-actions button { margin-right: 0; }
-    .drawer-extra-controls { display: grid; gap: 7px; margin-top: 7px; padding-top: 8px; border-top: 1px solid #d8cdb4; }
+    .drawer-extra-controls { display: grid; gap: 7px; margin-top: 7px; padding-top: 8px; border-top: 1px solid var(--cream-border); }
     .drawer-extra-controls[hidden] { display: none; }
     /* Feature list panel — per-feature visibility under a layer drawer.
        Drops into #layerEditor when the active layer declares a feature list
@@ -116,7 +125,7 @@
        with a visibility checkbox and a click-to-fly target. Grouped lists
        collapse the bulk row (e.g. "Other buildings in 9-patch") so a 200-row
        layer stays operable. See brain/tasks/02_edit/poi_editor_v2.md. */
-    .feature-list { display: grid; gap: 6px; margin-bottom: 9px; padding-bottom: 8px; border-bottom: 1px solid #d8cdb4; }
+    .feature-list { display: grid; gap: 6px; margin-bottom: 9px; padding-bottom: 8px; border-bottom: 1px solid var(--cream-border); }
     .feature-list[hidden] { display: none; }
     .feature-list-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 0.82rem; color: var(--brown-ink); }
     .feature-list-heading .feature-list-count { color: var(--brown-soft); font-weight: 400; }
@@ -160,7 +169,7 @@
        feature is staged for repositioning. Keeps the "click the map to place"
        affordance visible no matter how long the list is. */
     .feature-list-move-banner { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 6px; background: #f7e3b5; border: 1px solid #c8a463; color: var(--brown-ink); font-size: 0.82rem; }
-    .feature-list-move-banner .move-cancel { background: #fff8e8; border: 1px solid #b9aa88; padding: 2px 8px; border-radius: 5px; cursor: pointer; font-size: 0.78rem; color: var(--brown-ink); }
+    .feature-list-move-banner .move-cancel { background: #fff8e8; border: 1px solid var(--control-border); padding: 2px 8px; border-radius: 5px; cursor: pointer; font-size: 0.78rem; color: var(--brown-ink); }
     .feature-list-move-banner .move-cancel:hover { background: var(--cream-hover); }
     #presetStatus { min-height: 1.2em; }
     .editor-row { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; }
@@ -182,7 +191,7 @@
     .search-kind { color: #888; font-size: 0.78rem; }
     .search-empty { padding: 6px 9px; color: #999; font-size: 0.88rem; }
     .left-context-card { display: block; overflow: hidden; }
-    .calendar-card { display: block; padding: 0; overflow: hidden; background: transparent; }
+    .calendar-card { display: block; padding: 0; overflow: hidden; }
     .left-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; padding: 5px; border-bottom: 1px solid var(--cream-border); background: rgba(227, 235, 220, 0.62); }
     .left-tab { min-width: 0; min-height: 32px; margin: 0; padding: 5px 4px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--brown-mid); cursor: pointer; font: 800 0.76rem Inter, system-ui, sans-serif; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .left-tab:hover { background: rgba(255,253,245,0.7); color: var(--brown-dark); }
@@ -197,7 +206,7 @@
     .calendar-body { max-height: 240px; overflow-y: auto; padding: 0 8px 8px; opacity: 1; transition: max-height 0.24s ease, opacity 0.2s ease, padding 0.2s ease; }
     .calendar-card.collapsed .calendar-body { max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; }
     .calendar-days { list-style: none; display: grid; gap: 4px; margin: 0; padding: 0; }
-    .calendar-days li { margin: 0; padding: 0; border-top: 1px solid #d8cdb4; color: var(--brown-ink); }
+    .calendar-days li { margin: 0; padding: 0; border-top: 1px solid var(--cream-border); color: var(--brown-ink); }
     .calendar-row { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 8px; margin: 0; padding: 7px 8px; border: 0; border-radius: 0; background: transparent; color: var(--brown-ink); cursor: pointer; text-align: left; }
     .calendar-row:hover, .calendar-row.active { background: var(--cream-hover); }
     .calendar-day { padding-top: 2px; font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; color: var(--brown-mid); }
@@ -245,7 +254,7 @@
     .hot-button:disabled { cursor: default; opacity: 0.55; filter: saturate(0.7); }
     .hot-button[data-hot-state="hot-now"] { background: var(--rust); }
     .hot-button[data-hot-state="coming-up"] { background: var(--brown-dark); }
-    .hot-button[data-hot-state="trail-hot"] { background: #5f7157; }
+    .hot-button[data-hot-state="trail-hot"] { background: var(--moss); }
     .hot-button[data-hot-selected="true"] { box-shadow: 0 0 0 2px rgba(247, 241, 226, 0.82), 0 0 0 4px rgba(42, 33, 22, 0.16); }
     .hot-button[data-hot-priority="alert"][data-hot-selected="false"] { box-shadow: 0 0 0 2px rgba(191, 90, 54, 0.4); }
     .hot-button-glyph { display: inline-flex; align-items: center; justify-content: center;
@@ -321,11 +330,11 @@
             <span class="hot-button-detail" id="hotButtonDetail"></span>
           </span>
         </button>
-        <button id="hotTrailButton" type="button" class="hot-button" data-hot-lane="trails" data-hot-state="trail-hot" data-hot-selected="false" aria-label="Trail heat lane">
+        <button id="hotTrailButton" type="button" class="hot-button" data-hot-lane="trails" data-hot-state="trail-hot" data-hot-selected="false" aria-label="Trail activity lane">
           <span class="hot-button-glyph" id="hotTrailButtonGlyph" aria-hidden="true">❖</span>
           <span class="hot-button-text">
-            <span class="hot-button-title" id="hotTrailButtonTitle">Trail heat</span>
-            <span class="hot-button-detail" id="hotTrailButtonDetail">Activity evidence</span>
+            <span class="hot-button-title" id="hotTrailButtonTitle">Trail activity</span>
+            <span class="hot-button-detail" id="hotTrailButtonDetail">Where rigs spent time</span>
           </span>
         </button>
       </div>
@@ -4147,9 +4156,9 @@
       trailBtn.hidden = !haveHotspots;
       trailBtn.disabled = !haveHotspots;
       trailBtn.dataset.hotState = 'trail-hot';
-      if (trailTitle) trailTitle.textContent = 'Trail heat';
-      if (trailDetail) trailDetail.textContent = 'Activity evidence';
-      trailBtn.setAttribute('aria-label', 'Show trail activity heat');
+      if (trailTitle) trailTitle.textContent = 'Trail activity';
+      if (trailDetail) trailDetail.textContent = 'Where rigs spent time';
+      trailBtn.setAttribute('aria-label', 'Show trail activity');
 
       eventBtn.dataset.hotState = decision.state;
       eventBtn.dataset.hotPriority = decision.state === 'hot-now' ? 'alert' : '';
@@ -4183,15 +4192,15 @@
           const timePart = props.window || props.start_local || '';
           detail.textContent = `${dayPart}${timePart} · in ${eventScheduleFormatMinutes(mins)}`;
         }
-        if (status) status.textContent = selected === 'trails' ? 'Trail heat' : 'Next event';
+        if (status) status.textContent = selected === 'trails' ? 'Trail activity' : 'Next event';
         eventBtn.setAttribute('aria-label', `Next event: ${props.title || 'session'}`);
       } else {
         eventBtn.disabled = true;
         eventBtn.dataset.targetSessionId = '';
         if (glyph) glyph.textContent = '◷';
         if (title) title.textContent = 'No event';
-        if (detail) detail.textContent = 'Trail heat available';
-        if (status) status.textContent = haveHotspots ? 'Trail heat' : 'No target';
+        if (detail) detail.textContent = 'Trail activity available';
+        if (status) status.textContent = haveHotspots ? 'Trail activity' : 'No target';
         eventBtn.setAttribute('aria-label', 'No event target');
       }
     }

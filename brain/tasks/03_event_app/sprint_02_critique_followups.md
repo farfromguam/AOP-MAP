@@ -159,11 +159,13 @@ The two-lane card (`../02_edit/_done/hot_control_two_lane.md`) shipped the
 shape, but `_done/hot_button_heatmap_review.md` had three follow-ups; only the
 shape itself landed.
 
-- [ ] **Rename the Trails lane copy.** Current: `Trail heat / Activity
-      evidence`. "Heat" still implies recency. Drop to `Trail activity` or
-      `Where rigs spent time` until the data is recent, aggregated, and
-      privacy-reviewed. The two-lane card's own decision ("avoid 'live heat'
-      wording") shipped half-applied.
+- [x] **Rename the Trails lane copy.** Shipped 2026-05-24 as
+      `Trail activity / Where rigs spent time` in
+      `website/index.html` (markup at ~line 324; script fallbacks at
+      `refreshHotButton` ~lines 4150-4194). Verifier assertion at
+      `mvp/scripts/playwright_verify_event_schedule.py:866` updated to the
+      new title. Two-lane card `_done/hot_control_two_lane.md` copy block
+      now records the rename.
 - [ ] **Switch the heatmap-fallback target from top-K bbox to a densest-cluster
       polygon.** Review card's call.
 - [ ] **Regenerate the first-party hotspot GeoJSON from the current builder**

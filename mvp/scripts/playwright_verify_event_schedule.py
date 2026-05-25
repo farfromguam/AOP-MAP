@@ -863,7 +863,7 @@ def main() -> int:
         check("event lane has no-event state when schedule is empty", snap.get("state") == "no-event", str(snap))
         check("event lane disabled when schedule is empty", snap.get("event", {}).get("disabled") is True, str(snap))
         check("trail lane selected when schedule is empty", snap.get("trails", {}).get("selected") == "true", str(snap))
-        check("trail title reads Trail heat", "Trail heat" in (snap.get("trails", {}).get("title") or ""), str(snap))
+        check("trail title reads Trail activity", "Trail activity" in (snap.get("trails", {}).get("title") or ""), str(snap))
         check("no session target in empty-schedule state", snap.get("targetSessionId") == "", str(snap))
 
         # Click in Trails should toggle activity hotspots on and fit to the

@@ -39,6 +39,23 @@ the park topo trace resets should not reset zoom or rotation.
 need a poi viewer on the left side so that a user can browse locations and read about them.
 clicking will take them to the location on the map.
 
+## Routed 2026-05-25
+
+- POI browser belongs to a new card: `left_panel_poi_browser.md` (Sprint 03,
+  reuses the `Park` tab inside `#calendarCard` so the left-rail footprint
+  doesn't grow).
+
 ---
 
 the left side event calendar now has a transparent or no background. it should have one.
+
+## Resolved 2026-05-25
+
+- `.calendar-card` lost its panel chrome when the cream-surface group was
+  refactored to `.search-shell, .preset-bar, .left-context-card, .hot-control`
+  (commit 7a17b84) and an explicit `background: transparent` was added on the
+  `.calendar-card` selector. Restored: `.calendar-card` is back in the
+  cream-surface group at `website/index.html:31`, the transparent override is
+  removed at `website/index.html:185`, the moss-tint tab strip still sits on
+  top of the cream surface. Verifiers: `event_schedule` and `presets` both
+  PASS against the post-fix viewer.
