@@ -51,11 +51,13 @@ EDITOR_LAYERS = [
     "editor-poi-line-labels",
 ]
 
-# Click points on the map canvas, kept clear of the top-right control panel.
-PLACE_POINTS = [(380, 360), (520, 320), (300, 470)]
+# Click points on the map canvas, kept clear of the left controls and right
+# layer panel. The left stack grew in Sprint 3, so older x=300 clicks now land
+# on chrome instead of Terra Draw.
+PLACE_POINTS = [(430, 360), (570, 320), (720, 470)]
 # A four-corner footprint; the run closes it by clicking the first corner again.
-FOOTPRINT_CORNERS = [(360, 520), (560, 520), (560, 640), (360, 640)]
-TRACE_POINTS = [(300, 285), (390, 260), (500, 290), (620, 345)]
+FOOTPRINT_CORNERS = [(430, 520), (650, 520), (650, 640), (430, 640)]
+TRACE_POINTS = [(430, 285), (520, 260), (640, 290), (760, 345)]
 
 
 def check(label: str, ok: bool, detail: str = "") -> None:

@@ -175,11 +175,11 @@ def main() -> int:
         )
         page.locator("#presetTopo").click()
         page.wait_for_timeout(900)
-        # Sprint 02 misc pickup: Park/Topo/Trace presets now reset the camera
-        # to flat north-up AND clear 3D state. So terrain should be UNBOUND
-        # and the 3D button NOT pressed after a preset switch.
-        check("terrain cleared after preset switch", not has_terrain(page))
-        check("3D button no longer pressed after preset switch", not terrain_button_pressed(page))
+        # Sprint 03 correction: layer presets change layers/paint only. They do
+        # not reset camera, rotation, or the independent 3D terrain control.
+        check("terrain remains bound after preset switch", has_terrain(page))
+        check("3D button remains pressed after preset switch", terrain_button_pressed(page))
+        check("map remains pitched after preset switch", map_pitch(page) >= 45, f"pitch={map_pitch(page):.1f}")
         save_screenshot(page, "terrain_on")
 
         print("\n== Hillshade alone (2D + shaded relief) ==")

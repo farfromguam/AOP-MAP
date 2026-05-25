@@ -139,15 +139,22 @@ re-enter the sprint as a focused pass.
 doesn't quietly drop the user's directive. Owner stays with the community
 trails card; this card just points.
 
-### Misc pickup — Preset camera reset
+### Misc pickup — Camera / preset policy
 
 From `misc.md`, 2026-05-24:
 
 - Park / Topo / Trace should reset tilt and rotation of map.
 
+Clarified by the follow-up note in `misc.md`, 2026-05-25:
+
+- the initial flat west-up view is correct;
+- zoom shortcuts should reset to flat west-up;
+- Park / Topo / Trace layer presets should preserve zoom and rotation.
+
 This is viewer polish, so it lands here rather than the event-app CRUD card.
-Layer presets now return the camera to flat north-up and turn off the 3D state;
-the 3D button remains available after any preset.
+Current behavior: `Region`, `Park`, and `Pavilion` zoom shortcuts reset to flat
+west-up; Park / Topo / Trace layer presets preserve zoom, pitch, bearing, and
+the independent 3D terrain state.
 
 ## Already closed
 
@@ -188,9 +195,10 @@ Lanes 1-5 are closed.
 - **Lane 6 routing** shipped as `code_health_pass_4.md`. The CSS /
   theme / code-smell work now has its own executable card; this carryover card
   stops being the holder.
-- **Misc preset reset** shipped in `../../../website/index.html`: Park, Topo,
-  and Trace now reset the map camera to flat north-up and clear the 3D button
-  state. The preset verifier covers Park / Topo / Trace camera reset.
+- **Misc camera policy** shipped in `../../../website/index.html`: Region,
+  Park, and Pavilion zoom shortcuts reset the map to flat west-up; Park, Topo,
+  and Trace layer presets preserve zoom, pitch, bearing, and the independent
+  3D button state. The preset verifier covers both behaviors.
 - **Critique pickup** shipped in `../../../website/index.html`: Brand logos are
   now default-off on fresh load and Park / Topo / Trace until AOP confirms badge
   reuse. Internal review can still enable the Brand logos toggle.
@@ -209,8 +217,8 @@ python3 -u mvp/scripts/playwright_verify_presets.py
 The event-schedule verifier was extended for Lane 2 current-row scroll and Lane
 3 right-panel chevron / button styling. The brand-logo verifier was extended
 for Lane 5 size editing / persistence and the default-off permission posture.
-The presets verifier now covers the Park / Topo / Trace camera reset and passes
-end-to-end.
+The presets verifier now covers zoom-shortcut west-up reset plus Park / Topo /
+Trace layer-preset camera preservation and passes end-to-end.
 
 ## Recommended order
 
@@ -251,7 +259,8 @@ card is closed when:
       (branding card or `spinup/`).
 - [x] A Pass 4 card exists under `01_mvp/` carrying the CSS + theme + code-smell
       scope; this card stops being the holder.
-- [x] Park / Topo / Trace reset tilt and rotation.
+- [x] Zoom shortcuts reset to flat west-up; Park / Topo / Trace layer presets
+      preserve zoom, pitch, bearing, and independent 3D state.
 
 Numbered-trail-name research is **not** part of this card's acceptance — it
 lives on the community-trails card.

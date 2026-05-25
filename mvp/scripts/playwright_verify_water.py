@@ -156,6 +156,10 @@ def main() -> int:
         for layer in SPRING_LAYERS:
             vis = layer_visibility(page, layer)
             check(f"{layer} visible", vis == "visible", f"visibility={vis}")
+        page.evaluate(
+            "() => window.map.jumpTo({ center: [-85.74405784519145, 35.07065433778913], zoom: 15 })"
+        )
+        page.wait_for_timeout(300)
         rendered_pts = rendered_count(page, ["water-points"])
         check("water points render in viewport", rendered_pts > 0, f"{rendered_pts} points")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["springs_on"]))

@@ -2,6 +2,62 @@
 
 This repository contains the Adventure Off Road Park map brain and a minimal MVP scaffold for the first PostGIS/QGIS/MapLibre build.
 
+## Stack at a glance
+
+The repo has two tiers. Only the second one ships.
+
+**Authoring tier — local only, never deployed.**
+
+- PostGIS 15 / PostGIS 3.4 in a Docker container (`postgis/postgis:15-3.4`, declared in `mvp/docker-compose.yml`). Host port defaults to `55432` to avoid colliding with a local Postgres on `5432`.
+- Schemas: `raw` (captures from ArcGIS / GPX / etc.), `source_register` (provenance), `core` (working features), `publish` (read-only views filtered to `permission='publish' AND publish_status='publish'`). Definitions in `mvp/init_db.sql`.
+- QGIS as the editor against `localhost:55432`.
+- Shell + Python ingest/build scripts in `mvp/scripts/` (Tennessee Comptroller parcel pulls, GPX parsers, USGS NHD / roads, FEMA structures, Marion cemeteries, activity-hotspot builder, etc.).
+- Ad-hoc raster/contour work runs through a pinned GDAL container (`ghcr.io/osgeo/gdal:alpine-small-latest`); lidar CHMs through `pdal/pdal:latest`. macOS staging path is `/private/tmp` because Docker can't read `~/Documents`. See `brain/spinup/mvp_runbook.md`.
+- Verifier scripts (`mvp/scripts/playwright_verify_*.py`) drive the static viewer through Playwright on port `8001`.
+
+**Viewer tier — the deployable surface.**
+
+- Single-file MapLibre app: `website/index.html`. Pure HTML/CSS/JS, no build step, no framework.
+- Map runtime vendored in `website/vendor/`: `maplibre-gl.{js,css}`, `terra-draw.umd.js`, `terra-draw-maplibre-gl-adapter.umd.js`. No CDN dependency for the runtime itself.
+- Reads its data from static files under `website/data/` (`publish.geojson`, plus per-layer GeoJSON for water, roads, buildings, cemeteries, contours, lidar tiles, activity hotspots, OSM extracts, event schedule JSON, and the SFWDA paper-map raster).
+- At runtime it does fetch a few public tile services for backdrop layers: AWS Terrarium terrain tiles, TNMap satellite imagery, and USDA NAIP. Outbound HTTPS is required.
+
+**Pipeline glue.** `mvp/scripts/export_publish_geojson.sh` reads the `publish.*` views from PostGIS and writes `website/data/publish.geojson`. The DB itself never goes to production; only the regenerated GeoJSON files do.
+
+## Deployment
+
+The deliverable is the `website/` directory as a static site. There is nothing server-side to deploy.
+
+**What to upload.** The entire `website/` tree:
+
+- `website/index.html`
+- `website/vendor/` (MapLibre + Terra Draw)
+- `website/data/` (current `publish.geojson` and per-layer GeoJSON / JSON / WebP assets)
+- `website/assets/` (branding)
+
+Regenerate `website/data/publish.geojson` locally before each deploy:
+
+```bash
+cd mvp
+./scripts/export_publish_geojson.sh
+```
+
+**Hosting options.** Any static host works — S3 + CloudFront, Cloudflare Pages, Netlify, Vercel, GitHub Pages, or a plain nginx box. No environment variables, no runtime config file. The site must be served over HTTP(S); opening `index.html` over `file://` breaks the GeoJSON `fetch()` calls.
+
+**MIME types.** Confirm the host serves `.geojson` as `application/geo+json` or `application/json` and `.webp` as `image/webp`. Most managed hosts handle this; bare nginx may need a `mime.types` line.
+
+**Outbound tile services.** The browser fetches map tiles at runtime from:
+
+- `s3.amazonaws.com/elevation-tiles-prod/terrarium/...` — AWS Open Data terrain
+- `tnmap.tn.gov/arcgis/rest/services/BASEMAPS/IMAGERY_WEB_MERCATOR/...` — Tennessee state imagery
+- `gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME/...` — USDA NAIP
+
+These are public and unauthenticated, but they are third-party services with their own rate limits and terms. A production deploy should confirm acceptable-use terms and decide whether to proxy or cache them. The viewer does not require an API key today.
+
+**No backend.** There is no API, no auth, no database call from the browser. The viewer's "editor" controls (Terra Draw POIs, schedule edits, SFWDA alignment) currently persist to the browser only and are exported via the panel's Export buttons; nothing writes back to the cloud. If/when Sprint 03's `full_loop_crud_upload_audit` lands, deployment will grow a server tier — until then, this is a pure static site.
+
+**Smoke test after deploy.** Load the site, open the layer panel, confirm the AOP parcel boundary draws over satellite imagery, and confirm at least one toggle (e.g. Buildings, Cemeteries) renders features. If GeoJSON 404s, MIME types are the usual cause.
+
 ## Current progress
 
 - [X] Scaffold PostGIS container and init SQL

@@ -19,7 +19,7 @@ Read an archive only if you need to retrace why something was built. The durable
 
 Sprint 01 (MVP) and Sprint 02 (Editor & Polish) are both closed. All their build cards are in their respective `_done/` folders.
 
-The Sprint 02 carryover router is `tasks/03_event_app/viewer_polish_carryover.md`. Lanes 1–5 shipped 2026-05-24 (hot-control two-lane, calendar expand + scroll-into-view, collapse-icon uniformity, default-layer audit table in `research/viewer.md`, brand-logo size slider + add-image runbook). Lane 6 now lives at `tasks/03_event_app/code_health_pass_4.md`; Lane 7 stays on `tasks/01_mvp/_done/community_trails_import.md`. A `misc.md` pickup also shipped the Park / Topo / Trace camera reset into viewer polish.
+The Sprint 02 carryover router is `tasks/03_event_app/viewer_polish_carryover.md`. Lanes 1–5 shipped 2026-05-24 (hot-control two-lane, calendar expand + scroll-into-view, collapse-icon uniformity, default-layer audit table in `research/viewer.md`, brand-logo size slider + add-image runbook). Lane 6 now lives at `tasks/03_event_app/code_health_pass_4.md`; Lane 7 stays on `tasks/01_mvp/_done/community_trails_import.md`. The 2026-05-25 camera correction is now applied: zoom shortcuts reset to flat west-up, while Park / Topo / Trace layer presets preserve zoom, pitch, bearing, and independent 3D state.
 
 Sprint 03's main thrust is `tasks/03_event_app/full_loop_crud_upload_audit.md` — event setup, CRUD, uploads, and the submission → review → publish loop. `tasks/03_event_app/dev_db_snapshot_reseed.md` now carries the dev DB dump/reseed need from `misc.md`.
 

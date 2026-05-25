@@ -56,6 +56,7 @@ def camera_state(page):
           const bearing = window.map.getBearing();
           const normalizedBearing = Math.abs((((bearing + 180) % 360) + 360) % 360 - 180);
           return {
+            zoom: window.map.getZoom(),
             pitch: window.map.getPitch(),
             bearing,
             normalizedBearing,
@@ -66,8 +67,20 @@ def camera_state(page):
     )
 
 
-def is_flat_north(camera: dict) -> bool:
-    return abs(float(camera["pitch"])) < 0.75 and float(camera["normalizedBearing"]) < 0.75
+def angular_diff(a: float, b: float) -> float:
+    return abs((a - b + 180) % 360 - 180)
+
+
+def is_flat_west(camera: dict) -> bool:
+    return abs(float(camera["pitch"])) < 0.75 and angular_diff(float(camera["bearing"]), -90) < 0.75
+
+
+def camera_matches(actual: dict, expected: dict) -> bool:
+    return (
+        abs(float(actual["zoom"]) - float(expected["zoom"])) < 0.03
+        and abs(float(actual["pitch"]) - float(expected["pitch"])) < 0.75
+        and angular_diff(float(actual["bearing"]), float(expected["bearing"])) < 0.75
+    )
 
 
 def panel_section_for(page, toggle_id: str) -> str | None:
@@ -130,6 +143,8 @@ def main() -> int:
         check("dedicated 3D button exists", page.locator("#terrainButton").count() == 1)
         check("search input sits in the left control cluster", page.locator(".left-controls #searchInput").count() == 1)
         check("calendar sits in the left control cluster", page.locator(".left-controls #calendarCard").count() == 1)
+        check("calendar card carries the left context tabs",
+              page.locator("#calendarCard .left-tabs").count() == 1)
         tab_labels = page.locator(".left-controls .left-tab").evaluate_all(
             "els => els.map((el) => el.textContent.trim())"
         )
@@ -202,7 +217,7 @@ def main() -> int:
         check("Park keeps springs off (A2 — topo-only)", not is_checked(page, "showSprings"))
         check("Park background is Muted Earth", paint(page, "background", "background-color") == "#efe7d5")
         park_camera = camera_state(page)
-        check("Park preset starts flat and north-up", is_flat_north(park_camera), str(park_camera))
+        check("initial Park view starts flat and west-up", is_flat_west(park_camera), str(park_camera))
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["park"]))
 
         print("\n== Right panel layer grouping ==")
@@ -226,7 +241,8 @@ def main() -> int:
               and panel_section_for(page, "showSfwda") == "source-layers")
 
         print("\n== Topo preset ==")
-        page.evaluate("() => { window.map.jumpTo({ bearing: 37, pitch: 42 }); }")
+        topo_camera_before = {"zoom": 15.15, "bearing": 37, "pitch": 42}
+        page.evaluate("(camera) => { window.map.jumpTo(camera); }", topo_camera_before)
         page.locator("#presetTopo").click()
         page.wait_for_timeout(900)
         check("Topo button becomes active", page.locator("#presetTopo").evaluate("el => el.classList.contains('active')"))
@@ -238,8 +254,8 @@ def main() -> int:
         check("Topo restyles index contours", paint(page, "contours-index", "line-color") == "#5f4934")
         topo_camera = camera_state(page)
         check(
-            "Topo preset resets tilt and rotation",
-            is_flat_north(topo_camera),
+            "Topo preset preserves zoom, pitch, and rotation",
+            camera_matches(topo_camera, topo_camera_before),
             str(topo_camera),
         )
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["topo"]))
@@ -265,12 +281,17 @@ def main() -> int:
         check("Pavilion centers on the 1010 building",
               abs(pav["c"]["lng"] + 85.748268) < 0.01 and abs(pav["c"]["lat"] - 35.090703) < 0.01,
               str(pav["c"]))
+        pavilion_camera = camera_state(page)
+        check("Pavilion zoom resets to flat west-up", is_flat_west(pavilion_camera), str(pavilion_camera))
 
+        page.evaluate("() => { window.map.jumpTo({ bearing: 24, pitch: 38 }); }")
         page.locator("#zoomRegion").click()
         page.wait_for_timeout(1500)
         region_zoom = page.evaluate("() => window.map.getZoom()")
         check("Region zooms out wide", region_zoom < pav["z"] - 2,
               f"region={region_zoom:.2f} pavilion={pav['z']:.2f}")
+        region_camera = camera_state(page)
+        check("Region zoom resets to flat west-up", is_flat_west(region_camera), str(region_camera))
 
         page.evaluate("() => { window.map.jumpTo({ center: [-85.45, 35.42], zoom: 7 }); }")
         page.wait_for_timeout(400)
@@ -281,11 +302,14 @@ def main() -> int:
               and leashed["z"] >= region_zoom - 0.5,
               f"z={leashed['z']:.2f} c=({leashed['c']['lng']:.4f},{leashed['c']['lat']:.4f})")
 
+        page.evaluate("() => { window.map.jumpTo({ bearing: 31, pitch: 41 }); }")
         page.locator("#zoomPark").click()
         page.wait_for_timeout(1500)
         park_zoom = page.evaluate("() => window.map.getZoom()")
         check("Park zoom sits between region and pavilion",
               region_zoom < park_zoom < pav["z"], f"park={park_zoom:.2f}")
+        zoom_park_camera = camera_state(page)
+        check("Park zoom resets to flat west-up", is_flat_west(zoom_park_camera), str(zoom_park_camera))
 
         print("\n== Inline layer tuning + snapshot ==")
         page.evaluate(
@@ -372,7 +396,8 @@ def main() -> int:
               str(list(payload.keys())))
 
         print("\n== Trace preset ==")
-        page.evaluate("() => { window.map.jumpTo({ bearing: -51, pitch: 35 }); }")
+        trace_camera_before = {"zoom": 16.1, "bearing": -51, "pitch": 35}
+        page.evaluate("(camera) => { window.map.jumpTo(camera); }", trace_camera_before)
         page.locator("#presetTrace").click()
         page.wait_for_timeout(900)
         check("Trace button becomes active", page.locator("#presetTrace").evaluate("el => el.classList.contains('active')"))
@@ -382,7 +407,7 @@ def main() -> int:
               and is_checked(page, "showOsmTracks") and is_checked(page, "showBuildings"))
         check("Trace applies high-contrast boundary color", paint(page, "publish-boundaries", "line-color") == "#fff0b8")
         trace_camera = camera_state(page)
-        check("Trace preset resets tilt and rotation", is_flat_north(trace_camera), str(trace_camera))
+        check("Trace preset preserves zoom, pitch, and rotation", camera_matches(trace_camera, trace_camera_before), str(trace_camera))
         # Sprint 02 B5: trace label legibility — cream text on the SFWDA paper
         # map needs a dark halo or it disappears into the imagery. Assert the
         # four label layers picked up the dark halo override.
@@ -423,11 +448,12 @@ def main() -> int:
         # Sprint 02 B5: switching trace → park must reset halos. Without an
         # explicit cream-halo override in park, the dark halo from trace
         # would sit under park's dark text.
-        page.evaluate("() => { window.map.jumpTo({ bearing: 28, pitch: 32 }); }")
+        park_camera_before = {"zoom": 15.6, "bearing": 28, "pitch": 32}
+        page.evaluate("(camera) => { window.map.jumpTo(camera); }", park_camera_before)
         page.locator("#presetPark").click()
         page.wait_for_timeout(800)
         park_reset_camera = camera_state(page)
-        check("Park preset resets tilt and rotation", is_flat_north(park_reset_camera), str(park_reset_camera))
+        check("Park preset preserves zoom, pitch, and rotation", camera_matches(park_reset_camera, park_camera_before), str(park_reset_camera))
         check(
             "Park preset resets roads-labels halo to cream",
             paint(page, "roads-labels", "text-halo-color") == "#f7f1e2",
@@ -459,8 +485,17 @@ def main() -> int:
               const bar = document.querySelector('.left-controls').getBoundingClientRect();
               const panel = document.querySelector('.panel').getBoundingClientRect();
               const message = document.querySelector('.message').getBoundingClientRect();
+              const style = getComputedStyle(document.querySelector('.left-controls'));
               return {
-                bar: { x: bar.x, y: bar.y, width: bar.width, height: bar.height },
+                bar: {
+                  x: bar.x,
+                  y: bar.y,
+                  width: bar.width,
+                  height: bar.height,
+                  scrollHeight: document.querySelector('.left-controls').scrollHeight,
+                  clientHeight: document.querySelector('.left-controls').clientHeight,
+                  overflowY: style.overflowY
+                },
                 panel: { x: panel.x, y: panel.y, width: panel.width, height: panel.height, bottom: panel.bottom },
                 message: { y: message.y, bottom: message.bottom },
                 viewport_height: window.innerHeight
@@ -469,6 +504,12 @@ def main() -> int:
         )
         separated = boxes["bar"]["y"] + boxes["bar"]["height"] <= boxes["panel"]["y"]
         check("left controls do not overlap panel on narrow screens", separated, str(boxes))
+        check(
+            "left controls do not require internal scrolling by default",
+            boxes["bar"]["scrollHeight"] <= boxes["bar"]["clientHeight"] + 1
+            and boxes["bar"]["overflowY"] not in {"auto", "scroll"},
+            str(boxes),
+        )
         check(
             "panel docks above the message bar (bottom-anchored)",
             boxes["panel"]["bottom"] <= boxes["message"]["y"] + 2,

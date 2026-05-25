@@ -14,7 +14,7 @@ IE fema houses may get moved to a polygon then dumped to file and tagged  && thi
 
 ## Routed 2026-05-24
 
-- Park / Topo / Trace camera reset belongs to `viewer_polish_carryover.md`.
+- Camera / preset policy belongs to `viewer_polish_carryover.md`.
 - DB dump / reseed belongs to `dev_db_snapshot_reseed.md`.
 
 
@@ -26,3 +26,19 @@ then something rotates it north up. - bad.
 the park should reset rotation to west up when clicking the zoom presets.
 
 the park topo trace resets should not reset zoom or rotation.
+
+## Resolved 2026-05-25
+
+- Zoom shortcuts (`Region`, `Park`, `Pavilion`) reset to flat west-up.
+- Park / Topo / Trace layer presets preserve zoom, pitch, bearing, and the
+  independent 3D state.
+
+
+---
+
+need a poi viewer on the left side so that a user can browse locations and read about them.
+clicking will take them to the location on the map.
+
+---
+
+the left side event calendar now has a transparent or no background. it should have one.

@@ -123,8 +123,10 @@ waypoints visible for tracing context.
 
 ### UI presets and layer tuning
 
-Added 2026-05-21. The viewer has a top-left control cluster with search, three
-preset buttons (`Park`, `Topo`, and `Trace`), and a dedicated `3D` button.
+Added 2026-05-21 and revised 2026-05-24. The viewer has a top-left control
+cluster with search, the `Hot now` lanes, three preset buttons (`Park`, `Topo`,
+and `Trace`), a dedicated `3D` button, zoom shortcuts, and a tabbed context card
+for Events / Park / About content.
 
 - `Park` is the clean Muted Earth vector map: land cover, roads, publishable
   boundary/trails/trailheads, visitor context callouts, water (streams +
@@ -141,13 +143,14 @@ The `3D` button is independent of presets. Turning it on binds MapLibre terrain
 and pitches the camera; switching between `Park`, `Topo`, and `Trace` leaves the
 3D state alone.
 
-A second row below the preset bar holds three **zoom presets** -- `Region`,
+Below the preset bar, a zoom row holds three **zoom presets** -- `Region`,
 `Park`, and `Pavilion`. These move the camera only; they do not touch layers or
 the layer presets (note the name collision: the `Park` *layer* preset and the
 `Park` *zoom* preset are different controls). `Region` fits the documented
 9-patch acquisition AOI, `Park` fits the published park boundary from
 `publish.geojson`, and `Pavilion` flies in tight (zoom 17) on the 1010 Ellis
-Cove Road building. Bearing and pitch are preserved across all three.
+Cove Road building. All three zoom presets reset the camera to flat west-up
+(bearing -90, pitch 0).
 
 The map's `maxBounds` is set to the 9-patch (`REGION_BOUNDS`), so the camera is
 leashed: users cannot pan or zoom out past where there is map data. `Region` is
@@ -185,15 +188,17 @@ expands it back down. The body (`#panelBody`) animates via a `max-height`
 transition. Default state is expanded.
 
 The left control stack also hosts a two-lane `Hot now` control (`#hotControl`)
-under the zoom controls and above the calendar. The Event lane (`#hotButton`)
+near the top of the stack, below search. The Event lane (`#hotButton`)
 selects the live/imminent/next scheduled session and reuses the calendar
 `gotoEventSession` popup path. The Trails lane (`#hotTrailButton`) turns on the
 activity-hotspots layer and fits the hotspot target, so trail-first users do not
 have to wait for the schedule to be empty. Card:
 `tasks/02_edit/hot_control_two_lane.md`.
 
-Below that, a collapsible `Event calendar` card (`#calendarCard`) opens by
-default and renders the proposed session rows from
+The bottom of the left stack is `#calendarCard`, a tabbed context card. The
+default `Events` tab contains the collapsible event calendar body, which opens
+by default on wide screens and renders the
+proposed session rows from
 `website/data/aop_event_schedule.json`. The JSON is intentionally schedule-first:
 rows carry `date_label`, `time_label`, `title`, and a `location_tag` such as
 `#pavilion` or `#registration`; coordinates live once under `locations`. The
@@ -202,6 +207,14 @@ selection turns on the default-off `Event schedule POIs` overlay, moves the
 camera to the row's point/route, and opens a session popup. The header button
 (`#calendarToggle`) collapses the schedule into the title row with
 `aria-expanded` tracking the state.
+
+The `Park` tab gives source-cautious park context: AOP is private land in South
+Pittsburg, Tennessee, and this viewer is a scale RC trail-trucking / rock
+crawling map, not a full-size OHV trail map. The `About` tab describes the map
+project posture: trustworthy source-backed map first, observations before
+publication, and public submissions deferred to the later moderated app loop.
+Both info tabs share the same card footprint as the calendar so mobile keeps one
+left-side context surface instead of another drawer.
 
 Verification: `mvp/scripts/playwright_verify_presets.py` and
 `mvp/scripts/playwright_verify_event_schedule.py`.

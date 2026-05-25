@@ -959,15 +959,6 @@
       }
     }
 
-    function resetLayerPresetCamera() {
-      syncTerrainControl(false);
-      if (map.getSource('aws-terrain-dem')) {
-        map.setTerrain(null);
-        if (map.setSky) map.setSky(undefined);
-      }
-      map.easeTo({ pitch: 0, bearing: 0, duration: 600 });
-    }
-
     // Slider markup uses 0-100; layer paint properties want 0-1. One helper so
     // adding a fifth slider does not invent a fifth divisor.
     const sliderPercent = (element) => Number(element.value) / 100;
@@ -2796,7 +2787,6 @@
         setSliderValue(id, value);
       }
       updateLayerVisibility();
-      resetLayerPresetCamera();
       applyPaintState(state.paints);
       presetButtons.forEach((button) => {
         button.classList.toggle('active', button.dataset.preset === presetId);
@@ -4549,22 +4539,74 @@
       return undefined;
     }
 
+    const popupLayers = new Set();
+    const POPUP_LAYER_PRIORITY = {
+      'synthetic-activity-hotspots-fill': 100,
+      'synthetic-activity-hotspots-labels': 100,
+      'activity-hotspots-fill': 95,
+      'activity-hotspots-labels': 95,
+      'event-anchor-points': 90,
+      'event-session-routes': 86,
+      'brand-logos-icons': 84,
+      'water-points': 82,
+      'cemetery-marker': 80,
+      'osm-named-points': 78,
+      'building-footprint-fill': 72,
+      'building-footprint-outline': 72,
+      'building-footprint-aop-outline': 72,
+      'synthetic-activity-tracks': 66,
+      'streams': 64,
+      'roads-local': 62,
+      'roads-connecting': 62,
+      'roads-secondary': 62,
+      'roads-ramp': 62,
+      'roads-controlled': 62,
+      'waterbody-fill': 58,
+      'water-area-fill': 58,
+      'cemetery-fill': 56,
+      'visitor-context-fill': 40,
+      'visitor-context-outline': 40
+    };
+
+    function popupPriority(layerId) {
+      return POPUP_LAYER_PRIORITY[layerId] ?? 50;
+    }
+
+    function topPopupFeature(event) {
+      const layers = [...popupLayers].filter((id) => map.getLayer(id));
+      if (!layers.length) return null;
+      const features = map.queryRenderedFeatures(event.point, { layers });
+      return features.reduce((best, feature) => {
+        if (!best) return feature;
+        return popupPriority(feature.layer.id) > popupPriority(best.layer.id) ? feature : best;
+      }, null);
+    }
+
     // Wire a click popup for one or more layers. titleFor and footerFor may be
     // a value or a (props) => value function; footerFor is optional trailing HTML.
+    // Only the highest-priority popup layer under the click opens. This keeps
+    // broad default-on context polygons from stacking over hotspot/building
+    // popups at the same coordinate.
     function bindPopup(layers, titleFor, rowsFor, footerFor) {
+      const layerList = Array.isArray(layers) ? layers : [layers];
+      const layerSet = new Set(layerList);
+      layerList.forEach((layer) => popupLayers.add(layer));
       map.on('click', layers, (event) => {
         if (isDrawModeActive()) return;
         // While a feature is staged for move, the click belongs to the move
         // primitive — popping up info on the same click would compete with
         // the intended commit. See enterMoveMode / commitMoveMode.
         if (moveState) return;
-        const props = event.features?.[0]?.properties || {};
+        const targetFeature = topPopupFeature(event) || event.features?.[0];
+        if (targetFeature?.layer?.id && !layerSet.has(targetFeature.layer.id)) return;
+        const props = targetFeature?.properties || {};
         const title = typeof titleFor === 'function' ? titleFor(props) : titleFor;
         let html = `<strong>${title}</strong><br/>${detailRows(rowsFor(props))}`;
         if (footerFor) {
           const footer = footerFor(props);
           if (footer) html += '<br/>' + footer;
         }
+        document.querySelectorAll('.maplibregl-popup').forEach((el) => el.remove());
         new maplibregl.Popup().setLngLat(event.lngLat).setHTML(html).addTo(map);
       });
     }
@@ -4607,20 +4649,21 @@
     // Camera/zoom presets, separate from the layer presets (Park/Topo/Trace).
     // Region fits REGION_BOUNDS (the 9-patch, also the map's maxBounds); Park
     // fits the live park boundary from publish.geojson; Pavilion is the 1010
-    // Ellis Cove Rd building.
+    // Ellis Cove Rd building. Each zoom shortcut returns to the intended flat
+    // west-up read; layer presets preserve the current camera.
     const PAVILION_VIEW = { center: [-85.748268, 35.090703], zoom: 17 };
+    const VIEW_BEARING = -90;
+    const VIEW_PITCH = 0;
     let parkViewBounds = null;
 
     function goToView(view) {
-      const bearing = map.getBearing();
-      const pitch = map.getPitch();
       if (view === 'pavilion') {
-        map.flyTo({ center: PAVILION_VIEW.center, zoom: PAVILION_VIEW.zoom, bearing, pitch, duration: 1100 });
+        map.flyTo({ center: PAVILION_VIEW.center, zoom: PAVILION_VIEW.zoom, bearing: VIEW_BEARING, pitch: VIEW_PITCH, duration: 1100 });
         return;
       }
       if (view === 'park') {
         map.fitBounds(parkViewBounds || REGION_BOUNDS, {
-          padding: 60, bearing, pitch, duration: 1100, maxZoom: 15.5
+          padding: 60, bearing: VIEW_BEARING, pitch: VIEW_PITCH, duration: 1100, maxZoom: 15.5
         });
         return;
       }
@@ -4631,7 +4674,7 @@
       const insetY = (rn - rs) * 0.15;
       map.fitBounds(
         [[rw + insetX, rs + insetY], [re - insetX, rn - insetY]],
-        { padding: 20, bearing, pitch, duration: 1100 }
+        { padding: 20, bearing: VIEW_BEARING, pitch: VIEW_PITCH, duration: 1100 }
       );
     }
 
@@ -4981,7 +5024,7 @@
           },
           paint: { 'text-color': '#5b2d25', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.4 }
         });
-        bindPopup('activity-hotspots-fill', 'Activity hotspot', (props) => [
+        bindPopup(['activity-hotspots-fill', 'activity-hotspots-labels'], 'Activity hotspot', (props) => [
           ['Dwell', `${props.dwell_minutes ?? 'unknown'} min`],
           ['Stopped', `${Math.round(Number(props.stop_seconds || 0) / 60 * 10) / 10} min`],
           ['Slow', `${Math.round(Number(props.slow_seconds || 0) / 60 * 10) / 10} min`],
@@ -5094,7 +5137,7 @@
             },
             paint: { 'text-color': '#254d5b', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.4 }
           });
-          bindPopup('synthetic-activity-hotspots-fill', 'Synthetic Saturday hotspot', (props) => [
+          bindPopup(['synthetic-activity-hotspots-fill', 'synthetic-activity-hotspots-labels'], 'Synthetic Saturday hotspot', (props) => [
             ['Dwell focus', `${props.interest_minutes ?? props.dwell_minutes ?? 'unknown'} min`],
             ['Dwell', `${props.dwell_minutes ?? 'unknown'} min`],
             ['Stopped', `${Math.round(Number(props.stop_seconds || 0) / 60 * 10) / 10} min`],

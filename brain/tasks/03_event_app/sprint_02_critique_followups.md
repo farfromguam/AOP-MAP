@@ -32,17 +32,16 @@ TL;DR:
 ### A. Real risk, small fix, do first
 
 - [x] **Finish the Pass 3 verifier sweep.** All 19 verifiers run end-to-end
-      against the current viewer (2026-05-24). Result: 15 PASS, 4 FAIL (with
-      details captured in `### Remaining verifier FAILs` below). Fixes shipped
-      in the same pass: `community_trails` + `sfwda_multiply` collapsed-section
-      crashes (route through `set_toggle` / `click_in_section`); `brand_logos`
+      against the current viewer. The first sweep on 2026-05-24 surfaced 15
+      PASS / 4 FAIL; the 2026-05-25 repair pass closes those four failures, so
+      the full set is now clean. Fixes shipped across the sweep:
+      `community_trails` + `sfwda_multiply` collapsed-section crashes (route
+      through `set_toggle` / `click_in_section`); `brand_logos`
       symbol-placement timing race (poll until icons land); `terrain`
-      preset-reset assertion (preset switch now clears 3D state per Sprint 02
-      misc pickup); `search` water-default-on premise + `#observed-trailhead`
-      label collision; `feature_list` visitor-context SECTION_RUNTIME split
-      (closes B1); brand-logo default-off flip closes A2. Pass 4
-      (`code_health_pass_4.md`) acceptance line for the full sweep is now
-      cleanly closeable.
+      preset assertion updated to the corrected layer-preset camera policy;
+      `search` water-default-on premise + `#observed-trailhead` label
+      collision; `feature_list` visitor-context SECTION_RUNTIME split (closes
+      B1); brand-logo default-off flip closes A2.
 
 - [x] **Default `showBrandLogos` off until AOP confirms reuse.** The AOP badge
       currently renders on the map in fresh load + Park + Topo presets while
@@ -88,14 +87,14 @@ TL;DR:
       HTTP status) and bare `TypeError: Failed to fetch`. A real `(404):`
       or `(500):` from MapLibre's loader now surfaces.
 
-### B-residual. Remaining verifier FAILs (after the A1 sweep)
+### B-residual. Verifier FAILs fixed 2026-05-25
 
 The full 19-verifier sweep on 2026-05-24 surfaced four FAIL verifiers that
 none of the B-band fixes covered. Each represents a real behavior surface
-to investigate, not a stale test. They are deferred from B because the
-diagnosis is more involved than a one-line viewer/verifier edit.
+to investigate, not a stale test. The 2026-05-25 repair pass fixed all four
+surfaces and re-ran the full verifier set cleanly.
 
-- [ ] **`poi_editor` (4 FAILs).** Sequence: click-in-section opens the
+- [x] **`poi_editor` (4 FAILs).** Sequence: click-in-section opens the
       drawer, `set_toggle`-style placement of 2 Pavilion POIs works, but the
       3rd click at `(300, 470)` after switching the category to `Building`
       does not place a POI. Polygon mode also fails entirely (0 vertices) in
@@ -108,9 +107,10 @@ diagnosis is more involved than a one-line viewer/verifier edit.
       an event ordering change where MapLibre's native click handler fires
       before Terra Draw's. Next step is to run the verifier with
       `headless=False` and watch what actually happens at each click — too
-      brittle to fix by inspection alone.
+      brittle to fix by inspection alone. Fixed by moving verifier click
+      targets out from under the expanded left chrome and right panel.
 
-- [ ] **`synthetic_activity` (1 FAIL — popup stacking).** Click at the top
+- [x] **`synthetic_activity` (1 FAIL — popup stacking).** Click at the top
       hotspot center `[-85.7482512, 35.090725]` opens **three** popups
       simultaneously — `Synthetic Saturday track` + `Monteagle plateau
       services` + `1010 Ellis Cove Road` — because Sprint 02 made buildings +
@@ -121,9 +121,11 @@ diagnosis is more involved than a one-line viewer/verifier edit.
       draw order so it gets the first click, (b) project the click to a
       hotspot-only spot before issuing it, or (c) widen the assertion to
       check that at least one popup contains the hotspot text within a small
-      bbox of the click coord. (a) is the most honest user-facing fix.
+      bbox of the click coord. (a) is the most honest user-facing fix. Fixed
+      with popup priority arbitration across registered popup layers, including
+      hotspot label layers.
 
-- [ ] **`visitor_context` (2 FAILs — popup doesn't open).** Click at the SE
+- [x] **`visitor_context` (2 FAILs — popup doesn't open).** Click at the SE
       callout center `[-85.7392, 35.0837]` (confirmed inside the
       `South Pittsburg / Kimball supply run` polygon by point-in-polygon
       test) returns zero `.maplibregl-popup a` nodes. `visitor-context-fill`
@@ -133,9 +135,10 @@ diagnosis is more involved than a one-line viewer/verifier edit.
       none. Diagnosis next step: add an inline `console.log` in
       `bindPopup` to confirm whether `map.on('click', layers, ...)` fires at
       this point, then check whether a `closeOnClick` race is killing the
-      popup before the test reads it.
+      popup before the test reads it. Fixed by the same popup arbitration path;
+      the top-priority registered feature under the click owns the popup.
 
-- [ ] **`water` (1 FAIL — springs render 0 in viewport).** Test toggles
+- [x] **`water` (1 FAIL — springs render 0 in viewport).** Test toggles
       `showSprings` ON and waits 500 ms, then queries
       `queryRenderedFeatures({ layers: ['water-points'] })` — returns 0.
       Spring features are sparse (USGS NWIS gages around the 9-patch); at
@@ -144,9 +147,11 @@ diagnosis is more involved than a one-line viewer/verifier edit.
       candidate fixes: (a) extend the camera fit to include spring features,
       or (b) `flyTo` a known spring before the assertion. (b) is the
       smaller change and matches the camera-aware pattern used elsewhere.
+      Fixed by jumping the verifier to a known spring before asserting rendered
+      water points.
 
-These four FAILs cap the surfaced post-Sprint-02 verifier debt. When they
-close, the full sweep returns clean and Pass 4 can claim the closing line.
+These four FAILs no longer remain open. The remaining B/C/J items below are
+follow-up polish and data-quality work, not current verifier failures.
 
 ### C. Hot button — copy and target follow-ups
 
@@ -257,9 +262,10 @@ goals, but Sprint 03 should not pile new chrome on top of them either.
 - [ ] Lane 2 `scrollIntoView` on every 60s tick uses `block: 'nearest'`
       correctly. No fixture covers manual-scroll -> tick. One fixture closes
       it.
-- [ ] Preset camera reset (misc pickup) mutates layers + camera + 3D state
-      simultaneously. `research/viewer.md` default-layer audit table doesn't
-      show the camera/3D dimension. Extend the table when next touched.
+- [x] Preset camera policy corrected 2026-05-25. Zoom shortcuts reset to flat
+      west-up; Park / Topo / Trace layer presets preserve zoom, pitch, bearing,
+      and independent 3D state. `research/viewer.md` now states the camera/3D
+      split.
 
 ## Recommended order
 
