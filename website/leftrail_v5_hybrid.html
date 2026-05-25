@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Left rail v5 — hybrid: v1 layout + v2 styles</title>
+  <title>Left rail v5 — two-column drawer (icons + content, float-down)</title>
   <style>
     /* ── Palette (parity with index.html + v2's flat-mode additions) ─────── */
     :root {
@@ -26,6 +26,10 @@
       --hairline: rgba(74, 60, 42, 0.08);
       --moss-tint-hover: #d6e0cb;
       --cream-wash-hover: #f1e8d2;
+
+      /* One tab unit drives icon size, icon-col min height, and any
+         content row that should align flush with a single tab. */
+      --tab-h: 44px;
     }
     * { box-sizing: border-box; }
     body, html { margin: 0; padding: 0; height: 100%;
@@ -58,98 +62,86 @@
     .pill-bar .pill > button.terrain-button { font: 800 0.86rem Inter, system-ui, sans-serif; letter-spacing: 0.04em; }
 
     /* ── Left rail container ─────────────────────────────────────────────
-       Stacks pill-bar above the manilla drawer with the same 8px gap the
-       real .left-controls uses (index.html:29). ──────────────────────── */
+       Stacks pill-bar above the drawer with the same 8px gap as the real
+       .left-controls in index.html:29. In integration, this wrapper is
+       replaced by .left-controls — only the .drawer subtree ports over. */
     .left-rail { position: absolute; left: 12px; top: 12px; z-index: 3;
       width: 404px; display: grid; gap: 8px; }
 
-    /* ── Drawer (v1's absolute-positioning engine, v2's flat skin) ────────
-       The drawer is one container with a flat 1px border and the cream
-       surface fill — no drop shadow, no spine backdrop, no skeuomorphic
-       inner shadows. Tabs and segments are absolutely positioned at
-       JS-computed y-offsets so content-aware row heights work.
-       ─────────────────────────────────────────────────────────────────── */
+    /* ── Drawer: col1 icons + col2 content ────────────────────────────────
+       Two flex columns. Col1 (icon-col) holds three 44×44 tab buttons with
+       a min height of 132 (3 × --tab-h). Col2 (content-col) is 360 wide
+       and as tall as the open panels stacked inside it. Panels float to
+       the top of col2 in tab order. Icons stay in canonical order (search,
+       hot, cal) but can shift DOWN — never up — to align with their
+       panel's top in col2 (see margin loop in render()). When col2 is
+       shorter than col1, the icon strip extends below alone (L shape, with
+       bottom-right of icon-col rounded); when col2 is taller, icon-col
+       stretches via align-items:stretch so its cream bottom matches. */
     .drawer-wrap { position: relative; }
 
     .drawer {
-      position: relative;
-      width: 404px;            /* 44 + 360 */
-      min-height: 132px;       /* 3 × 44 when all closed */
+      display: flex;
+      align-items: stretch;     /* icon-col stretches to match content-col */
+    }
+
+    .icon-col {
+      flex: 0 0 var(--tab-h);
+      width: var(--tab-h);
+      min-height: calc(var(--tab-h) * 3);  /* 3 tab slots; stretches if col2 is taller */
+      display: flex;
+      flex-direction: column;
       background: var(--cream-surface);
       border: 1px solid var(--cream-border);
-      border-radius: 8px;
+      border-radius: 8px 0 0 8px;
       overflow: hidden;
-      transition: width 0.12s ease;
+      position: relative;
     }
-    .drawer.all-closed { width: 44px; }
+    .icon-col.standalone { border-radius: 8px; }
+    .icon-col.col2-short { border-bottom-right-radius: 8px; }
 
-    /* ── Tabs (icon column) ──────────────────────────────────────────────
-       Each tab is 44×44, absolutely positioned at the top of its row.
-       Closed = transparent over the drawer surface. Open = moss-soft fill,
-       icon pulled to moss-dark. State communicated by color only. No
-       transforms, no skeuomorphic shadows. */
+    .content-col {
+      flex: 0 0 360px;
+      width: 360px;
+      align-self: flex-start;   /* don't stretch when col2 is the short one */
+      display: flex;
+      flex-direction: column;
+      background: var(--cream-surface);
+      border: 1px solid var(--cream-border);
+      border-left: 0;           /* shared edge with icon-col */
+      border-radius: 0 8px 8px 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .content-col[hidden] { display: none; }
+
+    /* ── Tabs (icon buttons, not layout objects) ─────────────────────── */
     .tab {
-      position: absolute;
-      left: 0;
-      width: 44px; height: 44px;
+      position: relative;
+      flex: 0 0 var(--tab-h);
+      width: var(--tab-h); height: var(--tab-h);
       display: grid; place-items: center;
       border: 0;
       background: transparent;
       color: var(--brown-mid);
       cursor: pointer;
       transition: background 0.12s ease, color 0.12s ease;
-      z-index: 2;
     }
     .tab svg { width: 22px; height: 22px; }
+    .tab + .tab { border-top: 1px solid var(--hairline); }
     .tab:hover { background: var(--cream-wash-hover); }
     .tab:focus-visible { outline: 2px solid var(--moss); outline-offset: -2px; }
 
     .tab.open {
       background: var(--moss-soft);
       color: var(--moss-dark);
-      z-index: 4;             /* above segment so closed-icon islands sit on top */
     }
     .tab.open:hover { background: var(--moss-tint-hover); }
 
-    /* ── Hairline dividers between adjacent tabs ─────────────────────────
-       JS positions each at the seam between row N and row N+1. .short
-       restricts the line to the icon column when both rows belong to the
-       same open segment on the right. */
-    .tab-divider {
-      position: absolute;
-      left: 0;
-      height: 1px;
-      width: 404px;
-      background: var(--hairline);
-      pointer-events: none;
-      z-index: 3;
-    }
-    .tab-divider.short { width: 44px; }
-    .drawer.all-closed .tab-divider { width: 44px; }
-
-    /* ── Segments (right column) ─────────────────────────────────────────
-       Each open card emits ONE .segment absolutely positioned at x=44 with
-       top/height set by JS. Flat — no shadow, no inner border. A 1px
-       hairline on the LEFT separates segment from icon column. The
-       2px rust accent on data-active="true" is the only ornament. */
-    .segment {
-      position: absolute;
-      left: 44px;
-      width: 360px;
-      background: var(--cream-surface);
-      border-left: 1px solid var(--hairline);
-      min-width: 0;
-      overflow: hidden;
-    }
-    .segment[hidden] { display: none; }
-    .segment[data-active="true"]::before {
-      content: "";
-      position: absolute;
-      left: 0; top: 0; bottom: 0;
-      width: 2px;
-      background: var(--rust);
-      pointer-events: none;
-    }
+    /* ── Panels (content that pops in/out of col2) ──────────────────── */
+    .panel { display: none; position: relative; min-width: 0; }
+    .panel.open { display: block; }
+    .panel.open ~ .panel.open { border-top: 1px solid var(--hairline); }
 
     /* ── Live indicator on the hot tab ───────────────────────────────────
        Subdued in flat mode — small rust pip with a ring matching the
@@ -188,11 +180,26 @@
     .tab:not(.open):hover .label { opacity: 1; transform: translate(0, -50%); }
 
     /* ── Inner card chrome (shells stripped — drawer is the only shell) ──── */
-    .search-shell { padding: 6px 10px; }
-    .search-shell input { width: 100%; padding: 8px 10px; font: inherit;
-      border: 1px solid var(--control-border); border-radius: 6px;
-      background: var(--control-bg); color: var(--brown-ink);
-      transition: border-color 0.12s ease; }
+    /* Pinned to one tab unit so the search row sits flush with the icon. */
+    .search-shell {
+      height: var(--tab-h);
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+    }
+    .search-shell input {
+      width: 100%;
+      height: calc(var(--tab-h) - 12px);    /* 6px breath top + bottom */
+      box-sizing: border-box;
+      padding: 0 10px;
+      font: inherit;
+      border: 1px solid var(--control-border);
+      border-radius: 6px;
+      background: var(--control-bg);
+      color: var(--brown-ink);
+      transition: border-color 0.12s ease;
+    }
     .search-shell input::placeholder { color: var(--brown-soft); }
     .search-shell input:focus { outline: 2px solid rgba(95,113,87,0.32); border-color: var(--moss); }
 
@@ -303,294 +310,219 @@
       </div>
     </div>
 
-    <!-- ── Drawer ────────────────────────────────────────────────────── -->
+    <!-- ── Drawer: col1 (icons) + col2 (content) ───────────────────── -->
     <div class="drawer-wrap">
     <div class="drawer" id="drawer">
 
-      <button class="tab open" type="button" id="tabSearch"
-              data-card="search" aria-pressed="true" title="Toggle search">
-        <svg viewBox="0 0 22 22" fill="none">
-          <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.6"/>
-          <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
-        <span class="label">Search</span>
-      </button>
+      <div class="icon-col" id="iconCol">
+        <button class="tab open" type="button" id="tabSearch"
+                data-card="search" aria-pressed="true" title="Toggle search">
+          <svg viewBox="0 0 22 22" fill="none">
+            <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <span class="label">Search</span>
+        </button>
 
-      <button class="tab open" type="button" id="tabHot"
-              data-card="hot" aria-pressed="true" title="Toggle Hot now">
-        <!-- mono-line flame (matching v2's icon weight) -->
-        <svg viewBox="0 0 22 22" fill="none">
-          <path d="M11 3.5 C 12 6.5, 14.5 7.5, 14.5 11
-                   C 14.5 14, 12.7 16, 11 16
-                   C 9.3 16, 7.5 14, 7.5 11.5
-                   C 7.5 10, 8.2 9.4, 8.8 10
-                   C 9.4 10.6, 9.5 9.5, 9 8 C 8.7 6.5, 9.5 5, 11 3.5 Z"
-                stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        </svg>
-        <span class="live-dot" aria-hidden="true" title="Stage 3 LIVE"></span>
-        <span class="label">Hot now · Stage 3 LIVE</span>
-      </button>
+        <button class="tab open" type="button" id="tabHot"
+                data-card="hot" aria-pressed="true" title="Toggle Hot now">
+          <svg viewBox="0 0 22 22" fill="none">
+            <path d="M11 3.5 C 12 6.5, 14.5 7.5, 14.5 11
+                     C 14.5 14, 12.7 16, 11 16
+                     C 9.3 16, 7.5 14, 7.5 11.5
+                     C 7.5 10, 8.2 9.4, 8.8 10
+                     C 9.4 10.6, 9.5 9.5, 9 8 C 8.7 6.5, 9.5 5, 11 3.5 Z"
+                  stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+          <span class="live-dot" aria-hidden="true" title="Stage 3 LIVE"></span>
+          <span class="label">Hot now · Stage 3 LIVE</span>
+        </button>
 
-      <button class="tab open" type="button" id="tabCal"
-              data-card="cal" aria-pressed="true" title="Toggle calendar">
-        <svg viewBox="0 0 22 22" fill="none">
-          <rect x="3.2" y="5.2" width="15.6" height="13.6" rx="1.6"
-                stroke="currentColor" stroke-width="1.5"/>
-          <path d="M3.2 9.2 H 18.8" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M7.5 3 V 7 M14.5 3 V 7"
-                stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M6 13 H 10 M12 13 H 16 M6 16 H 10 M12 16 H 16"
-                stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
-        </svg>
-        <span class="day-cap">SAT</span>
-        <span class="label">Sat 2:00pm Stage 3 — Mud Pit</span>
-      </button>
+        <button class="tab open" type="button" id="tabCal"
+                data-card="cal" aria-pressed="true" title="Toggle calendar">
+          <svg viewBox="0 0 22 22" fill="none">
+            <rect x="3.2" y="5.2" width="15.6" height="13.6" rx="1.6"
+                  stroke="currentColor" stroke-width="1.5"/>
+            <path d="M3.2 9.2 H 18.8" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M7.5 3 V 7 M14.5 3 V 7"
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M6 13 H 10 M12 13 H 16 M6 16 H 10 M12 16 H 16"
+                  stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+          </svg>
+          <span class="day-cap">SAT</span>
+          <span class="label">Sat 2:00pm Stage 3 — Mud Pit</span>
+        </button>
+      </div>
 
-      <!-- Segments -->
-      <div class="segment" id="segSearch" data-card="search">
-        <div class="search-shell">
-          <input type="text" placeholder="Search the map…" />
+      <div class="content-col" id="contentCol">
+        <div class="panel open" id="panelSearch" data-card="search">
+          <div class="search-shell">
+            <input type="text" placeholder="Search the map…" />
+          </div>
+        </div>
+
+        <div class="panel open" id="panelHot" data-card="hot">
+          <section class="hot-control" aria-label="Hot now">
+            <div class="hot-control-head">
+              <span class="hot-control-title">Hot now</span>
+              <span class="hot-control-status">Sat 2:14 pm</span>
+            </div>
+            <div class="hot-lanes">
+              <button class="hot-button hot-now" type="button">
+                <span class="hot-glyph">●</span>
+                <span class="hot-text">
+                  <span class="hot-title">Stage 3</span>
+                  <span class="hot-detail">Running now</span>
+                </span>
+              </button>
+              <button class="hot-button trail-hot" type="button">
+                <span class="hot-glyph">❖</span>
+                <span class="hot-text">
+                  <span class="hot-title">Trail activity</span>
+                  <span class="hot-detail">Where rigs spent time</span>
+                </span>
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <div class="panel open" id="panelCal" data-card="cal">
+          <section class="calendar-card">
+            <div class="left-tabs">
+              <button class="left-tab active" type="button">Events</button>
+              <button class="left-tab" type="button">Park</button>
+              <button class="left-tab" type="button">About</button>
+            </div>
+            <button class="calendar-toggle" type="button">
+              <span>
+                <span class="calendar-title">Event calendar</span>
+                <span class="calendar-range">Draft Fri-Sun schedule</span>
+              </span>
+              <span class="calendar-chevron">▾</span>
+            </button>
+            <div class="calendar-body">
+              <ol class="calendar-days">
+                <li>
+                  <div class="calendar-row">
+                    <span class="calendar-day">FRI</span>
+                    <span>
+                      <span class="calendar-time">6:00 pm</span>
+                      <span class="calendar-name">Driver check-in</span>
+                      <span class="calendar-location">Pavilion</span>
+                    </span>
+                  </div>
+                </li>
+                <li data-state="happening">
+                  <span class="cal-live-badge">Live</span>
+                  <div class="calendar-row">
+                    <span class="calendar-day">SAT</span>
+                    <span>
+                      <span class="calendar-time">2:00 pm</span>
+                      <span class="calendar-name">Stage 3 — Mud Pit</span>
+                      <span class="calendar-location">Lower trace</span>
+                    </span>
+                  </div>
+                </li>
+                <li data-state="upcoming_next">
+                  <span class="cal-soon-badge">Next</span>
+                  <div class="calendar-row">
+                    <span class="calendar-day">SAT</span>
+                    <span>
+                      <span class="calendar-time">4:00 pm</span>
+                      <span class="calendar-name">Stage 4 — Cliff Loop</span>
+                      <span class="calendar-location">Upper trace</span>
+                    </span>
+                  </div>
+                </li>
+                <li>
+                  <div class="calendar-row">
+                    <span class="calendar-day">SUN</span>
+                    <span>
+                      <span class="calendar-time">10:00 am</span>
+                      <span class="calendar-name">Awards + Pull-Sled</span>
+                      <span class="calendar-location">Pavilion</span>
+                    </span>
+                  </div>
+                </li>
+              </ol>
+            </div>
+          </section>
         </div>
       </div>
-
-      <div class="segment" id="segHot" data-card="hot" data-active="true">
-        <section class="hot-control" aria-label="Hot now">
-          <div class="hot-control-head">
-            <span class="hot-control-title">Hot now</span>
-            <span class="hot-control-status">Sat 2:14 pm</span>
-          </div>
-          <div class="hot-lanes">
-            <button class="hot-button hot-now" type="button">
-              <span class="hot-glyph">●</span>
-              <span class="hot-text">
-                <span class="hot-title">Stage 3</span>
-                <span class="hot-detail">Running now</span>
-              </span>
-            </button>
-            <button class="hot-button trail-hot" type="button">
-              <span class="hot-glyph">❖</span>
-              <span class="hot-text">
-                <span class="hot-title">Trail activity</span>
-                <span class="hot-detail">Where rigs spent time</span>
-              </span>
-            </button>
-          </div>
-        </section>
-      </div>
-
-      <div class="segment" id="segCal" data-card="cal">
-        <section class="calendar-card">
-          <div class="left-tabs">
-            <button class="left-tab active" type="button">Events</button>
-            <button class="left-tab" type="button">Park</button>
-            <button class="left-tab" type="button">About</button>
-          </div>
-          <button class="calendar-toggle" type="button">
-            <span>
-              <span class="calendar-title">Event calendar</span>
-              <span class="calendar-range">Draft Fri-Sun schedule</span>
-            </span>
-            <span class="calendar-chevron">▾</span>
-          </button>
-          <div class="calendar-body">
-            <ol class="calendar-days">
-              <li>
-                <div class="calendar-row">
-                  <span class="calendar-day">FRI</span>
-                  <span>
-                    <span class="calendar-time">6:00 pm</span>
-                    <span class="calendar-name">Driver check-in</span>
-                    <span class="calendar-location">Pavilion</span>
-                  </span>
-                </div>
-              </li>
-              <li data-state="happening">
-                <span class="cal-live-badge">Live</span>
-                <div class="calendar-row">
-                  <span class="calendar-day">SAT</span>
-                  <span>
-                    <span class="calendar-time">2:00 pm</span>
-                    <span class="calendar-name">Stage 3 — Mud Pit</span>
-                    <span class="calendar-location">Lower trace</span>
-                  </span>
-                </div>
-              </li>
-              <li data-state="upcoming_next">
-                <span class="cal-soon-badge">Next</span>
-                <div class="calendar-row">
-                  <span class="calendar-day">SAT</span>
-                  <span>
-                    <span class="calendar-time">4:00 pm</span>
-                    <span class="calendar-name">Stage 4 — Cliff Loop</span>
-                    <span class="calendar-location">Upper trace</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="calendar-row">
-                  <span class="calendar-day">SUN</span>
-                  <span>
-                    <span class="calendar-time">10:00 am</span>
-                    <span class="calendar-name">Awards + Pull-Sled</span>
-                    <span class="calendar-location">Pavilion</span>
-                  </span>
-                </div>
-              </li>
-            </ol>
-          </div>
-        </section>
-      </div>
-
-      <!-- Dividers between adjacent rows -->
-      <div class="tab-divider" id="div12"></div>
-      <div class="tab-divider" id="div23"></div>
 
     </div>
     </div>
   </div>
 
   <script>
-    // ── Cards stack top → bottom: search (1), hot (2), cal (3) ────────────
+    // ── Drawer state + render ────────────────────────────────────────
+    // Col1 (icon-col): three tab buttons in canonical order. Default flow
+    // is 0/44/88 px; render() adds margin-top to each tab to push it down
+    // to meet its panel's offsetTop in col2 (icons only float DOWN, never
+    // up, and never reorder).
+    // Col2 (content-col): open panels stacked in tab order at the top.
+    // Click is a pure toggle.
     const CARDS = ['search', 'hot', 'cal'];
-    const ROW   = { search: 1, hot: 2, cal: 3 };
     const open  = { search: true, hot: true, cal: true };
-    let active  = 'hot';  // which open segment shows the 2px rust accent
 
-    const drawer = document.getElementById('drawer');
-    const segs   = { search: document.getElementById('segSearch'),
-                     hot:    document.getElementById('segHot'),
-                     cal:    document.getElementById('segCal') };
+    const iconCol    = document.getElementById('iconCol');
+    const contentCol = document.getElementById('contentCol');
     const tabs   = { search: document.getElementById('tabSearch'),
                      hot:    document.getElementById('tabHot'),
                      cal:    document.getElementById('tabCal') };
-    const div12  = document.getElementById('div12');
-    const div23  = document.getElementById('div23');
+    const panels = { search: document.getElementById('panelSearch'),
+                     hot:    document.getElementById('panelHot'),
+                     cal:    document.getElementById('panelCal') };
 
-    // For each open card, find the contiguous block of rows it owns.
-    // Upward absorb over any closed rows above. No downward absorb — the
-    // last open card sizes only to its own content, leaving any closed
-    // rows below as bare tab pills with the rail surface around them.
-    function computeSegments() {
-      const segments = {};
-      const openCards = CARDS.filter(c => open[c]);
-      for (let i = 0; i < openCards.length; i++) {
-        const card = openCards[i];
-        const myRow = ROW[card];
-        let start = myRow;
-        const prevOpenRow = i > 0 ? ROW[openCards[i - 1]] : 0;
-        for (let r = myRow - 1; r > prevOpenRow; r--) start = r;
-        segments[card] = { start, end: myRow };
-      }
-      return segments;
-    }
+    // Read --tab-h once; if the token changes at runtime, re-read here.
+    const TAB_H = parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue('--tab-h'),
+      10
+    ) || 44;
 
     function render() {
-      const segments = computeSegments();
-      const anyOpen = Object.keys(segments).length > 0;
-      drawer.classList.toggle('all-closed', !anyOpen);
+      const anyOpen = CARDS.some(c => open[c]);
+      contentCol.hidden = !anyOpen;
+      iconCol.classList.toggle('standalone', !anyOpen);
 
-      // Tabs
       CARDS.forEach(c => {
         const isOpen = !!open[c];
         tabs[c].classList.toggle('open', isOpen);
         tabs[c].setAttribute('aria-pressed', isOpen ? 'true' : 'false');
+        panels[c].classList.toggle('open', isOpen);
       });
 
-      // Pass 1: clear segment heights so we can measure natural content height
-      CARDS.forEach(c => {
-        const seg = segs[c];
-        if (segments[c]) { seg.hidden = false; seg.style.height = 'auto'; }
-        else             { seg.hidden = true; }
-      });
-      void drawer.offsetHeight;
+      // Float icons down to meet their panels. Icons keep their canonical
+      // order (search, hot, cal) and only shift DOWN — never up. Closed
+      // icons sit at canonical_y unless an icon above forced them lower.
+      CARDS.forEach(c => { tabs[c].style.marginTop = ''; });
+      void contentCol.offsetHeight;          // force layout before measuring
 
-      const naturalH = {};
-      CARDS.forEach(c => { if (segments[c]) naturalH[c] = segs[c].scrollHeight; });
-
-      // Pass 2: compute per-row heights
-      const rowHeight = { 1: 44, 2: 44, 3: 44 };
-      CARDS.forEach(c => {
-        const s = segments[c];
-        if (!s) return;
-        const span = s.end - s.start + 1;
-        const base = span * 44;
-        const extra = Math.max(0, naturalH[c] - base);
-        rowHeight[ROW[c]] = 44 + extra;
-      });
-      const rowTop = { 1: 0, 2: rowHeight[1], 3: rowHeight[1] + rowHeight[2] };
-      const totalH = rowHeight[1] + rowHeight[2] + rowHeight[3];
-
-      // Position tabs
-      CARDS.forEach(c => { tabs[c].style.top = rowTop[ROW[c]] + 'px'; });
-
-      // Position + activate segments
-      CARDS.forEach(c => {
-        const seg = segs[c];
-        const s = segments[c];
-        if (!s) { seg.hidden = true; seg.style.top = ''; seg.style.height = '';
-                  seg.removeAttribute('data-active'); return; }
-        const top = rowTop[s.start];
-        let h = 0;
-        for (let r = s.start; r <= s.end; r++) h += rowHeight[r];
-        seg.style.top = top + 'px';
-        seg.style.height = h + 'px';
-        seg.setAttribute('data-active', c === active ? 'true' : 'false');
+      let prevBottom = 0;
+      CARDS.forEach((c, i) => {
+        const canonical = i * TAB_H;
+        const pTop = open[c] ? panels[c].offsetTop : -Infinity;
+        const desired = Math.max(canonical, pTop, prevBottom);
+        tabs[c].style.marginTop = (desired - prevBottom) + 'px';
+        prevBottom = desired + TAB_H;
       });
 
-      // Dividers
-      function rowOwner(idx) {
-        for (const c of CARDS) {
-          const s = segments[c];
-          if (s && idx >= s.start && idx <= s.end) return c;
-        }
-        return null;
-      }
-      const o1 = rowOwner(1), o2 = rowOwner(2), o3 = rowOwner(3);
-      div12.style.top = rowTop[2] + 'px';
-      div23.style.top = rowTop[3] + 'px';
-      div12.classList.toggle('short', o1 !== null && o1 === o2);
-      div23.classList.toggle('short', o2 !== null && o2 === o3);
-
-      // Drawer height
-      const drawerH = Math.max(132, totalH);
-      drawer.style.height = drawerH + 'px';
-
-      // L-shape clip: below the last open segment, keep only the 44px icon
-      // column visible so the map shows through where there is no panel.
-      const openCardsList = CARDS.filter(c => open[c]);
-      const lastOpenCard = openCardsList[openCardsList.length - 1];
-      if (lastOpenCard) {
-        const lastSeg = segments[lastOpenCard];
-        let segBottom = 0;
-        for (let r = 1; r <= lastSeg.end; r++) segBottom += rowHeight[r];
-        if (segBottom < drawerH) {
-          drawer.style.clipPath =
-            `polygon(0 0, 100% 0, 100% ${segBottom}px, 44px ${segBottom}px, 44px 100%, 0 100%)`;
-        } else {
-          drawer.style.clipPath = '';
-        }
+      // Round icon-col's bottom-right when col2 ends above col1's bottom.
+      // Recompute AFTER margins so the comparison sees the final heights.
+      if (anyOpen) {
+        iconCol.classList.toggle(
+          'col2-short',
+          contentCol.offsetHeight < iconCol.offsetHeight
+        );
       } else {
-        drawer.style.clipPath = '';
+        iconCol.classList.remove('col2-short');
       }
     }
 
-    // Click behavior — matches v2's "active" model:
-    //   • Closed tab clicked → open + make active
-    //   • Open INACTIVE tab clicked → make active (don't close)
-    //   • Open ACTIVE tab clicked → close it (active drifts to another open card, or none)
+    // Click is a pure toggle: closed → open, open → closed.
     CARDS.forEach(c => {
       tabs[c].addEventListener('click', () => {
-        if (!open[c]) {
-          open[c] = true;
-          active = c;
-        } else if (active !== c) {
-          active = c;
-        } else {
-          open[c] = false;
-          // pick a new active card if any others are open
-          const stillOpen = CARDS.filter(x => open[x]);
-          active = stillOpen.length > 0 ? stillOpen[0] : null;
-        }
+        open[c] = !open[c];
         render();
       });
     });

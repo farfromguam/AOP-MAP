@@ -141,7 +141,14 @@
     .feature-list-rows { display: grid; gap: 2px; padding: 2px 0 4px 22px; }
     .feature-list-rows[hidden] { display: none; }
     .feature-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto auto auto; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 5px; font-size: 0.82rem; color: var(--brown-ink); }
+    /* Editor POI rows carry a ★ highlight toggle next to the visibility
+       checkbox, so the grid gains an extra 22px slot to its left. */
+    .feature-row.has-highlight { grid-template-columns: 18px 22px minmax(0, 1fr) auto auto auto auto; }
     .feature-row:hover { background: rgba(247,235,200,0.6); }
+    .feature-row .feature-highlight { background: none; border: 0; padding: 0; width: 22px; height: 22px; line-height: 1; cursor: pointer; font-size: 1rem; color: var(--brown-soft); border-radius: 4px; }
+    .feature-row .feature-highlight:hover { background: #f1e6cf; color: var(--brown-dark); }
+    .feature-row .feature-highlight.on { color: var(--rust); }
+    .feature-row .feature-highlight.on:hover { color: #8c3d1f; }
     .feature-row .feature-name { min-width: 0; overflow-wrap: anywhere; cursor: pointer; }
     .feature-row .feature-fly { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; }
     .feature-row .feature-fly:hover { background: #f1e6cf; color: var(--brown-dark); }
@@ -594,6 +601,12 @@
           </div>
           <small id="poiStatus">0 POIs, 0 footprints, 0 traces.</small>
           <small>Pick a type, then <b>Place POI</b> (one click), <b>Draw footprint</b> (click each corner), or <b>Trace line</b> (click vertices, press Enter to finish). Click a feature to rename or delete it. Edits save in this browser; Export writes <code>aop_editor_features.geojson</code>.</small>
+          <!-- Inline drawn-POI list. The feature-list primitive renders here
+               (not into the layer-editor drawer) so the per-POI rows sit
+               directly below the categories + draw buttons that produced
+               them. Each row carries an extra ★ button — the highlight flag
+               that opts a POI into the left-rail POI tab. -->
+          <div id="editorPoiList" class="feature-list" hidden></div>
         </div>
       </section>
 
@@ -769,6 +782,23 @@
     const tuneControls = document.getElementById('tuneControls');
     const sfwdaDrawerControls = document.getElementById('sfwdaDrawerControls');
     const featureListEl = document.getElementById('featureList');
+    // Per-layer override for where the feature list renders. The drawer's
+    // shared #featureList is the default; layers with their own dedicated
+    // inline home (editor POIs live under the categories in the Map editor
+    // section) point at their own container so re-renders fired from inside
+    // the row handlers land in the right place.
+    const editorPoiListEl = document.getElementById('editorPoiList');
+    const FEATURE_LIST_TARGETS = {
+      editorPois: editorPoiListEl
+    };
+    function featureListTargetFor(layerKey) {
+      return FEATURE_LIST_TARGETS[layerKey] || featureListEl;
+    }
+    // True when a re-render would actually be seen — either the drawer is
+    // showing this layer, or the layer has its own always-visible target.
+    function shouldRenderFeatureList(layerKey) {
+      return expandedTuneKey === layerKey || Boolean(FEATURE_LIST_TARGETS[layerKey]);
+    }
     const tuneVisible = document.getElementById('tuneVisible');
     // Snapshot Preset + Export Settings buttons retired 2026-05-23. The
     // export-only flow that replaced them: per-section ⧉ on each section
@@ -1047,9 +1077,13 @@
       }
 
       // --- Drawn POIs (user's own work, per-browser localStorage) -------
+      // Only POIs explicitly highlighted (props.highlight === true) surface
+      // here. The editor's ★ button is the curation gate — scratch POIs and
+      // author-only landmarks stay on the map but out of the visitor browser.
       if (Array.isArray(editorPois) && editorPois.length) {
         for (const feature of editorPois) {
           const props = feature.properties || {};
+          if (props.highlight !== true) continue;
           pushRow('drawn_pois', {
             id: `drawn:${props.id || props.name || Math.random()}`,
             name: props.name || props.category || 'Drawn POI',
@@ -1917,6 +1951,12 @@
         // schedule can resolve a location like #excavator-hill through a
         // drawn POI without ever typing lat/long.
         taggable: true,
+        // Per-row ★ toggle. When true, the POI appears in the left-rail
+        // POI tab under "Drawn POIs". Default off so the visitor browser
+        // stays curated — drawing scratch geometry shouldn't pollute the
+        // public-facing list. State lives in feature.properties.highlight
+        // and travels with the POI through localStorage and GeoJSON export.
+        highlightable: true,
         rowLabel: (props) => {
           const category = props.category || 'POI';
           const name = (props.name || '').trim();
@@ -2489,6 +2529,30 @@
       for (const child of coords) translateCoordinates(child, dLng, dLat);
     }
 
+    // Toggle the per-feature highlight flag for layers that opt in
+    // (`highlightable: true` in their FEATURE_LIST_LAYERS spec). The flag is
+    // stored on the feature itself so it travels with the POI through
+    // localStorage and GeoJSON export — no parallel store to keep in sync.
+    // Today only editorPois opts in; the function stays generic in case
+    // another layer (e.g. drawn callouts) earns a highlight axis later.
+    function toggleFeatureHighlight(layerKey, featureId) {
+      const item = findFeatureById(layerKey, featureId);
+      if (!item || !item.feature) return;
+      const props = item.feature.properties = item.feature.properties || {};
+      props.highlight = !props.highlight;
+      if (layerKey === 'editorPois') {
+        // refreshEditorSource persists the POI array and re-registers the
+        // feature list, which re-renders this layer's panel. It also calls
+        // renderPoiTabIfActive so the left-rail browser refreshes if it's
+        // the active tab.
+        saveEditorPois();
+        refreshEditorSource();
+      } else {
+        renderFeatureList(layerKey);
+      }
+      renderPoiTabIfActive();
+    }
+
     function findFeatureById(layerKey, featureId) {
       const runtime = featureListRuntime[layerKey];
       if (!runtime || !runtime.state) return null;
@@ -2538,7 +2602,7 @@
         document.removeEventListener('keydown', moveEscHandler);
         moveEscHandler = null;
       }
-      if (expandedTuneKey === layerKey) renderFeatureList(layerKey);
+      if (shouldRenderFeatureList(layerKey)) renderFeatureList(layerKey);
     }
 
     function enterMoveMode(layerKey, featureId) {
@@ -2560,7 +2624,13 @@
         }
       };
       document.addEventListener('keydown', moveEscHandler);
-      if (expandedTuneKey === layerKey) renderFeatureList(layerKey);
+      if (shouldRenderFeatureList(layerKey)) renderFeatureList(layerKey);
+      // If this layer renders into an inline target, make sure its
+      // containing panel section is expanded so the move banner is visible.
+      // (For drawer-rendered layers the drawer is already open by definition
+      // — expandedTuneKey === layerKey — so nothing to do.)
+      const inlineTarget = FEATURE_LIST_TARGETS[layerKey];
+      if (inlineTarget) openContainingSection(inlineTarget);
     }
 
     // --- Map → panel reveal --------------------------------------------
@@ -2585,9 +2655,15 @@
       if (!FEATURE_LIST_LAYERS[layerKey]) return;
       if (!featureListRuntime[layerKey]) return;
       if (featureId == null) return;
-      // 1. Expand the layer's drawer if it isn't already the expanded tune.
-      //    toggleTunableExpansion collapses on a second hit, so guard.
-      if (expandedTuneKey !== layerKey) {
+      const dedicatedTarget = FEATURE_LIST_TARGETS[layerKey];
+      // 1. Make sure the list is on screen. Layers with their own inline home
+      //    (editor POIs in the Map editor section) need that panel section
+      //    expanded; layers that render into the drawer's #featureList need
+      //    the drawer popped for this layer.
+      if (dedicatedTarget) {
+        openContainingSection(dedicatedTarget);
+      } else if (expandedTuneKey !== layerKey) {
+        // toggleTunableExpansion collapses on a second hit, so guard.
         if (typeof toggleTunableExpansion === 'function') {
           toggleTunableExpansion(layerKey);
         }
@@ -2687,26 +2763,33 @@
     // Render the feature list DOM into the shared #featureList container in
     // the layer editor drawer. Called when the active tunable layer changes.
     function renderFeatureList(layerKey) {
-      if (!featureListEl) return;
-      featureListEl.innerHTML = '';
+      const target = featureListTargetFor(layerKey);
+      if (!target) return;
+      target.innerHTML = '';
       const runtime = featureListRuntime[layerKey];
       if (!runtime || !runtime.state) {
-        featureListEl.hidden = true;
+        target.hidden = true;
         return;
       }
       const spec = FEATURE_LIST_LAYERS[layerKey];
       const movable = typeof spec.onMove === 'function';
+      const highlightable = spec.highlightable === true;
       const totalCount = runtime.state.groups.reduce((sum, b) => sum + b.features.length, 0);
       const heading = document.createElement('div');
       heading.className = 'feature-list-heading';
-      heading.innerHTML = `<span>Features</span><span class="feature-list-count">${runtime.state.visibleIds.size} of ${totalCount} visible</span>`;
-      featureListEl.append(heading);
+      const highlightCount = highlightable
+        ? runtime.state.groups.reduce((sum, b) => sum + b.features.filter((f) => f.feature && f.feature.properties && f.feature.properties.highlight === true).length, 0)
+        : 0;
+      heading.innerHTML = highlightable
+        ? `<span>Features</span><span class="feature-list-count">${runtime.state.visibleIds.size} of ${totalCount} visible · ${highlightCount} ★ to visitors</span>`
+        : `<span>Features</span><span class="feature-list-count">${runtime.state.visibleIds.size} of ${totalCount} visible</span>`;
+      target.append(heading);
 
       // Move-mode banner — only when this layer is the active move target.
       // Pinned above the rows so it stays visible even on a long list.
       if (moveState && moveState.layerKey === layerKey) {
-        const target = findFeatureById(layerKey, moveState.featureId);
-        const targetName = target ? spec.rowLabel(target.props) : 'feature';
+        const moveItem = findFeatureById(layerKey, moveState.featureId);
+        const targetName = moveItem ? spec.rowLabel(moveItem.props) : 'feature';
         const banner = document.createElement('div');
         banner.className = 'feature-list-move-banner';
         banner.dataset.moveBanner = layerKey;
@@ -2722,7 +2805,7 @@
           cancelMoveMode();
         });
         banner.append(text, cancelBtn);
-        featureListEl.append(banner);
+        target.append(banner);
       }
 
       for (const bucket of runtime.state.groups) {
@@ -2789,6 +2872,30 @@
             setFeatureVisible(layerKey, item.id, check.checked);
             renderFeatureList(layerKey);
           });
+          // ★ highlight toggle (editorPois). Sits next to the visibility
+          // checkbox so the two "include this in...?" flags read as a pair:
+          //   ☑ ★ shown on map AND surfaced to visitors in the left-rail POI tab
+          //   ☑ ☆ shown on map only (scratch / author-only)
+          //   ☐ ☆ hidden on map, also hidden from visitors
+          let highlight = null;
+          if (highlightable) {
+            highlight = document.createElement('button');
+            highlight.type = 'button';
+            highlight.className = 'feature-highlight';
+            const isHighlighted = item.feature && item.feature.properties && item.feature.properties.highlight === true;
+            highlight.textContent = isHighlighted ? '★' : '☆';
+            highlight.classList.toggle('on', isHighlighted);
+            highlight.title = isHighlighted
+              ? 'Surfaced in left-rail POI tab — click to remove'
+              : 'Click to surface in left-rail POI tab';
+            highlight.setAttribute('aria-pressed', String(isHighlighted));
+            highlight.addEventListener('click', (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              toggleFeatureHighlight(layerKey, item.id);
+            });
+            row.classList.add('has-highlight');
+          }
           const name = document.createElement('span');
           name.className = 'feature-name';
           name.textContent = spec.rowLabel(item.props);
@@ -2819,7 +2926,8 @@
             event.stopPropagation();
             copyFeatureAsDropIn(item.feature);
           });
-          row.append(check, name);
+          if (highlight) row.append(check, highlight, name);
+          else row.append(check, name);
           // Tag input on taggable layers (buildings, drawn POIs). Sits
           // between the name and the action cluster so the binding reads
           // alongside the label it modifies. Card:
@@ -2892,6 +3000,7 @@
               // Skip presses that landed on the inline controls — they have
               // their own handlers and shouldn't double-arm move mode.
               if (event.target === check || event.target === fly || event.target === move) return;
+              if (highlight && event.target === highlight) return;
               pressStart = { x: event.clientX, y: event.clientY };
               pressTimer = window.setTimeout(() => {
                 pressTimer = null;
@@ -2917,9 +3026,9 @@
           rows.append(row);
         }
         groupEl.append(rows);
-        featureListEl.append(groupEl);
+        target.append(groupEl);
       }
-      featureListEl.hidden = false;
+      target.hidden = false;
     }
 
     const EXTRA_PRESET_PAINTS = [
@@ -3558,8 +3667,11 @@
       tuneVisible.checked = config.toggle.checked;
       renderTuneControls(config);
       if (sfwdaDrawerControls) sfwdaDrawerControls.hidden = config.drawerControls !== sfwdaDrawerControls;
-      // Feature list slot. Only layers registered in FEATURE_LIST_LAYERS show a list.
-      if (FEATURE_LIST_LAYERS[expandedTuneKey]) {
+      // Feature list slot. Only layers registered in FEATURE_LIST_LAYERS
+      // AND without their own inline target render into the drawer. Editor
+      // POIs render into #editorPoiList in the Map editor section instead,
+      // so the drawer for that layer shows only the paint sliders.
+      if (FEATURE_LIST_LAYERS[expandedTuneKey] && !FEATURE_LIST_TARGETS[expandedTuneKey]) {
         renderFeatureList(expandedTuneKey);
       } else if (featureListEl) {
         featureListEl.hidden = true;
@@ -5045,7 +5157,7 @@
       // re-register because they live in localStorage, not in featureListRuntime.
       if (typeof registerFeatureListLayer === 'function' && map.getLayer('editor-poi-circles')) {
         registerFeatureListLayer('editorPois', editorFeatureCollection());
-        if (expandedTuneKey === 'editorPois') renderFeatureList('editorPois');
+        renderFeatureList('editorPois');
       }
     }
 
@@ -7387,7 +7499,7 @@
         for (const id of match.featureIds) {
           setFeatureVisible(match.featureListKey, id, true);
         }
-        if (expandedTuneKey === match.featureListKey) renderFeatureList(match.featureListKey);
+        if (shouldRenderFeatureList(match.featureListKey)) renderFeatureList(match.featureListKey);
       }
       if (bounds.minLng === bounds.maxLng && bounds.minLat === bounds.maxLat) {
         map.flyTo({ center: [bounds.minLng, bounds.minLat], zoom: 16, duration: 1100 });

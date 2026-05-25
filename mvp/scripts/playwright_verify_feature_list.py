@@ -112,21 +112,41 @@ def visible_count_in_source(page, geojson_url: str, layer_id: str, id_field: str
 
 
 def open_layer_editor(page, tune_key: str) -> None:
-    page.evaluate(
-        """(key) => {
-          if (typeof toggleTunableExpansion === 'function') {
-            toggleTunableExpansion(key);
-          }
-        }""",
-        tune_key,
-    )
+    # Editor POIs render into their own inline target inside the Map editor
+    # section, not into the drawer's #featureList. Make sure that section
+    # is expanded so the inline list is visible and its innerText is
+    # readable (the move banner is a hidden-text read). For all other
+    # tune_keys, expand the drawer the old way.
+    if tune_key == "editorPois":
+        page.evaluate(
+            """() => {
+              const section = document.querySelector('section[data-section="editor"]');
+              if (section && section.classList.contains('collapsed')) {
+                const btn = section.querySelector('.section-toggle');
+                if (btn) btn.click();
+              }
+            }"""
+        )
+    else:
+        page.evaluate(
+            """(key) => {
+              if (typeof toggleTunableExpansion === 'function') {
+                toggleTunableExpansion(key);
+              }
+            }""",
+            tune_key,
+        )
     page.wait_for_timeout(250)
 
 
-def feature_list_summary(page) -> dict:
+def feature_list_summary(page, tune_key: str = None) -> dict:
+    # editorPois lives in #editorPoiList; everything else lives in the
+    # shared drawer #featureList. Helper picks the right container so
+    # call sites can stay schema-agnostic.
+    container_id = "editorPoiList" if tune_key == "editorPois" else "featureList"
     return page.evaluate(
-        """() => {
-          const root = document.getElementById('featureList');
+        """(rootId) => {
+          const root = document.getElementById(rootId);
           if (!root || root.hidden) return { open: false };
           const headingText = root.querySelector('.feature-list-heading')?.innerText || '';
           const groups = [...root.querySelectorAll('.feature-list-group')].map((g) => ({
@@ -140,7 +160,8 @@ def feature_list_summary(page) -> dict:
             }))
           }));
           return { open: true, headingText, groups };
-        }"""
+        }""",
+        container_id,
     )
 
 
@@ -354,7 +375,7 @@ def main() -> int:
         # Confirm an empty editorPois starts the panel empty.
         set_toggle(page, "showEditorPois", True)
         open_layer_editor(page, "editorPois")
-        empty_summary = feature_list_summary(page)
+        empty_summary = feature_list_summary(page, "editorPois")
         check("editorPois panel opens (empty)", empty_summary.get("open") is True)
         check(
             "empty editorPois panel has 0 rows",
@@ -383,7 +404,7 @@ def main() -> int:
             }"""
         )
         page.wait_for_timeout(250)
-        summary = feature_list_summary(page)
+        summary = feature_list_summary(page, "editorPois")
         check("editorPois panel is open", summary.get("open") is True)
         rows = summary["groups"][0]["rows"] if summary.get("groups") else []
         check("editorPois list shows 3 rows", len(rows) == 3, str(len(rows)))
@@ -433,7 +454,7 @@ def main() -> int:
         page.wait_for_timeout(500)
         set_toggle(page, "showEditorPois", True)
         open_layer_editor(page, "editorPois")
-        post = feature_list_summary(page)
+        post = feature_list_summary(page, "editorPois")
         post_rows = post["groups"][0]["rows"] if post.get("groups") else []
         check("3 POIs survive reload", len(post_rows) == 3, str(len(post_rows)))
         b = next((r for r in post_rows if r["id"] == "poi_test_b"), None)
@@ -494,8 +515,9 @@ def main() -> int:
                 feature_id,
             )
 
-        # Sanity: panel currently shows the editorPois drawer.
-        summary = feature_list_summary(page)
+        # Sanity: editorPois rows are visible in the inline list (the Map
+        # editor section). The list now lives there, not in the drawer.
+        summary = feature_list_summary(page, "editorPois")
         check("editorPois panel open before move tests",
               summary.get("open") is True)
 
@@ -822,11 +844,29 @@ def main() -> int:
               str(state["revealedIds"]))
 
         close_any_drawer()
+        # Collapse the Map editor section so we can prove reveal re-opens it.
+        page.evaluate(
+            """() => {
+              const section = document.querySelector('section[data-section="editor"]');
+              if (section && !section.classList.contains('collapsed')) {
+                section.querySelector('.section-toggle')?.click();
+              }
+            }"""
+        )
+        page.wait_for_timeout(120)
         page.evaluate("() => revealFeatureInPanel('editorPois', 'poi_test_a')")
         page.wait_for_timeout(200)
         state = reveal_state()
-        check("editorPois drawer expanded after POI reveal",
-              state["expanded"] == "editorPois", str(state))
+        # Editor POIs render into the Map editor section, not the drawer, so
+        # reveal opens that section instead of toggling expandedTuneKey.
+        editor_section_open = page.evaluate(
+            """() => {
+              const section = document.querySelector('section[data-section="editor"]');
+              return !!section && !section.classList.contains('collapsed');
+            }"""
+        )
+        check("Map editor section opened after POI reveal",
+              editor_section_open is True, str(editor_section_open))
         check("poi_test_a row flashed",
               "poi_test_a" in state["revealedIds"],
               str(state["revealedIds"]))
