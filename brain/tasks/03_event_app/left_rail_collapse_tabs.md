@@ -59,25 +59,114 @@ The drawer is two flex columns with independent heights.
 - **All closed.** Col2 is `hidden`. Col1 gets `.standalone` and rounds all
   four corners — drawer collapses to a 44px icon pill on the left.
 
-## Mockup variants (historical)
+## Mockup variants
 
-All five variants explored the same problem with different visual treatments.
-v5 was picked and iterated past its original description. The others are
-preserved as reference and stay in the tree.
+The v1–v10 design-round mockups were retired 2026-05-25 after the drawer
+shipped. The artifact stack went through two further rounds:
 
-- `website/leftrail_v1_classic.html` — classic manilla folder treatment.
-- `website/leftrail_v2_modern.html` — flat modern, "active" rust accent.
-- `website/leftrail_v3_cabinet.html` — color-coded filing cabinet
-  (SR / HT / CL filing codes, function-stripe per tab).
-- `website/leftrail_v4_dynamic.html` — motion-led: spring overshoot, rotateY
-  wobble, prefers-reduced-motion-aware.
-- `website/leftrail_v5_hybrid.html` — **picked.** Iterated through several
-  rounds into the two-column drawer with float-down icons and pure-toggle
-  clicks. This file is the reference implementation; its README-style top
-  comment documents the model.
-- `website/leftrail_compare.html` — side-by-side review iframe page.
-- `website/leftrail_collapse_mockups.html`,
-  `website/leftrail_edge_dock_mockup.html` — round-one ASCII iteration.
+1. **Theme round (12 whole-rail variants)** — palette/surface/treatment
+   forks of the now-live integrated layout. User picked variant #12
+   (higher contrast) as the direction.
+2. **Element round (12 element-focused variants)** — buttons,
+   countdown banner, live/next rows, past/future rows. Each variant
+   restyles only its target element; the rest stays at the new baseline.
+
+Master baseline (post variant-#12 promotion):
+
+- `website/leftrail_current.html` — extracts the live drawer from
+  `index.html` (pill-bar + drawer + all three panels open) and carries
+  the higher-contrast palette tokens promoted from the theme round
+  (deeper browns, more saturated rust, slightly deeper hairline alpha;
+  cream + moss surfaces unchanged). All element variants fork this file.
+
+Round 1 — lineage redo on the live layout (5 variants):
+
+- `website/leftrail_classic.html` — warm kraft-tan open-tab fill,
+  papery hairlines, slightly heavier outer chrome.
+- `website/leftrail_modern.html` — flatter radii (4px), near-zero
+  drop shadow, cooler cream, rust as a thin accent stroke.
+- `website/leftrail_cabinet.html` — per-tab accent (search/slate,
+  hot/rust, cal/moss) with SR / HT / CL filing codes beneath each icon
+  and a left-edge stripe on each panel. Adds one `<span>` child per tab
+  to host the code; all JS hooks preserved.
+- `website/leftrail_motion.html` — springy float-down + fade-rise
+  panel reveal + live-dot glow. Wrapped in
+  `@media (prefers-reduced-motion: no-preference)` with a defensive
+  symmetric `reduce` kill block.
+- `website/leftrail_hybrid.html` — closest to current. Hairlines tuned
+  warmer, open tab grows a connecting hairline, inner top shadow on the
+  panel, countdown reads like a notebook pull.
+
+Round 2 — fresh themes for the now-live layout (4 variants):
+
+- `website/leftrail_warm_paper.html` — warmer amber cream, ochre
+  hairlines, softened shadow, asymmetric handed-paper radii, very-low-
+  opacity paper grain.
+- `website/leftrail_cool_utility.html` — pale stone surface, charcoal
+  ink, crisper hairlines, terracotta rust.
+- `website/leftrail_rust_accent.html` — open-tab fill becomes a soft
+  peach-clay wash, glyph deepens to walnut-rust. Rust as signature
+  without dyeing the whole drawer.
+- `website/leftrail_ink_noir.html` — full dark-mode sibling: walnut
+  substrate, cream ink, deeper moss open fill, slate/moss map backdrop.
+
+Round 3 — palette-only swaps (3 variants, `:root` tokens only):
+
+- `website/leftrail_palette_warmer.html` — cream/moss-soft/hairline
+  pushed one step amber. Rust/moss/ink untouched.
+- `website/leftrail_palette_stone.html` — cream pushed toward neutral
+  cool stone, brown-ink nudged cooler for cohesion.
+- `website/leftrail_palette_contrast.html` — deeper ink family + slightly
+  more saturated rust + thicker hairline alpha. AA+ sibling.
+
+Element round — buttons (3 variants):
+
+- `website/leftrail_buttons_outline.html` — cream surface + colored
+  border + colored title; glyph becomes a small filled chip in the
+  state color.
+- `website/leftrail_buttons_chip.html` — unified walnut surface for
+  all lanes; state expressed only as a 4–8px colored left-edge stripe.
+- `website/leftrail_buttons_segmented.html` — chunky pills: 12px
+  radius, 72px tall, stronger glyph, inner sheen + drop shadow,
+  tactile press.
+
+Element round — gates open countdown (3 variants):
+
+- `website/leftrail_gates_ribbon.html` — wider banner with stacked
+  label/value, ochre gradient, rust left ribbon, folded-corner notch.
+- `website/leftrail_gates_ticker.html` — minimal slim ticker: no fill,
+  no stripe, tabular numerals, 1px bottom rule.
+- `website/leftrail_gates_card.html` — boxed two-column card: value
+  left, stacked small-caps label right, postage-stamp rust triangle
+  in the top-right corner.
+
+Element round — live + next calendar rows (3 variants):
+
+- `website/leftrail_livenext_badge.html` — drop bg fill + inset
+  stripe; lean on rounded LIVE/NEXT pill badges with soft outer rings.
+- `website/leftrail_livenext_glow.html` — live row picks up soft rust
+  outer glow + badge pulse (prefers-reduced-motion aware); next gets
+  a thin amber underline.
+- `website/leftrail_livenext_card.html` — elevated cards: live = 2px
+  rust border + larger shadow; next = 1.5px brown-dark + smaller shadow.
+
+Element round — past + future calendar rows (3 variants):
+
+- `website/leftrail_pastfuture_faded.html` — past dims deeper (0.42)
+  with name strikethrough; hover lifts back. Future gets a bolder time
+  + small dot marker on the day chip.
+- `website/leftrail_pastfuture_marker.html` — past rows pick up a ✓
+  in the day cell, future rows get a ○. Pure CSS pseudo-elements.
+- `website/leftrail_pastfuture_condensed.html` — past rows collapse
+  to half-height single-line ledger entries (location hidden, time
+  inline); future stays roomy.
+
+Compare page:
+
+- `website/leftrail_compare.html` — side-by-side iframe review,
+  baseline pinned at the top in a rust banner, 12 element variants
+  grouped by category, and an appendix linking the 11 unchosen theme
+  variants for reference.
 
 ## Integration details (website/index.html)
 
@@ -170,12 +259,28 @@ CSS + HTML + JS:
 - `website/index.html` — tokens, lr-* classes, drawer scaffold around the
   three existing cards, IIFE for render/click logic.
 
-Mockup polish (no behavior changes during integration):
-- `website/leftrail_v5_hybrid.html` — title, top comment block, and JS
-  leading comment updated to match the final model.
+Theme exploration stack (2026-05-25, post-integration):
+- `website/leftrail_current.html` — master baseline; updated to carry
+  the higher-contrast palette after variant #12 was promoted.
+- `website/leftrail_classic.html`, `leftrail_modern.html`,
+  `leftrail_cabinet.html`, `leftrail_motion.html`, `leftrail_hybrid.html`
+  — theme round, lineage redo.
+- `website/leftrail_warm_paper.html`, `leftrail_cool_utility.html`,
+  `leftrail_rust_accent.html`, `leftrail_ink_noir.html`
+  — theme round, fresh themes.
+- `website/leftrail_palette_warmer.html`, `leftrail_palette_stone.html`,
+  `leftrail_palette_contrast.html` — theme round, palette-only swaps.
+  (`palette_contrast` is byte-identical to the new baseline.)
+- `website/leftrail_buttons_{outline,chip,segmented}.html`,
+  `leftrail_gates_{ribbon,ticker,card}.html`,
+  `leftrail_livenext_{badge,glow,card}.html`,
+  `leftrail_pastfuture_{faded,marker,condensed}.html`
+  — element round (12 variants).
+- `website/leftrail_compare.html` — side-by-side iframe review.
+
+Retired 2026-05-25 (deleted from tree): `leftrail_v{1..10}_*.html`,
+the previous `leftrail_compare.html`, `leftrail_collapse_mockups.html`,
+`leftrail_edge_dock_mockup.html`.
 
 Card rewrite:
 - `brain/tasks/03_event_app/left_rail_collapse_tabs.md` — this file.
-
-The four other mockup variants (`v1` / `v2` / `v3` / `v4`) and the two
-intermediate exploration files were left untouched as historical reference.

@@ -10,10 +10,10 @@
        card, feature list, and tune controls. Hoisted so the dark-text ink
        and the rust accent aren't typed by hand at every selector. */
     :root {
-      --brown-ink: #4a3c2a;    /* dark text on cream */
-      --brown-mid: #6b5a3e;    /* secondary text, icons, chevrons */
-      --brown-dark: #3f3122;   /* hover/active text */
-      --brown-soft: #6a5638;   /* tertiary labels, captions — Pass 4 AA bump from #756444 */
+      --brown-ink: #2e2418;    /* dark text on cream — higher-contrast baseline */
+      --brown-mid: #4e4128;    /* secondary text, icons, chevrons */
+      --brown-dark: #2a1f12;   /* hover/active text */
+      --brown-soft: #5a4828;   /* tertiary labels, captions */
       --cream-hover: #efe2c6;  /* button hover, active row */
       --cream-surface: rgba(250, 246, 235, 0.96);
       --cream-border: #d8cdb4;
@@ -22,14 +22,14 @@
       --moss: #5f7157;
       --moss-dark: #384833;
       --moss-soft: #e3ebdc;
-      --rust: #9a5a32;         /* primary accent / active border */
+      --rust: #a85020;         /* primary accent / active border — contrast bump */
 
       /* Left-rail drawer tokens. --tab-h drives icon size, icon-col min
          height, and the search-row height so the search bar sits flush
          with one tab. The two -hover tokens are the open/closed tab
          hover fills; --hairline is the divider between tabs/panels. */
       --tab-h: 44px;
-      --hairline: rgba(74, 60, 42, 0.08);
+      --hairline: rgba(46, 36, 24, 0.14);
       --moss-tint-hover: #d6e0cb;
       --cream-wash-hover: #f1e8d2;
     }
@@ -134,8 +134,10 @@
       background: transparent;
       box-shadow: none;
     }
-    /* Search row pinned to one tab unit so it lines up with the icon. */
-    .lr-panel .search-shell { height: var(--tab-h); padding: 0 8px; align-items: center; }
+    /* Search row pinned to one tab unit so it lines up with the icon.
+       display:flex is explicit (defends against the general .search-shell
+       rule above being overridden again) so the input vertically centers. */
+    .lr-panel .search-shell { display: flex; height: var(--tab-h); padding: 0 8px; align-items: center; }
     /* Pill bar above the search — three pill groups in one row:
        [Region · Park · Pavilion]  [Park-style · Topo · Trace]  [3D]
        No vertical pipes between groups; grouping reads from the pill chrome. */
@@ -296,12 +298,8 @@
     .message { position: absolute; left: 12px; bottom: 12px; background: rgba(255,255,255,0.95); padding: 10px 12px; border-radius: 10px; font-size: 0.9rem; max-width: 60ch; }
     .search { position: relative; margin-bottom: 10px; }
     .left-controls .search { margin-bottom: 0; width: 100%; }
-    .search-shell { display: block; }
-    .search input { width: 100%; box-sizing: border-box; padding: 8px 9px 8px 30px; font: inherit; border: 1px solid var(--control-border); border-radius: 7px; background: var(--control-bg); color: var(--brown-ink); }
+    .search input { width: 100%; box-sizing: border-box; padding: 8px 10px; font: inherit; border: 1px solid var(--control-border); border-radius: 7px; background: var(--control-bg); color: var(--brown-ink); }
     .search input:focus { outline: 2px solid var(--moss-dark); border-color: var(--moss); }
-    /* Magnifier glyph anchored at the left of #searchInput. pointer-events:none
-       lets the click pass through to the input so focus still works. */
-    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--brown-soft); pointer-events: none; }
     .search-results { position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 240px; overflow-y: auto; display: none; z-index: 5; }
     .search-item { display: flex; justify-content: space-between; gap: 10px; padding: 6px 9px; cursor: pointer; font-size: 0.9rem; }
     .search-item:hover, .search-item.active { background: #e8dcc3; }
@@ -309,7 +307,7 @@
     .search-empty { padding: 6px 9px; color: #999; font-size: 0.88rem; }
     .left-context-card { display: block; overflow: hidden; }
     .calendar-card { display: block; padding: 0; overflow: hidden; }
-    .left-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; padding: 5px; border-bottom: 1px solid var(--cream-border); background: rgba(227, 235, 220, 0.62); }
+    .left-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; padding: 8px; border-bottom: 1px solid var(--cream-border); background: rgba(227, 235, 220, 0.62); }
     .left-tab { min-width: 0; min-height: 32px; margin: 0; padding: 5px 4px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--brown-mid); cursor: pointer; font: 800 0.76rem Inter, system-ui, sans-serif; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .left-tab:hover { background: rgba(255,253,245,0.7); color: var(--brown-dark); }
     .left-tab[aria-selected="true"] { background: var(--control-bg); border-color: #b9c7ad; color: var(--moss-dark); box-shadow: inset 0 -2px 0 var(--moss); }
@@ -385,7 +383,7 @@
     /* Two-lane hot control: Event and Trails are separate actions so schedule
        users and trail-heat users do not fight one fallback button. Card:
        brain/tasks/02_edit/hot_control_two_lane.md. */
-    .hot-control { display: grid; gap: 6px; padding: 7px; }
+    .hot-control { display: grid; gap: 6px; padding: 8px; }
     .hot-control[hidden] { display: none; }
     .hot-control-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 2px;
       color: var(--brown-ink); }
@@ -500,10 +498,6 @@
         <div class="lr-panel open" id="lrPanelSearch" data-card="search">
     <div class="search-shell">
       <div class="search">
-        <svg class="search-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
-          <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/>
-          <path d="M10.6 10.6 L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
         <input type="text" id="searchInput" placeholder="Search the map…" autocomplete="off" />
         <div class="search-results" id="searchResults"></div>
       </div>

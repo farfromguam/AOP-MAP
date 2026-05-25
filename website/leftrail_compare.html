@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Left rail — variation review</title>
+  <title>Left rail — element variant review</title>
   <style>
     :root {
-      --brown-ink: #4a3c2a;
-      --brown-mid: #6b5a3e;
-      --brown-dark: #3f3122;
-      --brown-soft: #756444;
+      --brown-ink: #2e2418;
+      --brown-mid: #4e4128;
+      --brown-dark: #2a1f12;
+      --brown-soft: #5a4828;
       --cream-hover: #efe2c6;
       --cream-surface: #faf6eb;
       --cream-border: #d8cdb4;
@@ -18,230 +18,243 @@
       --moss: #5f7157;
       --moss-dark: #384833;
       --moss-soft: #e3ebdc;
-      --rust: #9a5a32;
+      --rust: #a85020;
     }
     * { box-sizing: border-box; }
     body, html { margin: 0; padding: 0; background: var(--cream-surface);
       font: 15px/1.5 Inter, system-ui, sans-serif; color: var(--brown-ink); }
-    header { padding: 24px 28px 14px; border-bottom: 1px solid var(--cream-border);
+    header.page { padding: 28px 32px 18px; border-bottom: 1px solid var(--cream-border);
       background: var(--control-bg); }
-    header h1 { margin: 0 0 4px; color: var(--moss-dark); font-size: 1.25rem; }
-    header .sub { color: var(--brown-soft); font-size: 0.86rem; }
-    main { display: grid; gap: 20px; padding: 24px 28px;
-      grid-template-columns: repeat(auto-fit, minmax(560px, 1fr)); max-width: 1500px; margin: 0 auto; }
+    header.page h1 { margin: 0 0 6px; color: var(--moss-dark); font-size: 1.4rem; }
+    header.page .sub { color: var(--brown-soft); font-size: 0.92rem; max-width: 88ch; }
+    header.page .sub strong { color: var(--brown-dark); }
+    header.page .sub code { background: var(--moss-soft); padding: 1px 5px; border-radius: 3px; font-size: 0.85em; }
+    main { display: grid; gap: 22px; padding: 24px 28px;
+      grid-template-columns: repeat(auto-fit, minmax(560px, 1fr)); max-width: 1600px; margin: 0 auto; }
     section.variant { background: #fff; border: 1px solid var(--cream-border); border-radius: 12px;
-      overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
-    section.variant header.v {
-      padding: 14px 18px; background: var(--moss-soft); border-bottom: 1px solid var(--cream-border); }
-    section.variant header.v h2 { margin: 0; color: var(--moss-dark); font-size: 1.05rem; display: flex; align-items: center; gap: 10px; }
-    section.variant header.v .num { display: inline-grid; place-items: center; width: 28px; height: 28px;
-      background: var(--moss); color: #f7f1e2; border-radius: 50%; font: 800 0.8rem Inter, system-ui, sans-serif; }
-    section.variant header.v .angle { color: var(--brown-soft); font-size: 0.82rem; font-style: italic; margin-top: 2px; }
-    section.variant .frame { position: relative; width: 100%; height: 480px; background: #c8bf9c; }
+      overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+      display: flex; flex-direction: column; }
+    section.variant header.v { padding: 14px 18px; background: var(--moss-soft);
+      border-bottom: 1px solid var(--cream-border); }
+    section.variant header.v h2 { margin: 0; color: var(--moss-dark); font-size: 1.05rem;
+      display: flex; align-items: center; gap: 10px; }
+    section.variant header.v .num { display: inline-grid; place-items: center;
+      width: 28px; height: 28px; background: var(--moss); color: #f7f1e2; border-radius: 50%;
+      font: 800 0.8rem Inter, system-ui, sans-serif; }
+    section.variant header.v .angle { color: var(--brown-soft); font-size: 0.84rem;
+      font-style: italic; margin: 4px 0 0 38px; line-height: 1.35; }
+    section.variant .frame { position: relative; width: 100%; height: 600px; background: #9a9c80; }
     section.variant iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-    section.variant .notes { padding: 14px 18px; font-size: 0.86rem; line-height: 1.45; color: var(--brown-ink); border-top: 1px solid var(--cream-border); }
-    section.variant .notes p { margin: 0 0 8px; }
-    section.variant .notes p:last-child { margin-bottom: 0; }
-    section.variant .links { display: flex; gap: 10px; padding: 10px 18px 14px; }
-    section.variant .links a {
-      color: var(--brown-mid); text-decoration: none; padding: 4px 10px;
-      border: 1px solid var(--cream-border); border-radius: 6px; font-size: 0.82rem; background: var(--control-bg); }
+    section.variant .links { display: flex; gap: 10px; padding: 10px 18px 14px;
+      border-top: 1px solid var(--cream-border); }
+    section.variant .links a { color: var(--brown-mid); text-decoration: none;
+      padding: 4px 10px; border: 1px solid var(--cream-border); border-radius: 6px;
+      font-size: 0.82rem; background: var(--control-bg); }
     section.variant .links a:hover { background: var(--cream-hover); color: var(--brown-dark); }
-    .tag { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 0.7rem;
-      font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 6px; vertical-align: middle; }
-    .tag.delight { background: rgba(95,113,87,0.22); color: var(--moss-dark); }
-    .tag.risk { background: rgba(154,90,50,0.16); color: var(--rust); }
-    .tag.feel { background: rgba(107,90,62,0.16); color: var(--brown-dark); }
-    .round-banner { grid-column: 1 / -1; margin: 8px 0 -4px;
+
+    /* Baseline variant: rust banner instead of moss. */
+    section.variant.baseline header.v { background: rgba(168,80,32,0.16); }
+    section.variant.baseline header.v h2 { color: var(--rust); }
+    section.variant.baseline header.v .num { background: var(--rust); }
+
+    /* Category banners */
+    .round-banner { grid-column: 1 / -1; margin: 12px 0 -6px;
       padding: 14px 18px; border-radius: 10px; background: var(--cream-hover);
       border: 1px solid var(--cream-border); }
     .round-banner h2 { margin: 0 0 4px; color: var(--brown-dark); font-size: 1rem;
       text-transform: uppercase; letter-spacing: 0.06em; }
-    .round-banner p { margin: 0; color: var(--brown-soft); font-size: 0.86rem; }
-    section.variant header.v.unlocked { background: rgba(154,90,50,0.14); }
-    section.variant header.v.unlocked h2 { color: var(--rust); }
-    section.variant header.v.unlocked .num { background: var(--rust); }
+    .round-banner p { margin: 0; color: var(--brown-soft); font-size: 0.88rem; max-width: 90ch; }
+
+    .tag { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 0.7rem;
+      font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+      margin-right: 6px; vertical-align: middle; }
+    .tag.scope { background: rgba(107,90,62,0.16); color: var(--brown-dark); }
+    .tag.bold  { background: rgba(168,80,32,0.16); color: var(--rust); }
+    .tag.quiet { background: rgba(95,113,87,0.22); color: var(--moss-dark); }
+
+    /* Appendix: prior 12-theme round, accessible but de-emphasized. */
+    .appendix { margin: 36px 28px 28px; padding: 18px 22px; background: var(--control-bg);
+      border: 1px solid var(--cream-border); border-radius: 10px; }
+    .appendix h2 { margin: 0 0 4px; color: var(--brown-dark); font-size: 0.96rem;
+      text-transform: uppercase; letter-spacing: 0.05em; }
+    .appendix p { margin: 0 0 10px; color: var(--brown-soft); font-size: 0.86rem; max-width: 90ch; }
+    .appendix ul { list-style: none; padding: 0; margin: 0;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 14px; }
+    .appendix li { font-size: 0.84rem; }
+    .appendix a { color: var(--brown-mid); text-decoration: none; }
+    .appendix a:hover { color: var(--rust); text-decoration: underline; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Left rail — collapse variations</h1>
-    <div class="sub">Two rounds in one page. <strong>v1–v5</strong>: same locked manilla-tab behavior (unified shell · island cut-out · scoot-up), five visual takes.
-      <strong>v6–v10</strong>: constraints unlocked, five totally different directions — pill-bar absorption, bottom drawer, workspace switcher, in-place accordion, edge-rail fly-out.
-      Click any control inside a preview to try the behavior.</div>
+  <header class="page">
+    <h1>Left rail — element variant review</h1>
+    <div class="sub">
+      <strong>New baseline:</strong> the higher-contrast palette (former theme variant #12) is now the master,
+      pinned at the top. Below it, four element-focused exploration categories — three flavors each.
+      Every variant restyles ONLY its target element; the rest of the chrome stays at the baseline so the
+      comparison is meaningful. Categories: <code>buttons</code>, <code>gates open</code> (countdown),
+      <code>live + next</code> (calendar happening / upcoming_next rows),
+      <code>past + future</code> (calendar past / default rows). Click any control inside a preview to try it.
+    </div>
   </header>
   <main>
 
+    <section class="variant baseline">
+      <header class="v">
+        <h2><span class="num">★</span>Current — leftrail_current.html</h2>
+        <div class="angle"><span class="tag bold">Baseline</span>Higher-contrast palette + the now-live integrated layout. Every variant below forks this file.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_current.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_current.html" target="_blank">Open full window</a></div>
+    </section>
+
     <div class="round-banner">
-      <h2>Round 1 — locked manilla-tab behavior</h2>
-      <p>Five visual takes on a single locked drawer: 44px icon column, fixed row positions, upward/downward absorption, per-card icon toggle.</p>
+      <h2>Buttons — hot-lane treatments</h2>
+      <p>The two-lane hot button (Event + Trail activity) takes the most visual real-estate in the rail. Three takes on how to express state.</p>
     </div>
 
     <section class="variant">
       <header class="v">
-        <h2><span class="num">1</span> Classic manilla folder</h2>
-        <div class="angle">Paper skeuomorphism — die-cut tabs with rounded outer corners, "pulled out" raised state</div>
+        <h2><span class="num">B1</span>Buttons — outline</h2>
+        <div class="angle"><span class="tag quiet">Outline-led</span>Cream surface + colored border + colored title; glyph becomes a small filled chip in the state color. Quieter from a distance, legible up close.</div>
       </header>
-      <div class="frame"><iframe src="./leftrail_v1_classic.html" loading="lazy"></iframe></div>
-      <div class="notes">
-        <p><span class="tag feel">feel</span>The icon column reads as the manilla "spine" — slightly darker cream painted continuously behind the tabs, with a 1px paper-grain highlight along the top.</p>
-        <p><span class="tag delight">delight</span>Closed tabs sit flush over the spine; open tabs translate left 2px and gain a deeper shadow so they look pulled out of the spine, with a 2px sliver of the darker spine visible behind them.</p>
-        <p><span class="tag risk">risk</span>Heaviest treatment — most "physical" feeling, but at the cost of the lightest map-chrome footprint.</p>
-      </div>
-      <div class="links">
-        <a href="./leftrail_v1_classic.html" target="_blank">Open full-screen</a>
-      </div>
+      <div class="frame"><iframe src="leftrail_buttons_outline.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_buttons_outline.html" target="_blank">Open full window</a></div>
     </section>
 
     <section class="variant">
       <header class="v">
-        <h2><span class="num">2</span> Modern card stack</h2>
-        <div class="angle">Flat, no shadows, state communicated by fill color alone — Linear / Notion sidebar feel</div>
+        <h2><span class="num">B2</span>Buttons — side chip</h2>
+        <div class="angle"><span class="tag scope">Unified surface</span>Single walnut surface for all lanes; state expressed only as a 4–8px colored left-edge stripe. Lowers visual chaos between lanes.</div>
       </header>
-      <div class="frame"><iframe src="./leftrail_v2_modern.html" loading="lazy"></iframe></div>
-      <div class="notes">
-        <p><span class="tag feel">feel</span>Zero drop shadows, zero gradients, zero pretend-physical insets. The drawer is a single flat surface bounded by one 1px border.</p>
-        <p><span class="tag delight">delight</span>Closed tabs show the cream drawer through. Open tabs fill with moss-soft and pull the glyph to moss-dark. The only ornament: a 2px rust stripe on the active segment's left edge.</p>
-        <p><span class="tag risk">risk</span>Easiest to maintain, lightest on the map, but a familiar "tech" look that doesn't pick up the project's hobby texture.</p>
-      </div>
-      <div class="links">
-        <a href="./leftrail_v2_modern.html" target="_blank">Open full-screen</a>
-      </div>
+      <div class="frame"><iframe src="leftrail_buttons_chip.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_buttons_chip.html" target="_blank">Open full window</a></div>
     </section>
 
     <section class="variant">
       <header class="v">
-        <h2><span class="num">3</span> Field cabinet (color-coded)</h2>
-        <div class="angle">Each tab has a color stripe + 2-letter filing code — provenance fingerprint at the chrome level</div>
+        <h2><span class="num">B3</span>Buttons — segmented</h2>
+        <div class="angle"><span class="tag bold">Chunky pills</span>Current solid-fill direction taken further: 12px radius, 72px tall, stronger glyph, inner sheen + drop shadow, tactile press.</div>
       </header>
-      <div class="frame"><iframe src="./leftrail_v3_cabinet.html" loading="lazy"></iframe></div>
-      <div class="notes">
-        <p><span class="tag feel">feel</span>Search = moss stripe, Hot = rust stripe, Calendar = brown-dark stripe. Below each glyph sits a tiny SR / HT / CL filing-code label.</p>
-        <p><span class="tag delight">delight</span>Open tab fills with a 12%-alpha wash of its stripe color — opens calendar and the whole tab area glows brown-dark, matching the source-register ink. Reinforces the source-traceable northstar.</p>
-        <p><span class="tag risk">risk</span>Leans heavily on hue. Color-blind users have the glyph + 2-letter code as fallbacks, but a high-contrast pass would need patterns (hatch/dot/solid) instead of stripe color.</p>
-      </div>
-      <div class="links">
-        <a href="./leftrail_v3_cabinet.html" target="_blank">Open full-screen</a>
-      </div>
-    </section>
-
-    <section class="variant">
-      <header class="v">
-        <h2><span class="num">5</span> Hybrid — v1 layout + v2 styles</h2>
-        <div class="angle">v1's content-aware JS layout engine, v2's flat aesthetic. Active segment carries the rust accent.</div>
-      </header>
-      <div class="frame"><iframe src="./leftrail_v5_hybrid.html" loading="lazy"></iframe></div>
-      <div class="notes">
-        <p><span class="tag feel">feel</span>Flat drawer like v2 (no drop-shadow, no skeuomorphism), but row heights are content-aware like v1 — search row stays tight, calendar's segment grows to its content instead of being clipped to fixed-grid rows.</p>
-        <p><span class="tag delight">delight</span>Click an open inactive tab to promote it (rust accent moves) without closing anything. Click the active tab to close it; rust accent migrates to whichever open tab is left.</p>
-        <p><span class="tag risk">risk</span>The "active vs open" distinction may be one click-target subtlety too many for first-time visitors.</p>
-      </div>
-      <div class="links">
-        <a href="./leftrail_v5_hybrid.html" target="_blank">Open full-screen</a>
-      </div>
-    </section>
-
-    <section class="variant">
-      <header class="v">
-        <h2><span class="num">4</span> Dynamic / dimensional</h2>
-        <div class="angle">Motion-led — overshoot, hover-shift, segment unfurl, "fingernail past a tab edge" feel</div>
-      </header>
-      <div class="frame"><iframe src="./leftrail_v4_dynamic.html" loading="lazy"></iframe></div>
-      <div class="notes">
-        <p><span class="tag feel">feel</span>Icon column is the spine (never moves). Right segments are cards being pulled out. Open: icon translates 3px on a slight-overshoot spring; soft brown shadow appears beneath the lifted icon.</p>
-        <p><span class="tag delight">delight</span>Close adds a 150ms 1deg rotateY wobble — the felt pause of a folder snapping back flush. Hover gives a single-pixel "pull-me" tug. Respects <code>prefers-reduced-motion</code>.</p>
-        <p><span class="tag risk">risk</span>Motion takes a position the others don't. If you change your mind about the feel later, it'll be the most expensive variant to undo.</p>
-      </div>
-      <div class="links">
-        <a href="./leftrail_v4_dynamic.html" target="_blank">Open full-screen</a>
-      </div>
+      <div class="frame"><iframe src="leftrail_buttons_segmented.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_buttons_segmented.html" target="_blank">Open full window</a></div>
     </section>
 
     <div class="round-banner">
-      <h2>Round 2 — constraints unlocked</h2>
-      <p>Same hard requirements only: pill-bar at top, real DOM IDs preserved, real palette. Everything else (icon column, single drawer, absorption rules, manilla metaphor) is up for grabs. Five different directions to mix attributes from.</p>
+      <h2>Gates open — countdown banner</h2>
+      <p>The "Gates open in 3d 14h" banner sits at the top of the calendar body in State A (pre-event). Three takes on tone and weight.</p>
     </div>
 
     <section class="variant">
-      <header class="v unlocked">
-        <h2><span class="num">6</span> Pill-bar absorption</h2>
-        <div class="angle">Search/hot/calendar become pills in a second row; click → arrow-pointing popover over the map</div>
+      <header class="v">
+        <h2><span class="num">G1</span>Gates — ribbon</h2>
+        <div class="angle"><span class="tag bold">Stacked + folded</span>Wider banner with stacked label/value, ochre gradient surface, rust left ribbon, folded-corner notch on the right.</div>
       </header>
-      <div class="frame"><iframe src="./leftrail_v6_pillbar_absorb.html" loading="lazy"></iframe></div>
-      <div class="notes">
-        <p><span class="tag feel">feel</span>No vertical card stack at all. Two horizontal pill-rows at the top — original (zoom/preset/3D) above, new (search/hot/cal/×) below. The map owns the whole left strip at rest.</p>
-        <p><span class="tag delight">delight</span>Popovers hang from their parent pill with a small downward-pointing arrow. Opening one closes the others; Esc, outside-click, and a dedicated × pill all dismiss.</p>
-        <p><span class="tag risk">risk</span>Only one of search/hot/calendar visible at a time. Calendar (tall) inside a popover means a scrolling body, which may feel less anchored than a fixed left card.</p>
-      </div>
-      <div class="links">
-        <a href="./leftrail_v6_pillbar_absorb.html" target="_blank">Open full-screen</a>
-      </div>
+      <div class="frame"><iframe src="leftrail_gates_ribbon.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_gates_ribbon.html" target="_blank">Open full window</a></div>
     </section>
 
     <section class="variant">
-      <header class="v unlocked">
-        <h2><span class="num">7</span> Bottom-anchored drawer</h2>
-        <div class="angle">Pill-bar stays top-left; search/hot/calendar slide up from the bottom edge in a tabbed drawer</div>
+      <header class="v">
+        <h2><span class="num">G2</span>Gates — ticker</h2>
+        <div class="angle"><span class="tag quiet">Minimal · slim</span>No fill, no stripe. Single slim row with tabular numerals on the right, a 1px bottom rule, a small rust dot as punctuation.</div>
       </header>
-      <div class="frame"><iframe src="./leftrail_v7_bottom_drawer.html" loading="lazy"></iframe></div>
-      <div class="notes">
-        <p><span class="tag feel">feel</span>Map breathes. At rest, just the pill-bar and three tab pills floating above the bottom edge. Tap a tab, drawer slides up to ~44vh.</p>
-        <p><span class="tag delight">delight</span>44px drag handle at the top of the open drawer — drag up to grow, drag down past ~80px to close. Floating rust LIVE chip surfaces above the tab strip when hot is live and the drawer is closed.</p>
-        <p><span class="tag risk">risk</span>Bottom-edge interaction conflicts on touch with browser chrome / pull-to-refresh. One panel at a time forces tab flips during multi-task work.</p>
-      </div>
-      <div class="links">
-        <a href="./leftrail_v7_bottom_drawer.html" target="_blank">Open full-screen</a>
-      </div>
+      <div class="frame"><iframe src="leftrail_gates_ticker.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_gates_ticker.html" target="_blank">Open full window</a></div>
     </section>
 
     <section class="variant">
-      <header class="v unlocked">
-        <h2><span class="num">8</span> Workspace switcher</h2>
-        <div class="angle">One panel below the pill-bar, top-edge tab strip: Search · Hot · Cal · ∅. One workspace at a time</div>
+      <header class="v">
+        <h2><span class="num">G3</span>Gates — envelope card</h2>
+        <div class="angle"><span class="tag scope">Boxed · stamped</span>Two-column boxed card: big bold value left, stacked small-caps label right, postage-stamp rust triangle in the top-right corner.</div>
       </header>
-      <div class="frame"><iframe src="./leftrail_v8_workspace.html" loading="lazy"></iframe></div>
-      <div class="notes">
-        <p><span class="tag feel">feel</span>Calmest of the five. The user is only ever doing one thing on the left side, so only one is shown. Panel is content-sized — search is tiny, calendar fills its body.</p>
-        <p><span class="tag delight">delight</span>Cross-fade swap between workspaces over 140ms. Real ∅ state means "show me only the pill-bar and the map." Pulsing rust pip on the Hot tab when live but the user is on a different workspace.</p>
-        <p><span class="tag risk">risk</span>Never see Search and Calendar at once — costs more for a planning-the-event session than for a live-event session. ∅ may be a deceptively important affordance to teach.</p>
-      </div>
-      <div class="links">
-        <a href="./leftrail_v8_workspace.html" target="_blank">Open full-screen</a>
-      </div>
+      <div class="frame"><iframe src="leftrail_gates_card.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_gates_card.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <div class="round-banner">
+      <h2>Live + Next — calendar happening / upcoming_next rows</h2>
+      <p>How to mark the row that's <em>actively happening</em> and the row that's <em>next up</em>. Three takes from quiet badge → atmospheric glow → elevated card.</p>
+    </div>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">L1</span>Live/Next — pill badge</h2>
+        <div class="angle"><span class="tag quiet">Quiet · badge-led</span>Drop the row background fill + inset stripe. Lean on the LIVE/NEXT pill badges (now rounded, ringed) to carry the signal.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_livenext_badge.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_livenext_badge.html" target="_blank">Open full window</a></div>
     </section>
 
     <section class="variant">
-      <header class="v unlocked">
-        <h2><span class="num">9</span> Stack accordion (no icon column)</h2>
-        <div class="angle">Keep the vertical stack. Collapsed cards become 28px peek bars whose text IS the live state.</div>
+      <header class="v">
+        <h2><span class="num">L2</span>Live/Next — glow + underline</h2>
+        <div class="angle"><span class="tag bold">Atmospheric</span>Live row picks up a soft rust outer glow + gentle pulse on the badge. Next gets a thin amber underline as the baton.</div>
       </header>
-      <div class="frame"><iframe src="./leftrail_v9_accordion.html" loading="lazy"></iframe></div>
-      <div class="notes">
-        <p><span class="tag feel">feel</span>The shape the user already knows — three stacked cards in a vertical rail. Collapsed = a 28px label bar with live status text: "🔥 Hot now · Stage 3 LIVE", "📅 Next: Sat 2:00 pm Stage 3 — Mud Pit".</p>
-        <p><span class="tag delight">delight</span>Even fully collapsed, the user reads the next event and the live hot status without expanding anything. A single "Hide / Show controls" chip above the stack flips all three together.</p>
-        <p><span class="tag risk">risk</span>No icon column means no neutral surface for a rust "active card" accent. About 40px more rail height at minimum than v5's 132px-min footprint.</p>
-      </div>
-      <div class="links">
-        <a href="./leftrail_v9_accordion.html" target="_blank">Open full-screen</a>
-      </div>
+      <div class="frame"><iframe src="leftrail_livenext_glow.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_livenext_glow.html" target="_blank">Open full window</a></div>
     </section>
 
     <section class="variant">
-      <header class="v unlocked">
-        <h2><span class="num">10</span> Edge-rail fly-out</h2>
-        <div class="angle">36px vertical strip glued to the left edge; rotated-text chips; one shared panel flies out to the right.</div>
+      <header class="v">
+        <h2><span class="num">L3</span>Live/Next — card lift</h2>
+        <div class="angle"><span class="tag bold">Elevated</span>Live + Next promote to elevated cards. Live = 2px rust border + larger drop shadow. Next = 1.5px brown-dark border + smaller shadow. A visible stack.</div>
       </header>
-      <div class="frame"><iframe src="./leftrail_v10_edge_rail.html" loading="lazy"></iframe></div>
-      <div class="notes">
-        <p><span class="tag feel">feel</span>Smallest idle chrome of any variant — 36px tall strip with three vertical chips. Map essentially unobstructed when nothing is open. Each chip is a permanent spatial anchor.</p>
-        <p><span class="tag delight">delight</span>Panel (not chip) is what flies. Clicking another chip cross-fades the inner shell in place. Live pip rides outside-left of the Hot chip so it's visible whether the panel is open or closed.</p>
-        <p><span class="tag risk">risk</span>Rotated text reads slower than horizontal. One panel at a time. Mobile inversion (rail flips to bottom) doubles the implementation cost.</p>
-      </div>
-      <div class="links">
-        <a href="./leftrail_v10_edge_rail.html" target="_blank">Open full-screen</a>
-      </div>
+      <div class="frame"><iframe src="leftrail_livenext_card.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_livenext_card.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <div class="round-banner">
+      <h2>Past + Future — done rows and rows that haven't started</h2>
+      <p>How to weight the schedule away from what's already happened, toward what's still to come. Three takes from faded → semantic glyph → condensed.</p>
+    </div>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">P1</span>Past/Future — faded</h2>
+        <div class="angle"><span class="tag quiet">Refined fade</span>Past dims deeper (0.42) with strikethrough on the name; hover lifts it back. Future gets a bolder time + a small dot marker on the day chip.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_pastfuture_faded.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_pastfuture_faded.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">P2</span>Past/Future — marker glyph</h2>
+        <div class="angle"><span class="tag scope">Semantic glyph</span>Past rows pick up a small ✓ in the day cell; future rows get a small ○ marker. Pure CSS pseudo-elements — no HTML change.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_pastfuture_marker.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_pastfuture_marker.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">P3</span>Past/Future — condensed</h2>
+        <div class="angle"><span class="tag bold">Vertical rhythm</span>Past rows collapse to half-height single-line ledger entries (time inline with name, location hidden). Future stays roomy. The schedule visually privileges what's still to come.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_pastfuture_condensed.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_pastfuture_condensed.html" target="_blank">Open full window</a></div>
     </section>
 
   </main>
+
+  <aside class="appendix">
+    <h2>Appendix — prior theme round (whole-rail palette/surface variants)</h2>
+    <p>The 11 unchosen theme variants from the previous round are still in the tree for reference. Variant 12 (higher contrast) was promoted to be the new baseline above.</p>
+    <ul>
+      <li><a href="leftrail_classic.html" target="_blank">leftrail_classic.html</a> — classic manilla</li>
+      <li><a href="leftrail_modern.html" target="_blank">leftrail_modern.html</a> — flat modern</li>
+      <li><a href="leftrail_cabinet.html" target="_blank">leftrail_cabinet.html</a> — color-coded cabinet</li>
+      <li><a href="leftrail_motion.html" target="_blank">leftrail_motion.html</a> — motion-led</li>
+      <li><a href="leftrail_hybrid.html" target="_blank">leftrail_hybrid.html</a> — hybrid (polished)</li>
+      <li><a href="leftrail_warm_paper.html" target="_blank">leftrail_warm_paper.html</a> — warm paper</li>
+      <li><a href="leftrail_cool_utility.html" target="_blank">leftrail_cool_utility.html</a> — cool utility</li>
+      <li><a href="leftrail_rust_accent.html" target="_blank">leftrail_rust_accent.html</a> — rust accent</li>
+      <li><a href="leftrail_ink_noir.html" target="_blank">leftrail_ink_noir.html</a> — ink noir (dark)</li>
+      <li><a href="leftrail_palette_warmer.html" target="_blank">leftrail_palette_warmer.html</a> — palette: warmer</li>
+      <li><a href="leftrail_palette_stone.html" target="_blank">leftrail_palette_stone.html</a> — palette: stone</li>
+      <li><a href="leftrail_palette_contrast.html" target="_blank">leftrail_palette_contrast.html</a> — palette: contrast (= baseline)</li>
+    </ul>
+  </aside>
 </body>
 </html>
