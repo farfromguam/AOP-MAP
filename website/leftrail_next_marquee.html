@@ -1,0 +1,839 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Left rail — next: marquee</title>
+  <!--
+    leftrail_next_marquee.html — "Next event" indicator variant (Marquee / animated).
+
+    Forked 2026-05-25 from leftrail_current.html. Replaces the static
+    "Gates open in 3d 14h" countdown banner with a dynamic dual-state
+    "next event" indicator driven by time-to-next-event.
+
+    DUAL-STATE LAYOUT
+    The drawer is rendered twice so both states are visible side-by-side.
+
+    1) FAR MODE  (next event > 1 hour away)
+       - Drawer id: lrDrawer1
+       - Calendar body shows the inline marquee ticker at the top:
+         small rust dot (pulses) · "Next" small caps · event name ·
+         tabular-numeral time-to-go ("in 2h 17m"). Faint warm wash
+         (~6% rust over cream), 1px bottom hairline. The numeral has a
+         CSS transition primed so a live swap fades/slides subtly.
+       - upcoming_next row shows the regular NEXT pill.
+
+    2) CLOSE MODE  (next event <= 1 hour away)
+       - Drawer id: lrDrawer2
+       - The standalone ticker is GONE.
+       - The upcoming_next row's NEXT pill is replaced by a richer
+         countdown chip ("IN 47M") — tabular numerals, all caps, rust
+         at higher saturation. The chip pulses (1.05x scale, 1.5s loop)
+         and the row carries a soft warm halo
+         (box-shadow: 0 0 12px rgba(168, 80, 32, 0.18)).
+
+    REDUCED-MOTION
+    All animated bits live inside @media (prefers-reduced-motion: no-preference).
+    A symmetric @media (prefers-reduced-motion: reduce) block strips
+    transition + animation defensively. Static visuals (color, halo) stay.
+
+    Class hooks: existing .lr-* class names are preserved so the drawer
+    toggle + float-down IIFE binds against both drawer instances. New
+    classes added for the indicator: .cal-next-ticker, .cal-next-dot,
+    .cal-next-label, .cal-next-name, .cal-next-time, .cal-soon-chip,
+    plus .cal-row-haloed on the host <li>.
+  -->
+  <style>
+    :root {
+      --brown-ink: #2e2418;
+      --brown-mid: #4e4128;
+      --brown-dark: #2a1f12;
+      --brown-soft: #5a4828;
+      --cream-hover: #efe2c6;
+      --cream-surface: rgba(250, 246, 235, 0.96);
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --control-border: #b9aa88;
+      --moss: #5f7157;
+      --moss-dark: #384833;
+      --moss-soft: #e3ebdc;
+      --rust: #a85020;
+      --rust-hot: #b8451a;
+
+      --tab-h: 44px;
+      --hairline: rgba(46, 36, 24, 0.14);
+      --moss-tint-hover: #d6e0cb;
+      --cream-wash-hover: #f1e8d2;
+    }
+    * { box-sizing: border-box; }
+    body, html { margin: 0; padding: 0; height: 100%; font-family: Inter, system-ui, sans-serif; }
+    body { background:
+      radial-gradient(circle at 25% 30%, #b5b69c 0, #9a9c80 36%, #7e8068 70%),
+      #888a72;
+      background-blend-mode: multiply;
+      color: var(--brown-ink); min-height: 100vh; padding: 24px;
+    }
+    .stage { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+    .stage .label { color: #f6efd9; font-size: 0.78rem; text-transform: uppercase;
+      letter-spacing: 0.06em; opacity: 0.85; margin: 0 0 8px; padding-left: 4px;
+      font-weight: 800; }
+
+    .left-controls { width: 340px; max-width: 360px; display: grid; gap: 8px; }
+    .left-controls * { box-sizing: border-box; letter-spacing: 0; }
+
+    .pill-bar { display: grid; grid-template-columns: 3fr 3fr 1fr; gap: 8px; align-items: stretch; }
+    .pill-bar .pill { display: flex; width: 100%; border: 1px solid var(--control-border);
+      border-radius: 999px; background: var(--control-bg); overflow: hidden;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .pill-bar .pill > button { flex: 1; min-width: 0; min-height: 36px; padding: 6px 8px;
+      border: 0; background: transparent; color: var(--brown-ink); cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; }
+    .pill-bar .pill > button + button { border-left: 1px solid var(--control-border); }
+    .pill-bar .pill > button:hover:not(.active) { background: var(--cream-hover); }
+    .pill-bar .pill > button.active { background: var(--moss); color: var(--control-bg);
+      border-left-color: transparent; }
+    .pill-bar .pill > button svg { width: 22px; height: 22px; }
+    .pill-bar .pill > button.terrain-button { font: 800 0.86rem Inter, system-ui, sans-serif;
+      letter-spacing: 0.04em; }
+
+    .lr-drawer { display: flex; align-items: stretch; }
+
+    .lr-icon-col {
+      flex: 0 0 var(--tab-h);
+      width: var(--tab-h);
+      min-height: calc(var(--tab-h) * 3);
+      display: flex;
+      flex-direction: column;
+      background: var(--cream-surface);
+      border: 1px solid var(--cream-border);
+      border-radius: 8px 0 0 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    .lr-icon-col.standalone { border-radius: 8px; }
+    .lr-icon-col.col2-short { border-bottom-right-radius: 8px; }
+
+    .lr-content-col {
+      flex: 1 1 auto;
+      min-width: 0;
+      align-self: flex-start;
+      display: flex;
+      flex-direction: column;
+      background: var(--cream-surface);
+      border: 1px solid var(--cream-border);
+      border-left: 0;
+      border-radius: 0 8px 8px 0;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+    }
+    .lr-content-col[hidden] { display: none; }
+
+    .lr-tab {
+      position: relative;
+      flex: 0 0 var(--tab-h);
+      width: var(--tab-h); height: var(--tab-h);
+      display: grid; place-items: center;
+      border: 0;
+      background: transparent;
+      color: var(--brown-mid);
+      cursor: pointer;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+    .lr-tab svg { width: 22px; height: 22px; }
+    .lr-tab + .lr-tab { border-top: 1px solid var(--hairline); }
+    .lr-tab:hover { background: var(--cream-wash-hover); }
+    .lr-tab:focus-visible { outline: 2px solid var(--moss); outline-offset: -2px; }
+    .lr-tab.open { background: var(--moss-soft); color: var(--moss-dark); }
+    .lr-tab.open:hover { background: var(--moss-tint-hover); }
+
+    .lr-tab .lr-live-dot {
+      position: absolute; top: 6px; right: 6px;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--rust);
+      box-shadow: 0 0 0 1.5px var(--cream-surface);
+      pointer-events: none;
+    }
+    .lr-tab.open .lr-live-dot { box-shadow: 0 0 0 1.5px var(--moss-soft); }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .lr-tab .lr-live-dot { animation: lrPulse 2s ease-in-out infinite; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .lr-tab .lr-live-dot { animation: none; }
+    }
+    @keyframes lrPulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.18); }
+    }
+
+    .lr-panel { display: none; position: relative; min-width: 0; }
+    .lr-panel.open { display: block; }
+    .lr-panel.open ~ .lr-panel.open { border-top: 1px solid var(--hairline); }
+
+    .lr-panel .search-shell,
+    .lr-panel .hot-control,
+    .lr-panel .calendar-card {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .lr-panel .search-shell { height: var(--tab-h); padding: 0 8px; align-items: center; }
+
+    .search-shell { display: flex; gap: 6px; padding: 6px;
+      border: 1px solid rgba(155,132,92,0.34); border-radius: 8px;
+      background: var(--cream-surface); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .search { position: relative; margin-bottom: 0; width: 100%; }
+    .search input { width: 100%; box-sizing: border-box; padding: 8px 9px 8px 30px;
+      font: inherit; border: 1px solid var(--control-border); border-radius: 7px;
+      background: var(--control-bg); color: var(--brown-ink); }
+    .search input:focus { outline: 2px solid var(--moss-dark); border-color: var(--moss); }
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      width: 14px; height: 14px; color: var(--brown-soft); pointer-events: none; }
+
+    .hot-control { display: grid; gap: 6px; padding: 7px; }
+    .hot-control-head { display: flex; align-items: baseline; justify-content: space-between;
+      gap: 8px; padding: 0 2px; color: var(--brown-ink); }
+    .hot-control-title { font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+    .hot-control-status { min-width: 0; font: 600 0.68rem Inter, system-ui, sans-serif;
+      color: var(--brown-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hot-lanes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .hot-button { width: 100%; min-height: 64px; display: grid;
+      grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 7px;
+      margin: 0; padding: 8px 9px; border: 1px solid rgba(85, 67, 44, 0.25);
+      border-radius: 8px; background: var(--brown-mid);
+      color: #f7f1e2; cursor: pointer; text-align: left;
+      font: 700 0.74rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+    .hot-button:hover { filter: brightness(1.06); }
+    .hot-button[data-hot-state="hot-now"]    { background: var(--rust); }
+    .hot-button[data-hot-state="coming-up"]  { background: var(--brown-dark); }
+    .hot-button[data-hot-state="trail-hot"]  { background: var(--moss); }
+    .hot-button-glyph { display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; font-size: 1.1rem; line-height: 1; }
+    .hot-button-text { display: block; min-width: 0; }
+    .hot-button-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hot-button-detail { display: block; margin-top: 1px;
+      font: 400 0.72rem Inter, system-ui, sans-serif; text-transform: none;
+      letter-spacing: 0; color: rgba(247, 241, 226, 0.88);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .calendar-card { display: block; padding: 0; overflow: hidden;
+      border: 1px solid rgba(155,132,92,0.34); border-radius: 8px;
+      background: var(--cream-surface); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .left-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 3px; padding: 5px; border-bottom: 1px solid var(--cream-border);
+      background: rgba(227, 235, 220, 0.62); }
+    .left-tab { min-width: 0; min-height: 32px; margin: 0; padding: 5px 4px;
+      border: 1px solid transparent; border-radius: 6px; background: transparent;
+      color: var(--brown-mid); cursor: pointer;
+      font: 800 0.76rem Inter, system-ui, sans-serif; text-align: center;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .left-tab:hover { background: rgba(255,253,245,0.7); color: var(--brown-dark); }
+    .left-tab[aria-selected="true"] { background: var(--control-bg);
+      border-color: #b9c7ad; color: var(--moss-dark);
+      box-shadow: inset 0 -2px 0 var(--moss); }
+    .left-tab-panel[hidden] { display: none; }
+
+    .calendar-toggle { width: 100%; display: grid;
+      grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px;
+      margin: 0; padding: 8px 10px; border: 0; background: transparent;
+      color: var(--brown-ink); cursor: pointer; text-align: left; }
+    .calendar-toggle:hover { background: var(--cream-hover); }
+    .calendar-title { display: block;
+      font: 800 0.78rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+    .calendar-range { display: block; margin-top: 1px; font-size: 0.76rem;
+      color: var(--brown-soft); }
+    .calendar-chevron { color: var(--brown-mid); font-size: 1.15rem; line-height: 1; }
+    .calendar-body { max-height: 260px; overflow-y: auto; padding: 0 8px 8px; }
+    .calendar-days { list-style: none; display: grid; gap: 4px; margin: 0; padding: 0; }
+    .calendar-days li { margin: 0; padding: 0;
+      border-top: 1px solid var(--cream-border); color: var(--brown-ink); position: relative; }
+    .calendar-days li[data-session-state="happening"] { background: #dde2cf;
+      box-shadow: inset 3px 0 0 0 var(--rust); }
+    .calendar-days li[data-session-state="upcoming_next"] { background: #ecd9b1;
+      box-shadow: inset 3px 0 0 0 var(--brown-dark); }
+    .calendar-days li[data-session-state="past"] { opacity: 0.55; }
+    .calendar-row { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr);
+      align-items: start; gap: 8px; margin: 0; padding: 7px 8px; border: 0;
+      background: transparent; color: var(--brown-ink); cursor: pointer; text-align: left; }
+    .calendar-row:hover { background: var(--cream-hover); }
+    .calendar-day { padding-top: 2px;
+      font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase;
+      color: var(--brown-mid); }
+    .calendar-time { display: block; min-width: 0;
+      font: 700 0.74rem Inter, system-ui, sans-serif; line-height: 1.15;
+      color: var(--brown-soft); }
+    .calendar-name { display: block; margin-top: 1px; font-size: 0.88rem;
+      line-height: 1.18; }
+    .calendar-location { display: block; margin-top: 2px; font-size: 0.74rem;
+      line-height: 1.15; color: var(--brown-soft); }
+    .cal-live-badge, .cal-soon-badge { position: absolute; top: 8px; right: 8px;
+      padding: 1px 6px; border-radius: 3px;
+      font: 700 10px Inter, system-ui, sans-serif; text-transform: uppercase;
+      color: #f7f1e2; white-space: nowrap; pointer-events: none; }
+    .cal-live-badge { background: var(--rust); }
+    .cal-soon-badge { background: var(--brown-dark); }
+
+    /* ===========================================================
+       NEW: "Next event" marquee ticker (FAR MODE)
+       Sits in the calendar header slot where the old gates-open
+       countdown banner used to be. Inline, single line, with a
+       gently pulsing rust dot on the left.
+       =========================================================== */
+    .cal-next-ticker {
+      display: flex; align-items: center; gap: 8px;
+      margin: 4px 0 6px; padding: 7px 10px;
+      border-radius: 6px;
+      /* very faint warm wash, ~6% rust over cream */
+      background: rgba(168, 80, 32, 0.06);
+      color: var(--brown-dark);
+      border-bottom: 1px solid var(--hairline);
+      min-width: 0;
+    }
+    .cal-next-dot {
+      flex: 0 0 auto;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--rust);
+      /* mirrors the .lr-live-dot ring on cream surface */
+      box-shadow: 0 0 0 1.5px var(--cream-surface);
+    }
+    .cal-next-label {
+      flex: 0 0 auto;
+      font: 800 0.66rem Inter, system-ui, sans-serif;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--brown-mid);
+    }
+    .cal-next-name {
+      flex: 1 1 auto; min-width: 0;
+      font: 700 0.78rem Inter, system-ui, sans-serif;
+      color: var(--brown-dark);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .cal-next-time {
+      flex: 0 0 auto;
+      font: 800 0.82rem Inter, system-ui, sans-serif;
+      font-variant-numeric: tabular-nums;
+      color: var(--rust-hot);
+      /* primed for live swaps — static here but real one will fade/slide */
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .cal-next-dot { animation: lrPulse 2s ease-in-out infinite; }
+      .cal-next-time {
+        transition: opacity 0.35s ease, transform 0.35s ease;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .cal-next-dot { animation: none; }
+      .cal-next-time { transition: none; }
+    }
+
+    /* ===========================================================
+       NEW: countdown chip (CLOSE MODE)
+       Replaces the .cal-soon-badge ("NEXT" pill) on the
+       upcoming_next row when the event is within an hour.
+       =========================================================== */
+    .cal-soon-chip {
+      position: absolute; top: 8px; right: 8px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--rust-hot);
+      color: #fff8eb;
+      font: 800 10px Inter, system-ui, sans-serif;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      pointer-events: none;
+      transform-origin: center center;
+      box-shadow: 0 0 0 1px rgba(120, 50, 18, 0.45);
+    }
+
+    /* halo on the host <li>. Combined with the existing inset rust
+       rule on upcoming_next so the row gleams without losing the
+       inset stripe. */
+    .calendar-days li.cal-row-haloed[data-session-state="upcoming_next"] {
+      box-shadow:
+        inset 3px 0 0 0 var(--rust-hot),
+        0 0 12px rgba(168, 80, 32, 0.18);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .cal-soon-chip { animation: calSoonPulse 1.5s ease-in-out infinite; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .cal-soon-chip { animation: none; }
+    }
+    @keyframes calSoonPulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.05); }
+    }
+
+    /* ===========================================================
+       Mockup chrome
+       =========================================================== */
+    .section-header { color: #f6efd9; font-size: 0.78rem; text-transform: uppercase;
+      letter-spacing: 0.08em; opacity: 0.95; margin: 0 0 10px; padding-left: 4px;
+      font-weight: 800; }
+    .section-sub { color: #f6efd9; opacity: 0.7; font-weight: 600;
+      font-size: 0.7rem; letter-spacing: 0.04em; margin-left: 8px; }
+
+    .caption { color: #f6efd9; padding: 12px 14px; max-width: 360px;
+      background: rgba(45, 50, 36, 0.55); border-radius: 8px;
+      font-size: 0.82rem; line-height: 1.4; }
+    .caption h3 { margin: 0 0 6px; font-size: 0.9rem; color: #f6efd9; }
+    .caption code { background: rgba(0,0,0,0.25); padding: 1px 5px; border-radius: 3px;
+      font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+
+  <div class="stage">
+
+    <!-- ============================================================
+         SECTION 1 — FAR MODE (next event > 1h away)
+         Inline marquee ticker at the top of the calendar body.
+         upcoming_next row keeps its regular NEXT pill.
+         ============================================================ -->
+    <div>
+      <p class="section-header">FAR mode <span class="section-sub">next event &gt; 1 hour away</span></p>
+
+      <div class="left-controls">
+
+        <div class="pill-bar" role="group" aria-label="Map view controls">
+          <div class="pill" role="group" aria-label="Zoom to area">
+            <button type="button" title="Region zoom">
+              <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 8V3h5M14 3h5v5M19 14v5h-5M8 19H3v-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </button>
+            <button type="button" title="Fit park boundary">
+              <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M4 7L7 3L15 4L18 9L17 16L9 18L4 14Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/></svg>
+            </button>
+            <button type="button" title="Pavilion zoom">
+              <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 9L11 3L19 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 9V18M9 9V18M13 9V18M17 9V18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 18H19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <div class="pill" role="group" aria-label="Map preset">
+            <button type="button" class="active" title="Park preset">
+              <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 6L8 4L14 6L19 4V16L14 18L8 16L3 18Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 4V16M14 6V18" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+            </button>
+            <button type="button" title="Topo preset">
+              <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 7c3-2 6-2 9 0s5 2 7 0M3 11c3-2 6-2 9 0s5 2 7 0M3 15c3-2 6-2 9 0s5 2 7 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            </button>
+            <button type="button" title="Trace preset">
+              <svg viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="3" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5 16c2-1 3-4 6-4s4 3 6 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="16" r="1.3" fill="currentColor"/><circle cx="17" cy="14" r="1.3" fill="currentColor"/></svg>
+            </button>
+          </div>
+          <div class="pill" role="group" aria-label="3D toggle">
+            <button type="button" class="terrain-button" title="Toggle 3D">3D</button>
+          </div>
+        </div>
+
+        <div class="lr-drawer" id="lrDrawer1">
+          <div class="lr-icon-col" id="lrIconCol1">
+            <button class="lr-tab open" id="lrTabSearch1" type="button" aria-pressed="true" aria-controls="lrPanelSearch1" title="Search">
+              <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <button class="lr-tab open" id="lrTabHot1" type="button" aria-pressed="true" aria-controls="lrPanelHot1" title="Hot now">
+              <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                <path d="M11 3.5 C 12 6.5, 14.5 7.5, 14.5 11 C 14.5 14, 12.7 16, 11 16 C 9.3 16, 7.5 14, 7.5 11.5 C 7.5 10, 8.2 9.4, 8.8 10 C 9.4 10.6, 9.5 9.5, 9 8 C 8.7 6.5, 9.5 5, 11 3.5 Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+              <span class="lr-live-dot" aria-hidden="true" title="Hot now"></span>
+            </button>
+            <button class="lr-tab open" id="lrTabCal1" type="button" aria-pressed="true" aria-controls="lrPanelCal1" title="Events / POI / About">
+              <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                <rect x="3.2" y="5.2" width="15.6" height="13.6" rx="1.6" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M3.2 9.2 H 18.8" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M7.5 3 V 7 M14.5 3 V 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M6 13 H 10 M12 13 H 16 M6 16 H 10 M12 16 H 16" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="lr-content-col" id="lrContentCol1">
+
+            <div class="lr-panel open" id="lrPanelSearch1" data-card="search">
+              <div class="search-shell">
+                <div class="search">
+                  <svg class="search-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/>
+                    <path d="M10.6 10.6 L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                  </svg>
+                  <input type="text" placeholder="Search the map…" />
+                </div>
+              </div>
+            </div>
+
+            <div class="lr-panel open" id="lrPanelHot1" data-card="hot">
+              <section class="hot-control" aria-label="Hot now">
+                <div class="hot-control-head">
+                  <span class="hot-control-title">Hot now</span>
+                  <span class="hot-control-status">Stage 2 · live</span>
+                </div>
+                <div class="hot-lanes" data-lane-count="2">
+                  <button type="button" class="hot-button" data-hot-state="hot-now">
+                    <span class="hot-button-glyph">●</span>
+                    <span class="hot-button-text">
+                      <span class="hot-button-title">Stage 2</span>
+                      <span class="hot-button-detail">Live — Taco Stand</span>
+                    </span>
+                  </button>
+                  <button type="button" class="hot-button" data-hot-state="trail-hot">
+                    <span class="hot-button-glyph">❖</span>
+                    <span class="hot-button-text">
+                      <span class="hot-button-title">Trail activity</span>
+                      <span class="hot-button-detail">Where rigs spent time</span>
+                    </span>
+                  </button>
+                </div>
+              </section>
+            </div>
+
+            <div class="lr-panel open" id="lrPanelCal1" data-card="cal">
+              <section class="calendar-card" aria-label="Events and park information">
+                <div class="left-tabs" role="tablist">
+                  <button class="left-tab" type="button" role="tab" aria-selected="true">Events</button>
+                  <button class="left-tab" type="button" role="tab" aria-selected="false">POI</button>
+                  <button class="left-tab" type="button" role="tab" aria-selected="false">About</button>
+                </div>
+                <div class="left-tab-panel" role="tabpanel">
+                  <button class="calendar-toggle" type="button">
+                    <span>
+                      <span class="calendar-title">Rock Warblers Trail Blazing Invitational</span>
+                      <span class="calendar-range">Friday, June 19, 2026</span>
+                    </span>
+                    <span class="calendar-chevron">▾</span>
+                  </button>
+                  <div class="calendar-body">
+
+                    <!-- FAR MODE: animated marquee ticker -->
+                    <div class="cal-next-ticker" role="status" aria-live="polite">
+                      <span class="cal-next-dot" aria-hidden="true"></span>
+                      <span class="cal-next-label">Next</span>
+                      <span class="cal-next-name">Stage 3 · Water Pull</span>
+                      <span class="cal-next-time">in 2h 17m</span>
+                    </div>
+
+                    <ol class="calendar-days">
+                      <li data-session-state="past">
+                        <button class="calendar-row" type="button">
+                          <span class="calendar-day">Fri</span>
+                          <span>
+                            <span class="calendar-time">8:30 AM</span>
+                            <span class="calendar-name">Driver meeting · Pavilion</span>
+                            <span class="calendar-location">Base camp</span>
+                          </span>
+                        </button>
+                      </li>
+                      <li data-session-state="happening">
+                        <span class="cal-live-badge">Live</span>
+                        <button class="calendar-row" type="button">
+                          <span class="calendar-day">Fri</span>
+                          <span>
+                            <span class="calendar-time">10:00 AM</span>
+                            <span class="calendar-name">Stage 2 · Taco Stand</span>
+                            <span class="calendar-location">Mid-ridge</span>
+                          </span>
+                        </button>
+                      </li>
+                      <li data-session-state="upcoming_next">
+                        <!-- FAR mode: regular NEXT pill -->
+                        <span class="cal-soon-badge">Next</span>
+                        <button class="calendar-row" type="button">
+                          <span class="calendar-day">Fri</span>
+                          <span>
+                            <span class="calendar-time">1:30 PM</span>
+                            <span class="calendar-name">Stage 3 · Water Pull</span>
+                            <span class="calendar-location">North creek</span>
+                          </span>
+                        </button>
+                      </li>
+                      <li>
+                        <button class="calendar-row" type="button">
+                          <span class="calendar-day">Fri</span>
+                          <span>
+                            <span class="calendar-time">8:00 PM</span>
+                            <span class="calendar-name">Night crawl · pavilion → fire</span>
+                            <span class="calendar-location">Lights on</span>
+                          </span>
+                        </button>
+                      </li>
+                    </ol>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================================
+         SECTION 2 — CLOSE MODE (next event <= 1h away)
+         NO ticker. upcoming_next row carries the pulsing countdown
+         chip + warm halo. NEXT pill is replaced by the chip.
+         ============================================================ -->
+    <div>
+      <p class="section-header">CLOSE mode <span class="section-sub">next event &le; 1 hour away</span></p>
+
+      <div class="left-controls">
+
+        <div class="pill-bar" role="group" aria-label="Map view controls">
+          <div class="pill" role="group" aria-label="Zoom to area">
+            <button type="button" title="Region zoom">
+              <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 8V3h5M14 3h5v5M19 14v5h-5M8 19H3v-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </button>
+            <button type="button" title="Fit park boundary">
+              <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M4 7L7 3L15 4L18 9L17 16L9 18L4 14Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/></svg>
+            </button>
+            <button type="button" title="Pavilion zoom">
+              <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 9L11 3L19 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 9V18M9 9V18M13 9V18M17 9V18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 18H19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <div class="pill" role="group" aria-label="Map preset">
+            <button type="button" class="active" title="Park preset">
+              <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 6L8 4L14 6L19 4V16L14 18L8 16L3 18Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 4V16M14 6V18" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+            </button>
+            <button type="button" title="Topo preset">
+              <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 7c3-2 6-2 9 0s5 2 7 0M3 11c3-2 6-2 9 0s5 2 7 0M3 15c3-2 6-2 9 0s5 2 7 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            </button>
+            <button type="button" title="Trace preset">
+              <svg viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="3" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5 16c2-1 3-4 6-4s4 3 6 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="16" r="1.3" fill="currentColor"/><circle cx="17" cy="14" r="1.3" fill="currentColor"/></svg>
+            </button>
+          </div>
+          <div class="pill" role="group" aria-label="3D toggle">
+            <button type="button" class="terrain-button" title="Toggle 3D">3D</button>
+          </div>
+        </div>
+
+        <div class="lr-drawer" id="lrDrawer2">
+          <div class="lr-icon-col" id="lrIconCol2">
+            <button class="lr-tab open" id="lrTabSearch2" type="button" aria-pressed="true" aria-controls="lrPanelSearch2" title="Search">
+              <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <button class="lr-tab open" id="lrTabHot2" type="button" aria-pressed="true" aria-controls="lrPanelHot2" title="Hot now">
+              <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                <path d="M11 3.5 C 12 6.5, 14.5 7.5, 14.5 11 C 14.5 14, 12.7 16, 11 16 C 9.3 16, 7.5 14, 7.5 11.5 C 7.5 10, 8.2 9.4, 8.8 10 C 9.4 10.6, 9.5 9.5, 9 8 C 8.7 6.5, 9.5 5, 11 3.5 Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+              <span class="lr-live-dot" aria-hidden="true" title="Hot now"></span>
+            </button>
+            <button class="lr-tab open" id="lrTabCal2" type="button" aria-pressed="true" aria-controls="lrPanelCal2" title="Events / POI / About">
+              <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                <rect x="3.2" y="5.2" width="15.6" height="13.6" rx="1.6" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M3.2 9.2 H 18.8" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M7.5 3 V 7 M14.5 3 V 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M6 13 H 10 M12 13 H 16 M6 16 H 10 M12 16 H 16" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="lr-content-col" id="lrContentCol2">
+
+            <div class="lr-panel open" id="lrPanelSearch2" data-card="search">
+              <div class="search-shell">
+                <div class="search">
+                  <svg class="search-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/>
+                    <path d="M10.6 10.6 L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                  </svg>
+                  <input type="text" placeholder="Search the map…" />
+                </div>
+              </div>
+            </div>
+
+            <div class="lr-panel open" id="lrPanelHot2" data-card="hot">
+              <section class="hot-control" aria-label="Hot now">
+                <div class="hot-control-head">
+                  <span class="hot-control-title">Hot now</span>
+                  <span class="hot-control-status">Stage 2 · live</span>
+                </div>
+                <div class="hot-lanes" data-lane-count="2">
+                  <button type="button" class="hot-button" data-hot-state="hot-now">
+                    <span class="hot-button-glyph">●</span>
+                    <span class="hot-button-text">
+                      <span class="hot-button-title">Stage 2</span>
+                      <span class="hot-button-detail">Live — Taco Stand</span>
+                    </span>
+                  </button>
+                  <button type="button" class="hot-button" data-hot-state="trail-hot">
+                    <span class="hot-button-glyph">❖</span>
+                    <span class="hot-button-text">
+                      <span class="hot-button-title">Trail activity</span>
+                      <span class="hot-button-detail">Where rigs spent time</span>
+                    </span>
+                  </button>
+                </div>
+              </section>
+            </div>
+
+            <div class="lr-panel open" id="lrPanelCal2" data-card="cal">
+              <section class="calendar-card" aria-label="Events and park information">
+                <div class="left-tabs" role="tablist">
+                  <button class="left-tab" type="button" role="tab" aria-selected="true">Events</button>
+                  <button class="left-tab" type="button" role="tab" aria-selected="false">POI</button>
+                  <button class="left-tab" type="button" role="tab" aria-selected="false">About</button>
+                </div>
+                <div class="left-tab-panel" role="tabpanel">
+                  <button class="calendar-toggle" type="button">
+                    <span>
+                      <span class="calendar-title">Rock Warblers Trail Blazing Invitational</span>
+                      <span class="calendar-range">Friday, June 19, 2026</span>
+                    </span>
+                    <span class="calendar-chevron">▾</span>
+                  </button>
+                  <div class="calendar-body">
+
+                    <!-- CLOSE MODE: no standalone ticker. -->
+
+                    <ol class="calendar-days">
+                      <li data-session-state="past">
+                        <button class="calendar-row" type="button">
+                          <span class="calendar-day">Fri</span>
+                          <span>
+                            <span class="calendar-time">8:30 AM</span>
+                            <span class="calendar-name">Driver meeting · Pavilion</span>
+                            <span class="calendar-location">Base camp</span>
+                          </span>
+                        </button>
+                      </li>
+                      <li data-session-state="happening">
+                        <span class="cal-live-badge">Live</span>
+                        <button class="calendar-row" type="button">
+                          <span class="calendar-day">Fri</span>
+                          <span>
+                            <span class="calendar-time">10:00 AM</span>
+                            <span class="calendar-name">Stage 2 · Taco Stand</span>
+                            <span class="calendar-location">Mid-ridge</span>
+                          </span>
+                        </button>
+                      </li>
+                      <li class="cal-row-haloed" data-session-state="upcoming_next">
+                        <!-- CLOSE mode: pulsing countdown chip + halo on the li -->
+                        <span class="cal-soon-chip">in 47m</span>
+                        <button class="calendar-row" type="button">
+                          <span class="calendar-day">Fri</span>
+                          <span>
+                            <span class="calendar-time">1:30 PM</span>
+                            <span class="calendar-name">Stage 3 · Water Pull</span>
+                            <span class="calendar-location">North creek</span>
+                          </span>
+                        </button>
+                      </li>
+                      <li>
+                        <button class="calendar-row" type="button">
+                          <span class="calendar-day">Fri</span>
+                          <span>
+                            <span class="calendar-time">8:00 PM</span>
+                            <span class="calendar-name">Night crawl · pavilion → fire</span>
+                            <span class="calendar-location">Lights on</span>
+                          </span>
+                        </button>
+                      </li>
+                    </ol>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="caption">
+      <h3>Next-event indicator — Marquee (animated)</h3>
+      <p><strong>Far mode</strong> (top) shows the inline ticker at the
+        calendar header: pulsing rust dot, "Next" small-caps label,
+        event name, tabular numerals for time-to-go.</p>
+      <p><strong>Close mode</strong> (bottom) drops the ticker. The
+        upcoming_next row carries a pulsing rust chip ("IN 47M") and a
+        warm halo. All motion respects <code>prefers-reduced-motion</code>.</p>
+    </div>
+  </div>
+
+  <script>
+    /* Drawer toggle + float-down, bound to BOTH drawer instances.
+       Same algorithm as the master IIFE; just parameterized by the
+       drawer instance suffix ("1" / "2") so each rail toggles
+       independently. */
+    (function () {
+      const LR_CARDS = ['search', 'hot', 'cal'];
+      const TAB_H = parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue('--tab-h'),
+        10
+      ) || 44;
+
+      function bindDrawer(suffix) {
+        const lrTabs = {
+          search: document.getElementById('lrTabSearch' + suffix),
+          hot:    document.getElementById('lrTabHot' + suffix),
+          cal:    document.getElementById('lrTabCal' + suffix),
+        };
+        const lrPanels = {
+          search: document.getElementById('lrPanelSearch' + suffix),
+          hot:    document.getElementById('lrPanelHot' + suffix),
+          cal:    document.getElementById('lrPanelCal' + suffix),
+        };
+        const lrIconCol    = document.getElementById('lrIconCol' + suffix);
+        const lrContentCol = document.getElementById('lrContentCol' + suffix);
+        if (!lrIconCol || !lrContentCol) return;
+
+        const lrOpen = { search: true, hot: true, cal: true };
+
+        function lrRender() {
+          const anyOpen = LR_CARDS.some(c => lrOpen[c]);
+          lrContentCol.hidden = !anyOpen;
+          lrIconCol.classList.toggle('standalone', !anyOpen);
+
+          LR_CARDS.forEach(c => {
+            const isOpen = !!lrOpen[c];
+            lrTabs[c].classList.toggle('open', isOpen);
+            lrTabs[c].setAttribute('aria-pressed', isOpen ? 'true' : 'false');
+            lrPanels[c].classList.toggle('open', isOpen);
+          });
+
+          LR_CARDS.forEach(c => { lrTabs[c].style.marginTop = ''; });
+          void lrContentCol.offsetHeight;
+
+          let prevBottom = 0;
+          LR_CARDS.forEach((c, i) => {
+            const canonical = i * TAB_H;
+            const pTop = lrOpen[c] ? lrPanels[c].offsetTop : -Infinity;
+            const desired = Math.max(canonical, pTop, prevBottom);
+            lrTabs[c].style.marginTop = (desired - prevBottom) + 'px';
+            prevBottom = desired + TAB_H;
+          });
+
+          if (anyOpen) {
+            lrIconCol.classList.toggle(
+              'col2-short',
+              lrContentCol.offsetHeight < lrIconCol.offsetHeight
+            );
+          } else {
+            lrIconCol.classList.remove('col2-short');
+          }
+        }
+
+        LR_CARDS.forEach(c => {
+          lrTabs[c].addEventListener('click', () => {
+            lrOpen[c] = !lrOpen[c];
+            lrRender();
+          });
+        });
+
+        lrRender();
+      }
+
+      bindDrawer('1');
+      bindDrawer('2');
+    })();
+  </script>
+</body>
+</html>

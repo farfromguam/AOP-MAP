@@ -236,6 +236,38 @@
       <div class="links"><a href="leftrail_pastfuture_condensed.html" target="_blank">Open full window</a></div>
     </section>
 
+    <div class="round-banner">
+      <h2>Next-event indicator — replaces "Gates open" countdown</h2>
+      <p>Replaces today's static "Gates open in 3d 14h" with a dynamic next-event signal. Two display modes per variant: <strong>FAR</strong> (next event &gt; 1 hour out) = inline ticker in the calendar header; <strong>CLOSE</strong> (next event ≤ 1 hour) = the standalone ticker disappears and the upcoming_next row carries a countdown badge. Each preview below shows BOTH modes stacked so you can compare the transition. Iframes are taller for this reason.</p>
+    </div>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">N1</span>Next — minimal</h2>
+        <div class="angle"><span class="tag quiet">Quiet</span>Far: single-line slim ticker, no fill, 1px bottom rule, tabular time-to-go. Close: small outlined rust countdown chip ("in 47m") replaces the NEXT pill.</div>
+      </header>
+      <div class="frame" style="height: 1280px;"><iframe src="leftrail_next_minimal.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_next_minimal.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">N2</span>Next — marquee</h2>
+        <div class="angle"><span class="tag bold">Motion-led</span>Far: ticker with pulsing rust dot + faint rust wash. Close: pulsing "IN 47M" chip on the upcoming row + soft warm halo. All motion respects <code>prefers-reduced-motion</code>.</div>
+      </header>
+      <div class="frame" style="height: 1280px;"><iframe src="leftrail_next_marquee.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_next_marquee.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">N3</span>Next — ribbon</h2>
+        <div class="angle"><span class="tag bold">Confident</span>Far: ochre-gradient ribbon with stacked NEXT UP / event / time, rust left stripe, folded corner. Close: imminent row promotes with a rust wash + "STARTING — 47m" chip.</div>
+      </header>
+      <div class="frame" style="height: 1280px;"><iframe src="leftrail_next_ribbon.html" loading="lazy"></iframe></div>
+      <div class="links"><a href="leftrail_next_ribbon.html" target="_blank">Open full window</a></div>
+    </section>
+
   </main>
 
   <aside class="appendix">
