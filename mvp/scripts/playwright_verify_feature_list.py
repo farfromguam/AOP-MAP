@@ -995,7 +995,11 @@ def main() -> int:
         # Import is intentionally not exposed in the UI per user direction
         # 2026-05-23 ("I will pass to you or put directly in code") — the
         # apply functions still exist for code-level use.
-        for sid in ("derived-layers", "source-layers", "editor"):
+        # Publishable joined the per-section export set on 2026-05-25
+        # (right_panel_editor_consistency build card). POI section is still
+        # excluded — its toggles are derived bindings of `show*` IDs that
+        # sectionInputs does not collect.
+        for sid in ("derived-layers", "source-layers", "editor", "publishable"):
             exp = page.evaluate(
                 """(sid) => !!document.querySelector(`[data-section-export="${sid}"]`)""",
                 sid,
@@ -1006,11 +1010,11 @@ def main() -> int:
             "() => !!document.querySelector('[data-section-import]')"
         )
         check("no per-section ↓ Import buttons", any_import_btn is False)
-        # Publishable + Notes sections do NOT get export.
-        no_publish = page.evaluate(
-            "!!document.querySelector('[data-section-export=\"publishable\"]') === false"
+        # POI + Notes sections do NOT get export.
+        no_poi = page.evaluate(
+            "!!document.querySelector('[data-section-export=\"poi\"]') === false"
         )
-        check("publishable section has no export button", no_publish is True)
+        check("poi section has no export button", no_poi is True)
 
         # --- editor section round-trip ---
         # Snapshot the editor payload, mutate, then restore.

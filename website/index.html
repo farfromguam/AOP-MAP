@@ -157,9 +157,10 @@
        because the panel already filled top→bottom. */
     .panel { position: absolute; right: 12px; bottom: 12px; top: auto; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); width: 380px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); overflow-y: auto; z-index: 2; box-sizing: border-box; }
     .panel h1 { margin: 0 0 8px; font-size: 1rem; }
-    .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; user-select: none; }
-    .panel-header h1 { margin: 0; }
+    .panel-header { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+    .panel-header h1 { margin: 0; flex: 1; min-width: 0; }
     .panel-collapse { flex: 0 0 auto; margin: 0; padding: 1px 8px; font-size: 1.15rem; line-height: 1.1; color: var(--brown-mid); }
+    .panel-export { flex: 0 0 auto; }
     .panel-body { overflow: hidden; transition: max-height 0.26s ease; }
     .panel.collapsed .panel-body { max-height: 0; }
     .panel label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.94rem; }
@@ -171,8 +172,8 @@
        (0,2,0) class+class specificity beats the generic `.panel button` rule
        at (0,1,1) without needing !important. Pass 4 dropped 6 !important
        declarations here by raising specificity instead of overriding. */
-    .panel .section-toggle, .panel .layer-expand, .panel .panel-collapse, .panel .group-chevron { display: inline-grid; place-items: center; width: 28px; height: 24px; margin: 0; padding: 0; border: 1px solid #d8d0bd; border-radius: 6px; background: #fff8e8; color: var(--brown-mid); cursor: pointer; line-height: 1; }
-    .panel .section-toggle:hover, .panel .layer-expand:hover, .panel .panel-collapse:hover, .panel .group-chevron:hover { color: var(--brown-dark); border-color: #c8b8a0; background: var(--cream-hover); }
+    .panel .section-toggle, .panel .layer-expand, .panel .panel-collapse, .panel .panel-export, .panel .group-chevron { display: inline-grid; place-items: center; width: 28px; height: 24px; margin: 0; padding: 0; border: 1px solid #d8d0bd; border-radius: 6px; background: #fff8e8; color: var(--brown-mid); cursor: pointer; line-height: 1; }
+    .panel .section-toggle:hover, .panel .layer-expand:hover, .panel .panel-collapse:hover, .panel .panel-export:hover, .panel .group-chevron:hover { color: var(--brown-dark); border-color: #c8b8a0; background: var(--cream-hover); }
     .section-label { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
     /* Section header with inline Export / Import per panel section. The chevron
        stays right-edge; the action buttons sit between label and chevron. Each
@@ -364,15 +365,27 @@
       font: 700 10px Inter, system-ui, sans-serif; text-transform: uppercase;
       color: #f7f1e2; white-space: nowrap; pointer-events: none; }
     .cal-live-badge { background: var(--rust); }
-    .cal-soon-badge { background: var(--brown-dark); }
-    /* Pre-event banner (State A). Hidden in 'live' and 'post' states; the
-       refresh-loop flips [hidden] to match data-calendar-state. */
+    /* Next-event chip (N1 close-mode): rust outline on a transparent surface,
+       tabular numerals, lowercase "in 47m". Replaces the prior filled NEXT pill. */
+    .cal-soon-badge { top: 7px; padding: 0 5px; background: transparent;
+      border: 1px solid var(--rust); color: var(--rust);
+      font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+      text-transform: lowercase; }
+    /* Gates-open ticker (G2): slim hairline tier, no fill, rust live-dot
+       before the value, tabular scoreboard digits. */
     .calendar-countdown { display: flex; align-items: baseline; justify-content: space-between;
-      gap: 8px; margin: 4px 0 6px; padding: 7px 10px; border-radius: 6px;
-      background: #ecd9b1; color: var(--brown-dark); box-shadow: inset 3px 0 0 0 var(--brown-dark); }
+      gap: 8px; margin: 6px 0 8px; padding: 5px 10px; border-radius: 0;
+      background: rgba(250, 246, 235, 0.3); color: var(--brown-dark);
+      border-bottom: 1px solid var(--cream-border); box-shadow: none; }
     .calendar-countdown[hidden] { display: none; }
-    .calendar-countdown-label { font: 800 0.66rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
-    .calendar-countdown-value { font: 800 0.92rem Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+    .calendar-countdown-label { font: 800 0.66rem Inter, system-ui, sans-serif;
+      text-transform: uppercase; letter-spacing: 0.04em; color: var(--brown-mid); }
+    .calendar-countdown-value { position: relative; padding-left: 12px;
+      font: 800 1.02rem Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums;
+      color: var(--brown-dark); }
+    .calendar-countdown-value::before { content: ""; position: absolute;
+      left: 0; top: 50%; transform: translateY(-50%);
+      width: 4px; height: 4px; border-radius: 50%; background: var(--rust); }
     .info-panel { max-height: 280px; overflow-y: auto; padding: 10px; border-top: 1px solid rgba(216,205,180,0.78); color: var(--brown-ink); }
     .info-panel h2 { margin: 0 0 6px; font-size: 0.95rem; line-height: 1.15; }
     .info-copy { margin: 0 0 9px; font-size: 0.86rem; line-height: 1.36; }
@@ -583,6 +596,7 @@
   <div class="panel">
     <div class="panel-header" id="panelHeader" title="Collapse panel">
       <h1>AOP edit panel</h1>
+      <button type="button" id="exportAll" class="panel-export" title="Copy a full snapshot — toggles, sliders, paints, geometry overrides, drawn POIs, per-feature visibility — to clipboard.">⧉</button>
       <button type="button" id="panelCollapse" class="panel-collapse" aria-expanded="true" aria-controls="panelBody" title="Collapse panel">▾</button>
     </div>
     <div class="panel-body" id="panelBody">
@@ -656,6 +670,7 @@
       <section class="panel-section collapsed" data-section="publishable">
         <div class="section-header">
           <span class="section-label">Publishable</span>
+          <button type="button" class="section-action" data-section-export="publishable" title="Copy this section's settings to clipboard">⧉</button>
           <button type="button" class="section-toggle" aria-expanded="false">
             <span class="section-chevron">▸</span>
           </button>
@@ -765,9 +780,6 @@
         </div>
       </section>
 
-      <div class="panel-actions panel-actions-single">
-        <button type="button" id="exportAll" title="Copy a full snapshot — toggles, sliders, paints, geometry overrides, drawn POIs, per-feature visibility — to clipboard.">⧉ Export all</button>
-      </div>
     </div>
   </div>
   <div class="message" id="message">Loading publish layer...</div>
@@ -1721,6 +1733,48 @@
         ],
         width: [['activity-hotspots-outline', 'line-width']]
       },
+      // Synthetic Saturday activity mirrors activityHotspots but also fades
+      // the per-persona tracks layer. Track line-color stays as a `match`
+      // expression (persona coding); only outline/label color are tunable.
+      // Card: brain/tasks/03_event_app/right_panel_editor_consistency.md.
+      syntheticActivity: {
+        label: 'Simulated Saturday activity',
+        toggle: syntheticActivityToggle,
+        defaults: { opacity: 60, color: '#254d5b', width: 1.2 },
+        opacity: [
+          ['synthetic-activity-tracks', 'line-opacity'],
+          ['synthetic-activity-hotspots-heat', 'heatmap-opacity'],
+          ['synthetic-activity-hotspots-fill', 'fill-opacity'],
+          ['synthetic-activity-hotspots-outline', 'line-opacity'],
+          ['synthetic-activity-hotspots-labels', 'text-opacity']
+        ],
+        color: [
+          ['synthetic-activity-hotspots-outline', 'line-color'],
+          ['synthetic-activity-hotspots-labels', 'text-color']
+        ],
+        width: [['synthetic-activity-hotspots-outline', 'line-width']]
+      },
+      // Event schedule routes + anchors. Anchor circle-color is a per-role
+      // `match` expression so it stays untunable here (the role coding
+      // carries semantic meaning). Width slider sets a scalar — the zoom
+      // interpolation on `event-session-routes` is the tradeoff documented
+      // in the build card.
+      eventSchedule: {
+        label: 'Event schedule POIs',
+        toggle: eventScheduleToggle,
+        defaults: { opacity: 92, color: '#b45f43', width: 3.0 },
+        opacity: [
+          ['event-session-routes', 'line-opacity'],
+          ['event-route-labels', 'text-opacity'],
+          ['event-anchor-labels', 'text-opacity']
+        ],
+        color: [
+          ['event-session-routes', 'line-color'],
+          ['event-route-labels', 'text-color'],
+          ['event-anchor-labels', 'text-color']
+        ],
+        width: [['event-session-routes', 'line-width']]
+      },
       hillshade: {
         label: 'Hillshade',
         toggle: hillshadeToggle,
@@ -2177,6 +2231,91 @@
           // centroid (only matters for future fly-to math).
           if (visitorContextData) registerFeatureListLayer('visitorContext', visitorContextData);
         }
+      },
+      // Activity hotspots — first-party timestamped GPX dwell cells. The
+      // geojson carries two features per hotspot (Polygon cell + Point
+      // centroid sharing one `id`); dedupe-by-id leaves one row per hotspot.
+      // Visibility + fly only — these are evidence rows, not authored
+      // geometry, so move/tag/highlight are deliberately off.
+      activityHotspots: {
+        label: 'Activity hotspots',
+        idField: 'id',
+        rowLabel: (props) => {
+          const klass = props.intensity_class ? `[${props.intensity_class}] ` : '';
+          const label = props.label || props.id;
+          return `${klass}${label}`;
+        },
+        targetLayers: [
+          'activity-hotspots-heat',
+          'activity-hotspots-fill',
+          'activity-hotspots-outline',
+          'activity-hotspots-labels'
+        ],
+        rowSort: (a, b) => {
+          const order = { high: 0, medium: 1, low: 2 };
+          const ai = order[a.props.intensity_class] ?? 9;
+          const bi = order[b.props.intensity_class] ?? 9;
+          if (ai !== bi) return ai - bi;
+          return String(a.props.label || '').localeCompare(String(b.props.label || ''));
+        },
+        groups: [{
+          id: 'all',
+          label: null,
+          match: () => true,
+          defaultVisible: () => true
+        }]
+      },
+      // Simulated Saturday — deterministic synthetic hotspots that mirror the
+      // activity-hotspot pipeline. Same shape, same scope (visibility + fly).
+      syntheticActivity: {
+        label: 'Simulated Saturday activity',
+        idField: 'id',
+        rowLabel: (props) => {
+          const klass = props.intensity_class ? `[${props.intensity_class}] ` : '';
+          const label = props.label || props.id;
+          return `${klass}${label}`;
+        },
+        targetLayers: [
+          'synthetic-activity-hotspots-heat',
+          'synthetic-activity-hotspots-fill',
+          'synthetic-activity-hotspots-outline',
+          'synthetic-activity-hotspots-labels'
+        ],
+        rowSort: (a, b) => {
+          const order = { high: 0, medium: 1, low: 2 };
+          const ai = order[a.props.intensity_class] ?? 9;
+          const bi = order[b.props.intensity_class] ?? 9;
+          if (ai !== bi) return ai - bi;
+          return String(a.props.label || '').localeCompare(String(b.props.label || ''));
+        },
+        groups: [{
+          id: 'all',
+          label: null,
+          match: () => true,
+          defaultVisible: () => true
+        }]
+      },
+      // Event-schedule anchors — the named locations from
+      // aop_event_schedule.json (#pavilion, #registration, …). Sessions are
+      // intentionally out of scope: they are derived from anchors + route
+      // tags, and their authoring lives in the JSON file, not the panel.
+      // Hiding an anchor here hides its circle + label without disturbing
+      // the route line that may still pass through it.
+      eventSchedule: {
+        label: 'Event schedule POIs',
+        idField: 'location_tag',
+        rowLabel: (props) => {
+          const role = props.role ? ` · ${String(props.role).replace(/_/g, ' ')}` : '';
+          return `${props.name || props.location_tag}${role}`;
+        },
+        targetLayers: ['event-anchor-points', 'event-anchor-labels'],
+        rowSort: (a, b) => String(a.props.name || '').localeCompare(String(b.props.name || '')),
+        groups: [{
+          id: 'anchors',
+          label: null,
+          match: (props) => props.feature_kind === 'event_anchor',
+          defaultVisible: () => true
+        }]
       },
       // Brand logos — on-map AOP badge + Rock Warblers logo. Drag-to-move is
       // the whole point of this consumer (placement gets nudged once the user
@@ -2846,6 +2985,21 @@
         if (id == null) return;
         revealFeatureInPanel(layerKey, id);
       });
+    }
+
+    // Refresh just the runtime data + state for a layer that's already been
+    // registered. Skips the side-effects in registerFeatureListLayer
+    // (pruneOrphanedTags, rebuildEventScheduleData, renderPoiTabIfActive)
+    // so it can be called from inside rebuildEventScheduleData without
+    // recursing. Used after eventScheduleData is rebuilt for a tag rebind.
+    function refreshFeatureListData(layerKey, data) {
+      const runtime = featureListRuntime[layerKey];
+      if (!runtime || !data) return;
+      runtime.data = data;
+      runtime.state = buildFeatureListState(layerKey, data);
+      applyFeatureListFilters(layerKey);
+      persistFeatureVisibility(layerKey);
+      if (shouldRenderFeatureList(layerKey)) renderFeatureList(layerKey);
     }
 
     // Register a layer's data + base filters with the runtime, build initial
@@ -4546,6 +4700,11 @@
       // them from the freshly-resolved data; then rebuild searchGroups so
       // typing `#pavilion` finds the live anchor.
       refreshEventScheduleSearchIndex();
+      // Feature-list runtime for eventSchedule holds a reference to the prior
+      // GeoJSON; refresh it in place so the right-panel CRUD list picks up
+      // newly-resolved anchors. In-place refresh avoids the recursion with
+      // registerFeatureListLayer that would otherwise loop back here.
+      refreshFeatureListData('eventSchedule', eventScheduleData);
       renderPoiTabIfActive();
     }
 
@@ -4769,7 +4928,7 @@
           const badge = document.createElement('span');
           badge.className = 'cal-soon-badge';
           badge.setAttribute('data-badge', 'soon');
-          badge.textContent = `SOON · IN ${eventScheduleFormatMinutes(untilMin)}`;
+          badge.textContent = `in ${eventScheduleFormatMinutes(untilMin)}`;
           r.li.appendChild(badge);
         }
       }
@@ -5858,6 +6017,7 @@
           ['Source', formatListProperty(props.source_files) || 'unknown'],
           ['Review', props.review_status || 'raw']
         ]);
+        registerFeatureListLayer('activityHotspots', activityData);
         // Hotspots may load before or after the schedule; either way the
         // button needs a refresh once aopActivityHotspotsData is populated
         // so the Trails lane renders correctly.
@@ -5972,6 +6132,7 @@
             ['Source', formatListProperty(props.source_files) || 'synthetic'],
             ['Review', props.review_status || 'synthetic']
           ]);
+          registerFeatureListLayer('syntheticActivity', syntheticHotspotsData);
         }
       }
 
@@ -6078,6 +6239,7 @@
           // searchable by title only — surfacing every session under a
           // shared tag would drown the dropdown.
           (props) => props.feature_kind === 'event_anchor' ? [props.location_tag] : null);
+        registerFeatureListLayer('eventSchedule', eventScheduleData);
       } else {
         calendarDays.innerHTML = '<li class="calendar-empty">Schedule unavailable.</li>';
       }
@@ -7696,7 +7858,7 @@
 
     tuneVisible.addEventListener('change', setSelectedLayerVisible);
     tuneControls.addEventListener('input', handleTuneInput);
-    if (exportAllBtn) exportAllBtn.addEventListener('click', exportAllToClipboard);
+    if (exportAllBtn) exportAllBtn.addEventListener('click', (e) => { e.stopPropagation(); exportAllToClipboard(); });
     // Per-section ⧉ on each section header. Buttons declare which section
     // they target via data-section-export so the header doesn't need an
     // explicit per-section listener.

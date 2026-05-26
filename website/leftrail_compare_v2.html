@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Left rail — round 2 element variant review</title>
+  <style>
+    :root {
+      --brown-ink: #2e2418;
+      --brown-mid: #4e4128;
+      --brown-dark: #2a1f12;
+      --brown-soft: #5a4828;
+      --cream-hover: #efe2c6;
+      --cream-surface: #faf6eb;
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --control-border: #b9aa88;
+      --moss: #5f7157;
+      --moss-dark: #384833;
+      --moss-soft: #e3ebdc;
+      --rust: #a85020;
+    }
+    * { box-sizing: border-box; }
+    body, html { margin: 0; padding: 0;
+      background: var(--cream-surface);
+      font: 15px/1.5 Inter, system-ui, sans-serif; color: var(--brown-ink); }
+
+    header.page { padding: 26px 32px 18px;
+      border-bottom: 1px solid var(--cream-border);
+      background: var(--control-bg); }
+    header.page h1 { margin: 0 0 8px; color: var(--moss-dark); font-size: 1.4rem; }
+    header.page .sub { color: var(--brown-soft); font-size: 0.92rem;
+      max-width: 92ch; line-height: 1.55; }
+    header.page .sub strong { color: var(--brown-dark); }
+    header.page .sub code { background: var(--moss-soft);
+      padding: 1px 5px; border-radius: 3px; font-size: 0.85em; }
+    header.page .sub a { color: var(--rust); }
+
+    main { display: grid; gap: 22px; padding: 24px 28px;
+      grid-template-columns: repeat(auto-fit, minmax(540px, 1fr));
+      max-width: 1600px; margin: 0 auto; }
+
+    section.variant { background: #fff;
+      border: 1px solid var(--cream-border); border-radius: 12px;
+      overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+      display: flex; flex-direction: column; }
+    section.variant header.v { padding: 14px 18px; background: var(--moss-soft);
+      border-bottom: 1px solid var(--cream-border); }
+    section.variant header.v h2 { margin: 0; color: var(--moss-dark);
+      font-size: 1.05rem; display: flex; align-items: center; gap: 10px; }
+    section.variant header.v .num { display: inline-grid; place-items: center;
+      width: 30px; height: 30px; background: var(--moss); color: #f7f1e2;
+      border-radius: 50%; font: 800 0.78rem Inter, system-ui, sans-serif;
+      letter-spacing: 0.04em; }
+    section.variant header.v .angle { color: var(--brown-soft); font-size: 0.86rem;
+      font-style: italic; margin: 6px 0 0 40px; line-height: 1.4; }
+    section.variant .frame { position: relative; width: 100%; height: 620px;
+      background: #9a9c80; }
+    section.variant iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    section.variant .links { display: flex; gap: 10px; padding: 10px 18px 14px;
+      border-top: 1px solid var(--cream-border); }
+    section.variant .links a { color: var(--brown-mid); text-decoration: none;
+      padding: 5px 10px; border: 1px solid var(--cream-border);
+      border-radius: 6px; font-size: 0.82rem; background: var(--control-bg); }
+    section.variant .links a:hover { background: var(--cream-hover); color: var(--brown-dark); }
+
+    /* Baseline variant: rust banner */
+    section.variant.baseline header.v { background: rgba(168,80,32,0.16); }
+    section.variant.baseline header.v h2 { color: var(--rust); }
+    section.variant.baseline header.v .num { background: var(--rust); }
+
+    /* Category banners */
+    .round-banner { grid-column: 1 / -1; margin: 14px 0 -6px;
+      padding: 16px 20px; border-radius: 10px;
+      background: var(--cream-hover); border: 1px solid var(--cream-border); }
+    .round-banner h2 { margin: 0 0 4px; color: var(--brown-dark);
+      font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .round-banner p { margin: 0; color: var(--brown-soft);
+      font-size: 0.88rem; max-width: 90ch; line-height: 1.5; }
+
+    .tag { display: inline-block; padding: 1px 8px; border-radius: 10px;
+      font-size: 0.72rem; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      margin-right: 6px; vertical-align: middle; }
+    .tag.scope { background: rgba(107,90,62,0.16); color: var(--brown-dark); }
+    .tag.bold  { background: rgba(168,80,32,0.16); color: var(--rust); }
+    .tag.quiet { background: rgba(95,113,87,0.22); color: var(--moss-dark); }
+
+    .footnote { margin: 32px 28px 24px; padding: 16px 20px;
+      background: var(--control-bg);
+      border: 1px solid var(--cream-border); border-radius: 10px; }
+    .footnote h2 { margin: 0 0 4px; color: var(--brown-dark); font-size: 0.96rem;
+      text-transform: uppercase; letter-spacing: 0.05em; }
+    .footnote p { margin: 0; color: var(--brown-soft); font-size: 0.86rem;
+      line-height: 1.5; }
+    .footnote a { color: var(--rust); }
+  </style>
+</head>
+<body>
+  <header class="page">
+    <h1>Left rail — round 2 element variant review</h1>
+    <div class="sub">
+      <strong>Three fresh element categories.</strong> Round 1 lives at
+      <a href="leftrail_compare.html">leftrail_compare.html</a> (buttons, gates, live+next, past+future).
+      This page restarts with new directions: <code>tabs</code> (Events / POI / About row at the top of the
+      calendar card — first variant batch for this element), <code>gates open</code> (round 2 — past
+      ribbon / ticker / card), and <code>event flow</code> (past + happening + next + future as one composed
+      rhythm, not single-row touch-ups). Every variant restyles ONLY its target element; the rest of the
+      rail stays at <a href="leftrail_current.html">leftrail_current.html</a> so the comparison is honest.
+    </div>
+  </header>
+
+  <main>
+
+    <section class="variant baseline">
+      <header class="v">
+        <h2><span class="num">★</span>Baseline — leftrail_current.html</h2>
+        <div class="angle"><span class="tag bold">Reference</span>The now-live integrated drawer at the higher-contrast palette. All nine variants below fork this file.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_current.html" loading="lazy" title="Baseline"></iframe></div>
+      <div class="links"><a href="leftrail_current.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <div class="round-banner">
+      <h2>Tabs — Events / POI / About</h2>
+      <p>The three buttons at the top of the calendar card switch between event schedule, the POI browser,
+        and an About copy block. The baseline uses a mild bottom-stripe selected state on a green wash —
+        these three push the row into idioms with more identity. <em>First variant batch on this element.</em></p>
+    </div>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">T1</span>Tabs — manilla folder</h2>
+        <div class="angle"><span class="tag scope">Paper</span>Recessed kraft folders sit on a tan shelf; the selected tab lifts into the cream panel with a rust top edge and a clipped-shoulder folder shape.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_tabs_manilla.html" loading="lazy" title="Tabs — manilla"></iframe></div>
+      <div class="links"><a href="leftrail_tabs_manilla.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">T2</span>Tabs — painted blaze</h2>
+        <div class="angle"><span class="tag bold">Trail</span>Thin painted-plank row, dimmed labels by default. The selected label sits inside a rotated rust blaze splotch — reads as a trail marker from across the room.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_tabs_blaze.html" loading="lazy" title="Tabs — blaze"></iframe></div>
+      <div class="links"><a href="leftrail_tabs_blaze.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">T3</span>Tabs — ruled brackets</h2>
+        <div class="angle"><span class="tag quiet">Typewriter</span>Pencil-thin row, dashed underline, monospace caps. The selected label is wrapped in rust square brackets with a 2 px rust underline. Calm, scannable, printed.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_tabs_ruled.html" loading="lazy" title="Tabs — ruled"></iframe></div>
+      <div class="links"><a href="leftrail_tabs_ruled.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <div class="round-banner">
+      <h2>Gates open in — countdown (round 2)</h2>
+      <p>Round 1 gave us ribbon / ticker / card (linked in the appendix below). User feedback: "got us closer."
+        This round pushes further — higher information density, more committed idioms.</p>
+    </div>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">G1</span>Gates — dashboard cluster</h2>
+        <div class="angle"><span class="tag bold">Instrument</span>Dark instrument band with a rust live-dot eyebrow and a three-cell monospace cluster (Days · Hrs · Min). Information-dense, scannable as a single read.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_gates_dash.html" loading="lazy" title="Gates — dash"></iframe></div>
+      <div class="links"><a href="leftrail_gates_dash.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">G2</span>Gates — horizon strip</h2>
+        <div class="angle"><span class="tag scope">Horizon</span>Two-line composition: heavy countdown up top, then a notched hairline scale with a rust marker on the left and the target time printed on the right. Reads like a printed timeline.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_gates_horizon.html" loading="lazy" title="Gates — horizon"></iframe></div>
+      <div class="links"><a href="leftrail_gates_horizon.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">G3</span>Gates — luggage tag</h2>
+        <div class="angle"><span class="tag scope">Paper</span>Cream paper tag with clipped corners, a brass-grommet string-hole, stamped monospace caption, and a target-time line below a dashed divider. Leans into the AOP paper voice.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_gates_tag.html" loading="lazy" title="Gates — tag"></iframe></div>
+      <div class="links"><a href="leftrail_gates_tag.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <div class="round-banner">
+      <h2>Event flow — past / current / next as one composed rhythm</h2>
+      <p>Prior rounds touched up the rows individually (live+next badges, past+future fades). This round
+        treats the whole calendar list as one composition — past, happening, next, and future get layouts
+        that work <em>together</em> to make "what's now / what's next" obvious in a one-second glance.</p>
+    </div>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">E1</span>Event flow — timeline rail</h2>
+        <div class="angle"><span class="tag scope">Timeline</span>Vertical hairline running down the column with state-coded dots: past = filled brown, happening = pulsing rust with a halo, next = double-ringed brown, future = hollow. All rows share one rail.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_eventflow_timeline.html" loading="lazy" title="Event flow — timeline"></iframe></div>
+      <div class="links"><a href="leftrail_eventflow_timeline.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">E2</span>Event flow — focus hero</h2>
+        <div class="angle"><span class="tag bold">Hero</span>Happening promotes to a tall moss-gradient hero with bigger type. Past compresses to a single-line chip-row above. Next stays as a medium-emphasis ochre stripe; future is condensed.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_eventflow_focus.html" loading="lazy" title="Event flow — focus"></iframe></div>
+      <div class="links"><a href="leftrail_eventflow_focus.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">E3</span>Event flow — NOW-line ribbon</h2>
+        <div class="angle"><span class="tag quiet">Ribbon</span>Past rolls into a collapsible "1 session behind" summary; happening, next, and future stack below. A rust NOW divider sits in front of the happening row — the line is the layout move.</div>
+      </header>
+      <div class="frame"><iframe src="leftrail_eventflow_ribbon.html" loading="lazy" title="Event flow — ribbon"></iframe></div>
+      <div class="links"><a href="leftrail_eventflow_ribbon.html" target="_blank">Open full window</a></div>
+    </section>
+
+  </main>
+
+  <div class="footnote">
+    <h2>Round 1 for reference</h2>
+    <p>The prior element variant compare lives at
+      <a href="leftrail_compare.html">leftrail_compare.html</a> — it covers <code>buttons</code>,
+      <code>gates open</code> (ribbon / ticker / card), <code>live + next</code> rows, and
+      <code>past + future</code> rows. Keep it open in another tab if you want to compare this round
+      against last round side-by-side.</p>
+  </div>
+</body>
+</html>

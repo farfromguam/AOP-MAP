@@ -61,6 +61,23 @@ The drawer is two flex columns with independent heights.
 
 ## Mockup variants
 
+2026-05-26 — element-round picks landed in `website/index.html`:
+
+- **Gates-open countdown**: G2 ticker style from `leftrail_gates_ticker.html`
+  — slim hairline tier, no fill, rust live-dot before the value, tabular
+  scoreboard digits. CSS swap on `.calendar-countdown*` only.
+- **Next-event chip**: N1 close-mode chip from `leftrail_next_minimal.html`
+  — rust outline on transparent, lowercase "in 47m", tabular numerals.
+  Restyles existing `.cal-soon-badge`; JS text changed from
+  `SOON · IN {X}` to `in {X}`. Class name preserved.
+- Far-mode header ticker from N1 was NOT carried (header ticker that
+  replaces the gates banner when next event > 1h). Skipped to keep
+  the change small; current behavior keeps the chip on the row at all
+  upcoming_next distances, which is a simpler superset of the close mode.
+- Round-2 variants (`leftrail_tabs_*`, `leftrail_gates_dash|horizon|tag`,
+  `leftrail_eventflow_*`) did not get carried. Compare page at
+  `website/leftrail_compare_v2.html` keeps them available for reference.
+
 The v1–v10 design-round mockups were retired 2026-05-25 after the drawer
 shipped. The artifact stack went through two further rounds:
 
