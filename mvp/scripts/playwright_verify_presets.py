@@ -131,6 +131,17 @@ def main() -> int:
 
         print(f"Opening {WEBSITE_URL}")
         page.goto(WEBSITE_URL, wait_until="load")
+        page.evaluate(
+            """() => {
+              try {
+                localStorage.removeItem('aop_left_rail_drawer_v1');
+                localStorage.removeItem('aop_virtual_clock_v1');
+                localStorage.removeItem('aop_viewer_session_state_v1');
+                localStorage.removeItem('aop_calendar_height_v1');
+              } catch (_) {}
+            }"""
+        )
+        page.reload(wait_until="load")
         page.evaluate("window.map = map;")
         page.wait_for_function(
             "() => document.getElementById('message').textContent.includes('publish feature')",
@@ -230,23 +241,28 @@ def main() -> int:
             and not page.locator("#showEventSchedule").is_checked(),
         )
         check(
-            "calendar starts expanded",
-            page.locator("#calendarToggle").get_attribute("aria-expanded") == "true"
-            and not page.locator("#calendarCard").evaluate("el => el.classList.contains('collapsed')"),
+            "calendar title is static and starts expanded",
+            page.locator("#calendarToggle").evaluate("el => el.tagName") == "DIV"
+            and not page.locator("#calendarCard").evaluate("el => el.classList.contains('collapsed')")
+            and page.locator("#calendarResizeHandle").count() == 1,
         )
-        expanded_height = page.locator("#calendarCard").bounding_box()["height"]
+        expanded_height = page.locator("#calendarBody").bounding_box()["height"]
         page.locator("#calendarToggle").click()
-        page.wait_for_timeout(300)
-        collapsed_height = page.locator("#calendarCard").bounding_box()["height"]
+        page.wait_for_timeout(200)
+        after_title_click_height = page.locator("#calendarBody").bounding_box()["height"]
         check(
-            "calendar collapses",
-            page.locator("#calendarToggle").get_attribute("aria-expanded") == "false"
-            and collapsed_height < expanded_height,
-            f"expanded={expanded_height:.1f} collapsed={collapsed_height:.1f}",
+            "title click does not collapse calendar",
+            abs(after_title_click_height - expanded_height) < 2,
+            f"before={expanded_height:.1f} after={after_title_click_height:.1f}",
         )
-        page.locator("#calendarToggle").click()
-        page.wait_for_timeout(300)
-        check("calendar expands again", page.locator("#calendarToggle").get_attribute("aria-expanded") == "true")
+        handle_box = page.locator("#calendarResizeHandle").bounding_box()
+        page.mouse.move(handle_box["x"] + handle_box["width"] / 2, handle_box["y"] + handle_box["height"] / 2)
+        page.mouse.down()
+        page.mouse.move(handle_box["x"] + handle_box["width"] / 2, handle_box["y"] + handle_box["height"] / 2 + 70)
+        page.mouse.up()
+        page.wait_for_timeout(200)
+        resized_height = page.locator("#calendarBody").bounding_box()["height"]
+        check("calendar resize handle expands the body", resized_height > expanded_height + 35, f"before={expanded_height:.1f} after={resized_height:.1f}")
         bar_box = page.locator(".left-controls").bounding_box()
         check(
             "left controls are in the top-left",
@@ -512,15 +528,13 @@ def main() -> int:
             paint(page, "activity-hotspots-labels", "text-halo-color") == "#f7f1e2",
         )
 
-        print("\n== Mobile layout (B3 bottom-dock + B4 calendar auto-collapse) ==")
+        print("\n== Mobile layout (B3 bottom-dock + calendar resize) ==")
         # Sprint 02 B3 dropped the fixed `top: 430px` on the mobile panel in
-        # favor of a bottom-dock that grows upward. Sprint 02 B4 auto-collapses
-        # the calendar on narrow viewports — the calendar must shrink before
-        # the panel layout below can clear. Reload after the resize so both
-        # behaviors apply.
+        # favor of a bottom-dock that grows upward. Reload after the resize so
+        # the mobile calendar sizing and panel layout both apply.
         page.set_viewport_size({"width": 500, "height": 760})
         page.evaluate(
-            "() => { try { localStorage.removeItem('aop_calendar_collapsed_v1'); } catch (_) {} }"
+            "() => { try { localStorage.removeItem('aop_calendar_height_v1'); } catch (_) {} }"
         )
         page.goto(WEBSITE_URL, wait_until="load")
         page.evaluate("window.map = map;")

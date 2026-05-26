@@ -25,6 +25,7 @@ TL;DR:
 - event schedule, event calendar, RC event, G6, Pro-Line, schedule rows, `#pavilion`, `#registration`, event POI: `tasks/01_mvp/_done/event_schedule_layer.md`, then `research/viewer.md`
 - feature tag binding, `#tag` on feature, `aop_feature_tags_v1`, tagToFeature, feature tag input, pavilion → 1010 building, schedule without coordinates, tag a building, tag a POI, named-feature tagging, seed `#pavilion`, refresh search index, refreshEventScheduleSearchIndex: `tasks/02_edit/_done/named_feature_tagging.md`, then `research/viewer.md`
 - event app, CRUD, uploads, contributor submissions, trail submission, landmark submission, moderation queue, attachment model, invite codes: `tasks/03_event_app/full_loop_crud_upload_audit.md`
+- virtual clock, test clock, date time slider, reset local overrides, reset new user, pocket map persistence, left drawer persistence, active tab persistence, landmark hot lane: `tasks/03_event_app/viewer_session_state_test_clock.md`
 - viewer polish carryover, hot control two-lane, calendar expand on wide, scroll-into-view, collapse chevron uniformity, default-layer audit, brand-logo size slider, add-image runbook, preset tilt reset, preset rotation reset: `tasks/03_event_app/viewer_polish_carryover.md`
 - Pass 4 CSS, theme review, code smell review, `!important` cluster, inline display hygiene, viewer visual audit: `tasks/03_event_app/code_health_pass_4.md`
 - dev DB seed, database dump, reseed, configured data, pre-prod seed, spinup consistency: `tasks/03_event_app/dev_db_snapshot_reseed.md`

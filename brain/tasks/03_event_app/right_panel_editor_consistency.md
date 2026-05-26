@@ -174,9 +174,10 @@ Section-export `⧉` is also missing from two section headers:
       explicitly intended: publishable now has the `⧉` button it formerly
       lacked; POI section took over the "no export" negative assertion).
 - [x] `playwright_verify_presets.py` passes (0 non-tile console errors).
-- [ ] `playwright_verify_event_schedule.py` — two failures reproduce on
-      baseline (search magnifier icon missing, hot button click timeout).
-      Neither is caused by this card.
+- [x] `playwright_verify_event_schedule.py` passes. The two pre-existing
+      failures named below were repaired during the 2026-05-26 left-rail
+      pickup: search magnifier SVG restored inside `.search`, and the Hot tab
+      now opens when hot data appears so the hot-button click path is reachable.
 - [x] Manual: ★ stays exclusive to `editorPois` (the new lists do not
       carry `highlightable`, so no star button renders).
 
@@ -186,7 +187,7 @@ Section-export `⧉` is also missing from two section headers:
 python3 -u mvp/scripts/playwright_verify_feature_list.py       → RESULT PASS
 python3 -u mvp/scripts/playwright_verify_synthetic_activity.py → RESULT PASS
 python3 -u mvp/scripts/playwright_verify_presets.py            → RESULT PASS
-python3 -u mvp/scripts/playwright_verify_event_schedule.py     → RESULT FAIL  (pre-existing, not from this card)
+python3 -u mvp/scripts/playwright_verify_event_schedule.py     → RESULT PASS  (2026-05-26)
 ```
 
 `playwright_verify_feature_list.py` needed one assertion flip: it explicitly
@@ -195,22 +196,19 @@ favour of asserting Publishable **does** carry one, with the same negative
 assertion now pointing at the POI section (which we deliberately left
 unexported — see Decisions).
 
-`playwright_verify_event_schedule.py` reports two failures that reproduce on
-the pre-change baseline (verified by stash + replay):
+`playwright_verify_event_schedule.py` previously reported two failures that
+reproduced on the pre-change baseline (verified by stash + replay):
 
 - `[FAIL] search magnifier icon present` — the verifier expects a
   `.search .search-icon` SVG inside the left-rail search shell; no such
-  element exists in `website/index.html`. Pre-existing gap; unrelated to
-  the editor surface this card touches.
+  element existed in `website/index.html`. Fixed 2026-05-26 by restoring the
+  inline search SVG and left padding.
 - `Locator.click: Timeout 30000ms exceeded` on `#hotButton` in the Hot
   control "live" block. The hot button is present and reports
   `hidden === false` in the immediately-prior snapshot assertion, but
-  Playwright's strict visibility check times out at click time. Also
-  pre-existing.
-
-Both are tracked in `viewer_polish_carryover.md`'s open-followups orbit (or
-deserve a new card) — flagged here so the next session does not blame this
-work for them.
+  Playwright's strict visibility check timed out at click time. Fixed
+  2026-05-26 by opening the left-rail Hot tab on hot-data arrival unless a
+  saved user-close state exists.
 
 ## Open follow-ups (not blocking)
 

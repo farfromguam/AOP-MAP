@@ -294,13 +294,21 @@
     #presetStatus { min-height: 1.2em; }
     .editor-row { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; }
     .editor-row button { flex: 1; margin-right: 0; }
+    .session-tools { display: grid; gap: 8px; }
+    .session-tools-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .session-tools-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+    .session-tools-wide { grid-column: 1 / -1; }
+    .session-tools input { min-width: 0; width: 100%; box-sizing: border-box; padding: 4px 6px; border: 1px solid var(--control-border); border-radius: 6px; background: var(--control-bg); color: var(--brown-ink); font: inherit; }
+    .session-clock-status { display: inline-flex; align-items: center; min-height: 22px; padding: 2px 7px; border: 1px solid var(--cream-border); border-radius: 5px; background: rgba(247, 241, 226, 0.78); color: var(--brown-soft); font: 700 0.72rem Inter, system-ui, sans-serif; }
+    .session-clock-status[data-clock-active="true"] { background: #ecd9b1; border-color: rgba(85, 67, 44, 0.35); color: var(--brown-dark); }
     .poi-popup input { font: inherit; width: 100%; box-sizing: border-box; margin: 6px 0; padding: 3px 5px; }
     .poi-popup button { font: inherit; padding: 3px 9px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
     .message { position: absolute; left: 12px; bottom: 12px; background: rgba(255,255,255,0.95); padding: 10px 12px; border-radius: 10px; font-size: 0.9rem; max-width: 60ch; }
     .search { position: relative; margin-bottom: 10px; }
     .left-controls .search { margin-bottom: 0; width: 100%; }
-    .search input { width: 100%; box-sizing: border-box; padding: 8px 10px; font: inherit; border: 1px solid var(--control-border); border-radius: 7px; background: var(--control-bg); color: var(--brown-ink); }
+    .search input { width: 100%; box-sizing: border-box; padding: 8px 10px 8px 32px; font: inherit; border: 1px solid var(--control-border); border-radius: 7px; background: var(--control-bg); color: var(--brown-ink); }
     .search input:focus { outline: 2px solid var(--moss-dark); border-color: var(--moss); }
+    .search-icon { position: absolute; left: 10px; top: 50%; width: 15px; height: 15px; transform: translateY(-50%); color: var(--brown-soft); pointer-events: none; z-index: 1; }
     .search-results { position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 240px; overflow-y: auto; display: none; z-index: 5; }
     .search-item { display: flex; justify-content: space-between; gap: 10px; padding: 6px 9px; cursor: pointer; font-size: 0.9rem; }
     .search-item:hover, .search-item.active { background: #e8dcc3; }
@@ -308,10 +316,10 @@
     .search-empty { padding: 6px 9px; color: #999; font-size: 0.88rem; }
     .left-context-card { display: block; overflow: hidden; }
     .calendar-card { display: block; padding: 0; overflow: hidden; }
-    .left-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; padding: 8px; border-bottom: 1px solid var(--cream-border); background: rgba(227, 235, 220, 0.62); }
-    .left-tab { min-width: 0; min-height: 32px; margin: 0; padding: 5px 4px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--brown-mid); cursor: pointer; font: 800 0.76rem Inter, system-ui, sans-serif; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .left-tab:hover { background: rgba(255,253,245,0.7); color: var(--brown-dark); }
-    .left-tab[aria-selected="true"] { background: var(--control-bg); border-color: #b9c7ad; color: var(--moss-dark); box-shadow: inset 0 -2px 0 var(--moss); }
+    .left-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 8px; border-bottom: 0; background: transparent; }
+    .left-tab { min-width: 0; min-height: 32px; margin: 0; padding: 5px 4px; border: 1px solid var(--cream-border); border-radius: 6px; background: rgba(255,248,232,0.88); color: var(--brown-mid); cursor: pointer; font: 800 0.76rem Inter, system-ui, sans-serif; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: inset 0 -1px 0 rgba(46,36,24,0.06); }
+    .left-tab:hover { background: var(--cream-hover); border-color: var(--control-border); color: var(--brown-dark); }
+    .left-tab[aria-selected="true"] { background: var(--rust); border-color: #8b431b; color: var(--control-bg); box-shadow: inset 0 -2px 0 rgba(46,36,24,0.28); }
     .left-tab-panel[hidden] { display: none; }
     /* POI tab — left-rail browseable directory of places. Mirrors the
        feature-list-group convention from the right panel so the two
@@ -337,17 +345,14 @@
     .poi-tab-popup .poi-popup-meta dt { display: inline; font-weight: 700; }
     .poi-tab-popup .poi-popup-meta dd { display: inline; margin: 0 8px 0 4px; }
     .poi-tab-popup .poi-popup-meta dt::before { content: ""; display: block; }
-    .left-controls button:focus-visible, .calendar-row:focus-visible, .search input:focus-visible { outline: 2px solid var(--moss-dark); outline-offset: 2px; }
-    .calendar-toggle { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; margin: 0; padding: 8px 10px; border: 0; background: transparent; color: var(--brown-ink); cursor: pointer; text-align: left; }
-    .calendar-toggle:hover { background: var(--cream-hover); }
+    .left-controls button:focus-visible, .calendar-row:focus-visible, .calendar-resize-handle:focus-visible, .search input:focus-visible { outline: 2px solid var(--moss-dark); outline-offset: 2px; }
+    .calendar-heading { width: 100%; display: block; margin: 0; padding: 8px 10px; border: 0; background: transparent; color: var(--brown-ink); text-align: left; }
     .calendar-title { display: block; font: 800 0.78rem Inter, system-ui, sans-serif; text-transform: uppercase; }
     .calendar-range { display: block; margin-top: 1px; font-size: 0.76rem; color: var(--brown-soft); }
-    .calendar-chevron { color: var(--brown-mid); font-size: 1.15rem; line-height: 1; }
-    .calendar-body { max-height: 240px; overflow-y: auto; padding: 0 8px 8px; opacity: 1; transition: max-height 0.24s ease, opacity 0.2s ease, padding 0.2s ease; }
-    .calendar-card.collapsed .calendar-body { max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; }
-    .calendar-days { list-style: none; display: grid; gap: 4px; margin: 0; padding: 0; }
+    .calendar-body { max-height: var(--calendar-body-height, 240px); overflow-y: auto; padding: 0; opacity: 1; transition: max-height 0.16s ease; scrollbar-gutter: stable; }
+    .calendar-days { list-style: none; display: grid; gap: 0; margin: 0; padding: 0; }
     .calendar-days li { margin: 0; padding: 0; border-top: 1px solid var(--cream-border); color: var(--brown-ink); }
-    .calendar-row { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 8px; margin: 0; padding: 7px 8px; border: 0; border-radius: 0; background: transparent; color: var(--brown-ink); cursor: pointer; text-align: left; }
+    .calendar-row { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 8px; margin: 0; padding: 7px 10px; border: 0; border-radius: 0; background: transparent; color: var(--brown-ink); cursor: pointer; text-align: left; }
     .calendar-row:hover, .calendar-row.active { background: var(--cream-hover); }
     .calendar-day { padding-top: 2px; font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; color: var(--brown-mid); }
     .calendar-time { display: block; min-width: 0; font: 700 0.74rem Inter, system-ui, sans-serif; line-height: 1.15; color: var(--brown-soft); overflow-wrap: anywhere; }
@@ -374,9 +379,9 @@
     /* Gates-open ticker (G2): slim hairline tier, no fill, rust live-dot
        before the value, tabular scoreboard digits. */
     .calendar-countdown { display: flex; align-items: baseline; justify-content: space-between;
-      gap: 8px; margin: 6px 0 8px; padding: 5px 10px; border-radius: 0;
+      gap: 8px; margin: 0; padding: 5px 10px; border-radius: 0;
       background: rgba(250, 246, 235, 0.3); color: var(--brown-dark);
-      border-bottom: 1px solid var(--cream-border); box-shadow: none; }
+      border-bottom: 0; box-shadow: none; }
     .calendar-countdown[hidden] { display: none; }
     .calendar-countdown-label { font: 800 0.66rem Inter, system-ui, sans-serif;
       text-transform: uppercase; letter-spacing: 0.04em; color: var(--brown-mid); }
@@ -386,6 +391,9 @@
     .calendar-countdown-value::before { content: ""; position: absolute;
       left: 0; top: 50%; transform: translateY(-50%);
       width: 4px; height: 4px; border-radius: 50%; background: var(--rust); }
+    .calendar-resize-handle { position: sticky; bottom: 0; z-index: 1; width: 100%; height: 13px; margin: 0; border: 0; border-top: 1px solid var(--cream-border); background: linear-gradient(180deg, rgba(250,246,235,0.92), rgba(239,226,198,0.96)); cursor: ns-resize; touch-action: none; }
+    .calendar-resize-handle::before { content: ""; position: absolute; left: 50%; top: 50%; width: 36px; height: 4px; transform: translate(-50%, -50%); border-top: 1px solid rgba(78,65,40,0.48); border-bottom: 1px solid rgba(78,65,40,0.34); }
+    .calendar-resize-handle:active { background: var(--cream-hover); }
     .info-panel { max-height: 280px; overflow-y: auto; padding: 10px; border-top: 1px solid rgba(216,205,180,0.78); color: var(--brown-ink); }
     .info-panel h2 { margin: 0 0 6px; font-size: 0.95rem; line-height: 1.15; }
     .info-copy { margin: 0 0 9px; font-size: 0.86rem; line-height: 1.36; }
@@ -437,18 +445,18 @@
       .pill-bar .pill > button svg { width: 20px; height: 20px; }
       .left-tabs { padding: 4px; }
       .left-tab { min-height: 30px; font-size: 0.74rem; }
-      .calendar-body { max-height: 160px; }
+      .calendar-body { --calendar-body-height: 160px; }
       .info-panel { max-height: 178px; padding: 9px; }
       .hot-button { min-height: 54px; padding: 7px 8px; }
       /* Panel docks above the message bar (which is at bottom: 8px, ~40 px
          tall) and grows upward. max-height keeps a 220 px reserve at the
-         top so the auto-collapsed calendar strip stays uncovered. */
+         top so the left rail stays uncovered. */
       .panel { left: 8px; right: 8px; top: auto; bottom: 56px; width: auto; max-width: none; max-height: clamp(220px, calc(100vh - 360px), 420px); }
       .message { left: 8px; right: 8px; max-width: none; }
     }
     @media (min-width: 1024px) {
       .left-controls { width: 360px; }
-      .calendar-body { max-height: min(42vh, 360px); }
+      .calendar-body { --calendar-body-height: min(42vh, 360px); }
       .info-panel { max-height: min(42vh, 360px); }
     }
   </style>
@@ -512,6 +520,10 @@
         <div class="lr-panel open" id="lrPanelSearch" data-card="search">
     <div class="search-shell">
       <div class="search">
+        <svg class="search-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
         <input type="text" id="searchInput" placeholder="Search the map…" autocomplete="off" />
         <div class="search-results" id="searchResults"></div>
       </div>
@@ -549,13 +561,12 @@
         <button id="leftTabAbout" class="left-tab" type="button" role="tab" aria-selected="false" aria-controls="aboutTabPanel" data-left-tab="about" tabindex="-1">About</button>
       </div>
       <div id="eventsTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabEvents">
-        <button id="calendarToggle" class="calendar-toggle" type="button" aria-expanded="true" aria-controls="calendarBody">
+        <div id="calendarToggle" class="calendar-heading" aria-controls="calendarBody">
           <span>
             <span class="calendar-title">Rock Warblers Trail Blazing Invitational</span>
             <span class="calendar-range" id="calendarRange">Friday, June 19, 2026</span>
           </span>
-          <span id="calendarChevron" class="calendar-chevron">▾</span>
-        </button>
+        </div>
         <div id="calendarBody" class="calendar-body">
           <div id="calendarCountdown" class="calendar-countdown" hidden>
             <span class="calendar-countdown-label">Gates open in</span>
@@ -564,6 +575,7 @@
           <ol class="calendar-days" id="calendarDays">
             <li class="calendar-empty">Loading schedule...</li>
           </ol>
+          <div id="calendarResizeHandle" class="calendar-resize-handle" role="separator" aria-label="Resize calendar" aria-orientation="horizontal" aria-controls="calendarBody" aria-valuemin="120" aria-valuemax="520" aria-valuenow="240" tabindex="0"></div>
         </div>
       </div>
       <div id="poiTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabPoi" hidden>
@@ -758,6 +770,34 @@
         </div>
       </section>
 
+      <section class="panel-section collapsed" data-section="session-tools">
+        <div class="section-header">
+          <span class="section-label">Session tools</span>
+          <button type="button" class="section-toggle" aria-expanded="false">
+            <span class="section-chevron">▸</span>
+          </button>
+        </div>
+        <div class="section-content session-tools">
+          <span id="virtualClockStatus" class="session-clock-status" data-clock-active="false">Wall clock</span>
+          <div class="session-tools-row">
+            <label>Date <input type="date" id="virtualClockDate" /></label>
+            <label>Time <input type="time" id="virtualClockTime" step="900" /></label>
+          </div>
+          <div class="session-tools-actions">
+            <button type="button" id="clockMinusDay">-1d</button>
+            <button type="button" id="clockPlusDay">+1d</button>
+            <button type="button" id="clockMinusHour">-1h</button>
+            <button type="button" id="clockPlusHour">+1h</button>
+          </div>
+          <div class="session-tools-actions">
+            <button type="button" id="clockUseInputs">Set</button>
+            <button type="button" id="clockUseNow">Now</button>
+            <button type="button" id="clockClear">Clear</button>
+            <button type="button" id="resetViewerState">Reset viewer</button>
+          </div>
+        </div>
+      </section>
+
       <section class="panel-section collapsed" data-section="notes">
         <div class="section-header">
           <span class="section-label">Layer notes</span>
@@ -795,7 +835,7 @@
     // Every localStorage key the viewer owns. Centralized so a typo on a
     // string literal cannot silently lose user state (the silent-drop class
     // northstar/source_register.md warns about, applied to local persistence).
-    const CALENDAR_COLLAPSE_KEY = 'aop_calendar_collapsed_v1';
+    const CALENDAR_HEIGHT_KEY = 'aop_calendar_height_v1';
     const VISITOR_CONTEXT_OVERRIDE_KEY = 'aop_visitor_context_overrides_v1';
     const BRAND_LOGOS_OVERRIDE_KEY = 'aop_brand_logos_overrides_v1';
     const FEATURE_VISIBILITY_KEY = 'aop_feature_visibility_v1';
@@ -803,9 +843,12 @@
     const FEATURE_TAG_SEEDED_KEY = 'aop_feature_tags_seeded_v1';
     const POI_STORAGE_KEY = 'aop_editor_pois_v1';
     const VIEWER_PRESET_KEY = 'aop_viewer_preset_settings_v1';
+    const LEFT_RAIL_DRAWER_KEY = 'aop_left_rail_drawer_v1';
+    const VIRTUAL_CLOCK_KEY = 'aop_virtual_clock_v1';
+    const VIEWER_SESSION_KEY = 'aop_viewer_session_state_v1';
 
     // Shared JSON-store helpers — every persisted feature in the viewer
-    // (calendar collapse, visitor-context overrides, per-feature visibility,
+    // (calendar height, visitor-context overrides, per-feature visibility,
     // tag bindings, drawn POIs, preset settings) reads and writes through
     // these. Quiet on a localStorage-unavailable browser; logs on a parse
     // failure so a corrupt store does not vanish without notice.
@@ -830,6 +873,26 @@
         return false;
       }
     }
+
+    function removeJsonStore(key) {
+      try { localStorage.removeItem(key); }
+      catch (_) { /* localStorage unavailable — ignore */ }
+    }
+
+    const VIEWER_OWNED_STORAGE_KEYS = [
+      CALENDAR_HEIGHT_KEY,
+      'aop_calendar_collapsed_v1',
+      VISITOR_CONTEXT_OVERRIDE_KEY,
+      BRAND_LOGOS_OVERRIDE_KEY,
+      FEATURE_VISIBILITY_KEY,
+      FEATURE_TAG_KEY,
+      FEATURE_TAG_SEEDED_KEY,
+      POI_STORAGE_KEY,
+      VIEWER_PRESET_KEY,
+      LEFT_RAIL_DRAWER_KEY,
+      VIRTUAL_CLOCK_KEY,
+      VIEWER_SESSION_KEY
+    ];
 
     // Read a layered store (a flat object keyed by layerKey), merge a subset
     // of layer slices in, and write it back. Used by section-export / -apply
@@ -911,13 +974,12 @@
     const searchInput = document.getElementById('searchInput');
     const searchResults = document.getElementById('searchResults');
     const calendarCard = document.getElementById('calendarCard');
-    const calendarToggle = document.getElementById('calendarToggle');
     const calendarRange = document.getElementById('calendarRange');
     const calendarBody = document.getElementById('calendarBody');
     const calendarDays = document.getElementById('calendarDays');
-    const calendarChevron = document.getElementById('calendarChevron');
     const calendarCountdown = document.getElementById('calendarCountdown');
     const calendarCountdownValue = document.getElementById('calendarCountdownValue');
+    const calendarResizeHandle = document.getElementById('calendarResizeHandle');
     const leftTabButtons = [...document.querySelectorAll('.left-tab[data-left-tab]')];
     const leftTabPanels = [...document.querySelectorAll('.left-tab-panel')];
     const presetButtons = [...document.querySelectorAll('.preset-bar button[data-preset]')];
@@ -953,6 +1015,17 @@
     // directly into code; we don't ship an import UI.
     const exportAllBtn = document.getElementById('exportAll');
     const presetStatus = document.getElementById('presetStatus');
+    const virtualClockStatus = document.getElementById('virtualClockStatus');
+    const virtualClockDate = document.getElementById('virtualClockDate');
+    const virtualClockTime = document.getElementById('virtualClockTime');
+    const clockMinusDay = document.getElementById('clockMinusDay');
+    const clockPlusDay = document.getElementById('clockPlusDay');
+    const clockMinusHour = document.getElementById('clockMinusHour');
+    const clockPlusHour = document.getElementById('clockPlusHour');
+    const clockUseInputs = document.getElementById('clockUseInputs');
+    const clockUseNow = document.getElementById('clockUseNow');
+    const clockClear = document.getElementById('clockClear');
+    const resetViewerStateBtn = document.getElementById('resetViewerState');
 
     // --- Right panel: collapse upward into its header bar ---
     const panel = document.querySelector('.panel');
@@ -985,7 +1058,23 @@
     panelCollapse.addEventListener('click', (e) => { e.stopPropagation(); togglePanel(); });
     panelHeader.addEventListener('click', togglePanel);
 
+    let viewerSessionState = (() => {
+      const parsed = readJsonStore(VIEWER_SESSION_KEY, () => ({}));
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    })();
+
+    function persistViewerSessionState(patch) {
+      viewerSessionState = {
+        ...(viewerSessionState || {}),
+        ...(patch || {}),
+        schema: 'aop-viewer-session-state-v1',
+        updated_at: new Date().toISOString()
+      };
+      writeJsonStore(VIEWER_SESSION_KEY, viewerSessionState);
+    }
+
     function setLeftTab(tabKey) {
+      if (!leftTabButtons.some((button) => button.dataset.leftTab === tabKey)) tabKey = 'events';
       for (const button of leftTabButtons) {
         const selected = button.dataset.leftTab === tabKey;
         button.setAttribute('aria-selected', String(selected));
@@ -996,6 +1085,10 @@
       }
       if (tabKey === 'events') scrollCalendarCurrentRowIntoView();
       if (tabKey === 'poi') renderPoiTab();
+    }
+
+    function persistLeftTab(tabKey) {
+      persistViewerSessionState({ active_left_tab: tabKey });
     }
 
     // POI tab data caches. publishDataCache shadows the async-local publishData
@@ -1381,7 +1474,10 @@
     }
 
     for (const button of leftTabButtons) {
-      button.addEventListener('click', () => setLeftTab(button.dataset.leftTab));
+      button.addEventListener('click', () => {
+        setLeftTab(button.dataset.leftTab);
+        persistLeftTab(button.dataset.leftTab);
+      });
       button.addEventListener('keydown', (event) => {
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
         event.preventDefault();
@@ -1393,56 +1489,101 @@
         const nextButton = leftTabButtons[next];
         if (nextButton) {
           setLeftTab(nextButton.dataset.leftTab);
+          persistLeftTab(nextButton.dataset.leftTab);
           nextButton.focus();
         }
       });
     }
+	    // Calendar body resize. The title row is static; the cal icon in the
+    // left-rail drawer owns open/close, while this bottom handle owns height.
+    const CALENDAR_MIN_BODY_HEIGHT = 120;
+    const CALENDAR_MAX_BODY_HEIGHT = 520;
 
-    // Sprint 02 B4: calendar starts collapsed on narrow viewports so the
-    // left-controls strip does not eat the visible map on mobile / tablet.
-    // User's manual choice survives across reloads via localStorage so a
-    // tablet driver who wants the calendar expanded stays expanded.
-    // Storage key declared at the top of the script with the others.
-    const NARROW_BREAKPOINT_PX = 760; // mirrors @media (max-width: 760px)
-
-    function setCalendarCollapsed(collapsed, persist = true) {
-      calendarCard.classList.toggle('collapsed', collapsed);
-      calendarToggle.setAttribute('aria-expanded', String(!collapsed));
-      calendarToggle.title = collapsed ? 'Expand calendar' : 'Collapse calendar';
-      calendarChevron.textContent = collapsed ? '▸' : '▾';
-      // Stored as a raw '1'/'0' (not JSON) so the read-side `stored === '1'`
-      // check stays trivial; the JSON-store helpers would wrap it in quotes.
-      if (persist) {
-        try { localStorage.setItem(CALENDAR_COLLAPSE_KEY, collapsed ? '1' : '0'); }
-        catch (_) { /* localStorage unavailable — ignore */ }
-      }
-      if (!collapsed) scrollCalendarCurrentRowIntoView();
+    function calendarResizeMaxHeight() {
+      const viewportCap = Math.floor(window.innerHeight * (window.innerWidth <= 760 ? 0.46 : 0.62));
+      return Math.max(CALENDAR_MIN_BODY_HEIGHT, Math.min(CALENDAR_MAX_BODY_HEIGHT, viewportCap));
     }
 
-    // First-load state: stored user choice wins; otherwise default-collapsed
-    // when the viewport is at or below the mobile breakpoint, default-expanded
-    // otherwise.
-    (() => {
-      let stored = null;
-      try { stored = localStorage.getItem(CALENDAR_COLLAPSE_KEY); } catch (_) { /* ignore */ }
-      if (stored === '1' || stored === '0') {
-        setCalendarCollapsed(stored === '1', false);
-      } else {
-        const narrow = window.matchMedia(`(max-width: ${NARROW_BREAKPOINT_PX}px)`).matches;
-        setCalendarCollapsed(narrow, false);
-      }
-    })();
+    function calendarCurrentBodyHeight() {
+      if (!calendarBody) return 240;
+      const rect = calendarBody.getBoundingClientRect();
+      const maxHeight = parseFloat(getComputedStyle(calendarBody).maxHeight);
+      if (Number.isFinite(rect.height) && rect.height >= CALENDAR_MIN_BODY_HEIGHT) return rect.height;
+      return Number.isFinite(maxHeight) ? maxHeight : 240;
+    }
 
-    calendarToggle.addEventListener('click', () => {
-      setCalendarCollapsed(!calendarCard.classList.contains('collapsed'));
-    });
+    function setCalendarBodyHeight(height, persist = true) {
+      if (!calendarBody || !calendarResizeHandle) return;
+      const max = calendarResizeMaxHeight();
+      const next = Math.round(Math.max(CALENDAR_MIN_BODY_HEIGHT, Math.min(max, Number(height) || 240)));
+      calendarBody.style.setProperty('--calendar-body-height', `${next}px`);
+      calendarResizeHandle.setAttribute('aria-valuemin', String(CALENDAR_MIN_BODY_HEIGHT));
+      calendarResizeHandle.setAttribute('aria-valuemax', String(max));
+      calendarResizeHandle.setAttribute('aria-valuenow', String(next));
+      if (persist) writeJsonStore(CALENDAR_HEIGHT_KEY, next);
+      scrollCalendarCurrentRowIntoView();
+    }
+
+    function initializeCalendarResize() {
+      if (!calendarBody || !calendarResizeHandle) return;
+      const stored = readJsonStore(CALENDAR_HEIGHT_KEY, null);
+      if (Number.isFinite(stored)) setCalendarBodyHeight(stored, false);
+      else {
+        calendarResizeHandle.setAttribute('aria-valuemax', String(calendarResizeMaxHeight()));
+        calendarResizeHandle.setAttribute('aria-valuenow', String(Math.round(calendarCurrentBodyHeight())));
+      }
+
+      let drag = null;
+      calendarResizeHandle.addEventListener('pointerdown', (event) => {
+        if (event.button != null && event.button !== 0) return;
+        event.preventDefault();
+        drag = { y: event.clientY, height: calendarCurrentBodyHeight(), pointerId: event.pointerId };
+        calendarResizeHandle.setPointerCapture(event.pointerId);
+      });
+      calendarResizeHandle.addEventListener('pointermove', (event) => {
+        if (!drag) return;
+        event.preventDefault();
+        setCalendarBodyHeight(drag.height + event.clientY - drag.y, false);
+      });
+      const finishDrag = (event) => {
+        if (!drag) return;
+        const next = drag.height + event.clientY - drag.y;
+        if (calendarResizeHandle.hasPointerCapture(drag.pointerId)) {
+          calendarResizeHandle.releasePointerCapture(drag.pointerId);
+        }
+        drag = null;
+        setCalendarBodyHeight(next, true);
+      };
+      calendarResizeHandle.addEventListener('pointerup', finishDrag);
+      calendarResizeHandle.addEventListener('pointercancel', finishDrag);
+      calendarResizeHandle.addEventListener('keydown', (event) => {
+        let next = calendarCurrentBodyHeight();
+        if (event.key === 'ArrowDown') next += 24;
+        else if (event.key === 'ArrowUp') next -= 24;
+        else if (event.key === 'PageDown') next += 72;
+        else if (event.key === 'PageUp') next -= 72;
+        else if (event.key === 'Home') next = CALENDAR_MIN_BODY_HEIGHT;
+        else if (event.key === 'End') next = calendarResizeMaxHeight();
+        else return;
+        event.preventDefault();
+        setCalendarBodyHeight(next, true);
+      });
+      window.addEventListener('resize', () => {
+        if (calendarBody.style.getPropertyValue('--calendar-body-height')) {
+          setCalendarBodyHeight(calendarCurrentBodyHeight(), false);
+        } else {
+          calendarResizeHandle.setAttribute('aria-valuemax', String(calendarResizeMaxHeight()));
+          calendarResizeHandle.setAttribute('aria-valuenow', String(Math.round(calendarCurrentBodyHeight())));
+        }
+      });
+    }
+
+    initializeCalendarResize();
+
     calendarDays.addEventListener('click', (event) => {
       const row = event.target.closest('.calendar-row');
       if (row?.dataset.sessionId) gotoEventSession(row.dataset.sessionId);
     });
-    // (Initial collapse state is set by the IIFE above; do not call
-    // setCalendarCollapsed unconditionally here or it overrides the saved /
-    // narrow-default state with a persisted '0'.)
 
     function setSectionCollapsed(section, collapsed) {
       const button = section.querySelector('.section-toggle');
@@ -2693,9 +2834,9 @@
     // building so the schedule's #pavilion entry works without coords on a
     // fresh viewer. After this fires once, the user owns the binding —
     // unbinding or re-binding survives, because the seed flag is sticky.
-    function maybeSeedFeatureTags() {
-      try {
-        if (localStorage.getItem(FEATURE_TAG_SEEDED_KEY) === '1') return;
+	    function maybeSeedFeatureTags() {
+	      try {
+	        if (localStorage.getItem(FEATURE_TAG_SEEDED_KEY) === '1') return;
         const runtime = featureListRuntime['buildings'];
         if (!runtime || !runtime.state) return;
         let pavilion = null;
@@ -2720,10 +2861,41 @@
         localStorage.setItem(FEATURE_TAG_SEEDED_KEY, '1');
       } catch (err) {
         console.warn('Feature-tag bootstrap failed:', err);
-      }
-    }
+	      }
+	    }
 
-    // Fly + flash a single feature. Mirrors gotoEventSession's camera math so
+	    function resetDefaultPavilionTagRuntime() {
+	      const runtime = featureListRuntime['buildings'];
+	      if (!runtime || !runtime.state) return;
+	      for (const bucket of runtime.state.groups) {
+	        for (const item of bucket.features) {
+	          if (!String(item.props.address || '').startsWith('1010 ')) continue;
+	          const coords = geometryCentroid(item.feature.geometry);
+	          if (!coords) return;
+	          tagToFeature.set('#pavilion', {
+	            layerKey: 'buildings',
+	            featureId: item.id,
+	            coordinates: [coords[0], coords[1]]
+	          });
+	          return;
+	        }
+	      }
+	    }
+
+	    function resetFeatureListRuntimeDefaults() {
+	      for (const [layerKey, runtime] of Object.entries(featureListRuntime)) {
+	        if (!runtime || !runtime.data || !FEATURE_LIST_LAYERS[layerKey]) continue;
+	        runtime.state = buildFeatureListState(layerKey, runtime.data);
+	        runtime.collapsed = {};
+	        for (const group of FEATURE_LIST_LAYERS[layerKey].groups) {
+	          runtime.collapsed[group.id] = !!group.collapsedDefault;
+	        }
+	        applyFeatureListFilters(layerKey);
+	        if (shouldRenderFeatureList(layerKey)) renderFeatureList(layerKey);
+	      }
+	    }
+
+	    // Fly + flash a single feature. Mirrors gotoEventSession's camera math so
     // the flight lands inside the visible map slice (not under the right
     // panel). No popup — the row label is already on-screen.
     function flyToFeature(feature) {
@@ -2992,15 +3164,15 @@
     // (pruneOrphanedTags, rebuildEventScheduleData, renderPoiTabIfActive)
     // so it can be called from inside rebuildEventScheduleData without
     // recursing. Used after eventScheduleData is rebuilt for a tag rebind.
-    function refreshFeatureListData(layerKey, data) {
-      const runtime = featureListRuntime[layerKey];
-      if (!runtime || !data) return;
-      runtime.data = data;
-      runtime.state = buildFeatureListState(layerKey, data);
-      applyFeatureListFilters(layerKey);
-      persistFeatureVisibility(layerKey);
-      if (shouldRenderFeatureList(layerKey)) renderFeatureList(layerKey);
-    }
+	    function refreshFeatureListData(layerKey, data, options = {}) {
+	      const runtime = featureListRuntime[layerKey];
+	      if (!runtime || !data) return;
+	      runtime.data = data;
+	      runtime.state = buildFeatureListState(layerKey, data);
+	      applyFeatureListFilters(layerKey);
+	      if (options.persistVisibility !== false) persistFeatureVisibility(layerKey);
+	      if (shouldRenderFeatureList(layerKey)) renderFeatureList(layerKey);
+	    }
 
     // Register a layer's data + base filters with the runtime, build initial
     // state, and apply the initial filter pass. Called from each layer's
@@ -3351,7 +3523,7 @@
     }
     const PRESET_PAINT_TARGETS = uniquePaintTargets();
 
-    const BUILT_IN_PRESETS = {
+	    const BUILT_IN_PRESETS = {
       park: {
         label: 'Park',
         toggles: {
@@ -3577,9 +3749,13 @@
           'search-highlight-point': { 'circle-color': '#00d1ff', 'circle-stroke-color': '#00d1ff' }
         }
       }
-    };
+	    };
 
-    function updateLayerVisibility() {
+	    if (BUILT_IN_PRESETS[viewerSessionState?.active_preset]) {
+	      activePresetId = viewerSessionState.active_preset;
+	    }
+
+	    function updateLayerVisibility() {
       for (const [toggle, layerIds] of LAYER_TOGGLES) {
         for (const id of layerIds) setLayerVisibility(id, toggle.checked);
       }
@@ -3644,7 +3820,7 @@
       element.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
-    function applyPreset(presetId) {
+    function applyPreset(presetId, options = {}) {
       if (!BUILT_IN_PRESETS[presetId]) return;
       const state = presetState(presetId);
       activePresetId = presetId;
@@ -3671,6 +3847,9 @@
       syncLayerTunerFromSelection();
       const saved = savedPresetStates[presetId] ? ' custom' : '';
       presetStatus.textContent = `${state.label}${saved} preset active.`;
+      if (options.persistSession !== false) {
+        persistViewerSessionState({ active_preset: presetId });
+      }
     }
 
     function capturePaintState() {
@@ -4683,8 +4862,8 @@
     // should make the pavilion session row fly to the building immediately,
     // not after a reload. Safe to call before the source is added (no-op).
     // Card: brain/tasks/02_edit/named_feature_tagging.md.
-    function rebuildEventScheduleData() {
-      if (!eventScheduleConfig) return;
+	    function rebuildEventScheduleData(options = {}) {
+	      if (!eventScheduleConfig) return;
       eventScheduleData = eventScheduleToGeojson(eventScheduleConfig);
       const source = map.getSource('event-schedule');
       if (source) source.setData(eventScheduleData);
@@ -4704,9 +4883,9 @@
       // GeoJSON; refresh it in place so the right-panel CRUD list picks up
       // newly-resolved anchors. In-place refresh avoids the recursion with
       // registerFeatureListLayer that would otherwise loop back here.
-      refreshFeatureListData('eventSchedule', eventScheduleData);
-      renderPoiTabIfActive();
-    }
+	      refreshFeatureListData('eventSchedule', eventScheduleData, options);
+	      renderPoiTabIfActive();
+	    }
 
     function refreshEventScheduleSearchIndex() {
       // searchIndex is a const-bound array; mutate in place. Drop any prior
@@ -4729,23 +4908,134 @@
     }
 
     // --- Variation B4-info: session "now" computation ---------------------
-    // Returns the Date treated as "now". Reads ?clock=YYYY-MM-DDTHH:MM as a
-    // local datetime when present (test fixture); otherwise wall-clock.
-    function eventScheduleNow() {
+    // Returns the Date treated as "now". Right-panel session tools and the
+    // existing ?clock=YYYY-MM-DDTHH:MM fixture both drive this single source.
+    function parseLocalClockString(raw) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{1,2}):(\d{2})$/.exec(String(raw || '').trim());
+      if (!m) return null;
+      const d = new Date(
+        Number(m[1]), Number(m[2]) - 1, Number(m[3]),
+        Number(m[4]), Number(m[5]), 0, 0
+      );
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function clockParamDate() {
       try {
         const params = new URLSearchParams(window.location.search);
         const raw = params.get('clock');
-        if (raw) {
-          const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{1,2}):(\d{2})$/.exec(raw.trim());
-          if (m) {
-            const d = new Date(
-              Number(m[1]), Number(m[2]) - 1, Number(m[3]),
-              Number(m[4]), Number(m[5]), 0, 0
-            );
-            if (!isNaN(d.getTime())) return d;
-          }
-        }
+        return raw ? parseLocalClockString(raw) : null;
       } catch (_) { /* fall through */ }
+      return null;
+    }
+
+    const urlClockDate = clockParamDate();
+    const storedClock = readJsonStore(VIRTUAL_CLOCK_KEY, null);
+    let virtualClockMs = urlClockDate
+      ? urlClockDate.getTime()
+      : (Number.isFinite(storedClock?.ms) ? Number(storedClock.ms) : null);
+
+    function pad2(value) {
+      return String(value).padStart(2, '0');
+    }
+
+    function clockInputParts(date) {
+      return {
+        date: `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`,
+        time: `${pad2(date.getHours())}:${pad2(date.getMinutes())}`
+      };
+    }
+
+    function clockLabel(date) {
+      const parts = clockInputParts(date);
+      return `${parts.date} ${parts.time}`;
+    }
+
+    function syncVirtualClockUi() {
+      if (!virtualClockDate || !virtualClockTime || !virtualClockStatus) return;
+      const active = Number.isFinite(virtualClockMs);
+      const date = active ? new Date(virtualClockMs) : new Date();
+      const parts = clockInputParts(date);
+      virtualClockDate.value = parts.date;
+      virtualClockTime.value = parts.time;
+      virtualClockStatus.dataset.clockActive = active ? 'true' : 'false';
+      virtualClockStatus.textContent = active ? `Test clock ${clockLabel(date)}` : 'Wall clock';
+    }
+
+    function setVirtualClock(date, persist = true) {
+      if (date && !isNaN(date.getTime())) {
+        virtualClockMs = date.getTime();
+        if (persist) {
+          writeJsonStore(VIRTUAL_CLOCK_KEY, {
+            schema: 'aop-virtual-clock-v1',
+            updated_at: new Date().toISOString(),
+            ms: virtualClockMs
+          });
+        }
+      } else {
+        virtualClockMs = null;
+        if (persist) removeJsonStore(VIRTUAL_CLOCK_KEY);
+      }
+      syncVirtualClockUi();
+      if (eventScheduleConfig && eventScheduleData) renderEventSchedule(eventScheduleConfig, eventScheduleData);
+      if (typeof refreshHotButton === 'function') refreshHotButton();
+    }
+
+    function virtualClockFromInputs() {
+      if (!virtualClockDate || !virtualClockTime) return null;
+      return parseLocalClockString(`${virtualClockDate.value}T${virtualClockTime.value}`);
+    }
+
+    function stepVirtualClock(minutes) {
+      const basis = Number.isFinite(virtualClockMs) ? new Date(virtualClockMs) : eventScheduleNow();
+      setVirtualClock(new Date(basis.getTime() + minutes * 60 * 1000));
+    }
+
+	    function resetViewerState() {
+	      if (!window.confirm('Reset viewer to the first view? Local edits and overrides in this browser will be cleared.')) return;
+	      VIEWER_OWNED_STORAGE_KEYS.forEach(removeJsonStore);
+      viewerSessionState = {};
+      savedPresetStates = {};
+      virtualClockMs = null;
+      preferredHotLane = null;
+      activeEventSessionId = null;
+      syncVirtualClockUi();
+      closeAllMapPopups();
+      clearSearchResults();
+      if (searchInput) searchInput.value = '';
+      const highlight = map.getSource('search-highlight');
+      if (highlight) {
+        highlight.setData({ type: 'FeatureCollection', features: [] });
+        setLayerVisibility('search-highlight-line', false);
+        setLayerVisibility('search-highlight-point', false);
+      }
+	      if (calendarBody) {
+	        calendarBody.style.removeProperty('--calendar-body-height');
+	        if (calendarResizeHandle) {
+	          calendarResizeHandle.setAttribute('aria-valuemax', String(calendarResizeMaxHeight()));
+	          calendarResizeHandle.setAttribute('aria-valuenow', String(Math.round(calendarCurrentBodyHeight())));
+	        }
+	      }
+	      if (typeof editorPois !== 'undefined' && Array.isArray(editorPois)) {
+	        editorPois.length = 0;
+	        const editorSource = map.getSource('editor-poi');
+	        if (editorSource) editorSource.setData(editorFeatureCollection());
+	      }
+	      resetFeatureListRuntimeDefaults();
+	      tagToFeature.clear();
+	      resetDefaultPavilionTagRuntime();
+	      rebuildEventScheduleData({ persistVisibility: false });
+	      if (typeof window.lrResetCards === 'function') window.lrResetCards();
+	      setLeftTab('events');
+	      setTerrainEnabled(false);
+	      applyPreset('park', { persistSession: false });
+	      if (typeof goToView === 'function') goToView('park');
+	      if (typeof refreshHotButton === 'function') refreshHotButton();
+	      presetStatus.textContent = 'Park preset active.';
+	    }
+
+    function eventScheduleNow() {
+      if (Number.isFinite(virtualClockMs)) return new Date(virtualClockMs);
       return new Date();
     }
 
@@ -4874,7 +5164,7 @@
     }
 
     function scrollCalendarCurrentRowIntoView() {
-      if (!calendarBody || !calendarDays || calendarCard?.classList.contains('collapsed')) return;
+      if (!calendarBody || !calendarDays) return;
       const target = calendarCurrentItem();
       if (!target) return;
       window.requestAnimationFrame(() => {
@@ -5118,13 +5408,19 @@
       const eventAvailable = hotEventAvailable(decision);
       if (!eventAvailable && !haveHotspots) {
         control.hidden = true;
+        control.dataset.lrWasVisible = '0';
         eventBtn.dataset.hotState = 'empty';
         eventBtn.dataset.targetSessionId = '';
         trailBtn.dataset.hotSelected = 'false';
         return;
       }
 
+      const wasVisible = control.dataset.lrWasVisible === '1';
       control.hidden = false;
+      control.dataset.lrWasVisible = '1';
+      if (!wasVisible && typeof window.lrOpenCard === 'function') {
+        window.lrOpenCard('hot', { auto: true });
+      }
       const selected = selectedHotLane(decision, haveHotspots);
       if (lanes) lanes.dataset.laneCount = haveHotspots ? '2' : '1';
       eventBtn.dataset.hotSelected = selected === 'event' ? 'true' : 'false';
@@ -5243,8 +5539,8 @@
 
     // The unoccluded map slice — container minus any chrome that floats on
     // top (`.left-controls`, `.panel`, `.message`). Returns a viewport rect
-    // in CSS pixels. Computes occlusion live from rects so a collapsed vs.
-    // expanded calendar card is reflected, and so the mobile layout (left
+    // in CSS pixels. Computes occlusion live from rects so a hidden vs.
+    // open calendar drawer is reflected, and so the mobile layout (left
     // strip spans top, right panel docked below) shifts top/bottom occlusion
     // instead of left/right.
     function visibleMapRect() {
@@ -5333,6 +5629,7 @@
       // Schedule link is a navigation: leave the viewer with one popup, not a stack.
       closeAllMapPopups();
       activeEventSessionId = sessionId;
+      persistViewerSessionState({ active_event_session_id: sessionId, active_left_tab: 'events' });
       if (eventScheduleConfig && eventScheduleData) renderEventSchedule(eventScheduleConfig, eventScheduleData);
 
       if (!eventScheduleToggle.checked) {
@@ -5385,6 +5682,12 @@
           .setLngLat(popupCoord)
           .setHTML(sessionPopupHtml(feature.properties))
           .addTo(map);
+        popup.on('close', () => {
+          if (activeEventSessionId !== sessionId) return;
+          activeEventSessionId = null;
+          persistViewerSessionState({ active_event_session_id: null });
+          if (eventScheduleConfig && eventScheduleData) renderEventSchedule(eventScheduleConfig, eventScheduleData);
+        });
         // After the fitBounds/flyTo settles, scroll the popup into the
         // unoccluded slice if narrow-screen chrome is clipping it. Belt-and-
         // braces: a second pan ~1.2 s in catches the case where moveend
@@ -6240,6 +6543,11 @@
           // shared tag would drown the dropdown.
           (props) => props.feature_kind === 'event_anchor' ? [props.location_tag] : null);
         registerFeatureListLayer('eventSchedule', eventScheduleData);
+        if (viewerSessionState?.active_event_session_id
+            && eventSessionById.has(viewerSessionState.active_event_session_id)) {
+          setLeftTab('events');
+          window.setTimeout(() => gotoEventSession(viewerSessionState.active_event_session_id), 300);
+        }
       } else {
         calendarDays.innerHTML = '<li class="calendar-empty">Schedule unavailable.</li>';
       }
@@ -7598,9 +7906,12 @@
         }
       });
 
-      message.textContent = `${publishData.features.length} publish feature${publishData.features.length === 1 ? '' : 's'} loaded.`;
-      applyPreset(activePresetId);
-    });
+	      message.textContent = `${publishData.features.length} publish feature${publishData.features.length === 1 ? '' : 's'} loaded.`;
+	      applyPreset(activePresetId);
+	      if (viewerSessionState?.active_left_tab && viewerSessionState.active_left_tab !== 'events') {
+	        setLeftTab(viewerSessionState.active_left_tab);
+	      }
+	    });
 
     // --- Map search -----------------------------------------------------
     // Searches named features across every loaded layer, flies to the match,
@@ -7813,10 +8124,18 @@
         pulseHighlight();
       }
       searchInput.value = match.name;
+      persistViewerSessionState({ search_query: searchInput.value });
       clearSearchResults();
     }
 
-    searchInput.addEventListener('input', () => { searchActive = -1; renderSearchResults(); });
+    if (viewerSessionState?.search_query) {
+      searchInput.value = String(viewerSessionState.search_query);
+    }
+    searchInput.addEventListener('input', () => {
+      searchActive = -1;
+      persistViewerSessionState({ search_query: searchInput.value });
+      renderSearchResults();
+    });
     searchInput.addEventListener('focus', renderSearchResults);
     searchInput.addEventListener('keydown', (event) => {
       if (event.key === 'ArrowDown') {
@@ -7832,6 +8151,7 @@
         gotoMatch(searchActive >= 0 ? searchActive : 0);
       } else if (event.key === 'Escape') {
         searchInput.value = '';
+        persistViewerSessionState({ search_query: '' });
         clearSearchResults();
         searchInput.blur();
       }
@@ -7865,6 +8185,27 @@
     for (const btn of document.querySelectorAll('[data-section-export]')) {
       btn.addEventListener('click', () => exportSectionToClipboard(btn.dataset.sectionExport));
     }
+
+    syncVirtualClockUi();
+    if (clockUseInputs) clockUseInputs.addEventListener('click', () => {
+      const next = virtualClockFromInputs();
+      if (next) setVirtualClock(next);
+    });
+    if (clockUseNow) clockUseNow.addEventListener('click', () => setVirtualClock(new Date()));
+    if (clockClear) clockClear.addEventListener('click', () => setVirtualClock(null));
+    if (clockMinusDay) clockMinusDay.addEventListener('click', () => stepVirtualClock(-1440));
+    if (clockPlusDay) clockPlusDay.addEventListener('click', () => stepVirtualClock(1440));
+    if (clockMinusHour) clockMinusHour.addEventListener('click', () => stepVirtualClock(-60));
+    if (clockPlusHour) clockPlusHour.addEventListener('click', () => stepVirtualClock(60));
+    if (virtualClockDate) virtualClockDate.addEventListener('change', () => {
+      const next = virtualClockFromInputs();
+      if (next) setVirtualClock(next);
+    });
+    if (virtualClockTime) virtualClockTime.addEventListener('change', () => {
+      const next = virtualClockFromInputs();
+      if (next) setVirtualClock(next);
+    });
+    if (resetViewerStateBtn) resetViewerStateBtn.addEventListener('click', resetViewerState);
 
     // Terrain has its own toggle handler (3D enable/disable, not a layer
     // visibility flip). The landcover-9 opacity is the lone slider that has
@@ -7924,8 +8265,8 @@
     // up — to align with their panel's top in col2. Click is a pure toggle:
     // closed → open, open → closed. Initial state mirrors prior layout
     // (Search + Cal visible, Hot closed because hot-control historically
-    // started hidden). To pop Hot open when data arrives, the existing
-    // hot-control reveal can call window.lrOpenCard('hot').
+    // started hidden). The hot-control reveal opens Hot on first data arrival
+    // unless a saved user-close state says otherwise.
     (function () {
       const LR_CARDS = ['search', 'hot', 'cal'];
       const lrTabs = {
@@ -7942,11 +8283,35 @@
       const lrContentCol = document.getElementById('lrContentCol');
       if (!lrIconCol || !lrContentCol) return;
 
-      const lrOpen = { search: true, hot: false, cal: true };
+      const LR_DEFAULT_OPEN = { search: true, hot: false, cal: true };
+      const lrSavedState = readJsonStore(LEFT_RAIL_DRAWER_KEY, null);
+      let lrHasSavedState = !!(
+        lrSavedState
+        && typeof lrSavedState === 'object'
+        && (lrSavedState.open || LR_CARDS.some((c) => typeof lrSavedState[c] === 'boolean'))
+      );
+      function lrSavedOpen(saved) {
+        const raw = saved && typeof saved === 'object'
+          ? (saved.open && typeof saved.open === 'object' ? saved.open : saved)
+          : {};
+        const open = {};
+        LR_CARDS.forEach((c) => { open[c] = typeof raw[c] === 'boolean' ? raw[c] : LR_DEFAULT_OPEN[c]; });
+        return open;
+      }
+      const lrOpen = lrSavedOpen(lrSavedState);
       const TAB_H = parseInt(
         getComputedStyle(document.documentElement).getPropertyValue('--tab-h'),
         10
       ) || 44;
+
+      function lrPersist() {
+        lrHasSavedState = true;
+        writeJsonStore(LEFT_RAIL_DRAWER_KEY, {
+          schema: 'aop-left-rail-drawer-v1',
+          updated_at: new Date().toISOString(),
+          open: { search: !!lrOpen.search, hot: !!lrOpen.hot, cal: !!lrOpen.cal }
+        });
+      }
 
       function lrRender() {
         const anyOpen = LR_CARDS.some(c => lrOpen[c]);
@@ -7986,12 +8351,33 @@
         lrTabs[c].addEventListener('click', () => {
           lrOpen[c] = !lrOpen[c];
           lrRender();
+          lrPersist();
         });
       });
 
       // Public hooks for code that wants to drive the drawer from outside.
-      window.lrOpenCard  = (c) => { if (LR_CARDS.includes(c)) { lrOpen[c] = true;  lrRender(); } };
-      window.lrCloseCard = (c) => { if (LR_CARDS.includes(c)) { lrOpen[c] = false; lrRender(); } };
+      window.lrOpenCard  = (c, options = {}) => {
+        if (!LR_CARDS.includes(c)) return;
+        if (options.auto && lrHasSavedState && !lrOpen[c]) return;
+        if (!lrOpen[c]) {
+          lrOpen[c] = true;
+          lrRender();
+          if (!options.auto) lrPersist();
+        }
+      };
+      window.lrCloseCard = (c) => {
+        if (!LR_CARDS.includes(c)) return;
+        if (lrOpen[c]) {
+          lrOpen[c] = false;
+          lrRender();
+          lrPersist();
+        }
+      };
+      window.lrResetCards = () => {
+        LR_CARDS.forEach((c) => { lrOpen[c] = !!LR_DEFAULT_OPEN[c]; });
+        lrHasSavedState = false;
+        lrRender();
+      };
 
       lrRender();
     })();

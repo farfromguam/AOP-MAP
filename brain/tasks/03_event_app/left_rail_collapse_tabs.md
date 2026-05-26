@@ -78,6 +78,27 @@ The drawer is two flex columns with independent heights.
   `leftrail_eventflow_*`) did not get carried. Compare page at
   `website/leftrail_compare_v2.html` keeps them available for reference.
 
+2026-05-26 — left context tab + calendar cleanup landed in
+`website/index.html`:
+
+- Events / POI / About tab strip dropped the green background and divider.
+  Inactive tabs now carry a cream fill; active tab carries a rust fill.
+- The event title row is no longer a collapse button. The left-rail Cal icon
+  is the only calendar open/close control.
+- Calendar rows and separators run full width: body side padding and row gaps
+  were removed, and the gates-open ticker no longer draws its own bottom rule.
+- Calendar body gained a bottom drag handle with persisted height
+  (`aop_calendar_height_v1`).
+- Closing a map popup opened from a calendar row clears that row's active
+  calendar state.
+- The Hot tab now opens automatically when hot data first appears, unless a
+  saved user-close state exists. Drawer card state persists in
+  `aop_left_rail_drawer_v1`.
+- The search input regained its inline magnifier SVG (`.search-icon`) so the
+  B2 verifier surface is back in sync with the UI.
+- Dedicated verifier added:
+  `mvp/scripts/playwright_verify_left_rail_drawer.py`.
+
 The v1–v10 design-round mockups were retired 2026-05-25 after the drawer
 shipped. The artifact stack went through two further rounds:
 
@@ -227,11 +248,12 @@ JS — self-contained IIFE appended to the existing inline script:
 
 - Reads `--tab-h` from CSS once at startup. If `:root` changes `--tab-h`
   at runtime the cached value won't follow without a reload.
-- Tracks `lrOpen = { search, hot, cal }` and runs the float-down margin
+- Reads / writes `aop_left_rail_drawer_v1` and runs the float-down margin
   loop on each render.
-- Exposes `window.lrOpenCard(c)` and `window.lrCloseCard(c)` so external
-  code (e.g., the hot-control reveal logic) can drive the drawer.
-  **Not wired yet** — see Still Open.
+- Exposes `window.lrOpenCard(c, { auto })` and `window.lrCloseCard(c)` so
+  external code can drive the drawer. The hot-control reveal path calls
+  `window.lrOpenCard('hot', { auto: true })`; auto-open respects a saved
+  user-close state.
 
 ## Verification
 
@@ -250,21 +272,20 @@ Playwright smoke (inline, `http://localhost:8001/index.html`):
 
 Session-only screenshots at `/tmp/lr_initial.png`, `/tmp/lr_hot_open.png`.
 
+Dedicated verifier added 2026-05-26:
+
+```text
+python3 mvp/scripts/playwright_verify_left_rail_drawer.py
+```
+
+It covers hot-data auto-open, saved user-close suppression, drawer persistence,
+canonical tab ordering, Cal icon float-down, and all-closed standalone state.
+
 ## Still open
 
-- **Wire Hot tab to hot-control data arrival.** The existing logic that
-  removes `hidden` from `#hotControl` when an event becomes live does NOT
-  open the Hot tab. Add a call to `window.lrOpenCard('hot')` in that code
-  path so users see hot updates without manually clicking the icon.
 - **Mobile (≤760px).** Drawer fills the wider mobile rail without changes,
   but the visual treatment has not been audited. Likely needs the
   full-width override and possibly a smaller `--tab-h` on tiny screens.
-- **Persistence.** Each card's open/closed state could persist via
-  localStorage (one key per card; mirrors `aop_calendar_collapsed_v1`).
-  Not implemented this pass.
-- **Dedicated verifier.** No `playwright_verify_left_rail_drawer.py` yet.
-  The smoke test was inline. A standalone verifier should cover the L
-  shape, the float-down rule, and the all-closed standalone state.
 - **Old `.left-tab` collision.** The real-app `.left-tab` (Events / POI /
   About inside `#calendarCard`) and the mockup's same-named class for
   calendar inner tabs collide name-wise but don't share a parent. Confirm

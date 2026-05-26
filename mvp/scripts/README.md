@@ -148,6 +148,27 @@ Serve the viewer, then run:
 python3 mvp/scripts/playwright_verify_event_schedule.py
 ```
 
+## Left-rail drawer verification
+
+The left rail wraps Search, Hot now, and the Events / POI / About context card
+in a two-column drawer. The focused verifier covers hot-data auto-open,
+drawer persistence, icon float-down, and the all-closed standalone state:
+
+```
+python3 mvp/scripts/playwright_verify_left_rail_drawer.py
+```
+
+## Viewer session tools verification
+
+The right-panel Session tools cover the virtual clock, reset-to-new-user flow,
+and pocket-map reload state. The focused verifier clears viewer-owned
+localStorage, sets and steps the clock, checks saved preset/tab/search/event
+state across reloads, and verifies Reset viewer returns to first-run defaults:
+
+```
+python3 mvp/scripts/playwright_verify_session_tools.py
+```
+
 ## import_geojson helper
 
 The ad-hoc ingest path for one-off GeoJSON files that do not yet have a

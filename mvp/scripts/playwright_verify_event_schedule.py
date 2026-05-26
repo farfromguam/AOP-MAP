@@ -69,14 +69,17 @@ def schedule_data(page) -> dict:
 
 
 def reset_tag_storage(page) -> None:
-    """Clear tag store + seed flag + calendar-collapse so a re-run starts
+    """Clear tag store + seed flag + calendar height so a re-run starts
     from the same first-load state as a fresh user."""
     page.evaluate(
         """() => {
           try {
             localStorage.removeItem('aop_feature_tags_v1');
             localStorage.removeItem('aop_feature_tags_seeded_v1');
-            localStorage.removeItem('aop_calendar_collapsed_v1');
+            localStorage.removeItem('aop_calendar_height_v1');
+            localStorage.removeItem('aop_left_rail_drawer_v1');
+            localStorage.removeItem('aop_virtual_clock_v1');
+            localStorage.removeItem('aop_viewer_session_state_v1');
             localStorage.removeItem('aop_feature_visibility_v1');
           } catch (_) {}
         }"""
@@ -145,9 +148,8 @@ def main() -> int:
 
         print(f"Opening {WEBSITE_URL}")
         page.goto(WEBSITE_URL, wait_until="load")
-        # Sprint 02 B4 added localStorage-backed calendar collapse state and
-        # Bucket D added the feature tag store + seed flag. Clear all of them
-        # so the auto-collapse default + the pavilion-seed default are
+        # Calendar height and the feature tag store persist in localStorage.
+        # Clear them so default sizing + the pavilion-seed default are
         # observable from a known initial state across local re-runs.
         reset_tag_storage(page)
         page.reload(wait_until="load")
@@ -205,6 +207,12 @@ def main() -> int:
         popup_text = " | ".join(page.locator(".maplibregl-popup").all_inner_texts())
         check("popup shows session and tag", "G6 Cove Rally stages" in popup_text and "#observed-trailhead" in popup_text, popup_text)
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["jump"]))
+        page.locator(".maplibregl-popup-close-button").click()
+        page.wait_for_timeout(250)
+        check(
+            "closing popup clears clicked row active state",
+            not page.locator('[data-session-id="sat-g6-cove-rally"]').evaluate("el => el.classList.contains('active')"),
+        )
 
         print("\n== Toggle OFF ==")
         set_toggle(page, "showEventSchedule", False)
@@ -319,7 +327,7 @@ def main() -> int:
             check("icon is vertically inside the input", icon_geom["inside_input_bounds"], str(icon_geom))
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["calendar_search_icon"]), clip={"x": 0, "y": 0, "width": 360, "height": 60})
 
-        print("\n== Calendar collapse: time labels (B4) ==")
+        print("\n== Calendar time labels ==")
         # User dump line "calendar needs time": confirm every row that has a
         # time_label in JSON also has visible text in .calendar-time. The
         # existing rendered-text check (~line 130) already proves a couple
@@ -339,11 +347,9 @@ def main() -> int:
             str(time_count),
         )
 
-        print("\n== Calendar collapse: narrow viewport default (B4) ==")
-        # Stale localStorage from the previous narrow pass would mask the
-        # auto-collapse default. Clear it before reloading at 420×740.
+        print("\n== Calendar title + resize handle ==")
         page.evaluate(
-            "() => { try { localStorage.removeItem('aop_calendar_collapsed_v1'); } catch (_) {} }"
+            "() => { try { localStorage.removeItem('aop_calendar_height_v1'); } catch (_) {} }"
         )
         page.set_viewport_size({"width": 420, "height": 740})
         page.goto(WEBSITE_URL, wait_until="load")
@@ -352,38 +358,64 @@ def main() -> int:
         narrow_default = page.evaluate(
             """() => ({
               has_collapsed: document.getElementById('calendarCard').classList.contains('collapsed'),
-              aria_expanded: document.getElementById('calendarToggle').getAttribute('aria-expanded'),
-              stored: localStorage.getItem('aop_calendar_collapsed_v1')
+              title_tag: document.getElementById('calendarToggle').tagName,
+              has_chevron: !!document.getElementById('calendarChevron'),
+              handle_count: document.querySelectorAll('#calendarResizeHandle').length,
+              body_height: document.getElementById('calendarBody').getBoundingClientRect().height,
+              stored: localStorage.getItem('aop_calendar_height_v1')
             })"""
         )
-        check("calendar starts collapsed on narrow viewport", narrow_default.get("has_collapsed") is True, str(narrow_default))
-        check("calendar aria-expanded reflects collapsed", narrow_default.get("aria_expanded") == "false", str(narrow_default))
-        check("auto-collapse does not persist by itself", narrow_default.get("stored") is None, str(narrow_default))
+        check("calendar no longer auto-collapses on narrow viewport", narrow_default.get("has_collapsed") is False, str(narrow_default))
+        check("calendar title row is static, not a button", narrow_default.get("title_tag") == "DIV", str(narrow_default))
+        check("calendar header chevron is removed", narrow_default.get("has_chevron") is False, str(narrow_default))
+        check("calendar resize handle exists", narrow_default.get("handle_count") == 1, str(narrow_default))
+        check("calendar height does not persist by itself", narrow_default.get("stored") is None, str(narrow_default))
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["calendar_narrow_default"]))
 
-        print("\n== Calendar collapse: manual expand persists (B4) ==")
+        print("\n== Calendar resize persists ==")
+        before_click_height = page.locator("#calendarBody").bounding_box()["height"]
         page.locator("#calendarToggle").click()
         page.wait_for_timeout(200)
-        after_expand = page.evaluate(
+        after_title_click_height = page.locator("#calendarBody").bounding_box()["height"]
+        check(
+            "title click does not collapse calendar",
+            abs(after_title_click_height - before_click_height) < 2
+            and not page.locator("#calendarCard").evaluate("el => el.classList.contains('collapsed')"),
+            f"before={before_click_height:.1f} after={after_title_click_height:.1f}",
+        )
+        handle_box = page.locator("#calendarResizeHandle").bounding_box()
+        page.mouse.move(handle_box["x"] + handle_box["width"] / 2, handle_box["y"] + handle_box["height"] / 2)
+        page.mouse.down()
+        page.mouse.move(handle_box["x"] + handle_box["width"] / 2, handle_box["y"] + handle_box["height"] / 2 + 80)
+        page.mouse.up()
+        page.wait_for_timeout(200)
+        after_drag = page.evaluate(
             """() => ({
-              has_collapsed: document.getElementById('calendarCard').classList.contains('collapsed'),
-              stored: localStorage.getItem('aop_calendar_collapsed_v1')
+              height: document.getElementById('calendarBody').getBoundingClientRect().height,
+              stored: Number(localStorage.getItem('aop_calendar_height_v1')),
+              aria_now: Number(document.getElementById('calendarResizeHandle').getAttribute('aria-valuenow'))
             })"""
         )
-        check("manual expand opens the card", after_expand.get("has_collapsed") is False, str(after_expand))
-        check("manual expand persists to localStorage", after_expand.get("stored") == "0", str(after_expand))
+        check("dragging handle expands calendar", after_drag.get("height", 0) > before_click_height + 40, str(after_drag))
+        check("calendar resize persists to localStorage", after_drag.get("stored") == after_drag.get("aria_now"), str(after_drag))
         page.reload(wait_until="load")
         page.evaluate("window.map = map;")
+        page.wait_for_function(
+            "() => document.querySelectorAll('#calendarDays .calendar-row').length === 12",
+            timeout=15_000,
+        )
         page.wait_for_timeout(500)
         post_reload = page.evaluate(
-            "() => document.getElementById('calendarCard').classList.contains('collapsed')"
+            """() => ({
+              height: document.getElementById('calendarBody').getBoundingClientRect().height,
+              stored: Number(localStorage.getItem('aop_calendar_height_v1'))
+            })"""
         )
-        check("user-expanded calendar survives reload on narrow", post_reload is False, str(post_reload))
+        check("resized calendar height survives reload", abs(post_reload.get("height", 0) - post_reload.get("stored", 0)) < 2, str(post_reload))
 
-        print("\n== Calendar collapse: wide viewport default (B4) ==")
-        # Clear localStorage so the wide-viewport default is observable.
+        print("\n== Calendar wide viewport default ==")
         page.evaluate(
-            "() => { try { localStorage.removeItem('aop_calendar_collapsed_v1'); } catch (_) {} }"
+            "() => { try { localStorage.removeItem('aop_calendar_height_v1'); } catch (_) {} }"
         )
         page.set_viewport_size({"width": 1280, "height": 820})
         page.goto(WEBSITE_URL, wait_until="load")
@@ -391,11 +423,11 @@ def main() -> int:
         wide_default = page.evaluate(
             """() => ({
               has_collapsed: document.getElementById('calendarCard').classList.contains('collapsed'),
-              stored: localStorage.getItem('aop_calendar_collapsed_v1')
+              stored: localStorage.getItem('aop_calendar_height_v1')
             })"""
         )
         check("calendar starts expanded on wide viewport", wide_default.get("has_collapsed") is False, str(wide_default))
-        check("auto-expand does not persist by itself", wide_default.get("stored") is None, str(wide_default))
+        check("default height does not persist by itself", wide_default.get("stored") is None, str(wide_default))
 
         print("\n== Calendar current-row scroll (Sprint 03 Lane 2) ==")
         page.goto(WEBSITE_URL + "?clock=2026-05-24T10:30", wait_until="load")

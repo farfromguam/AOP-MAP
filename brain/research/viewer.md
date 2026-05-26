@@ -195,26 +195,46 @@ activity-hotspots layer and fits the hotspot target, so trail-first users do not
 have to wait for the schedule to be empty. Card:
 `tasks/02_edit/hot_control_two_lane.md`.
 
-The bottom of the left stack is `#calendarCard`, a tabbed context card. The
-default `Events` tab contains the collapsible event calendar body, which opens
-by default on wide screens and renders the
-proposed session rows from
-`website/data/aop_event_schedule.json`. The JSON is intentionally schedule-first:
-rows carry `date_label`, `time_label`, `title`, and a `location_tag` such as
-`#pavilion` or `#registration`; coordinates live once under `locations`. The
-viewer resolves those tags into transient MapLibre features at load time. Row
-selection turns on the default-off `Event schedule POIs` overlay, moves the
-camera to the row's point/route, and opens a session popup. The header button
-(`#calendarToggle`) collapses the schedule into the title row with
-`aria-expanded` tracking the state.
+The bottom of the left stack is a two-column left-rail drawer wrapping Search,
+Hot now, and `#calendarCard`. The 44 px icon column opens/closes each card; the
+content column stacks open cards from the top. Drawer state persists in
+`aop_left_rail_drawer_v1`. The Hot card auto-opens when hot data first arrives
+unless a saved user-close state says otherwise. Dedicated verification:
+`mvp/scripts/playwright_verify_left_rail_drawer.py`.
 
-The `Park` tab gives source-cautious park context: AOP is private land in South
-Pittsburg, Tennessee, and this viewer is a scale RC trail-trucking / rock
-crawling map, not a full-size OHV trail map. The `About` tab describes the map
-project posture: trustworthy source-backed map first, observations before
-publication, and public submissions deferred to the later moderated app loop.
-Both info tabs share the same card footprint as the calendar so mobile keeps one
-left-side context surface instead of another drawer.
+The right panel has a `Session tools` section for staff/test operations. It
+drives a virtual event clock with date/time inputs plus `-1d`, `+1d`, `-1h`,
+`+1h`, `Set`, `Now`, and `Clear` controls. The clock uses the same path as the
+`?clock=YYYY-MM-DDTHH:MM` fixture and persists in `aop_virtual_clock_v1`; while
+active the UI labels itself as a test clock. `Reset viewer` clears viewer-owned
+localStorage (`aop_viewer_session_state_v1`, the virtual clock, left drawer,
+calendar height, preset/settings overrides, feature visibility/tags, editor POIs,
+visitor context overrides, and brand-logo overrides), closes transient popups and
+highlights, and reapplies the first-run Park preset, default view, default tab,
+and default drawer state.
+
+Pocket-map reload state lives in `aop_viewer_session_state_v1`. It records the
+active layer preset, active left context tab, search query, and selected event
+session; drawer open/closed state and calendar body height stay in their existing
+surface-specific keys. Landmark navigation remains a POI/search concern, not a
+third Hot lane. Card: `tasks/03_event_app/viewer_session_state_test_clock.md`.
+Dedicated verification: `mvp/scripts/playwright_verify_session_tools.py`.
+
+`#calendarCard` is a tabbed context card. The default `Events` tab renders
+session rows from `website/data/aop_event_schedule.json`. The JSON is
+intentionally schedule-first: rows carry `date_label`, `time_label`, `title`,
+and a `location_tag` such as `#pavilion` or `#registration`; coordinates live
+once under `locations`. The viewer resolves those tags into transient MapLibre
+features at load time. Row selection turns on the default-off `Event schedule
+POIs` overlay, moves the camera to the row's point/route, and opens a session
+popup. The event title row (`#calendarToggle`) is now static; the drawer's Cal
+icon owns open/close. The calendar body has a bottom resize handle
+(`#calendarResizeHandle`) and persists height in `aop_calendar_height_v1`.
+
+The `About` tab now carries the merged event and map-project context:
+Rock Warblers Trail Blazing Invitational posture, AOP as private scale-RC land,
+and the source-backed validation-loop promise. Public submissions are still
+deferred to the later moderated app loop.
 
 The third tab is `POI` (shipped 2026-05-25, card
 `tasks/03_event_app/left_panel_poi_browser.md`). It renders a grouped,
@@ -239,8 +259,10 @@ backs the group (`#showEventSchedule`, `#showBuildings`, `#showTrails`,
 `#showCemeteries`, `#showVisitorContext`, `#showEditorPois`), so flipping
 visibility from any surface stays in sync.
 
-Verification: `mvp/scripts/playwright_verify_presets.py` and
-`mvp/scripts/playwright_verify_event_schedule.py`.
+Verification: `mvp/scripts/playwright_verify_presets.py`,
+`mvp/scripts/playwright_verify_event_schedule.py`,
+`mvp/scripts/playwright_verify_left_rail_drawer.py`, and
+`mvp/scripts/playwright_verify_session_tools.py`.
 
 ### Feature search
 
