@@ -166,8 +166,22 @@ shape itself landed.
       `mvp/scripts/playwright_verify_event_schedule.py:866` updated to the
       new title. Two-lane card `_done/hot_control_two_lane.md` copy block
       now records the rename.
-- [ ] **Switch the heatmap-fallback target from top-K bbox to a densest-cluster
-      polygon.** Review card's call.
+- [x] **Switch the heatmap-fallback target from top-K bbox to a densest-cluster
+      polygon.** Shipped 2026-05-26. `findDensestHotspotBbox(topK=3)` retired;
+      replaced by `findDensestHotspotCluster(radiusM=260)` at
+      `website/index.html:5320-5366`. New behavior: seed at the
+      highest-`intensity_norm` polygon (rank 1), grow a cluster outward by
+      centroid distance ≤ 260 m, fit to that cluster's bbox. On the current
+      hotspot file the new bbox spans ~255 m × 225 m vs the old top-3 corridor
+      of ~390 m × 855 m — fitBounds with `maxZoom: 16.2` now lands at zoom
+      16.2 over the southern rank-1 cluster instead of zoom ~14 over a
+      corridor spanning both the southern and northern peaks. Verifier
+      `playwright_verify_event_schedule.py:1083-1107` asserts both the
+      bounded-zoom landing (`z >= 15`) and the cluster-centered camera
+      (`|center - rank-1| < 0.0015°/0.002°`). Both assertions PASS at
+      `z=16.2`, `center=(-85.747548, 35.091402)`. Closes
+      `_done/hot_button_heatmap_review.md` "Replace top-K bbox with true
+      cluster targeting" follow-up.
 - [x] **Regenerate the first-party hotspot GeoJSON from the current builder**
       and confirm source metadata is intact. `../02_edit/_done/hot_button_heatmap_review.md`
       flagged this and it was not addressed in the two-lane ship.
@@ -200,14 +214,20 @@ shape itself landed.
 
 ### E. localStorage architecture
 
-- [ ] **Add a "Reset local overrides" affordance.** Eight `aop_*_v1` keys
-      (`CALENDAR_COLLAPSE`, `VISITOR_CONTEXT_OVERRIDE`, `FEATURE_VISIBILITY`,
-      `FEATURE_TAG`, `FEATURE_TAG_SEEDED`, `BRAND_LOGOS_OVERRIDES`,
-      `POI_STORAGE`, `VIEWER_PRESET`) plus the v1->v2 preset bundle. The seed
-      flag (`FEATURE_TAG_SEEDED_KEY`) is a trap door: drop coordinates from the
-      schedule JSON expecting the binding to take over, but a user reload with
-      the seed flag set silently does the lifting. A clear reset surface fixes
-      the support story.
+- [x] **Add a "Reset local overrides" affordance.** Shipped 2026-05-26 via
+      `viewer_session_state_test_clock.md`. The right-panel `Session tools`
+      section carries a `Reset viewer` button that walks
+      `VIEWER_OWNED_STORAGE_KEYS` (`website/index.html:882-895`) and clears all
+      twelve viewer-owned keys: `aop_calendar_height_v1`,
+      `aop_calendar_collapsed_v1`, `aop_visitor_context_overrides_v1`,
+      `aop_brand_logos_overrides_v1`, `aop_feature_visibility_v1`,
+      `aop_feature_tags_v1`, `aop_feature_tags_seeded_v1`,
+      `aop_editor_pois_v1`, `aop_viewer_preset_settings_v1`,
+      `aop_left_rail_drawer_v1`, `aop_virtual_clock_v1`,
+      `aop_viewer_session_state_v1`. Includes a `confirm()` prompt and resets
+      the visible viewer to Park / default camera / default left tab / default
+      drawer in the same handler. Closes the seed-flag trap door named in the
+      original critique.
 - [ ] **Migration story for `_v1` -> `_v2` keys.** v1->v2 preset bundle is
       mentioned in `_done/poi_editor_v2.md` but the migration path on next
       bump is undocumented. Write a short rule (one direction: bump key, drop

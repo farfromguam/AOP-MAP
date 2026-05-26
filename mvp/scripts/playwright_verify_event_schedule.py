@@ -1069,16 +1069,36 @@ def main() -> int:
         check("no session target in empty-schedule state", snap.get("targetSessionId") == "", str(snap))
 
         # Click in Trails should toggle activity hotspots on and fit to the
-        # hotspot target.
+        # densest-cluster target, not a top-K bbox spanning the whole hotspot
+        # corridor. After the click the camera should land tightly on the
+        # rank-1 cluster (zoom near maxZoom) and be centered near the southern
+        # cluster centroid, not the corridor midpoint.
         before_check = page.evaluate("() => document.getElementById('showActivityHotspots').checked")
+        # Wait for the fitBounds animation (duration: 1000ms) to settle.
+        page.evaluate("() => map.jumpTo({ center: map.getCenter(), zoom: 12 })")
         page.locator("#hotTrailButton").click()
-        page.wait_for_timeout(1300)
+        page.wait_for_timeout(1500)
         after_check = page.evaluate("() => document.getElementById('showActivityHotspots').checked")
         hotspots_vis = layer_visibility(page, "activity-hotspots-fill")
         check("empty-schedule Trails click turns activity-hotspots toggle on",
               before_check is False and after_check is True, f"before={before_check} after={after_check}")
         check("activity-hotspots layer becomes visible after fallback click",
               hotspots_vis == "visible", f"visibility={hotspots_vis}")
+        camera = page.evaluate(
+            "() => { const c = map.getCenter(); return { lng: c.lng, lat: c.lat, zoom: map.getZoom() }; }"
+        )
+        # Old top-K=3 bbox spanned ~390m × 855m → zoom ~14.5. The cluster
+        # target spans ~255m × 225m → zoom ≥15.5 after fitBounds(maxZoom=16.2).
+        check("fallback click zooms tight to the cluster (z >= 15)",
+              camera["zoom"] >= 15.0, f"zoom={camera['zoom']}")
+        # Cluster bbox center sits near (-85.7478, 35.0913); old corridor
+        # center sat near (-85.7460, 35.0942). Tolerance is wide enough to
+        # absorb future cluster-data drift but narrow enough to fail on the
+        # old top-K target.
+        check("fallback click centers on the rank-1 cluster, not the corridor",
+              abs(camera["lng"] - (-85.7478)) < 0.0015
+              and abs(camera["lat"] - 35.0913) < 0.0020,
+              f"center=({camera['lng']:.6f}, {camera['lat']:.6f})")
 
         print("\n== Console summary ==")
         check("no console errors", len(console_errors) == 0, f"{len(console_errors)} error(s): {console_errors[:3]}")
