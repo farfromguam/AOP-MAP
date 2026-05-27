@@ -43,6 +43,11 @@ readability, or verifier coverage, land it.
 - [ ] Assert each exportable section header carries `⧉`, and the panel header carries global `⧉ Export all`.
 - [ ] Decide whether `Layer notes` deserves a section export action. Current leaning: no, because it is prose/tooling, not layer state.
 - [ ] Consider a "next up" marker in the event-schedule feature list once real event CRUD exists.
+- [ ] **S3 review 2026-05-27 — collapsed panel swallows feature-click reveal.** `revealFeatureInPanel` at `website/index.html:3226` opens the containing section, expands the editor row, and scrolls into view, but if the user has the panel collapsed (`panelCollapsed === true`, toggle at `:1111`) all that work happens behind a closed panel. Affects every map-click → panel reveal path: buildings, cemeteries, visitor-context, brand-logos, and the new S3 drawn-POI map-click → inline-accordion editor (`bindEditorClick` at `:8424`). The S3 inline-editor card promises "Map-click on a drawn POI opens the panel editor" — collapsed-panel silently breaks that promise. Design call: either auto-expand the panel inside `revealFeatureInPanel` (one-liner `if (panelCollapsed) togglePanel();`) or surface a chrome hint that an off-screen edit landed. Auto-expand is the smaller change but takes panel-open control away from a user who intentionally collapsed it.
+
+## Left Rail (S3 review 2026-05-27)
+
+- [ ] **`lrOpenCard({ auto: true })` suppression is too broad.** Gate at `website/index.html:8967-8975` is `options.auto && lrHasSavedState && !lrOpen[c]`. `lrHasSavedState` flips true on the **first** drawer click of any card, not just on a user-close of the target card. Scenario: fresh viewer, no saved state → user opens search by clicking → save fires → later hot data arrives → `lrOpenCard('hot', { auto: true })` suppresses because `lrHasSavedState`, so the Hot tab never auto-opens even though the user never closed it. The `left_rail_collapse_tabs.md` card describes the intent as "auto-open respects a saved user-close state" — the implementation is "any saved state suppresses auto-open." Verifier `playwright_verify_left_rail_drawer.py:153-174` covers the user-close-hot path but not the user-opens-search-then-hot-arrives path. Fix needs per-card user-close tracking (e.g. a `lrUserClosed[c]` map) so search interaction doesn't silence hot auto-open.
 
 ## Code Health
 
@@ -50,6 +55,8 @@ readability, or verifier coverage, land it.
 - [ ] Tokenize the four remaining repeated hex literals only when the role names are clear: `#d8d0bd`, `#bbb`, `#f7f1e2`, `#fff8e8`.
 - [ ] Extend the presets verifier to cover the five new trace-preset label-halo overrides if the verifier is touched again.
 - [ ] Decide whether named-feature-tagging camera tolerance should tighten from `5e-4` degrees once data densifies.
+- [ ] **S3 review 2026-05-27 — normalize tab/space indentation drift in inline script.** 90 lines start with a literal `\t` (one tab) while the surrounding file uses 4-space indent. Concentrated in S3-shipped blocks: `resetDefaultPavilionTagRuntime` (`website/index.html:2995-3011`), `resetFeatureListRuntimeDefaults` (`:3013-3024`), `refreshFeatureListData` (`:3295-3303`), `BUILT_IN_PRESETS` opening/closing (`:3949`, `:4220`), `rebuildEventScheduleData` partial (`:5342-5365`), `resetViewerState` partial (`:5471-5518`), and the boot block at `:8493-8498`. Behavior-identical; the cleanup keeps future diffs reviewable. Stand-alone bite — don't ride along with semantic changes in the same regions.
+- [ ] **S3 review 2026-05-27 — `registerFeatureListLayer` → `rebuildEventScheduleData` → `refreshFeatureListData` double-work.** First registration of `eventSchedule` runs `applyFeatureListFilters` + `persistFeatureVisibility` inside `registerFeatureListLayer` (`:3347-3348`), then `rebuildEventScheduleData` (`:3355`) immediately calls `refreshFeatureListData` (`:5363`) which rebuilds state + filters again. Same on every subsequent register pass for any layer that triggers a tag rebind. Wasteful but not broken; document or guard if perf shows up on the profiler.
 
 ## Mockup Cleanup
 
