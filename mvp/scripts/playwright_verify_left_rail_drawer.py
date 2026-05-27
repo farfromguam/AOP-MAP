@@ -11,7 +11,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from playwright_base import WEBSITE_URL
+from playwright_base import viewer_url
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -101,8 +101,8 @@ def main() -> int:
 
         page.on("console", record_console)
 
-        print(f"Opening {WEBSITE_URL}")
-        page.goto(WEBSITE_URL, wait_until="load")
+        print(f"Opening {viewer_url()}")
+        page.goto(viewer_url(), wait_until="load")
         page.evaluate(
             """() => {
               try {

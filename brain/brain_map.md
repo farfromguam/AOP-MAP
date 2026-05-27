@@ -46,9 +46,15 @@ brain/
 
 `research/viewer.md` is the catalog for the static MapLibre viewer (`website/index.html`): every layer, where its data comes from, and which doc records how it was built. Read it before adding or changing a viewer layer.
 
-`spinup/mvp_runbook.md` is the durable local MVP runbook. Use it for CWC checks, Docker/PostGIS startup, QGIS connection settings, port collisions, publish export checks, and viewer spinup.
+`spinup/mvp_runbook.md` is the durable local MVP runbook. Use it for CWC checks, Docker/PostGIS startup, QGIS connection settings, port collisions, publish export checks, and viewer spinup. `spinup/add_image_to_viewer.md` is the runbook for putting a new raster icon on the map; `spinup/viewer_storage_migration.md` is the forward-only rule for bumping `aop_*_v1` localStorage keys and `aop-*-v1` bundle schemas.
 
-`tasks/03_event_app/viewer_polish_carryover.md` is the Sprint 02 carryover router. Lanes 1–5 shipped, Lane 6 now lives at `tasks/03_event_app/code_health_pass_4.md`, and Lane 7 stays on `tasks/01_mvp/_done/community_trails_import.md`. `tasks/03_event_app/full_loop_crud_upload_audit.md` is the parallel Sprint 03 thrust, with `tasks/03_event_app/dev_db_snapshot_reseed.md` carrying the dev DB dump/reseed need. `tasks/01_mvp/_done/aop_south_pittsburg_map_build_card.md` is the closed Sprint 01 build card, kept as the historical promise. Cards are direction, not gospel; update them as the map learns.
+Sprint 03 is closed. Its reviewed cards live in `tasks/03_event_app/_done/`,
+with `tasks/03_event_app/misc_3.md` left active by request. Sprint 04 starts at
+`tasks/04_event_app/_readme.md`; it carries the extracted app-loop,
+dev-reseed, content-audit, data-integrity, viewer-polish, POI-editor, brand,
+and Park-icon work. `tasks/01_mvp/_done/aop_south_pittsburg_map_build_card.md`
+is the closed Sprint 01 build card, kept as the historical promise. Cards are
+direction, not gospel; update them as the map learns.
 
 `voice/voice_guide.md` and `voice/style_guide.md` govern docs.
 

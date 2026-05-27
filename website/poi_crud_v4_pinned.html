@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POI CRUD — V4 pinned editor card</title>
+  <style>
+    :root {
+      --brown-ink: #2e2418;
+      --brown-mid: #4e4128;
+      --brown-dark: #2a1f12;
+      --brown-soft: #6a5638;
+      --cream-hover: #efe2c6;
+      --cream-surface: #faf6eb;
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --control-border: #b9aa88;
+      --moss: #5f7157;
+      --moss-dark: #384833;
+      --moss-soft: #e3ebdc;
+      --rust: #a85020;
+      --rust-soft: #f1d8c6;
+    }
+    * { box-sizing: border-box; }
+    body, html { margin: 0; height: 100%; font: 14px/1.45 Inter, system-ui, sans-serif; color: var(--brown-ink); }
+    .map { position: fixed; inset: 0; background:
+      radial-gradient(circle at 30% 30%, #c9d6b7, transparent 60%),
+      radial-gradient(circle at 70% 70%, #b9c2a0, transparent 55%),
+      linear-gradient(135deg, #9eab8a, #7e8b6a); }
+    .map::after { content: ""; position: absolute; inset: 0; background-image:
+      linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 60px 60px; }
+    .variant-label { position: fixed; top: 16px; left: 16px; z-index: 5;
+      background: var(--moss-dark); color: #f7f1e2; padding: 6px 14px; border-radius: 6px;
+      font: 700 0.78rem Inter, system-ui, sans-serif; letter-spacing: 0.05em; text-transform: uppercase;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
+    .variant-label small { display: block; font: 400 0.74rem Inter, system-ui, sans-serif;
+      text-transform: none; letter-spacing: 0; color: rgba(247,241,226,0.78); margin-top: 2px; }
+
+    .panel { position: fixed; right: 12px; bottom: 12px; width: 380px;
+      max-height: calc(100vh - 24px); background: rgba(255,255,255,0.94);
+      padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15);
+      display: flex; flex-direction: column; overflow: hidden; }
+    .panel-header { display: flex; align-items: center; gap: 8px; }
+    .panel-header h1 { margin: 0; flex: 1; font-size: 1rem; }
+    .panel-export, .panel-collapse { background: #fff8e8; border: 1px solid #d8d0bd;
+      border-radius: 6px; width: 28px; height: 24px; color: var(--brown-mid); cursor: pointer; }
+
+    .panel-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+    .panel-section { border-top: 1px solid #d8d0bd; padding-top: 8px; margin-top: 10px;
+      display: flex; flex-direction: column; min-height: 0; }
+    .section-header { display: grid; grid-template-columns: 1fr auto auto; align-items: center;
+      gap: 4px; margin-bottom: 8px; }
+    .section-label { font-weight: 700; font-size: 0.78rem; text-transform: uppercase;
+      letter-spacing: 0.04em; }
+    .section-action, .section-toggle { background: #fff8e8; border: 1px solid #d8d0bd;
+      border-radius: 6px; color: var(--brown-mid); cursor: pointer; }
+    .section-action { padding: 1px 6px; font: 700 0.72rem Inter, system-ui, sans-serif; }
+    .section-toggle { width: 28px; height: 24px; }
+
+    .create-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+    .create-row button { padding: 7px 4px; font: 700 0.82rem Inter, system-ui, sans-serif;
+      border: 1px solid var(--control-border); background: #fff8e8; color: var(--brown-ink);
+      border-radius: 6px; cursor: pointer; }
+    .create-row button .kind { display: block; font: 400 0.7rem Inter, system-ui, sans-serif;
+      color: var(--brown-soft); margin-top: 2px; }
+    .category-row { display: flex; gap: 6px; align-items: center; margin-bottom: 10px;
+      font-size: 0.8rem; color: var(--brown-soft); }
+    .category-row select { flex: 1; font: inherit; padding: 4px 6px;
+      border: 1px solid var(--control-border); border-radius: 5px; background: var(--control-bg); }
+
+    /* Tree — scrollable region above the pinned editor. */
+    .tree-region { flex: 1; min-height: 120px; overflow-y: auto;
+      border: 1px solid var(--cream-border); border-radius: 8px; padding: 8px;
+      background: rgba(247,241,226,0.4); }
+    .tree-heading { display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 0.82rem; margin: 0 0 6px; }
+    .tree-heading .count { color: var(--brown-soft); font-weight: 400; }
+
+    .kind-group { margin: 0 0 4px; }
+    .kind-head { display: grid; grid-template-columns: 22px 1fr auto; gap: 6px;
+      align-items: center; padding: 3px 4px; border-radius: 5px;
+      background: rgba(255, 250, 232, 0.7); font-size: 0.84rem; cursor: pointer; }
+    .kind-head .chev { width: 22px; height: 22px; display: grid; place-items: center;
+      color: var(--brown-mid); }
+    .kind-head .label { font-weight: 600; }
+    .kind-head .label .kind-glyph { color: var(--brown-soft); margin-right: 4px; }
+    .kind-head .count { color: var(--brown-soft); font-size: 0.74rem; }
+    .kind-rows { display: grid; gap: 2px; padding: 4px 0 6px 24px; }
+    .kind-group.collapsed .kind-rows { display: none; }
+    .kind-group.collapsed .kind-head .chev { transform: rotate(-90deg); }
+
+    .leaf { display: grid; grid-template-columns: 18px 22px minmax(0, 1fr) auto;
+      gap: 6px; align-items: center; padding: 3px 5px; border-radius: 5px;
+      font-size: 0.82rem; cursor: pointer; }
+    .leaf:hover { background: rgba(247,235,200,0.6); }
+    .leaf.selected { background: #f6edda; box-shadow: inset 3px 0 0 0 var(--rust); }
+    .leaf.hidden { opacity: 0.55; }
+    .leaf input[type=checkbox] { margin: 0; }
+    .leaf .star { background: none; border: 0; width: 22px; height: 22px;
+      font-size: 1rem; color: var(--brown-soft); cursor: pointer; padding: 0; }
+    .leaf .star.on { color: var(--rust); }
+    .leaf .name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .leaf .category-chip { font-size: 0.68rem; padding: 1px 6px; border-radius: 8px;
+      background: var(--moss-soft); color: var(--moss-dark); }
+    .leaf .name .tag { color: var(--rust); font-weight: 600; font-size: 0.78rem; margin-left: 4px; }
+
+    /* Pinned editor card — sticky at the bottom of the panel. */
+    .pinned-editor { flex: 0 0 auto; margin-top: 10px;
+      border: 1px solid var(--rust-soft); border-radius: 10px;
+      background: linear-gradient(180deg, #fffdf5, #f7f0dc);
+      box-shadow: 0 -6px 14px rgba(0,0,0,0.06);
+      padding: 10px 12px; }
+    .pinned-editor.empty { padding: 14px; text-align: center; color: var(--brown-soft);
+      font-style: italic; border-style: dashed; }
+    .pinned-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .pinned-head h3 { margin: 0; flex: 1; font: 700 0.94rem Inter, system-ui, sans-serif;
+      color: var(--brown-dark); display: flex; align-items: center; gap: 6px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pinned-head .geom { color: var(--brown-soft); font-size: 0.74rem;
+      padding: 1px 7px; border-radius: 10px; background: var(--moss-soft); font-weight: 600; }
+    .pinned-head .expand { background: var(--control-bg); border: 1px solid var(--control-border);
+      border-radius: 5px; padding: 3px 8px; font: 600 0.74rem Inter, system-ui, sans-serif;
+      cursor: pointer; color: var(--brown-mid); }
+    .pinned-head .expand:hover { background: var(--cream-hover); }
+
+    .editor-grid { display: grid; grid-template-columns: 78px 1fr; gap: 5px 8px;
+      font-size: 0.82rem; align-items: center; }
+    .editor-grid label { color: var(--brown-mid); font-weight: 600; font-size: 0.78rem; }
+    .editor-grid input[type=text], .editor-grid select, .editor-grid textarea {
+      font: inherit; padding: 3px 6px; border: 1px solid var(--control-border);
+      border-radius: 5px; background: var(--control-bg); width: 100%; }
+    .editor-grid textarea { min-height: 40px; resize: vertical; }
+    .editor-grid .geom-summary { color: var(--brown-ink); font-size: 0.76rem;
+      font-family: ui-monospace, SFMono-Regular, monospace; }
+    .editor-grid .toggle-row { display: flex; gap: 14px; }
+    .editor-grid .toggle-row label { display: flex; align-items: center; gap: 4px;
+      color: var(--brown-ink); font-weight: 400; font-size: 0.8rem; }
+    .editor-actions { display: flex; gap: 4px; flex-wrap: wrap;
+      margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--cream-border); }
+    .editor-actions button { padding: 3px 8px; border: 1px solid var(--control-border);
+      background: var(--control-bg); color: var(--brown-ink); border-radius: 5px;
+      cursor: pointer; font: 600 0.76rem Inter, system-ui, sans-serif; }
+    .editor-actions button:hover { background: var(--cream-hover); }
+    .editor-actions button.danger { color: var(--rust); border-color: var(--rust-soft); margin-left: auto; }
+    .editor-actions button.danger:hover { background: var(--rust-soft); }
+
+    .bulk-row { display: flex; gap: 6px; margin-top: 8px; }
+    .bulk-row button { flex: 1; padding: 5px; font: 600 0.74rem Inter, system-ui, sans-serif;
+      border: 1px solid var(--control-border); background: var(--control-bg);
+      color: var(--brown-ink); border-radius: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="map"></div>
+  <div class="variant-label">V4 — Pinned editor card<small>Tree scrolls freely; selected leaf's editor is sticky at the bottom of the section</small></div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <h1>AOP Map Viewer</h1>
+      <button class="panel-export">⧉</button>
+      <button class="panel-collapse">▾</button>
+    </div>
+
+    <div class="panel-section" style="flex: 1; min-height: 0;">
+      <div class="section-header">
+        <span class="section-label">Map editor</span>
+        <button class="section-action">⧉</button>
+        <button class="section-toggle">▾</button>
+      </div>
+
+      <div class="create-row">
+        <button>+ POI<span class="kind">Point</span></button>
+        <button>+ Footprint<span class="kind">Polygon</span></button>
+        <button>+ Line<span class="kind">LineString</span></button>
+      </div>
+      <div class="category-row">
+        <span>Default category</span>
+        <select>
+          <option>Pavilion</option><option>Building</option><option>Restroom</option>
+          <option>Parking</option><option>Staging area</option><option>Gate</option>
+          <option>Trail trace</option><option>Road trace</option><option>Landmark</option>
+          <option>Hazard</option><option>Other</option>
+        </select>
+      </div>
+
+      <div class="tree-region">
+        <div class="tree-heading">
+          <span><strong>Drawn POI</strong> · 10 features</span>
+          <span class="count">5 ★ surfaced</span>
+        </div>
+
+        <div class="kind-group">
+          <div class="kind-head">
+            <span class="chev">▾</span>
+            <span class="label"><span class="kind-glyph">●</span>POI</span>
+            <span class="count">5</span>
+          </div>
+          <div class="kind-rows">
+            <div class="leaf selected">
+              <input type="checkbox" checked>
+              <button class="star on">★</button>
+              <span class="name">Big tent <span class="tag">#pavilion</span></span>
+              <span class="category-chip">Pavilion</span>
+            </div>
+            <div class="leaf">
+              <input type="checkbox" checked>
+              <button class="star on">★</button>
+              <span class="name">Main gate <span class="tag">#main</span></span>
+              <span class="category-chip">Gate</span>
+            </div>
+            <div class="leaf">
+              <input type="checkbox" checked>
+              <button class="star">☆</button>
+              <span class="name">Backup pavilion</span>
+              <span class="category-chip">Pavilion</span>
+            </div>
+            <div class="leaf">
+              <input type="checkbox" checked>
+              <button class="star">☆</button>
+              <span class="name">Restroom A</span>
+              <span class="category-chip">Restroom</span>
+            </div>
+            <div class="leaf hidden">
+              <input type="checkbox">
+              <button class="star">☆</button>
+              <span class="name">scratch landmark</span>
+              <span class="category-chip">Landmark</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="kind-group">
+          <div class="kind-head">
+            <span class="chev">▾</span>
+            <span class="label"><span class="kind-glyph">▭</span>Footprint</span>
+            <span class="count">2</span>
+          </div>
+          <div class="kind-rows">
+            <div class="leaf">
+              <input type="checkbox" checked>
+              <button class="star on">★</button>
+              <span class="name">Pavilion footprint</span>
+              <span class="category-chip">Pavilion</span>
+            </div>
+            <div class="leaf">
+              <input type="checkbox" checked>
+              <button class="star">☆</button>
+              <span class="name">Parking lot A</span>
+              <span class="category-chip">Parking</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="kind-group">
+          <div class="kind-head">
+            <span class="chev">▾</span>
+            <span class="label"><span class="kind-glyph">╱</span>Line</span>
+            <span class="count">3</span>
+          </div>
+          <div class="kind-rows">
+            <div class="leaf">
+              <input type="checkbox" checked>
+              <button class="star on">★</button>
+              <span class="name">Yellow loop</span>
+              <span class="category-chip">Trail trace</span>
+            </div>
+            <div class="leaf">
+              <input type="checkbox" checked>
+              <button class="star on">★</button>
+              <span class="name">Red traverse</span>
+              <span class="category-chip">Trail trace</span>
+            </div>
+            <div class="leaf">
+              <input type="checkbox" checked>
+              <button class="star">☆</button>
+              <span class="name">Service road</span>
+              <span class="category-chip">Road trace</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pinned editor — always at the bottom of the section. -->
+      <div class="pinned-editor">
+        <div class="pinned-head">
+          <h3>Big tent <span class="geom">● POI</span></h3>
+          <button class="expand" title="Open full editor">⛶ Expand</button>
+        </div>
+        <div class="editor-grid">
+          <label>Name</label>
+          <input type="text" value="Big tent">
+
+          <label>Category</label>
+          <select>
+            <option selected>Pavilion</option><option>Building</option><option>Restroom</option>
+            <option>Gate</option><option>Landmark</option><option>Hazard</option><option>Other</option>
+          </select>
+
+          <label>Tag</label>
+          <input type="text" value="#pavilion">
+
+          <label>Surface</label>
+          <div class="toggle-row">
+            <label><input type="checkbox" checked> ★ Visitors</label>
+            <label><input type="checkbox" checked> ☑ On map</label>
+          </div>
+
+          <label>Notes</label>
+          <textarea placeholder="Optional"></textarea>
+
+          <label>Geometry</label>
+          <span class="geom-summary">Point · 35.0908°N, −85.7475°W</span>
+        </div>
+        <div class="editor-actions">
+          <button>🎯 Fly</button>
+          <button>✋ Move</button>
+          <button>⎘ Dup</button>
+          <button>⧉ Copy</button>
+          <button class="danger">Delete</button>
+        </div>
+      </div>
+
+      <div class="bulk-row">
+        <button>⧉ Export all</button>
+        <button>Clear all</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.leaf').forEach((leaf) => {
+      leaf.addEventListener('click', (e) => {
+        if (e.target.matches('input, button')) return;
+        document.querySelectorAll('.leaf').forEach((l) => l.classList.remove('selected'));
+        leaf.classList.add('selected');
+        const name = leaf.querySelector('.name').textContent.trim();
+        const card = document.querySelector('.pinned-editor');
+        card.querySelector('h3').firstChild.nodeValue = name + ' ';
+        card.querySelector('input[type=text]').value = name.replace(/\s*#\w+$/, '').trim();
+      });
+    });
+    document.querySelectorAll('.kind-head').forEach((h) => {
+      h.addEventListener('click', () => h.parentElement.classList.toggle('collapsed'));
+    });
+  </script>
+</body>
+</html>

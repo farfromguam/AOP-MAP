@@ -9,20 +9,34 @@ shared file is now the single source of truth.
 
 Import what you need:
 
-    from playwright_base import WEBSITE_URL, set_toggle, layer_visibility, rendered_count
+    from playwright_base import viewer_url, set_toggle, layer_visibility, rendered_count
 
 Verifiers that do not flip toggles, query layer visibility, or count
-rendered features only need to import `WEBSITE_URL`.
+rendered features only need to import `viewer_url`.
 """
 
 from __future__ import annotations
 
 import os
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 # Default points at the Playwright-only port from the handoff. The env
 # override lets a verifier hit a viewer running on a different port (e.g.
 # WEBSITE_URL=http://localhost:8002/ python3 mvp/scripts/playwright_verify_water.py).
 WEBSITE_URL = os.environ.get("WEBSITE_URL", "http://localhost:8001/")
+
+
+def viewer_url(**params: str) -> str:
+    """Return the verifier URL, merging optional query params."""
+    parts = urlsplit(WEBSITE_URL)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query.update({key: str(value) for key, value in params.items() if value is not None})
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
+
+
+def viewer_origin() -> str:
+    parts = urlsplit(WEBSITE_URL)
+    return urlunsplit((parts.scheme, parts.netloc, "", "", ""))
 
 
 def set_toggle(page, toggle_id: str, target: bool) -> None:

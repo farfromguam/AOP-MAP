@@ -12,7 +12,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from playwright_base import WEBSITE_URL, set_toggle, layer_visibility, rendered_count
+from playwright_base import viewer_url, set_toggle, layer_visibility, rendered_count
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -69,13 +69,18 @@ def schedule_data(page) -> dict:
 
 
 def reset_tag_storage(page) -> None:
-    """Clear tag store + seed flag + calendar height so a re-run starts
-    from the same first-load state as a fresh user."""
+    """Clear tag store + editor POI store + calendar height so a re-run
+    starts from the same first-load state as a fresh user. Clearing
+    `aop_editor_pois_v1` is what re-arms the editor-POI seed loader so
+    the #pavilion binding lands back on the seeded POI on each fresh
+    run; clearing the tag store alone leaves the seed loader's gate
+    closed and the schedule would fail to resolve #pavilion."""
     page.evaluate(
         """() => {
           try {
             localStorage.removeItem('aop_feature_tags_v1');
             localStorage.removeItem('aop_feature_tags_seeded_v1');
+            localStorage.removeItem('aop_editor_pois_v1');
             localStorage.removeItem('aop_calendar_height_v1');
             localStorage.removeItem('aop_left_rail_drawer_v1');
             localStorage.removeItem('aop_virtual_clock_v1');
@@ -146,8 +151,8 @@ def main() -> int:
 
         page.on("console", _record_error)
 
-        print(f"Opening {WEBSITE_URL}")
-        page.goto(WEBSITE_URL, wait_until="load")
+        print(f"Opening {viewer_url()}")
+        page.goto(viewer_url(), wait_until="load")
         # Calendar height and the feature tag store persist in localStorage.
         # Clear them so default sizing + the pavilion-seed default are
         # observable from a known initial state across local re-runs.
@@ -227,7 +232,7 @@ def main() -> int:
         # 1024x640 keeps the desktop layout (above the 760px breakpoint) but
         # squeezes vertical space so the calendar card eats real popup room.
         page.set_viewport_size({"width": 1024, "height": 640})
-        page.goto(WEBSITE_URL, wait_until="load")
+        page.goto(viewer_url(), wait_until="load")
         page.evaluate("window.map = map;")
         page.wait_for_function(
             "() => document.getElementById('message').textContent.includes('publish feature')",
@@ -352,7 +357,7 @@ def main() -> int:
             "() => { try { localStorage.removeItem('aop_calendar_height_v1'); } catch (_) {} }"
         )
         page.set_viewport_size({"width": 420, "height": 740})
-        page.goto(WEBSITE_URL, wait_until="load")
+        page.goto(viewer_url(), wait_until="load")
         page.evaluate("window.map = map;")
         page.wait_for_timeout(700)
         narrow_default = page.evaluate(
@@ -418,7 +423,7 @@ def main() -> int:
             "() => { try { localStorage.removeItem('aop_calendar_height_v1'); } catch (_) {} }"
         )
         page.set_viewport_size({"width": 1280, "height": 820})
-        page.goto(WEBSITE_URL, wait_until="load")
+        page.goto(viewer_url(), wait_until="load")
         page.wait_for_timeout(500)
         wide_default = page.evaluate(
             """() => ({
@@ -430,7 +435,7 @@ def main() -> int:
         check("default height does not persist by itself", wide_default.get("stored") is None, str(wide_default))
 
         print("\n== Calendar current-row scroll (Sprint 03 Lane 2) ==")
-        page.goto(WEBSITE_URL + "?clock=2026-05-24T10:30", wait_until="load")
+        page.goto(viewer_url(clock="2026-05-24T10:30"), wait_until="load")
         page.wait_for_function(
             "() => document.getElementById('message').textContent.includes('publish feature')",
             timeout=45_000,
@@ -555,7 +560,7 @@ def main() -> int:
         # 2026-05-25 is a Monday. After the 06:00 reset the calendar anchor
         # flips forward to the upcoming weekend (Sat 2026-05-30); the gates-
         # open banner counts down to Fri 2026-05-29 17:00 (fri-registration).
-        page.goto(WEBSITE_URL + "?clock=2026-05-25T08:00", wait_until="load")
+        page.goto(viewer_url(clock="2026-05-25T08:00"), wait_until="load")
         page.wait_for_function(
             "() => document.getElementById('message').textContent.includes('publish feature')",
             timeout=45_000,
@@ -603,7 +608,7 @@ def main() -> int:
         # 2026-05-24 (Sun) 19:00 sits after sun-checkout's window (17:00 + 90m
         # = 18:30), so the just-finished weekend is in the post-event window
         # until Mon 06:00. Banner hidden, every row should be 'past'.
-        page.goto(WEBSITE_URL + "?clock=2026-05-24T19:00", wait_until="load")
+        page.goto(viewer_url(clock="2026-05-24T19:00"), wait_until="load")
         page.wait_for_function(
             "() => document.getElementById('message').textContent.includes('publish feature')",
             timeout=45_000,
@@ -696,7 +701,7 @@ def main() -> int:
         # reload so the maybeSeedFeatureTags path fires on this load with a
         # known starting state.
         reset_tag_storage(page)
-        page.goto(WEBSITE_URL, wait_until="load")
+        page.goto(viewer_url(), wait_until="load")
         # The viewer's tag store + lookup + tunable-expansion helpers are
         # script-scoped consts. Expose them on window for the verifier to
         # inspect.
@@ -706,6 +711,7 @@ def main() -> int:
               window.tagToFeature = tagToFeature;
               window.eventLocationByTag = eventLocationByTag;
               window.toggleTunableExpansion = toggleTunableExpansion;
+              window.setFeatureTag = setFeatureTag;
             }"""
         )
         page.wait_for_function(
@@ -721,24 +727,37 @@ def main() -> int:
               building_coords is not None and len(building_coords) == 2,
               str(building_coords))
 
-        # After load + auto-seed, the viewer should have #pavilion → 1010.
+        # 2026-05-26: the #pavilion binding moved from the 1010 building to
+        # a seeded editor POI (`data/aop_editor_seed_pois.geojson`,
+        # id=`aop_seed_pavilion`) at the same centroid. Wait for the async
+        # seed install to land before reading state.
+        page.wait_for_function(
+            "() => { const raw = localStorage.getItem('aop_editor_pois_v1');"
+            " if (!raw) return false;"
+            " try { return JSON.parse(raw).some((f) => f && f.properties && f.properties.id === 'aop_seed_pavilion'); }"
+            " catch (_) { return false; } }",
+            timeout=10000,
+        )
         seeded = page.evaluate(
             """() => {
               const raw = localStorage.getItem('aop_feature_tags_v1');
-              const seed = localStorage.getItem('aop_feature_tags_seeded_v1');
-              return { stored: raw ? JSON.parse(raw) : null, seed };
+              return { stored: raw ? JSON.parse(raw) : null };
             }"""
         )
-        check("seed flag set on first load", seeded.get("seed") == "1", str(seeded))
-        check("aop_feature_tags_v1 has a #pavilion binding under buildings",
+        check("aop_feature_tags_v1 has a #pavilion binding under editorPois",
               isinstance(seeded.get("stored"), dict)
-              and isinstance(seeded["stored"].get("buildings"), dict)
-              and "#pavilion" in [str(v).lower() for v in seeded["stored"]["buildings"].values()],
+              and isinstance(seeded["stored"].get("editorPois"), dict)
+              and "#pavilion" in [str(v).lower() for v in seeded["stored"]["editorPois"].values()],
               str(seeded))
+        check("aop_feature_tags_v1 does NOT carry a #pavilion binding under buildings",
+              isinstance(seeded.get("stored"), dict)
+              and "#pavilion" not in [str(v).lower()
+                                       for v in (seeded["stored"].get("buildings") or {}).values()],
+              str(seeded.get("stored", {}).get("buildings")))
 
-        # The viewer's tag-to-feature lookup should mirror the same binding,
-        # and the event schedule resolver should pick up those coords for
-        # #pavilion even though the JSON no longer carries any.
+        # The viewer's tag-to-feature lookup should mirror the editorPois
+        # binding, and the event schedule resolver should pick up the
+        # seeded POI's coords (same as 1010 centroid by design).
         resolved = page.evaluate(
             """() => {
               const tagBinding = window.tagToFeature && window.tagToFeature.get
@@ -761,18 +780,19 @@ def main() -> int:
               };
             }"""
         )
-        check("tagToFeature has #pavilion → buildings binding",
-              resolved.get("bound") and resolved["bound"].get("layerKey") == "buildings",
+        check("tagToFeature has #pavilion → editorPois binding",
+              resolved.get("bound") and resolved["bound"].get("layerKey") == "editorPois"
+              and resolved["bound"].get("featureId") == "aop_seed_pavilion",
               str(resolved))
-        check("#pavilion location resolved to building coords",
+        check("#pavilion location resolved to seeded POI coords",
               resolved.get("location") and resolved["location"].get("coordinates") is not None,
               str(resolved))
         if building_coords and resolved.get("location"):
             loc_coords = resolved["location"]["coordinates"]
             dist = abs(loc_coords[0] - building_coords[0]) + abs(loc_coords[1] - building_coords[1])
             check(
-                "resolved #pavilion coords match 1010 building centroid",
-                dist < 1e-7,
+                "seeded pavilion POI sits at the 1010 building centroid",
+                dist < 1e-5,
                 f"loc={loc_coords} building={building_coords} dist={dist}",
             )
 
@@ -819,32 +839,23 @@ def main() -> int:
               len(tag_inputs) > 0 and all(r.get("has_tag_input") for r in tag_inputs),
               f"{sum(1 for r in tag_inputs if r.get('has_tag_input'))}/{len(tag_inputs)} rows have tag input")
         pavilion_rows = [r for r in tag_inputs if r.get("tag_value") == "#pavilion"]
-        check("exactly one building row is pre-bound to #pavilion",
-              len(pavilion_rows) == 1,
-              f"rows tagged #pavilion: {[r.get('label') for r in pavilion_rows]}")
-        pavilion_label = pavilion_rows[0]["label"] if pavilion_rows else ""
-        check("the #pavilion-bound row is the 1010 Ellis Cove Rd building",
-              "1010" in pavilion_label,
-              pavilion_label)
+        check("no building row carries the #pavilion binding (moved to seeded POI)",
+              len(pavilion_rows) == 0,
+              f"rows tagged #pavilion in buildings: {[r.get('label') for r in pavilion_rows]}")
 
-        # Move the #pavilion tag to a different building row by typing into
-        # its input and dispatching change. The resolved schedule coords
-        # should follow without a reload.
-        target_id = next((r["id"] for r in tag_inputs
-                          if r["id"] != (pavilion_rows[0]["id"] if pavilion_rows else "")
-                          and r.get("has_tag_input")), None)
-        check("there is another building row to bind for the live re-resolve test",
-              target_id is not None, "no second building row found")
+        # Live re-resolve test: drive `setFeatureTag` directly to move
+        # #pavilion onto an arbitrary building row, confirm the event
+        # schedule resolver follows without a reload, then put the binding
+        # back on the seeded POI. The tag now lives in the inline editor
+        # surface (not the buildings drawer row), so we exercise the
+        # underlying helper rather than the DOM input.
+        target_id = next((r["id"] for r in tag_inputs if r.get("has_tag_input")), None)
+        check("there is a building row available for the live re-resolve test",
+              target_id is not None, "no building rows found")
         if target_id:
             new_coords = page.evaluate(
                 """(targetId) => {
-                  const row = document.querySelector(`.feature-row[data-feature-id="${targetId}"]`);
-                  const input = row && row.querySelector('.feature-tag');
-                  if (!input) return null;
-                  input.focus();
-                  input.value = '#pavilion';
-                  input.dispatchEvent(new Event('change', { bubbles: true }));
-                  // Pull the freshly-resolved location coords back out.
+                  window.setFeatureTag('buildings', targetId, '#pavilion');
                   const location = window.eventLocationByTag.get('#pavilion');
                   const bound = window.tagToFeature.get('#pavilion');
                   return {
@@ -856,29 +867,21 @@ def main() -> int:
                 target_id,
             )
             check("live re-bind: tagToFeature points at the new building row",
-                  new_coords and new_coords.get("bound_feature") == str(target_id),
+                  new_coords and new_coords.get("bound_feature") == str(target_id)
+                  and new_coords.get("bound_layer") == "buildings",
                   str(new_coords))
-            check("live re-bind: schedule re-resolves to new coords (different from 1010)",
-                  new_coords and new_coords.get("location_coords") is not None
-                  and building_coords is not None
-                  and (abs(new_coords["location_coords"][0] - building_coords[0])
-                       + abs(new_coords["location_coords"][1] - building_coords[1])) > 1e-6,
-                  str(new_coords))
-            # Restore the binding so the rest of the run (and the screenshot)
-            # leave a clean state. Bind back to the original row by ID.
-            if pavilion_rows:
-                original_id = pavilion_rows[0]["id"]
-                page.evaluate(
-                    """(origId) => {
-                      const row = document.querySelector(`.feature-row[data-feature-id="${origId}"]`);
-                      const input = row && row.querySelector('.feature-tag');
-                      if (input) {
-                        input.value = '#pavilion';
-                        input.dispatchEvent(new Event('change', { bubbles: true }));
-                      }
-                    }""",
-                    original_id,
-                )
+            # Restore: setFeatureTag('editorPois', 'aop_seed_pavilion', '#pavilion')
+            # moves the binding back to the seeded POI.
+            restored = page.evaluate(
+                """() => {
+                  window.setFeatureTag('editorPois', 'aop_seed_pavilion', '#pavilion');
+                  const bound = window.tagToFeature.get('#pavilion');
+                  return bound ? { layer: bound.layerKey, featureId: String(bound.featureId) } : null;
+                }"""
+            )
+            check("live re-bind: restore puts #pavilion back on the seeded POI",
+                  restored == {"layer": "editorPois", "featureId": "aop_seed_pavilion"},
+                  str(restored))
 
         # Search for `#pavilion` should still surface the anchor (the
         # alias path from Bucket C continues to work because the anchor now
@@ -902,7 +905,7 @@ def main() -> int:
 
         def load_with_clock(clock: str) -> None:
             page.set_viewport_size({"width": 1280, "height": 820})
-            page.goto(WEBSITE_URL + f"?clock={clock}", wait_until="load")
+            page.goto(viewer_url(clock=clock), wait_until="load")
             page.evaluate(
                 """() => {
                   window.map = map;

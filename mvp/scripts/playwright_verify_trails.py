@@ -14,7 +14,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from playwright_base import WEBSITE_URL
+from playwright_base import viewer_url
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
@@ -30,7 +30,7 @@ def main() -> int:
         console_errors: list[str] = []
         page.on("console", lambda m: console_errors.append(m.text) if m.type == "error" else None)
 
-        page.goto(WEBSITE_URL, wait_until="load")
+        page.goto(viewer_url(), wait_until="load")
         page.evaluate("window.map = map;")
         page.wait_for_function(
             "() => document.getElementById('message').textContent.includes('publish feature')",

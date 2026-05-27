@@ -1,0 +1,72 @@
+# Viewer Polish Follow-ups
+
+Sprint 03 shipped the big viewer chrome moves. This card is the residue worth
+keeping visible in Sprint 04.
+
+If a follow-up is just "nice someday," punt it. If it protects trust,
+readability, or verifier coverage, land it.
+
+#aop #04_event_app #viewer #polish #verifiers
+
+-----
+
+## Source
+
+- `../03_event_app/_done/code_health_pass_4.md`
+- `../03_event_app/_done/left_panel_poi_browser.md`
+- `../03_event_app/_done/left_rail_collapse_tabs.md`
+- `../03_event_app/_done/right_panel_editor_consistency.md`
+- `../03_event_app/_done/load animations.md`
+- `../03_event_app/_done/sprint_02_critique_followups.md`
+- `../03_event_app/misc_3.md` (items 14, 16; routing block 2026-05-27)
+- `calendar_group_icon_review.md` (item 16 pending-pick card)
+- `calendar_placeholder_state.md` (item 13 pending-pick card)
+- `../backlog/load_animation_intro.md`
+
+## Left Rail
+
+- [ ] Audit mobile <=760 px drawer treatment: full-width behavior, tiny-screen `--tab-h`, and no overlap with bottom/right panels.
+- [ ] Confirm `.left-tab` naming collision between app tabs and old mockup variants cannot leak specificity into live viewer CSS.
+- [ ] Keep load-animation intro out of normal startup unless it satisfies the backlog guardrails: no saved-state override, no visible collapse/reopen cycle, no second camera reset, respects `prefers-reduced-motion`, and has focused verifier coverage.
+
+## POI Browser
+
+- [ ] Add dedicated `playwright_verify_left_poi_browser.py`.
+- [ ] Cover placeholder chip count, click-row fly, popup HTML, and source-layer auto-enable.
+- [ ] Decide whether the `owed_work` array should render in the POI tab or stay as JSON-only reviewer metadata.
+- [ ] Decide whether Drawn POIs deserve a visible group for first-time visitors, or should hide until at least one highlighted user POI exists.
+
+## Right Panel
+
+- [ ] Add dedicated `playwright_verify_right_panel_consistency.py`.
+- [ ] Assert every Publishable editor row carries a `>`/expand control where expected.
+- [ ] Assert each exportable section header carries `⧉`, and the panel header carries global `⧉ Export all`.
+- [ ] Decide whether `Layer notes` deserves a section export action. Current leaning: no, because it is prose/tooling, not layer state.
+- [ ] Consider a "next up" marker in the event-schedule feature list once real event CRUD exists.
+
+## Code Health
+
+- [ ] Revisit the adjacent-JS-smell acceptance row from Pass 4. If no concrete smell exists, close it explicitly instead of carrying a fake task.
+- [ ] Tokenize the four remaining repeated hex literals only when the role names are clear: `#d8d0bd`, `#bbb`, `#f7f1e2`, `#fff8e8`.
+- [ ] Extend the presets verifier to cover the five new trace-preset label-halo overrides if the verifier is touched again.
+- [ ] Decide whether named-feature-tagging camera tolerance should tighten from `5e-4` degrees once data densifies.
+
+## Mockup Cleanup
+
+- [ ] Pick and wire one calendar loading placeholder variant from `calendar_placeholder_state.md`.
+- [ ] Pick a calendar-group icon candidate from `calendar_group_icon_review.md` and wire it into the live left-rail chip / tab strip.
+- [ ] Retire old comparison mockups after choices land. Full inventory at time of 2026-05-27 misc_3 triage: `website/leftrail_*.html` (~40+ files), `website/poi_crud_*.html`, `website/calendar_placeholder_*.html`, `website/calendar_group_icon_review.html`, `website/load_animations.html`, `website/park_bounds_icon_review.html`, `website/hot_glyph_options.html`, `website/button_icon_picker.html`.
+- [ ] Keep one left-sidebar comparison surface for layout/CSS review.
+- [ ] Keep one right-panel comparison surface for layout/CSS review. Current candidate is `website/poi_crud_compare.html` with V1 chosen; decide whether to keep the compare page, keep only `poi_crud_v1_accordion.html`, or replace it with a newer right-panel baseline.
+- [ ] Remove stale variant files only after the winning behavior is documented in the owning card.
+
+## Process
+
+- [ ] Add a tiny `decisions/` log pattern for future multi-variant explorations before pruning artifacts. It should capture short variant summaries and why the winner won.
+
+## Acceptance
+
+- [ ] No known viewer-polish follow-up is stranded only inside a Sprint 03 `_done` card.
+- [ ] Critical gaps have focused Playwright coverage or a named reason for manual-only verification.
+- [ ] Load animation remains either backlog-only or ships with state-safe startup proof.
+- [ ] Code-health leftovers are closed honestly, not carried as inert checkboxes.

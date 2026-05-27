@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
-from playwright_base import WEBSITE_URL as URL, set_toggle
+from playwright_base import viewer_url, set_toggle
 
 REPO = Path(__file__).resolve().parents[2]
 OUT = REPO / "brain" / "output"
@@ -39,7 +39,7 @@ def main() -> int:
             lambda msg: console_errors.append(msg.text) if msg.type == "error" else None,
         )
 
-        page.goto(URL, wait_until="networkidle")
+        page.goto(viewer_url(), wait_until="networkidle")
         # Use the same load proxy the other verifiers use: the publish message.
         page.wait_for_selector("#message", state="attached")
         page.wait_for_function(

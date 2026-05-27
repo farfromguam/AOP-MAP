@@ -23,7 +23,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from playwright_base import WEBSITE_URL, click_in_section, layer_visibility
+from playwright_base import viewer_url, click_in_section, layer_visibility
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -102,10 +102,14 @@ def main() -> int:
             lambda msg: console_errors.append(msg.text) if msg.type == "error" else None,
         )
 
-        print(f"Opening {WEBSITE_URL}")
-        page.goto(WEBSITE_URL, wait_until="load")
-        # Start from a clean slate so counts are deterministic.
-        page.evaluate(f"localStorage.removeItem('{POI_STORAGE_KEY}')")
+        print(f"Opening {viewer_url()}")
+        page.goto(viewer_url(), wait_until="load")
+        # Start from a clean slate so counts are deterministic. Write an
+        # empty array (rather than removing the key outright) so the
+        # editorPois seed loader's "fresh-install" gate stays closed —
+        # the verifier owns its own draw flow and doesn't want the seeded
+        # pavilion landing in the middle of feature_count assertions.
+        page.evaluate(f"localStorage.setItem('{POI_STORAGE_KEY}', '[]')")
         page.reload(wait_until="load")
         wait_for_viewer(page)
 
@@ -278,24 +282,42 @@ def main() -> int:
               and kind_count(page, "LineString") == 1)
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["reloaded"]))
 
-        print("\n== Popup: delete a POI, then a footprint ==")
+        print("\n== Inline editor: map-click opens editor, delete a POI, then a footprint ==")
+        # Map-click on a drawn POI now expands the inline accordion editor
+        # in the right panel — the legacy MapLibre rename/delete popup
+        # retired with the inline-editor card. The editor's Delete button
+        # is the new path for destroy.
+        first_point_id = page.evaluate(
+            "(() => editorPois.find((x) => x.geometry.type === 'Point').properties.id)()"
+        )
         point_pixel = page.evaluate(
             "(() => { const f = editorPois.find((x) => x.geometry.type === 'Point');"
             " const p = map.project(f.geometry.coordinates); return [p.x, p.y]; })()"
         )
         page.mouse.click(point_pixel[0], point_pixel[1])
         page.wait_for_timeout(300)
-        check("POI popup opened", page.locator(".poi-popup").count() == 1)
-        check("popup has name input + Save + Delete",
-              page.locator("#poiNameInput").count() == 1
-              and page.locator("#poiSaveBtn").count() == 1
-              and page.locator("#poiDeleteBtn").count() == 1)
+        check("legacy popup retired",
+              page.locator(".poi-popup").count() == 0
+              and page.locator("#poiNameInput").count() == 0
+              and page.locator("#poiSaveBtn").count() == 0
+              and page.locator("#poiDeleteBtn").count() == 0)
+        editor_selector = f".feature-row-editor[data-feature-id=\"{first_point_id}\"]"
+        check("inline editor block rendered for the clicked POI",
+              page.locator(editor_selector).count() == 1)
+        check("editor exposes name / category / notes inputs",
+              page.locator(f"{editor_selector} .editor-name").count() == 1
+              and page.locator(f"{editor_selector} .editor-category").count() == 1
+              and page.locator(f"{editor_selector} .editor-notes").count() == 1)
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["popup"]))
-        page.locator("#poiDeleteBtn").click()
+        page.locator(f"{editor_selector} .editor-action.danger").click()
         page.wait_for_timeout(300)
-        check("POI deleted via popup", kind_count(page, "Point") == 2, f"points={kind_count(page, 'Point')}")
+        check("POI deleted via inline editor", kind_count(page, "Point") == 2,
+              f"points={kind_count(page, 'Point')}")
 
         # Click the footprint at its centroid and delete it too.
+        first_poly_id = page.evaluate(
+            "(() => editorPois.find((x) => x.geometry.type === 'Polygon').properties.id)()"
+        )
         poly_pixel = page.evaluate(
             "(() => { const f = editorPois.find((x) => x.geometry.type === 'Polygon');"
             " const r = f.geometry.coordinates[0]; const n = r.length - 1;"
@@ -304,10 +326,11 @@ def main() -> int:
         )
         page.mouse.click(poly_pixel[0], poly_pixel[1])
         page.wait_for_timeout(300)
-        check("footprint popup opened", page.locator(".poi-popup").count() == 1)
-        page.locator("#poiDeleteBtn").click()
+        poly_editor = f".feature-row-editor[data-feature-id=\"{first_poly_id}\"]"
+        check("footprint editor opened", page.locator(poly_editor).count() == 1)
+        page.locator(f"{poly_editor} .editor-action.danger").click()
         page.wait_for_timeout(300)
-        check("footprint deleted via popup", kind_count(page, "Polygon") == 0)
+        check("footprint deleted via inline editor", kind_count(page, "Polygon") == 0)
         check("two POIs and one trace remain", feature_count(page) == 3, f"count={feature_count(page)}")
 
         print("\n== Drawn POIs toggle ==")

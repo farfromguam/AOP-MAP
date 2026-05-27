@@ -124,12 +124,14 @@ Bucket **I** is deferred to `../10_deferred/offline_pwa.md`; it re-enters the ac
 
 ## Carryover (next sprint)
 
-The `[]` punchlist items in `tasks.md` that didn't ship in Sprint 02 are
-pulled forward into `../03_event_app/viewer_polish_carryover.md`. Seven
-lanes, organized + prioritized: two-lane hot control finish, calendar
+The `[]` punchlist items in `tasks.md` that didn't ship in Sprint 02 were
+pulled forward into `../03_event_app/_done/viewer_polish_carryover.md`. Seven
+lanes shipped or routed: two-lane hot control finish, calendar
 expand + scroll-into-view, collapse-icon uniformity, default-layer audit,
 brand-logo size slider + add-image runbook, Pass 4 CSS + theme review, and
 a pointer to the numbered-trail-name research that stays on the community
-trails card. Pass 4 now lives at `../03_event_app/code_health_pass_4.md`. AOP +
-Rock Warblers logo `[]` lines are already closed under Bucket F; left in the
-dump per `preserve_card_directives`.
+trails card. Residual Pass 4 polish now lives at
+`../04_event_app/viewer_polish_followups.md`; the Pass 4 audit card is archived
+at `../03_event_app/_done/code_health_pass_4.md`. AOP + Rock Warblers logo
+`[]` lines are already closed under Bucket F; left in the dump per
+`preserve_card_directives`.

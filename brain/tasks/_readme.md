@@ -16,4 +16,9 @@ Task cards are the working edge of the project.
 
 They are directional, not sacred. Research and field evidence can update them. User-written directives stay visible; analysis and corrections go below the divider rather than silently deleting the original shape.
 
-The Sprint 02 carryover router is `03_event_app/viewer_polish_carryover.md`: lanes 1–5 shipped, Lane 6 moved to `03_event_app/code_health_pass_4.md`, and Lane 7 stays on `01_mvp/_done/community_trails_import.md`. Sprint 03's main thrust is `03_event_app/full_loop_crud_upload_audit.md`, with `03_event_app/dev_db_snapshot_reseed.md` now carrying the dev DB dump/reseed need. Sprint 01 and Sprint 02 cards live in their respective `_done/` folders.
+Sprint 03 is closed. Its reviewed cards live in `03_event_app/_done/`, with
+`03_event_app/misc_3.md` left active by request. Sprint 04 pickup lives in
+`04_event_app/`: app CRUD/uploads, dev reseed, Rock Warblers content truth pass,
+data-integrity blockers, viewer polish follow-ups, POI editor follow-ups, brand
+assets, and the Park bounds icon apply step. Sprint 01 and Sprint 02 cards live
+in their respective `_done/` folders.

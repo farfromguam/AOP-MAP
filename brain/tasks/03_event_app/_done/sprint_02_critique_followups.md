@@ -228,10 +228,15 @@ shape itself landed.
       the visible viewer to Park / default camera / default left tab / default
       drawer in the same handler. Closes the seed-flag trap door named in the
       original critique.
-- [ ] **Migration story for `_v1` -> `_v2` keys.** v1->v2 preset bundle is
-      mentioned in `_done/poi_editor_v2.md` but the migration path on next
-      bump is undocumented. Write a short rule (one direction: bump key, drop
-      old, ship a "reset overrides" notice) before the next bump.
+- [x] **Migration story for `_v1` -> `_v2` keys.** Shipped 2026-05-26 as
+      `../../spinup/viewer_storage_migration.md`. Covers both surfaces
+      (localStorage key suffixes and JSON bundle schemas) and lays down a
+      forward-only rule: bump suffix, drop old read path, lean on the
+      Session-tools `Reset viewer` button (E1) to clear stale state. Names
+      the one exception (irreplaceable data, no re-export path → one-time
+      read-and-rewrite at boot, gated by a sprint-scoped flag). The
+      `add_image_to_viewer.md` neighbor was the template for placement;
+      brain map entry added next to it.
 
 ### F. Card taxonomy + raw-dump hygiene
 

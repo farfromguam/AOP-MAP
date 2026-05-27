@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendar Group Icon — Review</title>
+  <style>
+    :root {
+      --brown-ink: #2e2418;
+      --brown-mid: #4e4128;
+      --brown-dark: #2a1f12;
+      --brown-soft: #5a4828;
+      --cream-hover: #efe2c6;
+      --cream-surface: rgba(250, 246, 235, 0.96);
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --control-border: #b9aa88;
+      --moss: #5f7157;
+      --moss-dark: #384833;
+      --moss-soft: #e3ebdc;
+      --rust: #a85020;
+      --tab-h: 44px;
+      --hairline: rgba(46, 36, 24, 0.14);
+      --moss-tint-hover: #d6e0cb;
+      --cream-wash-hover: #f1e8d2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 28px 32px;
+      font-family: Inter, system-ui, sans-serif;
+      background: #c8bca8;
+      min-height: 100vh;
+    }
+    h1 {
+      margin: 0 0 4px;
+      font: 800 1rem Inter, system-ui, sans-serif;
+      color: var(--brown-ink);
+    }
+    .subtitle {
+      margin: 0 0 24px;
+      font-size: 0.82rem; line-height: 1.4;
+      color: var(--brown-soft); max-width: 560px;
+    }
+    .compare-row {
+      display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start;
+    }
+    .candidate {
+      display: flex; flex-direction: column; gap: 10px; align-items: center;
+    }
+    .cand-label {
+      font: 800 0.68rem Inter, system-ui, sans-serif;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--brown-mid); text-align: center;
+    }
+    .cand-note {
+      font-size: 0.72rem; color: var(--brown-soft); text-align: center;
+      max-width: 100px; line-height: 1.3;
+    }
+
+    /* ── Faithful reproduction of the lr-icon-col tab strip ── */
+    .lr-icon-col {
+      flex: 0 0 var(--tab-h);
+      width: var(--tab-h);
+      display: flex;
+      flex-direction: column;
+      background: var(--cream-surface);
+      border: 1px solid var(--cream-border);
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    .lr-tab {
+      position: relative;
+      flex: 0 0 var(--tab-h);
+      width: var(--tab-h); height: var(--tab-h);
+      display: grid; place-items: center;
+      border: 0;
+      background: transparent;
+      color: var(--brown-mid);
+      cursor: pointer;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+    .lr-tab svg { width: 22px; height: 22px; }
+    .lr-tab + .lr-tab { border-top: 1px solid var(--hairline); }
+    .lr-tab:hover { background: var(--cream-wash-hover); }
+    .lr-tab.open { background: var(--moss-soft); color: var(--moss-dark); }
+    .lr-tab.open:hover { background: var(--moss-tint-hover); }
+    /* Live dot for hot tab */
+    .lr-live-dot {
+      position: absolute; top: 6px; right: 6px;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--rust);
+      box-shadow: 0 0 0 1.5px var(--cream-surface);
+      pointer-events: none;
+    }
+    /* Day cap for cal tab */
+    .lr-day-cap {
+      position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
+      font: 800 0.52rem Inter, system-ui, sans-serif;
+      letter-spacing: 0.04em; color: var(--brown-mid);
+      pointer-events: none;
+    }
+    .lr-tab.open .lr-day-cap { color: var(--moss-dark); }
+
+    /* Divider between compare sets */
+    .section-divider {
+      margin: 32px 0 24px;
+      border: 0; border-top: 1px solid rgba(78,65,40,0.2);
+    }
+    h2 {
+      margin: 0 0 6px;
+      font: 800 0.84rem Inter, system-ui, sans-serif;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      color: var(--brown-mid);
+    }
+    .section-note {
+      margin: 0 0 18px;
+      font-size: 0.78rem; line-height: 1.4;
+      color: var(--brown-soft); max-width: 480px;
+    }
+
+    /* current badge */
+    .badge-current {
+      display: inline-block; padding: 2px 7px;
+      background: #f5e8c8; border: 1px solid var(--cream-border);
+      border-radius: 4px; font: 700 0.66rem Inter, system-ui, sans-serif;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--brown-mid);
+    }
+    .badge-candidate {
+      display: inline-block; padding: 2px 7px;
+      background: var(--moss-soft); border: 1px solid #b9c7ad;
+      border-radius: 4px; font: 700 0.66rem Inter, system-ui, sans-serif;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--moss-dark);
+    }
+  </style>
+</head>
+<body>
+  <h1>Calendar Group Icon — Review</h1>
+  <p class="subtitle">
+    The calendar tab's icon is the third icon in the left-rail <code>.lr-icon-col</code> strip
+    (after Search and Hot). Currently a calendar-grid SVG. Each column below shows the full
+    three-tab strip — search icon stays fixed, hot icon stays fixed, only the calendar-group
+    icon changes. The third tab is shown in "open" state (moss tint) as it usually is on load.
+  </p>
+
+  <!-- ── SECTION A: Full icon-strip comparison ── -->
+  <h2>Tab strip comparison</h2>
+  <p class="section-note">Scroll down for close-up icon tiles.</p>
+
+  <div class="compare-row">
+
+    <!-- Current -->
+    <div class="candidate">
+      <div class="cand-label">Current <span class="badge-current">live</span></div>
+      <div class="lr-icon-col">
+        <!-- Search tab (unchanged) -->
+        <button class="lr-tab open" type="button" title="Search">
+          <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <!-- Hot tab (unchanged) -->
+        <button class="lr-tab" type="button" title="Hot now">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3.001 2.48Z"/>
+            <path d="M12 18a3.75 3.75 0 0 0 .495-7.467 5.99 5.99 0 0 0-1.925 3.546 5.974 5.974 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/>
+          </svg>
+          <span class="lr-live-dot"></span>
+        </button>
+        <!-- Cal tab — CURRENT calendar-grid icon -->
+        <button class="lr-tab open" type="button" title="Events / POI / About">
+          <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <rect x="3.2" y="5.2" width="15.6" height="13.6" rx="1.6" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M3.2 9.2 H 18.8" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M7.5 3 V 7 M14.5 3 V 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M6 13 H 10 M12 13 H 16 M6 16 H 10 M12 16 H 16" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+          </svg>
+          <span class="lr-day-cap">19</span>
+        </button>
+      </div>
+      <div class="cand-note">Calendar grid with date tick-marks and grid cells</div>
+    </div>
+
+    <!-- Candidate A: Clipboard -->
+    <div class="candidate">
+      <div class="cand-label">A — Clipboard <span class="badge-candidate">candidate</span></div>
+      <div class="lr-icon-col">
+        <button class="lr-tab open" type="button" title="Search">
+          <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="lr-tab" type="button" title="Hot now">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3.001 2.48Z"/>
+            <path d="M12 18a3.75 3.75 0 0 0 .495-7.467 5.99 5.99 0 0 0-1.925 3.546 5.974 5.974 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/>
+          </svg>
+          <span class="lr-live-dot"></span>
+        </button>
+        <!-- Clipboard: suggests "event list / schedule" more than a date -->
+        <button class="lr-tab open" type="button" title="Events / POI / About">
+          <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <!-- board -->
+            <rect x="4" y="5" width="14" height="15" rx="1.6" stroke="currentColor" stroke-width="1.5"/>
+            <!-- clip top -->
+            <path d="M8.5 5 V 3.5 Q8.5 3 9 3 h4 Q13.5 3 13.5 3.5 V 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            <!-- ruled lines -->
+            <path d="M7 9.5 H 15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M7 12.5 H 15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M7 15.5 H 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="cand-note">Clipboard with ruled lines — reads as "event list / schedule"</div>
+    </div>
+
+    <!-- Candidate B: Bookmark -->
+    <div class="candidate">
+      <div class="cand-label">B — Bookmark <span class="badge-candidate">candidate</span></div>
+      <div class="lr-icon-col">
+        <button class="lr-tab open" type="button" title="Search">
+          <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="lr-tab" type="button" title="Hot now">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3.001 2.48Z"/>
+            <path d="M12 18a3.75 3.75 0 0 0 .495-7.467 5.99 5.99 0 0 0-1.925 3.546 5.974 5.974 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/>
+          </svg>
+          <span class="lr-live-dot"></span>
+        </button>
+        <!-- Bookmark: slim ribbon that reads as "saved item / context card" -->
+        <button class="lr-tab open" type="button" title="Events / POI / About">
+          <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <!-- single bookmark ribbon -->
+            <path d="M6 3 H 16 Q 16.8 3 16.8 3.8 V 19 L 11 15.6 L 5.2 19 V 3.8 Q 5.2 3 6 3 Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <!-- horizontal rule inside bookmark -->
+            <path d="M8 8 H 14" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+            <path d="M8 11 H 12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="cand-note">Bookmark ribbon — reads as "saved schedule / context"</div>
+    </div>
+
+    <!-- Candidate C: Clock + stack (schedule + layers) -->
+    <div class="candidate">
+      <div class="cand-label">C — Clock stack <span class="badge-candidate">candidate</span></div>
+      <div class="lr-icon-col">
+        <button class="lr-tab open" type="button" title="Search">
+          <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="lr-tab" type="button" title="Hot now">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3.001 2.48Z"/>
+            <path d="M12 18a3.75 3.75 0 0 0 .495-7.467 5.99 5.99 0 0 0-1.925 3.546 5.974 5.974 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/>
+          </svg>
+          <span class="lr-live-dot"></span>
+        </button>
+        <!-- Clock face + stacked list lines below = "timed schedule" -->
+        <button class="lr-tab open" type="button" title="Events / POI / About">
+          <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <!-- small clock in upper half -->
+            <circle cx="11" cy="8.5" r="5" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M11 6 V 8.5 L 13 9.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- stacked lines in lower half -->
+            <path d="M4 16 H 10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M4 18.5 H 13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="cand-note">Clock + list lines — reads as "timed event schedule"</div>
+    </div>
+
+  </div><!-- .compare-row -->
+
+  <hr class="section-divider" />
+
+  <!-- ── SECTION B: Close-up icon tiles ── -->
+  <h2>Close-up icon tiles</h2>
+  <p class="section-note">
+    Same icons at 3× scale so fine strokes read clearly. Tap to see in context above.
+  </p>
+
+  <div class="compare-row" style="gap:16px; align-items:flex-start">
+
+    <!-- Current -->
+    <div class="candidate">
+      <div class="cand-label">Current</div>
+      <div style="width:66px;height:66px;background:var(--cream-surface);border:1px solid var(--cream-border);border-radius:8px;display:grid;place-items:center;">
+        <svg width="44" height="44" viewBox="0 0 22 22" fill="none" style="color:var(--brown-mid)">
+          <rect x="3.2" y="5.2" width="15.6" height="13.6" rx="1.6" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M3.2 9.2 H 18.8" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M7.5 3 V 7 M14.5 3 V 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M6 13 H 10 M12 13 H 16 M6 16 H 10 M12 16 H 16" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="cand-note">Calendar grid</div>
+    </div>
+
+    <!-- A: Clipboard -->
+    <div class="candidate">
+      <div class="cand-label">A — Clipboard</div>
+      <div style="width:66px;height:66px;background:var(--cream-surface);border:1px solid var(--cream-border);border-radius:8px;display:grid;place-items:center;">
+        <svg width="44" height="44" viewBox="0 0 22 22" fill="none" style="color:var(--brown-mid)">
+          <rect x="4" y="5" width="14" height="15" rx="1.6" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M8.5 5 V 3.5 Q8.5 3 9 3 h4 Q13.5 3 13.5 3.5 V 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <path d="M7 9.5 H 15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M7 12.5 H 15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M7 15.5 H 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="cand-note">Clipboard + ruled lines</div>
+    </div>
+
+    <!-- B: Bookmark -->
+    <div class="candidate">
+      <div class="cand-label">B — Bookmark</div>
+      <div style="width:66px;height:66px;background:var(--cream-surface);border:1px solid var(--cream-border);border-radius:8px;display:grid;place-items:center;">
+        <svg width="44" height="44" viewBox="0 0 22 22" fill="none" style="color:var(--brown-mid)">
+          <path d="M6 3 H 16 Q 16.8 3 16.8 3.8 V 19 L 11 15.6 L 5.2 19 V 3.8 Q 5.2 3 6 3 Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M8 8 H 14" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          <path d="M8 11 H 12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="cand-note">Bookmark ribbon</div>
+    </div>
+
+    <!-- C: Clock stack -->
+    <div class="candidate">
+      <div class="cand-label">C — Clock stack</div>
+      <div style="width:66px;height:66px;background:var(--cream-surface);border:1px solid var(--cream-border);border-radius:8px;display:grid;place-items:center;">
+        <svg width="44" height="44" viewBox="0 0 22 22" fill="none" style="color:var(--brown-mid)">
+          <circle cx="11" cy="8.5" r="5" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M11 6 V 8.5 L 13 9.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 16 H 10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M4 18.5 H 13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="cand-note">Clock + list lines</div>
+    </div>
+
+  </div>
+
+</body>
+</html>

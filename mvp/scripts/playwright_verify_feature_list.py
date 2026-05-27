@@ -27,7 +27,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from playwright_base import WEBSITE_URL, set_toggle
+from playwright_base import viewer_url, set_toggle
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -217,8 +217,8 @@ def main() -> int:
             lambda msg: console_errors.append(msg.text) if msg.type == "error" else None,
         )
 
-        print(f"Opening {WEBSITE_URL}")
-        page.goto(WEBSITE_URL, wait_until="load")
+        print(f"Opening {viewer_url()}")
+        page.goto(viewer_url(), wait_until="load")
         # Wipe any state from a prior run so defaults apply.
         page.evaluate("() => localStorage.removeItem('aop_feature_visibility_v1')")
         page.reload(wait_until="load")
@@ -358,10 +358,14 @@ def main() -> int:
         # We push three POIs via page.evaluate (the drawing UX is exercised in
         # playwright_verify_poi_editor.py — here we only test the list panel).
         print("\n== POIs feature list panel (mutable data) ==")
-        # Wipe POI + visibility state so this run is deterministic.
+        # Wipe POI + visibility state so this run is deterministic. POI
+        # storage gets an explicit empty array (not removed outright) so
+        # the editorPois seed loader's "fresh-install" gate stays closed
+        # — the verifier owns its own three-POI push below and doesn't
+        # want the seeded pavilion in the mix.
         page.evaluate(
             """() => {
-              localStorage.removeItem('aop_editor_pois_v1');
+              localStorage.setItem('aop_editor_pois_v1', '[]');
               localStorage.removeItem('aop_feature_visibility_v1');
             }"""
         )
@@ -1182,15 +1186,29 @@ def main() -> int:
                   and abs(cy - vc_expected_ll[1]) < 1e-3,
                   f"copied≈({cx},{cy}) expected≈{vc_expected_ll}")
 
-        # Same path for a POI row — must emit a Point Feature.
+        # Same path for a POI row — must emit a Point Feature. editorPois
+        # uses the inline accordion editor, so `⧉ Copy GeoJSON` lives inside
+        # the per-leaf editor pane (.feature-row-editor .editor-action),
+        # not on the row itself. Expand the leaf first, then click the
+        # action labeled "⧉ Copy GeoJSON".
         page.evaluate(
-            "() => { if (expandedTuneKey !== 'editorPois') toggleTunableExpansion('editorPois'); }"
+            "() => { const s = document.querySelector('.panel-section[data-section=\"editor\"]');"
+            " if (s && s.classList.contains('collapsed')) s.querySelector('.section-toggle').click(); }"
         )
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(120)
         page.evaluate(
-            """() => document.querySelector(
-              '.feature-row[data-feature-id="poi_test_a"] .feature-copy'
-            ).click()"""
+            "() => toggleFeatureEditor('editorPois', 'poi_test_a')"
+        )
+        page.wait_for_timeout(200)
+        page.evaluate(
+            """() => {
+              const editor = document.querySelector(
+                '.feature-row-editor[data-feature-id="poi_test_a"]'
+              );
+              const btn = [...editor.querySelectorAll('.editor-action')]
+                .find((b) => b.textContent.includes('Copy GeoJSON'));
+              btn.click();
+            }"""
         )
         page.wait_for_timeout(300)
         poi_copied = page.evaluate("() => navigator.clipboard.readText()")

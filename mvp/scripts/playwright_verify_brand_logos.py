@@ -20,7 +20,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 from playwright_base import (
-    WEBSITE_URL,
+    viewer_url,
     set_toggle,
     layer_visibility,
 )
@@ -93,8 +93,8 @@ def main() -> int:
             lambda msg: console_errors.append(msg.text) if msg.type == "error" else None,
         )
 
-        print(f"Opening {WEBSITE_URL}")
-        page.goto(WEBSITE_URL, wait_until="load")
+        print(f"Opening {viewer_url()}")
+        page.goto(viewer_url(), wait_until="load")
         # Clean override store so this run is deterministic.
         page.evaluate(f"() => localStorage.removeItem('{OVERRIDE_KEY}')")
         page.reload(wait_until="load")
@@ -107,13 +107,17 @@ def main() -> int:
         page.wait_for_timeout(700)
 
         print("\n== Initial state ==")
+        # Item 18 (misc_3.md, 2026-05-27): user request to flip the default-on
+        # for AOP + Rock Warblers logos in every preset. Permission concern is
+        # tracked in `brain/tasks/04_event_app/brand_assets_and_permissions.md`;
+        # this assertion follows the new policy.
         check(
-            "showBrandLogos toggle present and off by default",
+            "showBrandLogos toggle present and on by default",
             page.locator("#showBrandLogos").count() == 1
-            and not page.locator("#showBrandLogos").is_checked(),
+            and page.locator("#showBrandLogos").is_checked(),
         )
         vis = layer_visibility(page, LOGO_LAYER)
-        check(f"{LOGO_LAYER} hidden at load until permission is confirmed", vis == "none", f"visibility={vis}")
+        check(f"{LOGO_LAYER} visible at load (default-on policy)", vis == "visible", f"visibility={vis}")
 
         data = page.evaluate(
             """async () => {
@@ -149,7 +153,7 @@ def main() -> int:
         rendered_count = page.evaluate(
             "() => map.queryRenderedFeatures({ layers: ['brand-logos-icons'] }).length"
         )
-        check("logo icons do not render while default-off", rendered_count == 0, f"{rendered_count} rendered")
+        check("two logo icons render under default-on policy", rendered_count == 2, f"{rendered_count} rendered")
 
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["initial"]))
 

@@ -217,7 +217,7 @@ Pocket-map reload state lives in `aop_viewer_session_state_v1`. It records the
 active layer preset, active left context tab, search query, and selected event
 session; drawer open/closed state and calendar body height stay in their existing
 surface-specific keys. Landmark navigation remains a POI/search concern, not a
-third Hot lane. Card: `tasks/03_event_app/viewer_session_state_test_clock.md`.
+third Hot lane. Card: `tasks/03_event_app/_done/viewer_session_state_test_clock.md`.
 Dedicated verification: `mvp/scripts/playwright_verify_session_tools.py`.
 
 `#calendarCard` is a tabbed context card. The default `Events` tab renders
@@ -237,7 +237,7 @@ and the source-backed validation-loop promise. Public submissions are still
 deferred to the later moderated app loop.
 
 The third tab is `POI` (shipped 2026-05-25, card
-`tasks/03_event_app/left_panel_poi_browser.md`). It renders a grouped,
+`tasks/03_event_app/_done/left_panel_poi_browser.md`). It renders a grouped,
 scrollable directory of places already drawn on the map: event anchors,
 in-park buildings, observed trails, cemeteries, off-park visitor support, and
 the user's drawn POIs. Each row shows a name, a 1-2 sentence visitor blurb,
@@ -590,7 +590,7 @@ Recorded on 2026-05-22:
   Invitational`, subtitle `Friday, June 19, 2026`) renders 12 schedule rows from
   the JSON. The left context card carries three tabs: `Events` (the calendar),
   `POI` (left-rail browseable directory of places — shipped 2026-05-25 via
-  `brain/tasks/03_event_app/left_panel_poi_browser.md`), and `About` (merged
+  `brain/tasks/03_event_app/_done/left_panel_poi_browser.md`), and `About` (merged
   event detail + Rock Warblers team copy). Selecting a row turns on the default-off
   `Event schedule POIs`
   overlay, flies to the tagged point or route, flashes the highlight layer, and

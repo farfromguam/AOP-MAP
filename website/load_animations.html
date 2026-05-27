@@ -1,0 +1,1625 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Load animations review</title>
+  <style>
+    :root {
+      --brown-ink: #2e2418;
+      --brown-mid: #4e4128;
+      --brown-dark: #2a1f12;
+      --brown-soft: #5a4828;
+      --cream-hover: #efe2c6;
+      --cream-surface: rgba(250, 246, 235, 0.96);
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --control-border: #b9aa88;
+      --moss: #5f7157;
+      --moss-dark: #384833;
+      --moss-soft: #e3ebdc;
+      --rust: #a85020;
+      --tab-h: 44px;
+      --hairline: rgba(46, 36, 24, 0.14);
+      --moss-tint-hover: #d6e0cb;
+      --cream-wash-hover: #f1e8d2;
+      --shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background: #f4eddc;
+      color: var(--brown-ink);
+      font: 15px/1.45 Inter, system-ui, sans-serif;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    a { color: var(--brown-mid); text-decoration: none; }
+    a:hover { color: var(--rust); text-decoration: underline; }
+
+    .page-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+      padding: 24px 28px 18px;
+      border-bottom: 1px solid var(--cream-border);
+      background: var(--control-bg);
+    }
+    .page-head h1 {
+      margin: 0 0 5px;
+      font-size: 1.4rem;
+      line-height: 1.15;
+      color: var(--moss-dark);
+    }
+    .page-head p {
+      margin: 0;
+      max-width: 86ch;
+      color: var(--brown-soft);
+      font-size: 0.92rem;
+    }
+    .page-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .review-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 6px 10px;
+      border: 1px solid var(--control-border);
+      border-radius: 7px;
+      background: var(--control-bg);
+      color: var(--brown-ink);
+      font-weight: 800;
+      line-height: 1;
+    }
+    .review-button:hover { background: var(--cream-hover); }
+    .review-button svg { width: 17px; height: 17px; }
+    .review-button.primary {
+      background: var(--moss);
+      border-color: var(--moss);
+      color: var(--control-bg);
+    }
+    .review-button.primary:hover { background: var(--moss-dark); }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(420px, 1fr) minmax(280px, 360px);
+      gap: 18px;
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 20px 24px 28px;
+    }
+
+    .stage-shell,
+    .side-panel,
+    .lineage {
+      border: 1px solid var(--cream-border);
+      border-radius: 10px;
+      background: var(--control-bg);
+      box-shadow: 0 5px 18px rgba(46, 36, 24, 0.07);
+      overflow: hidden;
+    }
+    .stage-shell header,
+    .side-panel header,
+    .lineage header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--cream-border);
+      background: rgba(227, 235, 220, 0.68);
+    }
+    .stage-shell h2,
+    .side-panel h2,
+    .lineage h2 {
+      margin: 0;
+      color: var(--moss-dark);
+      font-size: 0.95rem;
+      line-height: 1.2;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .stage-meta {
+      color: var(--brown-soft);
+      font-size: 0.82rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .segmented {
+      display: grid;
+      gap: 8px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--cream-border);
+      background: #fffaf0;
+    }
+    .segmented-group {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .segmented-group.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .segmented button {
+      min-width: 0;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid var(--cream-border);
+      border-radius: 7px;
+      background: var(--control-bg);
+      color: var(--brown-mid);
+      font-size: 0.8rem;
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .segmented button[aria-pressed="true"] {
+      background: var(--rust);
+      border-color: #8b431b;
+      color: var(--control-bg);
+    }
+
+    .review-stage {
+      position: relative;
+      min-height: min(72vh, 760px);
+      overflow: hidden;
+      background: #7f876c;
+      isolation: isolate;
+    }
+    .review-stage.mobile-mode {
+      width: min(430px, calc(100vw - 48px));
+      min-height: 740px;
+      margin: 0 auto;
+      border-left: 1px solid rgba(46, 36, 24, 0.2);
+      border-right: 1px solid rgba(46, 36, 24, 0.2);
+    }
+
+    .map-sheet {
+      position: absolute;
+      inset: -8%;
+      background:
+        radial-gradient(circle at 44% 36%, rgba(236, 217, 177, 0.42) 0 7%, transparent 7.5%),
+        radial-gradient(circle at 58% 52%, rgba(168, 80, 32, 0.14) 0 9%, transparent 10%),
+        radial-gradient(circle at 31% 62%, rgba(95, 113, 87, 0.6) 0 14%, transparent 15%),
+        linear-gradient(135deg, #6e755b 0%, #9aa07c 42%, #56664c 100%);
+      transform-origin: 58% 51%;
+      transition: transform 420ms ease, filter 420ms ease;
+      z-index: 0;
+    }
+    .map-sheet svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.92;
+    }
+    .map-sheet .contour {
+      fill: none;
+      stroke: rgba(255, 253, 245, 0.32);
+      stroke-width: 1.4;
+    }
+    .map-sheet .trail {
+      fill: none;
+      stroke: rgba(46, 36, 24, 0.7);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .map-sheet .trail.hot {
+      stroke: rgba(168, 80, 32, 0.94);
+      stroke-width: 4.5;
+    }
+    .map-sheet .road {
+      fill: none;
+      stroke: rgba(255, 253, 245, 0.72);
+      stroke-width: 7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .review-stage.resetting .map-sheet {
+      animation: cameraReset var(--reset-ms, 620ms) cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    }
+    @keyframes cameraReset {
+      0% { transform: scale(1.2) translate(3%, -4%); filter: saturate(0.82); }
+      100% { transform: scale(1) translate(0, 0); filter: saturate(1); }
+    }
+
+    .left-controls {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      z-index: 3;
+      width: 360px;
+      max-width: calc(100% - 24px);
+      display: grid;
+      gap: 8px;
+    }
+    .review-stage.mobile-mode .left-controls {
+      left: 8px;
+      right: 8px;
+      top: 8px;
+      width: auto;
+      max-width: none;
+      gap: 6px;
+    }
+    .left-controls * {
+      box-sizing: border-box;
+      letter-spacing: 0;
+    }
+
+    .pill-bar {
+      display: grid;
+      grid-template-columns: 3fr 3fr 1fr;
+      gap: 8px;
+      align-items: stretch;
+    }
+    .review-stage.mobile-mode .pill-bar { gap: 6px; }
+    .pill-bar .pill {
+      display: flex;
+      width: 100%;
+      border: 1px solid var(--control-border);
+      border-radius: 999px;
+      background: var(--control-bg);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .pill-bar button {
+      flex: 1;
+      min-width: 0;
+      min-height: 36px;
+      padding: 6px 8px;
+      border: 0;
+      background: transparent;
+      color: var(--brown-ink);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .review-stage.mobile-mode .pill-bar button {
+      min-height: 32px;
+      padding: 4px 6px;
+    }
+    .pill-bar button + button { border-left: 1px solid var(--control-border); }
+    .pill-bar button.active {
+      background: var(--moss);
+      color: var(--control-bg);
+      border-left-color: transparent;
+    }
+    .pill-bar button:hover:not(.active) { background: var(--cream-hover); }
+    .pill-bar svg { width: 22px; height: 22px; }
+    .pill-bar .terrain-button {
+      font-weight: 800;
+      font-size: 0.86rem;
+    }
+
+    .lr-drawer {
+      display: flex;
+      align-items: stretch;
+    }
+    .lr-icon-col {
+      flex: 0 0 var(--tab-h);
+      width: var(--tab-h);
+      min-height: calc(var(--tab-h) * 3);
+      display: flex;
+      flex-direction: column;
+      background: var(--cream-surface);
+      border: 1px solid var(--cream-border);
+      border-radius: 8px 0 0 8px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+    .lr-icon-col.standalone { border-radius: 8px; }
+    .lr-icon-col.col2-short { border-bottom-right-radius: 8px; }
+    .lr-content-col {
+      position: relative;
+      flex: 1 1 auto;
+      min-width: 0;
+      align-self: flex-start;
+      display: flex;
+      flex-direction: column;
+      max-width: 420px;
+      opacity: 1;
+      background: var(--cream-surface);
+      border: 1px solid var(--cream-border);
+      border-left: 0;
+      border-radius: 0 8px 8px 0;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition:
+        max-width var(--open-motion-ms, 240ms) ease,
+        opacity 140ms ease,
+        border-width 180ms ease;
+    }
+    .lr-content-col.empty {
+      max-width: 0;
+      opacity: 0;
+      border-width: 0;
+      box-shadow: none;
+    }
+    .lr-tab {
+      position: relative;
+      flex: 0 0 var(--tab-h);
+      width: var(--tab-h);
+      height: var(--tab-h);
+      display: grid;
+      place-items: center;
+      border: 0;
+      background: transparent;
+      color: var(--brown-mid);
+      transition: margin-top var(--open-motion-ms, 260ms) cubic-bezier(0.34, 1.56, 0.64, 1),
+        background 140ms ease,
+        color 140ms ease,
+        transform 140ms ease;
+    }
+    .lr-tab svg { width: 22px; height: 22px; }
+    .lr-tab + .lr-tab { border-top: 1px solid var(--hairline); }
+    .lr-tab:hover { background: var(--cream-wash-hover); }
+    .lr-tab.open {
+      background: var(--moss-soft);
+      color: var(--moss-dark);
+    }
+    .lr-tab .lr-live-dot {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--rust);
+      box-shadow: 0 0 0 1.5px var(--cream-surface);
+      pointer-events: none;
+    }
+    .lr-tab.open .lr-live-dot { box-shadow: 0 0 0 1.5px var(--moss-soft); }
+    .lr-panel {
+      position: relative;
+      min-width: 0;
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: max-height var(--open-motion-ms, 320ms) cubic-bezier(0.22, 0.61, 0.36, 1),
+        opacity 180ms ease;
+    }
+    .lr-panel.open {
+      max-height: var(--panel-h, 360px);
+      opacity: 1;
+    }
+    .review-stage.closing .lr-tab,
+    .review-stage.closing .lr-panel,
+    .review-stage.closing .lr-content-col {
+      transition-duration: var(--close-motion-ms, 180ms);
+    }
+    .lr-panel.open ~ .lr-panel.open { border-top: 1px solid var(--hairline); }
+    #lrPanelSearch { --panel-h: var(--tab-h); }
+    #lrPanelHot { --panel-h: 112px; }
+    #lrPanelCal { --panel-h: 420px; }
+
+    .search-shell,
+    .hot-control,
+    .calendar-card {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .search-shell {
+      display: flex;
+      height: var(--tab-h);
+      padding: 0 8px;
+      align-items: center;
+    }
+    .search {
+      position: relative;
+      margin: 0;
+      width: 100%;
+    }
+    .search input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px 8px 32px;
+      border: 1px solid var(--control-border);
+      border-radius: 7px;
+      background: var(--control-bg);
+      color: var(--brown-ink);
+    }
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      width: 15px;
+      height: 15px;
+      transform: translateY(-50%);
+      color: var(--brown-soft);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .hot-control {
+      display: grid;
+      gap: 6px;
+      padding: 8px;
+    }
+    .hot-control-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 2px;
+      color: var(--brown-ink);
+    }
+    .hot-control-title {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .hot-control-status {
+      min-width: 0;
+      color: var(--brown-soft);
+      font-size: 0.68rem;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .hot-lanes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .hot-button {
+      width: 100%;
+      min-height: 64px;
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr);
+      align-items: center;
+      gap: 7px;
+      margin: 0;
+      padding: 8px 9px;
+      border: 1px solid rgba(85, 67, 44, 0.25);
+      border-radius: 8px;
+      background: var(--brown-mid);
+      color: #f7f1e2;
+      text-align: left;
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .hot-button[data-hot-state="hot-now"] { background: var(--rust); }
+    .hot-button[data-hot-state="trail-hot"] { background: var(--moss); }
+    .hot-button-title,
+    .hot-button-detail {
+      display: block;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .hot-button-detail {
+      margin-top: 1px;
+      color: rgba(247, 241, 226, 0.88);
+      font-size: 0.72rem;
+      font-weight: 400;
+      text-transform: none;
+    }
+    .hot-button-glyph {
+      display: inline-grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border: 1.5px solid currentColor;
+      border-radius: 50%;
+      font-size: 0;
+    }
+    .hot-button-glyph::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .calendar-card { display: block; overflow: hidden; }
+    .left-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 4px;
+      padding: 8px;
+      border-bottom: 0;
+      background: transparent;
+    }
+    .review-stage.mobile-mode .left-tabs { padding: 4px; }
+    .left-tab {
+      min-width: 0;
+      min-height: 32px;
+      margin: 0;
+      padding: 5px 4px;
+      border: 1px solid var(--cream-border);
+      border-radius: 6px;
+      background: rgba(255, 248, 232, 0.88);
+      color: var(--brown-mid);
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      box-shadow: inset 0 -1px 0 rgba(46, 36, 24, 0.06);
+    }
+    .left-tab[aria-selected="true"] {
+      background: var(--rust);
+      border-color: #8b431b;
+      color: var(--control-bg);
+      box-shadow: inset 0 -2px 0 rgba(46, 36, 24, 0.28);
+    }
+    .calendar-heading {
+      display: block;
+      padding: 8px 10px;
+      color: var(--brown-ink);
+      text-align: left;
+    }
+    .calendar-title {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .calendar-range {
+      display: block;
+      margin-top: 1px;
+      color: var(--brown-soft);
+      font-size: 0.76rem;
+    }
+    .calendar-body {
+      max-height: min(42vh, 360px);
+      overflow-y: auto;
+      padding: 0;
+    }
+    .review-stage.mobile-mode .calendar-body { max-height: 166px; }
+    .calendar-days {
+      list-style: none;
+      display: grid;
+      gap: 0;
+      margin: 0;
+      padding: 0;
+    }
+    .calendar-days li {
+      position: relative;
+      margin: 0;
+      padding: 0;
+      border-top: 1px solid var(--cream-border);
+      color: var(--brown-ink);
+    }
+    .calendar-days li[data-session-state="happening"] {
+      background: #dde2cf;
+      box-shadow: inset 3px 0 0 0 var(--rust);
+    }
+    .calendar-days li[data-session-state="upcoming_next"] {
+      background: #ecd9b1;
+      box-shadow: inset 3px 0 0 0 var(--brown-dark);
+    }
+    .calendar-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      align-items: start;
+      gap: 8px;
+      margin: 0;
+      padding: 7px 10px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--brown-ink);
+      text-align: left;
+    }
+    .calendar-row:hover,
+    .calendar-row.active { background: var(--cream-hover); }
+    .calendar-row.targeted {
+      background: #f3d99d;
+      box-shadow: inset 0 0 0 2px rgba(168, 80, 32, 0.46);
+    }
+    .calendar-day {
+      padding-top: 2px;
+      color: var(--brown-mid);
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .calendar-time,
+    .calendar-name,
+    .calendar-location {
+      display: block;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .calendar-time {
+      color: var(--brown-soft);
+      font-size: 0.74rem;
+      font-weight: 700;
+      line-height: 1.15;
+    }
+    .calendar-name {
+      margin-top: 1px;
+      font-size: 0.88rem;
+      line-height: 1.18;
+    }
+    .calendar-location {
+      margin-top: 2px;
+      color: var(--brown-soft);
+      font-size: 0.74rem;
+      line-height: 1.15;
+    }
+    .cal-live-badge,
+    .cal-soon-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      color: #f7f1e2;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .cal-live-badge { background: var(--rust); }
+    .cal-soon-badge {
+      top: 7px;
+      padding: 0 5px;
+      border: 1px solid var(--rust);
+      background: transparent;
+      color: var(--rust);
+      font-variant-numeric: tabular-nums;
+      text-transform: lowercase;
+    }
+    .calendar-resize-handle {
+      position: sticky;
+      bottom: 0;
+      z-index: 1;
+      width: 100%;
+      height: 13px;
+      margin: 0;
+      border: 0;
+      border-top: 1px solid var(--cream-border);
+      background: linear-gradient(180deg, rgba(250, 246, 235, 0.92), rgba(239, 226, 198, 0.96));
+    }
+    .calendar-resize-handle::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 36px;
+      height: 4px;
+      transform: translate(-50%, -50%);
+      border-top: 1px solid rgba(78, 65, 40, 0.48);
+      border-bottom: 1px solid rgba(78, 65, 40, 0.34);
+    }
+
+    .event-pin {
+      position: absolute;
+      left: 58%;
+      top: 51%;
+      z-index: 2;
+      width: 18px;
+      height: 18px;
+      border: 3px solid var(--control-bg);
+      border-radius: 50%;
+      background: var(--rust);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+      transform: translate(-50%, -50%) scale(0.86);
+      opacity: 0.78;
+    }
+    .event-popup {
+      position: absolute;
+      left: calc(58% + 18px);
+      top: calc(51% - 86px);
+      z-index: 4;
+      width: min(250px, calc(100% - 34px));
+      padding: 10px 12px;
+      border: 1px solid var(--cream-border);
+      border-radius: 8px;
+      background: rgba(255, 253, 245, 0.97);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.26);
+      transform: translateY(6px) scale(0.98);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .review-stage.mobile-mode .event-popup {
+      left: 18px;
+      right: 18px;
+      top: auto;
+      bottom: 26px;
+      width: auto;
+    }
+    .event-popup.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      transition:
+        opacity var(--popup-motion-ms, 210ms) ease,
+        transform var(--popup-motion-ms, 210ms) ease;
+    }
+    .event-popup h3 {
+      margin: 0 0 4px;
+      color: var(--brown-dark);
+      font-size: 0.92rem;
+      line-height: 1.2;
+    }
+    .event-popup p {
+      margin: 0;
+      color: var(--brown-soft);
+      font-size: 0.8rem;
+      line-height: 1.35;
+    }
+    .event-popup::before {
+      content: "";
+      position: absolute;
+      left: -8px;
+      top: 42px;
+      width: 14px;
+      height: 14px;
+      border-left: 1px solid var(--cream-border);
+      border-bottom: 1px solid var(--cream-border);
+      background: rgba(255, 253, 245, 0.97);
+      transform: rotate(45deg);
+    }
+    .review-stage.mobile-mode .event-popup::before { display: none; }
+
+    .sequence-list {
+      list-style: none;
+      display: grid;
+      gap: 7px;
+      margin: 0;
+      padding: 12px 14px;
+    }
+    .sequence-list li {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid var(--cream-border);
+      border-radius: 7px;
+      background: #fffaf0;
+      color: var(--brown-soft);
+      font-size: 0.82rem;
+    }
+    .sequence-list .num {
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--moss-soft);
+      color: var(--moss-dark);
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    .sequence-list li.active {
+      background: #ecd9b1;
+      border-color: rgba(168, 80, 32, 0.38);
+      color: var(--brown-dark);
+      box-shadow: inset 3px 0 0 var(--rust);
+    }
+
+    .variant-copy {
+      padding: 12px 14px 14px;
+      border-top: 1px solid var(--cream-border);
+      color: var(--brown-soft);
+      font-size: 0.86rem;
+    }
+    .variant-copy strong { color: var(--brown-dark); }
+    .timing-panel {
+      display: grid;
+      gap: 10px;
+      padding: 12px 14px 14px;
+      border-top: 1px solid var(--cream-border);
+      background: rgba(255, 250, 240, 0.78);
+    }
+    .timing-panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .timing-panel h3 {
+      margin: 0;
+      color: var(--moss-dark);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .timing-grid {
+      display: grid;
+      gap: 8px;
+    }
+    .timing-control {
+      display: grid;
+      grid-template-columns: minmax(88px, 1fr) minmax(104px, 1.35fr) 48px;
+      gap: 8px;
+      align-items: center;
+      color: var(--brown-ink);
+      font-size: 0.8rem;
+    }
+    .timing-control span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .timing-control input {
+      width: 100%;
+      min-width: 0;
+      accent-color: var(--rust);
+    }
+    .timing-control output {
+      color: var(--brown-soft);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+    .timing-reset {
+      min-height: 28px;
+      padding: 4px 8px;
+      border: 1px solid var(--control-border);
+      border-radius: 6px;
+      background: var(--control-bg);
+      color: var(--brown-mid);
+      font-size: 0.74rem;
+      font-weight: 800;
+    }
+    .timing-reset:hover {
+      background: var(--cream-hover);
+      color: var(--brown-dark);
+    }
+    .timing-note {
+      margin: 0;
+      color: var(--brown-soft);
+      font-size: 0.78rem;
+      line-height: 1.3;
+    }
+    .lineage {
+      grid-column: 1 / -1;
+    }
+    .lineage ul {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 8px 14px;
+      margin: 0;
+      padding: 12px 14px 16px;
+    }
+    .lineage li {
+      min-width: 0;
+      color: var(--brown-soft);
+      font-size: 0.84rem;
+    }
+    .lineage strong {
+      color: var(--brown-dark);
+      display: block;
+    }
+
+    .review-stage[data-variant="pulse"] .lr-tab.cue {
+      animation: tabPulseCue var(--cue-half-ms, 490ms) ease-in-out 2;
+    }
+    .review-stage[data-variant="pulse"] .event-popup.visible {
+      animation: popupPop var(--popup-motion-ms, 260ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    @keyframes tabPulseCue {
+      0%, 100% { background: transparent; color: var(--brown-mid); box-shadow: inset 0 0 0 0 rgba(168, 80, 32, 0); }
+      50% { background: #ecd9b1; color: var(--brown-dark); box-shadow: inset 0 0 0 2px rgba(168, 80, 32, 0.42); }
+    }
+    @keyframes popupPop {
+      0% { transform: translateY(8px) scale(0.95); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .review-stage[data-variant="sweep"] .lr-tab.cue::after {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border-radius: 6px;
+      background: linear-gradient(100deg, transparent 0%, rgba(255, 253, 245, 0.92) 48%, transparent 100%);
+      animation: tabSweepCue var(--cue-half-ms, 590ms) ease-in-out 2;
+    }
+    .review-stage[data-variant="sweep"] .lr-panel.open {
+      transition-duration: 240ms;
+    }
+    .review-stage[data-variant="sweep"] .event-pin.ping {
+      animation: pinPing 760ms ease-out 2;
+    }
+    @keyframes tabSweepCue {
+      0% { transform: translateX(-120%); opacity: 0; }
+      20% { opacity: 1; }
+      100% { transform: translateX(120%); opacity: 0; }
+    }
+    @keyframes pinPing {
+      0% { box-shadow: 0 0 0 0 rgba(168, 80, 32, 0.5), 0 6px 18px rgba(0, 0, 0, 0.28); }
+      100% { box-shadow: 0 0 0 22px rgba(168, 80, 32, 0), 0 6px 18px rgba(0, 0, 0, 0.28); }
+    }
+
+    .review-stage[data-variant="quiet"] .lr-tab.cue {
+      animation: tabQuietCue var(--cue-ms, 570ms) ease-in-out 1;
+    }
+    .review-stage[data-variant="quiet"] .lr-tab,
+    .review-stage[data-variant="quiet"] .lr-panel,
+    .review-stage[data-variant="quiet"] .lr-content-col {
+      transition-duration: var(--open-motion-ms, 250ms);
+    }
+    .review-stage[data-variant="quiet"].closing .lr-tab,
+    .review-stage[data-variant="quiet"].closing .lr-panel,
+    .review-stage[data-variant="quiet"].closing .lr-content-col {
+      transition-duration: var(--close-motion-ms, 145ms);
+    }
+    .review-stage[data-variant="quiet"] .event-popup.visible {
+      transition-duration: var(--popup-motion-ms, 295ms);
+    }
+    @keyframes tabQuietCue {
+      0%, 100% { outline: 0 solid rgba(168, 80, 32, 0); outline-offset: 0; }
+      50% { outline: 3px solid rgba(168, 80, 32, 0.42); outline-offset: -4px; background: var(--cream-hover); }
+    }
+
+    .event-pin.ping {
+      animation: pinPulse 650ms ease-out 1;
+    }
+    @keyframes pinPulse {
+      0% { transform: translate(-50%, -50%) scale(0.86); }
+      55% { transform: translate(-50%, -50%) scale(1.24); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+
+    @media (max-width: 960px) {
+      .page-head {
+        grid-template-columns: minmax(0, 1fr);
+        align-items: start;
+      }
+      .page-actions { justify-content: flex-start; }
+      main {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 16px;
+      }
+      .review-stage { min-height: 680px; }
+      .stage-meta { white-space: normal; }
+    }
+
+    @media (max-width: 560px) {
+      .page-head { padding: 18px 16px 14px; }
+      .segmented-group,
+      .segmented-group.two { grid-template-columns: minmax(0, 1fr); }
+      .review-stage.mobile-mode { width: 100%; }
+      .review-stage { min-height: 700px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 1ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-head">
+    <div>
+      <h1>Load animations review</h1>
+      <p>Standalone review page for the sequence in <code>brain/tasks/03_event_app/load animations.md</code>. The sequence teaches the left drawer by cueing Search, Hot, and Calendar before the selected event appears in the world.</p>
+    </div>
+    <div class="page-actions">
+      <button class="review-button primary" id="replayButton" type="button">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 12a8 8 0 1 0 2.35-5.65" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M4 4v5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Replay
+      </button>
+      <a class="review-button" href="leftrail_compare.html">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 5h16M4 12h16M4 19h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        Variant history
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <section class="stage-shell">
+      <header>
+        <h2 id="variantTitle">LA3 Quiet Beacon</h2>
+        <span class="stage-meta" id="stageMeta">Desktop keeps cards open</span>
+      </header>
+      <div class="segmented" aria-label="Review controls">
+        <div class="segmented-group" role="group" aria-label="Animation variant">
+          <button type="button" data-variant="pulse" aria-pressed="false">LA1 Pulse Ladder</button>
+          <button type="button" data-variant="sweep" aria-pressed="false">LA2 Scout Sweep</button>
+          <button type="button" data-variant="quiet" aria-pressed="true">LA3 Quiet Beacon</button>
+        </div>
+        <div class="segmented-group two" role="group" aria-label="Device mode">
+          <button type="button" data-device="desktop" aria-pressed="true">Desktop</button>
+          <button type="button" data-device="mobile" aria-pressed="false">Mobile</button>
+        </div>
+      </div>
+
+      <div class="review-stage" id="reviewStage" data-variant="pulse">
+        <div class="map-sheet" aria-hidden="true">
+          <svg viewBox="0 0 1200 760" preserveAspectRatio="none">
+            <path class="contour" d="M-20 92 C180 44 330 98 494 72 C650 46 790 10 1220 66"/>
+            <path class="contour" d="M-20 164 C132 128 266 158 438 132 C628 102 820 112 1220 150"/>
+            <path class="contour" d="M-20 252 C150 220 324 248 512 218 C722 184 900 210 1220 244"/>
+            <path class="contour" d="M-20 354 C210 306 376 390 566 336 C742 286 930 314 1220 356"/>
+            <path class="contour" d="M-20 462 C160 424 340 510 548 462 C762 414 930 438 1220 488"/>
+            <path class="contour" d="M-20 594 C164 532 356 612 584 574 C792 540 956 548 1220 626"/>
+            <path class="road" d="M-30 640 C120 566 214 486 352 444 C500 398 640 398 804 324 C944 260 1046 188 1230 154"/>
+            <path class="trail" d="M230 610 C286 520 382 492 438 420 C500 340 576 352 636 282 C694 214 804 232 878 154"/>
+            <path class="trail hot" d="M454 556 C518 480 536 422 612 386 C690 350 710 294 780 264"/>
+            <path class="trail" d="M286 288 C390 310 460 282 546 222 C614 176 704 170 774 126"/>
+            <path class="trail" d="M732 656 C690 566 716 498 790 444 C856 396 896 340 884 282"/>
+          </svg>
+        </div>
+
+        <div class="left-controls">
+          <div class="pill-bar" role="group" aria-label="Map view controls">
+            <div class="pill" role="group" aria-label="Zoom to area">
+              <button type="button" title="Region zoom" aria-label="Region zoom">
+                <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 8V3h5M14 3h5v5M19 14v5h-5M8 19H3v-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              </button>
+              <button type="button" title="Fit park boundary" aria-label="Fit park boundary">
+                <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M4 7L7 3L15 4L18 9L17 16L9 18L4 14Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/></svg>
+              </button>
+              <button type="button" title="Pavilion zoom" aria-label="Pavilion zoom">
+                <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 9L11 3L19 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 9V18M9 9V18M13 9V18M17 9V18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 18H19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <div class="pill" role="group" aria-label="Map preset">
+              <button type="button" class="active" title="Park preset" aria-label="Park preset">
+                <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 6L8 4L14 6L19 4V16L14 18L8 16L3 18Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 4V16M14 6V18" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+              </button>
+              <button type="button" title="Topo preset" aria-label="Topo preset">
+                <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 7c3-2 6-2 9 0s5 2 7 0M3 11c3-2 6-2 9 0s5 2 7 0M3 15c3-2 6-2 9 0s5 2 7 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              </button>
+              <button type="button" title="Trace preset" aria-label="Trace preset">
+                <svg viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="3" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5 16c2-1 3-4 6-4s4 3 6 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="16" r="1.3" fill="currentColor"/><circle cx="17" cy="14" r="1.3" fill="currentColor"/></svg>
+              </button>
+            </div>
+            <div class="pill" role="group" aria-label="3D toggle">
+              <button type="button" class="terrain-button" title="Toggle 3D" aria-label="Toggle 3D">3D</button>
+            </div>
+          </div>
+
+          <div class="lr-drawer" id="lrDrawer">
+            <div class="lr-icon-col standalone" id="lrIconCol">
+              <button class="lr-tab" id="lrTabSearch" type="button" aria-pressed="false" aria-controls="lrPanelSearch" title="Search">
+                <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                  <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.6"/>
+                  <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <button class="lr-tab" id="lrTabHot" type="button" aria-pressed="false" aria-controls="lrPanelHot" title="Hot now">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3.001 2.48Z"/>
+                  <path d="M12 18a3.75 3.75 0 0 0 .495-7.467 5.99 5.99 0 0 0-1.925 3.546 5.974 5.974 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/>
+                </svg>
+                <span class="lr-live-dot" aria-hidden="true"></span>
+              </button>
+              <button class="lr-tab" id="lrTabCal" type="button" aria-pressed="false" aria-controls="lrPanelCal" title="Events / POI / About">
+                <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                  <rect x="3.2" y="5.2" width="15.6" height="13.6" rx="1.6" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M3.2 9.2 H 18.8" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M7.5 3 V 7 M14.5 3 V 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M6 13 H 10 M12 13 H 16 M6 16 H 10 M12 16 H 16" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+
+            <div class="lr-content-col empty" id="lrContentCol">
+              <div class="lr-panel" id="lrPanelSearch" data-card="search">
+                <div class="search-shell">
+                  <div class="search">
+                    <svg class="search-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                      <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.6"/>
+                      <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                    </svg>
+                    <input type="text" value="" placeholder="Search the map..." aria-label="Search the map">
+                  </div>
+                </div>
+              </div>
+
+              <div class="lr-panel" id="lrPanelHot" data-card="hot">
+                <section class="hot-control" aria-label="Hot now">
+                  <div class="hot-control-head">
+                    <span class="hot-control-title">Hot now</span>
+                    <span class="hot-control-status">Stage 2 live</span>
+                  </div>
+                  <div class="hot-lanes" data-lane-count="2">
+                    <button type="button" class="hot-button" data-hot-state="hot-now">
+                      <span class="hot-button-glyph" aria-hidden="true"></span>
+                      <span>
+                        <span class="hot-button-title">Stage 2</span>
+                        <span class="hot-button-detail">Taco Stand ridge</span>
+                      </span>
+                    </button>
+                    <button type="button" class="hot-button" data-hot-state="trail-hot">
+                      <span class="hot-button-glyph" aria-hidden="true"></span>
+                      <span>
+                        <span class="hot-button-title">Trail activity</span>
+                        <span class="hot-button-detail">Where rigs spent time</span>
+                      </span>
+                    </button>
+                  </div>
+                </section>
+              </div>
+
+              <div class="lr-panel" id="lrPanelCal" data-card="cal">
+                <section class="calendar-card" aria-label="Events and park information">
+                  <div class="left-tabs" role="tablist" aria-label="Left panel content">
+                    <button class="left-tab" type="button" role="tab" aria-selected="true">Events</button>
+                    <button class="left-tab" type="button" role="tab" aria-selected="false">POI</button>
+                    <button class="left-tab" type="button" role="tab" aria-selected="false">About</button>
+                  </div>
+                  <div class="left-tab-panel" role="tabpanel">
+                    <div class="calendar-heading">
+                      <span>
+                        <span class="calendar-title">Rock Warblers Trail Blazing Invitational</span>
+                        <span class="calendar-range">Friday, June 19, 2026</span>
+                      </span>
+                    </div>
+                    <div class="calendar-body">
+                      <ol class="calendar-days">
+                        <li>
+                          <button class="calendar-row" type="button">
+                            <span class="calendar-day">Fri</span>
+                            <span>
+                              <span class="calendar-time">8:30 AM</span>
+                              <span class="calendar-name">Driver meeting</span>
+                              <span class="calendar-location">Pavilion</span>
+                            </span>
+                          </button>
+                        </li>
+                        <li data-session-state="happening">
+                          <span class="cal-live-badge">Live</span>
+                          <button class="calendar-row" type="button" id="targetCalendarRow">
+                            <span class="calendar-day">Fri</span>
+                            <span>
+                              <span class="calendar-time">10:00 AM</span>
+                              <span class="calendar-name">Stage 2 - Taco Stand</span>
+                              <span class="calendar-location">Mid-ridge marker</span>
+                            </span>
+                          </button>
+                        </li>
+                        <li data-session-state="upcoming_next">
+                          <span class="cal-soon-badge">in 47m</span>
+                          <button class="calendar-row" type="button">
+                            <span class="calendar-day">Fri</span>
+                            <span>
+                              <span class="calendar-time">1:30 PM</span>
+                              <span class="calendar-name">Stage 3 - Water Pull</span>
+                              <span class="calendar-location">North creek</span>
+                            </span>
+                          </button>
+                        </li>
+                        <li>
+                          <button class="calendar-row" type="button">
+                            <span class="calendar-day">Fri</span>
+                            <span>
+                              <span class="calendar-time">8:00 PM</span>
+                              <span class="calendar-name">Night crawl</span>
+                              <span class="calendar-location">Pavilion to fire</span>
+                            </span>
+                          </button>
+                        </li>
+                      </ol>
+                      <div class="calendar-resize-handle" aria-hidden="true"></div>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="event-pin" id="eventPin" aria-hidden="true"></div>
+        <article class="event-popup" id="eventPopup" aria-live="polite">
+          <h3>Stage 2 - Taco Stand</h3>
+          <p>The calendar action resolves to the map target after the drawer teaches itself.</p>
+        </article>
+      </div>
+    </section>
+
+    <aside class="side-panel">
+      <header>
+        <h2>Sequence</h2>
+      </header>
+      <ol class="sequence-list" id="sequenceList">
+        <li data-step="reset"><span class="num">1</span><span>Page loads and view resets.</span></li>
+        <li data-step="search-open"><span class="num">2</span><span>Search button blinks, then extends.</span></li>
+        <li data-step="hot-open"><span class="num">3</span><span>Hot button blinks, then extends.</span></li>
+        <li data-step="cal-open"><span class="num">4</span><span>Calendar button blinks, then active tab extends.</span></li>
+        <li data-step="calendar-action"><span class="num">5</span><span>User finds action in the calendar.</span></li>
+        <li data-step="mobile-collapse"><span class="num">6</span><span>Mobile collapses Search, Hot, and Calendar.</span></li>
+        <li data-step="world-pop"><span class="num">7</span><span>Event in world pops up.</span></li>
+      </ol>
+      <div class="variant-copy" id="variantCopy">
+        <strong>LA3 Quiet Beacon.</strong> Lower-motion version: one soft flash per icon, quicker intro, faster mobile close.
+      </div>
+      <section class="timing-panel" aria-label="Timing knobs">
+        <div class="timing-panel-head">
+          <h3>Timing knobs</h3>
+          <button class="timing-reset" id="timingReset" type="button">Reset</button>
+        </div>
+        <div class="timing-grid">
+          <label class="timing-control">
+            <span>View reset</span>
+            <input type="range" min="250" max="1200" step="10" data-timing-key="reset">
+            <output data-timing-output="reset"></output>
+          </label>
+          <label class="timing-control">
+            <span>Tab flash</span>
+            <input type="range" min="120" max="900" step="10" data-timing-key="cue">
+            <output data-timing-output="cue"></output>
+          </label>
+          <label class="timing-control">
+            <span>Open speed</span>
+            <input type="range" min="80" max="450" step="5" data-timing-key="openMotion">
+            <output data-timing-output="openMotion"></output>
+          </label>
+          <label class="timing-control">
+            <span>Step hold</span>
+            <input type="range" min="0" max="700" step="10" data-timing-key="afterOpen">
+            <output data-timing-output="afterOpen"></output>
+          </label>
+          <label class="timing-control">
+            <span>Mobile close</span>
+            <input type="range" min="60" max="350" step="5" data-timing-key="closeMotion">
+            <output data-timing-output="closeMotion"></output>
+          </label>
+          <label class="timing-control">
+            <span>Popup delay</span>
+            <input type="range" min="0" max="500" step="10" data-timing-key="popup">
+            <output data-timing-output="popup"></output>
+          </label>
+        </div>
+        <p class="timing-note">Mobile close runs only in Mobile mode. All three cards close together; the close flash is derived from Tab flash.</p>
+      </section>
+    </aside>
+
+    <section class="lineage">
+      <header>
+        <h2>Named variation lineage</h2>
+      </header>
+      <ul>
+        <li><strong><a href="leftrail_current.html">leftrail_current.html</a></strong>Current higher-contrast baseline for the drawer chrome.</li>
+        <li><strong><a href="leftrail_motion.html">leftrail_motion.html</a></strong>Earlier motion-led drawer variant: springy float-down, panel reveal, and hot-lane ripple.</li>
+        <li><strong><a href="leftrail_compare.html">leftrail_compare.html</a></strong>Element review page with the B/G/L/P/N named variant history.</li>
+        <li><strong><a href="leftrail_compare_v2.html">leftrail_compare_v2.html</a></strong>Second compare page for the tab, gates, and event-flow variant round.</li>
+      </ul>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const LR_CARDS = ['search', 'hot', 'cal'];
+      const variantTitles = {
+        pulse: 'LA1 Pulse Ladder',
+        sweep: 'LA2 Scout Sweep',
+        quiet: 'LA3 Quiet Beacon'
+      };
+      const variantCopy = {
+        pulse: '<strong>LA1 Pulse Ladder.</strong> Direct interpretation of the card: each tab pulses twice, opens, then the event row and world popup take focus.',
+        sweep: '<strong>LA2 Scout Sweep.</strong> Same order, but the cue reads as a light sweep through each icon before the panel opens.',
+        quiet: '<strong>LA3 Quiet Beacon.</strong> Lower-motion version: one soft flash per icon, quicker intro, faster mobile close.'
+      };
+      const DEFAULT_TIMINGS = {
+        pulse: {
+          reset: 700,
+          cue: 520,
+          afterCue: 45,
+          openMotion: 210,
+          afterOpen: 260,
+          action: 300,
+          closeMotion: 125,
+          popup: 150,
+          popupMotion: 210
+        },
+        sweep: {
+          reset: 680,
+          cue: 560,
+          afterCue: 35,
+          openMotion: 190,
+          afterOpen: 220,
+          action: 280,
+          closeMotion: 115,
+          popup: 140,
+          popupMotion: 200
+        },
+        quiet: {
+          reset: 500,
+          cue: 250,
+          afterCue: 35,
+          openMotion: 120,
+          afterOpen: 150,
+          action: 240,
+          closeMotion: 170,
+          popup: 200,
+          popupMotion: 180
+        }
+      };
+      const timings = typeof structuredClone === 'function'
+        ? structuredClone(DEFAULT_TIMINGS)
+        : JSON.parse(JSON.stringify(DEFAULT_TIMINGS));
+
+      const stage = document.getElementById('reviewStage');
+      const replayButton = document.getElementById('replayButton');
+      const timingReset = document.getElementById('timingReset');
+      const stageMeta = document.getElementById('stageMeta');
+      const variantTitle = document.getElementById('variantTitle');
+      const variantText = document.getElementById('variantCopy');
+      const eventPopup = document.getElementById('eventPopup');
+      const eventPin = document.getElementById('eventPin');
+      const targetCalendarRow = document.getElementById('targetCalendarRow');
+      const sequenceItems = Array.from(document.querySelectorAll('#sequenceList li'));
+      const variantButtons = Array.from(document.querySelectorAll('[data-variant]'));
+      const deviceButtons = Array.from(document.querySelectorAll('[data-device]'));
+      const timingInputs = Array.from(document.querySelectorAll('[data-timing-key]'));
+      const timingOutputs = Object.fromEntries(
+        Array.from(document.querySelectorAll('[data-timing-output]'))
+          .map(output => [output.dataset.timingOutput, output])
+      );
+      const lrTabs = {
+        search: document.getElementById('lrTabSearch'),
+        hot: document.getElementById('lrTabHot'),
+        cal: document.getElementById('lrTabCal')
+      };
+      const lrPanels = {
+        search: document.getElementById('lrPanelSearch'),
+        hot: document.getElementById('lrPanelHot'),
+        cal: document.getElementById('lrPanelCal')
+      };
+      const lrIconCol = document.getElementById('lrIconCol');
+      const lrContentCol = document.getElementById('lrContentCol');
+      const TAB_H = parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue('--tab-h'),
+        10
+      ) || 44;
+
+      let currentVariant = 'quiet';
+      let currentDevice = 'desktop';
+      let runId = 0;
+      const lrOpen = { search: false, hot: false, cal: false };
+
+      function wait(ms) {
+        return new Promise(resolve => window.setTimeout(resolve, ms));
+      }
+
+      function cloneTiming(name) {
+        return JSON.parse(JSON.stringify(DEFAULT_TIMINGS[name]));
+      }
+
+      function applyTimingVars() {
+        const cfg = timings[currentVariant];
+        stage.style.setProperty('--reset-ms', `${cfg.reset}ms`);
+        stage.style.setProperty('--open-motion-ms', `${cfg.openMotion}ms`);
+        stage.style.setProperty('--close-motion-ms', `${cfg.closeMotion}ms`);
+        stage.style.setProperty('--popup-motion-ms', `${cfg.popupMotion}ms`);
+      }
+
+      function refreshTimingControls() {
+        const cfg = timings[currentVariant];
+        timingInputs.forEach(input => {
+          const key = input.dataset.timingKey;
+          input.value = cfg[key];
+          if (timingOutputs[key]) timingOutputs[key].value = `${cfg[key]}ms`;
+        });
+        applyTimingVars();
+      }
+
+      function renderDrawer() {
+        const anyOpen = LR_CARDS.some(c => lrOpen[c]);
+        lrContentCol.classList.toggle('empty', !anyOpen);
+        lrIconCol.classList.toggle('standalone', !anyOpen);
+
+        LR_CARDS.forEach(c => {
+          const isOpen = !!lrOpen[c];
+          lrTabs[c].classList.toggle('open', isOpen);
+          lrTabs[c].setAttribute('aria-pressed', isOpen ? 'true' : 'false');
+          lrPanels[c].classList.toggle('open', isOpen);
+        });
+
+        LR_CARDS.forEach(c => { lrTabs[c].style.marginTop = ''; });
+        void lrContentCol.offsetHeight;
+
+        let prevBottom = 0;
+        LR_CARDS.forEach((c, i) => {
+          const canonical = i * TAB_H;
+          const pTop = lrOpen[c] ? lrPanels[c].offsetTop : -Infinity;
+          const desired = Math.max(canonical, pTop, prevBottom);
+          lrTabs[c].style.marginTop = (desired - prevBottom) + 'px';
+          prevBottom = desired + TAB_H;
+        });
+
+        lrIconCol.classList.toggle(
+          'col2-short',
+          anyOpen && lrContentCol.offsetHeight < lrIconCol.offsetHeight
+        );
+      }
+
+      function setOpen(card, open) {
+        lrOpen[card] = open;
+        renderDrawer();
+      }
+
+      function resetStage() {
+        stage.classList.remove('closing');
+        LR_CARDS.forEach(c => {
+          lrOpen[c] = false;
+          lrTabs[c].classList.remove('cue');
+          lrTabs[c].style.removeProperty('--cue-ms');
+          lrTabs[c].style.removeProperty('--cue-half-ms');
+        });
+        targetCalendarRow.classList.remove('targeted');
+        eventPopup.classList.remove('visible');
+        eventPin.classList.remove('ping');
+        renderDrawer();
+      }
+
+      function setStep(step) {
+        sequenceItems.forEach(item => {
+          item.classList.toggle('active', item.dataset.step === step);
+        });
+      }
+
+      async function cue(card, cfg, token, phase = 'open') {
+        if (token !== runId) return;
+        const tab = lrTabs[card];
+        const duration = phase === 'close' ? Math.max(120, Math.round(cfg.cue * 0.58)) : cfg.cue;
+        const afterCue = phase === 'close' ? 20 : cfg.afterCue;
+        tab.classList.remove('cue');
+        tab.style.setProperty('--cue-ms', `${duration}ms`);
+        tab.style.setProperty('--cue-half-ms', `${duration / 2}ms`);
+        void tab.offsetWidth;
+        tab.classList.add('cue');
+        await wait(duration);
+        tab.classList.remove('cue');
+        await wait(afterCue);
+        tab.style.removeProperty('--cue-ms');
+        tab.style.removeProperty('--cue-half-ms');
+      }
+
+      async function openWithCue(card, step, cfg, token) {
+        setStep(step);
+        await cue(card, cfg, token);
+        if (token !== runId) return;
+        setOpen(card, true);
+        await wait(cfg.afterOpen);
+      }
+
+      async function collapseAllWithCue(cfg, token) {
+        stage.classList.add('closing');
+        await Promise.all(LR_CARDS.map(card => cue(card, cfg, token, 'close')));
+        if (token !== runId) {
+          stage.classList.remove('closing');
+          return;
+        }
+        LR_CARDS.forEach(card => { lrOpen[card] = false; });
+        renderDrawer();
+        await wait(cfg.closeMotion + 20);
+        stage.classList.remove('closing');
+      }
+
+      async function replay() {
+        const token = ++runId;
+        const cfg = timings[currentVariant];
+        applyTimingVars();
+        replayButton.disabled = true;
+        resetStage();
+        setStep('reset');
+        stage.classList.remove('resetting');
+        void stage.offsetWidth;
+        stage.classList.add('resetting');
+        await wait(cfg.reset);
+
+        await openWithCue('search', 'search-open', cfg, token);
+        await openWithCue('hot', 'hot-open', cfg, token);
+        await openWithCue('cal', 'cal-open', cfg, token);
+
+        if (token !== runId) return;
+        setStep('calendar-action');
+        targetCalendarRow.classList.add('targeted');
+        const calendarBody = targetCalendarRow.closest('.calendar-body');
+        const targetItem = targetCalendarRow.closest('li');
+        if (calendarBody && targetItem) {
+          calendarBody.scrollTo({
+            top: Math.max(0, targetItem.offsetTop - 36),
+            behavior: 'smooth'
+          });
+        }
+        await wait(cfg.action);
+
+        if (currentDevice === 'mobile') {
+          setStep('mobile-collapse');
+          await collapseAllWithCue(cfg, token);
+        }
+
+        if (token !== runId) return;
+        setStep('world-pop');
+        await wait(cfg.popup);
+        eventPopup.classList.add('visible');
+        eventPin.classList.remove('ping');
+        void eventPin.offsetWidth;
+        eventPin.classList.add('ping');
+        replayButton.disabled = false;
+      }
+
+      function setVariant(name) {
+        currentVariant = name;
+        stage.dataset.variant = name;
+        variantTitle.textContent = variantTitles[name];
+        variantText.innerHTML = variantCopy[name];
+        variantButtons.forEach(button => {
+          button.setAttribute('aria-pressed', button.dataset.variant === name ? 'true' : 'false');
+        });
+        refreshTimingControls();
+      }
+
+      function setDevice(name) {
+        currentDevice = name;
+        stage.classList.toggle('mobile-mode', name === 'mobile');
+        stageMeta.textContent = name === 'mobile'
+          ? 'Mobile collapses before popup'
+          : 'Desktop keeps cards open';
+        deviceButtons.forEach(button => {
+          button.setAttribute('aria-pressed', button.dataset.device === name ? 'true' : 'false');
+        });
+      }
+
+      LR_CARDS.forEach(card => {
+        lrTabs[card].addEventListener('click', () => {
+          runId++;
+          replayButton.disabled = false;
+          setOpen(card, !lrOpen[card]);
+        });
+      });
+      variantButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          setVariant(button.dataset.variant);
+          replay();
+        });
+      });
+      deviceButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          setDevice(button.dataset.device);
+          replay();
+        });
+      });
+      timingInputs.forEach(input => {
+        input.addEventListener('input', () => {
+          const key = input.dataset.timingKey;
+          timings[currentVariant][key] = Number(input.value);
+          if (timingOutputs[key]) timingOutputs[key].value = `${input.value}ms`;
+          applyTimingVars();
+        });
+      });
+      timingReset.addEventListener('click', () => {
+        timings[currentVariant] = cloneTiming(currentVariant);
+        refreshTimingControls();
+        replay();
+      });
+      replayButton.addEventListener('click', replay);
+      window.addEventListener('resize', renderDrawer);
+
+      setVariant(currentVariant);
+      setDevice(currentDevice);
+      renderDrawer();
+      window.setTimeout(replay, 350);
+    })();
+  </script>
+</body>
+</html>

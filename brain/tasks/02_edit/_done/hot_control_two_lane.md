@@ -60,7 +60,7 @@ configuration. It should remain visible even when the calendar is collapsed.
 - Event unavailable: `No event`
 - Trail lane: `Trail activity` (originally shipped as `Trail heat`;
   renamed 2026-05-24 per critique-C item in
-  `../../03_event_app/sprint_02_critique_followups.md`)
+  `../../03_event_app/_done/sprint_02_critique_followups.md`)
 - Trail detail: `Where rigs spent time` (originally `Activity evidence`)
 
 Avoid "heat" / "live heat" wording until the data is recent, aggregated, and

@@ -13,7 +13,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from playwright_base import WEBSITE_URL, click_in_section, layer_visibility
+from playwright_base import viewer_origin, viewer_url, click_in_section, layer_visibility
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -100,7 +100,7 @@ def main() -> int:
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 1280, "height": 840})
-        context.grant_permissions(["clipboard-read", "clipboard-write"], origin=WEBSITE_URL.rstrip("/"))
+        context.grant_permissions(["clipboard-read", "clipboard-write"], origin=viewer_origin())
         page = context.new_page()
 
         def record_console(msg) -> None:
@@ -129,8 +129,8 @@ def main() -> int:
 
         page.on("console", record_console)
 
-        print(f"Opening {WEBSITE_URL}")
-        page.goto(WEBSITE_URL, wait_until="load")
+        print(f"Opening {viewer_url()}")
+        page.goto(viewer_url(), wait_until="load")
         page.evaluate(
             """() => {
               try {
@@ -150,7 +150,7 @@ def main() -> int:
         page.wait_for_timeout(700)
 
         print("\n== Left controls ==")
-        check("three top-left preset buttons exist", page.locator(".preset-bar button[data-preset]").count() == 3)
+        check("four top-left preset buttons exist", page.locator(".preset-bar button[data-preset]").count() == 4)
         check("dedicated 3D button exists", page.locator("#terrainButton").count() == 1)
         check("search input sits in the left control cluster", page.locator(".left-controls #searchInput").count() == 1)
         check("calendar sits in the left control cluster", page.locator(".left-controls #calendarCard").count() == 1)
@@ -448,8 +448,8 @@ def main() -> int:
         check("export copied v2 settings JSON",
               payload.get("schema") == "aop-viewer-preset-settings-v2",
               str(payload.get("schema")))
-        check("export includes all three presets",
-              set(payload.get("presets", {}).keys()) == {"park", "topo", "trace"})
+        check("export includes all four presets",
+              set(payload.get("presets", {}).keys()) == {"park", "topo", "trace", "satellite"})
         check("export includes current state",
               payload.get("current_state", {}).get("toggles") is not None)
         check("export includes runtime_overrides bag",
@@ -463,8 +463,11 @@ def main() -> int:
         page.wait_for_timeout(900)
         check("Trace button becomes active", page.locator("#presetTrace").evaluate("el => el.classList.contains('active')"))
         check("Trace turns land cover off", not is_checked(page, "showLandcover") and layer_visibility(page, "landcover-forest") == "none")
-        check("Trace turns imagery and tracing references on",
-              is_checked(page, "showUsdaNaip") and is_checked(page, "showSfwda")
+        # Item 22 (misc_3.md): Trace preset now sits over the lidar hillshade,
+        # not the NAIP imagery. SFWDA + OSM tracks remain on as tracing refs.
+        check("Trace turns lidar hillshade and tracing references on",
+              is_checked(page, "showHillshade") and not is_checked(page, "showUsdaNaip")
+              and is_checked(page, "showSfwda")
               and is_checked(page, "showOsmTracks") and is_checked(page, "showBuildings"))
         check("Trace applies high-contrast boundary color", paint(page, "publish-boundaries", "line-color") == "#fff0b8")
         trace_camera = camera_state(page)
@@ -536,7 +539,7 @@ def main() -> int:
         page.evaluate(
             "() => { try { localStorage.removeItem('aop_calendar_height_v1'); } catch (_) {} }"
         )
-        page.goto(WEBSITE_URL, wait_until="load")
+        page.goto(viewer_url(), wait_until="load")
         page.evaluate("window.map = map;")
         page.wait_for_timeout(700)
         boxes = page.evaluate(
@@ -579,7 +582,7 @@ def main() -> int:
         # Wide viewport: collapse the panel and confirm its bottom edge is
         # near the viewport bottom (the tray-style resting state).
         page.set_viewport_size({"width": 1280, "height": 820})
-        page.goto(WEBSITE_URL, wait_until="load")
+        page.goto(viewer_url(), wait_until="load")
         page.evaluate("window.map = map;")
         page.wait_for_timeout(500)
         # Make sure the panel starts expanded, then collapse via #panelCollapse.

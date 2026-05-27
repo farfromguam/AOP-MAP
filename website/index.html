@@ -196,6 +196,7 @@
     .panel select { font: inherit; padding: 3px 5px; border-radius: 6px; border: 1px solid #bbb; }
     .layer-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; margin: 0 0 4px; padding: 3px 4px 3px 6px; border-radius: 6px; }
     .layer-row.active { background: #f6edda; color: var(--brown-dark); box-shadow: inset 3px 0 0 0 var(--rust); }
+    .layer-row.active:hover { background: #ecddc5; box-shadow: inset 3px 0 0 0 var(--rust), inset 0 0 0 1px rgba(180,95,67,0.18); }
     .layer-row.expanded { background: var(--cream-hover); color: var(--brown-dark); }
     .layer-row label { min-width: 0; margin: 0; cursor: pointer; }
     .layer-expand { font-size: 1.05rem; }
@@ -276,6 +277,36 @@
     .feature-row .feature-tag.bound { background: #f3e6c4; border-color: #b08a4a; }
     .feature-row.move-target { background: #f7e3b5; }
     .feature-row.move-target .feature-move { cursor: grabbing; }
+    /* Inline accordion rows (editorPois). The trailing chevron toggles a
+       full editor block below the row. Tag input and copy button move into
+       that editor, so the row grid trims back to 6 columns:
+       check · ★ · name · 🎯 · ✋ · chevron. Editor block lives in the
+       same .feature-list-rows grid as the rows and spans full width. */
+    .feature-row.has-highlight.has-inline-editor { grid-template-columns: 18px 22px minmax(0, 1fr) auto auto auto; }
+    .feature-row .feature-row-expand { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; line-height: 1; }
+    .feature-row .feature-row-expand:hover { background: #f1e6cf; color: var(--brown-dark); }
+    .feature-row.editor-open { background: #f6edda; box-shadow: inset 3px 0 0 0 var(--rust); color: var(--brown-dark); }
+    .feature-row.editor-open .feature-row-expand { color: var(--rust); }
+    .feature-row-editor { margin: 2px -22px 6px 0; padding: 10px 12px; border: 1px solid var(--cream-border); border-radius: 8px; background: linear-gradient(180deg, #fffdf5, #f7f0dc); box-shadow: inset 3px 0 0 0 var(--rust); display: grid; gap: 8px; font-size: 0.82rem; color: var(--brown-ink); }
+    .feature-row-editor .editor-head { display: flex; align-items: center; gap: 8px; }
+    .feature-row-editor .editor-title { font: 700 0.92rem Inter, system-ui, sans-serif; color: var(--brown-dark); flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .feature-row-editor .editor-geom-chip { font-size: 0.72rem; padding: 1px 7px; border-radius: 10px; background: var(--moss-soft); color: var(--moss-dark); font-weight: 600; }
+    .feature-row-editor .editor-close { background: none; border: 0; color: var(--brown-mid); font-size: 1rem; cursor: pointer; padding: 0 4px; line-height: 1; }
+    .feature-row-editor .editor-close:hover { color: var(--rust); }
+    .feature-row-editor .editor-grid { display: grid; grid-template-columns: 72px 1fr; gap: 5px 10px; align-items: center; }
+    .feature-row-editor .editor-grid label { color: var(--brown-mid); font-weight: 600; font-size: 0.76rem; }
+    .feature-row-editor .editor-grid input[type="text"],
+    .feature-row-editor .editor-grid select,
+    .feature-row-editor .editor-grid textarea { font: inherit; padding: 3px 6px; border: 1px solid var(--control-border); border-radius: 5px; background: var(--control-bg); width: 100%; color: var(--brown-ink); box-sizing: border-box; }
+    .feature-row-editor .editor-grid textarea { min-height: 40px; resize: vertical; line-height: 1.35; }
+    .feature-row-editor .editor-grid .editor-geom-summary { color: var(--brown-ink); font-size: 0.76rem; font-family: ui-monospace, SFMono-Regular, monospace; }
+    .feature-row-editor .editor-actions { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 6px; border-top: 1px solid var(--cream-border); }
+    .feature-row-editor .editor-action { padding: 3px 8px; border: 1px solid var(--control-border); background: var(--control-bg); color: var(--brown-ink); border-radius: 5px; cursor: pointer; font: 600 0.76rem Inter, system-ui, sans-serif; }
+    .feature-row-editor .editor-action:hover { background: var(--cream-hover); }
+    .feature-row-editor .editor-action.danger { color: var(--rust); border-color: #e7c2ad; margin-left: auto; }
+    .feature-row-editor .editor-action.danger:hover { background: #f1d8c6; }
+    /* Kind glyph in group head (● POI / ▭ Footprint / ╱ Line). */
+    .feature-list-group-head .group-kind-glyph { color: var(--brown-soft); margin-right: 2px; }
     /* Map-click → panel-reveal flash. A row that was just selected from the
        map briefly glows so the eye finds it even on a long list. The class
        is added by revealFeatureInPanel and removed ~1.8 s later. */
@@ -309,7 +340,11 @@
     .search input { width: 100%; box-sizing: border-box; padding: 8px 10px 8px 32px; font: inherit; border: 1px solid var(--control-border); border-radius: 7px; background: var(--control-bg); color: var(--brown-ink); }
     .search input:focus { outline: 2px solid var(--moss-dark); border-color: var(--moss); }
     .search-icon { position: absolute; left: 10px; top: 50%; width: 15px; height: 15px; transform: translateY(-50%); color: var(--brown-soft); pointer-events: none; z-index: 1; }
-    .search-results { position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 240px; overflow-y: auto; display: none; z-index: 5; }
+    /* Item 1 (misc_3.md): position fixed escapes the .lr-content-col
+       overflow:hidden clip so the dropdown stays visible regardless of how
+       many left-rail cards are expanded. JS sets left/top/width to match
+       the input below. */
+    .search-results { position: fixed; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 240px; overflow-y: auto; display: none; z-index: 1000; }
     .search-item { display: flex; justify-content: space-between; gap: 10px; padding: 6px 9px; cursor: pointer; font-size: 0.9rem; }
     .search-item:hover, .search-item.active { background: #e8dcc3; }
     .search-kind { color: #888; font-size: 0.78rem; }
@@ -321,6 +356,18 @@
     .left-tab:hover { background: var(--cream-hover); border-color: var(--control-border); color: var(--brown-dark); }
     .left-tab[aria-selected="true"] { background: var(--rust); border-color: #8b431b; color: var(--control-bg); box-shadow: inset 0 -2px 0 rgba(46,36,24,0.28); }
     .left-tab-panel[hidden] { display: none; }
+    /* Tab-panels container: stacks all three panels in the same grid cell so
+       the outer height is always the tallest panel's height, eliminating the
+       layout jump when switching Events / POI / About. The hidden attribute
+       + visibility:hidden keeps non-active panels out of the a11y tree and
+       invisible while still occupying their natural space for height locking.
+       Item 21: brain/tasks/03_event_app/misc_3.md */
+    .left-tab-panels { display: grid; }
+    .left-tab-panels .left-tab-panel { grid-area: 1 / 1; visibility: hidden; pointer-events: none; }
+    .left-tab-panels .left-tab-panel:not([hidden]) { visibility: visible; pointer-events: auto; }
+    /* Override the generic hidden rule inside the panels wrapper so display
+       stays 'block' and the panel keeps its height contribution. */
+    .left-tab-panels .left-tab-panel[hidden] { display: block; }
     /* POI tab — left-rail browseable directory of places. Mirrors the
        feature-list-group convention from the right panel so the two
        inventories read the same. Card: brain/tasks/03_event_app/left_panel_poi_browser.md.
@@ -401,6 +448,14 @@
     .info-list li { display: grid; gap: 2px; padding-top: 6px; border-top: 1px solid rgba(216,205,180,0.78); font-size: 0.82rem; line-height: 1.28; }
     .info-label { font-weight: 800; color: var(--moss-dark); }
     .info-note { margin: 10px 0 0; padding-top: 7px; border-top: 1px solid rgba(216,205,180,0.78); font-size: 0.78rem; line-height: 1.3; color: var(--brown-soft); }
+    /* Left-rail tab footer: shared strip at the bottom of each tab panel so
+       all three tabs look like siblings. One button per tab for the tab's
+       primary secondary action (Events: past events; POI: browse all groups;
+       About: event page link). */
+    .tab-footer { display: flex; align-items: center; justify-content: center; padding: 6px 8px; border-top: 1px solid var(--cream-border); background: rgba(247,241,226,0.5); }
+    .tab-footer-btn { display: inline-block; margin: 0; padding: 4px 10px; border: 1px solid var(--cream-border); border-radius: 5px; background: transparent; color: var(--brown-soft); cursor: pointer; font: 600 0.74rem Inter, system-ui, sans-serif; text-decoration: none; }
+    .tab-footer-btn:hover { background: var(--cream-hover); color: var(--brown-dark); border-color: #c8b8a0; }
+    .tab-footer-btn.active { background: var(--cream-hover); color: var(--brown-dark); border-color: #c8b8a0; }
     /* Two-lane hot control: Event and Trails are separate actions so schedule
        users and trail-heat users do not fight one fallback button. Card:
        brain/tasks/02_edit/hot_control_two_lane.md. */
@@ -483,8 +538,11 @@
         <button id="presetTopo" type="button" data-preset="topo" title="Topo preset (contour-led)" aria-label="Topo preset">
           <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 7c3-2 6-2 9 0s5 2 7 0M3 11c3-2 6-2 9 0s5 2 7 0M3 15c3-2 6-2 9 0s5 2 7 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         </button>
-        <button id="presetTrace" type="button" data-preset="trace" title="Trace preset (NAIP aerial)" aria-label="Trace preset">
+        <button id="presetTrace" type="button" data-preset="trace" title="Trace preset (lidar hillshade aerial)" aria-label="Trace preset">
           <svg viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="3" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5 16c2-1 3-4 6-4s4 3 6 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="16" r="1.3" fill="currentColor"/><circle cx="17" cy="14" r="1.3" fill="currentColor"/></svg>
+        </button>
+        <button id="presetSatellite" type="button" data-preset="satellite" title="Satellite preset (2022 aerial)" aria-label="Satellite preset">
+          <svg viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M11 3a8 8 0 0 1 5.6 2.3M11 19a8 8 0 0 1-5.6-2.3"/><path d="M3 11h4m8 0h4"/><path d="M11 7v2m0 6v2"/><circle cx="11" cy="11" r="2" fill="currentColor" stroke="none"/></svg>
         </button>
       </div>
       <div class="pill" role="group" aria-label="3D toggle">
@@ -560,6 +618,7 @@
         <button id="leftTabPoi" class="left-tab" type="button" role="tab" aria-selected="false" aria-controls="poiTabPanel" data-left-tab="poi" tabindex="-1">POI</button>
         <button id="leftTabAbout" class="left-tab" type="button" role="tab" aria-selected="false" aria-controls="aboutTabPanel" data-left-tab="about" tabindex="-1">About</button>
       </div>
+      <div class="left-tab-panels">
       <div id="eventsTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabEvents">
         <div id="calendarToggle" class="calendar-heading" aria-controls="calendarBody">
           <span>
@@ -577,10 +636,16 @@
           </ol>
           <div id="calendarResizeHandle" class="calendar-resize-handle" role="separator" aria-label="Resize calendar" aria-orientation="horizontal" aria-controls="calendarBody" aria-valuemin="120" aria-valuemax="520" aria-valuenow="240" tabindex="0"></div>
         </div>
+        <div class="tab-footer">
+          <button type="button" class="tab-footer-btn" id="showPastEventsBtn" aria-pressed="false">Show past events</button>
+        </div>
       </div>
       <div id="poiTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabPoi" hidden>
         <div id="poiList" class="poi-list" aria-live="polite">
           <p class="poi-empty">Loading places…</p>
+        </div>
+        <div class="tab-footer">
+          <button type="button" class="tab-footer-btn" id="poiExpandAllBtn">Expand all groups</button>
         </div>
       </div>
       <div id="aboutTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabAbout" hidden>
@@ -599,6 +664,10 @@
           </ul>
           <p class="info-note">Built by Rock Warblers, for Rock Warblers. See you at the pavilion.</p>
         </div>
+        <div class="tab-footer">
+          <a class="tab-footer-btn" href="https://www.facebook.com/events/adventure-offroad-park-nature-center/rock-warblers-trail-blazing-invitational/4541595172728436/" target="_blank" rel="noopener noreferrer">Event page</a>
+        </div>
+      </div>
       </div>
     </section>
         </div>
@@ -613,6 +682,34 @@
     </div>
     <div class="panel-body" id="panelBody">
       <small id="presetStatus">Park preset active.</small>
+
+      <section class="panel-section collapsed" data-section="session-tools">
+        <div class="section-header">
+          <span class="section-label">Session tools</span>
+          <button type="button" class="section-toggle" aria-expanded="false">
+            <span class="section-chevron">▸</span>
+          </button>
+        </div>
+        <div class="section-content session-tools">
+          <span id="virtualClockStatus" class="session-clock-status" data-clock-active="false">Wall clock</span>
+          <div class="session-tools-row">
+            <label>Date <input type="date" id="virtualClockDate" /></label>
+            <label>Time <input type="time" id="virtualClockTime" step="900" /></label>
+          </div>
+          <div class="session-tools-actions">
+            <button type="button" id="clockMinusDay">-1d</button>
+            <button type="button" id="clockPlusDay">+1d</button>
+            <button type="button" id="clockMinusHour">-1h</button>
+            <button type="button" id="clockPlusHour">+1h</button>
+          </div>
+          <div class="session-tools-actions">
+            <button type="button" id="clockUseInputs">Set</button>
+            <button type="button" id="clockUseNow">Now</button>
+            <button type="button" id="clockClear">Clear</button>
+            <button type="button" id="resetViewerState">Reset viewer</button>
+          </div>
+        </div>
+      </section>
 
       <section class="panel-section collapsed" data-section="source-layers">
         <div class="section-header">
@@ -693,7 +790,6 @@
           <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
           <label><input type="checkbox" id="showActivityHotspots" /> Activity hotspots (GPX dwell)</label>
           <label><input type="checkbox" id="showSyntheticActivity" /> Simulated Saturday activity</label>
-          <label><input type="checkbox" id="showEventSchedule" /> Event schedule POIs</label>
           <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
           <label><input type="checkbox" id="showBrandLogos" /> Brand logos (AOP &amp; Rock Warblers)</label>
         </div>
@@ -732,9 +828,10 @@
           </button>
         </div>
         <div class="section-content">
+          <label><input type="checkbox" id="showEventSchedule" /> Event schedule POIs</label>
           <label><input type="checkbox" id="showEditorPois" checked /> Drawn POIs</label>
           <div class="editor-row">
-            <select id="poiCategory" title="Feature type" style="flex:1">
+            <select id="poiCategory" title="Default category for the next drawn feature (the leaf's category is editable from its inline editor below)" style="flex:1">
               <option>Pavilion</option>
               <option>Building</option>
               <option>Restroom</option>
@@ -760,41 +857,13 @@
             <button id="clearPoiBtn" type="button">Clear all</button>
           </div>
           <small id="poiStatus">0 POIs, 0 footprints, 0 traces.</small>
-          <small>Pick a type, then <b>Place POI</b> (one click), <b>Draw footprint</b> (click each corner), or <b>Trace line</b> (click vertices, press Enter to finish). Click a feature to rename or delete it. Edits save in this browser; Export writes <code>aop_editor_features.geojson</code>.</small>
+          <small>Pick a category, then <b>Place POI</b> (one click), <b>Draw footprint</b> (click each corner), or <b>Trace line</b> (click vertices, press Enter to finish). Drawn features sort under <b>POI / Footprint / Line</b> below — click the <code>▸</code> chevron on any row to rename, re-categorize, add notes, or delete. Map-click on a drawn feature jumps to its editor. Edits save in this browser. A fresh viewer (or <b>Reset viewer</b>) seeds the editor from <code>website/data/aop_editor_seed_pois.geojson</code>. To bake your work into the seed: <b>Export GeoJSON</b> → replace that file with the download → commit.</small>
           <!-- Inline drawn-POI list. The feature-list primitive renders here
                (not into the layer-editor drawer) so the per-POI rows sit
                directly below the categories + draw buttons that produced
                them. Each row carries an extra ★ button — the highlight flag
                that opts a POI into the left-rail POI tab. -->
           <div id="editorPoiList" class="feature-list" hidden></div>
-        </div>
-      </section>
-
-      <section class="panel-section collapsed" data-section="session-tools">
-        <div class="section-header">
-          <span class="section-label">Session tools</span>
-          <button type="button" class="section-toggle" aria-expanded="false">
-            <span class="section-chevron">▸</span>
-          </button>
-        </div>
-        <div class="section-content session-tools">
-          <span id="virtualClockStatus" class="session-clock-status" data-clock-active="false">Wall clock</span>
-          <div class="session-tools-row">
-            <label>Date <input type="date" id="virtualClockDate" /></label>
-            <label>Time <input type="time" id="virtualClockTime" step="900" /></label>
-          </div>
-          <div class="session-tools-actions">
-            <button type="button" id="clockMinusDay">-1d</button>
-            <button type="button" id="clockPlusDay">+1d</button>
-            <button type="button" id="clockMinusHour">-1h</button>
-            <button type="button" id="clockPlusHour">+1h</button>
-          </div>
-          <div class="session-tools-actions">
-            <button type="button" id="clockUseInputs">Set</button>
-            <button type="button" id="clockUseNow">Now</button>
-            <button type="button" id="clockClear">Clear</button>
-            <button type="button" id="resetViewerState">Reset viewer</button>
-          </div>
         </div>
       </section>
 
@@ -840,7 +909,12 @@
     const BRAND_LOGOS_OVERRIDE_KEY = 'aop_brand_logos_overrides_v1';
     const FEATURE_VISIBILITY_KEY = 'aop_feature_visibility_v1';
     const FEATURE_TAG_KEY = 'aop_feature_tags_v1';
-    const FEATURE_TAG_SEEDED_KEY = 'aop_feature_tags_seeded_v1';
+    // Retired 2026-05-26 with the editor-seed migration: the #pavilion
+    // binding now lives on the seeded POI in `aop_editor_seed_pois.geojson`,
+    // not on the 1010 building. The key itself stays in the Reset-viewer
+    // wipe-list as a literal so existing installs that still carry the
+    // sticky flag get it cleared.
+    // const FEATURE_TAG_SEEDED_KEY = 'aop_feature_tags_seeded_v1';
     const POI_STORAGE_KEY = 'aop_editor_pois_v1';
     const VIEWER_PRESET_KEY = 'aop_viewer_preset_settings_v1';
     const LEFT_RAIL_DRAWER_KEY = 'aop_left_rail_drawer_v1';
@@ -886,7 +960,7 @@
       BRAND_LOGOS_OVERRIDE_KEY,
       FEATURE_VISIBILITY_KEY,
       FEATURE_TAG_KEY,
-      FEATURE_TAG_SEEDED_KEY,
+      'aop_feature_tags_seeded_v1',
       POI_STORAGE_KEY,
       VIEWER_PRESET_KEY,
       LEFT_RAIL_DRAWER_KEY,
@@ -1528,7 +1602,12 @@
       if (!calendarBody || !calendarResizeHandle) return;
       const stored = readJsonStore(CALENDAR_HEIGHT_KEY, null);
       if (Number.isFinite(stored)) setCalendarBodyHeight(stored, false);
-      else {
+      else if (window.innerWidth <= 760) {
+        // Item 11 (misc_3.md): mobile default tall enough for ~2 calendar
+        // rows visible (one row ≈ 52 px + padding). Do not persist so
+        // desktop's first visit keeps its own default.
+        setCalendarBodyHeight(120, false);
+      } else {
         calendarResizeHandle.setAttribute('aria-valuemax', String(calendarResizeMaxHeight()));
         calendarResizeHandle.setAttribute('aria-valuenow', String(Math.round(calendarCurrentBodyHeight())));
       }
@@ -1582,8 +1661,71 @@
 
     calendarDays.addEventListener('click', (event) => {
       const row = event.target.closest('.calendar-row');
-      if (row?.dataset.sessionId) gotoEventSession(row.dataset.sessionId);
+      if (row?.dataset.sessionId) {
+        gotoEventSession(row.dataset.sessionId);
+        // Item 10 (misc_3.md): on mobile, collapse the search + hot cards
+        // after a calendar pick so the calendar isn't fighting the other
+        // drawer cards for the limited vertical real estate.
+        if (window.innerWidth <= 760) {
+          const searchTab = document.getElementById('lrTabSearch');
+          const hotTab = document.getElementById('lrTabHot');
+          if (searchTab?.classList.contains('open')) searchTab.click();
+          if (hotTab?.classList.contains('open')) hotTab.click();
+        }
+      }
     });
+
+    // Events tab footer: "Show past events" toggle. Past rows have
+    // data-session-state="past" and are faded via CSS. When the button is
+    // active, override that opacity so past rows are fully visible.
+    (function wirePastEventsBtn() {
+      const btn = document.getElementById('showPastEventsBtn');
+      if (!btn) return;
+      let showing = false;
+      btn.addEventListener('click', () => {
+        showing = !showing;
+        btn.classList.toggle('active', showing);
+        btn.setAttribute('aria-pressed', String(showing));
+        btn.textContent = showing ? 'Hide past events' : 'Show past events';
+        const styleId = 'past-events-override';
+        let styleEl = document.getElementById(styleId);
+        if (showing) {
+          if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = styleId;
+            document.head.appendChild(styleEl);
+          }
+          styleEl.textContent = '.calendar-days li[data-session-state="past"] { opacity: 1; }';
+        } else if (styleEl) {
+          styleEl.remove();
+        }
+      });
+    })();
+
+    // POI tab footer: "Expand all groups" — expands every collapsed poi-list
+    // group heading so all entries are visible at once.
+    (function wirePoiExpandAllBtn() {
+      const btn = document.getElementById('poiExpandAllBtn');
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        const groups = document.querySelectorAll('#poiList .poi-list-group');
+        let anyCollapsed = false;
+        for (const g of groups) {
+          const rows = g.querySelector('.poi-list-group-rows, .poi-list-rows');
+          if (rows && rows.hidden) { anyCollapsed = true; break; }
+        }
+        for (const g of groups) {
+          const head = g.querySelector('.poi-list-group-head');
+          const rows = g.querySelector('.poi-list-group-rows, .poi-list-rows');
+          const chevron = head?.querySelector('.group-chevron, .poi-chevron');
+          if (rows) {
+            rows.hidden = !anyCollapsed;
+            if (chevron) chevron.textContent = !anyCollapsed ? '▸' : '▾';
+          }
+        }
+        btn.textContent = anyCollapsed ? 'Collapse all groups' : 'Expand all groups';
+      });
+    })();
 
     function setSectionCollapsed(section, collapsed) {
       const button = section.querySelector('.section-toggle');
@@ -2238,9 +2380,12 @@
         label: 'Buildings',
         idField: 'build_id',
         // Tag input on each row binds a #tag to the building so the event
-        // schedule can resolve coords through this binding. The 1010 building
-        // is auto-seeded as #pavilion on first ever load (one-time bootstrap
-        // gated by aop_feature_tags_seeded_v1). See maybeSeedFeatureTags.
+        // schedule can resolve coords through this binding. The 1010
+        // building's #pavilion binding moved to the seeded editor POI on
+        // 2026-05-26 — see `data/aop_editor_seed_pois.geojson` and
+        // `maybeSeedEditorPois`. Users can still re-bind #pavilion to a
+        // building manually; the seeder only strips conflicts on the
+        // first-install/Reset pass.
         taggable: true,
         rowLabel: (props) => {
           const base = props.building_label || props.address || `build_id ${props.build_id}`;
@@ -2285,6 +2430,10 @@
         // public-facing list. State lives in feature.properties.highlight
         // and travels with the POI through localStorage and GeoJSON export.
         highlightable: true,
+        // Row label keeps the category alongside the name as a compact
+        // qualifier — `Pavilion — Big tent`. Same shape as before; the kind
+        // groupings (POI / Footprint / Line) replace the old flat sort, not
+        // the row label itself.
         rowLabel: (props) => {
           const category = props.category || 'POI';
           const name = (props.name || '').trim();
@@ -2300,6 +2449,8 @@
           'editor-poi-fill-labels',
           'editor-poi-line-labels'
         ],
+        // Within each kind group, sort by category then name. Kept stable so
+        // a Pavilion POI and a Restroom POI still cluster nicely.
         rowSort: (a, b) => {
           const ac = String(a.props.category || '');
           const bc = String(b.props.category || '');
@@ -2308,12 +2459,20 @@
           const bn = String(b.props.name || '');
           return an.localeCompare(bn);
         },
-        groups: [{
-          id: 'all',
-          label: null,                              // flat list
-          match: () => true,
-          defaultVisible: () => true                // newly drawn POIs default visible
-        }],
+        // Kind-grouped tree: Drawn POI → POI / Footprint / Line → named item.
+        // Match is on `feature.geometry.type` (the 2nd arg threaded through
+        // `groupForFeature`). Glyph drives the visual cue in the group head;
+        // collapsedDefault is false so a freshly-loaded session shows all
+        // three groups open — the user can collapse if they want.
+        groups: [
+          { id: 'point',     label: 'POI',       kindGlyph: '●', match: (_props, feature) => feature?.geometry?.type === 'Point',      defaultVisible: () => true, collapsedDefault: false },
+          { id: 'polygon',   label: 'Footprint', kindGlyph: '▭', match: (_props, feature) => feature?.geometry?.type === 'Polygon',    defaultVisible: () => true, collapsedDefault: false },
+          { id: 'linestring',label: 'Line',      kindGlyph: '╱', match: (_props, feature) => feature?.geometry?.type === 'LineString', defaultVisible: () => true, collapsedDefault: false }
+        ],
+        // Inline accordion editor lives in the same `.feature-list-rows`
+        // container. One leaf editor open at a time per layer. Toggle from
+        // a row-trailing chevron; map-click on a drawn POI routes here too.
+        inlineEditor: true,
         // Drag-to-move primitive opt-in. The feature reference here is the
         // same object as the entry inside `editorPois`, so mutating its
         // geometry in place updates the source data without an array swap.
@@ -2611,12 +2770,14 @@
 
     // Map a feature to its group inside a layer's `groups` array — first match
     // wins, mirroring the order in FEATURE_LIST_LAYERS. The `other` catch-all
-    // depends on this ordering: it must be declared last.
-    function groupForFeature(layerKey, props) {
+    // depends on this ordering: it must be declared last. `feature` is passed
+    // through so kind-grouped layers (editorPois) can match on geometry.type;
+    // existing layers that only inspect props ignore the 2nd arg.
+    function groupForFeature(layerKey, props, feature) {
       const spec = FEATURE_LIST_LAYERS[layerKey];
       if (!spec) return null;
       for (const group of spec.groups) {
-        if (group.match(props)) return group;
+        if (group.match(props, feature)) return group;
       }
       return null;
     }
@@ -2640,7 +2801,7 @@
         // sharing the same parcel_id. The list shows one row per cemetery.
         if (seenIds.has(id)) continue;
         seenIds.add(id);
-        const group = groupForFeature(layerKey, props);
+        const group = groupForFeature(layerKey, props, feature);
         if (!group) continue;
         bucketed.get(group.id).features.push({ id, props, feature });
         const persistedValue = persisted[String(id)];
@@ -2830,39 +2991,6 @@
       rebuildEventScheduleData();
     }
 
-    // First-ever-load seed: bind #pavilion → the 1010 Ellis Cove Rd
-    // building so the schedule's #pavilion entry works without coords on a
-    // fresh viewer. After this fires once, the user owns the binding —
-    // unbinding or re-binding survives, because the seed flag is sticky.
-	    function maybeSeedFeatureTags() {
-	      try {
-	        if (localStorage.getItem(FEATURE_TAG_SEEDED_KEY) === '1') return;
-        const runtime = featureListRuntime['buildings'];
-        if (!runtime || !runtime.state) return;
-        let pavilion = null;
-        for (const bucket of runtime.state.groups) {
-          for (const item of bucket.features) {
-            if (String(item.props.address || '').startsWith('1010 ')) {
-              pavilion = item;
-              break;
-            }
-          }
-          if (pavilion) break;
-        }
-        if (!pavilion) return;
-        const store = loadFeatureTagStore();
-        if (!store.buildings) store.buildings = {};
-        // Don't overwrite an existing binding (the user may have moved
-        // #pavilion to another row before the seed flag was set).
-        if (!store.buildings[pavilion.id]) {
-          store.buildings[pavilion.id] = '#pavilion';
-          saveFeatureTagStore(store);
-        }
-        localStorage.setItem(FEATURE_TAG_SEEDED_KEY, '1');
-      } catch (err) {
-        console.warn('Feature-tag bootstrap failed:', err);
-	      }
-	    }
 
 	    function resetDefaultPavilionTagRuntime() {
 	      const runtime = featureListRuntime['buildings'];
@@ -3188,9 +3316,11 @@
       const existing = featureListRuntime[layerKey];
       let baseFilters;
       let collapsed;
+      let expandedFeatureId = null;
       if (existing) {
         baseFilters = existing.baseFilters;
         collapsed = existing.collapsed;
+        expandedFeatureId = existing.expandedFeatureId || null;
       } else {
         baseFilters = {};
         for (const layerId of spec.targetLayers) {
@@ -3205,7 +3335,15 @@
         }
       }
       const state = buildFeatureListState(layerKey, data);
-      featureListRuntime[layerKey] = { data, baseFilters, state, collapsed };
+      // Prune expandedFeatureId if its target feature no longer exists in
+      // the freshly-built state (delete, Clear all, import). Keeps the
+      // editor from rendering against stale data after a destructive op.
+      if (expandedFeatureId != null) {
+        const stillExists = state && state.groups.some((b) =>
+          b.features.some((f) => String(f.id) === String(expandedFeatureId)));
+        if (!stillExists) expandedFeatureId = null;
+      }
+      featureListRuntime[layerKey] = { data, baseFilters, state, collapsed, expandedFeatureId };
       applyFeatureListFilters(layerKey);
       persistFeatureVisibility(layerKey);
       // Tag bindings depend on a present runtime; rebuild after every
@@ -3213,7 +3351,6 @@
       // layer all flow through. Buildings is the seed surface for the
       // #pavilion default.
       pruneOrphanedTags(layerKey);
-      if (layerKey === 'buildings') maybeSeedFeatureTags();
       rebuildTagLookup();
       rebuildEventScheduleData();
       renderPoiTabIfActive();
@@ -3306,7 +3443,16 @@
           });
           const name = document.createElement('span');
           name.className = 'group-name';
-          name.textContent = group.label;
+          if (group.kindGlyph) {
+            // Kind glyph reads alongside the label for the editorPois
+            // kind-grouped tree (● POI / ▭ Footprint / ╱ Line).
+            const glyph = document.createElement('span');
+            glyph.className = 'group-kind-glyph';
+            glyph.textContent = group.kindGlyph;
+            name.append(glyph, ' ', group.label);
+          } else {
+            name.textContent = group.label;
+          }
           const count = document.createElement('span');
           count.className = 'group-count';
           count.textContent = `${visibleInGroup}/${bucket.features.length}`;
@@ -3387,11 +3533,12 @@
           });
           if (highlight) row.append(check, highlight, name);
           else row.append(check, name);
-          // Tag input on taggable layers (buildings, drawn POIs). Sits
-          // between the name and the action cluster so the binding reads
-          // alongside the label it modifies. Card:
-          // brain/tasks/02_edit/named_feature_tagging.md.
-          if (spec.taggable) {
+          // Tag input on taggable layers. For inlineEditor layers the tag
+          // input lives inside the expanded editor block instead of on the
+          // row — keeps the row compact and gives the tag a labeled home
+          // alongside name/category/notes. Buildings (taggable, no inline
+          // editor) still get the row-level tag input.
+          if (spec.taggable && !spec.inlineEditor) {
             const tagInput = document.createElement('input');
             tagInput.type = 'text';
             tagInput.className = 'feature-tag';
@@ -3434,7 +3581,11 @@
             sizeWrap.append(sizeInput, sizeOutput);
             row.append(sizeWrap);
           }
-          row.append(copy, fly);
+          // Copy stays on the row for layers that don't use the inline
+          // editor; inlineEditor layers expose `⧉ Copy GeoJSON` inside the
+          // editor instead so the compact row keeps to visibility + fly + move.
+          if (!spec.inlineEditor) row.append(copy);
+          row.append(fly);
           if (movable) {
             const move = document.createElement('button');
             move.type = 'button';
@@ -3482,12 +3633,284 @@
             row.addEventListener('pointercancel', cancelPress);
             row.addEventListener('pointerleave', cancelPress);
           }
+          // Inline-editor chevron — last cell on the row. Toggles the
+          // expanded editor block below. The has-inline-editor class
+          // tightens the row grid (no row-level tag/copy buttons).
+          if (spec.inlineEditor) {
+            row.classList.add('has-inline-editor');
+            const isExpanded = String(runtime.expandedFeatureId) === String(item.id);
+            const expand = document.createElement('button');
+            expand.type = 'button';
+            expand.className = 'feature-row-expand';
+            expand.setAttribute('aria-expanded', String(isExpanded));
+            expand.textContent = isExpanded ? '▾' : '▸';
+            expand.title = isExpanded ? 'Close editor' : 'Open editor';
+            expand.addEventListener('click', (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              toggleFeatureEditor(layerKey, item.id);
+            });
+            // Long-press shouldn't fire on the chevron either.
+            expand.addEventListener('pointerdown', (event) => event.stopPropagation());
+            row.append(expand);
+            if (isExpanded) row.classList.add('editor-open');
+          }
           rows.append(row);
+          // After the row, if this leaf is the expanded one, inject the
+          // inline editor block (accordion). One open at a time per layer.
+          if (spec.inlineEditor && String(runtime.expandedFeatureId) === String(item.id)) {
+            rows.append(buildInlineEditor(layerKey, item, spec));
+          }
         }
         groupEl.append(rows);
         target.append(groupEl);
       }
       target.hidden = false;
+    }
+
+    // Build the inline editor block for an expanded leaf. Returns a DOM
+    // node that lives inside `.feature-list-rows`, immediately after the
+    // row it edits. Reads `feature.properties` directly; writes flow
+    // through setFeatureName / setFeatureCategory / setFeatureNotes / the
+    // existing visibility + tag + highlight helpers + saveEditorPois.
+    function buildInlineEditor(layerKey, item, spec) {
+      const editor = document.createElement('div');
+      editor.className = 'feature-row-editor';
+      editor.dataset.featureId = String(item.id);
+
+      const props = item.feature?.properties || {};
+      const kind = item.feature?.geometry?.type || 'Point';
+      const kindLabel = kind === 'Point' ? 'POI' : kind === 'Polygon' ? 'Footprint' : kind === 'LineString' ? 'Line' : kind;
+      const kindGlyph = kind === 'Point' ? '●' : kind === 'Polygon' ? '▭' : kind === 'LineString' ? '╱' : '◇';
+
+      const head = document.createElement('div');
+      head.className = 'editor-head';
+      const title = document.createElement('span');
+      title.className = 'editor-title';
+      title.textContent = (props.name || '').trim() || (props.category || 'Untitled');
+      const chip = document.createElement('span');
+      chip.className = 'editor-geom-chip';
+      chip.textContent = `${kindGlyph} ${kindLabel}`;
+      const close = document.createElement('button');
+      close.type = 'button';
+      close.className = 'editor-close';
+      close.title = 'Close editor';
+      close.textContent = '✕';
+      close.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleFeatureEditor(layerKey, item.id);
+      });
+      head.append(title, chip, close);
+      editor.append(head);
+
+      const grid = document.createElement('div');
+      grid.className = 'editor-grid';
+
+      // Name
+      grid.append(makeEditorLabel('Name'));
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.className = 'editor-name';
+      nameInput.value = props.name || '';
+      nameInput.addEventListener('change', () => {
+        setEditorFeatureName(item.id, nameInput.value);
+        title.textContent = (nameInput.value || '').trim() || (props.category || 'Untitled');
+      });
+      grid.append(nameInput);
+
+      // Category — now mutable post-create.
+      grid.append(makeEditorLabel('Category'));
+      const categorySelect = document.createElement('select');
+      categorySelect.className = 'editor-category';
+      for (const cat of EDITOR_POI_CATEGORIES) {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        if (props.category === cat) opt.selected = true;
+        categorySelect.append(opt);
+      }
+      categorySelect.addEventListener('change', () => {
+        setEditorFeatureCategory(item.id, categorySelect.value);
+      });
+      grid.append(categorySelect);
+
+      // Tag — moved off the row.
+      grid.append(makeEditorLabel('Tag'));
+      const tagInput = document.createElement('input');
+      tagInput.type = 'text';
+      tagInput.className = 'editor-tag';
+      tagInput.placeholder = '#tag';
+      const currentTag = tagForFeature(layerKey, item.id);
+      tagInput.value = currentTag;
+      tagInput.title = 'Bind a #tag (e.g. #pavilion). Used by the event-schedule resolver.';
+      tagInput.addEventListener('change', () => {
+        setFeatureTag(layerKey, item.id, tagInput.value);
+        renderFeatureList(layerKey);
+      });
+      grid.append(tagInput);
+
+      // Notes — new field. Persists in feature.properties.notes.
+      grid.append(makeEditorLabel('Notes'));
+      const notes = document.createElement('textarea');
+      notes.className = 'editor-notes';
+      notes.rows = 2;
+      notes.placeholder = 'Optional — context, source, why this is here';
+      notes.value = props.notes || '';
+      notes.addEventListener('change', () => {
+        setEditorFeatureNotes(item.id, notes.value);
+      });
+      grid.append(notes);
+
+      // Geometry summary (read-only).
+      grid.append(makeEditorLabel('Geometry'));
+      const geom = document.createElement('span');
+      geom.className = 'editor-geom-summary';
+      geom.textContent = describeGeometry(item.feature);
+      grid.append(geom);
+
+      editor.append(grid);
+
+      // Action row.
+      const actions = document.createElement('div');
+      actions.className = 'editor-actions';
+      actions.append(
+        makeEditorAction('🎯 Fly', 'Fly to feature', () => flyToFeature(item.feature)),
+        makeEditorAction('✋ Move', 'Move this feature (click then click the map)', () => enterMoveMode(layerKey, item.id)),
+        makeEditorAction('⎘ Duplicate', 'Duplicate this feature', () => duplicateEditorFeature(item.id)),
+        makeEditorAction('⧉ Copy GeoJSON', 'Copy as drop-in GeoJSON Feature', () => copyFeatureAsDropIn(item.feature))
+      );
+      const delBtn = makeEditorAction('Delete', 'Delete this feature', () => deleteEditorFeature(item.id));
+      delBtn.classList.add('danger');
+      actions.append(delBtn);
+      editor.append(actions);
+
+      // Keep clicks inside the editor from arming the row's long-press
+      // move primitive — pointerdown bubbles up through the rows grid.
+      editor.addEventListener('pointerdown', (event) => event.stopPropagation());
+
+      return editor;
+    }
+
+    function makeEditorLabel(text) {
+      const label = document.createElement('label');
+      label.textContent = text;
+      return label;
+    }
+
+    function makeEditorAction(label, title, onClick) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'editor-action';
+      btn.title = title;
+      btn.textContent = label;
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onClick();
+      });
+      return btn;
+    }
+
+    function describeGeometry(feature) {
+      const geom = feature?.geometry;
+      if (!geom) return '—';
+      if (geom.type === 'Point') {
+        const [lng, lat] = geom.coordinates || [];
+        if (typeof lat !== 'number' || typeof lng !== 'number') return 'Point';
+        return `Point · ${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E`;
+      }
+      if (geom.type === 'LineString') {
+        const n = Array.isArray(geom.coordinates) ? geom.coordinates.length : 0;
+        return `Line · ${n} vertices`;
+      }
+      if (geom.type === 'Polygon') {
+        const ring = Array.isArray(geom.coordinates) && geom.coordinates[0];
+        const n = Array.isArray(ring) ? ring.length : 0;
+        return `Polygon · ${n} vertices`;
+      }
+      return geom.type;
+    }
+
+    // The categories the Map editor section's create row offers. Mirrors
+    // the `<select id="poiCategory">` in the HTML — kept here so the
+    // editor's mutable Category dropdown has a single source of truth.
+    const EDITOR_POI_CATEGORIES = [
+      'Pavilion', 'Building', 'Restroom', 'Parking', 'Staging area',
+      'Gate', 'Trail trace', 'Road trace', 'Landmark', 'Hazard', 'Other'
+    ];
+
+    function toggleFeatureEditor(layerKey, featureId) {
+      const runtime = featureListRuntime[layerKey];
+      if (!runtime) return;
+      const same = String(runtime.expandedFeatureId) === String(featureId);
+      runtime.expandedFeatureId = same ? null : featureId;
+      renderFeatureList(layerKey);
+    }
+
+    // Write helpers for the editor inputs. Each mutates the in-memory
+    // `editorPois` array entry by id, persists the array, then refreshes
+    // the map source + feature-list runtime. saveEditorPois + refreshEditorSource
+    // are the same pair every other editor write goes through.
+    function setEditorFeatureName(featureId, value) {
+      const target = editorPois.find((f) => f.properties && String(f.properties.id) === String(featureId));
+      if (!target) return;
+      target.properties.name = value;
+      saveEditorPois();
+      refreshEditorSource();
+    }
+
+    function setEditorFeatureCategory(featureId, value) {
+      const target = editorPois.find((f) => f.properties && String(f.properties.id) === String(featureId));
+      if (!target) return;
+      target.properties.category = value;
+      saveEditorPois();
+      refreshEditorSource();
+    }
+
+    function setEditorFeatureNotes(featureId, value) {
+      const target = editorPois.find((f) => f.properties && String(f.properties.id) === String(featureId));
+      if (!target) return;
+      const trimmed = String(value || '');
+      if (trimmed) target.properties.notes = trimmed;
+      else delete target.properties.notes;
+      saveEditorPois();
+      refreshEditorSource();
+    }
+
+    function deleteEditorFeature(featureId) {
+      editorPois = editorPois.filter((f) => !(f.properties && String(f.properties.id) === String(featureId)));
+      const runtime = featureListRuntime['editorPois'];
+      if (runtime && String(runtime.expandedFeatureId) === String(featureId)) {
+        runtime.expandedFeatureId = null;
+      }
+      saveEditorPois();
+      refreshEditorSource();
+    }
+
+    function duplicateEditorFeature(featureId) {
+      const source = editorPois.find((f) => f.properties && String(f.properties.id) === String(featureId));
+      if (!source) return;
+      const clone = JSON.parse(JSON.stringify(source));
+      clone.properties.id = `poi_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+      if (clone.properties.name) clone.properties.name = `${clone.properties.name} copy`;
+      // Nudge the geometry so the duplicate doesn't sit exactly on top of
+      // the original. ~10 m east for Point; centroid-shift for Line/Polygon.
+      const offset = 0.00009;
+      if (clone.geometry?.type === 'Point' && Array.isArray(clone.geometry.coordinates)) {
+        clone.geometry.coordinates = [clone.geometry.coordinates[0] + offset, clone.geometry.coordinates[1]];
+      } else if (clone.geometry?.coordinates && typeof translateCoordinates === 'function') {
+        translateCoordinates(clone.geometry.coordinates, offset, 0);
+      }
+      editorPois.push(clone);
+      saveEditorPois();
+      refreshEditorSource();
+      // Snap the editor onto the new feature so the user can rename it.
+      const runtime = featureListRuntime['editorPois'];
+      if (runtime) {
+        runtime.expandedFeatureId = clone.properties.id;
+        renderFeatureList('editorPois');
+      }
     }
 
     const EXTRA_PRESET_PAINTS = [
@@ -3540,7 +3963,7 @@
           showLidarTiles: false,
           showRoads: true,
           showVisitorContext: true,
-          showBrandLogos: false,
+          showBrandLogos: true,
           showWater: true,
           showSprings: false,
           showCemeteries: false,
@@ -3591,11 +4014,11 @@
           'publish-trailheads': { 'circle-color': '#6f8a5c', 'circle-radius': 6, 'circle-opacity': 1 },
           'osm-tracks': { 'line-color': '#9a5a32', 'line-width': 2, 'line-opacity': 0.95 },
           'osm-service': { 'line-color': '#a89a7e', 'line-width': 1.5, 'line-opacity': 0.85 },
-          // Sprint 02 B5: explicit cream-halo reset for the labels that
-          // trace darkens. Without these a trace→park switch leaves the
-          // dark halo from trace sitting under park's dark text.
-          'roads-labels': { 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 },
-          'osm-named-labels': { 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 }
+          // Sprint 02 B5 + road-label contrast fix: full reset for labels that
+          // trace darkens. Without text-color here a trace→park/topo switch
+          // leaves '#fff4cf' cream text on the light cream/hillshade background.
+          'roads-labels': { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 },
+          'osm-named-labels': { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 }
         }
       },
       topo: {
@@ -3614,7 +4037,7 @@
           showLidarTiles: false,
           showRoads: true,
           showVisitorContext: true,
-          showBrandLogos: false,
+          showBrandLogos: true,
           showWater: true,
           showSprings: true,
           showCemeteries: false,
@@ -3666,9 +4089,10 @@
           'visitor-context-fill': { 'fill-color': '#d2a95f', 'fill-opacity': 0.14 },
           'visitor-context-outline': { 'line-color': '#6f4e2e', 'line-width': 2.4, 'line-opacity': 0.86 },
           'visitor-context-labels': { 'text-color': '#3f3122', 'text-opacity': 1, 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 },
-          // Sprint 02 B5: cream halo reset (see park preset note).
-          'roads-labels': { 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 },
-          'osm-named-labels': { 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 }
+          // Road-label contrast fix: full reset so trace→topo doesn't leave
+          // cream text (#fff4cf) sitting on the contour/hillshade background.
+          'roads-labels': { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 },
+          'osm-named-labels': { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 }
         }
       },
       trace: {
@@ -3676,18 +4100,18 @@
         toggles: {
           showLandcover: false,
           showLandcover9: false,
-          showHillshade: false,
+          showHillshade: true,
           showContours: false,
           showActivityHotspots: false,
           showSyntheticActivity: false,
           showEventSchedule: false,
           showSatellite: false,
-          showUsdaNaip: true,
+          showUsdaNaip: false,
           showNinePatch: false,
           showLidarTiles: false,
           showRoads: true,
           showVisitorContext: false,
-          showBrandLogos: false,
+          showBrandLogos: true,
           showWater: false,
           showSprings: false,
           showCemeteries: false,
@@ -3705,8 +4129,14 @@
         sliders: { landcover9Opacity: 0, sfwdaOpacity: 64, sfwdaMultiply: 0 },
         paints: {
           background: { 'background-color': '#1d1a16' },
-          'usda-naip-satellite': { 'raster-opacity': 1 },
-          'tnmap-satellite': { 'raster-opacity': 1 },
+          'usda-naip-satellite': { 'raster-opacity': 0 },
+          'tnmap-satellite': { 'raster-opacity': 0 },
+          'lidar-hillshade': {
+            'hillshade-exaggeration': 0.92,
+            'hillshade-shadow-color': '#0e0c09',
+            'hillshade-highlight-color': '#3a3228',
+            'hillshade-accent-color': '#2a231a'
+          },
           'publish-boundary-fill': { 'fill-color': '#fff0b8', 'fill-opacity': 0.03 },
           'publish-boundaries': { 'line-color': '#fff0b8', 'line-width': 3.4, 'line-opacity': 1 },
           'publish-trails': { 'line-color': '#ffb347', 'line-width': 4, 'line-opacity': 1 },
@@ -3747,6 +4177,44 @@
           'building-footprint-aop-outline': { 'line-color': '#ff9f5a', 'line-width': 3.2, 'line-opacity': 0.95 },
           'search-highlight-line': { 'line-color': '#00d1ff' },
           'search-highlight-point': { 'circle-color': '#00d1ff', 'circle-stroke-color': '#00d1ff' }
+        }
+      },
+      satellite: {
+        label: 'Satellite',
+        toggles: {
+          showLandcover: false,
+          showLandcover9: false,
+          showHillshade: false,
+          showContours: false,
+          showActivityHotspots: false,
+          showSyntheticActivity: false,
+          showEventSchedule: false,
+          showSatellite: true,
+          showUsdaNaip: false,
+          showNinePatch: false,
+          showLidarTiles: false,
+          showRoads: false,
+          showVisitorContext: false,
+          showBrandLogos: false,
+          showWater: false,
+          showSprings: false,
+          showCemeteries: false,
+          showBuildings: false,
+          showOsmPark: false,
+          showOsmTracks: false,
+          showOsmService: false,
+          showOsmNamed: false,
+          showSfwda: false,
+          showTrails: false,
+          showBoundaries: false,
+          showTrailheads: false,
+          showEditorPois: false
+        },
+        sliders: { landcover9Opacity: 0, sfwdaOpacity: 0, sfwdaMultiply: 0 },
+        paints: {
+          background: { 'background-color': '#000000' },
+          'tnmap-satellite': { 'raster-opacity': 1 },
+          'usda-naip-satellite': { 'raster-opacity': 0 }
         }
       }
 	    };
@@ -4173,6 +4641,14 @@
         if (selectedRow.nextElementSibling !== layerEditor) {
           selectedRow.insertAdjacentElement('afterend', layerEditor);
         }
+        // Collapse the Map editor section when the inline editor opens on a
+        // row that lives in a different section, so the editor surface
+        // dominates without the draw-tools controls competing for space.
+        const editorSection = document.querySelector('.panel-section[data-section="editor"]');
+        const rowSection = selectedRow.closest('.panel-section');
+        if (editorSection && rowSection !== editorSection && !editorSection.classList.contains('collapsed')) {
+          setSectionCollapsed(editorSection, true);
+        }
       }
       layerEditor.hidden = false;
       syncLayerTunerFromSelection();
@@ -4304,7 +4780,8 @@
         presets: {
           park: presetState('park'),
           topo: presetState('topo'),
-          trace: presetState('trace')
+          trace: presetState('trace'),
+          satellite: presetState('satellite')
         },
         current_state: captureViewerState(),
         runtime_overrides: captureRuntimeOverrides()
@@ -4349,7 +4826,7 @@
       },
       editor: {
         editorPois: POI_STORAGE_KEY,
-        featureVisibilityLayers: ['editorPois'],
+        featureVisibilityLayers: ['editorPois', 'eventSchedule'],
         // Drawn POIs are taggable: a #tag binding rides along with the POI.
         featureTagLayers: ['editorPois']
       }
@@ -5025,6 +5502,12 @@
 	      tagToFeature.clear();
 	      resetDefaultPavilionTagRuntime();
 	      rebuildEventScheduleData({ persistVisibility: false });
+	      // Re-seed editorPois from the canonical seed file. `aop_editor_pois_v1`
+	      // was cleared above (VIEWER_OWNED_STORAGE_KEYS), so the seed loader's
+	      // "fresh-install" gate passes and the pavilion + any future seeded
+	      // features come back. Fire-and-forget; refreshEditorSource inside the
+	      // seeder will push the new geometry into the map.
+	      if (typeof maybeSeedEditorPois === 'function') maybeSeedEditorPois();
 	      if (typeof window.lrResetCards === 'function') window.lrResetCards();
 	      setLeftTab('events');
 	      setTerrainEnabled(false);
@@ -5169,7 +5652,18 @@
       if (!target) return;
       window.requestAnimationFrame(() => {
         if (!target.isConnected) return;
-        target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        // Item 3 (misc_3.md): explicitly drive .calendar-body scroll so the
+        // active row centers inside the calendar's scrollable area
+        // regardless of the surrounding drawer state — BUT only when the row
+        // is not already fully visible. This preserves the "60s tick does
+        // not yank scroll back" contract: once the user can see the row,
+        // leave their scroll position alone.
+        const bodyRect = calendarBody.getBoundingClientRect();
+        const rowRect = target.getBoundingClientRect();
+        const fullyVisible = rowRect.top >= bodyRect.top && rowRect.bottom <= bodyRect.bottom;
+        if (fullyVisible) return;
+        const offset = (rowRect.top - bodyRect.top) - (bodyRect.height / 2 - rowRect.height / 2);
+        calendarBody.scrollTop += offset;
       });
     }
 
@@ -5207,18 +5701,17 @@
         const prior = r.li.querySelector('.cal-live-badge, .cal-soon-badge');
         if (prior) prior.remove();
         if (r.state === 'happening') {
-          const leftMin = (r.endMs - nowMs) / 60000;
           const badge = document.createElement('span');
           badge.className = 'cal-live-badge';
           badge.setAttribute('data-badge', 'live');
-          badge.textContent = `LIVE · ${eventScheduleFormatMinutes(leftMin)} LEFT`;
+          badge.textContent = 'LIVE';
           r.li.appendChild(badge);
         } else if (r.state === 'upcoming_next') {
           const untilMin = (r.startMs - nowMs) / 60000;
           const badge = document.createElement('span');
           badge.className = 'cal-soon-badge';
           badge.setAttribute('data-badge', 'soon');
-          badge.textContent = `in ${eventScheduleFormatMinutes(untilMin)}`;
+          badge.textContent = eventScheduleFormatMinutes(untilMin);
           r.li.appendChild(badge);
         }
       }
@@ -5412,9 +5905,15 @@
         trailBtn.dataset.bound = '1';
         trailBtn.addEventListener('click', () => {
           if (trailBtn.disabled) return;
-          preferredHotLane = 'trails';
-          refreshHotButton();
-          hotButtonFlyToHotspots();
+          // Toggle: a second tap on the active trail lane turns hot mode off.
+          if (trailBtn.dataset.hotSelected === 'true') {
+            preferredHotLane = null;
+            refreshHotButton();
+          } else {
+            preferredHotLane = 'trails';
+            refreshHotButton();
+            hotButtonFlyToHotspots();
+          }
         });
       }
     }
@@ -5758,6 +6257,67 @@
       editorPois = Array.isArray(parsed) ? parsed : [];
     }
 
+    // First-install + Reset-viewer seed for editorPois. The canonical seed
+    // lives at `website/data/aop_editor_seed_pois.geojson` and ships with
+    // the repo; on a fresh viewer (or after Reset viewer clears
+    // `aop_editor_pois_v1` outright) we fetch it and write its features
+    // into storage as the user's starting set. Workflow to update the
+    // seed: draw + Export GeoJSON, then commit the download as
+    // aop_editor_seed_pois.geojson. Every seeded feature is stamped
+    // `properties.source = aop_editor_seed_v1` so the source register can
+    // tell seeded geometry apart from user-drawn geometry; the optional
+    // `seed_tag` property writes a #tag into `aop_feature_tags_v1` for
+    // the seeded feature and strips any conflicting binding off another
+    // layer (migration: 1010 building → seeded pavilion POI).
+    async function maybeSeedEditorPois() {
+      if (localStorage.getItem(POI_STORAGE_KEY) !== null) return;
+      const seed = await fetchJson('./data/aop_editor_seed_pois.geojson', 'editor POI seed');
+      if (!seed || !Array.isArray(seed.features) || seed.features.length === 0) return;
+      const seeded = [];
+      for (const feature of seed.features) {
+        if (!feature || !feature.geometry || !feature.properties) continue;
+        const props = { ...feature.properties };
+        if (!props.id) continue;
+        if (!props.source) props.source = 'aop_editor_seed_v1';
+        if (!props.layer) props.layer = 'editor_poi';
+        seeded.push({ type: 'Feature', geometry: feature.geometry, properties: props });
+      }
+      if (seeded.length === 0) return;
+      editorPois = seeded;
+      // Apply seed_tag bindings. The seed wins over any pre-existing
+      // binding on another layer (one-shot migration on each fresh
+      // install / Reset). After this runs once, the user owns the
+      // binding through the editor's tag input like any other.
+      const tagStore = loadFeatureTagStore();
+      if (!tagStore.editorPois) tagStore.editorPois = {};
+      for (const feature of seeded) {
+        const id = feature.properties.id;
+        const seedTag = feature.properties.seed_tag;
+        if (!id || !seedTag) continue;
+        const normalized = normalizeFeatureTag(seedTag);
+        if (!normalized) continue;
+        for (const layerKey of Object.keys(tagStore)) {
+          if (layerKey === 'editorPois') continue;
+          const layerBindings = tagStore[layerKey] || {};
+          for (const fid of Object.keys(layerBindings)) {
+            if (layerBindings[fid] === normalized) delete layerBindings[fid];
+          }
+        }
+        tagStore.editorPois[id] = normalized;
+        // Strip the seed_tag property — it has served its purpose; the
+        // binding now lives in aop_feature_tags_v1 like any user tag.
+        delete feature.properties.seed_tag;
+      }
+      saveFeatureTagStore(tagStore);
+      saveEditorPois();
+      refreshEditorSource();
+      // Tag store changed: the existing #pavilion binding may have moved
+      // off the buildings layer, so rebuild the inverse lookup and the
+      // event schedule that resolves through it.
+      if (typeof rebuildTagLookup === 'function') rebuildTagLookup();
+      if (typeof rebuildEventScheduleData === 'function') rebuildEventScheduleData();
+    }
+
     function saveEditorPois() {
       writeJsonStore(POI_STORAGE_KEY, editorPois);
     }
@@ -5811,35 +6371,6 @@
       placePoiBtn.textContent = mode === 'point' ? 'Placing… (Esc)' : 'Place POI';
       drawFootprintBtn.textContent = mode === 'polygon' ? 'Drawing… (Esc)' : 'Draw footprint';
       traceLineBtn.textContent = mode === 'linestring' ? 'Tracing… (Esc)' : 'Trace line';
-    }
-
-    function openPoiPopup(feature, lngLat) {
-      const props = feature.properties || {};
-      const popup = new maplibregl.Popup({ maxWidth: '240px' })
-        .setLngLat(lngLat)
-        .setHTML(
-          `<div class="poi-popup"><strong>${escapeHtml(props.category || 'POI')}</strong>`
-          + `<input type="text" id="poiNameInput" value="${escapeHtml(props.name || '')}" />`
-          + '<button type="button" id="poiSaveBtn">Save name</button>'
-          + '<button type="button" id="poiDeleteBtn">Delete</button></div>')
-        .addTo(map);
-      const el = popup.getElement();
-      const nameInput = el.querySelector('#poiNameInput');
-      el.querySelector('#poiSaveBtn').addEventListener('click', () => {
-        const target = editorPois.find((f) => f.properties.id === props.id);
-        if (target) {
-          target.properties.name = nameInput.value;
-          saveEditorPois();
-          refreshEditorSource();
-        }
-        popup.remove();
-      });
-      el.querySelector('#poiDeleteBtn').addEventListener('click', () => {
-        editorPois = editorPois.filter((f) => f.properties.id !== props.id);
-        saveEditorPois();
-        refreshEditorSource();
-        popup.remove();
-      });
     }
 
     // Fetch an optional overlay. Returns undefined (and warns) if it cannot load,
@@ -6576,6 +7107,18 @@
             && eventSessionById.has(viewerSessionState.active_event_session_id)) {
           setLeftTab('events');
           window.setTimeout(() => gotoEventSession(viewerSessionState.active_event_session_id), 300);
+        } else {
+          // Item 4 (misc_3.md): no saved active session on first load means
+          // the calendar's "move to content" still needs to fire — fly to
+          // the currently-live or next-upcoming session so the map opens
+          // pointed at what the calendar is highlighting.
+          window.setTimeout(() => {
+            const live = calendarDays?.querySelector('li[data-session-state="happening"] .calendar-row, li[data-session-state="upcoming_next"] .calendar-row');
+            const sessionId = live?.dataset?.sessionId;
+            if (sessionId && eventSessionById.has(sessionId)) {
+              gotoEventSession(sessionId);
+            }
+          }, 300);
         }
       } else {
         calendarDays.innerHTML = '<li class="calendar-empty">Schedule unavailable.</li>';
@@ -7873,20 +8416,25 @@
       });
 
       // Clicking a committed POI or footprint (only while not drawing, and not
-      // while a move-mode commit is staged) opens the rename/delete popup
-      // AND reveals the matching row in the right-panel feature list. During
-      // move mode the click belongs to the move primitive — popping up
-      // rename/delete or yanking the panel would steal focus from the
-      // intended commit.
+      // while a move-mode commit is staged) routes into the right-panel
+      // inline accordion editor: expand the row for this feature, scroll
+      // it into view, and flash. The previous MapLibre rename/delete
+      // popup retired with the inline-editor card. During move mode the
+      // click belongs to the move primitive.
       function bindEditorClick(layerId) {
         map.on('click', layerId, (event) => {
           if (draw && draw.getMode() !== 'static') return;
           if (moveState) return;
           const feature = event.features?.[0];
           if (!feature) return;
-          openPoiPopup(feature, event.lngLat);
           const id = feature.properties && feature.properties.id;
-          if (id != null) revealFeatureInPanel('editorPois', id);
+          if (id == null) return;
+          const runtime = featureListRuntime['editorPois'];
+          if (runtime && String(runtime.expandedFeatureId) !== String(id)) {
+            runtime.expandedFeatureId = id;
+            renderFeatureList('editorPois');
+          }
+          revealFeatureInPanel('editorPois', id);
         });
         map.on('mouseenter', layerId, () => {
           if (draw && draw.getMode() === 'static' && !moveState) map.getCanvas().style.cursor = 'pointer';
@@ -7898,6 +8446,13 @@
       bindEditorClick('editor-poi-circles');
       bindEditorClick('editor-poi-fill');
       bindEditorClick('editor-poi-lines');
+
+      // First-install seed: if the user has never run the viewer, fetch
+      // the seed file and install it as the starting editorPois set. No
+      // await — the seed lands asynchronously and pushes itself into the
+      // map via refreshEditorSource(). Subsequent boots (with localStorage
+      // populated) no-op out of this path.
+      maybeSeedEditorPois();
 
       // --- Search index + highlight layers ------------------------------
       indexFeatures(publishData,
@@ -8030,6 +8585,23 @@
       searchActive = -1;
     }
 
+    // Anchor the (now `position: fixed`) dropdown to the input's bounding box
+    // so it escapes the `.lr-content-col` overflow-clip but still tracks the
+    // input across resizes / drawer-card collapses. Called whenever the
+    // dropdown is shown; the scroll/resize listeners reposition it live.
+    function positionSearchResults() {
+      const rect = searchInput.getBoundingClientRect();
+      searchResults.style.left = `${rect.left}px`;
+      searchResults.style.top = `${rect.bottom + 4}px`;
+      searchResults.style.width = `${rect.width}px`;
+    }
+    window.addEventListener('resize', () => {
+      if (searchResults.style.display === 'block') positionSearchResults();
+    });
+    window.addEventListener('scroll', () => {
+      if (searchResults.style.display === 'block') positionSearchResults();
+    }, true);
+
     // Match the query against the group's display name OR any alias.
     // A leading `#` flags a deliberate tag query — match aliases only so
     // the dropdown stays tight and an unrelated name substring does not
@@ -8058,6 +8630,7 @@
       if (!searchMatches.length) {
         searchResults.innerHTML = '<div class="search-empty">No match</div>';
         searchResults.style.display = 'block';
+        positionSearchResults();
         return;
       }
       searchResults.innerHTML = searchMatches
@@ -8067,6 +8640,7 @@
           + `<span class="search-kind">${escapeHtml(match.kind)}</span></div>`)
         .join('');
       searchResults.style.display = 'block';
+      positionSearchResults();
     }
 
     // Search-result pulse. `osc` runs 0 -> 1 -> 0 a few times across the
@@ -8312,7 +8886,12 @@
       const lrContentCol = document.getElementById('lrContentCol');
       if (!lrIconCol || !lrContentCol) return;
 
-      const LR_DEFAULT_OPEN = { search: true, hot: false, cal: true };
+      // Item 11 (misc_3.md): on mobile the small viewport can't host all
+      // three drawer cards comfortably, so the no-saved-state default is
+      // calendar-only. Desktop keeps search + cal open.
+      const LR_DEFAULT_OPEN = window.innerWidth <= 760
+        ? { search: false, hot: false, cal: true }
+        : { search: true, hot: false, cal: true };
       const lrSavedState = readJsonStore(LEFT_RAIL_DRAWER_KEY, null);
       let lrHasSavedState = !!(
         lrSavedState

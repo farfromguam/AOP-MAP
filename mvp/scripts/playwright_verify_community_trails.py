@@ -22,7 +22,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from playwright_base import WEBSITE_URL, set_toggle, click_in_section
+from playwright_base import viewer_url, set_toggle, click_in_section
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -45,7 +45,7 @@ def main() -> int:
         page.on("console", lambda msg: console_errors.append(msg.text)
                 if msg.type == "error" else None)
 
-        page.goto(WEBSITE_URL, wait_until="networkidle")
+        page.goto(viewer_url(), wait_until="networkidle")
         page.wait_for_function("window.map && window.map.isStyleLoaded()", timeout=15000) \
             if False else None  # window.map is not exposed; use load event proxy
         # Wait until the publish message is rendered so we know map.on('load') finished.

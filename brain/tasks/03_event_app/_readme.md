@@ -1,30 +1,41 @@
 # Sprint 03: Event App Loop
 
-TL;DR:
-- Sprint 03 starts as the app-loop audit for event setup, CRUD, uploads, and moderated trail / landmark submissions.
-- Keep the northstar constraint visible: submissions enter as observations, not direct edits to the trusted map.
+Sprint 03 is closed.
+
+Reviewed 2026-05-27. Shipped or routed cards moved to `_done/`. Outstanding
+work was extracted into `../04_event_app/` so Sprint 04 can start clean.
+`misc_3.md` stays here untouched per user direction.
 
 #aop #sprint #03_event_app #submissions #events
 
 -----
 
-## Current contents
+## Active contents
 
-- `full_loop_crud_upload_audit.md` - audit report for event setup, CRUD surfaces, upload capabilities, and the submission-to-review-to-publish loop.
-- `viewer_polish_carryover.md` - the Sprint 02 `[]` punchlist that didn't ship, organized into seven lanes. Lanes 1-5 shipped; Lane 6 moved to `code_health_pass_4.md`; Lane 7 stays on `../01_mvp/_done/community_trails_import.md`.
-- `code_health_pass_4.md` - Sprint 02 CSS / theme / smell carryover, kept in Sprint 03 because this is viewer polish, not MVP map-spine work.
-- `left_panel_context_tabs.md` - shipped left-panel UI pass: mobile-first control stack, Events / Park / About tabs, and context-card verifier coverage.
-- `left_sidebar_content_audit.md` - opened 2026-05-25 after the Rock Warblers Trail Blazing Invitational rebrand of the left sidebar (calendar header, Event tab, About tab) in production voice. A second 2026-05-25 pass merged the Event and About tabs into a single About tab and dropped `.left-tabs` to two columns. Audit closes when Rock Warblers confirm the real specifics behind sister-event placeholders.
-- `left_panel_poi_browser.md` - pending Sprint 03 card; routes `misc.md`'s "browseable POI list in the left rail" into a new third `POI` tab, restoring `.left-tabs` to three columns.
-- `poi_editor_inline_list_and_highlight.md` - opened 2026-05-25. Drawn-POI feature list relocated from the layer drawer into the Map editor section under the categories; per-row `★/☆` highlight toggle gates which drawn POIs surface in the left-rail POI tab.
-- `left_rail_collapse_tabs.md` - shipped left-rail drawer for Search / Hot / Calendar, with float-down icons, persisted card state, hot-data auto-open, calendar resize, and a dedicated drawer verifier. Variant artifacts remain in `website/leftrail_*.html` for reference.
-- `viewer_session_state_test_clock.md` - shipped 2026-05-26. Adds the right-panel virtual date/time control, reset-to-new-user affordance, pocket-map reload persistence, and the recorded landmarks-hot decision.
-- `dev_db_snapshot_reseed.md` - dev/pre-prod data snapshot and reseed task from `misc.md`.
-- `sprint_02_critique_followups.md` - holding card for issues surfaced from a critique of the closed Sprint 02 work (fixed verifier failures, AOP badge default-on, masked FAILs, hot-button polish, localStorage hygiene, taxonomy drift).
-- `misc.md` - scratch intake. Route anything durable into a card.
+- `misc_3.md` - left alone during the Sprint 03 closeout. Routing block at the bottom captures the 2026-05-27 triage dispatch.
 
-## Shape
+## Archive
 
-This sprint is not "build a community app first."
+`_done/` now holds the reviewed Sprint 03 cards:
 
-It is the bridge from the current static viewer plus PostGIS spine into a staff-curated event and submission loop. Event setup can move ahead first. Public or semi-public submissions stay behind invite codes, moderation, source register links, and publish gates.
+- app-loop audit and reseed: `full_loop_crud_upload_audit.md`,
+  `dev_db_snapshot_reseed.md`
+- viewer polish and critique carryover: `viewer_polish_carryover.md`,
+  `code_health_pass_4.md`, `sprint_02_critique_followups.md`
+- left rail and content: `left_panel_context_tabs.md`,
+  `left_sidebar_content_audit.md`, `left_panel_poi_browser.md`,
+  `left_rail_collapse_tabs.md`, `load animations.md`
+- right rail and POI editor: `right_panel_editor_consistency.md`,
+  `poi_editor_inline_list_and_highlight.md`,
+  `poi_editor_tree_inline_accordion.md`
+- session tools and routed scratch: `viewer_session_state_test_clock.md`,
+  `misc.md`, `misc_2.md`
+- review artifact: `park_bounds_icon_review.md`
+
+## Sprint 04 extraction
+
+Use `../04_event_app/_readme.md` for the current work list. It maps each
+partial Sprint 03 card to its Sprint 04 holder.
+
+The pending calendar placeholder mockup card spawned from `misc_3.md` item 13
+now lives at `../04_event_app/calendar_placeholder_state.md`.

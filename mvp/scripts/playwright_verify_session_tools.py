@@ -11,7 +11,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from playwright_base import WEBSITE_URL
+from playwright_base import viewer_url
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -123,8 +123,8 @@ def main() -> int:
         page.on("console", record_console)
         page.on("dialog", lambda dialog: dialog.accept())
 
-        print(f"Opening {WEBSITE_URL}")
-        page.goto(WEBSITE_URL, wait_until="load")
+        print(f"Opening {viewer_url()}")
+        page.goto(viewer_url(), wait_until="load")
         clear_viewer_storage(page)
         page.reload(wait_until="load")
         wait_loaded(page)
@@ -213,23 +213,52 @@ def main() -> int:
             }"""
         )
         page.locator("#resetViewerState").click()
-        page.wait_for_timeout(1200)
+        # Reset wipes all twelve viewer-owned keys, then `maybeSeedEditorPois`
+        # re-fetches `aop_editor_seed_pois.geojson` and re-installs it. We
+        # wait for that async install to complete before asserting state.
+        page.wait_for_function(
+            "() => { const raw = localStorage.getItem('aop_editor_pois_v1');"
+            " if (raw === null) return false;"
+            " try { const arr = JSON.parse(raw);"
+            " return Array.isArray(arr) && arr.length === 1"
+            " && arr[0].properties && arr[0].properties.id === 'aop_seed_pavilion'; }"
+            " catch (_) { return false; } }",
+            timeout=5000,
+        )
+        page.wait_for_timeout(300)
         state = session_state(page)
-        owned_after_reset = [key for key in state["storageKeys"] if key in {
+        # Keys that should be cleared outright (no seed for them).
+        # `aop_feature_visibility_v1` is excluded — registering the seeded
+        # editor POIs writes a fresh visibility entry for them, so the
+        # key is intentionally repopulated by the seed path.
+        SHOULD_BE_GONE = {
             "aop_calendar_height_v1",
             "aop_calendar_collapsed_v1",
             "aop_left_rail_drawer_v1",
             "aop_virtual_clock_v1",
             "aop_viewer_session_state_v1",
             "aop_viewer_preset_settings_v1",
-            "aop_feature_visibility_v1",
-            "aop_feature_tags_v1",
             "aop_feature_tags_seeded_v1",
-            "aop_editor_pois_v1",
             "aop_visitor_context_overrides_v1",
             "aop_brand_logos_overrides_v1",
-        }]
-        check("reset clears viewer-owned localStorage", owned_after_reset == [], str(state["storageKeys"]))
+        }
+        leftover = [k for k in state["storageKeys"] if k in SHOULD_BE_GONE]
+        check("reset clears viewer-owned localStorage (non-seeded keys)", leftover == [],
+              str(state["storageKeys"]))
+        # Keys the seed loader writes back after wiping them.
+        seed_pavilion_id = page.evaluate(
+            "() => { const raw = localStorage.getItem('aop_editor_pois_v1');"
+            " return raw ? JSON.parse(raw)[0].properties.id : null; }"
+        )
+        check("reset re-seeds editorPois with the canonical pavilion",
+              seed_pavilion_id == "aop_seed_pavilion", str(seed_pavilion_id))
+        seed_tag = page.evaluate(
+            "() => { const raw = localStorage.getItem('aop_feature_tags_v1');"
+            " if (!raw) return null; const store = JSON.parse(raw);"
+            " return store.editorPois && store.editorPois.aop_seed_pavilion; }"
+        )
+        check("reset re-seeds the #pavilion tag onto the seeded POI",
+              seed_tag == "#pavilion", str(seed_tag))
         check("reset returns to Park preset", state["activePreset"] == "park", str(state))
         check("reset returns to Events tab", state["activeTab"] == "events", str(state))
         check("reset clears search query and virtual clock", state["searchValue"] == "" and state["clockActive"] == "false", str(state))

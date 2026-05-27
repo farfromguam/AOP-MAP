@@ -1,6 +1,6 @@
-# Session Handoff: Sprint 03 pickup
+# Session Handoff: Sprint 04 pickup
 
-Date: 20260524
+Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
@@ -12,27 +12,60 @@ Each session pruned out of here lands at `session_context_<YYYYMMDD>.md`:
 - `session_context_20260522.md` — work log from the 2026‑05‑20 → 2026‑05‑22 sessions (lidar contours, water, search, cemeteries, land cover, NAIP tracing, presets, panel collapse, activity hotspots, initial event schedule).
 - `session_context_20260524.md` — work log for the 2026‑05‑23 → 2026‑05‑24 sessions, covering the full Sprint 02 close (Buckets A–H), schedule clock-times, calendar current-time indicator, left hot button, hot-control two-lane, branding logos, named-feature tagging, search tags, viewer chrome polish, default-layer policy, and code-health Pass 3.
 - `session_context_202605241228.md` — CWC dump after Sprint 03 carryover lanes 1–5 shipped.
-- `session_context_20260525.md` — left-rail manilla-tab design exploration; five HTML mockup variants checked in under `website/leftrail_v*.html`. Build card: `tasks/03_event_app/left_rail_collapse_tabs.md`. No `website/index.html` changes.
+- `session_context_20260525.md` — left-rail manilla-tab design exploration; five HTML mockup variants checked in under `website/leftrail_v*.html`. Build card: `tasks/03_event_app/_done/left_rail_collapse_tabs.md`. No `website/index.html` changes.
 
 Read an archive only if you need to retrace why something was built. The durable record for each feature lives in its `tasks/*/_done/<feature>.md` build card, `research/viewer.md`, `search_map.md`, or `spinup/mvp_runbook.md`.
 
 ## Where we are
 
-Sprint 01 (MVP) and Sprint 02 (Editor & Polish) are both closed. All their build cards are in their respective `_done/` folders.
+Sprint 01 (MVP), Sprint 02 (Editor & Polish), and Sprint 03 (Event App Loop)
+are closed. Sprint 03's reviewed cards live in `tasks/03_event_app/_done/`.
+`tasks/03_event_app/misc_3.md` was left active by request. Sprint 04 starts at
+`tasks/04_event_app/_readme.md`.
 
-The Sprint 02 carryover router is `tasks/03_event_app/viewer_polish_carryover.md`. Lanes 1–5 shipped 2026-05-24 (hot-control two-lane, calendar expand + scroll-into-view, collapse-icon uniformity, default-layer audit table in `research/viewer.md`, brand-logo size slider + add-image runbook). Lane 6 now lives at `tasks/03_event_app/code_health_pass_4.md`; Lane 7 stays on `tasks/01_mvp/_done/community_trails_import.md`. The 2026-05-25 camera correction is applied: zoom shortcuts reset to flat west-up, while Park / Topo / Trace layer presets preserve zoom, pitch, bearing, and independent 3D state.
+The Sprint 02 carryover router is archived at
+`tasks/03_event_app/_done/viewer_polish_carryover.md`. Lanes 1–5 shipped
+2026-05-24 (hot-control two-lane, calendar expand + scroll-into-view,
+collapse-icon uniformity, default-layer audit table in `research/viewer.md`,
+brand-logo size slider + add-image runbook). Lane 6 shipped its main pass in
+`tasks/03_event_app/_done/code_health_pass_4.md`; residual viewer polish now
+lives at `tasks/04_event_app/viewer_polish_followups.md`. Lane 7 stays on
+`tasks/01_mvp/_done/community_trails_import.md` and is also visible in
+`tasks/04_event_app/data_integrity_publishability.md`. The 2026-05-25 camera
+correction is applied: zoom shortcuts reset to flat west-up, while Park / Topo
+/ Trace layer presets preserve zoom, pitch, bearing, and independent 3D state.
 
-**2026-05-25 Pass 4 + misc landings.** Calendar-card cream-surface chrome restored (`misc.md` "left side event calendar transparent" item — `.calendar-card` is back in the shared cream-surface group at `website/index.html:31`). Pass 4 first wave shipped via four parallel agents and landed in main: (1) `!important` cluster fully eliminated in the right-rail collapse-button + tune-control region by raising specificity to `.panel`-scoped selectors; (2) 8 safe palette token swaps (`#d8cdb4 → var(--cream-border)`, etc.); (3) full theme readability report (8 surfaces, 13 KEEP / 6 TWEAK / 4 FIX with WCAG math) recorded in `code_health_pass_4.md`; (4) Critique-C1 hot-button copy renamed off "heat" wording — `Trail heat / Activity evidence` → `Trail activity / Where rigs spent time` in HTML defaults, `refreshHotButton` fallbacks, aria-labels, and the matching verifier assertion. `code_health_pass_4.md` acceptance is now 7 of 8 boxes ticked (adjacent-JS-smells is the open one, deferred). Open follow-ups named at the bottom of that card: `--brown-soft` contrast bump to `#6a5638`, focus-visible outline alpha lift, `.layer-row.active` rust stripe, four remaining ≥3-count hex literals waiting for new role names.
+**2026-05-25 Pass 4 + misc landings.** Calendar-card cream-surface chrome restored (`misc.md` "left side event calendar transparent" item — `.calendar-card` is back in the shared cream-surface group at `website/index.html:31`). Pass 4 first wave shipped via four parallel agents and landed in main: (1) `!important` cluster fully eliminated in the right-rail collapse-button + tune-control region by raising specificity to `.panel`-scoped selectors; (2) 8 safe palette token swaps (`#d8cdb4 → var(--cream-border)`, etc.); (3) full theme readability report (8 surfaces, 13 KEEP / 6 TWEAK / 4 FIX with WCAG math) recorded in `tasks/03_event_app/_done/code_health_pass_4.md`; (4) Critique-C1 hot-button copy renamed off "heat" wording — `Trail heat / Activity evidence` → `Trail activity / Where rigs spent time` in HTML defaults, `refreshHotButton` fallbacks, aria-labels, and the matching verifier assertion. Residual Pass 4 follow-ups now live in `tasks/04_event_app/viewer_polish_followups.md`.
 
-Sprint 03's main thrust is `tasks/03_event_app/full_loop_crud_upload_audit.md` — event setup, CRUD, uploads, and the submission → review → publish loop. `tasks/03_event_app/dev_db_snapshot_reseed.md` carries the dev DB dump/reseed need from `misc.md`. `tasks/03_event_app/left_panel_poi_browser.md` shipped 2026-05-25 — the viewer now has a third left-rail `POI` tab sitting between `Events` and `About`, rendering a grouped index of event anchors, in-park buildings, observed trails, cemeteries, off-park visitor support, and drawn POIs. Visitor blurbs + revisit-note placeholders live in `website/data/aop_poi_index.json` (6 groups, 20 entries, 10 placeholders flagged for follow-up); the source GeoJSONs stay clean so re-exports can't overwrite authored copy. Smoke checks land in the extended `playwright_verify_presets.py`; a dedicated `playwright_verify_left_poi_browser.py` is the remaining acceptance box.
+Sprint 04's main app thrust is `tasks/04_event_app/event_crud_upload_loop.md`
+— event setup, CRUD, uploads, and the submission -> review -> publish loop.
+`tasks/04_event_app/dev_db_snapshot_reseed.md` carries the dev DB dump/reseed
+need from `misc.md`. `tasks/03_event_app/_done/left_panel_poi_browser.md`
+shipped 2026-05-25 — the viewer now has a third left-rail `POI` tab sitting
+between `Events` and `About`, rendering a grouped index of event anchors,
+in-park buildings, observed trails, cemeteries, off-park visitor support, and
+drawn POIs. Visitor blurbs + revisit-note placeholders live in
+`website/data/aop_poi_index.json` (6 groups, 20 entries, 10 placeholders
+flagged for follow-up); the source GeoJSONs stay clean so re-exports can't
+overwrite authored copy. Smoke checks land in the extended
+`playwright_verify_presets.py`; a dedicated `playwright_verify_left_poi_browser.py`
+is now carried by `tasks/04_event_app/viewer_polish_followups.md`.
 
-**2026-05-26 — left-rail drawer shipped.** `tasks/03_event_app/left_rail_collapse_tabs.md` shipped into `website/index.html`: Search / Hot / Calendar now live in a two-column left drawer with per-card icons, persisted open/closed state, hot-data auto-open that respects user-close, all-closed standalone state, and the calendar resize handle. Focused coverage: `mvp/scripts/playwright_verify_left_rail_drawer.py`.
+**2026-05-26 — left-rail drawer shipped.** `tasks/03_event_app/_done/left_rail_collapse_tabs.md` shipped into `website/index.html`: Search / Hot / Calendar now live in a two-column left drawer with per-card icons, persisted open/closed state, hot-data auto-open that respects user-close, all-closed standalone state, and the calendar resize handle. Focused coverage: `mvp/scripts/playwright_verify_left_rail_drawer.py`.
 
-**2026-05-26 — right-panel editor consistency.** `tasks/03_event_app/right_panel_editor_consistency.md` shipped. `⧉ Export all` moved into the panel header beside `▾ Collapse panel` (the old `.panel-actions` row at the bottom of `#panelBody` is gone). Publishable section header gained its own `⧉` for parity with Source / Derived / Map editor; the POI section was deliberately not given one (its `poiGroup*` IDs don't match `sectionInputs`' `show*` filter, so the payload would be empty). Three layers that previously appeared as bare checkboxes in Publishable now get the full editor treatment: `activityHotspots`, `syntheticActivity`, and `eventSchedule` are registered in both `TUNABLE_LAYERS` (paint drawers) and `FEATURE_LIST_LAYERS` (CRUD index — 65 / 18 / 8 rows respectively, each with visibility + fly). New `refreshFeatureListData` helper lets `rebuildEventScheduleData` push fresh anchor data into the runtime without recursing through `registerFeatureListLayer`. The two failures in `playwright_verify_event_schedule.py` (search magnifier missing, hot-button click timeout) were verified pre-existing by stash + replay — not caused by this card.
+**2026-05-26 — right-panel editor consistency.** `tasks/03_event_app/_done/right_panel_editor_consistency.md` shipped. `⧉ Export all` moved into the panel header beside `▾ Collapse panel` (the old `.panel-actions` row at the bottom of `#panelBody` is gone). Publishable section header gained its own `⧉` for parity with Source / Derived / Map editor; the POI section was deliberately not given one (its `poiGroup*` IDs don't match `sectionInputs`' `show*` filter, so the payload would be empty). Three layers that previously appeared as bare checkboxes in Publishable now get the full editor treatment: `activityHotspots`, `syntheticActivity`, and `eventSchedule` are registered in both `TUNABLE_LAYERS` (paint drawers) and `FEATURE_LIST_LAYERS` (CRUD index — 65 / 18 / 8 rows respectively, each with visibility + fly). New `refreshFeatureListData` helper lets `rebuildEventScheduleData` push fresh anchor data into the runtime without recursing through `registerFeatureListLayer`. The two failures in `playwright_verify_event_schedule.py` (search magnifier missing, hot-button click timeout) were verified pre-existing by stash + replay — not caused by this card.
 
-**2026-05-26 — session tools shipped.** `tasks/03_event_app/viewer_session_state_test_clock.md` shipped from `misc_2.md`: right-panel virtual clock controls (`aop_virtual_clock_v1`), Reset viewer, and pocket-map reload state (`aop_viewer_session_state_v1`) for active preset, active left tab, search query, and selected event. Landmark-hot decision: keep landmarks in POI/search, not a third Hot lane. Focused coverage: `mvp/scripts/playwright_verify_session_tools.py`; adjacent suites `playwright_verify_left_rail_drawer.py`, `playwright_verify_event_schedule.py`, and `playwright_verify_presets.py` passed after the startup-order fix for restoring the POI tab.
+**2026-05-26 — session tools shipped.** `tasks/03_event_app/_done/viewer_session_state_test_clock.md` shipped from `misc_2.md`: right-panel virtual clock controls (`aop_virtual_clock_v1`), Reset viewer, and pocket-map reload state (`aop_viewer_session_state_v1`) for active preset, active left tab, search query, and selected event. Landmark-hot decision: keep landmarks in POI/search, not a third Hot lane. Focused coverage: `mvp/scripts/playwright_verify_session_tools.py`; adjacent suites `playwright_verify_left_rail_drawer.py`, `playwright_verify_event_schedule.py`, and `playwright_verify_presets.py` passed after the startup-order fix for restoring the POI tab.
 
-The MVP backlog at `tasks/01_mvp/_readme.md` "Immediate next work" still has three open data-integrity items that unblock V1 publishable: item 9 (replace demo trail/trailhead placeholders with real source-backed AOP data), item 3 (connect QGIS to `localhost:55432`), item 8 (reconcile the 600+ acre official claim against the parcel envelope), and item 10 (swap the AWS Terrarium DEM for USGS 3DEP 1 m tiles, deferred until the 10 m look earns its keep).
+**2026-05-26 — drawn-POI CRUD reshaped.** `tasks/03_event_app/_done/poi_editor_tree_inline_accordion.md` shipped. The flat editorPois list is now a kind-grouped tree — `Drawn POI → POI / Footprint / Line → named item` (`FEATURE_LIST_LAYERS.editorPois.groups` matches on `feature.geometry.type`, and `groupForFeature` now passes `feature` through alongside `props` so other layers ignore the 2nd arg). Each leaf carries a trailing `▸` chevron that opens an inline accordion editor below the row: name, category (now mutable post-create), tag, notes (new `feature.properties.notes` field), geometry summary, action row (`🎯 Fly · ✋ Move · ⎘ Duplicate · ⧉ Copy GeoJSON · Delete`). Tag input and `⧉` copy button move off the row into the editor; visibility checkbox, `★` highlight, name (click=fly), `🎯`, `✋`, and the new `▸` chevron stay on the row. The MapLibre rename/delete popup (`openPoiPopup`) retired — map-click on a drawn POI now expands the leaf's editor in the right panel and flashes the row. Card mockup pass: `website/poi_crud_compare.html` + four `poi_crud_v{1..4}_*.html` variants; V1 (inline accordion) chosen. Same session shipped the editor seed + dump-to-GeoJSON path: `website/data/aop_editor_seed_pois.geojson` (schema `aop_editor_seed_v1`, first entry the `aop_seed_pavilion` POI at the 1010 Ellis Cove centroid carrying `seed_tag: '#pavilion'`); `maybeSeedEditorPois` runs on a fresh install or after Reset viewer and writes both the POI store and the `#pavilion` tag binding, stripping the matching tag off any other layer one-shot (migration: 1010 building → seeded POI). The building-side `maybeSeedFeatureTags` + `FEATURE_TAG_SEEDED_KEY` constant retired (the literal stays in the wipe list so existing installs get the sticky flag cleared on Reset). Workflow to update the seed lives in the create-row help text: `Export GeoJSON → replace the seed file with the download → commit`. Verifiers green: `playwright_verify_poi_editor.py` (asserts inline editor + delete; clean-slate now writes `[]` to leave the seed gate closed), `playwright_verify_feature_list.py` (POI copy path rewritten to expand the leaf first; same `[]` swap), `playwright_verify_presets.py`, `playwright_verify_session_tools.py` (Reset now asserts the seed re-installs `aop_editor_pois_v1` + `aop_feature_tags_v1` while the other ten viewer-owned keys stay cleared), `playwright_verify_event_schedule.py` (Tag-driven block rewritten: `#pavilion → editorPois/aop_seed_pavilion`, no building row pre-bound; live re-resolve test driven via `setFeatureTag` rather than the buildings drawer DOM).
+
+The MVP backlog at `tasks/01_mvp/_readme.md` "Immediate next work" still has
+open data-integrity items that unblock V1 publishable: item 9 (replace demo
+trail/trailhead placeholders with real source-backed AOP data), item 3 (connect
+QGIS to `localhost:55432`), item 8 (reconcile the 600+ acre official claim
+against the parcel envelope), and item 10 (swap the AWS Terrarium DEM for USGS
+3DEP 1 m tiles, deferred until the 10 m look earns its keep). Sprint 04 also
+collects those blockers at `tasks/04_event_app/data_integrity_publishability.md`.
 
 ## Live preview ports
 

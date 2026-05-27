@@ -90,8 +90,12 @@ Shared helpers live in `playwright_base.py` next to the verifiers. A new
 verifier imports what it needs:
 
 ```python
-from playwright_base import WEBSITE_URL, set_toggle, layer_visibility, rendered_count
+from playwright_base import viewer_url, set_toggle, layer_visibility, rendered_count
 ```
+
+Use `page.goto(viewer_url(), ...)` instead of `WEBSITE_URL` directly. The helper
+preserves the configured viewer URL and merges verifier-specific query params,
+such as virtual clock overrides.
 
 `set_toggle` drives `.checked` + a bubbling `change` event so a checkbox
 inside a collapsed `.panel-section` still flips correctly (a `.click()`

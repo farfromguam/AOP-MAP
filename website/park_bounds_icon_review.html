@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Park bounds icon review</title>
+  <style>
+    :root {
+      --brown-ink: #2e2418;
+      --brown-mid: #4e4128;
+      --brown-dark: #2a1f12;
+      --brown-soft: #5a4828;
+      --cream-hover: #efe2c6;
+      --cream-surface: #faf6eb;
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --control-border: #b9aa88;
+      --moss: #5f7157;
+      --moss-dark: #384833;
+      --moss-soft: #e3ebdc;
+      --rust: #a85020;
+      --ridge: #786440;
+      --leaf: #6e7d53;
+      --sky: #dbe7e2;
+      --shadow: 0 8px 24px rgba(46, 36, 24, 0.11);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background: #efe7d7;
+      color: var(--brown-ink);
+      font: 15px/1.45 Inter, system-ui, sans-serif;
+    }
+    button { font: inherit; }
+
+    svg.symbols { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+    .page-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+      padding: 26px 30px 18px;
+      border-bottom: 1px solid var(--cream-border);
+      background: var(--control-bg);
+    }
+    .page-head h1 {
+      margin: 0 0 5px;
+      color: var(--moss-dark);
+      font-size: 1.45rem;
+      line-height: 1.15;
+    }
+    .page-head p {
+      margin: 0;
+      max-width: 90ch;
+      color: var(--brown-soft);
+      font-size: 0.93rem;
+    }
+    .page-head code {
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--moss-soft);
+      color: var(--brown-dark);
+      font-size: 0.9em;
+    }
+    .file-chip {
+      justify-self: end;
+      padding: 7px 10px;
+      border: 1px solid var(--cream-border);
+      border-radius: 7px;
+      background: var(--cream-surface);
+      color: var(--brown-mid);
+      font: 700 0.78rem ui-monospace, SFMono-Regular, Menlo, monospace;
+      white-space: nowrap;
+    }
+
+    .context {
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: 20px 24px 0;
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+      gap: 18px;
+    }
+    .context-card,
+    .candidate {
+      border: 1px solid var(--cream-border);
+      border-radius: 10px;
+      background: var(--control-bg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .context-card header,
+    .candidate header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--cream-border);
+      background: rgba(227, 235, 220, 0.72);
+    }
+    .context-card h2,
+    .candidate h2 {
+      margin: 0;
+      color: var(--moss-dark);
+      font-size: 0.95rem;
+      line-height: 1.2;
+    }
+    .context-body {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+    }
+    .context-body p,
+    .candidate .note {
+      margin: 0;
+      color: var(--brown-soft);
+      font-size: 0.85rem;
+    }
+    .context-body strong,
+    .candidate strong { color: var(--brown-dark); }
+
+    .mock-map {
+      position: relative;
+      min-height: 220px;
+      border: 1px solid var(--cream-border);
+      border-radius: 8px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 72% 18%, rgba(219, 231, 226, 0.88) 0 8%, transparent 8.4%),
+        radial-gradient(circle at 28% 70%, rgba(168, 80, 32, 0.14) 0 12%, transparent 12.6%),
+        linear-gradient(140deg, #76845f 0%, #a99974 45%, #596e50 100%);
+    }
+    .mock-map::before,
+    .mock-map::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(18deg, transparent 0 18px, rgba(255, 253, 245, 0.16) 18px 20px),
+        linear-gradient(120deg, transparent 0 54%, rgba(46, 36, 24, 0.16) 54% 55%, transparent 55%);
+      opacity: 0.7;
+    }
+    .mock-map::after {
+      inset: auto 18px 24px 24px;
+      height: 58px;
+      border: 2px solid rgba(255, 253, 245, 0.72);
+      border-left: 0;
+      border-right: 0;
+      border-radius: 50%;
+      transform: rotate(-12deg);
+      opacity: 0.62;
+      background: none;
+    }
+    .control-stack {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: min(360px, calc(100% - 24px));
+      display: grid;
+      gap: 8px;
+      z-index: 2;
+    }
+
+    .pill-bar {
+      display: grid;
+      grid-template-columns: 3fr 3fr 1fr;
+      gap: 8px;
+      align-items: stretch;
+    }
+    .pill {
+      display: flex;
+      width: 100%;
+      border: 1px solid var(--control-border);
+      border-radius: 999px;
+      background: var(--control-bg);
+      overflow: hidden;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+    }
+    .pill > button {
+      flex: 1;
+      min-width: 0;
+      min-height: 36px;
+      padding: 6px 8px;
+      border: 0;
+      background: transparent;
+      color: var(--brown-ink);
+      cursor: default;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pill > button + button { border-left: 1px solid var(--control-border); }
+    .pill > button.active {
+      background: var(--moss);
+      color: var(--control-bg);
+      border-left-color: transparent;
+    }
+    .pill svg { width: 22px; height: 22px; display: block; }
+    .terrain-button {
+      font: 800 0.86rem Inter, system-ui, sans-serif;
+      letter-spacing: 0.04em;
+    }
+    .search-mock {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      border: 1px solid var(--cream-border);
+      border-radius: 8px;
+      background: rgba(250, 246, 235, 0.96);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+      color: var(--brown-soft);
+      font-size: 0.86rem;
+    }
+    .search-mock svg { width: 16px; height: 16px; color: var(--brown-mid); }
+
+    .strip-preview {
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+    .strip-preview .label {
+      margin: 0;
+      color: var(--brown-mid);
+      font: 800 0.78rem Inter, system-ui, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .candidate-grid {
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: 18px 24px 30px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .candidate {
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+    .candidate header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+    }
+    .candidate .tag {
+      color: var(--rust);
+      font: 800 0.78rem Inter, system-ui, sans-serif;
+      white-space: nowrap;
+    }
+    .candidate .stage {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+    }
+    .big-preview {
+      min-height: 142px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--cream-border);
+      border-radius: 8px;
+      background:
+        linear-gradient(140deg, rgba(95, 113, 87, 0.17), rgba(168, 80, 32, 0.08)),
+        var(--cream-surface);
+      color: var(--brown-dark);
+    }
+    .big-preview svg {
+      width: 112px;
+      height: 112px;
+      display: block;
+    }
+    .swatches {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .swatch {
+      min-height: 62px;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 3px;
+      align-items: center;
+      justify-items: center;
+      padding: 8px 6px 6px;
+      border: 1px solid var(--cream-border);
+      border-radius: 7px;
+      background: var(--cream-surface);
+      color: var(--brown-ink);
+    }
+    .swatch.moss {
+      background: var(--moss);
+      border-color: var(--moss);
+      color: var(--control-bg);
+    }
+    .swatch.dark {
+      background: var(--brown-dark);
+      border-color: var(--brown-dark);
+      color: var(--control-bg);
+    }
+    .swatch svg { width: 24px; height: 24px; display: block; }
+    .swatch span {
+      color: inherit;
+      opacity: 0.82;
+      font: 700 0.68rem Inter, system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+    .mini-bar {
+      width: 100%;
+      max-width: 260px;
+      justify-self: center;
+    }
+    .mini-bar .pill { box-shadow: none; }
+    .mini-bar .pill > button { min-height: 34px; padding: 5px 7px; }
+    .mini-bar .pill svg { width: 21px; height: 21px; }
+    .note-list {
+      display: grid;
+      gap: 4px;
+      padding-top: 2px;
+    }
+    .note-list p {
+      margin: 0;
+      color: var(--brown-soft);
+      font-size: 0.83rem;
+    }
+
+    @media (max-width: 820px) {
+      .page-head { grid-template-columns: 1fr; }
+      .file-chip { justify-self: start; }
+      .context { grid-template-columns: 1fr; padding-inline: 14px; }
+      .candidate-grid { padding-inline: 14px; grid-template-columns: 1fr; }
+      .page-head { padding-inline: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <svg class="symbols" aria-hidden="true" focusable="false">
+    <symbol id="icon-region" viewBox="0 0 22 22">
+      <path d="M3 8V3h5M14 3h5v5M19 14v5h-5M8 19H3v-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon-pavilion" viewBox="0 0 22 22">
+      <path d="M3 9L11 3L19 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+      <path d="M5 9V18M9 9V18M13 9V18M17 9V18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+      <path d="M3 18H19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon-preset-park" viewBox="0 0 22 22">
+      <path d="M3 6L8 4L14 6L19 4V16L14 18L8 16L3 18Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+      <path d="M8 4V16M14 6V18" fill="none" stroke="currentColor" stroke-width="1.3" />
+    </symbol>
+    <symbol id="icon-topo" viewBox="0 0 22 22">
+      <path d="M3 7c3-2 6-2 9 0s5 2 7 0M3 11c3-2 6-2 9 0s5 2 7 0M3 15c3-2 6-2 9 0s5 2 7 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon-trace" viewBox="0 0 22 22">
+      <rect x="3" y="3" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.4" />
+      <path d="M5 16c2-1 3-4 6-4s4 3 6 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      <circle cx="6" cy="16" r="1.3" fill="currentColor" />
+      <circle cx="17" cy="14" r="1.3" fill="currentColor" />
+    </symbol>
+    <symbol id="icon-search" viewBox="0 0 22 22">
+      <circle cx="9.5" cy="9.5" r="5.7" fill="none" stroke="currentColor" stroke-width="1.7" />
+      <path d="M14 14L19 19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+    </symbol>
+
+    <!-- Actual AOP park boundary from website/data/publish.geojson.
+         Source feature: layer=park_boundaries, id=2.
+         Coordinates were equirectangular-projected, fit into a 22x22 viewBox,
+         simplified with Visvalingam targets, then rotated 90deg clockwise.
+         The pavilion dot uses the app's pavilion camera coordinate. -->
+    <path id="geo-r36" d="M3.73 17.36L6.73 15.2L7.79 13.55L6.82 12.74L6.29 13.38L7.35 14.31L5.88 15.8L3.67 17.3L2.66 17.47L3.89 15.08L3.25 10.69L2.51 4.21L7.66 3.23L12.1 2.19L13.24 2.09L13.17 2.55L16.37 2L15.97 9.39L14.72 11.36L19.49 11.45L18.9 16.82L16.01 16.93L15.16 16.73L12.22 15.29L11.3 15.02L10.07 12.42L9.4 17.48L10.09 17.6L9.48 18.48L9.15 19.92L8.3 19.94L7.53 19.33L7.26 17.93L6.24 15.97L4.74 16.7L3.49 17.83Z" />
+    <path id="geo-r30" d="M3.73 17.36L6.73 15.2L7.79 13.55L6.82 12.74L6.29 13.38L7.35 14.31L5.88 15.8L3.67 17.3L2.66 17.47L3.89 15.08L3.25 10.69L2.51 4.21L7.66 3.23L12.1 2.19L13.17 2.55L16.37 2L15.97 9.39L14.72 11.36L19.49 11.45L18.9 16.82L16.01 16.93L15.16 16.73L11.3 15.02L10.07 12.42L9.4 17.48L10.09 17.6L9.15 19.92L7.53 19.33L7.26 17.93L6.24 15.97Z" />
+    <path id="geo-r24" d="M3.73 17.36L6.73 15.2L7.79 13.55L6.29 13.38L7.35 14.31L3.67 17.3L2.66 17.47L3.89 15.08L2.51 4.21L12.1 2.19L13.17 2.55L16.37 2L15.97 9.39L14.72 11.36L19.49 11.45L18.9 16.82L15.16 16.73L11.3 15.02L10.07 12.42L9.4 17.48L10.09 17.6L9.15 19.92L7.53 19.33L6.24 15.97Z" />
+    <path id="geo-r20" d="M7.35 14.31L3.67 17.3L2.66 17.47L3.89 15.08L2.51 4.21L12.1 2.19L13.17 2.55L16.37 2L15.97 9.39L14.72 11.36L19.49 11.45L18.9 16.82L15.16 16.73L11.3 15.02L10.07 12.42L9.4 17.48L10.09 17.6L9.15 19.92L7.53 19.33L6.24 15.97Z" />
+    <path id="geo-r16" d="M7.35 14.31L3.67 17.3L3.89 15.08L2.51 4.21L12.1 2.19L16.37 2L15.97 9.39L14.72 11.36L19.49 11.45L18.9 16.82L15.16 16.73L11.3 15.02L10.07 12.42L9.15 19.92L7.53 19.33L6.24 15.97Z" />
+    <path id="geo-r12" d="M3.89 15.08L2.51 4.21L12.1 2.19L16.37 2L15.97 9.39L14.72 11.36L19.49 11.45L18.9 16.82L11.3 15.02L10.07 12.42L9.15 19.92L6.24 15.97Z" />
+    <symbol id="pavilion-dot" viewBox="0 0 22 22">
+      <circle cx="9.15" cy="12.46" r="1.2" fill="currentColor" />
+    </symbol>
+
+    <symbol id="pb1" viewBox="0 0 22 22">
+      <use href="#geo-r16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linejoin="round" />
+      <use href="#pavilion-dot" />
+    </symbol>
+
+    <symbol id="pb2" viewBox="0 0 22 22">
+      <use href="#geo-r20" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round" />
+      <use href="#pavilion-dot" />
+    </symbol>
+
+    <symbol id="pb3" viewBox="0 0 22 22">
+      <use href="#geo-r12" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round" />
+      <use href="#pavilion-dot" />
+    </symbol>
+
+    <symbol id="pb4" viewBox="0 0 22 22">
+      <path d="M2.6 6.3V3.4h2.9M19.4 6.3V3.4h-2.9M2.6 15.7v2.9h2.9M19.4 15.7v2.9h-2.9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+      <use href="#geo-r16" fill="none" stroke="currentColor" stroke-width="1.18" stroke-linejoin="round" />
+      <use href="#pavilion-dot" />
+    </symbol>
+
+    <symbol id="pb5" viewBox="0 0 22 22">
+      <use href="#geo-r24" fill="none" stroke="currentColor" stroke-width="1.28" stroke-linejoin="round" />
+      <use href="#pavilion-dot" />
+    </symbol>
+
+    <symbol id="pb6" viewBox="0 0 22 22">
+      <use href="#geo-r20" fill="none" stroke="currentColor" stroke-width="1.95" stroke-linejoin="round" />
+      <use href="#pavilion-dot" />
+    </symbol>
+
+    <symbol id="pb7" viewBox="0 0 22 22">
+      <use href="#geo-r16" fill="currentColor" opacity="0.13" />
+      <use href="#geo-r16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round" />
+      <use href="#pavilion-dot" />
+    </symbol>
+
+    <symbol id="pb8" viewBox="0 0 22 22">
+      <use href="#geo-r36" fill="none" stroke="currentColor" stroke-width="1.12" stroke-linejoin="round" />
+      <use href="#pavilion-dot" />
+    </symbol>
+
+    <symbol id="pb9" viewBox="0 0 22 22">
+      <use href="#geo-r30" fill="currentColor" opacity="0.12" />
+      <use href="#geo-r30" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linejoin="round" />
+      <use href="#pavilion-dot" />
+    </symbol>
+  </svg>
+
+  <header class="page-head">
+    <div>
+      <h1>Park bounds icon review</h1>
+      <p>
+        Target is the <code>#zoomPark</code> button in the Region / Park / Pavilion zoom group.
+        These candidates are derived from the actual <code>park_boundaries</code>
+        GeoJSON silhouette, simplified into low-poly icon shapes, rotated 90
+        degrees clockwise, and marked with the pavilion location. The live
+        viewer still waits for a picked winner.
+      </p>
+    </div>
+    <div class="file-chip">website/park_bounds_icon_review.html</div>
+  </header>
+
+  <section class="context" aria-label="Review context">
+    <article class="context-card">
+      <header><h2>Production slot</h2></header>
+      <div class="context-body">
+        <div class="mock-map">
+          <div class="control-stack">
+            <div class="pill-bar" role="group" aria-label="Mock map controls">
+              <div class="pill" role="group" aria-label="Zoom to area">
+                <button type="button" title="Region zoom"><svg><use href="#icon-region" /></svg></button>
+                <button type="button" class="active" title="Fit park boundary"><svg><use href="#pb4" /></svg></button>
+                <button type="button" title="Pavilion zoom"><svg><use href="#icon-pavilion" /></svg></button>
+              </div>
+              <div class="pill" role="group" aria-label="Map preset">
+                <button type="button" class="active" title="Park preset"><svg><use href="#icon-preset-park" /></svg></button>
+                <button type="button" title="Topo preset"><svg><use href="#icon-topo" /></svg></button>
+                <button type="button" title="Trace preset"><svg><use href="#icon-trace" /></svg></button>
+              </div>
+              <div class="pill" role="group" aria-label="3D toggle">
+                <button type="button" class="terrain-button">3D</button>
+              </div>
+            </div>
+            <div class="search-mock">
+              <svg><use href="#icon-search" /></svg>
+              <span>Search trails, events, places...</span>
+            </div>
+          </div>
+        </div>
+        <p><strong>Shown with PB4 selected</strong> because it combines the rotated real boundary silhouette with a fit-bounds cue. Pick by code below; nothing here changes the app.</p>
+      </div>
+    </article>
+
+    <article class="context-card strip-preview">
+      <header><h2>Read checks</h2></header>
+      <div class="context-body">
+        <p><strong>Idle on cream.</strong> Does the boundary shape still read when the button is not active?</p>
+        <p><strong>Active on moss.</strong> The pavilion dot has to survive on the filled active state.</p>
+        <p><strong>Neighbor confusion.</strong> It should not look like Region's corner-expand icon, Pavilion's building icon, or the Park-style map preset.</p>
+        <p><strong>Source truth.</strong> Exterior shape comes from <code>website/data/publish.geojson</code> feature <code>layer=park_boundaries</code>. Pavilion dot uses <code>-85.748268, 35.090703</code> from the app camera preset.</p>
+        <p><strong>Future implementation.</strong> Replace only the inline SVG inside <code>#zoomPark</code>; keep the title, aria-label, camera behavior, and storage untouched.</p>
+      </div>
+    </article>
+  </section>
+
+  <main class="candidate-grid" aria-label="Icon candidates">
+    <article class="candidate">
+      <header><h2>Clean rotated outline</h2><span class="tag">PB1</span></header>
+      <div class="stage">
+        <div class="big-preview"><svg><use href="#pb1" /></svg></div>
+        <div class="swatches">
+          <div class="swatch"><svg><use href="#pb1" /></svg><span>cream</span></div>
+          <div class="swatch moss"><svg><use href="#pb1" /></svg><span>active</span></div>
+          <div class="swatch dark"><svg><use href="#pb1" /></svg><span>dark</span></div>
+        </div>
+        <div class="mini-bar">
+          <div class="pill"><button><svg><use href="#icon-region" /></svg></button><button class="active"><svg><use href="#pb1" /></svg></button><button><svg><use href="#icon-pavilion" /></svg></button></div>
+        </div>
+        <div class="note-list">
+          <p><strong>Read:</strong> balanced real-boundary outline plus pavilion dot.</p>
+          <p><strong>Risk:</strong> some small boundary character is simplified away.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="candidate">
+      <header><h2>Bold rotated outline</h2><span class="tag">PB2</span></header>
+      <div class="stage">
+        <div class="big-preview"><svg><use href="#pb2" /></svg></div>
+        <div class="swatches">
+          <div class="swatch"><svg><use href="#pb2" /></svg><span>cream</span></div>
+          <div class="swatch moss"><svg><use href="#pb2" /></svg><span>active</span></div>
+          <div class="swatch dark"><svg><use href="#pb2" /></svg><span>dark</span></div>
+        </div>
+        <div class="mini-bar">
+          <div class="pill"><button><svg><use href="#icon-region" /></svg></button><button class="active"><svg><use href="#pb2" /></svg></button><button><svg><use href="#icon-pavilion" /></svg></button></div>
+        </div>
+        <div class="note-list">
+          <p><strong>Read:</strong> stronger outline at production size.</p>
+          <p><strong>Risk:</strong> pavilion dot competes with the heavier stroke.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="candidate">
+      <header><h2>Coarse rotated outline</h2><span class="tag">PB3</span></header>
+      <div class="stage">
+        <div class="big-preview"><svg><use href="#pb3" /></svg></div>
+        <div class="swatches">
+          <div class="swatch"><svg><use href="#pb3" /></svg><span>cream</span></div>
+          <div class="swatch moss"><svg><use href="#pb3" /></svg><span>active</span></div>
+          <div class="swatch dark"><svg><use href="#pb3" /></svg><span>dark</span></div>
+        </div>
+        <div class="mini-bar">
+          <div class="pill"><button><svg><use href="#icon-region" /></svg></button><button class="active"><svg><use href="#pb3" /></svg></button><button><svg><use href="#icon-pavilion" /></svg></button></div>
+        </div>
+        <div class="note-list">
+          <p><strong>Read:</strong> most reduced rotated boundary silhouette.</p>
+          <p><strong>Risk:</strong> simplification loses some of the park's distinctive edges.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="candidate">
+      <header><h2>Fit-frame bounds</h2><span class="tag">PB4</span></header>
+      <div class="stage">
+        <div class="big-preview"><svg><use href="#pb4" /></svg></div>
+        <div class="swatches">
+          <div class="swatch"><svg><use href="#pb4" /></svg><span>cream</span></div>
+          <div class="swatch moss"><svg><use href="#pb4" /></svg><span>active</span></div>
+          <div class="swatch dark"><svg><use href="#pb4" /></svg><span>dark</span></div>
+        </div>
+        <div class="mini-bar">
+          <div class="pill"><button><svg><use href="#icon-region" /></svg></button><button class="active"><svg><use href="#pb4" /></svg></button><button><svg><use href="#icon-pavilion" /></svg></button></div>
+        </div>
+        <div class="note-list">
+          <p><strong>Read:</strong> best "fit bounds" cue over the rotated real park shape.</p>
+          <p><strong>Risk:</strong> closest to the Region icon because of the corners.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="candidate">
+      <header><h2>Medium-detail outline</h2><span class="tag">PB5</span></header>
+      <div class="stage">
+        <div class="big-preview"><svg><use href="#pb5" /></svg></div>
+        <div class="swatches">
+          <div class="swatch"><svg><use href="#pb5" /></svg><span>cream</span></div>
+          <div class="swatch moss"><svg><use href="#pb5" /></svg><span>active</span></div>
+          <div class="swatch dark"><svg><use href="#pb5" /></svg><span>dark</span></div>
+        </div>
+        <div class="mini-bar">
+          <div class="pill"><button><svg><use href="#icon-region" /></svg></button><button class="active"><svg><use href="#pb5" /></svg></button><button><svg><use href="#icon-pavilion" /></svg></button></div>
+        </div>
+        <div class="note-list">
+          <p><strong>Read:</strong> more edge fidelity without interior decoration.</p>
+          <p><strong>Risk:</strong> linework starts to get sharp in the tiny chip.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="candidate">
+      <header><h2>Heavy rotated outline</h2><span class="tag">PB6</span></header>
+      <div class="stage">
+        <div class="big-preview"><svg><use href="#pb6" /></svg></div>
+        <div class="swatches">
+          <div class="swatch"><svg><use href="#pb6" /></svg><span>cream</span></div>
+          <div class="swatch moss"><svg><use href="#pb6" /></svg><span>active</span></div>
+          <div class="swatch dark"><svg><use href="#pb6" /></svg><span>dark</span></div>
+        </div>
+        <div class="mini-bar">
+          <div class="pill"><button><svg><use href="#icon-region" /></svg></button><button class="active"><svg><use href="#pb6" /></svg></button><button><svg><use href="#icon-pavilion" /></svg></button></div>
+        </div>
+        <div class="note-list">
+          <p><strong>Read:</strong> most robust rotated boundary outline at small size.</p>
+          <p><strong>Risk:</strong> feels more technical than low-poly.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="candidate">
+      <header><h2>Filled rotated bounds</h2><span class="tag">PB7</span></header>
+      <div class="stage">
+        <div class="big-preview"><svg><use href="#pb7" /></svg></div>
+        <div class="swatches">
+          <div class="swatch"><svg><use href="#pb7" /></svg><span>cream</span></div>
+          <div class="swatch moss"><svg><use href="#pb7" /></svg><span>active</span></div>
+          <div class="swatch dark"><svg><use href="#pb7" /></svg><span>dark</span></div>
+        </div>
+        <div class="mini-bar">
+          <div class="pill"><button><svg><use href="#icon-region" /></svg></button><button class="active"><svg><use href="#pb7" /></svg></button><button><svg><use href="#icon-pavilion" /></svg></button></div>
+        </div>
+        <div class="note-list">
+          <p><strong>Read:</strong> quiet fill makes the real boundary feel less wiry.</p>
+          <p><strong>Risk:</strong> fill can soften the pavilion dot on active state.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="candidate">
+      <header><h2>Fine-detail outline</h2><span class="tag">PB8</span></header>
+      <div class="stage">
+        <div class="big-preview"><svg><use href="#pb8" /></svg></div>
+        <div class="swatches">
+          <div class="swatch"><svg><use href="#pb8" /></svg><span>cream</span></div>
+          <div class="swatch moss"><svg><use href="#pb8" /></svg><span>active</span></div>
+          <div class="swatch dark"><svg><use href="#pb8" /></svg><span>dark</span></div>
+        </div>
+        <div class="mini-bar">
+          <div class="pill"><button><svg><use href="#icon-region" /></svg></button><button class="active"><svg><use href="#pb8" /></svg></button><button><svg><use href="#icon-pavilion" /></svg></button></div>
+        </div>
+        <div class="note-list">
+          <p><strong>Read:</strong> closest rotated silhouette to the exported boundary while still simplified.</p>
+          <p><strong>Risk:</strong> lots of edges for a 22 px button.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="candidate">
+      <header><h2>Filled detail outline</h2><span class="tag">PB9</span></header>
+      <div class="stage">
+        <div class="big-preview"><svg><use href="#pb9" /></svg></div>
+        <div class="swatches">
+          <div class="swatch"><svg><use href="#pb9" /></svg><span>cream</span></div>
+          <div class="swatch moss"><svg><use href="#pb9" /></svg><span>active</span></div>
+          <div class="swatch dark"><svg><use href="#pb9" /></svg><span>dark</span></div>
+        </div>
+        <div class="mini-bar">
+          <div class="pill"><button><svg><use href="#icon-region" /></svg></button><button class="active"><svg><use href="#pb9" /></svg></button><button><svg><use href="#icon-pavilion" /></svg></button></div>
+        </div>
+        <div class="note-list">
+          <p><strong>Read:</strong> detailed rotated outline with a very light fill.</p>
+          <p><strong>Risk:</strong> the fill may be too subtle to matter in the button.</p>
+        </div>
+      </div>
+    </article>
+  </main>
+</body>
+</html>
