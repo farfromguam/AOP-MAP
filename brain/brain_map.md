@@ -36,7 +36,7 @@ brain/
 
 `northstar/whats_this_for.md` is the hobby and event-context briefing. Read it before drawing layers, picking difficulty language, or sizing course features -- AOP is a scale RC park, not an OHV park, and the wrong mental model produces the wrong map.
 
-`northstar/show_and_shine_northstar.md` defines what Trail Blazing means by show & shine: the builder stage, theme posture, judging lens, first-event award set, and the recommended "Advance Party" build prompt.
+`northstar/events/show_and_shine_northstar.md` defines what Trail Blazing means by show & shine: the builder stage, theme posture, judging lens, first-event award set, and the recommended "Advance Party" build prompt.
 
 `northstar/source_register.md` is the data-integrity contract. It decides how source, confidence, permission, and publishability are carried through the map.
 

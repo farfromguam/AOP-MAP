@@ -38,12 +38,17 @@ Default-ON layers are marked; everything else is OFF until toggled, so the
 viewer opens cleanly with no network. "Detail" points to the doc that records
 how the layer was built.
 
-The right panel separates processed map products from source/reference inputs:
-`Derived layers` holds land cover, hillshade, contours, activity hotspots, the
-simulated Saturday activity test layer, the event schedule overlay, and visitor callouts;
-`Source layers` holds imagery, acquisition indexes, roads, water, cemeteries,
-buildings, OSM, and the SFWDA paper map. `Publishable` and `Map editor` remain
-separate because they are workflow states, not source-vs-derived context.
+The right panel groups layers by provenance, following `tasks/04_event_app/source_layers.md`:
+`Source layers` holds the raw external rasters and parcel feeds we acquired
+(9-patch AOI, satellite + NAIP imagery, lidar tile index, FEMA buildings, TN
+cemeteries). `Derived layers` holds what we computed from those sources (land
+cover, hillshade, contours, publishable boundaries, simulated Saturday
+activity). `External reference` holds external vectors and the SFWDA raster we
+trace against (USGS water/springs/roads, OSM cluster, SFWDA paper map).
+`Map editor` holds first-party items curated in the editor and baked into the
+export (event schedule POIs, publishable trailheads, visitor context callouts,
+brand logos, drawn POIs). `User submitted` holds contributor-shaped layers
+(submitted trails, activity hotspots).
 
 | Toggle label | Data / source | Default | Detail |
 | --- | --- | --- | --- |
@@ -80,53 +85,56 @@ The viewer also has a feature search box and the POI/footprint/trace editor -- s
 
 ### Default-layer audit
 
-Recorded 2026-05-24 for Sprint 03 carryover Lane 4. Fresh load matches the
-`Park` layer preset unless the browser has a saved custom preset override.
+Recorded 2026-05-24 for Sprint 03 carryover Lane 4; updated 2026-05-27 for
+the Trace hillshade and Satellite preset changes. Fresh load matches the `Park`
+layer preset unless the browser has a saved custom preset override.
 
-| Toggle | Fresh | Park | Topo | Trace |
-| --- | --- | --- | --- | --- |
-| Satellite imagery (TNMap 2022) | off | off | off | off |
-| USDA NAIP imagery (TN 2023) | off | off | off | on |
-| 9-patch acquisition AOI | off | off | off | off |
-| Lidar tile index (USGS 3DEP) | off | off | off | off |
-| Asphalt roads (USGS National Map) | on | on | on | on |
-| Streams & waterbodies (USGS NHD) | on | on | on | off |
-| Springs & gages (USGS NHD) | off | off | on | off |
-| Cemeteries (TN Comptroller parcels) | off | off | off | off |
-| Building footprints (FEMA USA Structures) | on | on | on | on |
-| OSM park polygon | off | off | off | on |
-| OSM tracks (highway=track) | off | off | off | on |
-| OSM service roads | off | off | off | on |
-| OSM named landmarks | off | off | off | on |
-| SFWDA paper trail map | off | off | off | on |
-| Land cover (NAIP) | on | on | on | off |
-| Land cover -- 9-patch (NAIP) | on | on | on | off |
-| Lidar hillshade (USGS 3DEP) | off | off | on | off |
-| Lidar contours (5 ft, 1m DEM) | off | off | on | off |
-| Publishable trails | on | on | on | on |
-| Publishable boundaries | on | on | on | on |
-| Publishable trailheads | on | on | on | on |
-| Activity hotspots (GPX dwell) | off | off | off | off |
-| Simulated Saturday activity | off | off | off | off |
-| Event schedule POIs | off | off | off | off |
-| Visitor context callouts | on | on | on | off |
-| Brand logos (AOP & Rock Warblers) | off | off | off | off |
-| Drawn POIs | on | on | on | on |
+| Toggle | Fresh | Park | Topo | Trace | Satellite |
+| --- | --- | --- | --- | --- | --- |
+| Satellite imagery (TNMap 2022) | off | off | off | off | on |
+| USDA NAIP imagery (TN 2023) | off | off | off | off | off |
+| 9-patch acquisition AOI | off | off | off | off | off |
+| Lidar tile index (USGS 3DEP) | off | off | off | off | off |
+| Asphalt roads (USGS National Map) | on | on | on | on | off |
+| Streams & waterbodies (USGS NHD) | on | on | on | off | off |
+| Springs & gages (USGS NHD) | off | off | on | off | off |
+| Cemeteries (TN Comptroller parcels) | off | off | off | off | off |
+| Building footprints (FEMA USA Structures) | on | on | on | on | off |
+| OSM park polygon | off | off | off | on | off |
+| OSM tracks (highway=track) | off | off | off | on | off |
+| OSM service roads | off | off | off | on | off |
+| OSM named landmarks | off | off | off | on | off |
+| SFWDA paper trail map | off | off | off | on | off |
+| Land cover (NAIP) | on | on | on | off | off |
+| Land cover -- 9-patch (NAIP) | on | on | on | off | off |
+| Lidar hillshade (USGS 3DEP) | off | off | on | on | off |
+| Lidar contours (5 ft, 1m DEM) | off | off | on | off | off |
+| Publishable trails | on | on | on | on | off |
+| Publishable boundaries | on | on | on | on | off |
+| Publishable trailheads | on | on | on | on | off |
+| Activity hotspots (GPX dwell) | off | off | off | off | off |
+| Simulated Saturday activity | off | off | off | off | off |
+| Event schedule POIs | off | off | off | off | off |
+| Visitor context callouts | on | on | on | off | off |
+| Brand logos (AOP & Rock Warblers) | on | on | on | on | off |
+| Drawn POIs | on | on | on | on | off |
 
 Audit read: the user's always-on set (`buildings`, `water`, `road`) is true
-for Fresh/Park/Topo, with Trace intentionally dropping water for the imagery /
-SFWDA workbench. Bottom/topo layers are preset-scoped: Topo adds hillshade,
-contours, and springs; Trace adds NAIP, SFWDA, OSM references, and keeps trails /
-waypoints visible for tracing context.
+for Fresh/Park/Topo, with Trace intentionally keeping buildings and roads while
+dropping water and land-cover for the hillshade/SFWDA/OSM workbench. Topo adds
+hillshade, contours, and springs; Trace adds hillshade plus SFWDA and OSM
+references while keeping trails / waypoints visible for tracing context.
+Satellite is intentionally imagery-only, with the normal paper background as
+the no-tile fallback.
 
 ## Viewer capabilities
 
 ### UI presets and layer tuning
 
 Added 2026-05-21 and revised 2026-05-24. The viewer has a top-left control
-cluster with search, the `Hot now` lanes, three preset buttons (`Park`, `Topo`,
-and `Trace`), a dedicated `3D` button, zoom shortcuts, and a tabbed context card
-for Events / Park / About content.
+cluster with search, the `Hot now` lanes, four preset buttons (`Park`, `Topo`,
+`Trace`, and `Satellite`), a dedicated `3D` button, zoom shortcuts, and a
+tabbed context card for Events / POI / About content.
 
 - `Park` is the clean Muted Earth vector map: land cover, roads, publishable
   boundary/trails/trailheads, visitor context callouts, water (streams +
@@ -135,13 +143,16 @@ for Events / Park / About content.
   off). Springs stay topo-only.
 - `Topo` is the relief read of Park: same payload plus hillshade, lidar
   contours, and springs/gages.
-- `Trace` is the workbench: USDA NAIP imagery, SFWDA paper map, OSM
-  tracks/service roads, OSM named landmarks, buildings, with land cover off
-  and high-contrast reference styling for tracing/review.
+- `Trace` is the workbench: lidar hillshade, SFWDA paper map, OSM
+  tracks/service roads, OSM named landmarks, buildings, with land cover and
+  aerial imagery off and high-contrast reference styling for tracing/review.
+- `Satellite` is the 2022 TNMap aerial alone. Its fallback background is the
+  normal paper color so tile gaps or load failures do not produce a black
+  "nothing" state.
 
 The `3D` button is independent of presets. Turning it on binds MapLibre terrain
-and pitches the camera; switching between `Park`, `Topo`, and `Trace` leaves the
-3D state alone.
+and pitches the camera; switching between layer presets leaves the 3D state
+alone.
 
 Below the preset bar, a zoom row holds three **zoom presets** -- `Region`,
 `Park`, and `Pavilion`. These move the camera only; they do not touch layers or
@@ -168,7 +179,7 @@ SFWDA paper-map opacity/multiply/alignment controls live in their layer drawers,
 not as loose rows under the section. `Snapshot preset` stores the current
 toggles/sliders/paint state for the active preset in `localStorage`
 (`aop_viewer_preset_settings_v1`). `Export settings` copies a JSON payload to
-the clipboard with all three resolved presets plus the current state so the user
+the clipboard with all four resolved presets plus the current state so the user
 can paste preferred settings back into the session.
 
 The right panel groups layers by provenance role. `Derived layers` contains

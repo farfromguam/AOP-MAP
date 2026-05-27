@@ -109,7 +109,7 @@ def main() -> int:
                 localStorage.removeItem('aop_left_rail_drawer_v1');
                 localStorage.removeItem('aop_virtual_clock_v1');
                 localStorage.removeItem('aop_viewer_session_state_v1');
-                localStorage.removeItem('aop_calendar_height_v1');
+                localStorage.removeItem('aop_lr_card_height_v1');
               } catch (_) {}
             }"""
         )

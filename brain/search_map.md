@@ -24,7 +24,7 @@ TL;DR:
 - GPX, field track, ride recording, observation import: `import/_readme.md`, then `tasks/01_mvp/_done/mvp_validation_loop.md`
 - activity hotspots, heatmap, dwell time, user-entered trail hotspots, timestamped GPX, synthetic Saturday activity, simulated users, OSM-following routes, GPS recorder: `tasks/01_mvp/_done/activity_hotspots.md`, then `research/viewer.md`
 - event schedule, event calendar, RC event, G6, Pro-Line, schedule rows, `#pavilion`, `#registration`, event POI: `tasks/04_event_app/rock_warblers_content_audit.md`, then `tasks/01_mvp/_done/event_schedule_layer.md`, then `research/viewer.md`
-- show and shine, show & shine, concours, build theme, Trail Blazing theme, Advance Party, scout build, field detail, rig awards, People's Choice: `northstar/show_and_shine_northstar.md`, then `tasks/04_event_app/rock_warblers_content_audit.md`
+- show and shine, show & shine, concours, build theme, Trail Blazing theme, Advance Party, scout build, field detail, rig awards, People's Choice: `northstar/events/show_and_shine_northstar.md`, then `tasks/04_event_app/rock_warblers_content_audit.md`
 - feature tag binding, `#tag` on feature, `aop_feature_tags_v1`, tagToFeature, feature tag input, pavilion → 1010 building, schedule without coordinates, tag a building, tag a POI, named-feature tagging, seed `#pavilion`, refresh search index, refreshEventScheduleSearchIndex: `tasks/02_edit/_done/named_feature_tagging.md`, then `research/viewer.md`
 - event app, CRUD, uploads, contributor submissions, trail submission, landmark submission, moderation queue, attachment model, invite codes: `tasks/04_event_app/event_crud_upload_loop.md`, then `tasks/03_event_app/_done/full_loop_crud_upload_audit.md`
 - virtual clock, test clock, date time slider, reset local overrides, reset new user, pocket map persistence, left drawer persistence, active tab persistence, landmark hot lane: `tasks/03_event_app/_done/viewer_session_state_test_clock.md`
@@ -39,7 +39,7 @@ TL;DR:
 - database schema, `init_db.sql`, tables, raw/core/publish zones, publish views, status vocabularies: `tasks/01_mvp/_done/code_health_pass.md`
 - contour build, gdal_contour, GDAL Docker, DEM clip: `tasks/01_mvp/_done/lidar_contour_pipeline.md`, then `spinup/mvp_runbook.md`
 - map build, PostGIS, QGIS, MapLibre, PMTiles, Cloudflare, Phoenix: `tasks/01_mvp/_done/aop_south_pittsburg_map_build_card.md`
-- spinup, runbook, CWC, database port, PostGIS connection, QGIS connection, Docker, `localhost:55432`, static viewer port, manual preview, Playwright port, `localhost:8000`, `localhost:8001`, port collision: `spinup/mvp_runbook.md`, then `spinup/discovery.md`
+- spinup, runbook, CWC, database port, PostGIS connection, QGIS connection, Docker, `localhost:55432`, static viewer port, manual preview, Playwright port, `localhost:8000`, `localhost:8001`, port collision, which port, how do I run the app: `ai_rules/canonical_spinup_commands.md`, then `spinup/mvp_runbook.md`, then `spinup/discovery.md`
 - localStorage migration, viewer storage key bump, `_v1` to `_v2`, schema bump, bundle schema, forward-only migration, no in-place adapter, reset overrides, `VIEWER_OWNED_STORAGE_KEYS`: `spinup/viewer_storage_migration.md`
 - source ledger, permission, confidence, provenance, publishable: `northstar/source_register.md`
 - community trail pull, OSM 9-patch, SFWDA 2015 raster, raw zone, import staging: `import/_readme.md`
@@ -65,4 +65,6 @@ TL;DR:
 - cards are direction: `ai_rules/cards_not_gospel.md`
 - preserve user directives in cards: `ai_rules/preserve_card_directives.md`
 - recommendation requested, option menu, decision: `ai_rules/commit_in_prose.md`
+- too many questions, asking instead of doing, just do it, yes/no question fatigue: `ai_rules/act_dont_ask.md`
 - writing style: `ai_rules/user_writing_style.md`, `voice/voice_guide.md`
+- canonical commands, port discipline, do not drift ports: `ai_rules/canonical_spinup_commands.md`

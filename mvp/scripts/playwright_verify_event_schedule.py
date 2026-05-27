@@ -81,7 +81,7 @@ def reset_tag_storage(page) -> None:
             localStorage.removeItem('aop_feature_tags_v1');
             localStorage.removeItem('aop_feature_tags_seeded_v1');
             localStorage.removeItem('aop_editor_pois_v1');
-            localStorage.removeItem('aop_calendar_height_v1');
+            localStorage.removeItem('aop_lr_card_height_v1');
             localStorage.removeItem('aop_left_rail_drawer_v1');
             localStorage.removeItem('aop_virtual_clock_v1');
             localStorage.removeItem('aop_viewer_session_state_v1');
@@ -170,7 +170,7 @@ def main() -> int:
         data = schedule_data(page)
         check("schedule JSON loads", data.get("ok") is True, str(data))
         check("schema is event schedule v1", data.get("schema") == "aop-event-schedule-v1", str(data))
-        check("twelve editable session rows", data.get("session_count") == 12, str(data))
+        check("thirteen editable session rows", data.get("session_count") == 13, str(data))
         check("sessions reference tags, not coordinates", data.get("sessions_have_coordinates") is False, str(data))
         # Bucket D: #pavilion location entry no longer carries coordinates;
         # the viewer resolves them through the 1010 building binding instead.
@@ -185,8 +185,9 @@ def main() -> int:
         print("\n== Sidebar initial state ==")
         rows = page.locator("#calendarDays .calendar-row")
         row_texts = rows.evaluate_all("els => els.map((el) => el.textContent.trim().replace(/\\s+/g, ' '))")
-        check("calendar renders all JSON sessions", rows.count() == 12, str(row_texts))
+        check("calendar renders all JSON sessions", rows.count() == 13, str(row_texts))
         check("calendar rows show location tags", any("#pavilion" in text for text in row_texts), str(row_texts))
+        check("Show & Shine schedule row is present", any("Show & Shine: The Advance Party" in text for text in row_texts), str(row_texts))
         check("G6 schedule row is present", any("G6 Cove Rally stages" in text for text in row_texts), str(row_texts))
         check(
             "event overlay toggle starts off",
@@ -348,13 +349,13 @@ def main() -> int:
         )
         check(
             "every calendar row has a time label",
-            time_count.get("total", 0) == 12 and time_count.get("non_empty", 0) == 12,
+            time_count.get("total", 0) == 13 and time_count.get("non_empty", 0) == 13,
             str(time_count),
         )
 
         print("\n== Calendar title + resize handle ==")
         page.evaluate(
-            "() => { try { localStorage.removeItem('aop_calendar_height_v1'); } catch (_) {} }"
+            "() => { try { localStorage.removeItem('aop_lr_card_height_v1'); } catch (_) {} }"
         )
         page.set_viewport_size({"width": 420, "height": 740})
         page.goto(viewer_url(), wait_until="load")
@@ -367,7 +368,7 @@ def main() -> int:
               has_chevron: !!document.getElementById('calendarChevron'),
               handle_count: document.querySelectorAll('#calendarResizeHandle').length,
               body_height: document.getElementById('calendarBody').getBoundingClientRect().height,
-              stored: localStorage.getItem('aop_calendar_height_v1')
+              stored: localStorage.getItem('aop_lr_card_height_v1')
             })"""
         )
         check("calendar no longer auto-collapses on narrow viewport", narrow_default.get("has_collapsed") is False, str(narrow_default))
@@ -397,7 +398,7 @@ def main() -> int:
         after_drag = page.evaluate(
             """() => ({
               height: document.getElementById('calendarBody').getBoundingClientRect().height,
-              stored: Number(localStorage.getItem('aop_calendar_height_v1')),
+              stored: Number(localStorage.getItem('aop_lr_card_height_v1')),
               aria_now: Number(document.getElementById('calendarResizeHandle').getAttribute('aria-valuenow'))
             })"""
         )
@@ -406,21 +407,21 @@ def main() -> int:
         page.reload(wait_until="load")
         page.evaluate("window.map = map;")
         page.wait_for_function(
-            "() => document.querySelectorAll('#calendarDays .calendar-row').length === 12",
+            "() => document.querySelectorAll('#calendarDays .calendar-row').length === 13",
             timeout=15_000,
         )
         page.wait_for_timeout(500)
         post_reload = page.evaluate(
             """() => ({
               height: document.getElementById('calendarBody').getBoundingClientRect().height,
-              stored: Number(localStorage.getItem('aop_calendar_height_v1'))
+              stored: Number(localStorage.getItem('aop_lr_card_height_v1'))
             })"""
         )
         check("resized calendar height survives reload", abs(post_reload.get("height", 0) - post_reload.get("stored", 0)) < 2, str(post_reload))
 
         print("\n== Calendar wide viewport default ==")
         page.evaluate(
-            "() => { try { localStorage.removeItem('aop_calendar_height_v1'); } catch (_) {} }"
+            "() => { try { localStorage.removeItem('aop_lr_card_height_v1'); } catch (_) {} }"
         )
         page.set_viewport_size({"width": 1280, "height": 820})
         page.goto(viewer_url(), wait_until="load")
@@ -428,14 +429,14 @@ def main() -> int:
         wide_default = page.evaluate(
             """() => ({
               has_collapsed: document.getElementById('calendarCard').classList.contains('collapsed'),
-              stored: localStorage.getItem('aop_calendar_height_v1')
+              stored: localStorage.getItem('aop_lr_card_height_v1')
             })"""
         )
         check("calendar starts expanded on wide viewport", wide_default.get("has_collapsed") is False, str(wide_default))
         check("default height does not persist by itself", wide_default.get("stored") is None, str(wide_default))
 
         print("\n== Calendar current-row scroll (Sprint 03 Lane 2) ==")
-        page.goto(viewer_url(clock="2026-05-24T10:30"), wait_until="load")
+        page.goto(viewer_url(clock="2026-06-21T08:30"), wait_until="load")
         page.wait_for_function(
             "() => document.getElementById('message').textContent.includes('publish feature')",
             timeout=45_000,
@@ -557,10 +558,11 @@ def main() -> int:
               str(manual_scroll))
 
         print("\n== Calendar state machine: Monday morning State A (pre-event) ==")
-        # 2026-05-25 is a Monday. After the 06:00 reset the calendar anchor
-        # flips forward to the upcoming weekend (Sat 2026-05-30); the gates-
-        # open banner counts down to Fri 2026-05-29 17:00 (fri-registration).
-        page.goto(viewer_url(clock="2026-05-25T08:00"), wait_until="load")
+        # 2026-06-15 is the Monday before the event Friday (2026-06-19). The
+        # calendar is anchored to the event date (date_range_label in
+        # aop_event_schedule.json), so the gates-open banner counts down to
+        # Fri 2026-06-19 17:00 (fri-registration).
+        page.goto(viewer_url(clock="2026-06-15T08:00"), wait_until="load")
         page.wait_for_function(
             "() => document.getElementById('message').textContent.includes('publish feature')",
             timeout=45_000,
@@ -594,7 +596,7 @@ def main() -> int:
         # Mon 08:00 → Fri 17:00 = 4 days 9 hours. Format: "4D 9H" after upper.
         check("banner reads '4D 9H' for the Mon 08:00 fixture",
               pre_state.get("banner_value") == "4D 9H", str(pre_state))
-        check("no row carries 'past' state in pre (forward anchor)",
+        check("no row carries 'past' state in pre (event anchor)",
               pre_state.get("row_states", {}).get("past", 0) == 0, str(pre_state))
         check("no row carries 'happening' in pre (no live session)",
               pre_state.get("row_states", {}).get("happening", 0) == 0, str(pre_state))
@@ -605,10 +607,10 @@ def main() -> int:
               str(pre_state))
 
         print("\n== Calendar state machine: Sunday evening State C (post-event) ==")
-        # 2026-05-24 (Sun) 19:00 sits after sun-checkout's window (17:00 + 90m
-        # = 18:30), so the just-finished weekend is in the post-event window
-        # until Mon 06:00. Banner hidden, every row should be 'past'.
-        page.goto(viewer_url(clock="2026-05-24T19:00"), wait_until="load")
+        # 2026-06-21 (Sun) 19:00 sits after sun-checkout's window (17:00 + 90m
+        # = 18:30), so the event weekend is in the post-event window. Banner
+        # hidden, every row should be 'past'.
+        page.goto(viewer_url(clock="2026-06-21T19:00"), wait_until="load")
         page.wait_for_function(
             "() => document.getElementById('message').textContent.includes('publish feature')",
             timeout=45_000,
@@ -637,7 +639,7 @@ def main() -> int:
               post_state.get("calendar_state") == "post", str(post_state))
         check("gates-open banner is hidden in post state",
               post_state.get("banner_hidden") is True, str(post_state))
-        check("every row is 'past' in post (just-finished weekend)",
+        check("every row is 'past' in post (event weekend over)",
               post_state.get("row_states", {}).get("past", 0) == post_state.get("row_count", 0),
               str(post_state))
 
@@ -898,10 +900,10 @@ def main() -> int:
         # Hot control (Sprint 02 Bucket A3 + two-lane follow-up)
         # ----------------------------------------------------------------
         # Three states driven by ?clock= fixtures so the same clock-override
-        # contract the calendar uses also pins the button. The forward
-        # anchor (eventScheduleAnchorForward) makes Mon-Fri "look ahead" to
-        # the upcoming weekend, so a Monday fixture still yields coming-up
-        # against the schedule's weekend template.
+        # contract the calendar uses also pins the button. Both the calendar
+        # and the hot button anchor to the event date (date_range_label in
+        # aop_event_schedule.json), so a fixture before Friday yields
+        # coming-up against the real event weekend.
 
         def load_with_clock(clock: str) -> None:
             page.set_viewport_size({"width": 1280, "height": 820})
@@ -962,8 +964,9 @@ def main() -> int:
             )
 
         print("\n== Hot control: Event lane state=hot-now (live) ==")
-        # 2026-05-23 13:45 sits inside sat-proving-grounds (13:30 + 90 min).
-        load_with_clock("2026-05-23T13:45")
+        # 2026-06-20 13:45 sits inside sat-proving-grounds (13:30 + 90 min)
+        # on the event Saturday.
+        load_with_clock("2026-06-20T13:45")
         snap = button_snapshot()
         check("hot button is present", snap.get("present") is True, str(snap))
         check("hot button is visible", snap.get("hidden") is False, str(snap))
@@ -994,7 +997,7 @@ def main() -> int:
 
         print("\n== Hot control: Event lane state=hot-now (imminent, <=30 min) ==")
         # 13:15 puts the same session 15 min in the future (still imminent).
-        load_with_clock("2026-05-23T13:15")
+        load_with_clock("2026-06-20T13:15")
         snap = button_snapshot()
         check("hot-now state on imminent fixture", snap.get("state") == "hot-now", str(snap))
         check("targets sat-proving-grounds", snap.get("targetSessionId") == "sat-proving-grounds", str(snap))
@@ -1004,7 +1007,7 @@ def main() -> int:
         print("\n== Hot control: Event lane state=coming-up (same-day, >30 min) ==")
         # 19:45 sits between sat-awards (18:00 + 90m -> 19:30) and
         # sat-night-crawl (20:30) — 45 min until night crawl.
-        load_with_clock("2026-05-23T19:45")
+        load_with_clock("2026-06-20T19:45")
         snap = button_snapshot()
         check("event lane stays in coming-up state when no session is imminent", snap.get("state") == "coming-up", str(snap))
         check("targets sat-night-crawl", snap.get("targetSessionId") == "sat-night-crawl", str(snap))
@@ -1032,11 +1035,10 @@ def main() -> int:
               snap_after_trail.get("trails", {}).get("selected") == "true", str(snap_after_trail))
 
         print("\n== Hot control: Event lane coming-up across days (Mon fixture) ==")
-        # Forward anchor: a Monday clock should wrap the template to the
-        # upcoming weekend (fri-registration ~4 days out). This proves the
-        # "Friday should already light up for a Saturday evening session"
-        # promise from the card.
-        load_with_clock("2026-05-25T12:00")
+        # Event anchor: a Monday clock before the event Friday should still
+        # target fri-registration as the next coming-up session, confirming
+        # the calendar/hot-button share the event-anchored resolver.
+        load_with_clock("2026-06-15T12:00")
         snap = button_snapshot()
         check("event lane coming-up state on Monday fixture", snap.get("state") == "coming-up", str(snap))
         check("Monday fixture targets first weekend session (fri-registration)",
@@ -1053,10 +1055,10 @@ def main() -> int:
               coming_popup)
 
         print("\n== Hot control: Trails lane when schedule is empty ==")
-        # Forward-anchoring means a weekday-template schedule never goes
-        # "all past"; with the two-lane control, clearing the schedule disables
-        # Event but leaves Trails usable.
-        load_with_clock("2026-05-23T13:45")
+        # Use the event Saturday so the live state is well-defined, then clear
+        # the schedule to confirm the two-lane control disables Event but
+        # leaves Trails usable.
+        load_with_clock("2026-06-20T13:45")
         page.evaluate(
             """() => {
               eventSessionById.clear();

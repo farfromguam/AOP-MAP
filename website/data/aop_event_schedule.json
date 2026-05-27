@@ -1,6 +1,6 @@
 {
   "schema": "aop-event-schedule-v1",
-  "updated_at": "2026-05-24",
+  "updated_at": "2026-05-27",
   "status": "proposed",
   "event": {
     "id": "rock_warblers_trail_blazing_invitational_2026",
@@ -133,6 +133,17 @@
       "location_tag": "#registration",
       "status": "proposed",
       "inspired_by": ["RG6 Saturday check-in", "AxialFest registration / tech"]
+    },
+    {
+      "id": "sat-show-and-shine",
+      "sort_order": 115,
+      "date_label": "Saturday",
+      "start_local": "08:30",
+      "time_label": "Morning",
+      "title": "Show & Shine: The Advance Party",
+      "location_tag": "#pavilion",
+      "status": "proposed",
+      "inspired_by": ["Trail Blazing show & shine northstar", "AxialFest concours", "Pro-Line By The Fire concourse"]
     },
     {
       "id": "sat-g6-cove-rally",

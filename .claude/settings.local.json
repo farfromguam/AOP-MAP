@@ -10,7 +10,18 @@
       "Bash(python3 -m http.server 8001)",
       "Bash(python3 -u mvp/scripts/playwright_verify_presets.py)",
       "Bash(python3 -u mvp/scripts/playwright_verify_brand_logos.py)",
-      "Bash(python3 -u mvp/scripts/playwright_verify_event_schedule.py)"
+      "Bash(python3 -u mvp/scripts/playwright_verify_event_schedule.py)",
+      "Bash(./cwc)",
+      "Bash(lsof -nP -iTCP:8001 -sTCP:LISTEN)",
+      "Bash(curl -sI http://localhost:8001/)",
+      "Bash(python3 /tmp/aop_probe_left_tabs.py)",
+      "Bash(awk 'NR>1 {print $2}')",
+      "Bash(xargs -r kill)",
+      "Bash(curl -sI http://localhost:8000/)",
+      "Bash(python3 mvp/scripts/playwright_verify_poi_editor.py)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(pkill -f \"python3 -m http.server 8001\")",
+      "Bash(python3 /tmp/poi_editor_diag.py)"
     ]
   }
 }

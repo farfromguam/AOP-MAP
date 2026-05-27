@@ -761,6 +761,28 @@ def main() -> int:
             )
             page.wait_for_timeout(120)
 
+        # --- 0) Collapsed-panel auto-expand on reveal ---
+        # Sprint 04 viewer_polish_followups.md: if the user has the right
+        # panel collapsed, revealFeatureInPanel must auto-expand it,
+        # otherwise the map-click → editor promise silently breaks.
+        close_any_drawer()
+        # Make sure the panel is open before we deliberately collapse it.
+        page.evaluate("() => { if (panelCollapsed) togglePanel(); }")
+        page.wait_for_timeout(120)
+        page.evaluate("() => togglePanel()")
+        page.wait_for_timeout(200)
+        check("panel collapsed for auto-expand test",
+              page.evaluate("() => panelCollapsed") is True,
+              str(page.evaluate("() => panelCollapsed")))
+        page.evaluate("() => revealFeatureInPanel('cemeteries', '110 008.04')")
+        page.wait_for_timeout(250)
+        check("reveal auto-expanded the collapsed panel",
+              page.evaluate("() => panelCollapsed") is False,
+              str(page.evaluate("() => panelCollapsed")))
+        state = reveal_state()
+        check("cemeteries drawer expanded after auto-expand reveal",
+              state["expanded"] == "cemeteries", str(state))
+
         # --- 1) revealFeatureInPanel directly: in-park building ---
         close_any_drawer()
         # Pick the 1010 Ellis Cove Road building (the in-park pavilion).

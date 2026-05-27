@@ -31,7 +31,7 @@ def clear_viewer_storage(page) -> None:
     page.evaluate(
         """() => {
           const keys = [
-            'aop_calendar_height_v1',
+            'aop_lr_card_height_v1',
             'aop_calendar_collapsed_v1',
             'aop_left_rail_drawer_v1',
             'aop_virtual_clock_v1',
@@ -58,7 +58,7 @@ def wait_loaded(page) -> None:
         timeout=15_000,
     )
     page.wait_for_function(
-        "() => document.querySelectorAll('#calendarDays .calendar-row').length === 12",
+        "() => document.querySelectorAll('#calendarDays .calendar-row').length === 13",
         timeout=15_000,
     )
     page.wait_for_timeout(500)
@@ -195,7 +195,7 @@ def main() -> int:
             """() => {
               const jsonSeed = JSON.stringify({ schema: 'verifier-seed' });
               for (const key of [
-                'aop_calendar_height_v1',
+                'aop_lr_card_height_v1',
                 'aop_calendar_collapsed_v1',
                 'aop_left_rail_drawer_v1',
                 'aop_virtual_clock_v1',
@@ -232,7 +232,7 @@ def main() -> int:
         # editor POIs writes a fresh visibility entry for them, so the
         # key is intentionally repopulated by the seed path.
         SHOULD_BE_GONE = {
-            "aop_calendar_height_v1",
+            "aop_lr_card_height_v1",
             "aop_calendar_collapsed_v1",
             "aop_left_rail_drawer_v1",
             "aop_virtual_clock_v1",

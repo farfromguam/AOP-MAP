@@ -107,8 +107,9 @@ def main() -> int:
             if msg.type != "error":
                 return
             text = msg.text
-            # Trace mode turns online imagery on. Tile-load failures are not
-            # preset UI failures, and the viewer has separate imagery checks.
+            # Source-only preset checks may turn online imagery on. Tile-load
+            # failures are not preset UI failures, and the viewer has separate
+            # imagery checks.
             ignored = (
                 "gis.apfo.usda.gov" in text
                 or "tnmap.tn.gov" in text
@@ -137,7 +138,7 @@ def main() -> int:
                 localStorage.removeItem('aop_left_rail_drawer_v1');
                 localStorage.removeItem('aop_virtual_clock_v1');
                 localStorage.removeItem('aop_viewer_session_state_v1');
-                localStorage.removeItem('aop_calendar_height_v1');
+                localStorage.removeItem('aop_lr_card_height_v1');
               } catch (_) {}
             }"""
         )
@@ -230,7 +231,8 @@ def main() -> int:
         )
         check(
             "calendar renders the editable schedule rows",
-            len(schedule_rows) == 12
+            len(schedule_rows) == 13
+            and any("Show & Shine: The Advance Party" in row for row in schedule_rows)
             and any("G6 Cove Rally stages" in row for row in schedule_rows)
             and any("#pavilion" in row for row in schedule_rows),
             str(schedule_rows),
@@ -456,6 +458,18 @@ def main() -> int:
               "runtime_overrides" in payload,
               str(list(payload.keys())))
 
+        print("\n== Satellite preset ==")
+        page.locator("#presetSatellite").click()
+        page.wait_for_timeout(500)
+        check("Satellite button becomes active", page.locator("#presetSatellite").evaluate("el => el.classList.contains('active')"))
+        check("Satellite keeps the preset imagery-only",
+              is_checked(page, "showSatellite")
+              and not is_checked(page, "showHillshade")
+              and not is_checked(page, "showTrails")
+              and not is_checked(page, "showEditorPois"))
+        check("Satellite fallback background is paper, not black",
+              paint(page, "background", "background-color") == "#efe7d5")
+
         print("\n== Trace preset ==")
         trace_camera_before = {"zoom": 16.1, "bearing": -51, "pitch": 35}
         page.evaluate("(camera) => { window.map.jumpTo(camera); }", trace_camera_before)
@@ -469,6 +483,10 @@ def main() -> int:
               is_checked(page, "showHillshade") and not is_checked(page, "showUsdaNaip")
               and is_checked(page, "showSfwda")
               and is_checked(page, "showOsmTracks") and is_checked(page, "showBuildings"))
+        check("Trace uses a relief-paper substrate instead of a black base",
+              paint(page, "background", "background-color") == "#e7ddc4"
+              and paint(page, "lidar-hillshade", "hillshade-highlight-color") == "#fff4d9"
+              and paint(page, "lidar-hillshade", "hillshade-shadow-color") == "#2f2a21")
         check("Trace applies high-contrast boundary color", paint(page, "publish-boundaries", "line-color") == "#fff0b8")
         trace_camera = camera_state(page)
         check("Trace preset preserves zoom, pitch, and rotation", camera_matches(trace_camera, trace_camera_before), str(trace_camera))
@@ -537,7 +555,7 @@ def main() -> int:
         # the mobile calendar sizing and panel layout both apply.
         page.set_viewport_size({"width": 500, "height": 760})
         page.evaluate(
-            "() => { try { localStorage.removeItem('aop_calendar_height_v1'); } catch (_) {} }"
+            "() => { try { localStorage.removeItem('aop_lr_card_height_v1'); } catch (_) {} }"
         )
         page.goto(viewer_url(), wait_until="load")
         page.evaluate("window.map = map;")

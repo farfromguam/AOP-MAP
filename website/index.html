@@ -139,7 +139,7 @@
        rule above being overridden again) so the input vertically centers. */
     .lr-panel .search-shell { display: flex; height: var(--tab-h); padding: 0 8px; align-items: center; }
     /* Pill bar above the search — three pill groups in one row:
-       [Region · Park · Pavilion]  [Park-style · Topo · Trace]  [3D]
+       [Region · Park · Pavilion]  [Park-style · Topo · Trace · Satellite]  [3D]
        No vertical pipes between groups; grouping reads from the pill chrome. */
     .pill-bar { display: grid; grid-template-columns: 3fr 3fr 1fr; gap: 8px; align-items: stretch; }
     .pill-bar .pill { display: flex; width: 100%; border: 1px solid var(--control-border); border-radius: 999px; background: var(--control-bg); overflow: hidden; box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
@@ -356,24 +356,18 @@
     .left-tab:hover { background: var(--cream-hover); border-color: var(--control-border); color: var(--brown-dark); }
     .left-tab[aria-selected="true"] { background: var(--rust); border-color: #8b431b; color: var(--control-bg); box-shadow: inset 0 -2px 0 rgba(46,36,24,0.28); }
     .left-tab-panel[hidden] { display: none; }
-    /* Tab-panels container: stacks all three panels in the same grid cell so
-       the outer height is always the tallest panel's height, eliminating the
-       layout jump when switching Events / POI / About. The hidden attribute
-       + visibility:hidden keeps non-active panels out of the a11y tree and
-       invisible while still occupying their natural space for height locking.
-       Item 21: brain/tasks/03_event_app/misc_3.md */
-    .left-tab-panels { display: grid; }
-    .left-tab-panels .left-tab-panel { grid-area: 1 / 1; visibility: hidden; pointer-events: none; }
-    .left-tab-panels .left-tab-panel:not([hidden]) { visibility: visible; pointer-events: auto; }
-    /* Override the generic hidden rule inside the panels wrapper so display
-       stays 'block' and the panel keeps its height contribution. */
-    .left-tab-panels .left-tab-panel[hidden] { display: block; }
+    /* Panels stack naturally; the active one displays, others use the generic
+       [hidden] rule. We accept the ~62 px tab-switch shift between Events
+       (has .calendar-heading) and POI/About — that shift is less bad than
+       the dead space the grid-stack-to-tallest produced under POI/About.
+       Reverts misc_3.md item 21 in favor of misc_4.md "white space". */
+    .left-tab-panels { display: block; }
     /* POI tab — left-rail browseable directory of places. Mirrors the
        feature-list-group convention from the right panel so the two
        inventories read the same. Card: brain/tasks/03_event_app/left_panel_poi_browser.md.
        Visitor copy + placeholder revisit notes are sourced from
        website/data/aop_poi_index.json. */
-    .poi-list { max-height: min(48vh, 360px); overflow-y: auto; padding: 8px 8px 10px; display: grid; gap: 8px; }
+    .poi-list { height: var(--lr-card-body-height, 240px); overflow-y: auto; padding: 8px 8px 10px; display: grid; gap: 8px; align-content: start; }
     .poi-list-group { display: grid; gap: 3px; }
     .poi-list-group-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 3px 4px 2px; border-bottom: 1px solid var(--cream-border); font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; color: var(--brown-mid); }
     .poi-list-group-count { color: var(--brown-soft); font: 700 0.72rem Inter, system-ui, sans-serif; text-transform: none; letter-spacing: 0; }
@@ -392,11 +386,11 @@
     .poi-tab-popup .poi-popup-meta dt { display: inline; font-weight: 700; }
     .poi-tab-popup .poi-popup-meta dd { display: inline; margin: 0 8px 0 4px; }
     .poi-tab-popup .poi-popup-meta dt::before { content: ""; display: block; }
-    .left-controls button:focus-visible, .calendar-row:focus-visible, .calendar-resize-handle:focus-visible, .search input:focus-visible { outline: 2px solid var(--moss-dark); outline-offset: 2px; }
+    .left-controls button:focus-visible, .calendar-row:focus-visible, .lr-resize-handle:focus-visible, .search input:focus-visible { outline: 2px solid var(--moss-dark); outline-offset: 2px; }
     .calendar-heading { width: 100%; display: block; margin: 0; padding: 8px 10px; border: 0; background: transparent; color: var(--brown-ink); text-align: left; }
     .calendar-title { display: block; font: 800 0.78rem Inter, system-ui, sans-serif; text-transform: uppercase; }
     .calendar-range { display: block; margin-top: 1px; font-size: 0.76rem; color: var(--brown-soft); }
-    .calendar-body { max-height: var(--calendar-body-height, 240px); overflow-y: auto; padding: 0; opacity: 1; transition: max-height 0.16s ease; scrollbar-gutter: stable; }
+    .calendar-body { height: var(--lr-card-body-height, 240px); overflow-y: auto; padding: 0; opacity: 1; scrollbar-gutter: stable; }
     .calendar-days { list-style: none; display: grid; gap: 0; margin: 0; padding: 0; }
     .calendar-days li { margin: 0; padding: 0; border-top: 1px solid var(--cream-border); color: var(--brown-ink); }
     .calendar-row { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 8px; margin: 0; padding: 7px 10px; border: 0; border-radius: 0; background: transparent; color: var(--brown-ink); cursor: pointer; text-align: left; }
@@ -438,24 +432,22 @@
     .calendar-countdown-value::before { content: ""; position: absolute;
       left: 0; top: 50%; transform: translateY(-50%);
       width: 4px; height: 4px; border-radius: 50%; background: var(--rust); }
-    .calendar-resize-handle { position: sticky; bottom: 0; z-index: 1; width: 100%; height: 13px; margin: 0; border: 0; border-top: 1px solid var(--cream-border); background: linear-gradient(180deg, rgba(250,246,235,0.92), rgba(239,226,198,0.96)); cursor: ns-resize; touch-action: none; }
-    .calendar-resize-handle::before { content: ""; position: absolute; left: 50%; top: 50%; width: 36px; height: 4px; transform: translate(-50%, -50%); border-top: 1px solid rgba(78,65,40,0.48); border-bottom: 1px solid rgba(78,65,40,0.34); }
-    .calendar-resize-handle:active { background: var(--cream-hover); }
-    .info-panel { max-height: 280px; overflow-y: auto; padding: 10px; border-top: 1px solid rgba(216,205,180,0.78); color: var(--brown-ink); }
+    /* Shared resize handle for Events / POI / About card bodies. Sits as a
+       sibling at the bottom of each tab panel — outside the scrollable body —
+       so the affordance is always visible regardless of content height. All
+       three handles drive the same --lr-card-body-height var on
+       .lr-content-col, so card heights stay consistent across tab switches.
+       No min/max — drag to 0 collapses. */
+    .lr-resize-handle { position: relative; width: 100%; height: 13px; margin: 0; border: 0; border-top: 1px solid var(--cream-border); background: linear-gradient(180deg, rgba(250,246,235,0.92), rgba(239,226,198,0.96)); cursor: ns-resize; touch-action: none; }
+    .lr-resize-handle::before { content: ""; position: absolute; left: 50%; top: 50%; width: 36px; height: 4px; transform: translate(-50%, -50%); border-top: 1px solid rgba(78,65,40,0.48); border-bottom: 1px solid rgba(78,65,40,0.34); }
+    .lr-resize-handle:active { background: var(--cream-hover); }
+    .info-panel { height: var(--lr-card-body-height, 240px); overflow-y: auto; padding: 10px; border-top: 1px solid rgba(216,205,180,0.78); color: var(--brown-ink); }
     .info-panel h2 { margin: 0 0 6px; font-size: 0.95rem; line-height: 1.15; }
     .info-copy { margin: 0 0 9px; font-size: 0.86rem; line-height: 1.36; }
     .info-list { list-style: none; display: grid; gap: 6px; margin: 0; padding: 0; }
     .info-list li { display: grid; gap: 2px; padding-top: 6px; border-top: 1px solid rgba(216,205,180,0.78); font-size: 0.82rem; line-height: 1.28; }
     .info-label { font-weight: 800; color: var(--moss-dark); }
     .info-note { margin: 10px 0 0; padding-top: 7px; border-top: 1px solid rgba(216,205,180,0.78); font-size: 0.78rem; line-height: 1.3; color: var(--brown-soft); }
-    /* Left-rail tab footer: shared strip at the bottom of each tab panel so
-       all three tabs look like siblings. One button per tab for the tab's
-       primary secondary action (Events: past events; POI: browse all groups;
-       About: event page link). */
-    .tab-footer { display: flex; align-items: center; justify-content: center; padding: 6px 8px; border-top: 1px solid var(--cream-border); background: rgba(247,241,226,0.5); }
-    .tab-footer-btn { display: inline-block; margin: 0; padding: 4px 10px; border: 1px solid var(--cream-border); border-radius: 5px; background: transparent; color: var(--brown-soft); cursor: pointer; font: 600 0.74rem Inter, system-ui, sans-serif; text-decoration: none; }
-    .tab-footer-btn:hover { background: var(--cream-hover); color: var(--brown-dark); border-color: #c8b8a0; }
-    .tab-footer-btn.active { background: var(--cream-hover); color: var(--brown-dark); border-color: #c8b8a0; }
     /* Two-lane hot control: Event and Trails are separate actions so schedule
        users and trail-heat users do not fight one fallback button. Card:
        brain/tasks/02_edit/hot_control_two_lane.md. */
@@ -500,8 +492,8 @@
       .pill-bar .pill > button svg { width: 20px; height: 20px; }
       .left-tabs { padding: 4px; }
       .left-tab { min-height: 30px; font-size: 0.74rem; }
-      .calendar-body { --calendar-body-height: 160px; }
-      .info-panel { max-height: 178px; padding: 9px; }
+      .lr-content-col { --lr-card-body-height: 160px; }
+      .info-panel { padding: 9px; }
       .hot-button { min-height: 54px; padding: 7px 8px; }
       /* Panel docks above the message bar (which is at bottom: 8px, ~40 px
          tall) and grows upward. max-height keeps a 220 px reserve at the
@@ -511,8 +503,7 @@
     }
     @media (min-width: 1024px) {
       .left-controls { width: 360px; }
-      .calendar-body { --calendar-body-height: min(42vh, 360px); }
-      .info-panel { max-height: min(42vh, 360px); }
+      .lr-content-col { --lr-card-body-height: min(42vh, 360px); }
     }
   </style>
 </head>
@@ -538,7 +529,7 @@
         <button id="presetTopo" type="button" data-preset="topo" title="Topo preset (contour-led)" aria-label="Topo preset">
           <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 7c3-2 6-2 9 0s5 2 7 0M3 11c3-2 6-2 9 0s5 2 7 0M3 15c3-2 6-2 9 0s5 2 7 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         </button>
-        <button id="presetTrace" type="button" data-preset="trace" title="Trace preset (lidar hillshade aerial)" aria-label="Trace preset">
+        <button id="presetTrace" type="button" data-preset="trace" title="Trace preset (lidar hillshade + trail refs)" aria-label="Trace preset">
           <svg viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="3" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5 16c2-1 3-4 6-4s4 3 6 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="16" r="1.3" fill="currentColor"/><circle cx="17" cy="14" r="1.3" fill="currentColor"/></svg>
         </button>
         <button id="presetSatellite" type="button" data-preset="satellite" title="Satellite preset (2022 aerial)" aria-label="Satellite preset">
@@ -634,24 +625,19 @@
           <ol class="calendar-days" id="calendarDays">
             <li class="calendar-empty">Loading schedule...</li>
           </ol>
-          <div id="calendarResizeHandle" class="calendar-resize-handle" role="separator" aria-label="Resize calendar" aria-orientation="horizontal" aria-controls="calendarBody" aria-valuemin="120" aria-valuemax="520" aria-valuenow="240" tabindex="0"></div>
         </div>
-        <div class="tab-footer">
-          <button type="button" class="tab-footer-btn" id="showPastEventsBtn" aria-pressed="false">Show past events</button>
-        </div>
+        <div id="calendarResizeHandle" class="lr-resize-handle" role="separator" aria-label="Resize calendar" aria-orientation="horizontal" aria-controls="calendarBody" aria-valuenow="240" tabindex="0"></div>
       </div>
       <div id="poiTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabPoi" hidden>
         <div id="poiList" class="poi-list" aria-live="polite">
           <p class="poi-empty">Loading places…</p>
         </div>
-        <div class="tab-footer">
-          <button type="button" class="tab-footer-btn" id="poiExpandAllBtn">Expand all groups</button>
-        </div>
+        <div id="poiResizeHandle" class="lr-resize-handle" role="separator" aria-label="Resize POI list" aria-orientation="horizontal" aria-controls="poiList" aria-valuenow="240" tabindex="0"></div>
       </div>
       <div id="aboutTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabAbout" hidden>
-        <div class="info-panel">
+        <div class="info-panel" id="aboutInfoPanel">
           <h2>About the Rock Warblers</h2>
-          <p class="info-copy">Friday, June 19, 2026 we host the Trail Blazing Invitational at Adventure Off Road Park &mdash; a Rock Warblers crawl on the Tennessee ridge with gated stages, real terrain, and a campfire night run to close it out.</p>
+          <p class="info-copy">Friday, June 19, 2026 we host the <a href="https://www.facebook.com/events/adventure-offroad-park-nature-center/rock-warblers-trail-blazing-invitational/4541595172728436/" target="_blank" rel="noopener noreferrer">Trail Blazing Invitational</a> at Adventure Off Road Park &mdash; a Rock Warblers crawl on the Tennessee ridge with gated stages, real terrain, and a campfire night run to close it out.</p>
           <ul class="info-list">
             <li><span class="info-label">Format</span><span>Three numbered stages, time-run. Gate touches, rolls, and driver assists cost you. Winching is free.</span></li>
             <li><span class="info-label">Mandatory skills</span><span>Water, a grade pull, and a taco-stand inside every stage.</span></li>
@@ -664,9 +650,7 @@
           </ul>
           <p class="info-note">Built by Rock Warblers, for Rock Warblers. See you at the pavilion.</p>
         </div>
-        <div class="tab-footer">
-          <a class="tab-footer-btn" href="https://www.facebook.com/events/adventure-offroad-park-nature-center/rock-warblers-trail-blazing-invitational/4541595172728436/" target="_blank" rel="noopener noreferrer">Event page</a>
-        </div>
+        <div id="aboutResizeHandle" class="lr-resize-handle" role="separator" aria-label="Resize about" aria-orientation="horizontal" aria-controls="aboutInfoPanel" aria-valuenow="240" tabindex="0"></div>
       </div>
       </div>
     </section>
@@ -720,20 +704,12 @@
           </button>
         </div>
         <div class="section-content">
+          <label><input type="checkbox" id="showNinePatch" /> 9-patch acquisition AOI</label>
           <label><input type="checkbox" id="showSatellite" /> Satellite imagery (TNMap 2022)</label>
           <label><input type="checkbox" id="showUsdaNaip" /> USDA NAIP imagery (TN 2023)</label>
-          <label><input type="checkbox" id="showNinePatch" /> 9-patch acquisition AOI</label>
           <label><input type="checkbox" id="showLidarTiles" /> Lidar tile index (USGS 3DEP)</label>
-          <label><input type="checkbox" id="showRoads" checked /> Asphalt roads (USGS National Map)</label>
-          <label><input type="checkbox" id="showWater" checked /> Streams &amp; waterbodies (USGS NHD)</label>
-          <label><input type="checkbox" id="showSprings" /> Springs &amp; gages (USGS NHD)</label>
-          <label><input type="checkbox" id="showCemeteries" /> Cemeteries (TN Comptroller parcels)</label>
           <label><input type="checkbox" id="showBuildings" checked /> Building footprints (FEMA USA Structures)</label>
-          <label><input type="checkbox" id="showOsmPark" /> OSM park polygon</label>
-          <label><input type="checkbox" id="showOsmTracks" /> OSM tracks (highway=track)</label>
-          <label><input type="checkbox" id="showOsmService" /> OSM service roads</label>
-          <label><input type="checkbox" id="showOsmNamed" /> OSM named landmarks</label>
-          <label><input type="checkbox" id="showSfwda" /> SFWDA paper trail map</label>
+          <label><input type="checkbox" id="showCemeteries" /> Cemeteries (TN Comptroller parcels)</label>
         </div>
       </section>
 
@@ -773,33 +749,37 @@
           <input type="range" id="landcover9Opacity" min="0" max="100" value="55" hidden aria-hidden="true" tabindex="-1" />
           <label><input type="checkbox" id="showHillshade" /> Lidar hillshade (USGS 3DEP)</label>
           <label><input type="checkbox" id="showContours" /> Lidar contours (5 ft, 1m DEM)</label>
+          <label><input type="checkbox" id="showBoundaries" checked /> Publishable boundaries</label>
+          <label><input type="checkbox" id="showSyntheticActivity" /> Simulated Saturday activity</label>
         </div>
       </section>
 
-      <section class="panel-section collapsed" data-section="publishable">
+      <section class="panel-section collapsed" data-section="external-reference">
         <div class="section-header">
-          <span class="section-label">Publishable</span>
-          <button type="button" class="section-action" data-section-export="publishable" title="Copy this section's settings to clipboard">⧉</button>
+          <span class="section-label">External reference</span>
+          <button type="button" class="section-action" data-section-export="external-reference" title="Copy this section's settings to clipboard">⧉</button>
           <button type="button" class="section-toggle" aria-expanded="false">
             <span class="section-chevron">▸</span>
           </button>
         </div>
         <div class="section-content">
-          <label><input type="checkbox" id="showTrails" checked /> Publishable trails</label>
-          <label><input type="checkbox" id="showBoundaries" checked /> Publishable boundaries</label>
-          <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
-          <label><input type="checkbox" id="showActivityHotspots" /> Activity hotspots (GPX dwell)</label>
-          <label><input type="checkbox" id="showSyntheticActivity" /> Simulated Saturday activity</label>
-          <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
-          <label><input type="checkbox" id="showBrandLogos" /> Brand logos (AOP &amp; Rock Warblers)</label>
+          <label><input type="checkbox" id="showWater" checked /> Streams &amp; waterbodies (USGS NHD)</label>
+          <label><input type="checkbox" id="showSprings" /> Springs &amp; gages (USGS NHD)</label>
+          <label><input type="checkbox" id="showRoads" checked /> Asphalt roads (USGS National Map)</label>
+          <label><input type="checkbox" id="showOsmPark" /> OSM park polygon</label>
+          <label><input type="checkbox" id="showOsmTracks" /> OSM tracks (highway=track)</label>
+          <label><input type="checkbox" id="showOsmService" /> OSM service roads</label>
+          <label><input type="checkbox" id="showOsmNamed" /> OSM named landmarks</label>
+          <label><input type="checkbox" id="showSfwda" /> SFWDA paper trail map</label>
         </div>
       </section>
 
       <!-- POI section: parallel to the left #poiTabPanel. Each row toggles
            the source layer that backs that POI group, so a user can hide all
            Event anchors / Cemeteries / etc. without hunting through Source /
-           Derived / Publishable. Two-way bound to the underlying toggles, so
-           changing visibility from any surface keeps the group state in sync.
+           Derived / External reference / Map editor / User submitted. Two-way
+           bound to the underlying toggles, so changing visibility from any
+           surface keeps the group state in sync.
            Card: brain/tasks/03_event_app/left_panel_poi_browser.md. -->
       <section class="panel-section collapsed" data-section="poi">
         <div class="section-header">
@@ -815,7 +795,7 @@
           <label><input type="checkbox" id="poiGroupCemeteries" data-poi-group="cemeteries" data-poi-target="showCemeteries" /> Cemeteries</label>
           <label><input type="checkbox" id="poiGroupVisitorSupport" data-poi-group="visitor_support" data-poi-target="showVisitorContext" /> Visitor support</label>
           <label><input type="checkbox" id="poiGroupDrawnPois" data-poi-group="drawn_pois" data-poi-target="showEditorPois" /> Drawn POIs</label>
-          <small>Toggles global visibility for each POI group. Wired to the same source-layer toggles in Source / Derived / Publishable / Map editor so any change syncs both ways.</small>
+          <small>Toggles global visibility for each POI group. Wired to the same source-layer toggles in Source / Derived / External reference / Map editor / User submitted so any change syncs both ways.</small>
         </div>
       </section>
 
@@ -829,6 +809,9 @@
         </div>
         <div class="section-content">
           <label><input type="checkbox" id="showEventSchedule" /> Event schedule POIs</label>
+          <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
+          <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
+          <label><input type="checkbox" id="showBrandLogos" /> Brand logos (AOP &amp; Rock Warblers)</label>
           <label><input type="checkbox" id="showEditorPois" checked /> Drawn POIs</label>
           <div class="editor-row">
             <select id="poiCategory" title="Default category for the next drawn feature (the leaf's category is editable from its inline editor below)" style="flex:1">
@@ -864,6 +847,20 @@
                them. Each row carries an extra ★ button — the highlight flag
                that opts a POI into the left-rail POI tab. -->
           <div id="editorPoiList" class="feature-list" hidden></div>
+        </div>
+      </section>
+
+      <section class="panel-section collapsed" data-section="user-submitted">
+        <div class="section-header">
+          <span class="section-label">User submitted</span>
+          <button type="button" class="section-action" data-section-export="user-submitted" title="Copy this section's settings to clipboard">⧉</button>
+          <button type="button" class="section-toggle" aria-expanded="false">
+            <span class="section-chevron">▸</span>
+          </button>
+        </div>
+        <div class="section-content">
+          <label><input type="checkbox" id="showTrails" checked /> Submitted trails</label>
+          <label><input type="checkbox" id="showActivityHotspots" /> Activity hotspots (GPX dwell)</label>
         </div>
       </section>
 
@@ -904,7 +901,7 @@
     // Every localStorage key the viewer owns. Centralized so a typo on a
     // string literal cannot silently lose user state (the silent-drop class
     // northstar/source_register.md warns about, applied to local persistence).
-    const CALENDAR_HEIGHT_KEY = 'aop_calendar_height_v1';
+    const LR_CARD_HEIGHT_KEY = 'aop_lr_card_height_v1';
     const VISITOR_CONTEXT_OVERRIDE_KEY = 'aop_visitor_context_overrides_v1';
     const BRAND_LOGOS_OVERRIDE_KEY = 'aop_brand_logos_overrides_v1';
     const FEATURE_VISIBILITY_KEY = 'aop_feature_visibility_v1';
@@ -954,7 +951,8 @@
     }
 
     const VIEWER_OWNED_STORAGE_KEYS = [
-      CALENDAR_HEIGHT_KEY,
+      LR_CARD_HEIGHT_KEY,
+      'aop_calendar_height_v1',
       'aop_calendar_collapsed_v1',
       VISITOR_CONTEXT_OVERRIDE_KEY,
       BRAND_LOGOS_OVERRIDE_KEY,
@@ -1568,96 +1566,86 @@
         }
       });
     }
-	    // Calendar body resize. The title row is static; the cal icon in the
-    // left-rail drawer owns open/close, while this bottom handle owns height.
-    const CALENDAR_MIN_BODY_HEIGHT = 120;
-    const CALENDAR_MAX_BODY_HEIGHT = 520;
+    // Left-rail card-body resize. All three card bodies (Events / POI / About)
+    // share a single CSS var, `--lr-card-body-height`, set on `.lr-content-col`.
+    // Each card carries its own bottom handle so the affordance reads the same
+    // wherever the user is; dragging any handle updates the shared var and the
+    // persisted height. No min/max — the user can drag to 0 to collapse.
+    // Defaults come from CSS media queries (160 mobile / 240 default / min(42vh,360px) wide).
+    const lrContentCol = document.getElementById('lrContentCol');
+    const lrResizeHandles = [
+      { handle: calendarResizeHandle, body: calendarBody },
+      { handle: document.getElementById('poiResizeHandle'), body: document.getElementById('poiList') },
+      { handle: document.getElementById('aboutResizeHandle'), body: document.getElementById('aboutInfoPanel') },
+    ].filter((entry) => entry.handle && entry.body);
 
-    function calendarResizeMaxHeight() {
-      const viewportCap = Math.floor(window.innerHeight * (window.innerWidth <= 760 ? 0.46 : 0.62));
-      return Math.max(CALENDAR_MIN_BODY_HEIGHT, Math.min(CALENDAR_MAX_BODY_HEIGHT, viewportCap));
+    function lrCardCurrentHeight(body) {
+      if (!body) return 240;
+      const rect = body.getBoundingClientRect();
+      if (Number.isFinite(rect.height) && rect.height > 0) return rect.height;
+      return 240;
     }
 
-    function calendarCurrentBodyHeight() {
-      if (!calendarBody) return 240;
-      const rect = calendarBody.getBoundingClientRect();
-      const maxHeight = parseFloat(getComputedStyle(calendarBody).maxHeight);
-      if (Number.isFinite(rect.height) && rect.height >= CALENDAR_MIN_BODY_HEIGHT) return rect.height;
-      return Number.isFinite(maxHeight) ? maxHeight : 240;
-    }
-
-    function setCalendarBodyHeight(height, persist = true) {
-      if (!calendarBody || !calendarResizeHandle) return;
-      const max = calendarResizeMaxHeight();
-      const next = Math.round(Math.max(CALENDAR_MIN_BODY_HEIGHT, Math.min(max, Number(height) || 240)));
-      calendarBody.style.setProperty('--calendar-body-height', `${next}px`);
-      calendarResizeHandle.setAttribute('aria-valuemin', String(CALENDAR_MIN_BODY_HEIGHT));
-      calendarResizeHandle.setAttribute('aria-valuemax', String(max));
-      calendarResizeHandle.setAttribute('aria-valuenow', String(next));
-      if (persist) writeJsonStore(CALENDAR_HEIGHT_KEY, next);
+    function setLrCardHeight(height, persist = true) {
+      if (!lrContentCol) return;
+      const next = Math.round(Math.max(0, Number(height) || 0));
+      lrContentCol.style.setProperty('--lr-card-body-height', `${next}px`);
+      for (const { handle } of lrResizeHandles) {
+        handle.setAttribute('aria-valuenow', String(next));
+      }
+      if (persist) writeJsonStore(LR_CARD_HEIGHT_KEY, next);
       scrollCalendarCurrentRowIntoView();
     }
 
-    function initializeCalendarResize() {
-      if (!calendarBody || !calendarResizeHandle) return;
-      const stored = readJsonStore(CALENDAR_HEIGHT_KEY, null);
-      if (Number.isFinite(stored)) setCalendarBodyHeight(stored, false);
-      else if (window.innerWidth <= 760) {
-        // Item 11 (misc_3.md): mobile default tall enough for ~2 calendar
-        // rows visible (one row ≈ 52 px + padding). Do not persist so
-        // desktop's first visit keeps its own default.
-        setCalendarBodyHeight(120, false);
-      } else {
-        calendarResizeHandle.setAttribute('aria-valuemax', String(calendarResizeMaxHeight()));
-        calendarResizeHandle.setAttribute('aria-valuenow', String(Math.round(calendarCurrentBodyHeight())));
+    function initializeLrCardResize() {
+      if (!lrContentCol || !lrResizeHandles.length) return;
+      const stored = readJsonStore(LR_CARD_HEIGHT_KEY, null);
+      if (Number.isFinite(stored)) setLrCardHeight(stored, false);
+      else {
+        for (const { handle, body } of lrResizeHandles) {
+          handle.setAttribute('aria-valuenow', String(Math.round(lrCardCurrentHeight(body))));
+        }
       }
 
-      let drag = null;
-      calendarResizeHandle.addEventListener('pointerdown', (event) => {
-        if (event.button != null && event.button !== 0) return;
-        event.preventDefault();
-        drag = { y: event.clientY, height: calendarCurrentBodyHeight(), pointerId: event.pointerId };
-        calendarResizeHandle.setPointerCapture(event.pointerId);
-      });
-      calendarResizeHandle.addEventListener('pointermove', (event) => {
-        if (!drag) return;
-        event.preventDefault();
-        setCalendarBodyHeight(drag.height + event.clientY - drag.y, false);
-      });
-      const finishDrag = (event) => {
-        if (!drag) return;
-        const next = drag.height + event.clientY - drag.y;
-        if (calendarResizeHandle.hasPointerCapture(drag.pointerId)) {
-          calendarResizeHandle.releasePointerCapture(drag.pointerId);
-        }
-        drag = null;
-        setCalendarBodyHeight(next, true);
-      };
-      calendarResizeHandle.addEventListener('pointerup', finishDrag);
-      calendarResizeHandle.addEventListener('pointercancel', finishDrag);
-      calendarResizeHandle.addEventListener('keydown', (event) => {
-        let next = calendarCurrentBodyHeight();
-        if (event.key === 'ArrowDown') next += 24;
-        else if (event.key === 'ArrowUp') next -= 24;
-        else if (event.key === 'PageDown') next += 72;
-        else if (event.key === 'PageUp') next -= 72;
-        else if (event.key === 'Home') next = CALENDAR_MIN_BODY_HEIGHT;
-        else if (event.key === 'End') next = calendarResizeMaxHeight();
-        else return;
-        event.preventDefault();
-        setCalendarBodyHeight(next, true);
-      });
-      window.addEventListener('resize', () => {
-        if (calendarBody.style.getPropertyValue('--calendar-body-height')) {
-          setCalendarBodyHeight(calendarCurrentBodyHeight(), false);
-        } else {
-          calendarResizeHandle.setAttribute('aria-valuemax', String(calendarResizeMaxHeight()));
-          calendarResizeHandle.setAttribute('aria-valuenow', String(Math.round(calendarCurrentBodyHeight())));
-        }
-      });
+      for (const { handle, body } of lrResizeHandles) {
+        let drag = null;
+        handle.addEventListener('pointerdown', (event) => {
+          if (event.button != null && event.button !== 0) return;
+          event.preventDefault();
+          drag = { y: event.clientY, height: lrCardCurrentHeight(body), pointerId: event.pointerId };
+          handle.setPointerCapture(event.pointerId);
+        });
+        handle.addEventListener('pointermove', (event) => {
+          if (!drag) return;
+          event.preventDefault();
+          setLrCardHeight(drag.height + event.clientY - drag.y, false);
+        });
+        const finishDrag = (event) => {
+          if (!drag) return;
+          const next = drag.height + event.clientY - drag.y;
+          if (handle.hasPointerCapture(drag.pointerId)) {
+            handle.releasePointerCapture(drag.pointerId);
+          }
+          drag = null;
+          setLrCardHeight(next, true);
+        };
+        handle.addEventListener('pointerup', finishDrag);
+        handle.addEventListener('pointercancel', finishDrag);
+        handle.addEventListener('keydown', (event) => {
+          let next = lrCardCurrentHeight(body);
+          if (event.key === 'ArrowDown') next += 24;
+          else if (event.key === 'ArrowUp') next -= 24;
+          else if (event.key === 'PageDown') next += 72;
+          else if (event.key === 'PageUp') next -= 72;
+          else if (event.key === 'Home') next = 0;
+          else return;
+          event.preventDefault();
+          setLrCardHeight(next, true);
+        });
+      }
     }
 
-    initializeCalendarResize();
+    initializeLrCardResize();
 
     calendarDays.addEventListener('click', (event) => {
       const row = event.target.closest('.calendar-row');
@@ -1674,58 +1662,6 @@
         }
       }
     });
-
-    // Events tab footer: "Show past events" toggle. Past rows have
-    // data-session-state="past" and are faded via CSS. When the button is
-    // active, override that opacity so past rows are fully visible.
-    (function wirePastEventsBtn() {
-      const btn = document.getElementById('showPastEventsBtn');
-      if (!btn) return;
-      let showing = false;
-      btn.addEventListener('click', () => {
-        showing = !showing;
-        btn.classList.toggle('active', showing);
-        btn.setAttribute('aria-pressed', String(showing));
-        btn.textContent = showing ? 'Hide past events' : 'Show past events';
-        const styleId = 'past-events-override';
-        let styleEl = document.getElementById(styleId);
-        if (showing) {
-          if (!styleEl) {
-            styleEl = document.createElement('style');
-            styleEl.id = styleId;
-            document.head.appendChild(styleEl);
-          }
-          styleEl.textContent = '.calendar-days li[data-session-state="past"] { opacity: 1; }';
-        } else if (styleEl) {
-          styleEl.remove();
-        }
-      });
-    })();
-
-    // POI tab footer: "Expand all groups" — expands every collapsed poi-list
-    // group heading so all entries are visible at once.
-    (function wirePoiExpandAllBtn() {
-      const btn = document.getElementById('poiExpandAllBtn');
-      if (!btn) return;
-      btn.addEventListener('click', () => {
-        const groups = document.querySelectorAll('#poiList .poi-list-group');
-        let anyCollapsed = false;
-        for (const g of groups) {
-          const rows = g.querySelector('.poi-list-group-rows, .poi-list-rows');
-          if (rows && rows.hidden) { anyCollapsed = true; break; }
-        }
-        for (const g of groups) {
-          const head = g.querySelector('.poi-list-group-head');
-          const rows = g.querySelector('.poi-list-group-rows, .poi-list-rows');
-          const chevron = head?.querySelector('.group-chevron, .poi-chevron');
-          if (rows) {
-            rows.hidden = !anyCollapsed;
-            if (chevron) chevron.textContent = !anyCollapsed ? '▸' : '▾';
-          }
-        }
-        btn.textContent = anyCollapsed ? 'Collapse all groups' : 'Expand all groups';
-      });
-    })();
 
     function setSectionCollapsed(section, collapsed) {
       const button = section.querySelector('.section-toggle');
@@ -3227,6 +3163,11 @@
       if (!FEATURE_LIST_LAYERS[layerKey]) return;
       if (!featureListRuntime[layerKey]) return;
       if (featureId == null) return;
+      // 0. If the user has the panel collapsed, the section/group/row work
+      //    below would all happen behind a closed panel and the map-click
+      //    "open the panel editor" promise would silently break. Expand
+      //    first; the user can re-collapse if they want.
+      if (panelCollapsed) togglePanel();
       const dedicatedTarget = FEATURE_LIST_TARGETS[layerKey];
       // 1. Make sure the list is on screen. Layers with their own inline home
       //    (editor POIs in the Map editor section) need that panel section
@@ -3271,7 +3212,11 @@
     // holding the feature's id (string) or a (props) => id function for
     // composed keys. Suppressed during move mode — the click then belongs to
     // the move primitive, and yanking the panel focus away mid-commit would
-    // be hostile UX.
+    // be hostile UX. Also suppressed while Terra Draw is in an active draw
+    // mode: the click is committing a POI / footprint / trace and any
+    // parallel reveal would collapse the editor section that hosts the
+    // draw-mode controls (toggleTunableExpansion auto-closes the editor
+    // section when expanding a drawer outside it — see :4574).
     function bindPanelReveal(layers, layerKey, idFromProps) {
       const layerList = Array.isArray(layers) ? layers : [layers];
       const resolver = typeof idFromProps === 'function'
@@ -3279,6 +3224,7 @@
         : (props) => props && props[idFromProps];
       map.on('click', layerList, (event) => {
         if (moveState) return;
+        if (draw && draw.getMode && draw.getMode() !== 'static') return;
         const props = event.features?.[0]?.properties;
         if (!props) return;
         const id = resolver(props);
@@ -4128,14 +4074,14 @@
         },
         sliders: { landcover9Opacity: 0, sfwdaOpacity: 64, sfwdaMultiply: 0 },
         paints: {
-          background: { 'background-color': '#1d1a16' },
+          background: { 'background-color': '#e7ddc4' },
           'usda-naip-satellite': { 'raster-opacity': 0 },
           'tnmap-satellite': { 'raster-opacity': 0 },
           'lidar-hillshade': {
-            'hillshade-exaggeration': 0.92,
-            'hillshade-shadow-color': '#0e0c09',
-            'hillshade-highlight-color': '#3a3228',
-            'hillshade-accent-color': '#2a231a'
+            'hillshade-exaggeration': 0.82,
+            'hillshade-shadow-color': '#2f2a21',
+            'hillshade-highlight-color': '#fff4d9',
+            'hillshade-accent-color': '#6f604c'
           },
           'publish-boundary-fill': { 'fill-color': '#fff0b8', 'fill-opacity': 0.03 },
           'publish-boundaries': { 'line-color': '#fff0b8', 'line-width': 3.4, 'line-opacity': 1 },
@@ -4151,9 +4097,8 @@
           // against tan paper, dark gridlines, and red trail strokes alike.
           'osm-named-labels': { 'text-color': '#fff0b8', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
           // Pass 4 theme review §6: trace-preset overrides for editor-POI,
-          // cemetery, and nine-patch labels — defaults sit on the
-          // #4a3c2a + #f7f1e2 combo and disappear against the #1d1a16
-          // trace background. Flip to cream-on-dark like osm-named-labels.
+          // cemetery, and nine-patch labels. Keep the trace labels on dark
+          // halos so they read over SFWDA ink and hillshade texture.
           'editor-poi-labels': { 'text-color': '#fff0b8', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
           'editor-poi-fill-labels': { 'text-color': '#fff0b8', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
           'editor-poi-line-labels': { 'text-color': '#fff0b8', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
@@ -4212,7 +4157,7 @@
         },
         sliders: { landcover9Opacity: 0, sfwdaOpacity: 0, sfwdaMultiply: 0 },
         paints: {
-          background: { 'background-color': '#000000' },
+          background: { 'background-color': '#efe7d5' },
           'tnmap-satellite': { 'raster-opacity': 1 },
           'usda-naip-satellite': { 'raster-opacity': 0 }
         }
@@ -4817,19 +4762,18 @@
         // Buildings is the only taggable source-layer consumer today.
         featureTagLayers: ['buildings']
       },
+      'external-reference': {},
       // Visitor-context callouts live in this section's HTML
       // (#showVisitorContext); the override + per-feature visibility slice
       // ride with the toggle so per-section round-trips stay coherent.
-      publishable: {
-        visitorContextOverrides: VISITOR_CONTEXT_OVERRIDE_KEY,
-        featureVisibilityLayers: ['visitorContext']
-      },
       editor: {
         editorPois: POI_STORAGE_KEY,
-        featureVisibilityLayers: ['editorPois', 'eventSchedule'],
+        visitorContextOverrides: VISITOR_CONTEXT_OVERRIDE_KEY,
+        featureVisibilityLayers: ['editorPois', 'eventSchedule', 'visitorContext'],
         // Drawn POIs are taggable: a #tag binding rides along with the POI.
         featureTagLayers: ['editorPois']
-      }
+      },
+      'user-submitted': {}
     };
 
     // Walk a section's DOM to find toggles + sliders inside it. Cached at
@@ -5486,11 +5430,10 @@
         setLayerVisibility('search-highlight-line', false);
         setLayerVisibility('search-highlight-point', false);
       }
-	      if (calendarBody) {
-	        calendarBody.style.removeProperty('--calendar-body-height');
-	        if (calendarResizeHandle) {
-	          calendarResizeHandle.setAttribute('aria-valuemax', String(calendarResizeMaxHeight()));
-	          calendarResizeHandle.setAttribute('aria-valuenow', String(Math.round(calendarCurrentBodyHeight())));
+	      if (lrContentCol) {
+	        lrContentCol.style.removeProperty('--lr-card-body-height');
+	        for (const { handle, body } of lrResizeHandles) {
+	          handle.setAttribute('aria-valuenow', String(Math.round(lrCardCurrentHeight(body))));
 	        }
 	      }
 	      if (typeof editorPois !== 'undefined' && Array.isArray(editorPois)) {
@@ -5525,31 +5468,40 @@
     // Default session duration for end-time math (schema has no end_local).
     // Kept in sync with the hot button's HOT_BUTTON_SESSION_LEN_MIN below.
     const CALENDAR_SESSION_DURATION_MIN = 90;
-    // Monday-morning rollover. Before this hour on a Monday, the calendar
-    // stays anchored to the just-finished weekend (post-event window). After
-    // it, the anchor flips forward to the upcoming weekend (countdown mode).
-    const CALENDAR_MONDAY_RESET_HOUR = 6;
 
-    // Resolve "the Saturday this calendar anchors to" for now. Mon-Fri (and
-    // Sat) point at the current/upcoming weekend; Sun stays on yesterday's
-    // Sat. On Monday, the 06:00 cutover swings the anchor from prior Sat to
-    // upcoming Sat — that's what makes the post-event window expire and the
-    // pre-event countdown begin.
-    function resolveCalendarAnchorSat(now) {
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-      const dow = today.getDay(); // 0=Sun..6=Sat
-      let daysToSat;
-      if (dow === 6) daysToSat = 0;
-      else if (dow === 0) daysToSat = -1;
-      else if (dow === 1) daysToSat = now.getHours() < CALENDAR_MONDAY_RESET_HOUR ? -2 : 5;
-      else if (dow === 5) daysToSat = 1;
-      else daysToSat = 6 - dow; // Tue–Thu → upcoming Sat
-      today.setDate(today.getDate() + daysToSat);
-      return today;
+    // Anchor the calendar to the actual event date pulled from
+    // aop_event_schedule.json (`event.date_range_label`, e.g.
+    // "Friday, June 19, 2026"). Replaces the prior Friday-of-this-week shim
+    // that always assumed the upcoming weekend was the event. Now session
+    // tools (virtual clock) let users simulate live/pre/post states without
+    // moving the anchor.
+    const EVENT_DATE_LABEL_MONTHS = {
+      january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+      july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
+    };
+
+    function parseEventAnchorFriday() {
+      const label = eventScheduleConfig?.event?.date_range_label;
+      if (!label) return null;
+      const m = /([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})/.exec(String(label));
+      if (!m) return null;
+      const month = EVENT_DATE_LABEL_MONTHS[m[1].toLowerCase()];
+      if (month == null) return null;
+      const day = Number(m[2]);
+      const year = Number(m[3]);
+      if (!Number.isFinite(day) || !Number.isFinite(year)) return null;
+      return new Date(year, month, day, 0, 0, 0, 0);
+    }
+
+    function resolveCalendarAnchorSat() {
+      const friday = parseEventAnchorFriday();
+      if (!friday) return null;
+      return new Date(friday.getFullYear(), friday.getMonth(), friday.getDate() + 1, 0, 0, 0, 0);
     }
 
     // Session-start Date for a row given a resolved anchor Saturday.
     function eventScheduleStartFromAnchor(dayLabel, startLocal, anchorSat) {
+      if (!anchorSat) return null;
       const day = String(dayLabel || '').trim().toLowerCase();
       const tm = /^(\d{1,2}):(\d{2})$/.exec(String(startLocal || '').trim());
       if (!tm) return null;
@@ -5594,13 +5546,14 @@
       };
     }
 
-    // Classify the current moment against the anchored weekend. Three states:
-    //   'pre'  — Mon 06:00 → Fri gates open. Countdown banner active.
+    // Classify the current moment against the event weekend. Three states:
+    //   'pre'  — before Friday gates open. Countdown banner active.
     //   'live' — Fri gates open → end of last Sun session. Per-row badges.
-    //   'post' — Sun last session → Mon 06:00. All rows past, banner hidden.
+    //   'post' — after the last Sun session. All rows past, banner hidden.
     function computeCalendarState(now) {
       const edges = computeCalendarScheduleEdges();
-      const anchorSat = resolveCalendarAnchorSat(now);
+      const anchorSat = resolveCalendarAnchorSat();
+      if (!anchorSat) return { state: 'pre', anchorSat: null, countdownTargetMs: null };
       const gatesH = Math.floor(edges.gatesOpenMin / 60);
       const gatesM = edges.gatesOpenMin % 60;
       const endH = Math.floor(edges.weekendEndMin / 60);
@@ -5609,8 +5562,6 @@
         anchorSat.getDate() - 1, gatesH, gatesM, 0, 0);
       const weekendEnd = new Date(anchorSat.getFullYear(), anchorSat.getMonth(),
         anchorSat.getDate() + 1, endH, endM, 0, 0);
-      const mondayReset = new Date(anchorSat.getFullYear(), anchorSat.getMonth(),
-        anchorSat.getDate() + 2, CALENDAR_MONDAY_RESET_HOUR, 0, 0, 0);
       const nowMs = now.getTime();
       let state;
       if (nowMs < gatesOpen.getTime()) state = 'pre';
@@ -5621,7 +5572,6 @@
         anchorSat,
         gatesOpenMs: gatesOpen.getTime(),
         weekendEndMs: weekendEnd.getTime(),
-        mondayResetMs: mondayReset.getTime(),
         countdownTargetMs: state === 'pre' ? gatesOpen.getTime() : null,
       };
     }
@@ -5752,32 +5702,15 @@
     const HOT_BUTTON_IMMINENT_MIN = 30;
     const HOT_BUTTON_SESSION_LEN_MIN = 90;
 
-    // Forward-leaning anchor: when now is Mon-Fri the upcoming Saturday
-    // anchors the weekend so Friday sessions resolve to TODAY-Sat-1 not
-    // PRIOR-Sat-1. Sat/Sun anchor to the current weekend. Calendar keeps
-    // the most-recent anchor (it wants to show past rows fading); hot
-    // button wants the *next* live/upcoming thing.
-    function eventScheduleAnchorForward(dayLabel, startLocal, now) {
-      const day = String(dayLabel || '').trim().toLowerCase();
-      const tm = /^(\d{1,2}):(\d{2})$/.exec(String(startLocal || '').trim());
-      if (!tm) return null;
-      const hour = Number(tm[1]);
-      const minute = Number(tm[2]);
-      if (!Number.isFinite(hour) || hour < 0 || hour > 23) return null;
-      if (!Number.isFinite(minute) || minute < 0 || minute > 59) return null;
-      const ref = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-      const dow = ref.getDay(); // 0=Sun..6=Sat
-      let daysToSat;
-      if (dow === 6) daysToSat = 0;        // today is Sat
-      else if (dow === 0) daysToSat = -1;  // today is Sun -> Sat was yesterday
-      else daysToSat = 6 - dow;             // Mon-Fri -> upcoming Sat
-      ref.setDate(ref.getDate() + daysToSat);
-      let offset = 0;
-      if (day === 'friday') offset = -1;
-      else if (day === 'sunday') offset = 1;
-      else if (day !== 'saturday') return null;
-      return new Date(ref.getFullYear(), ref.getMonth(),
-        ref.getDate() + offset, hour, minute, 0, 0);
+    // Anchor every session to the real event Saturday from the JSON config.
+    // Shares the same anchor logic the calendar uses, so the hot button and
+    // the calendar always agree on what "live" and "next" mean. Returns null
+    // when the schedule config is not yet loaded or the row's day label is
+    // unrecognised.
+    function eventScheduleAnchorForward(dayLabel, startLocal /* now unused */) {
+      const anchorSat = resolveCalendarAnchorSat();
+      if (!anchorSat) return null;
+      return eventScheduleStartFromAnchor(dayLabel, startLocal, anchorSat);
     }
 
     function computeHotButtonTarget() {
@@ -6377,7 +6310,7 @@
     // so a missing overlay never aborts the rest of the viewer.
     async function fetchJson(url, label) {
       try {
-        const response = await fetch(url);
+        const response = await fetch(url, { cache: 'no-cache' });
         if (response.ok) return await response.json();
       } catch (error) {
         console.warn(`${label}:`, error);
@@ -7105,8 +7038,16 @@
         registerFeatureListLayer('eventSchedule', eventScheduleData);
         if (viewerSessionState?.active_event_session_id
             && eventSessionById.has(viewerSessionState.active_event_session_id)) {
-          setLeftTab('events');
-          window.setTimeout(() => gotoEventSession(viewerSessionState.active_event_session_id), 300);
+          // Restore the highlight on the saved session row regardless, but
+          // only fly + force the Events tab if the user was actually on
+          // Events at reload. Otherwise their saved POI/About tab wins.
+          activeEventSessionId = viewerSessionState.active_event_session_id;
+          renderEventSchedule(eventScheduleConfig, eventScheduleData);
+          const savedTab = viewerSessionState.active_left_tab;
+          if (!savedTab || savedTab === 'events') {
+            setLeftTab('events');
+            window.setTimeout(() => gotoEventSession(viewerSessionState.active_event_session_id), 300);
+          }
         } else {
           // Item 4 (misc_3.md): no saved active session on first load means
           // the calendar's "move to content" still needs to fire — fly to
