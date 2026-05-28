@@ -307,6 +307,43 @@
     .feature-row-editor .editor-action.danger:hover { background: #f1d8c6; }
     /* Kind glyph in group head (● POI / ▭ Footprint / ╱ Line). */
     .feature-list-group-head .group-kind-glyph { color: var(--brown-soft); margin-right: 2px; }
+    /* --- Unified editor tree --------------------------------------------
+       The Map editor section's body is:
+         .editor-layer-strip    — the 5 source-layer toggles (Event schedule,
+                                  trailheads, visitor context, brand logos,
+                                  drawn POIs). Compact, single-column.
+         #editorTree            — the bucket tree (Visitor list + Point /
+                                  Line / Polygon / Image / Callout). Each
+                                  bucket wraps existing .feature-list rows.
+         .editor-create-footer  — the create row (category + draw buttons +
+                                  export + clear + status + help). At the
+                                  bottom so the tree leads.
+       Card: brain/tasks/04_event_app/editor_unified_tree.md. */
+    .editor-layer-strip { display: grid; gap: 3px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--cream-border); }
+    .editor-layer-strip label { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--brown-ink); }
+    .editor-tree { display: grid; gap: 10px; }
+    .editor-bucket { display: grid; gap: 4px; padding: 4px 0; border-radius: 6px; }
+    .editor-bucket[data-bucket="visitor-list"] { padding: 4px 6px; background: rgba(212, 168, 102, 0.10); border: 1px solid rgba(212, 168, 102, 0.30); }
+    .editor-bucket-head { display: grid; grid-template-columns: 22px 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 5px; background: rgba(247, 241, 226, 0.92); font-size: 0.82rem; color: var(--brown-dark); font-weight: 600; }
+    .editor-bucket[data-bucket="visitor-list"] .editor-bucket-head { background: rgba(212, 168, 102, 0.18); }
+    .editor-bucket-head .editor-bucket-chevron { background: none; border: 0; cursor: pointer; padding: 0; width: 22px; height: 22px; font-size: 0.95rem; color: var(--brown-soft); }
+    .editor-bucket-head .editor-bucket-chevron:hover { color: var(--brown-dark); }
+    .editor-bucket-head .editor-bucket-glyph { color: var(--brown-soft); margin-right: 2px; }
+    .editor-bucket-head .editor-bucket-label { min-width: 0; overflow-wrap: anywhere; }
+    .editor-bucket-head .editor-bucket-count { color: var(--brown-soft); font-size: 0.75rem; font-weight: 400; }
+    .editor-bucket-body { display: grid; gap: 6px; padding: 2px 0 4px 22px; }
+    .editor-bucket-body[hidden] { display: none; }
+    .editor-bucket-body .feature-list { margin: 0; padding-bottom: 0; border-bottom: 0; }
+    .editor-bucket-body .feature-list-heading { display: none; }
+    .editor-bucket-empty { font-size: 0.78rem; color: var(--brown-soft); font-style: italic; padding: 2px 0; }
+    .editor-visitor-list-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 5px; cursor: pointer; }
+    .editor-visitor-list-row:hover { background: rgba(247, 241, 226, 0.8); }
+    .editor-visitor-list-row .vrow-name { font-size: 0.82rem; color: var(--brown-dark); overflow-wrap: anywhere; min-width: 0; }
+    .editor-visitor-list-row .vrow-chip { font-size: 0.70rem; padding: 1px 6px; border-radius: 9px; background: var(--moss-soft); color: var(--moss-dark); font-weight: 600; white-space: nowrap; }
+    .editor-visitor-list-row .vrow-fly, .editor-visitor-list-row .vrow-star { background: none; border: 0; padding: 0; cursor: pointer; font-size: 0.95rem; color: var(--brown-soft); }
+    .editor-visitor-list-row .vrow-star.on { color: var(--rust); }
+    .editor-visitor-list-row .vrow-fly:hover, .editor-visitor-list-row .vrow-star:hover { color: var(--brown-dark); }
+    .editor-create-footer { display: grid; gap: 4px; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--cream-border); }
     /* Map-click → panel-reveal flash. A row that was just selected from the
        map briefly glows so the eye finds it even on a long list. The class
        is added by revealFeatureInPanel and removed ~1.8 s later. */
@@ -774,31 +811,6 @@
         </div>
       </section>
 
-      <!-- POI section: parallel to the left #poiTabPanel. Each row toggles
-           the source layer that backs that POI group, so a user can hide all
-           Event anchors / Cemeteries / etc. without hunting through Source /
-           Derived / External reference / Map editor / User submitted. Two-way
-           bound to the underlying toggles, so changing visibility from any
-           surface keeps the group state in sync.
-           Card: brain/tasks/03_event_app/left_panel_poi_browser.md. -->
-      <section class="panel-section collapsed" data-section="poi">
-        <div class="section-header">
-          <span class="section-label">POI</span>
-          <button type="button" class="section-toggle" aria-expanded="false">
-            <span class="section-chevron">▸</span>
-          </button>
-        </div>
-        <div class="section-content" id="poiGroupToggles">
-          <label><input type="checkbox" id="poiGroupEventAnchors" data-poi-group="event_anchors" data-poi-target="showEventSchedule" /> Event anchors</label>
-          <label><input type="checkbox" id="poiGroupBuildings" data-poi-group="buildings" data-poi-target="showBuildings" /> Buildings in the park</label>
-          <label><input type="checkbox" id="poiGroupTrails" data-poi-group="trails" data-poi-target="showTrails" /> Trails</label>
-          <label><input type="checkbox" id="poiGroupCemeteries" data-poi-group="cemeteries" data-poi-target="showCemeteries" /> Cemeteries</label>
-          <label><input type="checkbox" id="poiGroupVisitorSupport" data-poi-group="visitor_support" data-poi-target="showVisitorContext" /> Visitor support</label>
-          <label><input type="checkbox" id="poiGroupDrawnPois" data-poi-group="drawn_pois" data-poi-target="showEditorPois" /> Drawn POIs</label>
-          <small>Toggles global visibility for each POI group. Wired to the same source-layer toggles in Source / Derived / External reference / Map editor / User submitted so any change syncs both ways.</small>
-        </div>
-      </section>
-
       <section class="panel-section collapsed" data-section="editor">
         <div class="section-header">
           <span class="section-label">Map editor</span>
@@ -808,45 +820,53 @@
           </button>
         </div>
         <div class="section-content">
-          <label><input type="checkbox" id="showEventSchedule" /> Event schedule POIs</label>
-          <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
-          <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
-          <label><input type="checkbox" id="showBrandLogos" /> Brand logos (AOP &amp; Rock Warblers)</label>
-          <label><input type="checkbox" id="showEditorPois" checked /> Drawn POIs</label>
-          <div class="editor-row">
-            <select id="poiCategory" title="Default category for the next drawn feature (the leaf's category is editable from its inline editor below)" style="flex:1">
-              <option>Pavilion</option>
-              <option>Building</option>
-              <option>Restroom</option>
-              <option>Parking</option>
-              <option>Staging area</option>
-              <option>Gate</option>
-              <option>Trail trace</option>
-              <option>Road trace</option>
-              <option>Landmark</option>
-              <option>Hazard</option>
-              <option>Other</option>
-            </select>
+          <!-- Layer-level on/off for the five editor-owned source layers.
+               Bucket-head bulk toggles below switch per-feature visibility;
+               these five flip the whole layer. -->
+          <div class="editor-layer-strip">
+            <label><input type="checkbox" id="showEventSchedule" /> Event schedule POIs</label>
+            <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
+            <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
+            <label><input type="checkbox" id="showBrandLogos" /> Brand logos (AOP &amp; Rock Warblers)</label>
+            <label><input type="checkbox" id="showEditorPois" checked /> Drawn POIs</label>
           </div>
-          <div class="editor-row">
-            <button id="placePoiBtn" type="button">Place POI</button>
-            <button id="drawFootprintBtn" type="button">Draw footprint</button>
+          <!-- Bucket tree rendered by renderEditorTree(). Five buckets keyed
+               by renderable kind: Point, Line, Polygon, Image, Callout. A
+               ★ Visitor list virtual group renders above as a live mirror of
+               every highlighted feature. Card:
+               brain/tasks/04_event_app/editor_unified_tree.md. -->
+          <div id="editorTree" class="editor-tree"></div>
+          <!-- Create footer — category + draw / trace / export / clear. -->
+          <div class="editor-create-footer">
+            <div class="editor-row">
+              <select id="poiCategory" title="Default category for the next drawn feature (the leaf's category is editable from its inline editor)" style="flex:1">
+                <option>Pavilion</option>
+                <option>Building</option>
+                <option>Restroom</option>
+                <option>Parking</option>
+                <option>Staging area</option>
+                <option>Gate</option>
+                <option>Trail trace</option>
+                <option>Road trace</option>
+                <option>Landmark</option>
+                <option>Hazard</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="editor-row">
+              <button id="placePoiBtn" type="button">Place POI</button>
+              <button id="drawFootprintBtn" type="button">Draw footprint</button>
+            </div>
+            <div class="editor-row">
+              <button id="traceLineBtn" type="button">Trace line</button>
+            </div>
+            <div class="editor-row">
+              <button id="exportPoiBtn" type="button">Export GeoJSON</button>
+              <button id="clearPoiBtn" type="button">Clear all</button>
+            </div>
+            <small id="poiStatus">0 POIs, 0 footprints, 0 traces.</small>
+            <small>Pick a category, then <b>Place POI</b> (one click), <b>Draw footprint</b> (click each corner), or <b>Trace line</b> (click vertices, press Enter to finish). Drawn features land in the matching bucket above (<b>Point</b> / <b>Polygon</b> / <b>Line</b>). Click the <code>▸</code> chevron on any drawn row to rename, re-categorize, add notes, or delete. Map-click on a drawn feature jumps to its editor. ★ on any leaf surfaces it in the left-rail POI tab and the <b>Visitor list</b> group at the top. Edits save in this browser. A fresh viewer (or <b>Reset viewer</b>) seeds the editor from <code>website/data/aop_editor_seed_pois.geojson</code>. To bake your work into the seed: <b>Export GeoJSON</b> → replace that file with the download → commit.</small>
           </div>
-          <div class="editor-row">
-            <button id="traceLineBtn" type="button">Trace line</button>
-          </div>
-          <div class="editor-row">
-            <button id="exportPoiBtn" type="button">Export GeoJSON</button>
-            <button id="clearPoiBtn" type="button">Clear all</button>
-          </div>
-          <small id="poiStatus">0 POIs, 0 footprints, 0 traces.</small>
-          <small>Pick a category, then <b>Place POI</b> (one click), <b>Draw footprint</b> (click each corner), or <b>Trace line</b> (click vertices, press Enter to finish). Drawn features sort under <b>POI / Footprint / Line</b> below — click the <code>▸</code> chevron on any row to rename, re-categorize, add notes, or delete. Map-click on a drawn feature jumps to its editor. Edits save in this browser. A fresh viewer (or <b>Reset viewer</b>) seeds the editor from <code>website/data/aop_editor_seed_pois.geojson</code>. To bake your work into the seed: <b>Export GeoJSON</b> → replace that file with the download → commit.</small>
-          <!-- Inline drawn-POI list. The feature-list primitive renders here
-               (not into the layer-editor drawer) so the per-POI rows sit
-               directly below the categories + draw buttons that produced
-               them. Each row carries an extra ★ button — the highlight flag
-               that opts a POI into the left-rail POI tab. -->
-          <div id="editorPoiList" class="feature-list" hidden></div>
         </div>
       </section>
 
@@ -1061,20 +1081,28 @@
     const tuneControls = document.getElementById('tuneControls');
     const sfwdaDrawerControls = document.getElementById('sfwdaDrawerControls');
     const featureListEl = document.getElementById('featureList');
-    // Per-layer override for where the feature list renders. The drawer's
-    // shared #featureList is the default; layers with their own dedicated
-    // inline home (editor POIs live under the categories in the Map editor
-    // section) point at their own container so re-renders fired from inside
-    // the row handlers land in the right place.
-    const editorPoiListEl = document.getElementById('editorPoiList');
-    const FEATURE_LIST_TARGETS = {
-      editorPois: editorPoiListEl
-    };
-    function featureListTargetFor(layerKey) {
-      return FEATURE_LIST_TARGETS[layerKey] || featureListEl;
+    // Per-layer render targets. The drawer's shared #featureList is the
+    // default for layers without a registered target. Layers can register
+    // multiple targets — used by the unified editor tree where editorPois
+    // renders three times (once per geometry bucket) with `onlyGroupId`
+    // filtering the runtime groups down to one per bucket. Each entry is
+    // `{ target, onlyGroupId? }`. Card:
+    // brain/tasks/04_event_app/editor_unified_tree.md.
+    const FEATURE_LIST_TARGETS = {};
+    function registerFeatureListTarget(layerKey, target, opts = {}) {
+      if (!FEATURE_LIST_TARGETS[layerKey]) FEATURE_LIST_TARGETS[layerKey] = [];
+      FEATURE_LIST_TARGETS[layerKey].push({ target, ...opts });
+    }
+    function clearFeatureListTargets(layerKey) {
+      delete FEATURE_LIST_TARGETS[layerKey];
+    }
+    function featureListTargetsFor(layerKey) {
+      const arr = FEATURE_LIST_TARGETS[layerKey];
+      if (arr && arr.length) return arr;
+      return [{ target: featureListEl }];
     }
     // True when a re-render would actually be seen — either the drawer is
-    // showing this layer, or the layer has its own always-visible target.
+    // showing this layer, or the layer has its own registered targets.
     function shouldRenderFeatureList(layerKey) {
       return expandedTuneKey === layerKey || Boolean(FEATURE_LIST_TARGETS[layerKey]);
     }
@@ -1197,38 +1225,269 @@
     // Kick off the fetch immediately; the renderer is resilient to a null index.
     fetchPoiIndex();
 
-    // Right-panel POI section: two-way bind each group checkbox to the source
-    // layer toggle that backs it, so a user can flip global visibility per POI
-    // group and the state stays in sync no matter which surface the change
-    // happened on. Idempotent: safe to call once at module init.
-    function wirePoiPanel() {
-      const rows = document.querySelectorAll('#poiGroupToggles input[data-poi-target]');
-      if (!rows.length) return;
-      // Suppress feedback loops while we mirror state across surfaces.
-      let echoing = false;
-      for (const row of rows) {
-        const target = document.getElementById(row.dataset.poiTarget);
-        if (!target) {
-          row.disabled = true;
-          continue;
+    // --- Unified editor tree ---------------------------------------------
+    // The Map editor section's body is a five-bucket tree by renderable kind
+    // (Point / Line / Polygon / Image / Callout), plus a virtual ★ Visitor
+    // list group at the top that mirrors highlighted features across the
+    // three highlightable layers. Card:
+    // brain/tasks/04_event_app/editor_unified_tree.md.
+    //
+    // `leaves` declares which FEATURE_LIST_LAYERS render into each bucket.
+    // `onlyGroupId` filters a layer's runtime groups down to one (used by
+    // editorPois so its Point / Polygon / LineString groups split across the
+    // Point / Polygon / Line buckets respectively).
+    const EDITOR_BUCKETS = [
+      { id: 'point',    label: 'Point',    glyph: '●', leaves: [
+        { layerKey: 'editorPois',    onlyGroupId: 'point' },
+        { layerKey: 'eventSchedule' }
+      ] },
+      { id: 'line',     label: 'Line',     glyph: '╱', leaves: [
+        { layerKey: 'editorPois',    onlyGroupId: 'linestring' }
+      ] },
+      { id: 'polygon',  label: 'Polygon',  glyph: '▭', leaves: [
+        { layerKey: 'editorPois',    onlyGroupId: 'polygon' }
+      ] },
+      { id: 'image',    label: 'Image',    glyph: '⌗', leaves: [
+        { layerKey: 'brandLogos' }
+      ] },
+      { id: 'callout',  label: 'Callout',  glyph: '⌑', leaves: [
+        { layerKey: 'visitorContext' }
+      ] }
+    ];
+    const VISITOR_LIST_LAYERS = ['editorPois', 'brandLogos', 'visitorContext'];
+    const VISITOR_LIST_SOURCE_CHIP = {
+      editorPois: 'drawn',
+      brandLogos: 'image',
+      visitorContext: 'callout'
+    };
+    let editorTreeBuilt = false;
+
+    function buildEditorTree() {
+      const root = document.getElementById('editorTree');
+      if (!root || editorTreeBuilt) return;
+      root.innerHTML = '';
+
+      // ★ Visitor list — virtual group, rendered by renderVisitorListGroup.
+      const visitorBucket = document.createElement('div');
+      visitorBucket.className = 'editor-bucket';
+      visitorBucket.dataset.bucket = 'visitor-list';
+      const visitorHead = document.createElement('div');
+      visitorHead.className = 'editor-bucket-head';
+      const vChevron = document.createElement('button');
+      vChevron.type = 'button';
+      vChevron.className = 'editor-bucket-chevron';
+      vChevron.textContent = '▾';
+      vChevron.title = 'Collapse bucket';
+      vChevron.setAttribute('aria-expanded', 'true');
+      const vSpacer = document.createElement('span');
+      const vLabel = document.createElement('span');
+      vLabel.className = 'editor-bucket-label';
+      vLabel.innerHTML = '<span class="editor-bucket-glyph">★</span> Visitor list';
+      const vCount = document.createElement('span');
+      vCount.className = 'editor-bucket-count';
+      vCount.id = 'editorVisitorListCount';
+      vCount.textContent = '0';
+      const vBody = document.createElement('div');
+      vBody.className = 'editor-bucket-body';
+      vBody.id = 'editorVisitorList';
+      vChevron.addEventListener('click', () => {
+        const collapsed = vBody.hidden = !vBody.hidden;
+        vChevron.textContent = collapsed ? '▸' : '▾';
+        vChevron.setAttribute('aria-expanded', String(!collapsed));
+      });
+      visitorHead.append(vChevron, vSpacer, vLabel, vCount);
+      visitorBucket.append(visitorHead, vBody);
+      root.append(visitorBucket);
+
+      // 5 kind buckets.
+      for (const bucket of EDITOR_BUCKETS) {
+        const wrap = document.createElement('div');
+        wrap.className = 'editor-bucket';
+        wrap.dataset.bucket = bucket.id;
+
+        const head = document.createElement('div');
+        head.className = 'editor-bucket-head';
+        const chevron = document.createElement('button');
+        chevron.type = 'button';
+        chevron.className = 'editor-bucket-chevron';
+        chevron.textContent = '▾';
+        chevron.title = 'Collapse bucket';
+        chevron.setAttribute('aria-expanded', 'true');
+        const bulk = document.createElement('input');
+        bulk.type = 'checkbox';
+        bulk.dataset.editorBucketBulk = bucket.id;
+        bulk.title = 'Toggle every feature in this bucket';
+        bulk.addEventListener('change', () => setBucketVisibility(bucket, bulk.checked));
+        const labelEl = document.createElement('span');
+        labelEl.className = 'editor-bucket-label';
+        labelEl.innerHTML = `<span class="editor-bucket-glyph">${bucket.glyph}</span> ${bucket.label}`;
+        const count = document.createElement('span');
+        count.className = 'editor-bucket-count';
+        count.dataset.editorBucketCount = bucket.id;
+        count.textContent = '';
+        head.append(chevron, bulk, labelEl, count);
+
+        const body = document.createElement('div');
+        body.className = 'editor-bucket-body';
+        body.dataset.editorBucketBody = bucket.id;
+        chevron.addEventListener('click', () => {
+          const collapsed = body.hidden = !body.hidden;
+          chevron.textContent = collapsed ? '▸' : '▾';
+          chevron.setAttribute('aria-expanded', String(!collapsed));
+        });
+
+        for (const leaf of bucket.leaves) {
+          const slot = document.createElement('div');
+          slot.className = 'feature-list';
+          slot.dataset.editorLeaf = `${bucket.id}-${leaf.layerKey}${leaf.onlyGroupId ? '-' + leaf.onlyGroupId : ''}`;
+          slot.hidden = true;
+          body.append(slot);
+          registerFeatureListTarget(leaf.layerKey, slot, { onlyGroupId: leaf.onlyGroupId });
         }
-        // Initial state mirrors the underlying source toggle.
-        row.checked = !!target.checked;
-        row.addEventListener('change', () => {
-          if (echoing) return;
-          if (target.checked === row.checked) return;
-          target.checked = row.checked;
-          target.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-        target.addEventListener('change', () => {
-          if (row.checked === target.checked) return;
-          echoing = true;
-          row.checked = target.checked;
-          echoing = false;
-        });
+
+        wrap.append(head, body);
+        root.append(wrap);
+      }
+
+      editorTreeBuilt = true;
+      renderEditorTreeCounts();
+      renderVisitorListGroup();
+    }
+
+    function setBucketVisibility(bucket, visible) {
+      const seenLayers = new Set();
+      for (const leaf of bucket.leaves) {
+        const runtime = featureListRuntime[leaf.layerKey];
+        if (!runtime || !runtime.state) continue;
+        for (const groupBucket of runtime.state.groups) {
+          if (leaf.onlyGroupId && groupBucket.group && groupBucket.group.id !== leaf.onlyGroupId) continue;
+          for (const item of groupBucket.features) {
+            setFeatureVisible(leaf.layerKey, item.id, visible);
+          }
+        }
+        seenLayers.add(leaf.layerKey);
+      }
+      for (const layerKey of seenLayers) renderFeatureList(layerKey);
+      renderEditorTreeCounts();
+    }
+
+    function renderEditorTreeCounts() {
+      if (!editorTreeBuilt) return;
+      for (const bucket of EDITOR_BUCKETS) {
+        let visible = 0;
+        let total = 0;
+        let stars = 0;
+        for (const leaf of bucket.leaves) {
+          const runtime = featureListRuntime[leaf.layerKey];
+          if (!runtime || !runtime.state) continue;
+          for (const groupBucket of runtime.state.groups) {
+            if (leaf.onlyGroupId && groupBucket.group && groupBucket.group.id !== leaf.onlyGroupId) continue;
+            for (const item of groupBucket.features) {
+              total += 1;
+              if (runtime.state.visibleIds.has(item.id)) visible += 1;
+              const props = item.feature && item.feature.properties;
+              if (props && props.highlight === true) stars += 1;
+            }
+          }
+        }
+        const countEl = document.querySelector(`[data-editor-bucket-count="${bucket.id}"]`);
+        if (countEl) {
+          if (total === 0) countEl.textContent = '—';
+          else if (stars > 0) countEl.textContent = `${visible}/${total} · ${stars} ★`;
+          else countEl.textContent = `${visible}/${total}`;
+        }
+        const bulkEl = document.querySelector(`[data-editor-bucket-bulk="${bucket.id}"]`);
+        if (bulkEl) {
+          bulkEl.checked = total > 0 && visible === total;
+          bulkEl.indeterminate = total > 0 && visible > 0 && visible < total;
+          bulkEl.disabled = total === 0;
+        }
+        const body = document.querySelector(`[data-editor-bucket-body="${bucket.id}"]`);
+        if (body) {
+          const existingEmpty = body.querySelector('.editor-bucket-empty');
+          if (total === 0 && !existingEmpty) {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'editor-bucket-empty';
+            placeholder.textContent = 'No items yet.';
+            body.append(placeholder);
+          } else if (total > 0 && existingEmpty) {
+            existingEmpty.remove();
+          }
+        }
       }
     }
-    wirePoiPanel();
+
+    function renderVisitorListGroup() {
+      if (!editorTreeBuilt) return;
+      const container = document.getElementById('editorVisitorList');
+      const countEl = document.getElementById('editorVisitorListCount');
+      if (!container || !countEl) return;
+      container.innerHTML = '';
+      const rows = [];
+      for (const layerKey of VISITOR_LIST_LAYERS) {
+        const runtime = featureListRuntime[layerKey];
+        if (!runtime || !runtime.state) continue;
+        const spec = FEATURE_LIST_LAYERS[layerKey];
+        for (const groupBucket of runtime.state.groups) {
+          for (const item of groupBucket.features) {
+            const props = item.feature && item.feature.properties;
+            if (!props || props.highlight !== true) continue;
+            rows.push({ layerKey, item, label: spec.rowLabel(item.props) });
+          }
+        }
+      }
+      rows.sort((a, b) => String(a.label || '').localeCompare(String(b.label || '')));
+      countEl.textContent = String(rows.length);
+      if (!rows.length) {
+        const empty = document.createElement('div');
+        empty.className = 'editor-bucket-empty';
+        empty.textContent = 'Nothing starred yet. Click ★ on any item to surface it here and in the left-rail POI tab.';
+        container.append(empty);
+        renderEditorTreeCounts();
+        return;
+      }
+      for (const row of rows) {
+        const r = document.createElement('div');
+        r.className = 'editor-visitor-list-row';
+        r.dataset.layerKey = row.layerKey;
+        r.dataset.featureId = String(row.item.id);
+        const name = document.createElement('span');
+        name.className = 'vrow-name';
+        name.textContent = row.label;
+        const chip = document.createElement('span');
+        chip.className = 'vrow-chip';
+        chip.textContent = VISITOR_LIST_SOURCE_CHIP[row.layerKey] || row.layerKey;
+        const fly = document.createElement('button');
+        fly.type = 'button';
+        fly.className = 'vrow-fly';
+        fly.title = 'Fly to feature';
+        fly.textContent = '🎯';
+        fly.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          flyToFeature(row.item.feature);
+        });
+        const star = document.createElement('button');
+        star.type = 'button';
+        star.className = 'vrow-star on';
+        star.title = 'Unstar — remove from Visitor list';
+        star.textContent = '★';
+        star.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          toggleFeatureHighlight(row.layerKey, row.item.id);
+        });
+        r.addEventListener('click', () => flyToFeature(row.item.feature));
+        r.append(name, chip, fly, star);
+        container.append(r);
+      }
+      renderEditorTreeCounts();
+    }
+
+    // buildEditorTree() is invoked once the featureListRuntime / FEATURE_LIST_LAYERS
+    // const declarations below are reachable; calling it from this position
+    // would trip the TDZ on those bindings. See the explicit call right
+    // after `const featureListRuntime = {};`.
 
     function poiIndexLookup(matchKey) {
       if (!poiIndex || !Array.isArray(poiIndex.entries)) return null;
@@ -2440,6 +2699,10 @@
       visitorContext: {
         label: 'Visitor context callouts',
         idField: 'name',
+        // Star surfaces a callout into the left-rail POI tab and the
+        // right-side Visitor list virtual group at the top of the editor.
+        // Default off — same curation gate as editor POIs.
+        highlightable: true,
         rowLabel: (props) => props.name || 'Visitor context',
         targetLayers: ['visitor-context-fill', 'visitor-context-outline', 'visitor-context-labels'],
         groups: [{
@@ -2561,6 +2824,9 @@
       brandLogos: {
         label: 'Brand logos',
         idField: 'logo_id',
+        // Star surfaces the logo as a visitor POI in the left-rail POI
+        // tab and in the right-side Visitor list virtual group. Default off.
+        highlightable: true,
         rowLabel: (props) => props.name || 'Logo',
         sizeEditable: true,
         targetLayers: ['brand-logos-icons'],
@@ -2598,8 +2864,11 @@
     function saveVisitorContextOverride(feature) {
       if (!feature || !feature.properties || !feature.geometry) return;
       const store = loadVisitorContextOverrides();
+      const existing = store[feature.properties.name] || {};
       store[feature.properties.name] = {
+        ...existing,
         geometry: JSON.parse(JSON.stringify(feature.geometry)),
+        highlight: feature.properties.highlight === true,
         updated: new Date().toISOString()
       };
       writeJsonStore(VISITOR_CONTEXT_OVERRIDE_KEY, store);
@@ -2610,9 +2879,11 @@
       const store = loadVisitorContextOverrides();
       for (const feature of data.features) {
         const name = feature.properties && feature.properties.name;
-        if (name && store[name] && store[name].geometry) {
-          feature.geometry = JSON.parse(JSON.stringify(store[name].geometry));
-        }
+        if (!name) continue;
+        const entry = store[name];
+        if (!entry) continue;
+        if (entry.geometry) feature.geometry = JSON.parse(JSON.stringify(entry.geometry));
+        if (entry.highlight === true) feature.properties.highlight = true;
       }
       return data;
     }
@@ -2657,9 +2928,12 @@
       if (!feature || !feature.properties || !feature.geometry) return;
       const size = brandLogoSize(feature);
       const store = loadBrandLogoOverrides();
+      const existing = store[feature.properties.logo_id] || {};
       store[feature.properties.logo_id] = {
+        ...existing,
         geometry: JSON.parse(JSON.stringify(feature.geometry)),
         icon_size: size,
+        highlight: feature.properties.highlight === true,
         updated: new Date().toISOString()
       };
       writeJsonStore(BRAND_LOGOS_OVERRIDE_KEY, store);
@@ -2670,12 +2944,14 @@
       const store = loadBrandLogoOverrides();
       for (const feature of data.features) {
         const id = feature.properties && feature.properties.logo_id;
-        if (id && store[id] && store[id].geometry) {
-          feature.geometry = JSON.parse(JSON.stringify(store[id].geometry));
+        if (!id) continue;
+        const entry = store[id];
+        if (!entry) continue;
+        if (entry.geometry) feature.geometry = JSON.parse(JSON.stringify(entry.geometry));
+        if (Number.isFinite(Number(entry.icon_size))) {
+          feature.properties.icon_size = Number(entry.icon_size);
         }
-        if (id && store[id] && Number.isFinite(Number(store[id].icon_size))) {
-          feature.properties.icon_size = Number(store[id].icon_size);
-        }
+        if (entry.highlight === true) feature.properties.highlight = true;
       }
       return data;
     }
@@ -2685,6 +2961,10 @@
     // Storage key for the persisted visibility set lives at the top of the
     // script with the others.
     const featureListRuntime = {};
+    // Now that the runtime and FEATURE_LIST_LAYERS are bound, build the
+    // unified editor tree. Registering tree targets here means any
+    // registerFeatureListLayer call later in boot lands rows in the tree.
+    buildEditorTree();
     // Active move-mode target. While set, the next map click commits the
     // staged feature to the clicked lngLat; Esc or the panel's Cancel button
     // reverts. Shared across consumers (POIs first; callouts + logos to come).
@@ -3055,6 +3335,12 @@
         // the active tab.
         saveEditorPois();
         refreshEditorSource();
+      } else if (layerKey === 'brandLogos') {
+        saveBrandLogoOverride(item.feature);
+        renderFeatureList(layerKey);
+      } else if (layerKey === 'visitorContext') {
+        saveVisitorContextOverride(item.feature);
+        renderFeatureList(layerKey);
       } else {
         renderFeatureList(layerKey);
       }
@@ -3137,8 +3423,8 @@
       // containing panel section is expanded so the move banner is visible.
       // (For drawer-rendered layers the drawer is already open by definition
       // — expandedTuneKey === layerKey — so nothing to do.)
-      const inlineTarget = FEATURE_LIST_TARGETS[layerKey];
-      if (inlineTarget) openContainingSection(inlineTarget);
+      const inlineTargets = FEATURE_LIST_TARGETS[layerKey];
+      if (inlineTargets && inlineTargets.length) openContainingSection(inlineTargets[0].target);
     }
 
     // --- Map → panel reveal --------------------------------------------
@@ -3168,13 +3454,14 @@
       //    "open the panel editor" promise would silently break. Expand
       //    first; the user can re-collapse if they want.
       if (panelCollapsed) togglePanel();
-      const dedicatedTarget = FEATURE_LIST_TARGETS[layerKey];
+      const dedicatedTargets = FEATURE_LIST_TARGETS[layerKey];
       // 1. Make sure the list is on screen. Layers with their own inline home
-      //    (editor POIs in the Map editor section) need that panel section
+      //    (editor POIs / brand logos / visitor context / event-schedule rows
+      //    all live in the unified Map editor tree) need that panel section
       //    expanded; layers that render into the drawer's #featureList need
       //    the drawer popped for this layer.
-      if (dedicatedTarget) {
-        openContainingSection(dedicatedTarget);
+      if (dedicatedTargets && dedicatedTargets.length) {
+        openContainingSection(dedicatedTargets[0].target);
       } else if (expandedTuneKey !== layerKey) {
         // toggleTunableExpansion collapses on a second hit, so guard.
         if (typeof toggleTunableExpansion === 'function') {
@@ -3300,12 +3587,26 @@
       rebuildTagLookup();
       rebuildEventScheduleData();
       renderPoiTabIfActive();
+      // Editor-tree targets are always visible — push a render so a fresh
+      // data load (or re-register) repaints the bucket leaves and the
+      // Visitor list virtual group without waiting for a drawer expansion.
+      if (FEATURE_LIST_TARGETS[layerKey]) renderFeatureList(layerKey);
     }
 
-    // Render the feature list DOM into the shared #featureList container in
-    // the layer editor drawer. Called when the active tunable layer changes.
+    // Render the feature list DOM. A layer can be registered to render into
+    // multiple targets (the unified editor tree leverages this for editorPois,
+    // which renders three times — once per geometry bucket). Each registered
+    // target can carry an `onlyGroupId` to filter the runtime groups down
+    // to one bucket.
     function renderFeatureList(layerKey) {
-      const target = featureListTargetFor(layerKey);
+      const targets = featureListTargetsFor(layerKey);
+      for (const entry of targets) {
+        renderFeatureListInto(entry.target, layerKey, { onlyGroupId: entry.onlyGroupId });
+      }
+      if (typeof renderVisitorListGroup === 'function') renderVisitorListGroup();
+    }
+
+    function renderFeatureListInto(target, layerKey, opts) {
       if (!target) return;
       target.innerHTML = '';
       const runtime = featureListRuntime[layerKey];
@@ -3316,41 +3617,54 @@
       const spec = FEATURE_LIST_LAYERS[layerKey];
       const movable = typeof spec.onMove === 'function';
       const highlightable = spec.highlightable === true;
-      const totalCount = runtime.state.groups.reduce((sum, b) => sum + b.features.length, 0);
-      const heading = document.createElement('div');
-      heading.className = 'feature-list-heading';
-      const highlightCount = highlightable
-        ? runtime.state.groups.reduce((sum, b) => sum + b.features.filter((f) => f.feature && f.feature.properties && f.feature.properties.highlight === true).length, 0)
-        : 0;
-      heading.innerHTML = highlightable
-        ? `<span>Features</span><span class="feature-list-count">${runtime.state.visibleIds.size} of ${totalCount} visible · ${highlightCount} ★ to visitors</span>`
-        : `<span>Features</span><span class="feature-list-count">${runtime.state.visibleIds.size} of ${totalCount} visible</span>`;
-      target.append(heading);
-
-      // Move-mode banner — only when this layer is the active move target.
-      // Pinned above the rows so it stays visible even on a long list.
-      if (moveState && moveState.layerKey === layerKey) {
-        const moveItem = findFeatureById(layerKey, moveState.featureId);
-        const targetName = moveItem ? spec.rowLabel(moveItem.props) : 'feature';
-        const banner = document.createElement('div');
-        banner.className = 'feature-list-move-banner';
-        banner.dataset.moveBanner = layerKey;
-        const text = document.createElement('span');
-        text.textContent = `Move mode — click on map to place ${targetName}. Esc to cancel.`;
-        const cancelBtn = document.createElement('button');
-        cancelBtn.type = 'button';
-        cancelBtn.className = 'move-cancel';
-        cancelBtn.textContent = 'Cancel';
-        cancelBtn.addEventListener('click', (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          cancelMoveMode();
-        });
-        banner.append(text, cancelBtn);
-        target.append(banner);
+      const onlyGroupId = opts && opts.onlyGroupId;
+      // Filter the runtime groups to one bucket when onlyGroupId is set.
+      const renderedGroups = onlyGroupId
+        ? runtime.state.groups.filter((b) => b.group && b.group.id === onlyGroupId)
+        : runtime.state.groups;
+      const totalCount = renderedGroups.reduce((sum, b) => sum + b.features.length, 0);
+      // When filtering to one group there's no need for the full Features
+      // heading — the enclosing bucket head carries the count.
+      if (!onlyGroupId) {
+        const heading = document.createElement('div');
+        heading.className = 'feature-list-heading';
+        const highlightCount = highlightable
+          ? renderedGroups.reduce((sum, b) => sum + b.features.filter((f) => f.feature && f.feature.properties && f.feature.properties.highlight === true).length, 0)
+          : 0;
+        const visibleInGroups = renderedGroups.reduce((sum, b) => sum + b.features.filter((f) => runtime.state.visibleIds.has(f.id)).length, 0);
+        heading.innerHTML = highlightable
+          ? `<span>Features</span><span class="feature-list-count">${visibleInGroups} of ${totalCount} visible · ${highlightCount} ★ to visitors</span>`
+          : `<span>Features</span><span class="feature-list-count">${visibleInGroups} of ${totalCount} visible</span>`;
+        target.append(heading);
       }
 
-      for (const bucket of runtime.state.groups) {
+      // Move-mode banner — only when this layer is the active move target
+      // and the moved feature is inside one of the rendered groups.
+      if (moveState && moveState.layerKey === layerKey) {
+        const moveItem = findFeatureById(layerKey, moveState.featureId);
+        const inRendered = !onlyGroupId || renderedGroups.some((b) => b.features.some((f) => String(f.id) === String(moveState.featureId)));
+        if (inRendered) {
+          const targetName = moveItem ? spec.rowLabel(moveItem.props) : 'feature';
+          const banner = document.createElement('div');
+          banner.className = 'feature-list-move-banner';
+          banner.dataset.moveBanner = layerKey;
+          const text = document.createElement('span');
+          text.textContent = `Move mode — click on map to place ${targetName}. Esc to cancel.`;
+          const cancelBtn = document.createElement('button');
+          cancelBtn.type = 'button';
+          cancelBtn.className = 'move-cancel';
+          cancelBtn.textContent = 'Cancel';
+          cancelBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            cancelMoveMode();
+          });
+          banner.append(text, cancelBtn);
+          target.append(banner);
+        }
+      }
+
+      for (const bucket of renderedGroups) {
         const group = bucket.group;
         const groupEl = document.createElement('div');
         groupEl.className = 'feature-list-group';
@@ -3817,8 +4131,8 @@
     function setEditorFeatureNotes(featureId, value) {
       const target = editorPois.find((f) => f.properties && String(f.properties.id) === String(featureId));
       if (!target) return;
-      const trimmed = String(value || '');
-      if (trimmed) target.properties.notes = trimmed;
+      const next = String(value || '').trim();
+      if (next) target.properties.notes = next;
       else delete target.properties.notes;
       saveEditorPois();
       refreshEditorSource();
@@ -4547,9 +4861,10 @@
       renderTuneControls(config);
       if (sfwdaDrawerControls) sfwdaDrawerControls.hidden = config.drawerControls !== sfwdaDrawerControls;
       // Feature list slot. Only layers registered in FEATURE_LIST_LAYERS
-      // AND without their own inline target render into the drawer. Editor
-      // POIs render into #editorPoiList in the Map editor section instead,
-      // so the drawer for that layer shows only the paint sliders.
+      // AND without their own tree targets render into the drawer's
+      // #featureList. Editor POIs / brand logos / visitor-context callouts /
+      // event-schedule anchors all live in the unified Map editor tree, so
+      // their drawer shows only the paint sliders.
       if (FEATURE_LIST_LAYERS[expandedTuneKey] && !FEATURE_LIST_TARGETS[expandedTuneKey]) {
         renderFeatureList(expandedTuneKey);
       } else if (featureListEl) {

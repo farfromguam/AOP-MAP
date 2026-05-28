@@ -189,41 +189,27 @@ def main() -> int:
             "POI tab groups list at least one labelled section",
             page.locator("#poiList .poi-list-group").count() >= 1,
         )
-        # Right-panel POI section — parallel to the left tab, group-level
-        # visibility toggles two-way bound to source-layer toggles.
-        page.locator('section[data-section="poi"] .section-toggle').click()
-        poi_section_rows = page.locator('#poiGroupToggles input[data-poi-target]').count()
+        # Right-panel Map editor section — unified bucket tree. The legacy
+        # POI section (`data-section="poi"`) was retired by the unified-tree
+        # card; the editor now carries a five-bucket tree (Point / Line /
+        # Polygon / Image / Callout) plus a ★ Visitor list virtual group.
         check(
-            "right-panel POI section exposes six group toggles",
-            poi_section_rows == 6,
-            f"rows={poi_section_rows}",
+            "legacy POI section is gone",
+            page.locator('section[data-section="poi"]').count() == 0,
         )
-        # Flip Cemeteries on via the POI section, confirm the source toggle mirrors.
-        cem_before = page.evaluate(
-            "() => ({ poi: document.getElementById('poiGroupCemeteries').checked, src: document.getElementById('showCemeteries').checked })"
-        )
-        page.locator("#poiGroupCemeteries").click()
+        page.locator('section[data-section="editor"] .section-toggle').click()
         page.wait_for_timeout(150)
-        cem_after = page.evaluate(
-            "() => ({ poi: document.getElementById('poiGroupCemeteries').checked, src: document.getElementById('showCemeteries').checked, layer: map.getLayoutProperty('cemetery-fill', 'visibility') })"
+        bucket_ids = page.locator('#editorTree .editor-bucket').evaluate_all(
+            "els => els.map((el) => el.dataset.bucket)"
         )
         check(
-            "POI section -> source toggle propagates",
-            (not cem_before["poi"]) and cem_after["poi"] and cem_after["src"] and cem_after["layer"] == "visible",
-            f"before={cem_before} after={cem_after}",
-        )
-        # Reverse direction — flip source toggle from JS, POI section mirrors.
-        page.evaluate(
-            "() => { const c = document.getElementById('showCemeteries'); c.checked = false; c.dispatchEvent(new Event('change', { bubbles: true })); }"
-        )
-        page.wait_for_timeout(150)
-        cem_after2 = page.evaluate(
-            "() => ({ poi: document.getElementById('poiGroupCemeteries').checked, src: document.getElementById('showCemeteries').checked })"
+            "editor tree renders the five kind buckets plus visitor list",
+            bucket_ids == ["visitor-list", "point", "line", "polygon", "image", "callout"],
+            f"buckets={bucket_ids}",
         )
         check(
-            "source toggle -> POI section mirrors",
-            (not cem_after2["poi"]) and (not cem_after2["src"]),
-            f"after={cem_after2}",
+            "editor visitor-list container exists",
+            page.locator('#editorVisitorList').count() == 1,
         )
         page.locator("#leftTabEvents").click()
         schedule_rows = page.locator("#calendarBody .calendar-row").evaluate_all(

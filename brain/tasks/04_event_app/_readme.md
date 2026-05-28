@@ -22,6 +22,7 @@ The goal is not to reopen every Sprint 03 card. The shipped cards move to
 - `poi_editor_followups.md` - drawn-POI accordion follow-ups that did not need to block Sprint 03.
 - `brand_assets_and_permissions.md` - raster cleanup and brand-use permission posture.
 - `park_bounds_icon_apply.md` - pick one boundary-derived Park icon and wire it into the viewer.
+- `editor_unified_tree.md` - combine the right rail's POI and Map editor sections into one tree by base type (Point / Line / Polygon / Image / Callout) with a live ★ Visitor list group.
 
 ## Extraction map
 

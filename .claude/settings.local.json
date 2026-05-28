@@ -21,7 +21,9 @@
       "Bash(python3 mvp/scripts/playwright_verify_poi_editor.py)",
       "Bash(echo \"EXIT=$?\")",
       "Bash(pkill -f \"python3 -m http.server 8001\")",
-      "Bash(python3 /tmp/poi_editor_diag.py)"
+      "Bash(python3 /tmp/poi_editor_diag.py)",
+      "Bash(python3 -u mvp/scripts/playwright_verify_session_tools.py)",
+      "Bash(python3 -u mvp/scripts/playwright_verify_synthetic_activity.py)"
     ]
   }
 }

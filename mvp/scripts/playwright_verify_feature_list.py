@@ -112,12 +112,12 @@ def visible_count_in_source(page, geojson_url: str, layer_id: str, id_field: str
 
 
 def open_layer_editor(page, tune_key: str) -> None:
-    # Editor POIs render into their own inline target inside the Map editor
-    # section, not into the drawer's #featureList. Make sure that section
-    # is expanded so the inline list is visible and its innerText is
-    # readable (the move banner is a hidden-text read). For all other
-    # tune_keys, expand the drawer the old way.
-    if tune_key == "editorPois":
+    # Editor-tree layers (editorPois, brandLogos, visitorContext, eventSchedule)
+    # render into bucket-scoped slots inside the Map editor section's
+    # #editorTree. Make sure that section is expanded so the slot is visible.
+    # Drawer-only layers (cemeteries, buildings, etc.) still expand via
+    # toggleTunableExpansion.
+    if tune_key in {"editorPois", "brandLogos", "visitorContext", "eventSchedule"}:
         page.evaluate(
             """() => {
               const section = document.querySelector('section[data-section="editor"]');
@@ -140,13 +140,47 @@ def open_layer_editor(page, tune_key: str) -> None:
 
 
 def feature_list_summary(page, tune_key: str = None) -> dict:
-    # editorPois lives in #editorPoiList; everything else lives in the
-    # shared drawer #featureList. Helper picks the right container so
-    # call sites can stay schema-agnostic.
-    container_id = "editorPoiList" if tune_key == "editorPois" else "featureList"
+    # Editor-tree layers (editorPois, brandLogos, visitorContext, eventSchedule)
+    # render into bucket-scoped slots inside #editorTree. Drawer-only layers
+    # (cemeteries, buildings, activityHotspots, syntheticActivity) still
+    # render into the shared drawer #featureList. The helper auto-routes
+    # using the tune_key.
+    tree_layers = {"editorPois", "brandLogos", "visitorContext", "eventSchedule"}
+    if tune_key in tree_layers:
+        return page.evaluate(
+            """(layerKey) => {
+              const tree = document.getElementById('editorTree');
+              if (!tree) return { open: false };
+              const slots = [...tree.querySelectorAll(`.feature-list[data-editor-leaf]`)].filter(
+                (slot) => slot.dataset.editorLeaf.includes('-' + layerKey)
+              );
+              if (!slots.length || slots.every((s) => s.hidden)) return { open: false };
+              const rows = [];
+              const groups = [];
+              for (const slot of slots) {
+                for (const g of slot.querySelectorAll('.feature-list-group')) {
+                  const groupRows = [...g.querySelectorAll('.feature-row')].map((r) => ({
+                    id: r.dataset.featureId,
+                    name: r.querySelector('.feature-name')?.textContent,
+                    checked: r.querySelector('input[type=checkbox]')?.checked
+                  }));
+                  rows.push(...groupRows);
+                  groups.push({
+                    id: g.dataset.groupId,
+                    label: g.querySelector('.group-name')?.textContent || null,
+                    count: g.querySelector('.group-count')?.textContent || null,
+                    rows: groupRows
+                  });
+                }
+              }
+              const aggregated = [{ id: 'all', label: null, count: String(rows.length), rows }];
+              return { open: true, headingText: '', groups: aggregated, perGroup: groups };
+            }""",
+            tune_key,
+        )
     return page.evaluate(
-        """(rootId) => {
-          const root = document.getElementById(rootId);
+        """() => {
+          const root = document.getElementById('featureList');
           if (!root || root.hidden) return { open: false };
           const headingText = root.querySelector('.feature-list-heading')?.innerText || '';
           const groups = [...root.querySelectorAll('.feature-list-group')].map((g) => ({
@@ -160,8 +194,7 @@ def feature_list_summary(page, tune_key: str = None) -> dict:
             }))
           }));
           return { open: true, headingText, groups };
-        }""",
-        container_id,
+        }"""
     )
 
 
@@ -633,7 +666,7 @@ def main() -> int:
         page.wait_for_timeout(500)
         set_toggle(page, "showVisitorContext", True)
         open_layer_editor(page, "visitorContext")
-        vc_summary = feature_list_summary(page)
+        vc_summary = feature_list_summary(page, "visitorContext")
         check("visitor-context panel opens", vc_summary.get("open") is True)
         vc_rows = vc_summary["groups"][0]["rows"] if vc_summary.get("groups") else []
         check("visitor-context list shows 2 rows", len(vc_rows) == 2, str(len(vc_rows)))
@@ -858,13 +891,31 @@ def main() -> int:
               str(state["revealedIds"]))
 
         close_any_drawer()
+        # Visitor-context callouts live in the unified Map editor tree (the
+        # Callout bucket) since the editor_unified_tree card, so reveal opens
+        # the editor section rather than the legacy drawer.
+        page.evaluate(
+            """() => {
+              const section = document.querySelector('section[data-section="editor"]');
+              if (section && !section.classList.contains('collapsed')) {
+                section.querySelector('.section-toggle')?.click();
+              }
+            }"""
+        )
+        page.wait_for_timeout(120)
         page.evaluate(
             "() => revealFeatureInPanel('visitorContext', 'Monteagle plateau services')"
         )
         page.wait_for_timeout(200)
         state = reveal_state()
-        check("visitor-context drawer expanded after callout reveal",
-              state["expanded"] == "visitorContext", str(state))
+        editor_section_open = page.evaluate(
+            """() => {
+              const section = document.querySelector('section[data-section="editor"]');
+              return !!section && !section.classList.contains('collapsed');
+            }"""
+        )
+        check("Map editor section opened after callout reveal",
+              editor_section_open is True, str(editor_section_open))
         check("Monteagle row flashed",
               "Monteagle plateau services" in state["revealedIds"],
               str(state["revealedIds"]))
@@ -921,8 +972,17 @@ def main() -> int:
                          canvas_box["y"] + monteagle_pixel[1])
         page.wait_for_timeout(400)
         state = reveal_state()
-        check("clicking the callout on the map opened its drawer",
-              state["expanded"] == "visitorContext", str(state))
+        # Same logic as the synthetic reveal above: visitor-context now lives
+        # in the editor tree, so the click opens the Map editor section
+        # rather than the drawer.
+        editor_section_open = page.evaluate(
+            """() => {
+              const section = document.querySelector('section[data-section="editor"]');
+              return !!section && !section.classList.contains('collapsed');
+            }"""
+        )
+        check("clicking the callout on the map opened the Map editor section",
+              editor_section_open is True, str(editor_section_open))
         check("clicking the callout flashed its row",
               "Monteagle plateau services" in state["revealedIds"],
               str(state["revealedIds"]))
