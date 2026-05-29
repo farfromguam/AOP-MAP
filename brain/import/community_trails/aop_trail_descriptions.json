@@ -1,0 +1,115 @@
+{
+  "schema": "aop_trail_descriptions_v1",
+  "compiled": "2026-05-29",
+  "about": "Harvested descriptions for AOP numbered trails. AOP identifies trails by NUMBER; names below are onX-contributor-applied labels (NOT the park's nomenclature) except #96 which is the park's own 2015 blog wording. Raw zone only — do NOT promote to publish.* without source_register rows + license clearance (onX text is onX-copyright; #96 is AOP-copyright-via-Wayback).",
+  "difficulty_legend": "Park map: green circle = Easy, blue square = Moderate, black triangle = Difficult. onX technical rating (TR) 1-10 shown where known.",
+  "trails": [
+    {
+      "number": 1,
+      "name": "Launchpad",
+      "name_source": "onX",
+      "difficulty": "Easy",
+      "tr": 2,
+      "length_mi": 1.2,
+      "description": "AOP 1 - Launchpad begins with a fine dirt-filled trail with a slight uphill climb. Once you make it to Area 51, there is lots of loose rock that makes you feel like you're driving on a cobblestone road.",
+      "connects": [18, 50, 3, 22],
+      "source": "https://www.onxmaps.com/offroad/trails/us/tennessee/1-launchpad",
+      "license": "onX-copyright"
+    },
+    {
+      "number": 2,
+      "name": "Convergence",
+      "name_source": "onX",
+      "difficulty": "Easy",
+      "description": "AOP's trail 2 - Convergence is an easy route that peels off of trail 1 - Launch Pad and curves around towards the buggy side of the park. Trail 2 is a convergence point for water that runs off the mountain and feeds into the nearby Battle Creek.",
+      "connects": [1],
+      "source": "https://www.onxmaps.com/offroad/trails/us/tennessee/2-convergence",
+      "license": "onX-copyright"
+    },
+    {
+      "number": 3,
+      "name": "Major Tom",
+      "name_source": "onX",
+      "difficulty": "Easy / casual",
+      "description": "3 - Major Tom is an excellent trail on the more casual side that can be underestimated. At the same time, Major Tom is a more accessible trail that can sometimes lead to complacency for a starter vehicle or one with less ground clearance.",
+      "source": "https://www.onxmaps.com/offroad/trails/us/tennessee/3-major-tom",
+      "license": "onX-copyright"
+    },
+    {
+      "number": 5,
+      "name": "Lifeform",
+      "name_source": "onX",
+      "difficulty": "Easy",
+      "description": "AOP Trail 5 - Lifeform is a peaceful uphill climbing connector trail. Trail 5 features small rocks, exposed roots, and curving bends that bring you out to Trail 3.",
+      "connects": [3],
+      "source": "https://www.onxmaps.com/offroad/trails/us/tennessee/5-lifeform",
+      "license": "onX-copyright"
+    },
+    {
+      "number": 6,
+      "name": "Descension",
+      "name_source": "onX",
+      "difficulty": "Moderate",
+      "tr": 6,
+      "description": "AOP trail 6 - Descension is a mild downhill trail that starts off as a dirt flat, and ends with a deeply rutted and eroded section. The bottom half rut also has an exposed tree root.",
+      "source": "https://www.onxmaps.com/offroad/trails/us/tennessee/6-descension",
+      "license": "onX-copyright"
+    },
+    {
+      "number": 7,
+      "name": "Ascension",
+      "name_source": "onX",
+      "difficulty": "Moderate",
+      "tr": 5,
+      "description": "AOP 7 - Ascension can be quite a slippery slope when wet. When the trail is dry it is a fun hill climb for all vehicle types.",
+      "source": "https://www.onxmaps.com/offroad/trails/us/tennessee/7-ascension",
+      "license": "onX-copyright"
+    },
+    {
+      "number": 9,
+      "name": "Little Dipper",
+      "name_source": "onX",
+      "difficulty": "Easy",
+      "tr": 2,
+      "description": "AOP trail 9 - Little Dipper is a full loop trail that connects back to itself, but also connects to a few other more difficult trails. Trail 9 - Little Dipper is mostly flat throughout with little to no obstacles.",
+      "source": "https://www.onxmaps.com/offroad/trails/us/tennessee/9-little-dipper",
+      "license": "onX-copyright"
+    },
+    {
+      "number": 11,
+      "name": "Ground Control",
+      "name_source": "onX",
+      "difficulty": "Easy",
+      "tr": 3,
+      "length_mi": 0.3,
+      "description": "AOP trail 11 - Ground Control is like a child's roller coaster - slightly uphill then back down over and over. Trail 11 - Ground Control has concentrated clusters of rock, however none are difficult to traverse.",
+      "source": "https://www.onxmaps.com/offroad/trails/us/tennessee/11-ground-control",
+      "license": "onX-copyright"
+    },
+    {
+      "number": 96,
+      "name": null,
+      "name_source": null,
+      "difficulty": "Moderate",
+      "color": "Blue",
+      "description": "Trail 96 is a Blue, or moderate difficulty trail. This trail is a short loop that contains many rock and ledge obstacles that challenge drivers to negotiate angles and clearance. This trail is passable by modified Jeeps and Trucks. (Video shot at Trailfest 2015.)",
+      "source": "http://web.archive.org/web/20151004023339/http://www.adventureoffroadpark.com/blog/aop-trail-96/",
+      "source_note": "Park's own 2015 BigCommerce blog post — the only per-trail writeup the park ever published. Refers to the trail by number only, no name.",
+      "license": "AOP-copyright (via Wayback)"
+    }
+  ],
+  "named_landmarks": [
+    {"name": "Area 51", "note": "Loose-rock zone on Trail 1 (Launchpad)", "source": "onX trail 1"},
+    {"name": "Battle Creek", "note": "Creek fed by runoff via Trail 2; off-park watershed", "source": "onX trail 2"},
+    {"name": "Lesson Zone", "note": "Labeled near Buggy Entrance on the current official map", "source": "official 2025 map"},
+    {"name": "Riot Hill", "note": "Labeled on the SFWDA 2015 map (near Freeze Zone)", "source": "SFWDA 2015 map"},
+    {"name": "Freeze Zone", "note": "Labeled on the SFWDA 2015 map, buggy/hardcore area", "source": "SFWDA 2015 map"},
+    {"name": "Bounty Hill", "note": "Event obstacle ($5,000 Bounty Hill / Motive Gear Bounty Hill) — bounty-run feature, not a numbered trail", "source": "AOP 2015 blog"},
+    {"name": "Jeep Entrance", "note": "Map label", "source": "official map"},
+    {"name": "Buggy Entrance", "note": "Map label", "source": "official map"},
+    {"name": "Jackson Point", "note": "OSM named point inside park polygon", "source": "OSM 9-patch"},
+    {"name": "Smithtown", "note": "OSM named feature", "source": "OSM 9-patch"},
+    {"name": "Pinhook", "note": "OSM named feature", "source": "OSM 9-patch"},
+    {"name": "Stagecoach Road", "note": "OSM named way", "source": "OSM 9-patch"}
+  ]
+}

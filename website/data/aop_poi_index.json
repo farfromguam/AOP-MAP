@@ -5,6 +5,11 @@
   "match_fields": "Each entry matches a feature by `source` (which layer/dataset it lives in) plus one identifying property. Order in `entries` is the order rows render under each group when no other sort is applied.",
   "groups": [
     {
+      "id": "published_destinations",
+      "label": "Published destinations",
+      "note": "The ★ POI set baked from PostGIS: core.pois rows cleared by the publish.pois gate, exported into publish.geojson. This is the SERVE end of the one pipeline; the groups below are the legacy per-layer scaffolding it will eventually replace. Blurbs for these rows live in the DB, not in this file."
+    },
+    {
       "id": "event_anchors",
       "label": "Event anchors",
       "note": "Friday 2026-06-19 Rock Warblers schedule. All currently 'proposed' until AOP confirms; see aop_event_schedule.json."
@@ -17,7 +22,7 @@
     {
       "id": "trails",
       "label": "Trails",
-      "note": "Currently observed-ride evidence from the Saturday Afternoon GPX. SFWDA paper-map numbered trails are still owed; see brain/tasks/01_mvp/_done/community_trails_import.md."
+      "note": "Currently observed-ride evidence from the Saturday Afternoon GPX. Numbered-trail names/descriptions are being assembled in aop_trail_catalog.json (9 trails curated so far); they wire in here once real per-trail geometry is digitized. SFWDA paper-map numbered trails still owed; see brain/tasks/01_mvp/_done/community_trails_import.md."
     },
     {
       "id": "cemeteries",

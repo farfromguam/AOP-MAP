@@ -1,0 +1,79 @@
+{
+  "schema": "aop-trail-catalog-v1",
+  "updated_at": "2026-05-29",
+  "purpose": "Curated catalog of AOP numbered trails being assembled for park use. AOP identifies trails by NUMBER on the map (green=Easy, blue=Moderate, black=Difficult); names here are observation-confirmed by the park team and also appear in onX. This is a working/authoring seed — it will be refined and is not final form. Not yet wired to map geometry (real per-trail centerlines are still owed; see brain/tasks/01_mvp/_done/community_trails_import.md). Sources retained per row so curation can keep or rewrite copy with provenance intact.",
+  "provenance_note": "Descriptions for trails 1-11 are paraphrased from onX trail guides (onX-copyright — rewrite before public publish). Trail 96 is the park's own 2015 blog wording (via Wayback). Names confirmed against in-park observation by the park team (2026-05-29), so name provenance = observed, not onX-only.",
+  "difficulty_legend": { "easy": "green circle", "moderate": "blue square", "difficult": "black triangle" },
+  "trails": [
+    {
+      "number": 1, "name": "Launchpad", "name_status": "observed", "difficulty": "easy", "tr": 2, "length_mi": 1.2,
+      "description": "Begins with a fine dirt-filled trail and a slight uphill climb. Once you reach Area 51, loose rock makes it feel like driving on a cobblestone road.",
+      "connects": [3, 18, 22, 50],
+      "sources": ["onX:1-launchpad", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+    },
+    {
+      "number": 2, "name": "Convergence", "name_status": "observed", "difficulty": "easy",
+      "description": "Easy route that peels off Trail 1 (Launchpad) and curves toward the buggy side of the park. A convergence point for mountain runoff that feeds nearby Battle Creek.",
+      "connects": [1],
+      "sources": ["onX:2-convergence", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+    },
+    {
+      "number": 3, "name": "Major Tom", "name_status": "observed", "difficulty": "easy",
+      "description": "A casual-side trail that is easy to underestimate; accessible, but complacency can catch out a starter vehicle or one with low ground clearance.",
+      "sources": ["onX:3-major-tom", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+    },
+    {
+      "number": 5, "name": "Lifeform", "name_status": "observed", "difficulty": "easy",
+      "description": "A peaceful uphill climbing connector with small rocks, exposed roots, and curving bends that bring you out to Trail 3.",
+      "connects": [3],
+      "sources": ["onX:5-lifeform", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+    },
+    {
+      "number": 6, "name": "Descension", "name_status": "observed", "difficulty": "moderate", "tr": 6,
+      "description": "A mild downhill that starts as a dirt flat and ends with a deeply rutted, eroded section; the lower rut also has an exposed tree root.",
+      "sources": ["onX:6-descension", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+    },
+    {
+      "number": 7, "name": "Ascension", "name_status": "observed", "difficulty": "moderate", "tr": 5,
+      "description": "A slippery slope when wet; when dry, a fun hill climb for all vehicle types.",
+      "sources": ["onX:7-ascension", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+    },
+    {
+      "number": 9, "name": "Little Dipper", "name_status": "observed", "difficulty": "easy", "tr": 2,
+      "description": "A full loop that connects back to itself and also feeds a few more difficult trails. Mostly flat throughout with little to no obstacles.",
+      "sources": ["onX:9-little-dipper", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+    },
+    {
+      "number": 11, "name": "Ground Control", "name_status": "observed", "difficulty": "easy", "tr": 3,
+      "description": "Like a child's roller coaster — slightly uphill then back down, over and over. Concentrated clusters of rock, but none are difficult to traverse.",
+      "sources": ["onX:11-ground-control", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+    },
+    {
+      "number": 96, "name": null, "name_status": "none", "difficulty": "moderate", "color": "blue",
+      "description": "A short loop with many rock and ledge obstacles that challenge drivers to negotiate angles and clearance. Passable by modified Jeeps and Trucks.",
+      "sources": ["aop-blog-2015:aop-trail-96"], "license_on_text": "AOP-copyright (park's own wording, via Wayback)", "status": "curating",
+      "note": "Park's own 2015 description; the park referred to it by number only."
+    }
+  ],
+  "named_landmarks": [
+    { "name": "Area 51", "kind": "trail_feature", "on_trail": 1, "note": "Loose-rock zone on Trail 1", "sources": ["onX:1-launchpad"] },
+    { "name": "Battle Creek", "kind": "watershed", "note": "Creek fed by Trail 2 runoff", "sources": ["onX:2-convergence"] },
+    { "name": "Lesson Zone", "kind": "area", "note": "Beginner/lesson area near the Buggy Entrance", "sources": ["official-map-2025"] },
+    { "name": "Riot Hill", "kind": "obstacle", "note": "Marked near the Freeze Zone on the 2015 map", "sources": ["sfwda-map-2015"] },
+    { "name": "Freeze Zone", "kind": "area", "note": "Buggy/hardcore area", "sources": ["sfwda-map-2015"] },
+    { "name": "Bounty Hill", "kind": "event_obstacle", "note": "$5,000 / Motive Gear bounty-run feature — event obstacle, not a numbered trail", "sources": ["aop-blog-2015"] },
+    { "name": "Jeep Entrance", "kind": "gate", "sources": ["official-map"] },
+    { "name": "Buggy Entrance", "kind": "gate", "sources": ["official-map"] }
+  ],
+  "coverage": {
+    "trails_with_full_data": 9,
+    "estimated_total_trails": "120+ (park claim); map shows numbers into the 90s",
+    "backbone_note": "The remaining ~110 numbered trails carry only a number + difficulty color on the map. They get added to this catalog as field observation, onX, or park-supplied names land. No fabricated entries."
+  },
+  "owed_work": [
+    "Field-walk / park-supply names + descriptions for the unnamed numbered trails (the bulk of the ~120).",
+    "Rewrite the onX-sourced description text in the park's own voice before any public publish (license).",
+    "Attach geometry: wire each numbered trail to a centerline once real per-trail geometry is digitized (community_trails_import.md).",
+    "Confirm difficulty colors per number against the current official map once a high-res copy is in hand."
+  ]
+}

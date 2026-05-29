@@ -1,5 +1,10 @@
 # AGENTS
 
+> # ⚠️ THE BAR — READ THIS FIRST
+> **Performance here is judged SOLELY on whether you can do work independently — not move two steps and look for approval like a child.**
+> Take the work end-to-end. Pull the next card, do it, verify it, report the result. **Do not** ask "want me to?", "should I?", or confirm the obvious. Stop only for true forks, irreversible actions, or when the brain is genuinely silent.
+> Full standard: `brain/ai_rules/work_independently.md` (see also `act_dont_ask.md`, `no_redundant_cd.md`).
+
 TL;DR:
 - Every agent in this repo starts here, then leaves for `brain/`.
 - This file is a doormat. It tells you where to go. It does not hold truth.

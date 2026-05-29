@@ -27,6 +27,9 @@ around the two-parcel working envelope; see `research/aop_data_bounds.md`).
 | `osm_aop_9patch_named.geojson` | Filtered subset: 5 named features (`Adventure Off Road Park` polygon, `Jackson Point`, `Smithtown`, `Pinhook`, `Stagecoach Road`) | derived | ODbL | medium-high (names) / medium (geometry) | cross-reference against RiderPlanet landmark list |
 | `sfwda_aop_trail_map_2015-03-11.webp` | SFWDA archived AOP trail map raster (original served as WebP despite `.jpg` extension) | https://www.sfwda.org/aop image asset | (c) Adventure Off Road Park (per SFWDA page) | high for **shape**, low for **current trails** | georeference as raster overlay only; do not redistribute |
 | `sfwda_aop_trail_map_2015-03-11.png` | Same image converted to PNG for downstream tooling | derived | as above | as above | as above |
+| `aop_official_trail_map_2025-11.webp` / `.png` | **Current** official AOP trail map (≈Nov 2025), pulled by rendering the `/trails` SPA. Same numbers-only scheme as 2015. | adventureoffroadpark.com `/assets/AOP MAP_1764447008903…` | (c) Adventure Off Road Park | high for **current shape**, none for **names** (numbers only) | georeference as raster overlay only; do not redistribute |
+| `aop_official_map_rules_2025-11.pdf` | Official 4-page Map+Rules PDF (page 1 = same map, 2–4 = rules) | adventureoffroadpark.com `/assets/AOP Map_Rules_1764607479109…` | as above | reference | do not redistribute |
+| `aop_trail_descriptions.json` | Harvested prose for 9 numbered trails (8 AOP via onX `og:description` + park's own Trail 96 via Wayback) + named-landmark list. See `research/aop_trail_name_index.md`. | onX trail pages; AOP 2015 blog (Wayback) | onX-copyright (8 trails); AOP-copyright-via-Wayback (#96) | high for those 9; names are onX labels not park nomenclature | raw only — no promote to publish.* without source rows + license clearance |
 
 ## Sources known but not pulled (need login / JS / permission)
 

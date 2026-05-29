@@ -9,6 +9,10 @@ services:
       POSTGRES_DB: aop_map
     volumes:
       - ./db-data:/var/lib/postgresql/data
+      # initdb.d runs *.sql in sorted order on a fresh volume:
+      # init_db.sql (schema) sorts before seed_core_pois.sql (dev fixture data),
+      # so a fresh dev DB comes up with the destination POI rows already seeded.
       - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
+      - ./scripts/seed_core_pois.sql:/docker-entrypoint-initdb.d/seed_core_pois.sql:ro
     ports:
       - "${AOP_DB_HOST_PORT:-55432}:5432"

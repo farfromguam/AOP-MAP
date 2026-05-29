@@ -826,6 +826,7 @@
           <div class="comparisons-list">
             <a href="leftrail_compare_v2.html" target="_blank" rel="noopener">Left rail — element variants</a>
             <a href="editor_unified_v3_create_compare.html" target="_blank" rel="noopener">Editor V3 — per-bucket create</a>
+            <a href="right_sidebar_compare.html" target="_blank" rel="noopener">Right sidebar — edit toolkit (A/B/C)</a>
             <a href="park_bounds_icon_review.html" target="_blank" rel="noopener">Park bounds icon</a>
           </div>
         </div>
@@ -1936,6 +1937,32 @@
       function pushRow(groupId, row) {
         if (!groups.has(groupId)) groups.set(groupId, []);
         groups.get(groupId).push(row);
+      }
+
+      // --- Published destinations (baked publish.geojson `poi` layer) ---
+      // This is the SERVE end of the one pipeline: rows authored in PostGIS
+      // core.pois, cleared by the publish.pois gate, baked into
+      // publish.geojson, and read here. The other source blocks below are the
+      // legacy scaffolding this is meant to eventually replace. Card:
+      // brain/tasks/04_event_app/star_driven_poi_list.md.
+      if (publishDataCache && Array.isArray(publishDataCache.features)) {
+        for (const feature of publishDataCache.features) {
+          const props = feature.properties || {};
+          if (props.layer !== 'poi') continue;
+          pushRow('published_destinations', {
+            id: `pubpoi:${props.id != null ? props.id : props.name}`,
+            name: props.name || 'Destination',
+            kind: props.kind || 'destination',
+            blurb: props.blurb || null,
+            revisitNote: null,
+            status: props.status || props.confidence || 'published',
+            source: 'publish.geojson (from PostGIS)',
+            caveat: null,
+            feature,
+            toggle: null,
+            popupCoord: firstCoordinate(feature.geometry)
+          });
+        }
       }
 
       // --- Event anchors -----------------------------------------------
@@ -8915,6 +8942,15 @@
         source: 'publish-data',
         filter: ['==', ['get', 'layer'], 'trailheads'],
         paint: { 'circle-radius': 6, 'circle-color': '#6f8a5c', 'circle-stroke-color': '#f7f1e2', 'circle-stroke-width': 2 }
+      });
+
+      // Baked destination POIs (publish.pois -> publish.geojson `poi` layer).
+      map.addLayer({
+        id: 'publish-pois',
+        type: 'circle',
+        source: 'publish-data',
+        filter: ['==', ['get', 'layer'], 'poi'],
+        paint: { 'circle-radius': 6, 'circle-color': '#b5762e', 'circle-stroke-color': '#f7f1e2', 'circle-stroke-width': 2 }
       });
 
       updateLayerVisibility();

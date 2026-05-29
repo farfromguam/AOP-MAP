@@ -1,8 +1,7 @@
 {
   "permissions": {
-    "defaultMode": "acceptEdits",
-
     "allow": [
+      "Bash(cd *)",
       "Bash(ls)",
       "Bash(ls *)",
       "Bash(pwd)",
@@ -23,7 +22,6 @@
       "Bash(printenv *)",
       "Bash(date)",
       "Bash(date *)",
-
       "Bash(grep *)",
       "Bash(rg *)",
       "Bash(find *)",
@@ -40,10 +38,8 @@
       "Bash(cmp *)",
       "Bash(xxd *)",
       "Bash(od *)",
-
       "Bash(echo *)",
       "Bash(printf *)",
-
       "Bash(ps)",
       "Bash(ps *)",
       "Bash(lsof *)",
@@ -51,7 +47,6 @@
       "Bash(pkill *)",
       "Bash(kill *)",
       "Bash(xargs *)",
-
       "Bash(python *)",
       "Bash(python3 *)",
       "Bash(node *)",
@@ -61,28 +56,26 @@
       "Bash(make *)",
       "Bash(pip *)",
       "Bash(pip3 *)",
-
       "Bash(curl *)",
       "Bash(wget *)",
-
       "Bash(git *)",
       "Bash(gh *)",
-
       "Bash(mkdir *)",
       "Bash(touch *)",
       "Bash(cp *)",
       "Bash(mv *)",
       "Bash(open *)",
-
       "Bash(./*)",
-
-      "Skill(update-config)"
+      "Skill(update-config)",
+      "Bash(docker compose *)",
+      "Bash(bash \"/Users/christopherfryman/Documents/code/AOP MAP/mvp/scripts/export_publish_geojson.sh\")",
+      "Bash(WEBSITE_URL=http://localhost:8001/ python3 playwright_verify_baked_pois.py)",
+      "WebSearch",
+      "WebFetch(domain:www.onxmaps.com)"
     ],
-
     "deny": [
       "Bash(sudo *)",
       "Bash(su *)",
-
       "Bash(rm -rf /*)",
       "Bash(rm -rf ~*)",
       "Bash(rm -rf $HOME*)",
@@ -90,7 +83,6 @@
       "Bash(rm -rf .*)",
       "Bash(rm -fr /*)",
       "Bash(rm -fr ~*)",
-
       "Bash(brew install*)",
       "Bash(brew uninstall*)",
       "Bash(brew upgrade*)",
@@ -104,7 +96,6 @@
       "Bash(cargo install*)",
       "Bash(go install*)",
       "Bash(pipx install*)",
-
       "Bash(git push --force*)",
       "Bash(git push -f *)",
       "Bash(git push -f)",
@@ -113,7 +104,6 @@
       "Bash(git clean -d*)",
       "Bash(git filter-branch*)",
       "Bash(git update-ref -d*)",
-
       "Bash(chmod -R*)",
       "Bash(chown *)",
       "Bash(launchctl *)",
@@ -122,10 +112,8 @@
       "Bash(mkfs*)",
       "Bash(dd if*)",
       "Bash(diskutil *)",
-
       "Bash(mv * /*)",
       "Bash(cp -R / *)",
-
       "Edit(/etc/**)",
       "Edit(/usr/**)",
       "Edit(/var/**)",
@@ -140,6 +128,7 @@
       "Write(/var/**)",
       "Write(/System/**)",
       "Write(/Library/**)"
-    ]
+    ],
+    "defaultMode": "acceptEdits"
   }
 }

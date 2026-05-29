@@ -46,7 +46,39 @@ Do not bless messy local state as pre-prod truth.
 - [ ] Reseed replaces dev data intentionally instead of merging silently.
 - [ ] `export_publish_geojson.sh` after reseed produces expected layer counts.
 - [ ] A new local spinup can run reseed + viewer verification and match current dev state.
-- [ ] Seed cleanup policy is documented before the file becomes pre-prod fixture data.
+- [x] Seed cleanup policy is documented before the file becomes pre-prod fixture data. *(POI fixture only — see below.)*
+
+## Wired 2026-05-29 — POI dev fixture in fresh-DB bring-up
+
+First concrete piece of this card, landed alongside the bake-first POI slice
+(`star_driven_poi_list.md`). The full dump/restore mechanism is still unbuilt;
+this only covers the destination-POI fixture.
+
+- `mvp/scripts/seed_core_pois.sql` is now mounted into the db container's
+  `/docker-entrypoint-initdb.d/` (`docker-compose.yml`). The PostGIS entrypoint
+  runs `*.sql` in sorted order on a **fresh data volume**, and `init_db.sql`
+  (schema) sorts before `seed_core_pois.sql` (data), so a brand-new dev DB comes
+  up with the destination POIs already seeded — no manual seed step.
+- **Verified** (2026-05-29) in a throwaway PostGIS container with a fresh
+  volume: init runs schema → seed, leaving `core.pois`=3 rows and `publish.pois`
+  exposing 2 (Pavilion, Ellis Cemetery); the unpublished candidate is gated out.
+  (macOS note: ad-hoc `docker run -v file:file` init mounts hit "Operation not
+  permitted"; mount the *directory* as initdb.d to reproduce.)
+- Only affects **fresh** volumes. An existing `db-data` volume is untouched —
+  apply the seed to a running DB by hand:
+  `docker compose exec -T db psql -U aop -d aop_map < mvp/scripts/seed_core_pois.sql`.
+
+### Seed cleanup policy (POI fixture)
+
+- `seed_core_pois.sql` is **dev fixture data, not pre-prod truth.** Every row it
+  writes is owned by the `source_register.sources` row named
+  `'AOP bake-first POI seed'`; the script deletes rows by that `source_id` before
+  re-inserting, so it is idempotent and never merges silently.
+- Rows are derived one-time from `website/data/*` files and carry honest
+  provenance (`permission`/`publish_status`/`confidence`). The unpublished
+  candidate row is intentional — it exercises the `publish.pois` gate.
+- When real authoring lands (the AUTHOR half), retire this seed or demote it to a
+  smoke-only fixture; do not let hand-seeded rows masquerade as authored truth.
 
 ## Out of Scope
 

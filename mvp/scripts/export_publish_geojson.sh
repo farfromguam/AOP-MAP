@@ -23,17 +23,20 @@ COPY (
       'properties', to_jsonb(t) - 'geom'
     ) AS feature
     FROM (
-      SELECT id, name, difficulty, NULL::text AS hazard_type, NULL::text AS severity, status, confidence, permission, 'trail_centerlines' AS layer, geom
+      SELECT id, name, difficulty, NULL::text AS hazard_type, NULL::text AS severity, NULL::text AS kind, NULL::text AS blurb, status, confidence, permission, 'trail_centerlines' AS layer, geom
       FROM publish.trail_centerlines
       UNION ALL
-      SELECT id, name, NULL::text AS difficulty, NULL::text AS hazard_type, NULL::text AS severity, status, confidence, permission, 'park_boundaries' AS layer, geom
+      SELECT id, name, NULL::text AS difficulty, NULL::text AS hazard_type, NULL::text AS severity, NULL::text AS kind, NULL::text AS blurb, status, confidence, permission, 'park_boundaries' AS layer, geom
       FROM publish.park_boundaries
       UNION ALL
-      SELECT id, name, NULL::text AS difficulty, NULL::text AS hazard_type, NULL::text AS severity, status, confidence, permission, 'trailheads' AS layer, geom
+      SELECT id, name, NULL::text AS difficulty, NULL::text AS hazard_type, NULL::text AS severity, NULL::text AS kind, NULL::text AS blurb, status, confidence, permission, 'trailheads' AS layer, geom
       FROM publish.trailheads
       UNION ALL
-      SELECT id, NULL::text AS name, NULL::text AS difficulty, hazard_type, severity, status, confidence, permission, 'hazards' AS layer, geom
+      SELECT id, NULL::text AS name, NULL::text AS difficulty, hazard_type, severity, NULL::text AS kind, NULL::text AS blurb, status, confidence, permission, 'hazards' AS layer, geom
       FROM publish.hazards
+      UNION ALL
+      SELECT id, name, NULL::text AS difficulty, NULL::text AS hazard_type, NULL::text AS severity, kind, blurb, status, confidence, permission, 'poi' AS layer, geom
+      FROM publish.pois
     ) t
   ) foo
 ) TO STDOUT;

@@ -162,6 +162,30 @@ CREATE TABLE IF NOT EXISTS core.field_tracks (
   updated_at timestamptz DEFAULT now()
 );
 
+-- Destination POIs: the ★ "visitor list" set as first-class rows.
+-- A POI is any feature a visitor would browse to as a goal (pavilion,
+-- cemetery, trailhead, course feature). `is_destination` is the ★ curation
+-- axis; `blurb` is the visitor-facing copy that used to live in
+-- website/data/aop_poi_index.json. Card:
+-- brain/tasks/04_event_app/star_driven_poi_list.md.
+CREATE TABLE IF NOT EXISTS core.pois (
+  id serial PRIMARY KEY,
+  name text,
+  kind text,
+  blurb text,
+  is_destination boolean DEFAULT true,
+  status text,
+  confidence text,
+  permission text,
+  publish_status text,
+  source_id integer REFERENCES source_register.sources(id),
+  geom geometry(Point,4326),
+  notes text,
+  last_verified timestamptz,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS raw.gpx_captures (
   id serial PRIMARY KEY,
   source_id integer REFERENCES source_register.sources(id),
@@ -217,6 +241,18 @@ CREATE OR REPLACE VIEW publish.hazards AS
   WHERE permission = 'publish'
     AND publish_status = 'publish';
 
+-- The ★ POI list = destinations cleared for publish. The card states the gate
+-- as `publish_status='publish' AND is_destination`; permission is added here
+-- to match the sibling views and the northstar publish rule ("unknown
+-- permission does not publish"). The baked publish.geojson is the only POI
+-- source the static viewer should ultimately read.
+CREATE OR REPLACE VIEW publish.pois AS
+  SELECT id, name, kind, blurb, status, confidence, permission, geom
+  FROM core.pois
+  WHERE is_destination = true
+    AND permission = 'publish'
+    AND publish_status = 'publish';
+
 -- Indexes -----------------------------------------------------------------
 
 CREATE INDEX IF NOT EXISTS park_boundaries_geom_gix   ON core.park_boundaries   USING GIST (geom);
@@ -225,6 +261,7 @@ CREATE INDEX IF NOT EXISTS trail_centerlines_geom_gix ON core.trail_centerlines 
 CREATE INDEX IF NOT EXISTS observations_geom_gix      ON core.observations      USING GIST (geom);
 CREATE INDEX IF NOT EXISTS hazards_geom_gix           ON core.hazards           USING GIST (geom);
 CREATE INDEX IF NOT EXISTS trailheads_geom_gix        ON core.trailheads        USING GIST (geom);
+CREATE INDEX IF NOT EXISTS pois_geom_gix               ON core.pois              USING GIST (geom);
 CREATE INDEX IF NOT EXISTS print_annotations_geom_gix ON core.print_annotations USING GIST (geom);
 CREATE INDEX IF NOT EXISTS field_tracks_geom_gix      ON core.field_tracks      USING GIST (geom);
 
@@ -256,6 +293,7 @@ BEGIN
     'core.observations',
     'core.hazards',
     'core.trailheads',
+    'core.pois',
     'core.print_annotations',
     'core.field_tracks'
   ]

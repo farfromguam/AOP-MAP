@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Right sidebar — compare A / B / C</title>
+  <style>
+    :root {
+      --brown-ink:#2e2418; --brown-mid:#4e4128; --brown-dark:#2a1f12;
+      --cream-border:#d8cdb4; --moss-dark:#384833; --gold:#d4a866;
+    }
+    *{box-sizing:border-box;}
+    body,html{margin:0;height:100%;font:14px/1.4 Inter,system-ui,sans-serif;color:var(--brown-ink);background:#1f1c14;}
+    .header{padding:10px 16px;color:#f7f1e2;background:var(--moss-dark);display:flex;align-items:center;gap:14px;}
+    .header h1{margin:0;font-size:1rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
+    .header .lede{font-size:.78rem;color:rgba(247,241,226,.78);max-width:780px;}
+    .axis{padding:10px 16px;background:#2a2718;color:#f4ead0;font-size:.8rem;border-bottom:1px solid #3b3624;display:flex;gap:18px;flex-wrap:wrap;}
+    .axis b{color:#f7d99a;}
+    .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;}
+    .cell{position:relative;border-right:1px solid #3b3624;height:calc(100vh - 96px);overflow:hidden;}
+    .cell:last-child{border-right:0;}
+    .cell iframe{width:100%;height:100%;border:0;background:#fff;}
+    .cell-label{position:absolute;top:8px;right:8px;z-index:3;background:rgba(0,0,0,.55);color:#fff;padding:4px 10px;border-radius:4px;font:700 .7rem Inter,system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;pointer-events:none;}
+    .open-link{position:absolute;bottom:8px;right:8px;z-index:3;background:#fff8e8;border:1px solid var(--gold);padding:3px 8px;border-radius:5px;font:700 .7rem Inter,system-ui,sans-serif;text-decoration:none;color:var(--brown-dark);}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Right sidebar · A / B / C</h1>
+    <span class="lede">
+      All three share the V3c bucket tree (★ Visitor list · Point · Line · Polygon with
+      Drawn / Trailheads / Brand / Visitor source sub-groups). They differ only in the
+      per-row edit toolkit. Pick which way the toolkit should live; the bucket tree itself
+      is not in scope here.
+    </span>
+  </div>
+  <div class="axis">
+    <span><b>Shared:</b> every feature type gets the same row controls and the same drawer/dock structure — ★ is wired for every promotable type, not a privileged few.</span>
+    <span><b>A:</b> slim row, tabbed drawer (Identify · Edit · Display).</span>
+    <span><b>B:</b> row + 🎯, chip-grid drawer where unavailable chips grey out.</span>
+    <span><b>C:</b> ultra-thin row, persistent edit dock at the bottom holds the toolkit for the selected feature.</span>
+  </div>
+  <div class="grid">
+    <div class="cell">
+      <span class="cell-label">A · slim + tabbed drawer</span>
+      <a class="open-link" href="right_sidebar_a_slim.html" target="_blank" rel="noopener">open ↗</a>
+      <iframe src="right_sidebar_a_slim.html" title="A"></iframe>
+    </div>
+    <div class="cell">
+      <span class="cell-label">B · chip-grid drawer</span>
+      <a class="open-link" href="right_sidebar_b_chips.html" target="_blank" rel="noopener">open ↗</a>
+      <iframe src="right_sidebar_b_chips.html" title="B"></iframe>
+    </div>
+    <div class="cell">
+      <span class="cell-label">C · master-detail dock</span>
+      <a class="open-link" href="right_sidebar_c_dock.html" target="_blank" rel="noopener">open ↗</a>
+      <iframe src="right_sidebar_c_dock.html" title="C"></iframe>
+    </div>
+  </div>
+</body>
+</html>

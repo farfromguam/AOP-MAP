@@ -30,6 +30,7 @@ When asking, ask once, with one question, with the assistant's recommendation up
 
 - Before opening `AskUserQuestion`, check: is this a real fork, or am I confirming the obvious? If the latter, close the prompt and act.
 - Strings like "should I", "want me to", "is it okay if" are warning signs. Replace them with the action itself and a short note about what just happened.
+- Do not re-ask "what's next?" / "which item next?" after every unit of work. Pull the next card from `brain/tasks/` yourself and keep moving. Only surface a "what next" choice at sprint/bucket boundaries, or when two queued items genuinely conflict in priority. A transcript audit (2026-05-29) found this next-task polling, alongside "want me to?", was the dominant source of question fatigue.
 - If a question is unavoidable, lead with the recommendation, not the menu. See `commit_in_prose.md`.
 
 See also: `commit_in_prose.md` (recommend, don't menu), `move_slowly.md` (slow on core forks, not on routine work), `canonical_spinup_commands.md` (one set of defaults, not a question).
