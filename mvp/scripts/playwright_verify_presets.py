@@ -214,10 +214,10 @@ def main() -> int:
             "els => els.map((el) => `${el.dataset.bucket}/${el.dataset.source}`)"
         )
         check(
-            "Point bucket carries Drawn + Trailheads + Brand sub-groups",
+            "Point bucket carries Drawn + Brand sub-groups (trailheads moved out 2026-05-28)",
             "point/drawn" in source_keys
-            and "point/trailhead" in source_keys
-            and "point/brand" in source_keys,
+            and "point/brand" in source_keys
+            and "point/trailhead" not in source_keys,
             f"sources={source_keys}",
         )
         check(
@@ -451,8 +451,8 @@ def main() -> int:
         page.wait_for_timeout(500)
         text = page.evaluate("navigator.clipboard.readText()")
         payload = json.loads(text)
-        check("export copied v2 settings JSON",
-              payload.get("schema") == "aop-viewer-preset-settings-v2",
+        check("export copied v3 settings JSON",
+              payload.get("schema") == "aop-viewer-preset-settings-v3",
               str(payload.get("schema")))
         check("export includes all four presets",
               set(payload.get("presets", {}).keys()) == {"park", "topo", "trace", "satellite"})

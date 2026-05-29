@@ -5,7 +5,7 @@ Covers Sprint 02 Bucket F: the AOP badge + Rock Warblers logo render as
 MapLibre icons sourced from `website/data/aop_brand_logos.geojson`, sit in
 the Publishable section under `showBrandLogos`, and consume the shared
 drag-to-move primitive from `poi_editor_v2.md` (commit + persist across
-reload via `aop_brand_logos_overrides_v1`).
+reload via the unified `aop_positioned_features_v1` store).
 
 Run after `python3 -m http.server 8001` is serving the `website/` dir.
 Set WEBSITE_URL to override.
@@ -37,7 +37,8 @@ SCREENSHOTS = {
 }
 
 LOGO_LAYER = "brand-logos-icons"
-OVERRIDE_KEY = "aop_brand_logos_overrides_v1"
+OVERRIDE_KEY = "aop_positioned_features_v1"
+BRAND_LOGO_PREFIX = "brandLogos:"
 
 
 def check(label: str, ok: bool, detail: str = "") -> None:
@@ -221,11 +222,12 @@ def main() -> int:
               input.value = String(value);
               input.dispatchEvent(new Event('input', { bubbles: true }));
               const feature = brandLogosData.features.find((f) => f.properties.logo_id === id);
-              const store = JSON.parse(localStorage.getItem('aop_brand_logos_overrides_v1') || '{}');
+              const store = JSON.parse(localStorage.getItem('aop_positioned_features_v1') || '{}');
+              const entry = store[`brandLogos:${id}`];
               return {
                 source_size: feature && feature.properties.icon_size,
                 output: output && output.textContent,
-                stored_size: store[id] && store[id].icon_size
+                stored_size: entry && entry.icon_size
               };
             }""",
             {"id": target, "value": new_size},
@@ -293,9 +295,10 @@ def main() -> int:
         override = page.evaluate(
             f"() => JSON.parse(localStorage.getItem('{OVERRIDE_KEY}') || '{{}}')"
         )
+        moved_key = f"{BRAND_LOGO_PREFIX}{target}"
         check(
             "override store carries the moved logo",
-            target in override and "geometry" in override[target],
+            moved_key in override and "geometry" in override[moved_key],
             str(list(override.keys())),
         )
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["moved"]))

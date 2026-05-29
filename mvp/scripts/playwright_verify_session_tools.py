@@ -41,6 +41,10 @@ def clear_viewer_storage(page) -> None:
             'aop_feature_tags_v1',
             'aop_feature_tags_seeded_v1',
             'aop_editor_pois_v1',
+            'aop_positioned_features_v1',
+            // Retired 2026-05-28 (unified positioned-features store) but
+            // still listed in VIEWER_OWNED_STORAGE_KEYS so existing installs
+            // get them cleared on Reset viewer.
             'aop_visitor_context_overrides_v1',
             'aop_brand_logos_overrides_v1'
           ];
@@ -204,6 +208,7 @@ def main() -> int:
                 'aop_feature_visibility_v1',
                 'aop_feature_tags_v1',
                 'aop_editor_pois_v1',
+                'aop_positioned_features_v1',
                 'aop_visitor_context_overrides_v1',
                 'aop_brand_logos_overrides_v1'
               ]) {
@@ -213,7 +218,7 @@ def main() -> int:
             }"""
         )
         page.locator("#resetViewerState").click()
-        # Reset wipes all twelve viewer-owned keys, then `maybeSeedEditorPois`
+        # Reset wipes every viewer-owned key, then `maybeSeedEditorPois`
         # re-fetches `aop_editor_seed_pois.geojson` and re-installs it. We
         # wait for that async install to complete before asserting state.
         page.wait_for_function(
@@ -239,6 +244,7 @@ def main() -> int:
             "aop_viewer_session_state_v1",
             "aop_viewer_preset_settings_v1",
             "aop_feature_tags_seeded_v1",
+            "aop_positioned_features_v1",
             "aop_visitor_context_overrides_v1",
             "aop_brand_logos_overrides_v1",
         }

@@ -649,13 +649,13 @@ def main() -> int:
 
         # ---- Visitor context: second drag consumer (Slice 3 of poi_editor_v2.md) ----
         # Same move primitive, different consumer. Geometry override lands in
-        # `aop_visitor_context_overrides_v1` localStorage and is replayed on
-        # next page load, so a moved callout survives a reload without
-        # touching the source geojson on disk.
+        # the unified `aop_positioned_features_v1` store under the
+        # `visitorContext:<name>` key, replayed on next page load so a moved
+        # callout survives a reload without touching the source geojson on disk.
         print("\n== Visitor-context drag (second consumer) ==")
         # Clean slate for the override store so this run is deterministic.
         page.evaluate(
-            "() => localStorage.removeItem('aop_visitor_context_overrides_v1')"
+            "() => localStorage.removeItem('aop_positioned_features_v1')"
         )
         page.reload(wait_until="load")
         page.evaluate("window.map = map;")
@@ -740,12 +740,14 @@ def main() -> int:
               abs(after_centroid[0] - vc_expected_ll[0]) < 1e-3
               and abs(after_centroid[1] - vc_expected_ll[1]) < 1e-3,
               f"expected≈{vc_expected_ll} got={after_centroid}")
-        # Override store should now hold the moved entry.
+        # Override store should now hold the moved entry under the
+        # `visitorContext:<name>` key (unified positioned-features store).
         override = page.evaluate(
-            "() => JSON.parse(localStorage.getItem('aop_visitor_context_overrides_v1') || '{}')"
+            "() => JSON.parse(localStorage.getItem('aop_positioned_features_v1') || '{}')"
         )
+        moved_key = f"visitorContext:{target_name}"
         check("override store has the moved callout",
-              target_name in override and "geometry" in override[target_name],
+              moved_key in override and "geometry" in override[moved_key],
               str(list(override.keys())))
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["visitor_context_moved"]))
 
@@ -1033,30 +1035,32 @@ def main() -> int:
               len(new_reveals) == 0,
               f"new_reveals={new_reveals}")
 
-        # ---- Export Settings v2: payload carries runtime overrides ----
-        # At this point in the run we have: a moved Monteagle callout in
-        # localStorage, three test POIs, and several per-feature visibility
-        # entries. A v2 export should round-trip every one of those.
-        print("\n== Export Settings v2 (runtime overrides round-trip) ==")
+        # ---- Export Settings v3: payload carries runtime overrides ----
+        # At this point in the run we have: a moved Monteagle callout in the
+        # unified positioned-features store, three test POIs, and several
+        # per-feature visibility entries. A v3 export should round-trip every
+        # one of those.
+        print("\n== Export Settings v3 (runtime overrides round-trip) ==")
         payload = page.evaluate("() => buildExportPayload()")
-        check("schema bumped to v2",
-              payload.get("schema") == "aop-viewer-preset-settings-v2",
+        check("schema bumped to v3",
+              payload.get("schema") == "aop-viewer-preset-settings-v3",
               str(payload.get("schema")))
         check("runtime_overrides key present",
               "runtime_overrides" in payload, str(list(payload.keys())))
         overrides = payload.get("runtime_overrides", {}) or {}
-        check("visitor_context_overrides key present",
-              "visitor_context_overrides" in overrides)
+        check("positioned_features key present",
+              "positioned_features" in overrides)
         check("editor_pois key present",
               "editor_pois" in overrides)
         check("feature_visibility key present",
               "feature_visibility" in overrides)
-        # The moved Monteagle entry should be there with a geometry block.
-        vc = overrides.get("visitor_context_overrides", {}) or {}
+        # The moved Monteagle entry should be there under its layerKey:id key.
+        pf = overrides.get("positioned_features", {}) or {}
+        monteagle_key = "visitorContext:Monteagle plateau services"
         check("Monteagle override round-trips in export",
-              "Monteagle plateau services" in vc
-              and "geometry" in (vc.get("Monteagle plateau services") or {}),
-              str(list(vc.keys())))
+              monteagle_key in pf
+              and "geometry" in (pf.get(monteagle_key) or {}),
+              str(list(pf.keys())))
         # The three test POIs should round-trip.
         poi_ids = [
             f.get("properties", {}).get("id")
@@ -1105,8 +1109,8 @@ def main() -> int:
         # --- editor section round-trip ---
         # Snapshot the editor payload, mutate, then restore.
         editor_before = page.evaluate("() => buildSectionPayload('editor')")
-        check("editor payload schema is aop-section-state-v1",
-              editor_before.get("schema") == "aop-section-state-v1",
+        check("editor payload schema is aop-section-state-v2",
+              editor_before.get("schema") == "aop-section-state-v2",
               str(editor_before.get("schema")))
         check("editor payload tagged with section",
               editor_before.get("section") == "editor",
@@ -1144,30 +1148,29 @@ def main() -> int:
               str((source_payload.get("runtime", {}) or {}).get("feature_visibility", {})))
         check("source-layers payload has buildings visibility",
               "buildings" in (source_payload.get("runtime", {}).get("feature_visibility") or {}))
-        # Source-layers payload should NOT include visitor-context overrides
-        # (the runtime + toggle live together in the publishable section now).
-        check("source-layers payload does NOT carry visitor-context overrides",
-              "visitor_context_overrides" not in (source_payload.get("runtime") or {}))
+        # Source-layers payload should NOT include positioned-features
+        # overrides (visitor-context + brand logos slices ride with the editor
+        # section's runtime under the unified store).
+        check("source-layers payload does NOT carry positioned_features overrides",
+              "positioned_features" not in (source_payload.get("runtime") or {}))
 
-        # --- publishable section round-trip ---
-        # The #showVisitorContext toggle lives in the publishable section, so
-        # the visitor-context override + per-feature visibility slice live here
-        # too. No per-section export *button* is exposed for publishable, but
-        # buildSectionPayload still works for code-level round-trips.
-        publishable_payload = page.evaluate("() => buildSectionPayload('publishable')")
-        check("publishable payload carries visitor_context_overrides",
-              "visitor_context_overrides" in (publishable_payload.get("runtime") or {}),
-              str(list((publishable_payload.get("runtime") or {}).keys())))
-        check("publishable payload carries visitor-context-fill paint",
-              "visitor-context-fill" in (publishable_payload.get("paints") or {}),
-              str(list((publishable_payload.get("paints") or {}).keys()))[:200])
+        # --- editor section carries positioned-features slice ---
+        # Visitor-context + brand-logos overrides ride with the editor section
+        # under the unified positioned-features key. The slice scopes by
+        # layerKey prefix so a paste into a sibling section can't leak.
+        editor_runtime = (editor_before.get("runtime") or {})
+        check("editor payload carries positioned_features slice",
+              "positioned_features" in editor_runtime,
+              str(list(editor_runtime.keys())))
+        pf_slice = editor_runtime.get("positioned_features") or {}
+        check("editor positioned_features slice carries the Monteagle override",
+              "visitorContext:Monteagle plateau services" in pf_slice,
+              str(list(pf_slice.keys())))
 
         # --- derived-layers section round-trip ---
-        # After the SECTION_RUNTIME move, derived-layers no longer carries any
-        # visitor-context state; the background paint stays under derived.
         derived_payload = page.evaluate("() => buildSectionPayload('derived-layers')")
-        check("derived-layers payload does NOT carry visitor_context_overrides",
-              "visitor_context_overrides" not in (derived_payload.get("runtime") or {}))
+        check("derived-layers payload does NOT carry positioned_features overrides",
+              "positioned_features" not in (derived_payload.get("runtime") or {}))
         check("derived-layers payload still carries background paint",
               "background" in (derived_payload.get("paints") or {}),
               str(list((derived_payload.get("paints") or {}).keys()))[:200])
@@ -1178,7 +1181,7 @@ def main() -> int:
               try { applySectionPayload({ ...payload, section: 'editor' }); return null; }
               catch (err) { return err.message; }
             }""",
-            {"schema": "aop-section-state-v1", "section": "editor",
+            {"schema": "aop-section-state-v2", "section": "editor",
              "toggles": {}, "sliders": {}, "paints": {}, "runtime": {}},
         )
         # applySectionPayload itself doesn't check the section/button mismatch —
@@ -1194,7 +1197,7 @@ def main() -> int:
             }"""
         )
         check("applySectionPayload rejects wrong schema",
-              "aop-section-state-v1" in (bad_schema or ""),
+              "aop-section-state-v2" in (bad_schema or ""),
               str(bad_schema))
 
         # --- Snapshot Preset / Export Settings / Import-all buttons retired ---

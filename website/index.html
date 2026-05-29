@@ -250,10 +250,10 @@
     .feature-list-group-head .group-count { color: var(--brown-soft); font-size: 0.75rem; }
     .feature-list-rows { display: grid; gap: 2px; padding: 2px 0 4px 22px; }
     .feature-list-rows[hidden] { display: none; }
-    .feature-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto auto auto; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 5px; font-size: 0.82rem; color: var(--brown-ink); }
+    .feature-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto auto auto auto; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 5px; font-size: 0.82rem; color: var(--brown-ink); }
     /* Editor POI rows carry a ★ highlight toggle next to the visibility
        checkbox, so the grid gains an extra 22px slot to its left. */
-    .feature-row.has-highlight { grid-template-columns: 18px 22px minmax(0, 1fr) auto auto auto auto; }
+    .feature-row.has-highlight { grid-template-columns: 18px 22px minmax(0, 1fr) auto auto auto auto auto; }
     .feature-row:hover { background: rgba(247,235,200,0.6); }
     .feature-row .feature-highlight { background: none; border: 0; padding: 0; width: 22px; height: 22px; line-height: 1; cursor: pointer; font-size: 1rem; color: var(--brown-soft); border-radius: 4px; }
     .feature-row .feature-highlight:hover { background: #f1e6cf; color: var(--brown-dark); }
@@ -264,8 +264,18 @@
     .feature-row .feature-fly:hover { background: #f1e6cf; color: var(--brown-dark); }
     .feature-row .feature-move { background: none; border: 0; padding: 1px 5px; cursor: grab; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; }
     .feature-row .feature-move:hover { background: #f1e6cf; color: var(--brown-dark); }
+    .feature-row .feature-move:disabled { cursor: not-allowed; color: var(--brown-soft); opacity: 0.5; }
+    .feature-row .feature-move:disabled:hover { background: transparent; color: var(--brown-soft); }
+    .feature-row .feature-lock { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; }
+    .feature-row .feature-lock:hover { background: #f1e6cf; color: var(--brown-dark); }
+    .feature-row .feature-lock.on { color: var(--rust); }
     .feature-row .feature-copy { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; }
     .feature-row .feature-copy:hover { background: #f1e6cf; color: var(--brown-dark); }
+    /* Locked rows: dim the position-affecting controls so the user reads
+       "this is parked." Size slider on brand logos also locks because the
+       size is part of how the logo sits on the cartography. */
+    .feature-row.is-locked .feature-size-control input { opacity: 0.5; pointer-events: none; }
+    .feature-row.is-locked .feature-size-control output { color: var(--brown-soft); }
     .feature-row .feature-size-control { display: grid; grid-template-columns: 64px 34px; align-items: center; gap: 4px; width: 102px; }
     .feature-row .feature-size-control input { width: 64px; min-width: 0; }
     .feature-row .feature-size-control output { font-size: 0.72rem; color: var(--brown-soft); text-align: right; }
@@ -279,10 +289,10 @@
     .feature-row.move-target .feature-move { cursor: grabbing; }
     /* Inline accordion rows (editorPois). The trailing chevron toggles a
        full editor block below the row. Tag input and copy button move into
-       that editor, so the row grid trims back to 6 columns:
-       check · ★ · name · 🎯 · ✋ · chevron. Editor block lives in the
+       that editor, so the row grid trims back to 7 columns:
+       check · ★ · name · 🎯 · ✋ · 🔒 · chevron. Editor block lives in the
        same .feature-list-rows grid as the rows and spans full width. */
-    .feature-row.has-highlight.has-inline-editor { grid-template-columns: 18px 22px minmax(0, 1fr) auto auto auto; }
+    .feature-row.has-highlight.has-inline-editor { grid-template-columns: 18px 22px minmax(0, 1fr) auto auto auto auto; }
     .feature-row .feature-row-expand { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; line-height: 1; }
     .feature-row .feature-row-expand:hover { background: #f1e6cf; color: var(--brown-dark); }
     .feature-row.editor-open { background: #f6edda; box-shadow: inset 3px 0 0 0 var(--rust); color: var(--brown-dark); }
@@ -994,8 +1004,17 @@
     // string literal cannot silently lose user state (the silent-drop class
     // northstar/source_register.md warns about, applied to local persistence).
     const LR_CARD_HEIGHT_KEY = 'aop_lr_card_height_v1';
-    const VISITOR_CONTEXT_OVERRIDE_KEY = 'aop_visitor_context_overrides_v1';
-    const BRAND_LOGOS_OVERRIDE_KEY = 'aop_brand_logos_overrides_v1';
+    // Unified store for user-positioned features. Keyed by `layerKey:id`,
+    // each entry carries the per-feature overrides this layer cares about:
+    // `geometry` (drag-to-move), `highlight` (★), `locked` (🔒 lock the
+    // placement so move/star become no-ops), `icon_size` (brand-logo only).
+    // Replaces the per-layer override stores that lived under
+    // `aop_visitor_context_overrides_v1` and `aop_brand_logos_overrides_v1`
+    // — one schema, one save path, one apply path. editorPois geometry stays
+    // in its own array store because the array IS the source of truth; its
+    // highlight + locked travel inside feature.properties so GeoJSON export
+    // carries them.
+    const POSITIONED_FEATURES_KEY = 'aop_positioned_features_v1';
     const FEATURE_VISIBILITY_KEY = 'aop_feature_visibility_v1';
     const FEATURE_TAG_KEY = 'aop_feature_tags_v1';
     // Retired 2026-05-26 with the editor-seed migration: the #pavilion
@@ -1046,8 +1065,11 @@
       LR_CARD_HEIGHT_KEY,
       'aop_calendar_height_v1',
       'aop_calendar_collapsed_v1',
-      VISITOR_CONTEXT_OVERRIDE_KEY,
-      BRAND_LOGOS_OVERRIDE_KEY,
+      POSITIONED_FEATURES_KEY,
+      // Retired 2026-05-28 (unified positioned-features store). Kept here as
+      // literals so existing installs get them cleared on Reset viewer.
+      'aop_visitor_context_overrides_v1',
+      'aop_brand_logos_overrides_v1',
       FEATURE_VISIBILITY_KEY,
       FEATURE_TAG_KEY,
       'aop_feature_tags_seeded_v1',
@@ -1327,9 +1349,6 @@
               { layerKey: 'editorPois', onlyGroupId: 'point' },
               { layerKey: 'eventSchedule' }
             ] },
-          { id: 'trailhead', label: 'Trailheads', defaultOpen: false, sourceClass: 'trailhead',
-            layerToggleIds: ['showTrailheads'],
-            leaves: [{ layerKey: 'trailheads' }] },
           { id: 'brand', label: 'Brand logos', defaultOpen: false, sourceClass: 'brand',
             layerToggleIds: ['showBrandLogos'],
             leaves: [{ layerKey: 'brandLogos' }] }
@@ -3095,7 +3114,9 @@
           const dLng = lngLat.lng - centroid[0];
           const dLat = lngLat.lat - centroid[1];
           translateCoordinates(feature.geometry.coordinates, dLng, dLat);
-          saveVisitorContextOverride(feature);
+          savePositionedFeature('visitorContext', feature, {
+            geometry: JSON.parse(JSON.stringify(feature.geometry))
+          });
           // Push the updated FeatureCollection back into the live source so
           // the rendered polygon and label move on the map immediately. The
           // feature reference is the same as the entry inside
@@ -3193,27 +3214,6 @@
           defaultVisible: () => true
         }]
       },
-      // Publishable trailheads — read-only points from publish.geojson
-      // (`layer === 'trailheads'`). Surfaced under Point → Trailheads in the
-      // V3c editor tree so the user can scan the gate locations alongside
-      // their drawn POIs and event anchors. No ★ (curation lives on the
-      // drawn / brand / visitor axes), no `▸` inline accordion (publish data
-      // is read-only here), no `✋` move (the publish layer is the source of
-      // truth). Visibility + fly only. Spec parallels the cemeteries spec —
-      // a flat list with a positional id.
-      trailheads: {
-        label: 'Trailheads',
-        idField: 'name',
-        rowLabel: (props) => props.name || 'Trailhead',
-        targetLayers: ['publish-trailheads'],
-        rowSort: (a, b) => String(a.props.name || '').localeCompare(String(b.props.name || '')),
-        groups: [{
-          id: 'all',
-          label: null,
-          match: () => true,
-          defaultVisible: () => true
-        }]
-      },
       // Brand logos — on-map AOP badge + Rock Warblers logo. Drag-to-move is
       // the whole point of this consumer (placement gets nudged once the user
       // sees how the logo lands against the cartography); visibility is here
@@ -3237,7 +3237,9 @@
         onMove: (feature, lngLat) => {
           if (!feature || !feature.geometry || feature.geometry.type !== 'Point') return;
           feature.geometry.coordinates = [lngLat.lng, lngLat.lat];
-          saveBrandLogoOverride(feature);
+          savePositionedFeature('brandLogos', feature, {
+            geometry: JSON.parse(JSON.stringify(feature.geometry))
+          });
           const source = map.getSource('brand-logos');
           if (source && brandLogosData) source.setData(brandLogosData);
           if (brandLogosData) registerFeatureListLayer('brandLogos', brandLogosData);
@@ -3254,36 +3256,97 @@
     // declared at the top of the script with the others.
     let visitorContextData = null;
 
-    function loadVisitorContextOverrides() {
-      const parsed = readJsonStore(VISITOR_CONTEXT_OVERRIDE_KEY, () => ({}));
+    // --- Unified positioned-features store -------------------------------
+    // Replaces the two per-layer override stores (visitor-context, brand
+    // logos). Keyed by `${layerKey}:${id}` where `id` is the value at the
+    // layer's `idField` in the FEATURE_LIST_LAYERS spec. Each entry is a
+    // sparse patch — only the props the user has touched. Geometry overrides
+    // exist because the source data ships in committed website/data/*.geojson
+    // (immutable from the browser); highlight + locked persist here too so
+    // they survive reload without baking into the on-disk seed.
+    function loadPositionedFeatures() {
+      const parsed = readJsonStore(POSITIONED_FEATURES_KEY, () => ({}));
       return parsed && typeof parsed === 'object' ? parsed : {};
     }
 
-    function saveVisitorContextOverride(feature) {
-      if (!feature || !feature.properties || !feature.geometry) return;
-      const store = loadVisitorContextOverrides();
-      const existing = store[feature.properties.name] || {};
-      store[feature.properties.name] = {
-        ...existing,
-        geometry: JSON.parse(JSON.stringify(feature.geometry)),
-        highlight: feature.properties.highlight === true,
-        updated: new Date().toISOString()
-      };
-      writeJsonStore(VISITOR_CONTEXT_OVERRIDE_KEY, store);
+    function positionedFeatureKey(layerKey, featureId) {
+      return `${layerKey}:${featureId}`;
     }
 
-    function applyVisitorContextOverrides(data) {
+    function positionedFeatureIdFor(layerKey, feature) {
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      if (!spec || !feature || !feature.properties) return null;
+      const value = feature.properties[spec.idField];
+      return value == null ? null : String(value);
+    }
+
+    // Merge `patch` into the entry for one feature. `patch` may set any of
+    // geometry, highlight, locked, icon_size — only the keys present in the
+    // patch are touched, so a star toggle never clobbers a geometry override.
+    function savePositionedFeature(layerKey, feature, patch) {
+      const id = positionedFeatureIdFor(layerKey, feature);
+      if (id == null || !patch) return;
+      const key = positionedFeatureKey(layerKey, id);
+      const store = loadPositionedFeatures();
+      const existing = store[key] || {};
+      const next = { ...existing };
+      if (patch.geometry !== undefined) next.geometry = patch.geometry;
+      if (patch.highlight !== undefined) next.highlight = patch.highlight === true;
+      if (patch.locked !== undefined) next.locked = patch.locked === true;
+      if (patch.icon_size !== undefined && Number.isFinite(Number(patch.icon_size))) {
+        next.icon_size = Number(patch.icon_size);
+      }
+      next.updated = new Date().toISOString();
+      store[key] = next;
+      writeJsonStore(POSITIONED_FEATURES_KEY, store);
+    }
+
+    // Replay stored overrides onto a freshly fetched FeatureCollection.
+    // Mutates in place so the live MapLibre source and the feature-list
+    // runtime see the same references.
+    function applyPositionedFeatures(layerKey, data) {
       if (!data || !data.features) return data;
-      const store = loadVisitorContextOverrides();
+      const store = loadPositionedFeatures();
       for (const feature of data.features) {
-        const name = feature.properties && feature.properties.name;
-        if (!name) continue;
-        const entry = store[name];
+        const id = positionedFeatureIdFor(layerKey, feature);
+        if (id == null) continue;
+        const entry = store[positionedFeatureKey(layerKey, id)];
         if (!entry) continue;
         if (entry.geometry) feature.geometry = JSON.parse(JSON.stringify(entry.geometry));
+        feature.properties = feature.properties || {};
         if (entry.highlight === true) feature.properties.highlight = true;
+        if (entry.locked === true) feature.properties.locked = true;
+        if (Number.isFinite(Number(entry.icon_size))) {
+          feature.properties.icon_size = Number(entry.icon_size);
+        }
       }
       return data;
+    }
+
+    // Read-only slice of the unified store filtered to one layer's entries.
+    // Used by section export so a paste of one section's slice cannot leak
+    // overrides from sibling layers.
+    function positionedFeaturesSlice(layerKey) {
+      const prefix = `${layerKey}:`;
+      const store = loadPositionedFeatures();
+      const slice = {};
+      for (const [key, value] of Object.entries(store)) {
+        if (key.startsWith(prefix)) slice[key] = value;
+      }
+      return slice;
+    }
+
+    // Merge an imported slice back into the unified store. Slice keys are
+    // already in `${layerKey}:${id}` form; we trust the bundle author not to
+    // smuggle other layers' entries through a section paste, but the section
+    // apply path narrows by layerKey before calling this anyway.
+    function mergePositionedFeaturesSlice(slice) {
+      if (!slice || typeof slice !== 'object') return;
+      const store = loadPositionedFeatures();
+      for (const [key, value] of Object.entries(slice)) {
+        store[key] = value;
+      }
+      writeJsonStore(POSITIONED_FEATURES_KEY, store);
     }
 
     // --- Brand-logos override store --------------------------------------
@@ -3312,46 +3375,9 @@
       const clamped = Math.min(BRAND_LOGO_SIZE_MAX, Math.max(BRAND_LOGO_SIZE_MIN, Number(value)));
       if (!Number.isFinite(clamped)) return;
       feature.properties.icon_size = Number(clamped.toFixed(3));
-      saveBrandLogoOverride(feature);
+      savePositionedFeature('brandLogos', feature, { icon_size: feature.properties.icon_size });
       const source = map.getSource('brand-logos');
       if (source && brandLogosData) source.setData(brandLogosData);
-    }
-
-    function loadBrandLogoOverrides() {
-      const parsed = readJsonStore(BRAND_LOGOS_OVERRIDE_KEY, () => ({}));
-      return parsed && typeof parsed === 'object' ? parsed : {};
-    }
-
-    function saveBrandLogoOverride(feature) {
-      if (!feature || !feature.properties || !feature.geometry) return;
-      const size = brandLogoSize(feature);
-      const store = loadBrandLogoOverrides();
-      const existing = store[feature.properties.logo_id] || {};
-      store[feature.properties.logo_id] = {
-        ...existing,
-        geometry: JSON.parse(JSON.stringify(feature.geometry)),
-        icon_size: size,
-        highlight: feature.properties.highlight === true,
-        updated: new Date().toISOString()
-      };
-      writeJsonStore(BRAND_LOGOS_OVERRIDE_KEY, store);
-    }
-
-    function applyBrandLogoOverrides(data) {
-      if (!data || !data.features) return data;
-      const store = loadBrandLogoOverrides();
-      for (const feature of data.features) {
-        const id = feature.properties && feature.properties.logo_id;
-        if (!id) continue;
-        const entry = store[id];
-        if (!entry) continue;
-        if (entry.geometry) feature.geometry = JSON.parse(JSON.stringify(entry.geometry));
-        if (Number.isFinite(Number(entry.icon_size))) {
-          feature.properties.icon_size = Number(entry.icon_size);
-        }
-        if (entry.highlight === true) feature.properties.highlight = true;
-      }
-      return data;
     }
 
     // Per-layer runtime state: data, base filters captured at addLayer time,
@@ -3717,32 +3743,48 @@
 
     // Toggle the per-feature highlight flag for layers that opt in
     // (`highlightable: true` in their FEATURE_LIST_LAYERS spec). The flag is
-    // stored on the feature itself so it travels with the POI through
-    // localStorage and GeoJSON export — no parallel store to keep in sync.
-    // Today only editorPois opts in; the function stays generic in case
-    // another layer (e.g. drawn callouts) earns a highlight axis later.
+    // mirrored on `feature.properties.highlight` so GeoJSON export and the
+    // Visitor list group can read it off the live feature. Persistence
+    // routes by spec.persistKind: editorPois → array store (saveEditorPois);
+    // visitorContext + brandLogos → unified positioned-features store.
     function toggleFeatureHighlight(layerKey, featureId) {
       const item = findFeatureById(layerKey, featureId);
       if (!item || !item.feature) return;
       const props = item.feature.properties = item.feature.properties || {};
       props.highlight = !props.highlight;
-      if (layerKey === 'editorPois') {
-        // refreshEditorSource persists the POI array and re-registers the
-        // feature list, which re-renders this layer's panel. It also calls
-        // renderPoiTabIfActive so the left-rail browser refreshes if it's
-        // the active tab.
-        saveEditorPois();
-        refreshEditorSource();
-      } else if (layerKey === 'brandLogos') {
-        saveBrandLogoOverride(item.feature);
-        renderFeatureList(layerKey);
-      } else if (layerKey === 'visitorContext') {
-        saveVisitorContextOverride(item.feature);
-        renderFeatureList(layerKey);
-      } else {
-        renderFeatureList(layerKey);
-      }
+      persistFeatureFlagChange(layerKey, item.feature, { highlight: props.highlight === true });
+      if (layerKey === 'editorPois') refreshEditorSource();
+      else renderFeatureList(layerKey);
       renderPoiTabIfActive();
+    }
+
+    // Mirror of toggleFeatureHighlight for the lock flag. Locked features
+    // stay rendered and stay starrable, but the row's ✋ move handle and
+    // long-press path become no-ops. Used when a feature has reached its
+    // final position and the user wants to stop nudging it accidentally.
+    function toggleFeatureLocked(layerKey, featureId) {
+      const item = findFeatureById(layerKey, featureId);
+      if (!item || !item.feature) return;
+      const props = item.feature.properties = item.feature.properties || {};
+      props.locked = !props.locked;
+      persistFeatureFlagChange(layerKey, item.feature, { locked: props.locked === true });
+      if (layerKey === 'editorPois') refreshEditorSource();
+      else renderFeatureList(layerKey);
+    }
+
+    // Routes a feature-property change to the right persistence path.
+    // editorPois persists via its array store (saveEditorPois writes the
+    // whole array, which already includes the mutated properties).
+    // visitorContext + brandLogos persist their overrides in the unified
+    // positioned-features store, patched key-by-key.
+    function persistFeatureFlagChange(layerKey, feature, patch) {
+      if (layerKey === 'editorPois') {
+        saveEditorPois();
+        return;
+      }
+      if (layerKey === 'visitorContext' || layerKey === 'brandLogos') {
+        savePositionedFeature(layerKey, feature, patch);
+      }
     }
 
     function findFeatureById(layerKey, featureId) {
@@ -3802,6 +3844,9 @@
       if (!spec || typeof spec.onMove !== 'function') return;
       const item = findFeatureById(layerKey, featureId);
       if (!item) return;
+      // Locked features refuse every move path defensively — row button,
+      // long-press, map-click reveal, or programmatic call all bounce here.
+      if (item.feature && item.feature.properties && item.feature.properties.locked === true) return;
       // Replacing any prior move mode is the gentler UX — long-pressing
       // another row should switch the target, not error out.
       if (moveState) cancelMoveMode();
@@ -4244,52 +4289,78 @@
           // editor instead so the compact row keeps to visibility + fly + move.
           if (!spec.inlineEditor) row.append(copy);
           row.append(fly);
+          const isLocked = movable && item.feature && item.feature.properties && item.feature.properties.locked === true;
+          let move = null;
+          let lock = null;
           if (movable) {
-            const move = document.createElement('button');
+            if (isLocked) row.classList.add('is-locked');
+            move = document.createElement('button');
             move.type = 'button';
             move.className = 'feature-move';
             move.textContent = '✋';
-            move.title = 'Move this feature (click ✋ then click the map)';
-            move.addEventListener('click', (event) => {
+            if (isLocked) {
+              move.disabled = true;
+              move.title = 'Feature is locked — click 🔒 to unlock before moving.';
+            } else {
+              move.title = 'Move this feature (click ✋ then click the map)';
+              move.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                enterMoveMode(layerKey, item.id);
+              });
+            }
+            row.append(move);
+            // 🔒 / 🔓 lock toggle. Locked features stay rendered + starrable
+            // but their move handle goes inert. Used when a placement has
+            // landed where the user wants it and they don't want to nudge it
+            // off accidentally.
+            lock = document.createElement('button');
+            lock.type = 'button';
+            lock.className = 'feature-lock' + (isLocked ? ' on' : '');
+            lock.textContent = isLocked ? '🔒' : '🔓';
+            lock.title = isLocked
+              ? 'Unlock — allow this feature to be moved'
+              : 'Lock — pin this feature so move becomes a no-op';
+            lock.setAttribute('aria-pressed', String(isLocked));
+            lock.addEventListener('click', (event) => {
               event.preventDefault();
               event.stopPropagation();
-              enterMoveMode(layerKey, item.id);
+              toggleFeatureLocked(layerKey, item.id);
             });
-            row.append(move);
+            row.append(lock);
             // Long-press anywhere on the row body also enters move mode —
-            // the path the card calls out for mobile users. We start a timer
-            // on pointerdown and arm if the pointer hasn't moved or lifted
-            // before LONG_PRESS_MS; any movement or release cancels the timer.
-            // Touch and mouse both flow through PointerEvents so one handler
-            // covers both.
-            let pressTimer = null;
-            let pressStart = null;
-            const startPress = (event) => {
-              // Skip presses that landed on the inline controls — they have
-              // their own handlers and shouldn't double-arm move mode.
-              if (event.target === check || event.target === fly || event.target === move) return;
-              if (highlight && event.target === highlight) return;
-              pressStart = { x: event.clientX, y: event.clientY };
-              pressTimer = window.setTimeout(() => {
-                pressTimer = null;
-                enterMoveMode(layerKey, item.id);
-              }, LONG_PRESS_MS);
-            };
-            const cancelPress = () => {
-              if (pressTimer) { window.clearTimeout(pressTimer); pressTimer = null; }
-              pressStart = null;
-            };
-            const movedFar = (event) => {
-              if (!pressStart) return false;
-              const dx = event.clientX - pressStart.x;
-              const dy = event.clientY - pressStart.y;
-              return (dx * dx + dy * dy) > 64;     // ~8 px slop
-            };
-            row.addEventListener('pointerdown', startPress);
-            row.addEventListener('pointermove', (event) => { if (movedFar(event)) cancelPress(); });
-            row.addEventListener('pointerup', cancelPress);
-            row.addEventListener('pointercancel', cancelPress);
-            row.addEventListener('pointerleave', cancelPress);
+            // the path the card calls out for mobile users. Locked rows skip
+            // the long-press entirely.
+            if (!isLocked) {
+              let pressTimer = null;
+              let pressStart = null;
+              const startPress = (event) => {
+                // Skip presses that landed on the inline controls — they have
+                // their own handlers and shouldn't double-arm move mode.
+                if (event.target === check || event.target === fly || event.target === move || event.target === lock) return;
+                if (highlight && event.target === highlight) return;
+                pressStart = { x: event.clientX, y: event.clientY };
+                pressTimer = window.setTimeout(() => {
+                  pressTimer = null;
+                  enterMoveMode(layerKey, item.id);
+                }, LONG_PRESS_MS);
+              };
+              const cancelPress = () => {
+                if (pressTimer) { window.clearTimeout(pressTimer); pressTimer = null; }
+                pressStart = null;
+              };
+              const movedFar = (event) => {
+                if (!pressStart) return false;
+                const dx = event.clientX - pressStart.x;
+                const dy = event.clientY - pressStart.y;
+                return (dx * dx + dy * dy) > 64;     // ~8 px slop
+              };
+              row.addEventListener('pointerdown', startPress);
+              row.addEventListener('pointermove', (event) => { if (movedFar(event)) cancelPress(); });
+              row.addEventListener('pointerup', cancelPress);
+              row.addEventListener('pointercancel', cancelPress);
+              row.addEventListener('pointerleave', cancelPress);
+            }
           }
           // Inline-editor chevron — last cell on the row. Toggles the
           // expanded editor block below. The has-inline-editor class
@@ -4432,9 +4503,23 @@
       // Action row.
       const actions = document.createElement('div');
       actions.className = 'editor-actions';
+      const featureLocked = item.feature && item.feature.properties && item.feature.properties.locked === true;
       actions.append(
-        makeEditorAction('🎯 Fly', 'Fly to feature', () => flyToFeature(item.feature)),
-        makeEditorAction('✋ Move', 'Move this feature (click then click the map)', () => enterMoveMode(layerKey, item.id)),
+        makeEditorAction('🎯 Fly', 'Fly to feature', () => flyToFeature(item.feature))
+      );
+      const moveAction = makeEditorAction(
+        '✋ Move',
+        featureLocked ? 'Feature is locked — unlock to move' : 'Move this feature (click then click the map)',
+        () => enterMoveMode(layerKey, item.id)
+      );
+      if (featureLocked) moveAction.disabled = true;
+      actions.append(moveAction);
+      actions.append(makeEditorAction(
+        featureLocked ? '🔒 Unlock' : '🔓 Lock',
+        featureLocked ? 'Unlock so this feature can be moved again' : 'Lock this feature so move becomes a no-op',
+        () => toggleFeatureLocked(layerKey, item.id)
+      ));
+      actions.append(
         makeEditorAction('⎘ Duplicate', 'Duplicate this feature', () => duplicateEditorFeature(item.id)),
         makeEditorAction('⧉ Copy GeoJSON', 'Copy as drop-in GeoJSON Feature', () => copyFeatureAsDropIn(item.feature))
       );
@@ -5412,27 +5497,22 @@
     }
 
     // Pulls the durable runtime state that lives outside the preset/paint
-    // system into a single bag. Bumped the export schema to v2 the moment
-    // these landed — a v1 export would silently lose moves and drawings, and
-    // a re-import would snap everything back to the source-file defaults.
+    // system into a single bag. Bumped to schema v3 on 2026-05-28 when the
+    // two per-layer override stores collapsed into a single
+    // `positioned_features` slot keyed by `layerKey:id`. v2 imports are
+    // refused — forward-only per spinup/viewer_storage_migration.md.
     function captureRuntimeOverrides() {
-      const overrides = {};
-      const stores = [
-        ['visitor_context_overrides', VISITOR_CONTEXT_OVERRIDE_KEY, () => ({})],
-        ['brand_logos_overrides', BRAND_LOGOS_OVERRIDE_KEY, () => ({})],
-        ['editor_pois', POI_STORAGE_KEY, () => []],
-        ['feature_visibility', FEATURE_VISIBILITY_KEY, () => ({})],
-        ['feature_tags', FEATURE_TAG_KEY, () => ({})]
-      ];
-      for (const [outKey, storageKey, fallback] of stores) {
-        overrides[outKey] = readJsonStore(storageKey, fallback);
-      }
-      return overrides;
+      return {
+        positioned_features: loadPositionedFeatures(),
+        editor_pois: readJsonStore(POI_STORAGE_KEY, () => []),
+        feature_visibility: readJsonStore(FEATURE_VISIBILITY_KEY, () => ({})),
+        feature_tags: readJsonStore(FEATURE_TAG_KEY, () => ({}))
+      };
     }
 
     function buildExportPayload() {
       return {
-        schema: 'aop-viewer-preset-settings-v2',
+        schema: 'aop-viewer-preset-settings-v3',
         exported_at: new Date().toISOString(),
         active_preset: activePresetId,
         presets: {
@@ -5476,13 +5556,13 @@
         featureTagLayers: ['buildings']
       },
       'external-reference': {},
-      // Visitor-context callouts live in this section's HTML
-      // (#showVisitorContext); the override + per-feature visibility slice
-      // ride with the toggle so per-section round-trips stay coherent.
+      // Editor section runtime: drawn POI array + per-feature visibility +
+      // tags + the unified positioned-features slice for the user-positioned
+      // layers that live here (visitor-context callouts, brand logos).
       editor: {
         editorPois: POI_STORAGE_KEY,
-        visitorContextOverrides: VISITOR_CONTEXT_OVERRIDE_KEY,
-        featureVisibilityLayers: ['editorPois', 'eventSchedule', 'visitorContext'],
+        positionedFeatureLayers: ['visitorContext', 'brandLogos'],
+        featureVisibilityLayers: ['editorPois', 'eventSchedule', 'visitorContext', 'brandLogos'],
         // Drawn POIs are taggable: a #tag binding rides along with the POI.
         featureTagLayers: ['editorPois']
       },
@@ -5554,8 +5634,12 @@
       }
       const paints = capturePaintStateFor(sectionPaintTargets(sectionId));
       const runtime = {};
-      if (runtimeSpec.visitorContextOverrides) {
-        runtime.visitor_context_overrides = readJsonStore(runtimeSpec.visitorContextOverrides, () => ({}));
+      if (runtimeSpec.positionedFeatureLayers && runtimeSpec.positionedFeatureLayers.length) {
+        const slice = {};
+        for (const layerKey of runtimeSpec.positionedFeatureLayers) {
+          Object.assign(slice, positionedFeaturesSlice(layerKey));
+        }
+        runtime.positioned_features = slice;
       }
       if (runtimeSpec.editorPois) {
         runtime.editor_pois = readJsonStore(runtimeSpec.editorPois, () => []);
@@ -5577,7 +5661,7 @@
         runtime.feature_tags = slice;
       }
       return {
-        schema: 'aop-section-state-v1',
+        schema: 'aop-section-state-v2',
         section: sectionId,
         exported_at: new Date().toISOString(),
         toggles,
@@ -5591,8 +5675,8 @@
     // else alone. Validates schema + section so a Drawn-POIs paste can't
     // accidentally land on Cemeteries.
     function applySectionPayload(payload) {
-      if (!payload || payload.schema !== 'aop-section-state-v1') {
-        throw new Error('Not an aop-section-state-v1 payload.');
+      if (!payload || payload.schema !== 'aop-section-state-v2') {
+        throw new Error('Not an aop-section-state-v2 payload.');
       }
       const sectionId = payload.section;
       if (!SECTION_RUNTIME.hasOwnProperty(sectionId)) {
@@ -5614,12 +5698,15 @@
       if (payload.paints) applyPaintState(payload.paints);
       const runtime = payload.runtime || {};
       const spec = SECTION_RUNTIME[sectionId];
-      // Visitor-context geometry overrides write through to localStorage; the
-      // moved geometry takes effect on next page reload (the live source is
-      // not re-rendered here — a future live-replay extension lives on the
-      // poi_editor_v2 follow-up card).
-      if (spec.visitorContextOverrides && runtime.visitor_context_overrides) {
-        writeJsonStore(spec.visitorContextOverrides, runtime.visitor_context_overrides);
+      // Positioned-feature overrides write through to localStorage; the moved
+      // geometry takes effect on next page reload (no live re-render here).
+      if (spec.positionedFeatureLayers && runtime.positioned_features) {
+        const allowedPrefixes = spec.positionedFeatureLayers.map((k) => `${k}:`);
+        const slice = {};
+        for (const [key, value] of Object.entries(runtime.positioned_features)) {
+          if (allowedPrefixes.some((p) => key.startsWith(p))) slice[key] = value;
+        }
+        mergePositionedFeaturesSlice(slice);
       }
       if (spec.editorPois && Array.isArray(runtime.editor_pois)) {
         writeJsonStore(spec.editorPois, runtime.editor_pois);
@@ -5650,12 +5737,12 @@
       return sectionId;
     }
 
-    // Restore a full v2 export. Same handlers as a section apply, but across
+    // Restore a full v3 export. Same handlers as a section apply, but across
     // every section. Toggles fire change events so layer visibility updates
     // live; geometry overrides settle on next reload.
     function applyExportAllPayload(payload) {
-      if (!payload || payload.schema !== 'aop-viewer-preset-settings-v2') {
-        throw new Error('Not an aop-viewer-preset-settings-v2 payload.');
+      if (!payload || payload.schema !== 'aop-viewer-preset-settings-v3') {
+        throw new Error('Not an aop-viewer-preset-settings-v3 payload.');
       }
       const state = payload.current_state || {};
       for (const [id, value] of Object.entries(state.toggles || {})) {
@@ -5671,11 +5758,8 @@
       }
       if (state.paints) applyPaintState(state.paints);
       const overrides = payload.runtime_overrides || {};
-      if (overrides.visitor_context_overrides) {
-        writeJsonStore(VISITOR_CONTEXT_OVERRIDE_KEY, overrides.visitor_context_overrides);
-      }
-      if (overrides.brand_logos_overrides) {
-        writeJsonStore(BRAND_LOGOS_OVERRIDE_KEY, overrides.brand_logos_overrides);
+      if (overrides.positioned_features && typeof overrides.positioned_features === 'object') {
+        writeJsonStore(POSITIONED_FEATURES_KEY, overrides.positioned_features);
       }
       if (Array.isArray(overrides.editor_pois)) {
         writeJsonStore(POI_STORAGE_KEY, overrides.editor_pois);
@@ -8062,7 +8146,7 @@
         // Replay any user-staged geometry overrides before the source data
         // ever reaches MapLibre, so a moved callout draws in its new spot
         // from the first frame rather than snapping in after registration.
-        applyVisitorContextOverrides(visitorContextData);
+        applyPositionedFeatures('visitorContext', visitorContextData);
         map.addSource('visitor-context', {
           type: 'geojson',
           data: visitorContextData,
@@ -8909,12 +8993,12 @@
       // viewer-served copies.
       //
       // Edit posture: positions are draggable from the feature list panel
-      // and persist in BRAND_LOGOS_OVERRIDE_KEY. Editing the seed file just
-      // moves the first-load coords; overrides win on next load. Card:
-      // brain/tasks/02_edit/branding.md.
+      // and persist in the unified positioned-features store. Editing the
+      // seed file just moves the first-load coords; overrides win on next
+      // load. Card: brain/tasks/02_edit/branding.md.
       brandLogosData = await fetchJson('./data/aop_brand_logos.geojson', 'Brand logos missing');
       if (brandLogosData) {
-        applyBrandLogoOverrides(brandLogosData);
+        applyPositionedFeatures('brandLogos', brandLogosData);
 
         // Load each icon image and register it under the property name the
         // features reference. Done in parallel so a slow asset can't gate

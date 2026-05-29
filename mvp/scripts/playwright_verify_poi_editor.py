@@ -365,11 +365,13 @@ def main() -> int:
         # V3c + drawn-subgroup-flush polish: the Drawn POIs sub-group head is
         # hidden inside each bucket (it duplicated the bucket head), so the
         # visible mirror of #showEditorPois is the bucket-level bulk on each
-        # bucket whose only source is drawn. Point bucket includes trailheads
-        # and brand-logos in its toggle set (so Point starts indeterminate),
-        # and Polygon includes visitorContext. Line is the clean case: its
-        # only source is drawn, so the bucket bulk starts checked and one
-        # click flips both showEditorPois and the layer visibility.
+        # bucket whose only source is drawn. Point bucket includes brand-logos
+        # in its toggle set (so Point starts indeterminate), and Polygon
+        # includes visitorContext. Trailheads were moved out of the editor
+        # tree 2026-05-28 — they were read-only publish data without a true
+        # editor axis. Line is the clean case: its only source is drawn, so
+        # the bucket bulk starts checked and one click flips both
+        # showEditorPois and the layer visibility.
         line_bucket_bulk = '[data-editor-bucket-bulk="line"]'
         check(
             "Line bucket bulk starts checked (showEditorPois is on)",
