@@ -23,7 +23,18 @@
       "Bash(pkill -f \"python3 -m http.server 8001\")",
       "Bash(python3 /tmp/poi_editor_diag.py)",
       "Bash(python3 -u mvp/scripts/playwright_verify_session_tools.py)",
-      "Bash(python3 -u mvp/scripts/playwright_verify_synthetic_activity.py)"
+      "Bash(python3 -u mvp/scripts/playwright_verify_synthetic_activity.py)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/)",
+      "Bash(curl -s http://localhost:8000/)",
+      "Bash(curl -s -f -o /dev/null http://localhost:8001/)",
+      "Bash(python3 /tmp/aop_editor_snapshot.py)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8001/)",
+      "Bash(python3 /tmp/review_editor.py)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} %{size_download}\\\\n\" http://localhost:8001/data/aop_editor_seed_pois.geojson)",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} %{size_download}\\\\n\" http://localhost:8001/data/publish.geojson)",
+      "Bash(pkill -f \"playwright_verify_poi_editor\")",
+      "Bash(pkill -f playwright_verify_poi_editor)"
     ]
   }
 }

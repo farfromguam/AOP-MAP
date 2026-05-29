@@ -203,9 +203,27 @@ def main() -> int:
             "els => els.map((el) => el.dataset.bucket)"
         )
         check(
-            "editor tree renders the five kind buckets plus visitor list",
-            bucket_ids == ["visitor-list", "point", "line", "polygon", "image", "callout"],
+            "editor tree renders the three geometry buckets plus visitor list",
+            bucket_ids == ["visitor-list", "point", "line", "polygon"],
             f"buckets={bucket_ids}",
+        )
+        # V3c folded Image and Callout buckets into Point and Polygon as
+        # source sub-groups (brand logos under Point, visitor context under
+        # Polygon). Card: brain/tasks/04_event_app/editor_three_buckets_v3c.md.
+        source_keys = page.locator('#editorTree .editor-subgroup').evaluate_all(
+            "els => els.map((el) => `${el.dataset.bucket}/${el.dataset.source}`)"
+        )
+        check(
+            "Point bucket carries Drawn + Trailheads + Brand sub-groups",
+            "point/drawn" in source_keys
+            and "point/trailhead" in source_keys
+            and "point/brand" in source_keys,
+            f"sources={source_keys}",
+        )
+        check(
+            "Polygon bucket carries Drawn + Visitor sub-groups",
+            "polygon/drawn" in source_keys and "polygon/visitor" in source_keys,
+            f"sources={source_keys}",
         )
         check(
             "editor visitor-list container exists",

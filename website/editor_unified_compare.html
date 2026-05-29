@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editor unified — variant compare</title>
+  <style>
+    :root {
+      --brown-ink: #2e2418;
+      --brown-mid: #4e4128;
+      --brown-dark: #2a1f12;
+      --brown-soft: #6a5638;
+      --cream-hover: #efe2c6;
+      --cream-surface: #faf6eb;
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --control-border: #b9aa88;
+      --moss: #5f7157;
+      --moss-dark: #384833;
+      --moss-soft: #e3ebdc;
+      --rust: #a85020;
+      --rust-soft: #f1d8c6;
+    }
+    * { box-sizing: border-box; }
+    body, html { margin: 0; padding: 0; background: var(--cream-surface);
+      font: 15px/1.5 Inter, system-ui, sans-serif; color: var(--brown-ink); }
+    header.page { padding: 28px 32px 18px; border-bottom: 1px solid var(--cream-border);
+      background: var(--control-bg); }
+    header.page h1 { margin: 0 0 6px; color: var(--moss-dark); font-size: 1.4rem; }
+    header.page .sub { color: var(--brown-soft); font-size: 0.93rem; max-width: 100ch; }
+    header.page .sub strong { color: var(--brown-dark); }
+    header.page .sub code { background: var(--moss-soft); padding: 1px 5px; border-radius: 3px; font-size: 0.85em; }
+    header.page .sub p { margin: 0 0 6px; }
+
+    .axes { display: flex; gap: 24px; margin-top: 14px; flex-wrap: wrap; font-size: 0.86rem; color: var(--brown-mid); }
+    .axes b { color: var(--brown-dark); }
+
+    main { display: grid; gap: 22px; padding: 24px 28px;
+      grid-template-columns: repeat(auto-fit, minmax(620px, 1fr)); max-width: 1640px; margin: 0 auto; }
+    section.variant { background: #fff; border: 1px solid var(--cream-border); border-radius: 12px;
+      overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+      display: flex; flex-direction: column; }
+    section.variant header.v { padding: 14px 18px; background: var(--moss-soft);
+      border-bottom: 1px solid var(--cream-border); }
+    section.variant header.v h2 { margin: 0; color: var(--moss-dark); font-size: 1.05rem;
+      display: flex; align-items: center; gap: 10px; }
+    section.variant header.v .num { display: inline-grid; place-items: center;
+      width: 28px; height: 28px; background: var(--moss); color: #f7f1e2; border-radius: 50%;
+      font: 800 0.8rem Inter, system-ui, sans-serif; }
+    section.variant header.v .angle { color: var(--brown-soft); font-size: 0.86rem;
+      margin: 6px 0 0 38px; line-height: 1.4; }
+    section.variant header.v .pros-cons { margin: 8px 0 0 38px; display: grid; grid-template-columns: 1fr 1fr;
+      gap: 4px 14px; font-size: 0.82rem; }
+    section.variant header.v .pros-cons .label { color: var(--brown-mid); font-weight: 700; }
+    section.variant header.v .pros-cons .pro { color: var(--moss-dark); }
+    section.variant header.v .pros-cons .con { color: var(--rust); }
+    section.variant .frame { position: relative; width: 100%; height: 760px; background: #9a9c80; }
+    section.variant iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    section.variant .links { display: flex; gap: 10px; padding: 10px 18px 14px;
+      border-top: 1px solid var(--cream-border); align-items: center; }
+    section.variant .links a { color: var(--brown-mid); text-decoration: none;
+      padding: 4px 10px; border: 1px solid var(--cream-border); border-radius: 6px;
+      font-size: 0.82rem; background: var(--control-bg); }
+    section.variant .links a:hover { background: var(--cream-hover); color: var(--brown-dark); }
+    section.variant .links .file { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.78rem;
+      color: var(--brown-soft); margin-left: auto; }
+
+    .common, .legend { padding: 18px 28px; background: var(--control-bg); border-top: 1px solid var(--cream-border); }
+    .common h3, .legend h3 { margin: 0 0 6px; font-size: 0.92rem; text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--brown-dark); }
+    .common ul, .legend ul { margin: 0; padding-left: 20px; font-size: 0.88rem; color: var(--brown-mid); }
+    .common li, .legend li { margin-bottom: 3px; }
+    .common li b, .legend li b { color: var(--brown-dark); }
+  </style>
+</head>
+<body>
+  <header class="page">
+    <h1>Editor unified — variant compare</h1>
+    <div class="sub">
+      <p><strong>Goal:</strong> the right-rail Map editor section becomes the single home for
+      every author + reference layer the user can touch. The current 5-toggle strip
+      (<code>showEventSchedule</code>, <code>showTrailheads</code>, <code>showVisitorContext</code>,
+      <code>showBrandLogos</code>, <code>showEditorPois</code>) goes away. The five buckets in
+      the prior pass (Point / Line / Polygon / Image / Callout) collapse to <strong>three</strong>:
+      <strong>Point · Line · Polygon</strong>.</p>
+      <p><strong>What "everything in one place" means here:</strong> brand logos render as icon
+      images but they are geometrically Points — they live under Point. Visitor context
+      renders as labeled callouts but they are geometrically Polygons — they live under
+      Polygon. <strong>Event-schedule POIs are just regular POIs</strong> with a
+      <code>#tag</code> that the schedule binds against — they live under Point with the
+      rest of the drawn POIs, no separate group.</p>
+      <p>The four variants below differ only in <strong>how each bucket organizes its
+      mixed-source contents</strong> (drawn / trailheads / brand / visitor) and where the
+      layer-level on/off lives now that the strip is gone.</p>
+    </div>
+    <div class="axes">
+      <span><b>Variant axis 1:</b> source organization (sub-groups / chips / focused / dots)</span>
+      <span><b>Variant axis 2:</b> layer-level on/off location (sub-group head / filter chips / sub-group head / Source-Derived-External)</span>
+      <span><b>Constant:</b> three buckets, same data, same ★ Visitor list, same create footer</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">1</span> Sub-grouped buckets</h2>
+        <div class="angle">Each bucket contains source sub-groups (Drawn / Trailheads / Brand / Visitor) with their own chevron + bulk visibility. Sub-group bulk = layer-level toggle.</div>
+        <div class="pros-cons">
+          <div class="label">Pros</div><div class="label">Cons</div>
+          <div class="pro">Two-level grouping reads cleanly: kind first, source second.</div>
+          <div class="con">More vertical space — every source gets its own header even with 1 row.</div>
+          <div class="pro">Layer-level on/off lives where the data lives. No floating strip.</div>
+          <div class="con">Drawing a new Point lands it deep in a sub-group, not at the bucket top.</div>
+        </div>
+      </header>
+      <div class="frame"><iframe src="editor_unified_v1_subgroups.html"></iframe></div>
+      <div class="links">
+        <a href="editor_unified_v1_subgroups.html" target="_blank">Open</a>
+        <span class="file">website/editor_unified_v1_subgroups.html</span>
+      </div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">2</span> Source chips on each row</h2>
+        <div class="angle">No sub-groups. Each row carries a colored source chip. Filter chips above the buckets mute or hide whole sources — they replace the 5-toggle strip.</div>
+        <div class="pros-cons">
+          <div class="label">Pros</div><div class="label">Cons</div>
+          <div class="pro">Flattest tree — fewest clicks to reach any row.</div>
+          <div class="con">More visual noise per row (chip + name + actions).</div>
+          <div class="pro">Filter chips are scannable; one click hides a whole source.</div>
+          <div class="con">No sub-group header means you can't bulk-act on "all brand logos" by tapping a head.</div>
+        </div>
+      </header>
+      <div class="frame"><iframe src="editor_unified_v2_chips.html"></iframe></div>
+      <div class="links">
+        <a href="editor_unified_v2_chips.html" target="_blank">Open</a>
+        <span class="file">website/editor_unified_v2_chips.html</span>
+      </div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">3</span> Focused (Drawn open, refs collapsed)</h2>
+        <div class="angle">Same shape as V1 but only the <b>Drawn</b> sub-group is open by default. Trailheads / Brand / Visitor are one click away with their counts visible on the head.</div>
+        <div class="pros-cons">
+          <div class="label">Pros</div><div class="label">Cons</div>
+          <div class="pro">Edit-focused default; reference clutter recedes.</div>
+          <div class="con">Reference layers feel "hidden behind a click" — easy to forget they exist.</div>
+          <div class="pro">No new affordances over V1 — just a default-state opinion.</div>
+          <div class="con">User who wants to ★ a trailhead needs to expand first; one extra click.</div>
+        </div>
+      </header>
+      <div class="frame"><iframe src="editor_unified_v3_focused.html"></iframe></div>
+      <div class="links">
+        <a href="editor_unified_v3_focused.html" target="_blank">Open</a>
+        <span class="file">website/editor_unified_v3_focused.html</span>
+      </div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">4</span> Minimal dots (no sub-groups, no chips)</h2>
+        <div class="angle">Three buckets, flat rows. Source is a small colored dot at the row start; a one-line legend explains the palette. Layer-level on/off moves out to Source / Derived / External reference where data toggles live anyway.</div>
+        <div class="pros-cons">
+          <div class="label">Pros</div><div class="label">Cons</div>
+          <div class="pro">Most compact; rows read like a sortable list.</div>
+          <div class="con">Layer toggles split across sections — "where do I hide brand logos?" needs an answer.</div>
+          <div class="pro">Editor section stays slim — no nested heads, no filter strip.</div>
+          <div class="con">Source dot is subtler than a chip — easy to skim past.</div>
+        </div>
+      </header>
+      <div class="frame"><iframe src="editor_unified_v4_dots.html"></iframe></div>
+      <div class="links">
+        <a href="editor_unified_v4_dots.html" target="_blank">Open</a>
+        <span class="file">website/editor_unified_v4_dots.html</span>
+      </div>
+    </section>
+  </main>
+
+  <div class="common">
+    <h3>What every variant changes vs. today</h3>
+    <ul>
+      <li><b>Five buckets become three.</b> Image and Callout merge into Point and Polygon respectively. Render style (icon-image, callout-label) is a property of the row, not a top-level axis.</li>
+      <li><b>5-toggle strip is gone.</b> <code>showEventSchedule</code>, <code>showTrailheads</code>, <code>showVisitorContext</code>, <code>showBrandLogos</code>, <code>showEditorPois</code> stop being floating layer switches above the tree. Their function moves into the tree (V1 / V2 / V3) or into the existing data-layer sections (V4).</li>
+      <li><b>Event-schedule POIs are regular drawn POIs.</b> No separate row group; the <code>#tag</code> on the POI is the binding to the schedule entry.</li>
+      <li><b>Drawn POIs stay split across buckets.</b> A Point lands under Point, a Polygon under Polygon, a Line under Line — driven by <code>feature.geometry.type</code>, same as today.</li>
+      <li><b>★ Visitor list stays at the top of the editor.</b> Live mirror of every highlighted feature across the tree; same source chip on each row.</li>
+      <li><b>Create footer is unchanged.</b> Category select + Place / Draw / Trace + Export / Clear / status / help at the bottom of the section.</li>
+    </ul>
+  </div>
+
+  <div class="legend">
+    <h3>Pick lens</h3>
+    <ul>
+      <li><b>If you usually focus on authoring</b> and only check refs occasionally: V3 (focused) reads best — drawn rows are the default surface.</li>
+      <li><b>If you treat all rows as roughly equal</b> and want to bulk-toggle by source: V1 (sub-grouped) gives that affordance natively.</li>
+      <li><b>If the curation question is "where is this row from"</b> more than "what kind of thing is it": V2 (chips) puts source on the row.</li>
+      <li><b>If you want the editor as compact as possible</b> and don't mind moving layer toggles out: V4 (dots) is the smallest visual footprint.</li>
+    </ul>
+  </div>
+</body>
+</html>

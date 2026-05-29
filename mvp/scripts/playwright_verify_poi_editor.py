@@ -136,22 +136,38 @@ def main() -> int:
         for layer in EDITOR_LAYERS:
             check(f"{layer} layer exists", page.evaluate(f"!!map.getLayer('{layer}')"))
         check("no features placed initially", feature_count(page) == 0)
-        check("Place POI button present", page.locator("#placePoiBtn").count() == 1)
-        check("Draw footprint button present", page.locator("#drawFootprintBtn").count() == 1)
-        check("Trace line button present", page.locator("#traceLineBtn").count() == 1)
+        # V3c: the three per-bucket + buttons are the visible affordance; the
+        # legacy #placePoiBtn / #drawFootprintBtn / #traceLineBtn live inside
+        # the hidden #legacyLayerToggles form (preserved so setDrawMode's
+        # class-flip plumbing keeps working).
+        check("Point bucket + button present",
+              page.locator('[data-editor-bucket-add="point"]').count() == 1)
+        check("Line bucket + button present",
+              page.locator('[data-editor-bucket-add="line"]').count() == 1)
+        check("Polygon bucket + button present",
+              page.locator('[data-editor-bucket-add="polygon"]').count() == 1)
+        check("legacy #placePoiBtn lives in hidden form",
+              page.locator("#placePoiBtn").count() == 1
+              and page.locator("#placePoiBtn").is_visible() is False)
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["initial"]))
 
         print("\n== Place POIs (point mode) ==")
-        click_in_section(page, "#placePoiBtn")
+        click_in_section(page, '[data-editor-bucket-add="point"]')
         page.wait_for_timeout(200)
-        check("draw mode is 'point' after Place POI", page.evaluate("draw.getMode()") == "point")
+        check("draw mode is 'point' after clicking Point +",
+              page.evaluate("draw.getMode()") == "point")
         check(
-            "Place POI button shows active state",
-            "active" in (page.locator("#placePoiBtn").get_attribute("class") or ""),
+            "Point + button shows active state",
+            "active" in (page.locator('[data-editor-bucket-add="point"]').get_attribute("class") or ""),
+        )
+        check(
+            "Point bucket inline create row opened",
+            page.locator('[data-editor-bucket-body="point"] .editor-create-inline').count() == 1,
         )
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["placing"]))
 
-        page.select_option("#poiCategory", "Pavilion")
+        point_category_select = '[data-editor-bucket-body="point"] select.editor-create-category'
+        page.select_option(point_category_select, "Pavilion")
 
         def _place_point(x: int, y: int) -> None:
             # Sprint 02 default-on buildings + visitor-context callouts +
@@ -170,25 +186,32 @@ def main() -> int:
 
         for x, y in PLACE_POINTS[:2]:
             _place_point(x, y)
-        page.select_option("#poiCategory", "Building")
+        page.select_option(point_category_select, "Building")
         _place_point(*PLACE_POINTS[2])
         check("three POIs placed", kind_count(page, "Point") == 3, f"points={kind_count(page, 'Point')}")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["placed"]))
 
         print("\n== Draw a footprint (polygon mode) ==")
-        page.locator("#drawFootprintBtn").click()
+        # Clicking another bucket's + closes the prior create row and starts
+        # the new mode.
+        page.locator('[data-editor-bucket-add="polygon"]').click()
         page.wait_for_timeout(200)
-        check("draw mode is 'polygon' after Draw footprint",
+        check("draw mode is 'polygon' after clicking Polygon +",
               page.evaluate("draw.getMode()") == "polygon")
         check(
-            "Draw footprint button shows active state",
-            "active" in (page.locator("#drawFootprintBtn").get_attribute("class") or ""),
+            "Polygon + button shows active state",
+            "active" in (page.locator('[data-editor-bucket-add="polygon"]').get_attribute("class") or ""),
         )
         check(
-            "Place POI button no longer active",
-            "active" not in (page.locator("#placePoiBtn").get_attribute("class") or ""),
+            "Point + button no longer active",
+            "active" not in (page.locator('[data-editor-bucket-add="point"]').get_attribute("class") or ""),
         )
-        page.select_option("#poiCategory", "Building")
+        check(
+            "Point bucket create row removed when Polygon + opened",
+            page.locator('[data-editor-bucket-body="point"] .editor-create-inline').count() == 0,
+        )
+        polygon_category_select = '[data-editor-bucket-body="polygon"] select.editor-create-category'
+        page.select_option(polygon_category_select, "Building")
         # Click each corner, then click the first corner again to close the ring.
         for x, y in FOOTPRINT_CORNERS:
             page.mouse.click(x, y)
@@ -201,15 +224,16 @@ def main() -> int:
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["footprint"]))
 
         print("\n== Trace a line (linestring mode) ==")
-        page.locator("#traceLineBtn").click()
+        page.locator('[data-editor-bucket-add="line"]').click()
         page.wait_for_timeout(200)
-        check("draw mode is 'linestring' after Trace line",
+        check("draw mode is 'linestring' after clicking Line +",
               page.evaluate("draw.getMode()") == "linestring")
         check(
-            "Trace line button shows active state",
-            "active" in (page.locator("#traceLineBtn").get_attribute("class") or ""),
+            "Line + button shows active state",
+            "active" in (page.locator('[data-editor-bucket-add="line"]').get_attribute("class") or ""),
         )
-        page.select_option("#poiCategory", "Trail trace")
+        line_category_select = '[data-editor-bucket-body="line"] select.editor-create-category'
+        page.select_option(line_category_select, "Trail trace")
         for x, y in TRACE_POINTS:
             page.mouse.click(x, y)
             page.wait_for_timeout(220)
@@ -333,19 +357,36 @@ def main() -> int:
         check("footprint deleted via inline editor", kind_count(page, "Polygon") == 0)
         check("two POIs and one trace remain", feature_count(page) == 3, f"count={feature_count(page)}")
 
-        print("\n== Drawn POIs toggle ==")
+        print("\n== Drawn POIs toggle (now driven by Line/Drawn sub-group bulk) ==")
         check(
             "editor layers visible by default",
             all(layer_visibility(page, lyr) == "visible" for lyr in EDITOR_LAYERS),
         )
-        page.locator("#showEditorPois").click()
+        # V3c + drawn-subgroup-flush polish: the Drawn POIs sub-group head is
+        # hidden inside each bucket (it duplicated the bucket head), so the
+        # visible mirror of #showEditorPois is the bucket-level bulk on each
+        # bucket whose only source is drawn. Point bucket includes trailheads
+        # and brand-logos in its toggle set (so Point starts indeterminate),
+        # and Polygon includes visitorContext. Line is the clean case: its
+        # only source is drawn, so the bucket bulk starts checked and one
+        # click flips both showEditorPois and the layer visibility.
+        line_bucket_bulk = '[data-editor-bucket-bulk="line"]'
+        check(
+            "Line bucket bulk starts checked (showEditorPois is on)",
+            page.locator(line_bucket_bulk).is_checked(),
+        )
+        page.locator(line_bucket_bulk).click()
         page.wait_for_timeout(250)
         check(
-            "all editor layers hidden after toggle off",
+            "all editor layers hidden after bucket toggle off",
             all(layer_visibility(page, lyr) == "none" for lyr in EDITOR_LAYERS),
         )
+        check(
+            "hidden #showEditorPois reflects the toggle",
+            page.evaluate("document.getElementById('showEditorPois').checked") is False,
+        )
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["hidden"]))
-        page.locator("#showEditorPois").click()
+        page.locator(line_bucket_bulk).click()
         page.wait_for_timeout(250)
         check(
             "all editor layers visible after toggle on",

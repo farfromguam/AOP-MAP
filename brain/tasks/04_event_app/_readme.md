@@ -23,6 +23,7 @@ The goal is not to reopen every Sprint 03 card. The shipped cards move to
 - `brand_assets_and_permissions.md` - raster cleanup and brand-use permission posture.
 - `park_bounds_icon_apply.md` - pick one boundary-derived Park icon and wire it into the viewer.
 - `editor_unified_tree.md` - combine the right rail's POI and Map editor sections into one tree by base type (Point / Line / Polygon / Image / Callout) with a live ★ Visitor list group.
+- `editor_three_buckets_v3c.md` - supersedes the prior tree pass: collapse to three buckets (Point / Line / Polygon), delete the 5-toggle strip, source sub-groups inside each bucket (Drawn open, refs collapsed), and per-bucket `+` opens an inline create row.
 
 ## Extraction map
 

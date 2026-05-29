@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editor unified — V4 minimal dots</title>
+  <style>
+    :root {
+      --brown-ink: #2e2418;
+      --brown-mid: #4e4128;
+      --brown-dark: #2a1f12;
+      --brown-soft: #6a5638;
+      --cream-hover: #efe2c6;
+      --cream-surface: #faf6eb;
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --control-border: #b9aa88;
+      --moss: #5f7157;
+      --moss-dark: #384833;
+      --moss-soft: #e3ebdc;
+      --rust: #a85020;
+      --rust-soft: #f1d8c6;
+      --gold: #d4a866;
+      --gold-soft: rgba(212, 168, 102, 0.18);
+    }
+    * { box-sizing: border-box; }
+    body, html { margin: 0; height: 100%; font: 14px/1.45 Inter, system-ui, sans-serif; color: var(--brown-ink); }
+    .map { position: fixed; inset: 0; background:
+      radial-gradient(circle at 30% 30%, #c9d6b7, transparent 60%),
+      radial-gradient(circle at 70% 70%, #b9c2a0, transparent 55%),
+      linear-gradient(135deg, #9eab8a, #7e8b6a); }
+    .map::after { content: ""; position: absolute; inset: 0; background-image:
+      linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 60px 60px; }
+    .variant-label { position: fixed; top: 16px; left: 16px; z-index: 5;
+      background: var(--moss-dark); color: #f7f1e2; padding: 6px 14px; border-radius: 6px;
+      font: 700 0.78rem Inter, system-ui, sans-serif; letter-spacing: 0.05em; text-transform: uppercase;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
+    .variant-label small { display: block; font: 400 0.74rem Inter, system-ui, sans-serif;
+      text-transform: none; letter-spacing: 0; color: rgba(247,241,226,0.78); margin-top: 2px; }
+
+    .panel { position: fixed; right: 12px; bottom: 12px; width: 380px;
+      max-height: calc(100vh - 24px); overflow-y: auto;
+      background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px;
+      box-shadow: 0 10px 35px rgba(0,0,0,0.15); }
+    .panel-header { display: flex; align-items: center; gap: 8px; }
+    .panel-header h1 { margin: 0; flex: 1; font-size: 1rem; }
+    .panel-export, .panel-collapse { background: #fff8e8; border: 1px solid #d8d0bd;
+      border-radius: 6px; width: 28px; height: 24px; color: var(--brown-mid); cursor: pointer; }
+    .preset-status { display: block; color: var(--brown-soft); font-size: 0.78rem; margin: 6px 0 0; }
+
+    .panel-section { border-top: 1px solid #d8d0bd; padding-top: 8px; margin-top: 10px; }
+    .panel-section.collapsed .section-content { display: none; }
+    .section-header { display: grid; grid-template-columns: 1fr auto auto; align-items: center;
+      gap: 4px; margin-bottom: 8px; }
+    .section-label { font-weight: 700; font-size: 0.78rem; text-transform: uppercase;
+      letter-spacing: 0.04em; color: var(--brown-ink); }
+    .section-action, .section-toggle { background: #fff8e8; border: 1px solid #d8d0bd;
+      border-radius: 6px; color: var(--brown-mid); cursor: pointer; }
+    .section-action { padding: 1px 6px; font: 700 0.72rem Inter, system-ui, sans-serif; }
+    .section-toggle { width: 28px; height: 24px; }
+    .panel-section.collapsed .section-chevron { display: inline-block; transform: rotate(-90deg); }
+
+    .editor-tree { display: grid; gap: 8px; }
+    .editor-bucket { background: #fffefa; border: 1px solid var(--cream-border); border-radius: 8px;
+      overflow: hidden; }
+    .editor-bucket-head { display: grid; grid-template-columns: 22px 18px minmax(0, 1fr) auto;
+      gap: 6px; align-items: center; padding: 6px 8px; background: rgba(247,241,226,0.92);
+      font-size: 0.84rem; color: var(--brown-dark); font-weight: 600; }
+    .editor-bucket-head .chev { background: none; border: 0; cursor: pointer; padding: 0;
+      width: 22px; height: 22px; font-size: 0.95rem; color: var(--brown-soft); }
+    .editor-bucket-head .glyph { color: var(--brown-soft); margin-right: 2px; }
+    .editor-bucket-head .count { color: var(--brown-soft); font-size: 0.75rem; font-weight: 400; }
+    .editor-bucket[data-bucket="visitor"] .editor-bucket-head { background: var(--gold-soft); }
+    .editor-bucket-body { padding: 6px 8px 8px; display: grid; gap: 2px; }
+
+    /* Row: source dot + visibility + star + name + actions. No chip, no filters. */
+    .row { display: grid; grid-template-columns: 10px 16px 22px minmax(0, 1fr) auto auto auto;
+      gap: 6px; align-items: center; padding: 4px 4px; border-radius: 5px;
+      font-size: 0.82rem; cursor: pointer; }
+    .row:hover { background: rgba(247,235,200,0.6); }
+    .row input[type=checkbox] { margin: 0; }
+    .row .source-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+      justify-self: center; }
+    .row .source-dot.drawn { background: var(--rust); }
+    .row .source-dot.trailhead { background: #4f76a4; }
+    .row .source-dot.brand { background: var(--gold); }
+    .row .source-dot.visitor { background: #b35c93; }
+    .row .star { background: none; border: 0; width: 22px; height: 22px;
+      font-size: 1rem; color: var(--brown-soft); cursor: pointer; padding: 0; }
+    .row .star.on { color: var(--rust); }
+    .row .name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .row .name .tag { color: var(--rust); font-weight: 600; font-size: 0.76rem; margin-left: 4px; }
+    .row .fly, .row .chev-edit { background: none; border: 0; width: 22px; height: 22px;
+      color: var(--brown-mid); cursor: pointer; padding: 0; font-size: 0.9rem; }
+
+    .visitor-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto auto;
+      gap: 6px; align-items: center; padding: 4px 4px; border-radius: 5px; font-size: 0.82rem;
+      background: rgba(255,253,245,0.6); cursor: pointer; }
+    .visitor-row .star { color: var(--rust); background: none; border: 0; width: 22px; height: 22px;
+      font-size: 1rem; padding: 0; }
+    .visitor-row .name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .visitor-row .chip { font-size: 0.62rem; padding: 1px 6px; border-radius: 8px;
+      background: var(--moss-soft); color: var(--moss-dark); text-transform: uppercase;
+      letter-spacing: 0.02em; font-weight: 700; }
+    .visitor-row .fly { background: none; border: 0; color: var(--brown-mid); cursor: pointer;
+      font-size: 0.9rem; padding: 0; width: 22px; height: 22px; }
+
+    /* Source legend — tiny, one line. Replaces the filter strip. */
+    .source-legend { display: flex; gap: 12px; align-items: center; padding: 4px 8px;
+      margin-bottom: 8px; font-size: 0.72rem; color: var(--brown-soft);
+      background: rgba(247,241,226,0.5); border-radius: 6px; }
+    .source-legend .swatch { display: inline-flex; align-items: center; gap: 4px; }
+    .source-legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .source-legend .dot.drawn { background: var(--rust); }
+    .source-legend .dot.trailhead { background: #4f76a4; }
+    .source-legend .dot.brand { background: var(--gold); }
+    .source-legend .dot.visitor { background: #b35c93; }
+
+    .editor-create-footer { border-top: 1px dashed var(--cream-border); margin-top: 10px;
+      padding-top: 10px; display: grid; gap: 6px; }
+    .editor-create-footer .create-label { font-size: 0.74rem; color: var(--brown-soft); text-transform: uppercase;
+      letter-spacing: 0.05em; }
+    .editor-create-footer .row-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .editor-create-footer button { padding: 6px 4px; font: 700 0.8rem Inter, system-ui, sans-serif;
+      border: 1px solid var(--control-border); background: #fff8e8; color: var(--brown-ink);
+      border-radius: 6px; cursor: pointer; }
+    .editor-create-footer select { padding: 5px 6px; font: inherit; border: 1px solid var(--control-border);
+      border-radius: 5px; background: var(--control-bg); }
+    .editor-create-footer small { color: var(--brown-soft); font-size: 0.74rem; line-height: 1.35; }
+
+    .diff-note { background: rgba(255, 247, 220, 0.95); border: 1px solid var(--gold);
+      border-radius: 8px; padding: 8px 10px; font-size: 0.78rem; color: var(--brown-dark);
+      margin-bottom: 8px; }
+    .diff-note b { color: var(--moss-dark); }
+  </style>
+</head>
+<body>
+  <div class="map"></div>
+  <div class="variant-label">V4 — Minimal dots<small>Source = a dot at the row start; layer toggles live in Source/Derived</small></div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <h1>AOP edit panel</h1>
+      <button class="panel-export">⧉</button>
+      <button class="panel-collapse">▾</button>
+    </div>
+    <small class="preset-status">Park preset active.</small>
+
+    <section class="panel-section collapsed"><div class="section-header"><span class="section-label">Source layers</span><button class="section-action">⧉</button><button class="section-toggle"><span class="section-chevron">▸</span></button></div></section>
+    <section class="panel-section collapsed"><div class="section-header"><span class="section-label">Derived layers</span><button class="section-action">⧉</button><button class="section-toggle"><span class="section-chevron">▸</span></button></div></section>
+    <section class="panel-section collapsed"><div class="section-header"><span class="section-label">External reference</span><button class="section-action">⧉</button><button class="section-toggle"><span class="section-chevron">▸</span></button></div></section>
+
+    <section class="panel-section">
+      <div class="section-header">
+        <span class="section-label">Map editor</span>
+        <button class="section-action">⧉</button>
+        <button class="section-toggle"><span class="section-chevron">▾</span></button>
+      </div>
+      <div class="section-content">
+
+        <div class="diff-note">
+          <b>What changed:</b> the 5-toggle strip is gone. No sub-groups. No filter chips.
+          Source is a colored dot at the start of each row (legend just below). Each
+          bucket's bulk-checkbox is the only on/off. Trailheads / Brand / Visitor layer
+          toggles move into <b>Source / Derived / External reference</b> with the rest of
+          the data-layer switches.
+        </div>
+
+        <div class="source-legend">
+          <span class="swatch"><span class="dot drawn"></span>Drawn</span>
+          <span class="swatch"><span class="dot trailhead"></span>Trailheads</span>
+          <span class="swatch"><span class="dot brand"></span>Brand logos</span>
+          <span class="swatch"><span class="dot visitor"></span>Visitor context</span>
+        </div>
+
+        <div class="editor-tree">
+
+          <div class="editor-bucket" data-bucket="visitor">
+            <div class="editor-bucket-head">
+              <button class="chev">▾</button><span></span>
+              <span><span class="glyph">★</span> Visitor list</span><span class="count">3</span>
+            </div>
+            <div class="editor-bucket-body">
+              <div class="visitor-row"><button class="star">★</button><span class="name">Pavilion</span><span class="chip">drawn · point</span><button class="fly">🎯</button></div>
+              <div class="visitor-row"><button class="star">★</button><span class="name">AOP badge</span><span class="chip">brand · point</span><button class="fly">🎯</button></div>
+              <div class="visitor-row"><button class="star">★</button><span class="name">Monteagle plateau services</span><span class="chip">visitor · polygon</span><button class="fly">🎯</button></div>
+            </div>
+          </div>
+
+          <div class="editor-bucket" data-bucket="point">
+            <div class="editor-bucket-head">
+              <button class="chev">▾</button><input type="checkbox" checked />
+              <span><span class="glyph">●</span> Point</span><span class="count">9/9 · 1 ★</span>
+            </div>
+            <div class="editor-bucket-body">
+              <div class="row"><span class="source-dot drawn"></span><input type="checkbox" checked /><button class="star on">★</button><span class="name">Pavilion <span class="tag">#pavilion</span></span><button class="chev-edit">▸</button><button class="fly">🎯</button><button class="chev-edit">✋</button></div>
+              <div class="row"><span class="source-dot drawn"></span><input type="checkbox" checked /><button class="star">☆</button><span class="name">Registration <span class="tag">#registration</span></span><button class="chev-edit">▸</button><button class="fly">🎯</button><button class="chev-edit">✋</button></div>
+              <div class="row"><span class="source-dot drawn"></span><input type="checkbox" checked /><button class="star">☆</button><span class="name">Coffee <span class="tag">#coffee</span></span><button class="chev-edit">▸</button><button class="fly">🎯</button><button class="chev-edit">✋</button></div>
+              <div class="row"><span class="source-dot drawn"></span><input type="checkbox" checked /><button class="star">☆</button><span class="name">Pit lane <span class="tag">#pit_lane</span></span><button class="chev-edit">▸</button><button class="fly">🎯</button><button class="chev-edit">✋</button></div>
+              <div class="row"><span class="source-dot drawn"></span><input type="checkbox" checked /><button class="star">☆</button><span class="name">Hazard — rebar</span><button class="chev-edit">▸</button><button class="fly">🎯</button><button class="chev-edit">✋</button></div>
+              <div class="row"><span class="source-dot trailhead"></span><input type="checkbox" checked /><button class="star">☆</button><span class="name">North gate trailhead</span><span></span><button class="fly">🎯</button><span></span></div>
+              <div class="row"><span class="source-dot trailhead"></span><input type="checkbox" checked /><button class="star">☆</button><span class="name">Pavilion trailhead</span><span></span><button class="fly">🎯</button><span></span></div>
+              <div class="row"><span class="source-dot brand"></span><input type="checkbox" checked /><button class="star on">★</button><span class="name">AOP badge</span><button class="chev-edit">▸</button><button class="fly">🎯</button><button class="chev-edit">✋</button></div>
+              <div class="row"><span class="source-dot brand"></span><input type="checkbox" checked /><button class="star">☆</button><span class="name">Rock Warblers</span><button class="chev-edit">▸</button><button class="fly">🎯</button><button class="chev-edit">✋</button></div>
+            </div>
+          </div>
+
+          <div class="editor-bucket" data-bucket="line">
+            <div class="editor-bucket-head">
+              <button class="chev">▾</button><input type="checkbox" checked />
+              <span><span class="glyph">╱</span> Line</span><span class="count">1/1</span>
+            </div>
+            <div class="editor-bucket-body">
+              <div class="row"><span class="source-dot drawn"></span><input type="checkbox" checked /><button class="star">☆</button><span class="name">North loop trace</span><button class="chev-edit">▸</button><button class="fly">🎯</button><button class="chev-edit">✋</button></div>
+            </div>
+          </div>
+
+          <div class="editor-bucket" data-bucket="polygon">
+            <div class="editor-bucket-head">
+              <button class="chev">▾</button><input type="checkbox" checked />
+              <span><span class="glyph">▭</span> Polygon</span><span class="count">3/3 · 1 ★</span>
+            </div>
+            <div class="editor-bucket-body">
+              <div class="row"><span class="source-dot drawn"></span><input type="checkbox" checked /><button class="star">☆</button><span class="name">Big tent footprint</span><button class="chev-edit">▸</button><button class="fly">🎯</button><button class="chev-edit">✋</button></div>
+              <div class="row"><span class="source-dot visitor"></span><input type="checkbox" checked /><button class="star on">★</button><span class="name">Monteagle plateau services</span><button class="chev-edit">▸</button><button class="fly">🎯</button><button class="chev-edit">✋</button></div>
+              <div class="row"><span class="source-dot visitor"></span><input type="checkbox" checked /><button class="star">☆</button><span class="name">South Pittsburg dining</span><button class="chev-edit">▸</button><button class="fly">🎯</button><button class="chev-edit">✋</button></div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="editor-create-footer">
+          <span class="create-label">+ Create</span>
+          <select>
+            <option>Pavilion</option><option>Building</option><option>Restroom</option>
+            <option>Parking</option><option>Staging area</option><option>Trail trace</option>
+            <option>Landmark</option><option>Hazard</option>
+          </select>
+          <div class="row-buttons"><button>Place POI</button><button>Draw footprint</button></div>
+          <div class="row-buttons"><button>Trace line</button><button>Clear all</button></div>
+          <button>Export GeoJSON</button>
+          <small>0 POIs, 0 footprints, 0 traces.</small>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

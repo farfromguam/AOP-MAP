@@ -319,23 +319,92 @@
                                   export + clear + status + help). At the
                                   bottom so the tree leads.
        Card: brain/tasks/04_event_app/editor_unified_tree.md. */
-    .editor-layer-strip { display: grid; gap: 3px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--cream-border); }
-    .editor-layer-strip label { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--brown-ink); }
+    /* Hidden form block hosting the 5 legacy layer-visibility toggles and the
+       three legacy draw buttons. The visible UI for those affordances moved
+       into per-bucket sub-group bulk checkboxes and per-bucket + buttons in
+       V3c (card: brain/tasks/04_event_app/editor_three_buckets_v3c.md). The
+       legacy nodes survive so existing getElementById wiring, preset capture/
+       apply, and MapLibre layer-visibility plumbing keep working unchanged. */
+    #legacyLayerToggles { display: none; }
     .editor-tree { display: grid; gap: 10px; }
     .editor-bucket { display: grid; gap: 4px; padding: 4px 0; border-radius: 6px; }
     .editor-bucket[data-bucket="visitor-list"] { padding: 4px 6px; background: rgba(212, 168, 102, 0.10); border: 1px solid rgba(212, 168, 102, 0.30); }
-    .editor-bucket-head { display: grid; grid-template-columns: 22px 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 5px; background: rgba(247, 241, 226, 0.92); font-size: 0.82rem; color: var(--brown-dark); font-weight: 600; }
-    .editor-bucket[data-bucket="visitor-list"] .editor-bucket-head { background: rgba(212, 168, 102, 0.18); }
+    .editor-bucket-head { display: grid; grid-template-columns: 22px 18px minmax(0, 1fr) auto auto; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 5px; background: rgba(247, 241, 226, 0.92); font-size: 0.82rem; color: var(--brown-dark); font-weight: 600; }
+    .editor-bucket[data-bucket="visitor-list"] .editor-bucket-head { background: rgba(212, 168, 102, 0.18); grid-template-columns: 22px 18px minmax(0, 1fr) auto; }
     .editor-bucket-head .editor-bucket-chevron { background: none; border: 0; cursor: pointer; padding: 0; width: 22px; height: 22px; font-size: 0.95rem; color: var(--brown-soft); }
     .editor-bucket-head .editor-bucket-chevron:hover { color: var(--brown-dark); }
     .editor-bucket-head .editor-bucket-glyph { color: var(--brown-soft); margin-right: 2px; }
     .editor-bucket-head .editor-bucket-label { min-width: 0; overflow-wrap: anywhere; }
     .editor-bucket-head .editor-bucket-count { color: var(--brown-soft); font-size: 0.75rem; font-weight: 400; }
-    .editor-bucket-body { display: grid; gap: 6px; padding: 2px 0 4px 22px; }
+    .editor-bucket-body { display: grid; gap: 6px; padding: 2px 0 4px 8px; }
     .editor-bucket-body[hidden] { display: none; }
     .editor-bucket-body .feature-list { margin: 0; padding-bottom: 0; border-bottom: 0; }
     .editor-bucket-body .feature-list-heading { display: none; }
+    /* The bucket head already announces the geometry kind (● Point / ╱ Line /
+       ▭ Polygon), so the inner feature-list-group-head ("● POI 1/1") is just
+       three-deep nesting saying the same thing. The sub-group bulk-checkbox
+       covers the layer-level on/off, and individual row checkboxes cover
+       per-feature visibility; hiding the kind group-head loses no axis. */
+    .editor-bucket-body .feature-list-group-head { display: none; }
+    /* Three nested left-paddings (bucket body + subgroup body + feature-list-
+       rows) used to eat ~64 px of row width inside an editor bucket, which
+       crushed the brand-logo row's name column to one character wide. Zero
+       the innermost padding so the row gets its full width back. */
+    .editor-bucket-body .feature-list-rows { padding-left: 0; }
     .editor-bucket-empty { font-size: 0.78rem; color: var(--brown-soft); font-style: italic; padding: 2px 0; }
+    /* V3c: bucket-head + button. Click expands an inline create row inside the
+       bucket body, calls setDrawMode for that bucket's geometry kind, and
+       echoes an active state (rust fill). */
+    .editor-bucket-head .editor-bucket-add { background: var(--moss-soft); border: 1px solid var(--moss); color: var(--moss-dark); cursor: pointer; padding: 0; width: 22px; height: 22px; border-radius: 5px; font: 700 0.95rem Inter, system-ui, sans-serif; line-height: 1; }
+    .editor-bucket-head .editor-bucket-add:hover { background: var(--moss); color: #f7f1e2; }
+    .editor-bucket-head .editor-bucket-add.active { background: var(--rust); border-color: var(--rust); color: #fff7e8; box-shadow: 0 0 0 2px rgba(168, 80, 32, 0.18); }
+    /* V3c: per-bucket inline create row. Lives at the top of the bucket body
+       while the + is active; carries a bucket-scoped category select + the
+       matching primary action (Place / Draw / Trace) + cancel ✕. */
+    .editor-create-inline { background: linear-gradient(180deg, #fff8e2, #fff3cc); border: 1px solid #d4a866; border-radius: 6px; padding: 8px; display: grid; gap: 6px; margin: 0 0 6px; }
+    .editor-create-inline .editor-create-label-row { display: flex; align-items: center; gap: 6px; font: 700 0.78rem Inter, system-ui, sans-serif; color: var(--brown-dark); }
+    .editor-create-inline .editor-create-glyph { color: var(--brown-soft); }
+    .editor-create-inline .editor-create-cancel { margin-left: auto; background: none; border: 0; color: var(--brown-mid); cursor: pointer; font-size: 0.92rem; padding: 0 4px; }
+    .editor-create-inline .editor-create-control-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+    .editor-create-inline .editor-create-control-row .editor-create-category-label { font-size: 0.76rem; color: var(--brown-mid); }
+    .editor-create-inline select { padding: 5px 6px; font: inherit; border: 1px solid var(--control-border); border-radius: 5px; background: var(--control-bg); min-width: 0; }
+    .editor-create-inline .editor-create-start { padding: 5px 10px; font: 700 0.82rem Inter, system-ui, sans-serif; border: 1px solid var(--moss); background: var(--moss); color: #f7f1e2; border-radius: 6px; cursor: pointer; }
+    .editor-create-inline .editor-create-start:hover { background: var(--moss-dark); }
+    .editor-create-inline .editor-create-start.active { background: var(--rust); border-color: var(--rust); }
+    .editor-create-inline small { color: var(--brown-mid); font-size: 0.72rem; line-height: 1.35; }
+    /* V3c: source sub-group inside a bucket body. Head carries a chevron, a
+       bulk-vis checkbox (two-way bridged to the hidden legacy layer toggle),
+       a source dot, the source label, and the count. Drawn = open default;
+       reference sources = collapsed default. */
+    .editor-subgroup { border-radius: 6px; }
+    .editor-subgroup-head { display: grid; grid-template-columns: 18px 16px 10px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 3px 4px; font-size: 0.78rem; color: var(--brown-mid); background: #f6efdc; border-radius: 5px; }
+    .editor-subgroup-head .editor-subgroup-chev { background: none; border: 0; padding: 0; width: 18px; height: 18px; font-size: 0.82rem; color: var(--brown-soft); cursor: pointer; }
+    .editor-subgroup-head .editor-subgroup-chev:hover { color: var(--brown-dark); }
+    .editor-subgroup-head .editor-subgroup-bulk { margin: 0; }
+    .editor-subgroup-head .editor-subgroup-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; justify-self: center; }
+    .editor-subgroup-head .editor-subgroup-dot.drawn { background: var(--rust); }
+    .editor-subgroup-head .editor-subgroup-dot.trailhead { background: #4f76a4; }
+    .editor-subgroup-head .editor-subgroup-dot.brand { background: #d4a866; }
+    .editor-subgroup-head .editor-subgroup-dot.visitor { background: #b35c93; }
+    .editor-subgroup-head .editor-subgroup-label { font-weight: 600; color: var(--brown-dark); cursor: pointer; }
+    .editor-subgroup-head .editor-subgroup-count { color: var(--brown-soft); font-size: 0.72rem; }
+    .editor-subgroup.collapsed .editor-subgroup-body { display: none; }
+    /* The chev's glyph itself is the orientation cue (▾ when expanded, ▸ when
+       collapsed — same JS toggle as the bucket chevrons). Don't rotate the
+       glyph on top of that or it ends up pointing up instead of right. */
+    .editor-subgroup.collapsed .editor-subgroup-head { opacity: 0.82; }
+    .editor-subgroup-body { display: grid; gap: 4px; padding: 4px 4px 4px 8px; }
+    /* The Drawn POIs sub-group is the bucket's primary content — the bucket
+       head already announces it ("● Point" / "╱ Line" / "▭ Polygon" with the
+       + button right there). A second "● Drawn POIs" head bar below the
+       bucket head was a near-clone (chevron + checkbox + dot + label + count),
+       so render Drawn rows flush in the bucket body and drop the "No items
+       yet" placeholder for empty Drawn (the bucket's + button is the action).
+       Reference sub-groups (Trailheads / Brand logos / Visitor context) keep
+       their full heads since they're a real second axis. */
+    .editor-subgroup[data-source="drawn"] > .editor-subgroup-head { display: none; }
+    .editor-subgroup[data-source="drawn"] > .editor-subgroup-body { padding: 0; }
+    .editor-subgroup[data-source="drawn"] > .editor-subgroup-body > .editor-bucket-empty { display: none; }
     .editor-visitor-list-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 5px; cursor: pointer; }
     .editor-visitor-list-row:hover { background: rgba(247, 241, 226, 0.8); }
     .editor-visitor-list-row .vrow-name { font-size: 0.82rem; color: var(--brown-dark); overflow-wrap: anywhere; min-width: 0; }
@@ -820,52 +889,55 @@
           </button>
         </div>
         <div class="section-content">
-          <!-- Layer-level on/off for the five editor-owned source layers.
-               Bucket-head bulk toggles below switch per-feature visibility;
-               these five flip the whole layer. -->
-          <div class="editor-layer-strip">
-            <label><input type="checkbox" id="showEventSchedule" /> Event schedule POIs</label>
-            <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
-            <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
-            <label><input type="checkbox" id="showBrandLogos" /> Brand logos (AOP &amp; Rock Warblers)</label>
-            <label><input type="checkbox" id="showEditorPois" checked /> Drawn POIs</label>
-          </div>
-          <!-- Bucket tree rendered by renderEditorTree(). Five buckets keyed
-               by renderable kind: Point, Line, Polygon, Image, Callout. A
-               ★ Visitor list virtual group renders above as a live mirror of
-               every highlighted feature. Card:
-               brain/tasks/04_event_app/editor_unified_tree.md. -->
+          <!-- Bucket tree rendered by buildEditorTree(). Three geometry buckets
+               (Point / Line / Polygon) plus a ★ Visitor list virtual group at
+               the top. Each bucket head carries a + that opens an inline
+               create row inside the bucket. Source sub-groups (Drawn /
+               Trailheads / Brand / Visitor) live inside each bucket; Drawn is
+               open by default, references collapse. Card:
+               brain/tasks/04_event_app/editor_three_buckets_v3c.md. -->
           <div id="editorTree" class="editor-tree"></div>
-          <!-- Create footer — category + draw / trace / export / clear. -->
+          <!-- Create footer — Export / Clear / status / help. The three draw
+               buttons (Place POI / Draw footprint / Trace line) and the
+               default-category select moved into each bucket's inline create
+               row (see #legacyLayerToggles below for the hidden originals). -->
           <div class="editor-create-footer">
-            <div class="editor-row">
-              <select id="poiCategory" title="Default category for the next drawn feature (the leaf's category is editable from its inline editor)" style="flex:1">
-                <option>Pavilion</option>
-                <option>Building</option>
-                <option>Restroom</option>
-                <option>Parking</option>
-                <option>Staging area</option>
-                <option>Gate</option>
-                <option>Trail trace</option>
-                <option>Road trace</option>
-                <option>Landmark</option>
-                <option>Hazard</option>
-                <option>Other</option>
-              </select>
-            </div>
-            <div class="editor-row">
-              <button id="placePoiBtn" type="button">Place POI</button>
-              <button id="drawFootprintBtn" type="button">Draw footprint</button>
-            </div>
-            <div class="editor-row">
-              <button id="traceLineBtn" type="button">Trace line</button>
-            </div>
             <div class="editor-row">
               <button id="exportPoiBtn" type="button">Export GeoJSON</button>
               <button id="clearPoiBtn" type="button">Clear all</button>
             </div>
             <small id="poiStatus">0 POIs, 0 footprints, 0 traces.</small>
-            <small>Pick a category, then <b>Place POI</b> (one click), <b>Draw footprint</b> (click each corner), or <b>Trace line</b> (click vertices, press Enter to finish). Drawn features land in the matching bucket above (<b>Point</b> / <b>Polygon</b> / <b>Line</b>). Click the <code>▸</code> chevron on any drawn row to rename, re-categorize, add notes, or delete. Map-click on a drawn feature jumps to its editor. ★ on any leaf surfaces it in the left-rail POI tab and the <b>Visitor list</b> group at the top. Edits save in this browser. A fresh viewer (or <b>Reset viewer</b>) seeds the editor from <code>website/data/aop_editor_seed_pois.geojson</code>. To bake your work into the seed: <b>Export GeoJSON</b> → replace that file with the download → commit.</small>
+            <small>Each bucket above has its own <b>+</b> button — click to choose a category and start placing / drawing / tracing. The new feature lands in <b>Drawn POIs</b> under the matching bucket. Click the <code>▸</code> chevron on any drawn row to rename, re-categorize, add notes, or delete. Map-click on a drawn feature jumps to its editor. ★ on any leaf surfaces it in the left-rail POI tab and the <b>Visitor list</b> group at the top. Edits save in this browser. A fresh viewer (or <b>Reset viewer</b>) seeds the editor from <code>website/data/aop_editor_seed_pois.geojson</code>. To bake your work into the seed: <b>Export GeoJSON</b> → replace that file with the download → commit.</small>
+          </div>
+          <!-- Hidden form block. These nodes used to drive the visible UI; in
+               V3c the per-bucket sub-group bulk checkboxes mirror the 5 layer
+               toggles via a two-way bridge, and the per-bucket inline create
+               rows wrap the three draw buttons. Keeping the originals in the
+               DOM (hidden) means preset capture/apply, paint drawers, MapLibre
+               layer-visibility wiring, draw-mode class flips, and verifier
+               assertions keep working without a one-shot patch storm. -->
+          <div id="legacyLayerToggles" hidden aria-hidden="true">
+            <label><input type="checkbox" id="showEventSchedule" /> Event schedule POIs</label>
+            <label><input type="checkbox" id="showTrailheads" checked /> Publishable trailheads</label>
+            <label><input type="checkbox" id="showVisitorContext" checked /> Visitor context callouts</label>
+            <label><input type="checkbox" id="showBrandLogos" /> Brand logos (AOP &amp; Rock Warblers)</label>
+            <label><input type="checkbox" id="showEditorPois" checked /> Drawn POIs</label>
+            <select id="poiCategory" title="Legacy default-category select; per-bucket selects in the inline create rows are the visible affordance.">
+              <option>Pavilion</option>
+              <option>Building</option>
+              <option>Restroom</option>
+              <option>Parking</option>
+              <option>Staging area</option>
+              <option>Gate</option>
+              <option>Trail trace</option>
+              <option>Road trace</option>
+              <option>Landmark</option>
+              <option>Hazard</option>
+              <option>Other</option>
+            </select>
+            <button id="placePoiBtn" type="button">Place POI</button>
+            <button id="drawFootprintBtn" type="button">Draw footprint</button>
+            <button id="traceLineBtn" type="button">Trace line</button>
           </div>
         </div>
       </section>
@@ -1225,42 +1297,69 @@
     // Kick off the fetch immediately; the renderer is resilient to a null index.
     fetchPoiIndex();
 
-    // --- Unified editor tree ---------------------------------------------
-    // The Map editor section's body is a five-bucket tree by renderable kind
-    // (Point / Line / Polygon / Image / Callout), plus a virtual ★ Visitor
-    // list group at the top that mirrors highlighted features across the
-    // three highlightable layers. Card:
-    // brain/tasks/04_event_app/editor_unified_tree.md.
+    // --- Unified editor tree (V3c) ---------------------------------------
+    // The Map editor section is a three-bucket tree by geometry kind (Point /
+    // Line / Polygon), with a ★ Visitor list virtual group at the top. Inside
+    // each bucket, source sub-groups split rows by where the data came from
+    // (Drawn / Trailheads / Brand logos / Visitor context). Drawn is open by
+    // default; reference sub-groups are collapsed with their count visible.
     //
-    // `leaves` declares which FEATURE_LIST_LAYERS render into each bucket.
-    // `onlyGroupId` filters a layer's runtime groups down to one (used by
-    // editorPois so its Point / Polygon / LineString groups split across the
-    // Point / Polygon / Line buckets respectively).
+    // Each bucket head carries a + button that opens an inline create row
+    // inside the bucket body (category select + matching primary action).
+    // The 5-toggle strip retired in V3c; the bucket-head bulk + source-head
+    // bulk checkboxes are the visible mirror of the hidden #showXxx inputs in
+    // #legacyLayerToggles, two-way bridged via change events. Card:
+    // brain/tasks/04_event_app/editor_three_buckets_v3c.md.
+    //
+    // `sources` declares the source sub-groups within each bucket. Each
+    // source has `layerToggleIds` (legacy hidden toggles that the bulk
+    // mirrors), `leaves` (which FEATURE_LIST_LAYERS render into the
+    // sub-group body), `defaultOpen` (open/collapsed default), and
+    // `sourceClass` (CSS class for the colored dot). `onlyGroupId` filters
+    // a layer's runtime groups down to one (used by editorPois so its
+    // geometry-type groups split across the three matching buckets).
     const EDITOR_BUCKETS = [
-      { id: 'point',    label: 'Point',    glyph: '●', leaves: [
-        { layerKey: 'editorPois',    onlyGroupId: 'point' },
-        { layerKey: 'eventSchedule' }
-      ] },
-      { id: 'line',     label: 'Line',     glyph: '╱', leaves: [
-        { layerKey: 'editorPois',    onlyGroupId: 'linestring' }
-      ] },
-      { id: 'polygon',  label: 'Polygon',  glyph: '▭', leaves: [
-        { layerKey: 'editorPois',    onlyGroupId: 'polygon' }
-      ] },
-      { id: 'image',    label: 'Image',    glyph: '⌗', leaves: [
-        { layerKey: 'brandLogos' }
-      ] },
-      { id: 'callout',  label: 'Callout',  glyph: '⌑', leaves: [
-        { layerKey: 'visitorContext' }
-      ] }
+      { id: 'point', label: 'Point', glyph: '●', drawMode: 'point',
+        sources: [
+          { id: 'drawn', label: 'Drawn POIs', defaultOpen: true, sourceClass: 'drawn',
+            layerToggleIds: ['showEditorPois', 'showEventSchedule'],
+            leaves: [
+              { layerKey: 'editorPois', onlyGroupId: 'point' },
+              { layerKey: 'eventSchedule' }
+            ] },
+          { id: 'trailhead', label: 'Trailheads', defaultOpen: false, sourceClass: 'trailhead',
+            layerToggleIds: ['showTrailheads'],
+            leaves: [{ layerKey: 'trailheads' }] },
+          { id: 'brand', label: 'Brand logos', defaultOpen: false, sourceClass: 'brand',
+            layerToggleIds: ['showBrandLogos'],
+            leaves: [{ layerKey: 'brandLogos' }] }
+        ] },
+      { id: 'line', label: 'Line', glyph: '╱', drawMode: 'linestring',
+        sources: [
+          { id: 'drawn', label: 'Drawn POIs', defaultOpen: true, sourceClass: 'drawn',
+            layerToggleIds: ['showEditorPois'],
+            leaves: [{ layerKey: 'editorPois', onlyGroupId: 'linestring' }] }
+        ] },
+      { id: 'polygon', label: 'Polygon', glyph: '▭', drawMode: 'polygon',
+        sources: [
+          { id: 'drawn', label: 'Drawn POIs', defaultOpen: true, sourceClass: 'drawn',
+            layerToggleIds: ['showEditorPois'],
+            leaves: [{ layerKey: 'editorPois', onlyGroupId: 'polygon' }] },
+          { id: 'visitor', label: 'Visitor context', defaultOpen: false, sourceClass: 'visitor',
+            layerToggleIds: ['showVisitorContext'],
+            leaves: [{ layerKey: 'visitorContext' }] }
+        ] }
     ];
     const VISITOR_LIST_LAYERS = ['editorPois', 'brandLogos', 'visitorContext'];
     const VISITOR_LIST_SOURCE_CHIP = {
       editorPois: 'drawn',
-      brandLogos: 'image',
-      visitorContext: 'callout'
+      brandLogos: 'brand',
+      visitorContext: 'visitor'
     };
     let editorTreeBuilt = false;
+    // The bucket whose + is currently active. Read by draw.on('finish') to
+    // pull the right category. Cleared on Esc / cancel / mode change.
+    let currentCreateBucket = null;
 
     function buildEditorTree() {
       const root = document.getElementById('editorTree');
@@ -1299,7 +1398,7 @@
       visitorBucket.append(visitorHead, vBody);
       root.append(visitorBucket);
 
-      // 5 kind buckets.
+      // 3 geometry buckets, each with source sub-groups.
       for (const bucket of EDITOR_BUCKETS) {
         const wrap = document.createElement('div');
         wrap.className = 'editor-bucket';
@@ -1316,8 +1415,8 @@
         const bulk = document.createElement('input');
         bulk.type = 'checkbox';
         bulk.dataset.editorBucketBulk = bucket.id;
-        bulk.title = 'Toggle every feature in this bucket';
-        bulk.addEventListener('change', () => setBucketVisibility(bucket, bulk.checked));
+        bulk.title = `Show or hide every source under ${bucket.label}`;
+        bulk.addEventListener('change', () => setBucketLayerToggles(bucket, bulk.checked));
         const labelEl = document.createElement('span');
         labelEl.className = 'editor-bucket-label';
         labelEl.innerHTML = `<span class="editor-bucket-glyph">${bucket.glyph}</span> ${bucket.label}`;
@@ -1325,7 +1424,18 @@
         count.className = 'editor-bucket-count';
         count.dataset.editorBucketCount = bucket.id;
         count.textContent = '';
-        head.append(chevron, bulk, labelEl, count);
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'editor-bucket-add';
+        addBtn.dataset.editorBucketAdd = bucket.id;
+        addBtn.title = `Place / draw / trace a new ${bucket.label.toLowerCase()} feature`;
+        addBtn.textContent = '+';
+        addBtn.setAttribute('aria-label', addBtn.title);
+        addBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          toggleBucketCreate(bucket);
+        });
+        head.append(chevron, bulk, labelEl, count, addBtn);
 
         const body = document.createElement('div');
         body.className = 'editor-bucket-body';
@@ -1336,13 +1446,68 @@
           chevron.setAttribute('aria-expanded', String(!collapsed));
         });
 
-        for (const leaf of bucket.leaves) {
-          const slot = document.createElement('div');
-          slot.className = 'feature-list';
-          slot.dataset.editorLeaf = `${bucket.id}-${leaf.layerKey}${leaf.onlyGroupId ? '-' + leaf.onlyGroupId : ''}`;
-          slot.hidden = true;
-          body.append(slot);
-          registerFeatureListTarget(leaf.layerKey, slot, { onlyGroupId: leaf.onlyGroupId });
+        // Source sub-groups inside the bucket body.
+        for (const source of (bucket.sources || [])) {
+          const sourceWrap = document.createElement('div');
+          sourceWrap.className = 'editor-subgroup';
+          if (source.defaultOpen === false) sourceWrap.classList.add('collapsed');
+          sourceWrap.dataset.source = source.id;
+          sourceWrap.dataset.bucket = bucket.id;
+
+          const sourceHead = document.createElement('div');
+          sourceHead.className = 'editor-subgroup-head';
+          const sChev = document.createElement('button');
+          sChev.type = 'button';
+          sChev.className = 'editor-subgroup-chev';
+          sChev.textContent = source.defaultOpen === false ? '▸' : '▾';
+          sChev.title = 'Collapse sub-group';
+          sChev.setAttribute('aria-expanded', String(source.defaultOpen !== false));
+          const sBulk = document.createElement('input');
+          sBulk.type = 'checkbox';
+          sBulk.className = 'editor-subgroup-bulk';
+          sBulk.dataset.editorSourceBulk = `${bucket.id}-${source.id}`;
+          sBulk.title = `Show or hide the ${source.label.toLowerCase()} layer`;
+          sBulk.addEventListener('change', () => setSourceLayerToggles(source, sBulk.checked));
+          const sDot = document.createElement('span');
+          sDot.className = `editor-subgroup-dot ${source.sourceClass || 'drawn'}`;
+          const sLabel = document.createElement('span');
+          sLabel.className = 'editor-subgroup-label';
+          sLabel.textContent = source.label;
+          const sCount = document.createElement('span');
+          sCount.className = 'editor-subgroup-count';
+          sCount.dataset.editorSourceCount = `${bucket.id}-${source.id}`;
+          sCount.textContent = '';
+          sourceHead.append(sChev, sBulk, sDot, sLabel, sCount);
+
+          const sourceBody = document.createElement('div');
+          sourceBody.className = 'editor-subgroup-body';
+          sourceBody.dataset.editorSourceBody = `${bucket.id}-${source.id}`;
+
+          const collapseSubgroup = () => {
+            const willCollapse = !sourceWrap.classList.contains('collapsed');
+            sourceWrap.classList.toggle('collapsed', willCollapse);
+            sChev.textContent = willCollapse ? '▸' : '▾';
+            sChev.setAttribute('aria-expanded', String(!willCollapse));
+          };
+          sChev.addEventListener('click', (event) => { event.stopPropagation(); collapseSubgroup(); });
+          sLabel.addEventListener('click', collapseSubgroup);
+          sLabel.style.cursor = 'pointer';
+
+          // One feature-list slot per leaf. They render stacked inside the
+          // source body — eventSchedule and editorPois Points both go into
+          // the Point/Drawn body this way (event-schedule POIs are just
+          // regular POIs by the schedule's #tag binding).
+          for (const leaf of (source.leaves || [])) {
+            const slot = document.createElement('div');
+            slot.className = 'feature-list';
+            slot.dataset.editorLeaf = `${bucket.id}-${source.id}-${leaf.layerKey}${leaf.onlyGroupId ? '-' + leaf.onlyGroupId : ''}`;
+            slot.hidden = true;
+            sourceBody.append(slot);
+            registerFeatureListTarget(leaf.layerKey, slot, { onlyGroupId: leaf.onlyGroupId });
+          }
+
+          sourceWrap.append(sourceHead, sourceBody);
+          body.append(sourceWrap);
         }
 
         wrap.append(head, body);
@@ -1350,71 +1515,283 @@
       }
 
       editorTreeBuilt = true;
+      bridgeLegacyLayerTogglesToSubgroupBulks();
       renderEditorTreeCounts();
       renderVisitorListGroup();
     }
 
-    function setBucketVisibility(bucket, visible) {
-      const seenLayers = new Set();
-      for (const leaf of bucket.leaves) {
-        const runtime = featureListRuntime[leaf.layerKey];
-        if (!runtime || !runtime.state) continue;
-        for (const groupBucket of runtime.state.groups) {
-          if (leaf.onlyGroupId && groupBucket.group && groupBucket.group.id !== leaf.onlyGroupId) continue;
-          for (const item of groupBucket.features) {
-            setFeatureVisible(leaf.layerKey, item.id, visible);
-          }
+    // Source bulk drives the layer toggle(s) it represents. The layer-
+    // visibility wiring at the MapLibre layer-toggle section reads those
+    // hidden checkboxes' state, so dispatching change events here lights up
+    // the rest of the pipeline (paint drawers, presets, popup priority).
+    function setSourceLayerToggles(source, visible) {
+      for (const toggleId of (source.layerToggleIds || [])) {
+        const el = document.getElementById(toggleId);
+        if (!el) continue;
+        if (el.checked !== visible) {
+          el.checked = visible;
+          el.dispatchEvent(new Event('change', { bubbles: true }));
         }
-        seenLayers.add(leaf.layerKey);
       }
-      for (const layerKey of seenLayers) renderFeatureList(layerKey);
+      // The legacy change-event chain already calls renderEditorTreeCounts
+      // through the bridge, but renderEditorTreeCounts is also called here
+      // as a belt-and-suspenders against missed bridges.
       renderEditorTreeCounts();
+    }
+
+    function setBucketLayerToggles(bucket, visible) {
+      for (const source of (bucket.sources || [])) {
+        setSourceLayerToggles(source, visible);
+      }
+    }
+
+    // Bridge: when a hidden legacy toggle changes externally (preset apply,
+    // programmatic restore, an old code path), refresh the matching sub-
+    // group bulks via the counts pass.
+    let legacyToggleBridgeWired = false;
+    function bridgeLegacyLayerTogglesToSubgroupBulks() {
+      if (legacyToggleBridgeWired) return;
+      const allToggleIds = new Set();
+      for (const bucket of EDITOR_BUCKETS) {
+        for (const source of (bucket.sources || [])) {
+          for (const id of (source.layerToggleIds || [])) allToggleIds.add(id);
+        }
+      }
+      for (const id of allToggleIds) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        el.addEventListener('change', () => {
+          if (editorTreeBuilt) renderEditorTreeCounts();
+        });
+      }
+      legacyToggleBridgeWired = true;
     }
 
     function renderEditorTreeCounts() {
       if (!editorTreeBuilt) return;
       for (const bucket of EDITOR_BUCKETS) {
-        let visible = 0;
-        let total = 0;
-        let stars = 0;
-        for (const leaf of bucket.leaves) {
-          const runtime = featureListRuntime[leaf.layerKey];
-          if (!runtime || !runtime.state) continue;
-          for (const groupBucket of runtime.state.groups) {
-            if (leaf.onlyGroupId && groupBucket.group && groupBucket.group.id !== leaf.onlyGroupId) continue;
-            for (const item of groupBucket.features) {
-              total += 1;
-              if (runtime.state.visibleIds.has(item.id)) visible += 1;
-              const props = item.feature && item.feature.properties;
-              if (props && props.highlight === true) stars += 1;
+        let bucketVisible = 0;
+        let bucketTotal = 0;
+        let bucketStars = 0;
+        let bucketAllToggleOn = true;
+        let bucketAnyToggleOn = false;
+        let bucketHasToggle = false;
+
+        for (const source of (bucket.sources || [])) {
+          let sourceVisible = 0;
+          let sourceTotal = 0;
+          let sourceStars = 0;
+          for (const leaf of (source.leaves || [])) {
+            const runtime = featureListRuntime[leaf.layerKey];
+            if (!runtime || !runtime.state) continue;
+            for (const groupBucket of runtime.state.groups) {
+              if (leaf.onlyGroupId && groupBucket.group && groupBucket.group.id !== leaf.onlyGroupId) continue;
+              for (const item of groupBucket.features) {
+                sourceTotal += 1;
+                if (runtime.state.visibleIds.has(item.id)) sourceVisible += 1;
+                const props = item.feature && item.feature.properties;
+                if (props && props.highlight === true) sourceStars += 1;
+              }
             }
           }
+          // Layer-toggle state for the source. If a source declares multiple
+          // toggle ids (Point/Drawn does — both showEditorPois and
+          // showEventSchedule), all-on means every toggle is on; any-on
+          // means at least one is on. Indeterminate sits between the two.
+          const toggleStates = (source.layerToggleIds || []).map((id) => {
+            const el = document.getElementById(id);
+            return el ? !!el.checked : true;
+          });
+          const sourceAllOn = toggleStates.length === 0 || toggleStates.every(Boolean);
+          const sourceAnyOn = toggleStates.length === 0 || toggleStates.some(Boolean);
+
+          const sourceCountEl = document.querySelector(`[data-editor-source-count="${bucket.id}-${source.id}"]`);
+          if (sourceCountEl) {
+            if (sourceTotal === 0) sourceCountEl.textContent = '—';
+            else if (sourceStars > 0) sourceCountEl.textContent = `${sourceVisible}/${sourceTotal} · ${sourceStars} ★`;
+            else sourceCountEl.textContent = `${sourceVisible}/${sourceTotal}`;
+          }
+          const sourceBulkEl = document.querySelector(`[data-editor-source-bulk="${bucket.id}-${source.id}"]`);
+          if (sourceBulkEl) {
+            sourceBulkEl.checked = sourceAllOn;
+            sourceBulkEl.indeterminate = sourceAnyOn && !sourceAllOn;
+          }
+          // Empty-source placeholder inside the sub-group body.
+          const sourceBodyEl = document.querySelector(`[data-editor-source-body="${bucket.id}-${source.id}"]`);
+          if (sourceBodyEl) {
+            const existingEmpty = sourceBodyEl.querySelector('.editor-bucket-empty');
+            if (sourceTotal === 0 && !existingEmpty) {
+              const placeholder = document.createElement('div');
+              placeholder.className = 'editor-bucket-empty';
+              placeholder.textContent = 'No items yet.';
+              sourceBodyEl.append(placeholder);
+            } else if (sourceTotal > 0 && existingEmpty) {
+              existingEmpty.remove();
+            }
+          }
+
+          bucketVisible += sourceVisible;
+          bucketTotal += sourceTotal;
+          bucketStars += sourceStars;
+          if (toggleStates.length > 0) {
+            bucketHasToggle = true;
+            if (!sourceAllOn) bucketAllToggleOn = false;
+            if (sourceAnyOn) bucketAnyToggleOn = true;
+          }
         }
+
         const countEl = document.querySelector(`[data-editor-bucket-count="${bucket.id}"]`);
         if (countEl) {
-          if (total === 0) countEl.textContent = '—';
-          else if (stars > 0) countEl.textContent = `${visible}/${total} · ${stars} ★`;
-          else countEl.textContent = `${visible}/${total}`;
+          if (bucketTotal === 0) countEl.textContent = '—';
+          else if (bucketStars > 0) countEl.textContent = `${bucketVisible}/${bucketTotal} · ${bucketStars} ★`;
+          else countEl.textContent = `${bucketVisible}/${bucketTotal}`;
         }
         const bulkEl = document.querySelector(`[data-editor-bucket-bulk="${bucket.id}"]`);
         if (bulkEl) {
-          bulkEl.checked = total > 0 && visible === total;
-          bulkEl.indeterminate = total > 0 && visible > 0 && visible < total;
-          bulkEl.disabled = total === 0;
-        }
-        const body = document.querySelector(`[data-editor-bucket-body="${bucket.id}"]`);
-        if (body) {
-          const existingEmpty = body.querySelector('.editor-bucket-empty');
-          if (total === 0 && !existingEmpty) {
-            const placeholder = document.createElement('div');
-            placeholder.className = 'editor-bucket-empty';
-            placeholder.textContent = 'No items yet.';
-            body.append(placeholder);
-          } else if (total > 0 && existingEmpty) {
-            existingEmpty.remove();
-          }
+          bulkEl.checked = bucketHasToggle && bucketAllToggleOn;
+          bulkEl.indeterminate = bucketHasToggle && bucketAnyToggleOn && !bucketAllToggleOn;
+          bulkEl.disabled = !bucketHasToggle;
         }
       }
+    }
+
+    // V3c inline create row. Click a bucket's + to open the row inside that
+    // bucket's body; click again (or ✕, or Esc) to close. Only one create
+    // row may be open at a time; opening a new one closes any open row in
+    // any bucket. Calls setDrawMode internally so the existing Terra Draw
+    // wiring (mode flips, finish handler, ESC cancel) keeps working.
+    function toggleBucketCreate(bucket) {
+      const isCurrent = currentCreateBucket && currentCreateBucket.id === bucket.id;
+      if (isCurrent) {
+        // Same bucket re-click — cancel.
+        closeBucketCreate();
+        return;
+      }
+      // Any other bucket open? Close it first.
+      if (currentCreateBucket) closeBucketCreate({ skipModeReset: true });
+      openBucketCreate(bucket);
+    }
+
+    function openBucketCreate(bucket) {
+      const body = document.querySelector(`[data-editor-bucket-body="${bucket.id}"]`);
+      if (!body) return;
+      // Ensure the bucket body isn't collapsed; opening + on a collapsed
+      // bucket expands it so the user sees their freshly-drawn feature
+      // appear.
+      if (body.hidden) {
+        body.hidden = false;
+        const chev = body.parentElement?.querySelector('.editor-bucket-chevron');
+        if (chev) { chev.textContent = '▾'; chev.setAttribute('aria-expanded', 'true'); }
+      }
+      let row = body.querySelector(':scope > .editor-create-inline');
+      if (!row) {
+        row = document.createElement('div');
+        row.className = 'editor-create-inline';
+        row.dataset.bucket = bucket.id;
+        const labelRow = document.createElement('div');
+        labelRow.className = 'editor-create-label-row';
+        const glyph = document.createElement('span');
+        glyph.className = 'editor-create-glyph';
+        glyph.textContent = bucket.glyph;
+        const labelText = document.createElement('span');
+        labelText.textContent = createPrimaryLabel(bucket);
+        const cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'editor-create-cancel';
+        cancel.title = 'Cancel (Esc)';
+        cancel.setAttribute('aria-label', 'Cancel');
+        cancel.textContent = '✕';
+        cancel.addEventListener('click', (event) => { event.stopPropagation(); closeBucketCreate(); });
+        labelRow.append(glyph, labelText, cancel);
+
+        const controlRow = document.createElement('div');
+        controlRow.className = 'editor-create-control-row';
+        const catLabel = document.createElement('span');
+        catLabel.className = 'editor-create-category-label';
+        catLabel.textContent = 'Category';
+        const select = document.createElement('select');
+        select.className = 'editor-create-category';
+        select.dataset.bucket = bucket.id;
+        // Clone options from the legacy #poiCategory so the option list
+        // stays in one place (per-bucket category lists are a deferred
+        // follow-up — see card "Out of scope").
+        const legacy = document.getElementById('poiCategory');
+        if (legacy) {
+          for (const opt of Array.from(legacy.options)) {
+            const cloned = opt.cloneNode(true);
+            select.append(cloned);
+          }
+        }
+        // Default the select to a bucket-appropriate option where one fits.
+        const preferred = bucketPreferredCategory(bucket);
+        if (preferred) {
+          for (const opt of Array.from(select.options)) {
+            if (opt.value === preferred || opt.textContent === preferred) {
+              opt.selected = true;
+              break;
+            }
+          }
+        }
+        const startBtn = document.createElement('button');
+        startBtn.type = 'button';
+        startBtn.className = 'editor-create-start';
+        startBtn.dataset.bucket = bucket.id;
+        startBtn.textContent = createPrimaryButtonLabel(bucket, false);
+        startBtn.addEventListener('click', () => {
+          const active = draw && draw.getMode && draw.getMode() === bucket.drawMode;
+          setDrawMode(active ? 'static' : bucket.drawMode);
+        });
+        controlRow.append(catLabel, select, startBtn);
+
+        const help = document.createElement('small');
+        help.textContent = createHelpText(bucket);
+        row.append(labelRow, controlRow, help);
+        body.prepend(row);
+      }
+      // Cache the references on the bucket so draw.on('finish') can read the
+      // selected category without DOM queries.
+      bucket.createRow = row;
+      bucket.categorySelect = row.querySelector('select.editor-create-category');
+      bucket.startBtn = row.querySelector('button.editor-create-start');
+      currentCreateBucket = bucket;
+      setDrawMode(bucket.drawMode);
+    }
+
+    function closeBucketCreate(opts = {}) {
+      const bucket = currentCreateBucket;
+      currentCreateBucket = null;
+      if (bucket) {
+        if (bucket.createRow && bucket.createRow.parentElement) bucket.createRow.remove();
+        bucket.createRow = null;
+        bucket.categorySelect = null;
+        bucket.startBtn = null;
+      }
+      if (!opts.skipModeReset) setDrawMode('static');
+    }
+
+    function createPrimaryLabel(bucket) {
+      if (bucket.drawMode === 'point') return 'Place a POI';
+      if (bucket.drawMode === 'polygon') return 'Draw a polygon';
+      if (bucket.drawMode === 'linestring') return 'Trace a line';
+      return 'Create';
+    }
+    function createPrimaryButtonLabel(bucket, active) {
+      if (active) return bucket.drawMode === 'point' ? 'Placing… (Esc)'
+        : bucket.drawMode === 'polygon' ? 'Drawing… (Esc)'
+        : 'Tracing… (Esc)';
+      return bucket.drawMode === 'point' ? 'Place POI'
+        : bucket.drawMode === 'polygon' ? 'Draw footprint'
+        : 'Trace line';
+    }
+    function createHelpText(bucket) {
+      if (bucket.drawMode === 'point') return 'Click once on the map to drop the POI.';
+      if (bucket.drawMode === 'polygon') return 'Click each corner. Press Enter to finish or Esc to cancel.';
+      if (bucket.drawMode === 'linestring') return 'Click each vertex. Press Enter to finish or Esc to cancel.';
+      return '';
+    }
+    function bucketPreferredCategory(bucket) {
+      if (bucket.drawMode === 'linestring') return 'Trail trace';
+      return null;
     }
 
     function renderVisitorListGroup() {
@@ -2813,6 +3190,27 @@
           id: 'anchors',
           label: null,
           match: (props) => props.feature_kind === 'event_anchor',
+          defaultVisible: () => true
+        }]
+      },
+      // Publishable trailheads — read-only points from publish.geojson
+      // (`layer === 'trailheads'`). Surfaced under Point → Trailheads in the
+      // V3c editor tree so the user can scan the gate locations alongside
+      // their drawn POIs and event anchors. No ★ (curation lives on the
+      // drawn / brand / visitor axes), no `▸` inline accordion (publish data
+      // is read-only here), no `✋` move (the publish layer is the source of
+      // truth). Visibility + fly only. Spec parallels the cemeteries spec —
+      // a flat list with a positional id.
+      trailheads: {
+        label: 'Trailheads',
+        idField: 'name',
+        rowLabel: (props) => props.name || 'Trailhead',
+        targetLayers: ['publish-trailheads'],
+        rowSort: (a, b) => String(a.props.name || '').localeCompare(String(b.props.name || '')),
+        groups: [{
+          id: 'all',
+          label: null,
+          match: () => true,
           defaultVisible: () => true
         }]
       },
@@ -6613,12 +7011,37 @@
     function setDrawMode(mode) {
       if (!draw) return;
       draw.setMode(mode);
+      // Legacy hidden buttons keep their class/text echo so any verifier or
+      // adjacent JS that reads them stays happy.
       placePoiBtn.classList.toggle('active', mode === 'point');
       drawFootprintBtn.classList.toggle('active', mode === 'polygon');
       traceLineBtn.classList.toggle('active', mode === 'linestring');
       placePoiBtn.textContent = mode === 'point' ? 'Placing… (Esc)' : 'Place POI';
       drawFootprintBtn.textContent = mode === 'polygon' ? 'Drawing… (Esc)' : 'Draw footprint';
       traceLineBtn.textContent = mode === 'linestring' ? 'Tracing… (Esc)' : 'Trace line';
+      // V3c: echo active state on every bucket's + and start-btn. The bucket
+      // with the matching drawMode glows rust; other bucket buttons reset.
+      for (const bucket of EDITOR_BUCKETS) {
+        const isActive = bucket.drawMode === mode;
+        const addBtn = document.querySelector(`[data-editor-bucket-add="${bucket.id}"]`);
+        if (addBtn) addBtn.classList.toggle('active', isActive);
+        if (bucket.startBtn) {
+          bucket.startBtn.classList.toggle('active', isActive);
+          bucket.startBtn.textContent = createPrimaryButtonLabel(bucket, isActive);
+        }
+      }
+      // Going back to static closes any open create row that doesn't belong
+      // to an actively drawing bucket. Cancelling mid-draw flows through
+      // closeBucketCreate (the cancel button + Esc handler call it).
+      if (mode === 'static' && currentCreateBucket) {
+        // Don't recurse — closeBucketCreate may also call setDrawMode.
+        const stale = currentCreateBucket;
+        currentCreateBucket = null;
+        if (stale.createRow && stale.createRow.parentElement) stale.createRow.remove();
+        stale.createRow = null;
+        stale.categorySelect = null;
+        stale.startBtn = null;
+      }
     }
 
     // Fetch an optional overlay. Returns undefined (and warns) if it cannot load,
@@ -8393,6 +8816,21 @@
       updateLayerVisibility();
       fitToDataBounds(publishData);
 
+      // V3c: surface publish.geojson trailheads as feature-list rows so the
+      // Point → Trailheads sub-group has rows to render. Filter publishData
+      // down to just the trailhead features; `id` defaults to the index
+      // when properties don't carry an idField match. Card:
+      // brain/tasks/04_event_app/editor_three_buckets_v3c.md.
+      const trailheadsData = {
+        type: 'FeatureCollection',
+        features: publishData.features.filter(
+          (feature) => feature.properties?.layer === 'trailheads'
+        )
+      };
+      if (trailheadsData.features.length > 0) {
+        registerFeatureListLayer('trailheads', trailheadsData);
+      }
+
       // The Park zoom preset fits the published park boundary; fall back to all
       // publish features if no boundary has been exported yet.
       const boundaryOnly = {
@@ -8642,7 +9080,12 @@
         if (!feature) return;
         const kind = feature.geometry.type;
         if (kind !== 'Point' && kind !== 'Polygon' && kind !== 'LineString') return;
-        const category = poiCategory.value;
+        // V3c: category comes from the bucket that initiated the draw. If
+        // somehow no bucket is active (Esc race, programmatic start), fall
+        // back to the hidden legacy #poiCategory select.
+        const category = (currentCreateBucket && currentCreateBucket.categorySelect)
+          ? currentCreateBucket.categorySelect.value
+          : poiCategory.value;
         const isTrace = kind === 'LineString';
         const properties = {
           id: `poi_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
