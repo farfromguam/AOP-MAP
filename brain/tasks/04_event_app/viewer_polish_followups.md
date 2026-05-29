@@ -19,7 +19,7 @@ readability, or verifier coverage, land it.
 - `../03_event_app/_done/load animations.md`
 - `../03_event_app/_done/sprint_02_critique_followups.md`
 - `../03_event_app/misc_3.md` (items 14, 16; routing block 2026-05-27)
-- `calendar_group_icon_review.md` (item 16 pending-pick card)
+- `calendar_group_icon_review.md` (item 16 — resolved 2026-05-29)
 - `calendar_placeholder_state.md` (item 13 pending-pick card)
 - `../backlog/load_animation_intro.md`
 
@@ -67,8 +67,8 @@ readability, or verifier coverage, land it.
 ## Mockup Cleanup
 
 - [ ] Pick and wire one calendar loading placeholder variant from `calendar_placeholder_state.md`.
-- [ ] Pick a calendar-group icon candidate from `calendar_group_icon_review.md` and wire it into the live left-rail chip / tab strip.
-- [ ] Retire old comparison mockups after choices land. Full inventory at time of 2026-05-27 misc_3 triage: `website/leftrail_*.html` (~40+ files), `website/poi_crud_*.html`, `website/calendar_placeholder_*.html`, `website/calendar_group_icon_review.html`, `website/load_animations.html`, `website/park_bounds_icon_review.html`, `website/hot_glyph_options.html`, `website/button_icon_picker.html`.
+- [x] **2026-05-29 — Calendar-group icon picked and wired.** Candidate A (Clipboard + ruled lines) lifted into `#lrTabCal` SVG. Compare page retired. See `calendar_group_icon_review.md`.
+- [ ] Retire old comparison mockups after choices land. Full inventory at time of 2026-05-27 misc_3 triage: `website/leftrail_*.html` (~40+ files), `website/poi_crud_*.html`, `website/calendar_placeholder_*.html`, `website/load_animations.html`, `website/park_bounds_icon_review.html`, `website/hot_glyph_options.html`, `website/button_icon_picker.html`. (Retired 2026-05-29: `calendar_group_icon_review.html`, the four `*_compare.html` files; surviving compare/review pages linked from the right-panel "Comparisons" section.)
 - [ ] Keep one left-sidebar comparison surface for layout/CSS review.
 - [ ] Keep one right-panel comparison surface for layout/CSS review. Current candidate is `website/poi_crud_compare.html` with V1 chosen; decide whether to keep the compare page, keep only `poi_crud_v1_accordion.html`, or replace it with a newer right-panel baseline.
 - [ ] Remove stale variant files only after the winning behavior is documented in the owning card.

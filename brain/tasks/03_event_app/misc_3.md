@@ -159,7 +159,7 @@ The three productive worktrees branched from commit `4adfe5a`, while `master` ha
 - **Item 13** — mockup compare page checked in at `website/calendar_placeholder_compare.html` with four variants. Pending card at `tasks/03_event_app/calendar_placeholder_state.md`. Nothing is wired into `website/index.html` yet.
 - **Item 14** — deferred. Old mockup cleanup needs a deliberate pass: keep one `leftrail_*` survivor + one right-panel surface, retire the rest. Owner: next session.
 - **Item 15** — Events / POI / About each have a `.tab-footer` strip. Past-events toggle, POI expand-all-groups, About event-page link.
-- **Item 16** — icon compare page at `website/calendar_group_icon_review.html`. The live viewer icon is unchanged pending pick.
+- **Item 16** — icon compare page produced at `website/calendar_group_icon_review.html`. Pick landed 2026-05-29: Candidate A (Clipboard + ruled lines) wired into the live `#lrTabCal` SVG; compare page retired.
 - **Item 17** — `roads-labels` and `osm-named-labels` paint blocks now include `text-color: '#4a3c2a'` on the Park and Topo preset overrides, eliminating the cream-on-cream "trace → topo / park" invisibility.
 - **Item 18** — `showBrandLogos: true` flipped on Park, Topo, and Trace. Satellite intentionally false.
 - **Item 19** — water was already visible on Park (toggle on, paint opacities non-zero, nothing covering). No code change; verified.
@@ -181,7 +181,7 @@ re-open work here; pick from the matching card in `../04_event_app/`.
 | --- | --- | --- |
 | 13 (calendar placeholder mockup) | `../04_event_app/calendar_placeholder_state.md` | Pending user pick |
 | 14 (retire old mockup pages) | `../04_event_app/viewer_polish_followups.md` → "Mockup Cleanup" | Inventoried, pruning chore |
-| 16 (calendar group icon review) | `../04_event_app/calendar_group_icon_review.md` | Pending user pick |
+| 16 (calendar group icon review) | `../04_event_app/calendar_group_icon_review.md` | Done 2026-05-29 — Candidate A (Clipboard + ruled lines) shipped |
 | 18 (brand-logos default-on permission posture) | `../04_event_app/brand_assets_and_permissions.md` | Reconcile-conflict line; live viewer ships default-on |
 
 The three locked agent worktrees under `.claude/worktrees/agent-*` and their

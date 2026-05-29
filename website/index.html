@@ -448,6 +448,9 @@
     .session-tools input { min-width: 0; width: 100%; box-sizing: border-box; padding: 4px 6px; border: 1px solid var(--control-border); border-radius: 6px; background: var(--control-bg); color: var(--brown-ink); font: inherit; }
     .session-clock-status { display: inline-flex; align-items: center; min-height: 22px; padding: 2px 7px; border: 1px solid var(--cream-border); border-radius: 5px; background: rgba(247, 241, 226, 0.78); color: var(--brown-soft); font: 700 0.72rem Inter, system-ui, sans-serif; }
     .session-clock-status[data-clock-active="true"] { background: #ecd9b1; border-color: rgba(85, 67, 44, 0.35); color: var(--brown-dark); }
+    .comparisons-list { display: grid; gap: 4px; }
+    .comparisons-list a { display: block; padding: 5px 8px; border: 1px solid var(--cream-border); border-radius: 6px; background: var(--control-bg); color: var(--brown-ink); font-size: 0.82rem; text-decoration: none; }
+    .comparisons-list a:hover { border-color: var(--rust); color: var(--rust); }
     .poi-popup input { font: inherit; width: 100%; box-sizing: border-box; margin: 6px 0; padding: 3px 5px; }
     .poi-popup button { font: inherit; padding: 3px 9px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
     .message { position: absolute; left: 12px; bottom: 12px; background: rgba(255,255,255,0.95); padding: 10px 12px; border-radius: 10px; font-size: 0.9rem; max-width: 60ch; }
@@ -674,10 +677,11 @@
         </button>
         <button class="lr-tab open" id="lrTabCal" type="button" aria-pressed="true" aria-controls="lrPanelCal" title="Events / POI / About">
           <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
-            <rect x="3.2" y="5.2" width="15.6" height="13.6" rx="1.6" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M3.2 9.2 H 18.8" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M7.5 3 V 7 M14.5 3 V 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M6 13 H 10 M12 13 H 16 M6 16 H 10 M12 16 H 16" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+            <rect x="4" y="5" width="14" height="15" rx="1.6" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M8.5 5 V 3.5 Q8.5 3 9 3 h4 Q13.5 3 13.5 3.5 V 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            <path d="M7 9.5 H 15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M7 12.5 H 15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M7 15.5 H 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
           </svg>
         </button>
       </div>
@@ -807,6 +811,22 @@
             <button type="button" id="clockUseNow">Now</button>
             <button type="button" id="clockClear">Clear</button>
             <button type="button" id="resetViewerState">Reset viewer</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-section collapsed" data-section="comparisons">
+        <div class="section-header">
+          <span class="section-label">Comparisons</span>
+          <button type="button" class="section-toggle" aria-expanded="false">
+            <span class="section-chevron">▸</span>
+          </button>
+        </div>
+        <div class="section-content">
+          <div class="comparisons-list">
+            <a href="leftrail_compare_v2.html" target="_blank" rel="noopener">Left rail — element variants</a>
+            <a href="editor_unified_v3_create_compare.html" target="_blank" rel="noopener">Editor V3 — per-bucket create</a>
+            <a href="park_bounds_icon_review.html" target="_blank" rel="noopener">Park bounds icon</a>
           </div>
         </div>
       </section>

@@ -18,7 +18,7 @@ The goal is not to reopen every Sprint 03 card. The shipped cards move to
 - `data_integrity_publishability.md` - source-backed trails, acreage reconciliation, DEM swap, POI gap pass, and synthetic-vs-real activity boundaries.
 - `viewer_polish_followups.md` - residual verifier, left-rail, right-panel, load-animation, and code-health follow-ups.
 - `calendar_placeholder_state.md` - pending-pick calendar loading placeholder mockups from `misc_3.md` item 13.
-- `calendar_group_icon_review.md` - pending-pick calendar group icon mockup from `misc_3.md` item 16.
+- `calendar_group_icon_review.md` - resolved 2026-05-29: Clipboard + ruled lines wired into `#lrTabCal` (misc_3.md item 16).
 - `poi_editor_followups.md` - drawn-POI accordion follow-ups that did not need to block Sprint 03.
 - `brand_assets_and_permissions.md` - raster cleanup and brand-use permission posture.
 - `park_bounds_icon_apply.md` - pick one boundary-derived Park icon and wire it into the viewer.
