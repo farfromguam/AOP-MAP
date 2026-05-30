@@ -908,6 +908,9 @@
           <label><input type="checkbox" id="showOsmService" /> OSM service roads</label>
           <label><input type="checkbox" id="showOsmNamed" /> OSM named landmarks</label>
           <label><input type="checkbox" id="showSfwda" /> SFWDA paper trail map</label>
+          <label><input type="checkbox" id="showSfwdaTraceTrails" /> SFWDA traced trails (extracted)</label>
+          <label><input type="checkbox" id="showSfwdaTraceMarkers" /> SFWDA traced markers (difficulty)</label>
+          <label><input type="checkbox" id="showAopTrailNetwork" /> AOP trail network (merged truth, colour by difficulty)</label>
         </div>
       </section>
 
@@ -1159,6 +1162,9 @@
     const osmServiceToggle = document.getElementById('showOsmService');
     const osmNamedToggle = document.getElementById('showOsmNamed');
     const sfwdaToggle = document.getElementById('showSfwda');
+    const sfwdaTraceTrailsToggle = document.getElementById('showSfwdaTraceTrails');
+    const sfwdaTraceMarkersToggle = document.getElementById('showSfwdaTraceMarkers');
+    const aopTrailNetworkToggle = document.getElementById('showAopTrailNetwork');
     const sfwdaOpacity = document.getElementById('sfwdaOpacity');
     const sfwdaMultiply = document.getElementById('sfwdaMultiply');
     const editSfwdaToggle = document.getElementById('editSfwda');
@@ -2565,6 +2571,13 @@
       // inside updateLayerVisibility -- but it still belongs in the preset list
       // and wants the same change handler.
       [sfwdaToggle, [], 'showSfwda'],
+      // Extracted-trail review layers (paper_map_trail_extraction.md). Registered
+      // here so the change handler + visibility loop wire themselves, but left
+      // out of every preset object so applyPreset never forces them -- default
+      // OFF, review-only, refine later.
+      [sfwdaTraceTrailsToggle, ['sfwda-trace-trails'], 'showSfwdaTraceTrails'],
+      [sfwdaTraceMarkersToggle, ['sfwda-trace-markers', 'sfwda-trace-marker-labels'], 'showSfwdaTraceMarkers'],
+      [aopTrailNetworkToggle, ['aop-trail-network', 'aop-trail-network-labels'], 'showAopTrailNetwork'],
       [trailToggle, ['publish-trails'], 'showTrails'],
       [boundaryToggle, ['publish-boundary-fill', 'publish-boundaries'], 'showBoundaries'],
       [trailheadToggle, ['publish-trailheads'], 'showTrailheads'],
@@ -8513,6 +8526,93 @@
         });
 
         indexFeatures(osmNamedData, (props) => props.place || props.natural || 'landmark', osmNamedToggle);
+      }
+
+      // --- SFWDA traced trails + markers (extracted from the paper map) ----
+      // Card: brain/tasks/04_event_app/paper_map_trail_extraction.md. Prototype
+      // vectorization of the SFWDA raster, georeferenced through the same
+      // alignment mesh (mvp/scripts/paper_trace_warp.py). Default OFF, in no
+      // preset -- a review layer to eyeball the trace over the raster + OSM.
+      const TRACE_DIFF_COLOR = [
+        'match', ['get', 'difficulty'],
+        'easy', '#2e8b57',
+        'moderate', '#2f6fb0',
+        'difficult', '#333333',
+        '#b06a2c'  // mixed / unread difficulty
+      ];
+      const sfwdaTraceTrailsData = await fetchJson('./data/sfwda_traced_trails.geojson', 'SFWDA traced trails missing');
+      if (sfwdaTraceTrailsData) {
+        map.addSource('sfwda-trace-trails', { type: 'geojson', data: sfwdaTraceTrailsData });
+        map.addLayer({
+          id: 'sfwda-trace-trails',
+          type: 'line',
+          source: 'sfwda-trace-trails',
+          layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
+          paint: { 'line-color': TRACE_DIFF_COLOR, 'line-width': 2.5, 'line-opacity': 0.9 }
+        });
+      }
+      const sfwdaTraceMarkersData = await fetchJson('./data/sfwda_traced_markers.geojson', 'SFWDA traced markers missing');
+      if (sfwdaTraceMarkersData) {
+        map.addSource('sfwda-trace-markers', { type: 'geojson', data: sfwdaTraceMarkersData });
+        map.addLayer({
+          id: 'sfwda-trace-markers',
+          type: 'circle',
+          source: 'sfwda-trace-markers',
+          layout: { visibility: 'none' },
+          paint: {
+            'circle-radius': 5,
+            'circle-color': TRACE_DIFF_COLOR,
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 1.2,
+            'circle-opacity': 0.92
+          }
+        });
+        // trail-number labels on the markers (the hand-read numbers) -- share the
+        // markers toggle so they show/hide together.
+        map.addLayer({
+          id: 'sfwda-trace-marker-labels',
+          type: 'symbol',
+          source: 'sfwda-trace-markers',
+          filter: ['has', 'trail_number'],
+          layout: {
+            visibility: 'none',
+            'text-field': ['to-string', ['get', 'trail_number']],
+            'text-size': 11,
+            'text-allow-overlap': true,
+            'text-ignore-placement': true
+          },
+          paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.1 }
+        });
+      }
+
+      // --- AOP merged trail network (hand-cleaned SFWDA trails + OSM tracks) ----
+      // The "new truth": one feature per trail edge, each coloured per-trail via the
+      // baked-in `color` property so cut-at-intersection pieces read as one colour.
+      const aopTrailNetworkData = await fetchJson('./data/aop_trail_network.geojson', 'AOP trail network missing');
+      if (aopTrailNetworkData) {
+        map.addSource('aop-trail-network', { type: 'geojson', data: aopTrailNetworkData });
+        map.addLayer({
+          id: 'aop-trail-network',
+          type: 'line',
+          source: 'aop-trail-network',
+          layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
+          paint: { 'line-color': ['coalesce', ['get', 'color'], '#888888'],
+                   'line-width': 3, 'line-opacity': 0.92 }
+        });
+        map.addLayer({
+          id: 'aop-trail-network-labels',
+          type: 'symbol',
+          source: 'aop-trail-network',
+          // Label by NAME (any string — "15", "Area 51", "JW2"), not just numbers.
+          // Non-numeric named trails carry name but no trail_number, so the old
+          // ['has','trail_number'] filter hid them. Roads/unnamed have name=null.
+          filter: ['to-boolean', ['get', 'name']],
+          layout: {
+            visibility: 'none', 'symbol-placement': 'line-center',
+            'text-field': ['to-string', ['get', 'name']], 'text-size': 12
+          },
+          paint: { 'text-color': '#111', 'text-halo-color': '#fff', 'text-halo-width': 1.6 }
+        });
       }
 
       // --- SFWDA paper map raster + 9-patch alignment editor -------------

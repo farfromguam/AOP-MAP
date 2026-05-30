@@ -1,0 +1,1065 @@
+{
+ "about": "Trail numbers read by eye off the SFWDA 2015 raster at high zoom (per-marker crops), keyed to the cv2 detector's centroids for exact matching. Source for attach_trail_numbers.py + build_numbered_trails.py. Card: tasks/04_event_app/paper_map_trail_extraction.md",
+ "image_px": [
+  2500,
+  1817
+ ],
+ "marker_count": 124,
+ "numbered": 117,
+ "unread_or_junk": 7,
+ "reads": [
+  {
+   "centroid_px": [
+    1816.4,
+    286.3
+   ],
+   "number": 3,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1974.0,
+    335.5
+   ],
+   "number": 4,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1472.9,
+    336.2
+   ],
+   "number": 14,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    2124.3,
+    401.8
+   ],
+   "number": 17,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1187.1,
+    404.6
+   ],
+   "number": 14,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    2199.1,
+    410.9
+   ],
+   "number": 3,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    627.7,
+    453.1
+   ],
+   "number": 1,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    932.7,
+    453.9
+   ],
+   "number": 1,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1199.3,
+    474.4
+   ],
+   "number": 8,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    869.3,
+    521.4
+   ],
+   "number": 12,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1439.4,
+    520.8
+   ],
+   "number": 3,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1330.4,
+    527.9
+   ],
+   "number": 7,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1649.9,
+    531.1
+   ],
+   "number": 2,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    990.4,
+    533.6
+   ],
+   "number": 15,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1204.3,
+    580.8
+   ],
+   "number": 1,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1049.6,
+    601.9
+   ],
+   "number": 12,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1130.2,
+    624.1
+   ],
+   "number": 10,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    421.7,
+    627.8
+   ],
+   "number": 1,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1460.3,
+    640.2
+   ],
+   "number": 2,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    2065.7,
+    640.7
+   ],
+   "number": 5,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1217.1,
+    652.5
+   ],
+   "number": 9,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1825.8,
+    661.1
+   ],
+   "number": 11,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    2105.0,
+    671.0
+   ],
+   "number": 3,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1950.0,
+    710.8
+   ],
+   "number": 2,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1157.3,
+    728.8
+   ],
+   "number": 9,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    269.3,
+    755.2
+   ],
+   "number": 18,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    237.2,
+    797.2
+   ],
+   "number": 20,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1274.1,
+    798.7
+   ],
+   "number": 1,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    191.5,
+    822.6
+   ],
+   "number": 1,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1825.8,
+    839.2
+   ],
+   "number": 11,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    258.5,
+    872.8
+   ],
+   "number": 16,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    356.9,
+    909.0
+   ],
+   "number": 18,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1907.1,
+    937.6
+   ],
+   "number": 3,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    249.3,
+    984.8
+   ],
+   "number": 1,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1837.8,
+    1037.3
+   ],
+   "number": 11,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1093.0,
+    1212.2
+   ],
+   "number": 1,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1070.9,
+    1356.7
+   ],
+   "number": 1,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    993.0,
+    1392.7
+   ],
+   "number": 1,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    968.7,
+    1529.7
+   ],
+   "number": 1,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1200.8,
+    1757.9
+   ],
+   "number": 1,
+   "difficulty": "easy",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1800.5,
+    43.5
+   ],
+   "number": 93,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1868.4,
+    127.6
+   ],
+   "number": 91,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1477.0,
+    163.5
+   ],
+   "number": 90,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1980.5,
+    165.5
+   ],
+   "number": 92,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1544.5,
+    288.7
+   ],
+   "number": 28,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    503.8,
+    326.8
+   ],
+   "number": 25,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    626.0,
+    373.0
+   ],
+   "number": 39,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1561.8,
+    383.0
+   ],
+   "number": 28,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1780.6,
+    431.0
+   ],
+   "number": 35,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    336.7,
+    453.4
+   ],
+   "number": 27,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    521.0,
+    456.0
+   ],
+   "number": 39,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1522.9,
+    494.9
+   ],
+   "number": 28,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    455.7,
+    501.4
+   ],
+   "number": 27,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1907.5,
+    527.3
+   ],
+   "number": 94,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    623.4,
+    532.5
+   ],
+   "number": 81,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    295.0,
+    538.0
+   ],
+   "number": 29,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    419.5,
+    572.0
+   ],
+   "number": 37,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    357.0,
+    663.9
+   ],
+   "number": 82,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    493.5,
+    691.5
+   ],
+   "number": 81,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    404.5,
+    712.0
+   ],
+   "number": 86,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1898.0,
+    713.4
+   ],
+   "number": 26,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    473.0,
+    743.5
+   ],
+   "number": 85,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1866.5,
+    761.5
+   ],
+   "number": 24,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1004.5,
+    766.6
+   ],
+   "number": 23,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1218.0,
+    801.5
+   ],
+   "number": 33,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    394.5,
+    838.5
+   ],
+   "number": 84,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    647.4,
+    870.0
+   ],
+   "number": 83,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1152.5,
+    897.0
+   ],
+   "number": 33,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1009.5,
+    931.4
+   ],
+   "number": 23,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1795.5,
+    935.1
+   ],
+   "number": 34,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    946.1,
+    953.9
+   ],
+   "number": 21,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1932.0,
+    984.6
+   ],
+   "number": 34,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1395.0,
+    1012.5
+   ],
+   "number": 97,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    945.0,
+    1188.0
+   ],
+   "number": 96,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1030.0,
+    1227.7
+   ],
+   "number": 95,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1917.4,
+    1241.0
+   ],
+   "number": 32,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1868.9,
+    1329.2
+   ],
+   "number": 36,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1119.9,
+    1364.5
+   ],
+   "number": 22,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    992.0,
+    1423.9
+   ],
+   "number": 22,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1906.4,
+    1451.3
+   ],
+   "number": 32,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1215.7,
+    1457.1
+   ],
+   "number": 1,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1822.0,
+    1456.5
+   ],
+   "number": 32,
+   "difficulty": "moderate",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1617.8,
+    430.4
+   ],
+   "number": 62,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    754.0,
+    488.9
+   ],
+   "number": 60,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    270.9,
+    607.8
+   ],
+   "number": 56,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1574.0,
+    627.4
+   ],
+   "number": 64,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    906.7,
+    666.5
+   ],
+   "number": 54,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1520.2,
+    669.7
+   ],
+   "number": 66,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    737.2,
+    689.9
+   ],
+   "number": 60,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1148.6,
+    826.2
+   ],
+   "number": 68,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    991.2,
+    848.6
+   ],
+   "number": 54,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1402.1,
+    857.9
+   ],
+   "number": 41,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1054.0,
+    1070.3
+   ],
+   "number": 51,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1181.8,
+    1090.1
+   ],
+   "number": 41,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1859.5,
+    1137.5
+   ],
+   "number": 49,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    319.4,
+    1158.2
+   ],
+   "number": 50,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1599.1,
+    1174.8
+   ],
+   "number": 47,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1355.6,
+    1227.6
+   ],
+   "number": 47,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    801.8,
+    1262.9
+   ],
+   "number": 53,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    659.7,
+    1269.2
+   ],
+   "number": 52,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    900.8,
+    1282.3
+   ],
+   "number": 50,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1482.3,
+    1309.1
+   ],
+   "number": 44,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1635.4,
+    1320.0
+   ],
+   "number": 63,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1425.7,
+    1335.0
+   ],
+   "number": 43,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    704.9,
+    1359.8
+   ],
+   "number": 50,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    435.7,
+    1381.5
+   ],
+   "number": 50,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1593.7,
+    1427.8
+   ],
+   "number": 45,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1684.9,
+    1469.8
+   ],
+   "number": 43,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    679.7,
+    1475.2
+   ],
+   "number": 70,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    633.2,
+    1500.3
+   ],
+   "number": 71,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    763.4,
+    1536.6
+   ],
+   "number": 59,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1515.3,
+    1541.5
+   ],
+   "number": 45,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    571.9,
+    1556.2
+   ],
+   "number": 74,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    521.2,
+    1581.8
+   ],
+   "number": 73,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    358.3,
+    1618.4
+   ],
+   "number": 50,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    1787.4,
+    1627.6
+   ],
+   "number": 67,
+   "difficulty": "difficult",
+   "confidence": "high"
+  },
+  {
+   "centroid_px": [
+    633.7,
+    1650.1
+   ],
+   "number": 57,
+   "difficulty": "difficult",
+   "confidence": "high"
+  }
+ ]
+}

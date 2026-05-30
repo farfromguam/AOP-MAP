@@ -1,0 +1,2123 @@
+{
+  "source": "brain/import/community_trails/sfwda_aop_trail_map_2015-03-11.png",
+  "image_px": [
+    2500,
+    1817
+  ],
+  "counts": {
+    "easy_green_circle": 40,
+    "moderate_blue_square": 42,
+    "difficult_black_triangle": 42,
+    "total": 124
+  },
+  "markers": [
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1816.4,
+        286.3
+      ],
+      "area": 1387,
+      "bbox": [
+        1796,
+        266,
+        42,
+        42
+      ],
+      "extent": 0.79,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1974.0,
+        335.5
+      ],
+      "area": 1347,
+      "bbox": [
+        1953,
+        315,
+        43,
+        42
+      ],
+      "extent": 0.75,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1472.9,
+        336.2
+      ],
+      "area": 1384,
+      "bbox": [
+        1452,
+        316,
+        43,
+        42
+      ],
+      "extent": 0.77,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        2124.3,
+        401.8
+      ],
+      "area": 1352,
+      "bbox": [
+        2104,
+        382,
+        42,
+        41
+      ],
+      "extent": 0.79,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1187.1,
+        404.6
+      ],
+      "area": 1405,
+      "bbox": [
+        1166,
+        384,
+        43,
+        42
+      ],
+      "extent": 0.78,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        2199.1,
+        410.9
+      ],
+      "area": 1378,
+      "bbox": [
+        2179,
+        390,
+        41,
+        42
+      ],
+      "extent": 0.8,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        627.7,
+        453.1
+      ],
+      "area": 1367,
+      "bbox": [
+        607,
+        432,
+        42,
+        42
+      ],
+      "extent": 0.77,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        932.7,
+        453.9
+      ],
+      "area": 1374,
+      "bbox": [
+        912,
+        433,
+        43,
+        42
+      ],
+      "extent": 0.76,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1199.3,
+        474.4
+      ],
+      "area": 1351,
+      "bbox": [
+        1179,
+        454,
+        42,
+        42
+      ],
+      "extent": 0.77,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        869.3,
+        521.4
+      ],
+      "area": 1383,
+      "bbox": [
+        849,
+        501,
+        42,
+        42
+      ],
+      "extent": 0.78,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1439.4,
+        520.8
+      ],
+      "area": 1385,
+      "bbox": [
+        1419,
+        500,
+        42,
+        43
+      ],
+      "extent": 0.77,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1330.4,
+        527.9
+      ],
+      "area": 1354,
+      "bbox": [
+        1309,
+        508,
+        43,
+        41
+      ],
+      "extent": 0.77,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1649.9,
+        531.1
+      ],
+      "area": 1325,
+      "bbox": [
+        1629,
+        511,
+        43,
+        42
+      ],
+      "extent": 0.73,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        990.4,
+        533.6
+      ],
+      "area": 1383,
+      "bbox": [
+        970,
+        513,
+        42,
+        42
+      ],
+      "extent": 0.78,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1204.3,
+        580.8
+      ],
+      "area": 1383,
+      "bbox": [
+        1184,
+        560,
+        43,
+        42
+      ],
+      "extent": 0.77,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1049.6,
+        601.9
+      ],
+      "area": 1356,
+      "bbox": [
+        1029,
+        582,
+        43,
+        42
+      ],
+      "extent": 0.75,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1130.2,
+        624.1
+      ],
+      "area": 1353,
+      "bbox": [
+        1110,
+        604,
+        42,
+        42
+      ],
+      "extent": 0.77,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        421.7,
+        627.8
+      ],
+      "area": 1366,
+      "bbox": [
+        401,
+        607,
+        43,
+        42
+      ],
+      "extent": 0.76,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1460.3,
+        640.2
+      ],
+      "area": 1340,
+      "bbox": [
+        1440,
+        620,
+        42,
+        42
+      ],
+      "extent": 0.76,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        2065.7,
+        640.7
+      ],
+      "area": 898,
+      "bbox": [
+        2049,
+        624,
+        34,
+        35
+      ],
+      "extent": 0.75,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1217.1,
+        652.5
+      ],
+      "area": 1352,
+      "bbox": [
+        1197,
+        632,
+        42,
+        42
+      ],
+      "extent": 0.77,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1825.8,
+        661.1
+      ],
+      "area": 1378,
+      "bbox": [
+        1806,
+        640,
+        42,
+        43
+      ],
+      "extent": 0.76,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        2105.0,
+        671.0
+      ],
+      "area": 1374,
+      "bbox": [
+        2084,
+        649,
+        42,
+        44
+      ],
+      "extent": 0.74,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1950.0,
+        710.8
+      ],
+      "area": 1253,
+      "bbox": [
+        1930,
+        692,
+        42,
+        42
+      ],
+      "extent": 0.71,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1157.3,
+        728.8
+      ],
+      "area": 1351,
+      "bbox": [
+        1137,
+        708,
+        42,
+        42
+      ],
+      "extent": 0.77,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        269.3,
+        755.2
+      ],
+      "area": 1381,
+      "bbox": [
+        249,
+        735,
+        42,
+        41
+      ],
+      "extent": 0.8,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        237.2,
+        797.2
+      ],
+      "area": 1377,
+      "bbox": [
+        217,
+        777,
+        42,
+        41
+      ],
+      "extent": 0.8,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1274.1,
+        798.7
+      ],
+      "area": 1385,
+      "bbox": [
+        1254,
+        778,
+        42,
+        42
+      ],
+      "extent": 0.79,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        191.5,
+        822.6
+      ],
+      "area": 1344,
+      "bbox": [
+        171,
+        802,
+        42,
+        42
+      ],
+      "extent": 0.76,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1825.8,
+        839.2
+      ],
+      "area": 1384,
+      "bbox": [
+        1806,
+        817,
+        42,
+        44
+      ],
+      "extent": 0.75,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        258.5,
+        872.8
+      ],
+      "area": 1380,
+      "bbox": [
+        238,
+        853,
+        42,
+        41
+      ],
+      "extent": 0.8,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        356.9,
+        909.0
+      ],
+      "area": 1382,
+      "bbox": [
+        336,
+        887,
+        42,
+        44
+      ],
+      "extent": 0.75,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1907.1,
+        937.6
+      ],
+      "area": 1379,
+      "bbox": [
+        1886,
+        917,
+        43,
+        42
+      ],
+      "extent": 0.76,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        249.3,
+        984.8
+      ],
+      "area": 1370,
+      "bbox": [
+        229,
+        964,
+        42,
+        42
+      ],
+      "extent": 0.78,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1837.8,
+        1037.3
+      ],
+      "area": 1383,
+      "bbox": [
+        1817,
+        1017,
+        42,
+        42
+      ],
+      "extent": 0.78,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1093.0,
+        1212.2
+      ],
+      "area": 1378,
+      "bbox": [
+        1072,
+        1191,
+        43,
+        43
+      ],
+      "extent": 0.75,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1070.9,
+        1356.7
+      ],
+      "area": 1369,
+      "bbox": [
+        1050,
+        1335,
+        42,
+        43
+      ],
+      "extent": 0.76,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        993.0,
+        1392.7
+      ],
+      "area": 704,
+      "bbox": [
+        978,
+        1378,
+        31,
+        30
+      ],
+      "extent": 0.76,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        968.7,
+        1529.7
+      ],
+      "area": 1649,
+      "bbox": [
+        946,
+        1506,
+        46,
+        48
+      ],
+      "extent": 0.75,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "circle",
+      "difficulty": "easy",
+      "centroid_px": [
+        1200.8,
+        1757.9
+      ],
+      "area": 1308,
+      "bbox": [
+        1180,
+        1738,
+        43,
+        41
+      ],
+      "extent": 0.74,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1800.5,
+        43.5
+      ],
+      "area": 1166,
+      "bbox": [
+        1783,
+        27,
+        36,
+        34
+      ],
+      "extent": 0.95,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1868.4,
+        127.6
+      ],
+      "area": 1161,
+      "bbox": [
+        1852,
+        111,
+        35,
+        35
+      ],
+      "extent": 0.95,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1477.0,
+        163.5
+      ],
+      "area": 1808,
+      "bbox": [
+        1456,
+        143,
+        43,
+        43
+      ],
+      "extent": 0.98,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1980.5,
+        165.5
+      ],
+      "area": 1164,
+      "bbox": [
+        1963,
+        149,
+        36,
+        34
+      ],
+      "extent": 0.95,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1544.5,
+        288.7
+      ],
+      "area": 797,
+      "bbox": [
+        1530,
+        275,
+        29,
+        29
+      ],
+      "extent": 0.95,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        503.8,
+        326.8
+      ],
+      "area": 1531,
+      "bbox": [
+        483,
+        308,
+        42,
+        39
+      ],
+      "extent": 0.93,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        626.0,
+        373.0
+      ],
+      "area": 1230,
+      "bbox": [
+        608,
+        356,
+        37,
+        35
+      ],
+      "extent": 0.95,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1561.8,
+        383.0
+      ],
+      "area": 1114,
+      "bbox": [
+        1545,
+        367,
+        35,
+        33
+      ],
+      "extent": 0.96,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1780.6,
+        431.0
+      ],
+      "area": 1564,
+      "bbox": [
+        1761,
+        412,
+        41,
+        39
+      ],
+      "extent": 0.98,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        336.7,
+        453.4
+      ],
+      "area": 1582,
+      "bbox": [
+        317,
+        433,
+        40,
+        42
+      ],
+      "extent": 0.94,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        521.0,
+        456.0
+      ],
+      "area": 1235,
+      "bbox": [
+        504,
+        439,
+        36,
+        36
+      ],
+      "extent": 0.95,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1522.9,
+        494.9
+      ],
+      "area": 1547,
+      "bbox": [
+        1503,
+        475,
+        42,
+        42
+      ],
+      "extent": 0.88,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        455.7,
+        501.4
+      ],
+      "area": 1579,
+      "bbox": [
+        436,
+        481,
+        41,
+        41
+      ],
+      "extent": 0.94,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1907.5,
+        527.3
+      ],
+      "area": 1170,
+      "bbox": [
+        1889,
+        509,
+        36,
+        36
+      ],
+      "extent": 0.9,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        623.4,
+        532.5
+      ],
+      "area": 1169,
+      "bbox": [
+        605,
+        515,
+        36,
+        36
+      ],
+      "extent": 0.9,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        295.0,
+        538.0
+      ],
+      "area": 1098,
+      "bbox": [
+        279,
+        522,
+        34,
+        34
+      ],
+      "extent": 0.95,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        419.5,
+        572.0
+      ],
+      "area": 1569,
+      "bbox": [
+        399,
+        553,
+        42,
+        39
+      ],
+      "extent": 0.96,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        357.0,
+        663.9
+      ],
+      "area": 860,
+      "bbox": [
+        342,
+        649,
+        30,
+        32
+      ],
+      "extent": 0.9,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        493.5,
+        691.5
+      ],
+      "area": 1166,
+      "bbox": [
+        476,
+        675,
+        37,
+        34
+      ],
+      "extent": 0.93,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        404.5,
+        712.0
+      ],
+      "area": 1330,
+      "bbox": [
+        386,
+        694,
+        37,
+        38
+      ],
+      "extent": 0.95,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1898.0,
+        713.4
+      ],
+      "area": 767,
+      "bbox": [
+        1885,
+        698,
+        27,
+        31
+      ],
+      "extent": 0.92,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        473.0,
+        743.5
+      ],
+      "area": 1260,
+      "bbox": [
+        456,
+        726,
+        35,
+        36
+      ],
+      "extent": 1.0,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1866.5,
+        761.5
+      ],
+      "area": 905,
+      "bbox": [
+        1851,
+        747,
+        32,
+        30
+      ],
+      "extent": 0.94,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1004.5,
+        766.6
+      ],
+      "area": 1166,
+      "bbox": [
+        987,
+        750,
+        36,
+        35
+      ],
+      "extent": 0.93,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1218.0,
+        801.5
+      ],
+      "area": 1489,
+      "bbox": [
+        1199,
+        782,
+        39,
+        40
+      ],
+      "extent": 0.95,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        394.5,
+        838.5
+      ],
+      "area": 1298,
+      "bbox": [
+        377,
+        820,
+        37,
+        38
+      ],
+      "extent": 0.92,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        647.4,
+        870.0
+      ],
+      "area": 1147,
+      "bbox": [
+        631,
+        852,
+        34,
+        37
+      ],
+      "extent": 0.91,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1152.5,
+        897.0
+      ],
+      "area": 1567,
+      "bbox": [
+        1132,
+        877,
+        41,
+        41
+      ],
+      "extent": 0.93,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1009.5,
+        931.4
+      ],
+      "area": 1164,
+      "bbox": [
+        992,
+        915,
+        36,
+        34
+      ],
+      "extent": 0.95,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1795.5,
+        935.1
+      ],
+      "area": 943,
+      "bbox": [
+        1780,
+        920,
+        33,
+        31
+      ],
+      "extent": 0.92,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        946.1,
+        953.9
+      ],
+      "area": 1234,
+      "bbox": [
+        929,
+        935,
+        36,
+        37
+      ],
+      "extent": 0.93,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1932.0,
+        984.6
+      ],
+      "area": 1405,
+      "bbox": [
+        1914,
+        965,
+        36,
+        42
+      ],
+      "extent": 0.93,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1395.0,
+        1012.5
+      ],
+      "area": 1260,
+      "bbox": [
+        1378,
+        995,
+        35,
+        36
+      ],
+      "extent": 1.0,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        945.0,
+        1188.0
+      ],
+      "area": 1295,
+      "bbox": [
+        928,
+        1170,
+        35,
+        38
+      ],
+      "extent": 0.97,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1030.0,
+        1227.7
+      ],
+      "area": 1275,
+      "bbox": [
+        1011,
+        1209,
+        37,
+        38
+      ],
+      "extent": 0.91,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1917.4,
+        1241.0
+      ],
+      "area": 1551,
+      "bbox": [
+        1898,
+        1221,
+        40,
+        42
+      ],
+      "extent": 0.92,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1868.9,
+        1329.2
+      ],
+      "area": 1242,
+      "bbox": [
+        1851,
+        1312,
+        36,
+        37
+      ],
+      "extent": 0.93,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1119.9,
+        1364.5
+      ],
+      "area": 1136,
+      "bbox": [
+        1103,
+        1347,
+        34,
+        36
+      ],
+      "extent": 0.93,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        992.0,
+        1423.9
+      ],
+      "area": 970,
+      "bbox": [
+        976,
+        1409,
+        33,
+        31
+      ],
+      "extent": 0.95,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1906.4,
+        1451.3
+      ],
+      "area": 1590,
+      "bbox": [
+        1885,
+        1431,
+        42,
+        41
+      ],
+      "extent": 0.92,
+      "shape_guess": "square"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1215.7,
+        1457.1
+      ],
+      "area": 1374,
+      "bbox": [
+        1195,
+        1436,
+        43,
+        43
+      ],
+      "extent": 0.74,
+      "shape_guess": "circle"
+    },
+    {
+      "type": "square",
+      "difficulty": "moderate",
+      "centroid_px": [
+        1822.0,
+        1456.5
+      ],
+      "area": 1417,
+      "bbox": [
+        1804,
+        1437,
+        37,
+        40
+      ],
+      "extent": 0.96,
+      "shape_guess": "square"
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        2175.1,
+        301.5
+      ],
+      "area": 158,
+      "bbox": [
+        2168,
+        294,
+        15,
+        16
+      ],
+      "extent": 0.66,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1617.8,
+        430.4
+      ],
+      "area": 1149,
+      "bbox": [
+        1597,
+        406,
+        41,
+        42
+      ],
+      "extent": 0.67,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        754.0,
+        488.9
+      ],
+      "area": 874,
+      "bbox": [
+        737,
+        466,
+        35,
+        39
+      ],
+      "extent": 0.64,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1106.7,
+        512.8
+      ],
+      "area": 329,
+      "bbox": [
+        1096,
+        499,
+        23,
+        30
+      ],
+      "extent": 0.48,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        270.9,
+        607.8
+      ],
+      "area": 1097,
+      "bbox": [
+        251,
+        583,
+        41,
+        42
+      ],
+      "extent": 0.64,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1574.0,
+        627.4
+      ],
+      "area": 1727,
+      "bbox": [
+        1551,
+        592,
+        44,
+        66
+      ],
+      "extent": 0.59,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1514.4,
+        617.0
+      ],
+      "area": 498,
+      "bbox": [
+        1502,
+        603,
+        27,
+        31
+      ],
+      "extent": 0.59,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        906.7,
+        666.5
+      ],
+      "area": 988,
+      "bbox": [
+        889,
+        641,
+        36,
+        45
+      ],
+      "extent": 0.61,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1520.2,
+        669.7
+      ],
+      "area": 897,
+      "bbox": [
+        1504,
+        649,
+        35,
+        38
+      ],
+      "extent": 0.67,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        737.2,
+        689.9
+      ],
+      "area": 956,
+      "bbox": [
+        719,
+        669,
+        41,
+        35
+      ],
+      "extent": 0.67,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1148.6,
+        826.2
+      ],
+      "area": 1253,
+      "bbox": [
+        1129,
+        798,
+        41,
+        50
+      ],
+      "extent": 0.61,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        991.2,
+        848.6
+      ],
+      "area": 968,
+      "bbox": [
+        973,
+        827,
+        42,
+        36
+      ],
+      "extent": 0.64,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1402.1,
+        857.9
+      ],
+      "area": 933,
+      "bbox": [
+        1381,
+        837,
+        40,
+        35
+      ],
+      "extent": 0.67,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        508.4,
+        898.5
+      ],
+      "area": 313,
+      "bbox": [
+        496,
+        889,
+        27,
+        18
+      ],
+      "extent": 0.64,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1054.0,
+        1070.3
+      ],
+      "area": 846,
+      "bbox": [
+        1037,
+        1049,
+        35,
+        36
+      ],
+      "extent": 0.67,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1181.8,
+        1090.1
+      ],
+      "area": 926,
+      "bbox": [
+        1164,
+        1067,
+        36,
+        40
+      ],
+      "extent": 0.64,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1859.5,
+        1137.5
+      ],
+      "area": 903,
+      "bbox": [
+        1842,
+        1116,
+        37,
+        39
+      ],
+      "extent": 0.63,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        319.4,
+        1158.2
+      ],
+      "area": 1192,
+      "bbox": [
+        299,
+        1133,
+        43,
+        45
+      ],
+      "extent": 0.62,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1103.3,
+        1154.6
+      ],
+      "area": 193,
+      "bbox": [
+        1096,
+        1146,
+        16,
+        18
+      ],
+      "extent": 0.67,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1599.1,
+        1174.8
+      ],
+      "area": 823,
+      "bbox": [
+        1582,
+        1154,
+        35,
+        36
+      ],
+      "extent": 0.65,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1355.6,
+        1227.6
+      ],
+      "area": 893,
+      "bbox": [
+        1338,
+        1204,
+        36,
+        40
+      ],
+      "extent": 0.62,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        801.8,
+        1262.9
+      ],
+      "area": 1253,
+      "bbox": [
+        778,
+        1238,
+        46,
+        41
+      ],
+      "extent": 0.66,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        659.7,
+        1269.2
+      ],
+      "area": 1152,
+      "bbox": [
+        640,
+        1244,
+        41,
+        57
+      ],
+      "extent": 0.49,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        900.8,
+        1282.3
+      ],
+      "area": 1181,
+      "bbox": [
+        881,
+        1258,
+        41,
+        44
+      ],
+      "extent": 0.65,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1482.3,
+        1309.1
+      ],
+      "area": 946,
+      "bbox": [
+        1465,
+        1287,
+        37,
+        38
+      ],
+      "extent": 0.67,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1635.4,
+        1320.0
+      ],
+      "area": 1041,
+      "bbox": [
+        1613,
+        1298,
+        43,
+        37
+      ],
+      "extent": 0.65,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1425.7,
+        1335.0
+      ],
+      "area": 936,
+      "bbox": [
+        1408,
+        1314,
+        41,
+        35
+      ],
+      "extent": 0.65,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        704.9,
+        1359.8
+      ],
+      "area": 1169,
+      "bbox": [
+        684,
+        1334,
+        42,
+        45
+      ],
+      "extent": 0.62,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        435.7,
+        1381.5
+      ],
+      "area": 1195,
+      "bbox": [
+        413,
+        1356,
+        44,
+        46
+      ],
+      "extent": 0.59,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1070.6,
+        1417.9
+      ],
+      "area": 470,
+      "bbox": [
+        1055,
+        1406,
+        35,
+        23
+      ],
+      "extent": 0.58,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1593.7,
+        1427.8
+      ],
+      "area": 833,
+      "bbox": [
+        1577,
+        1407,
+        35,
+        36
+      ],
+      "extent": 0.66,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1684.9,
+        1469.8
+      ],
+      "area": 886,
+      "bbox": [
+        1667,
+        1448,
+        36,
+        39
+      ],
+      "extent": 0.63,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        679.7,
+        1475.2
+      ],
+      "area": 1124,
+      "bbox": [
+        659,
+        1451,
+        42,
+        42
+      ],
+      "extent": 0.64,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        633.2,
+        1500.3
+      ],
+      "area": 1625,
+      "bbox": [
+        606,
+        1465,
+        51,
+        64
+      ],
+      "extent": 0.5,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        763.4,
+        1536.6
+      ],
+      "area": 1565,
+      "bbox": [
+        738,
+        1507,
+        50,
+        48
+      ],
+      "extent": 0.65,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1515.3,
+        1541.5
+      ],
+      "area": 865,
+      "bbox": [
+        1498,
+        1520,
+        36,
+        37
+      ],
+      "extent": 0.65,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        571.9,
+        1556.2
+      ],
+      "area": 1901,
+      "bbox": [
+        544,
+        1522,
+        59,
+        64
+      ],
+      "extent": 0.5,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        521.2,
+        1581.8
+      ],
+      "area": 1289,
+      "bbox": [
+        498,
+        1556,
+        45,
+        49
+      ],
+      "extent": 0.58,
+      "verts": 4
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        358.3,
+        1618.4
+      ],
+      "area": 1246,
+      "bbox": [
+        335,
+        1592,
+        47,
+        49
+      ],
+      "extent": 0.54,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        1787.4,
+        1627.6
+      ],
+      "area": 1135,
+      "bbox": [
+        1767,
+        1598,
+        42,
+        47
+      ],
+      "extent": 0.57,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        633.7,
+        1650.1
+      ],
+      "area": 1237,
+      "bbox": [
+        613,
+        1625,
+        42,
+        42
+      ],
+      "extent": 0.7,
+      "verts": 3
+    },
+    {
+      "type": "triangle",
+      "difficulty": "difficult",
+      "centroid_px": [
+        440.4,
+        1771.4
+      ],
+      "area": 4494,
+      "bbox": [
+        378,
+        1742,
+        117,
+        61
+      ],
+      "extent": 0.63,
+      "verts": 4
+    }
+  ]
+}

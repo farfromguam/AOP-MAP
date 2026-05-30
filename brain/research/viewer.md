@@ -79,6 +79,8 @@ brand logos, drawn POIs). `User submitted` holds contributor-shaped layers
 | OSM service roads | `osm_aop_9patch.geojson` | off | `tasks/01_mvp/community_trails_import.md` |
 | OSM named landmarks | `osm_aop_named.geojson` | off | `tasks/01_mvp/community_trails_import.md` |
 | SFWDA paper trail map | `sfwda_aop_trail_map.webp` + `sfwda_raster_alignment.json` | off | `tasks/01_mvp/community_trails_import.md` |
+| SFWDA traced trails (extracted) | `sfwda_traced_trails.geojson` | off | `tasks/04_event_app/paper_map_trail_extraction.md` |
+| SFWDA traced markers (difficulty) | `sfwda_traced_markers.geojson` | off | `tasks/04_event_app/paper_map_trail_extraction.md` |
 
 The viewer also has a feature search box and the POI/footprint/trace editor -- see
 "Viewer capabilities" below.

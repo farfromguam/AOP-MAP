@@ -68,7 +68,10 @@
   "coverage": {
     "trails_with_full_data": 9,
     "estimated_total_trails": "120+ (park claim); map shows numbers into the 90s",
-    "backbone_note": "The remaining ~110 numbered trails carry only a number + difficulty color on the map. They get added to this catalog as field observation, onX, or park-supplied names land. No fabricated entries."
+    "backbone_note": "The remaining ~110 numbered trails carry only a number + difficulty color on the map. They get added to this catalog as field observation, onX, or park-supplied names land. No fabricated entries.",
+    "map_marker_layer": "website/data/sfwda_traced_markers.geojson — 124 georeferenced markers from the SFWDA 2015 paper map; 117 carry a hand-read trail_number (72 distinct; 116/117 in difficulty band). Contiguous per-trail geometry in website/data/sfwda_numbered_trails.geojson (67 trails). A trail's number is labelled at several points along its route. Built by mvp/scripts/run_paper_trace_pipeline.sh.",
+    "difficulty_bands_on_map": { "easy_green": "1-20", "moderate_blue": "21-39 & 80-99", "difficult_black": "40-79", "note": "Approximate banding; not a hard rule." },
+    "difficulty_source_note": "Two rating systems can disagree. The PARK MAP color is the park's own rating (authority for park use); onX technical ratings are onX's. Known mismatch: trails 6 (Descension) and 7 (Ascension) read GREEN/Easy on the park map but onX rates them Moderate (TR6/TR5). The 'difficulty' values above currently follow onX; reconcile to the map color during curation."
   },
   "owed_work": [
     "Field-walk / park-supply names + descriptions for the unnamed numbered trails (the bulk of the ~120).",

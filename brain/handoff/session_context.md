@@ -15,6 +15,50 @@ Each session pruned out of here lands at `session_context_<YYYYMMDD>.md`:
 - `session_context_20260525.md` — left-rail manilla-tab design exploration; five HTML mockup variants checked in under `website/leftrail_v*.html`. Build card: `tasks/03_event_app/_done/left_rail_collapse_tabs.md`. No `website/index.html` changes.
 - `session_context_20260527.md` — misc_4 items 1–5 shipped, plus the POI/About empty-space CSS fix and the tab-restore fix. All in the working tree (uncommitted). See `tasks/04_event_app/misc_4.md` "What shipped (2026-05-27)" block for the full close-out and the trail-lane verifier residue routed to `viewer_polish_followups.md`.
 
+**2026-05-29 (session 4) — string trail names + difficulty colours + snap/trim
+(golden-data prep).** The merged network dropped `JW2`/`JW20` and other **named**
+trails because the round-trip treated name as an integer. Fixed in
+`import_trace_svg.py` (`_editable_name`: serif:id → inkscape:label → id; import
+every name except `?`; non-numeric names locked) + `export_trace_svg.py` (writes
+the name to both `inkscape:label` and `serif:id`). Re-import → 119 trails, 104
+named, all 9 non-numeric names land (Area 51, GWT, JW1–4, JW20, Pretender, Riot
+Hill). Colours switched from per-trail rainbow to **green/blue/black by difficulty**
+(`assign_difficulty` band fallback; 22 grey unknowns flagged). New
+`mvp/scripts/snap_trim_trails.py` cleans topology — 31 overshoots trimmed, 48 gaps
+snapped, 3 dangling left for review. Re-exported the stack over the 2025 backdrop:
+`brain/output/paper_trace/aop_trail_network_2025_edit.svg` (difficulty colours,
+names on editable channels) — **this is the artifact for the user's review/edit pass
+→ re-import = golden data.** `playwright_verify_sfwda_trace.py` PASS; overlay
+`brain/output/net_2025_difficulty_overlay.png`. Details in
+`tasks/04_event_app/paper_map_trail_extraction.md` "String trail names…" block. All
+`website/data/` + `mvp/scripts/` + `website/index.html` uncommitted.
+
+**2026-05-29 (session 3) — paper-map trail extraction PROTOTYPE.** New card
+`tasks/04_event_app/paper_map_trail_extraction.md`. User goal: the SFWDA 2015
+paper map is the only surviving record of trails the prior owner lost; extract
+them cleanly. User corrected my framing — the sheet was **printed from a mapping
+system, so it is positionally accurate once the (already-correct) warp is applied**;
+"high for shape, low for current trails" was about 2015 *vintage*, not precision.
+Built three `mvp/scripts/` scripts (need `numpy opencv-python-headless pillow
+scikit-image shapely`, pip'd into the global Python): `extract_paper_trails.py`
+(124 markers — 40 green Easy / 42 blue Moderate / 42 black-triangle Difficult;
+triangles solved via close+OPEN since they fuse to the trail lines + trail-line
+isolation), `paper_trace_warp.py` (`PaperWarp` exactly replicates the viewer's
+270°-rotate + 6×6 bilinear mesh — corner self-check passes), `vectorize_paper_trails.py`
+(skeletonize → graph walk → DP simplify → warp = 382 edges/1521 vertices, 116/124
+markers matched). Outputs in `brain/output/paper_trace/` (scratch): `sfwda_markers.geojson`,
+`sfwda_trails.geojson`, debug overlays. Verified by observation (overlays) + georef
+self-check + bbox-inside-envelope. Per user ("load the data in the app to review,
+refine after"), wired into `website/index.html` as two default-OFF, in-no-preset
+review layers (`sfwda-trace-trails` + `sfwda-trace-markers`, toggles under External
+reference) with data copied to `website/data/sfwda_traced_{trails,markers}.geojson`;
+verifier `mvp/scripts/playwright_verify_sfwda_trace.py` PASS (512 features, survives
+preset switch, 0 console errors). Visual: Trace preset + SFWDA raster + traced trails
+shows the trace landing on the paper-map ink (`brain/output/sfwda_trace_review_traceonly.png`).
+Open (refine pass): trail-number OCR (deferred, no higher-res scan), boundary-split,
+camping-icon false positives, junction topology. `website/index.html` +
+`website/data/` changes are UNCOMMITTED.
+
 **2026-05-29 (session 2) — bake-first POI slice SHIPPED.** Acting on the
 push-order decision (bake first; one `publish.geojson`), the SERVE half of the
 star-driven pipeline now runs end-to-end: new `core.pois` table + `publish.pois`

@@ -65,6 +65,46 @@ on a number→name index is: onX's handful + whatever names ride along on the
 event/bounty obstacles (Bounty Hill, Riot Hill, Lesson Zone, Freeze Zone). The
 remaining ~110 trails have numbers and difficulty colors only, by design.
 
+## Marker extraction from the georeferenced paper map (2026-05-29)
+
+Pulled the **difficulty + position of every numbered marker** off the
+georeferenced SFWDA 2015 raster. This dovetails with the parallel OpenCV pipeline
+in `tasks/04_event_app/paper_map_trail_extraction.md` (`extract_paper_trails.py`
+→ `brain/output/paper_trace/`): that effort detected + georeferenced 124 markers
+and traced 382 trail edges but left `trail_number: null` (its OCR fork).
+
+I supplied the missing **numbers** (read by eye off 3× contact sheets; tesseract.js
+did worse) and `mvp/scripts/attach_trail_numbers.py` matched them to the detector's
+markers by pixel centroid.
+
+Result: **`website/data/sfwda_traced_markers.geojson`** (= the detector's
+georeferenced markers + my numbers) — after a full high-zoom re-read of every
+marker: **117/124 markers numbered, 72 distinct numbers, 116/117 in difficulty
+band** (1 flagged anomaly: a blue-circle "1" near the Buggy Entrance). The 7
+unnumbered are junk (trail-line crossings + "Jeep" text). Plus contiguous
+per-trail geometry in `sfwda_numbered_trails.geojson` (67 trails, 58 single-part;
+loose-end rejoin + a local-path cap so far-apart same-number markers leave an
+honest gap instead of a map-spanning false line).
+Each feature: `difficulty`, `trail_number`, `number_confidence`, provisional
+review status.
+
+What's reliable vs not:
+- **Reliable:** difficulty (from marker colour) + lat/lng (georeferenced).
+- **Provisional:** the trail NUMBER. 2-digit reads are crisp (confidence `high`);
+  single-digit greens are low-res and unreliable (confidence `low`/`none`).
+  tesseract.js OCR did worse than reading by eye (small stylised numerals).
+- A trail's number is **labelled at several points along its route**, so numbers
+  repeat across markers — expected, not an error.
+
+**Difficulty bands (robust finding):** Easy ≈ **1–20**, Moderate ≈ **21–39 & 80–99**,
+Difficult ≈ **40–79**. Distinct numbers read so far:
+- Easy: 2–12,14–18,20
+- Moderate: 21–29, 32–39, 81, 83–87, 94–99
+- Difficult: 44, 50, 53–54, 56–57, 59–60, 62, 64, 68–74
+
+To refine the numbers: cross-read against a higher-res / current map, or have the
+park confirm. The detection+georef pipeline is reusable for any sharper scan.
+
 ## Best public source: onX Offroad
 
 onX publishes per-trail guide pages at
