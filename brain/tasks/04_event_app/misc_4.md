@@ -34,6 +34,13 @@ buildings should be in two places
 buildings layers
 and our footprints. at this time we are good to turn off buildings.
 
+---
+
+cleanup worktrees that are unused.
+clean up 
+
+
+
 
 ---
 

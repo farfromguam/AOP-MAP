@@ -42,9 +42,11 @@ The right panel groups layers by provenance, following `tasks/04_event_app/sourc
 `Source layers` holds the raw external rasters and parcel feeds we acquired
 (9-patch AOI, satellite + NAIP imagery, lidar tile index, FEMA buildings, TN
 cemeteries). `Derived layers` holds what we computed from those sources (land
-cover, hillshade, contours, publishable boundaries, simulated Saturday
-activity). `External reference` holds external vectors and the SFWDA raster we
-trace against (USGS water/springs/roads, OSM cluster, SFWDA paper map).
+cover, hillshade, contours, publishable boundaries, the merged AOP trail
+network, simulated Saturday activity). `External reference` holds external
+vectors and the SFWDA raster we trace against (USGS water/springs/roads, OSM
+cluster, SFWDA paper map, and the raw SFWDA traced-trail/marker prototypes the
+merged network was curated from).
 `Map editor` holds first-party items curated in the editor and baked into the
 export (event schedule POIs, publishable trailheads, visitor context callouts,
 brand logos, drawn POIs). `User submitted` holds contributor-shaped layers
@@ -65,6 +67,7 @@ brand logos, drawn POIs). `User submitted` holds contributor-shaped layers
 | Lidar contours (5 ft, 1m DEM) | `aop_contours.geojson` | off | `tasks/01_mvp/lidar_contour_pipeline.md`; "Lidar Contour Layer" below |
 | Activity hotspots (GPX dwell) | `aop_activity_hotspots.geojson` | off | `tasks/01_mvp/activity_hotspots.md`; "Activity Hotspots Layer" below |
 | Simulated Saturday activity | `aop_synthetic_activity_tracks.geojson` + `aop_synthetic_activity_hotspots.geojson` | off | `tasks/01_mvp/activity_hotspots.md`; "Simulated Saturday Activity Layer" below |
+| AOP trail network (merged truth, colour by difficulty) | `aop_trail_network.geojson` | off | `tasks/04_event_app/paper_map_trail_extraction.md` |
 | Event schedule POIs | `aop_event_schedule.json` | off | `tasks/01_mvp/event_schedule_layer.md`; "Event Schedule Layer" below |
 | Satellite imagery (TNMap 2022) | TNMap XYZ tiles | off | "Satellite Imagery" below |
 | USDA NAIP imagery (TN 2023) | USDA FPAC `USDA_CONUS_PRIME` tiles | off | "USDA NAIP Imagery / Tracing Source" below |
@@ -186,7 +189,8 @@ can paste preferred settings back into the session.
 
 The right panel groups layers by provenance role. `Derived layers` contains
 viewer-ready outputs generated from source material: land cover, the 9-patch
-land-cover context, lidar hillshade/contours, activity hotspots, the event
+land-cover context, lidar hillshade/contours, the merged AOP trail network
+(extracted/traced/merged from the SFWDA paper map), activity hotspots, the event
 schedule overlay, and visitor context callouts. `Source layers` contains the
 inspectable inputs and reference overlays: TNMap and USDA imagery, the
 9-patch and lidar tile acquisition

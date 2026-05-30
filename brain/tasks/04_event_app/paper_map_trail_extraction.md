@@ -562,6 +562,19 @@ overlay `brain/output/net_2025_difficulty_overlay.png`. Verifier note: bumped th
 ~10s (rectified imagery + all layers), 15s was a flaky budget; app loads with 0 errors.
 PASS. Still uncommitted.
 
+**Merged network re-grouped to Derived layers (2026-05-30).** The
+`showAopTrailNetwork` toggle moved out of `External reference` into `Derived
+layers` in `website/index.html`: the merged gold network is a product we
+*computed* from the SFWDA raster, not an external feed, so it belongs beside the
+other derived outputs (land cover, contours, boundaries, synthetic activity) per
+the `source_layers.md` provenance grouping. The raw `SFWDA traced trails/markers`
+prototypes stay in `External reference` next to the raster they trace against.
+DOM-only move — `sectionInputs()`/`SECTION_RUNTIME` are containment-driven, so the
+network's per-section export now lands under derived-layers automatically; toggle
+ref, layer-visibility wiring, data fetch, and presets all key on the element ID
+and were untouched. `playwright_verify_sfwda_trace.py` PASS. `research/viewer.md`
+inventory + provenance prose updated in the same pass. Uncommitted.
+
 ### Still open
 - **Resolve the blue-circle "1"** band-flag near the Buggy Entrance (info/start
   marker vs trail?) — one human glance at the sheet.
