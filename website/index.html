@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>AOP Map Viewer</title>
+  <!-- PWA: installable + offline. See sw.js and manifest.json. -->
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#a85020" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="AOP Map" />
   <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
   <style>
     /* Palette tokens. Cream/brown stack used by the panel chrome, calendar
@@ -9960,6 +9967,19 @@
 
       lrRender();
     })();
+  </script>
+
+  <!-- PWA: register the service worker. Scoped to this directory so the app
+       works under any host subpath. Failure is non-fatal — the viewer runs
+       fine without it, just without offline caching. -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((err) => {
+          console.warn('[AOP] service worker registration failed:', err);
+        });
+      });
+    }
   </script>
 </body>
 </html>
