@@ -47,6 +47,16 @@ The Sprint 03 POI tab shipped with `info needed - revisit` placeholders.
 - [ ] Promote synthetic activity segment labels to real named trails only after the trail-name source work lands.
 - [ ] Decide whether `aop_poi_index.json` `owed_work` should render in the POI tab for non-coder review.
 
+### Positioned-feature bake (DONE 2026-05-30)
+
+- [x] Bake brand-logo + region-callout drag/resize positions to disk so they
+      survive a data reset. `mvp/scripts/export_positioned_features.py` reads the
+      viewer's "Export all" / section-Copy JSON and writes the moved geometry
+      (+ logo `icon_size`) into `website/data/aop_brand_logos.geojson` and
+      `website/data/aop_visitor_context_callouts.geojson`. These two layers are
+      file-based, not PostGIS, so they are out of scope for
+      `export_publish_geojson.sh`. Close-out: `misc_4.md`.
+
 ### Synthetic Activity Boundary
 
 - [ ] Decide whether first-party activity hotspots are clearly synthetic/test-grade or ready for visitor-facing "activity" treatment.

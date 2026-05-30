@@ -2,7 +2,7 @@
   "type": "FeatureCollection",
   "name": "aop_brand_logos",
   "metadata": {
-    "description": "On-map brand logo overlays for AOP and the Rock Warblers. Seed coordinates are nudged off the 1010 pavilion so both logos read at first load; positions are draggable via the feature list panel and persist in the aop_brand_logos_overrides_v1 store.",
+    "description": "On-map brand logo overlays for AOP and the Rock Warblers. Seed coordinates are nudged off the 1010 pavilion so both logos read at first load; positions are draggable via the feature list panel and persist in the aop_brand_logos_overrides_v1 store. To bake drag/resize positions back here so they survive a data reset: viewer right panel 'Export all' -> save JSON -> python3 mvp/scripts/export_positioned_features.py <that file>.",
     "permission_note": "AOP badge is reference-only until AOP confirms reuse. Rock Warblers logo cleared for this project per user grant (the user is Rock Warblers). See brain/tasks/02_edit/assets/branding/README.md."
   },
   "features": [

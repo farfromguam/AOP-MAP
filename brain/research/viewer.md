@@ -386,6 +386,12 @@ Recorded on 2026-05-21:
   via `applyVisitorContextOverrides` before `addSource`. The source geojson
   on disk is never mutated, so an override is always relative to the most
   recent shipped data.
+- Baking overrides to disk (2026-05-30): `mvp/scripts/export_positioned_features.py`
+  reads the right-panel "Export all" / section-Copy JSON and writes the moved
+  geometry back into this seed file so positions survive a data reset. The same
+  script bakes brand-logo positions + `icon_size`. Both layers are file-based
+  (not PostGIS), so they are out of scope for `export_publish_geojson.sh`.
+  Card: `tasks/04_event_app/misc_4.md`.
 
 ### Satellite Imagery (TNMap 2022)
 

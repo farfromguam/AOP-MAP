@@ -1,7 +1,7 @@
 {
   "type": "FeatureCollection",
   "name": "aop_visitor_context_callouts",
-  "_description": "Two planning callout areas for visitor support orientation around Adventure Off Road Park. These are cartographic annotations, not surveyed service-area boundaries.",
+  "_description": "Two planning callout areas for visitor support orientation around Adventure Off Road Park. These are cartographic annotations, not surveyed service-area boundaries. To bake drag-to-move positions back here so they survive a data reset: viewer right panel 'Export all' -> save JSON -> python3 mvp/scripts/export_positioned_features.py <that file>.",
   "_sources_checked": [
     {
       "name": "Adventure Off Road Park official site / rentals pages",

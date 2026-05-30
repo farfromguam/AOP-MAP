@@ -70,10 +70,42 @@ Item 6 (sticky header scroll-with-events) held out by user — leave it alone.
 Routed elsewhere:
 
 - "1033 is the farmhouse / 880 is the park offices / 1010 is the pavilion" — these are building feature-tag bindings, not a misc_4 follow-up. Owed by source verification before promotion. Captured at `tasks/04_event_app/data_integrity_publishability.md` for the tagging pass on the buildings drawer.
-- "images and region callouts in the export script" — left as-is in this block. Open work, not closed by misc_4.
+- "images and region callouts in the export script" — SHIPPED 2026-05-30, see below.
 
 Verifier residue:
 
 - `playwright_verify_event_schedule.py` Trail-lane click tests vs. `hotButtonFlyToHotspots` off→on edge (6 pre-existing FAILs) logged at `tasks/04_event_app/viewer_polish_followups.md` under Code Health. Not caused by misc_4.
 
 No git commit per `ai_rules/no_commits.md`.
+
+## Images + region callouts in the export script (2026-05-30)
+
+The "images and region callouts" line is closed. Background: brand logos
+(`website/data/aop_brand_logos.geojson`) and visitor-context region callouts
+(`website/data/aop_visitor_context_callouts.geojson`) are **file-based** layers
+the static viewer loads directly — they are not in PostGIS, so
+`export_publish_geojson.sh` (PostGIS publish views only) never touched them.
+Drag/resize overrides lived only in localStorage (`aop_positioned_features_v1`),
+so a Reset viewer / data reset snapped them back to seed coords and lost the
+placement work.
+
+New bake script **`mvp/scripts/export_positioned_features.py`** closes the loop
+(same "bake the served file" pattern as `export_gold_trail_network.py`). It reads
+the viewer's right-panel export — "Export all" (`aop-viewer-preset-settings-v3`,
+key `positioned_features`), section Copy (`aop-section-state-v2`, key
+`positionedFeatures`), or a bare `"<layer>:<id>"` map — and bakes each
+override's `geometry` (plus `icon_size` for logos) into the two seed files in
+place. Runtime flags (`highlight`/`locked`) are session state and are ignored.
+Coords rounded to 5 decimals to match seed style; a `generated` date is stamped
+into each changed file; overrides naming an unknown id are flagged and skipped.
+`--dry-run` previews.
+
+Loop: drag/resize in viewer → right panel "Export all" → save JSON →
+`python3 mvp/scripts/export_positioned_features.py <file>` → commit the changed
+geojson. Both seed files carry a bake-workflow note in their metadata.
+
+Verified on `/tmp` copies (real seed files untouched): a synthetic override
+moved + resized `aop_badge`, moved the South Pittsburg callout polygon, left
+`rock_warblers` alone, ignored an unknown id, and produced valid canonical
+2-space GeoJSON (json.loads round-trip holds). Script + the two seed-file notes
+uncommitted per `ai_rules/no_commits.md`.
