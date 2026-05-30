@@ -39,10 +39,26 @@
       --hairline: rgba(46, 36, 24, 0.14);
       --moss-tint-hover: #d6e0cb;
       --cream-wash-hover: #f1e8d2;
+
+      /* iOS notch / home-indicator / rounded-corner padding. We set
+         viewport-fit=cover, so edge-anchored UI must add these or it
+         slides under the notch. Default 0 on devices without insets, so
+         desktop layout is unchanged. To fake a notch on desktop for
+         testing, override these in DevTools (e.g. --sa-top: 59px). */
+      --sa-top:    env(safe-area-inset-top, 0px);
+      --sa-bottom: env(safe-area-inset-bottom, 0px);
+      --sa-left:   env(safe-area-inset-left, 0px);
+      --sa-right:  env(safe-area-inset-right, 0px);
     }
     body, html { margin: 0; padding: 0; height: 100%; font-family: Inter, system-ui, sans-serif; }
     #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-    .left-controls { position: absolute; left: 12px; top: 12px; z-index: 3; width: 340px; max-width: calc(100vw - 392px); display: grid; gap: 8px; }
+    /* Keep MapLibre's corner controls (geolocate, etc.) clear of the notch,
+       status bar, home indicator, and rounded corners under viewport-fit=cover. */
+    .maplibregl-ctrl-top-left    { margin-top: var(--sa-top); margin-left: var(--sa-left); }
+    .maplibregl-ctrl-top-right   { margin-top: var(--sa-top); margin-right: var(--sa-right); }
+    .maplibregl-ctrl-bottom-left { margin-bottom: var(--sa-bottom); margin-left: var(--sa-left); }
+    .maplibregl-ctrl-bottom-right{ margin-bottom: var(--sa-bottom); margin-right: var(--sa-right); }
+    .left-controls { position: absolute; left: calc(12px + var(--sa-left)); top: calc(12px + var(--sa-top)); z-index: 3; width: 340px; max-width: calc(100vw - 392px - var(--sa-left) - var(--sa-right)); display: grid; gap: 8px; }
     .left-controls * { box-sizing: border-box; letter-spacing: 0; }
     .search-shell, .left-context-card, .calendar-card, .hot-control { border: 1px solid rgba(155,132,92,0.34); border-radius: 8px; background: var(--cream-surface); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
     .search-shell { display: flex; gap: 6px; padding: 6px; }
@@ -162,7 +178,7 @@
        narrow viewports. Expanded panel still fills the right column up to
        max-height; the visual difference on a tall desktop is negligible
        because the panel already filled top→bottom. */
-    .panel { position: absolute; right: 12px; bottom: 12px; top: auto; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); width: 380px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); overflow-y: auto; z-index: 2; box-sizing: border-box; }
+    .panel { position: absolute; right: calc(12px + var(--sa-right)); bottom: calc(12px + var(--sa-bottom)); top: auto; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); width: 380px; max-width: calc(100vw - 24px - var(--sa-left) - var(--sa-right)); max-height: calc(100vh - 24px - var(--sa-top) - var(--sa-bottom)); overflow-y: auto; z-index: 2; box-sizing: border-box; }
     .panel h1 { margin: 0 0 8px; font-size: 1rem; }
     .panel-header { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
     .panel-header h1 { margin: 0; flex: 1; min-width: 0; }
@@ -9978,6 +9994,77 @@
       };
 
       lrRender();
+    })();
+  </script>
+
+  <!-- PWA: "Install app" button. Hidden by default. On Chromium it shows once
+       the browser fires beforeinstallprompt and triggers the native prompt on
+       click. On iOS Safari (no install API) it shows Add-to-Home-Screen steps.
+       Self-hides when the app is already installed / running standalone. -->
+  <button type="button" id="pwaInstallBtn" hidden
+          aria-label="Install AOP Map as an app"
+          style="position:fixed; left:calc(12px + var(--sa-left)); bottom:calc(12px + var(--sa-bottom)); z-index:1200;
+                 display:flex; align-items:center; gap:7px;
+                 padding:9px 14px; border:1px solid #a85020; border-radius:22px;
+                 background:#a85020; color:#fff; font:600 14px/1 system-ui,sans-serif;
+                 box-shadow:0 2px 8px rgba(0,0,0,.25); cursor:pointer;">
+    <span aria-hidden="true" style="font-size:15px;">⤓</span><span>Install app</span>
+  </button>
+  <div id="pwaIosHint" hidden role="dialog" aria-label="Install instructions"
+       style="position:fixed; left:calc(12px + var(--sa-left)); bottom:calc(58px + var(--sa-bottom)); z-index:1200; max-width:260px;
+              padding:12px 14px; border:1px solid #a85020; border-radius:10px;
+              background:#F5EFE0; color:#3a2a1a; font:14px/1.4 system-ui,sans-serif;
+              box-shadow:0 2px 10px rgba(0,0,0,.25);">
+    To install: tap the <b>Share</b> button, then <b>Add to Home Screen</b>.
+    <button type="button" id="pwaIosHintClose"
+            style="margin-top:8px; padding:5px 10px; border:1px solid #a85020;
+                   border-radius:6px; background:#fff; color:#a85020; cursor:pointer;">
+      Got it
+    </button>
+  </div>
+  <script>
+    (function () {
+      const btn = document.getElementById('pwaInstallBtn');
+      const iosHint = document.getElementById('pwaIosHint');
+      const iosHintClose = document.getElementById('pwaIosHintClose');
+      let deferredPrompt = null;
+
+      // Already installed / launched from home screen → never show the button.
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+
+      // iOS Safari has no beforeinstallprompt; detect it for the manual fallback.
+      const ua = window.navigator.userAgent;
+      const isIos = /iPad|iPhone|iPod/.test(ua)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isIosSafari = isIos && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+
+      function hide() { btn.hidden = true; iosHint.hidden = true; }
+
+      if (!isStandalone && isIosSafari) {
+        // No programmatic prompt available — show the button, reveal steps on tap.
+        btn.hidden = false;
+        btn.addEventListener('click', () => { iosHint.hidden = !iosHint.hidden; });
+        iosHintClose.addEventListener('click', () => { iosHint.hidden = true; });
+      }
+
+      // Chromium: the browser tells us when the app is installable.
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();          // suppress the mini-infobar
+        deferredPrompt = e;
+        if (!isStandalone) btn.hidden = false;
+      });
+
+      btn.addEventListener('click', async () => {
+        if (!deferredPrompt) return; // iOS path handled above
+        btn.hidden = true;
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;       // a prompt can only be used once
+      });
+
+      // Fired after a successful install (Chromium) — nothing left to offer.
+      window.addEventListener('appinstalled', hide);
     })();
   </script>
 
