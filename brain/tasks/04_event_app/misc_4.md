@@ -109,3 +109,30 @@ moved + resized `aop_badge`, moved the South Pittsburg callout polygon, left
 `rock_warblers` alone, ignored an unknown id, and produced valid canonical
 2-space GeoJSON (json.loads round-trip holds). Script + the two seed-file notes
 uncommitted per `ai_rules/no_commits.md`.
+### 2026-05-30 (later) — positions reviewed + baked
+
+User exported viewer settings and asked to review + update image locations and
+the visitor-context callouts. Baked the four `positioned_features` overrides into
+the seed GeoJSON via `export_positioned_features.py`:
+
+- **Brand logos** — moved off the old off-park seed (`-85.7510, …`) onto the park
+  core and resized: `aop_badge` -> `-85.74157, 35.08698` size `0.2`;
+  `rock_warblers` -> `-85.74188, 35.09385` size `0.19`. On-park, consistent sizes.
+- **Visitor context** — near-park **directional annotation circles** (the file's
+  own `_description`: "cartographic annotations, not surveyed service-area
+  boundaries"); the geometry is an orientation anchor, the *label* carries the
+  town + drive time. Checked each circle's bearing from park (35.087, -85.742)
+  vs the real town:
+  - *SP / Kimball supply run* -> 0.83 km @ 158° (SSE). Real South Pittsburg 157°,
+    Kimball 119°. Matches its "SE" label. Baked as exported.
+  - *Monteagle plateau services* -> the **exported drag landed at 9° (NNE)**, but
+    its own "N/NW TO MONTEAGLE" label and real Monteagle (336°, NNW) are to the
+    **northwest** — wrong side (the original seed was correctly NW).
+    **Corrected**: re-baked the circle to `35.10362, -85.75093` = 2.02 km @ 336°
+    (NNW), keeping the user's distance/radius. Trivial to revert if NNE was
+    intentional.
+
+Town coords verified via web (Monteagle 35.2384/-85.8255, South Pittsburg
+35.0094/-85.7017, Kimball 35.0561/-85.6739). Both seed files changed +
+uncommitted. Playwright verifiers (`playwright_verify_brand_logos.py`,
+`playwright_verify_visitor_context.py`) not yet run.

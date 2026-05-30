@@ -627,7 +627,7 @@
     .align-handle-interior { width: 11px; height: 11px; background: #ffd400; }
     .align-handle::after { content: attr(data-label); position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none; }
     @media (max-width: 760px) {
-      .left-controls { left: 8px; right: 8px; top: 8px; width: auto; max-width: none; gap: 6px; }
+      .left-controls { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); top: calc(8px + var(--sa-top)); width: auto; max-width: none; gap: 6px; }
       .search-shell { padding: 4px; }
       .pill-bar { gap: 6px; }
       .pill-bar .pill > button { min-height: 32px; padding: 4px 6px; }
@@ -640,8 +640,8 @@
       /* Panel docks above the message bar (which is at bottom: 8px, ~40 px
          tall) and grows upward. max-height keeps a 220 px reserve at the
          top so the left rail stays uncovered. */
-      .panel { left: 8px; right: 8px; top: auto; bottom: 56px; width: auto; max-width: none; max-height: clamp(220px, calc(100vh - 360px), 420px); }
-      .message { left: 8px; right: 8px; max-width: none; }
+      .panel { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); top: auto; bottom: calc(56px + var(--sa-bottom)); width: auto; max-width: none; max-height: clamp(220px, calc(100vh - 360px - var(--sa-top) - var(--sa-bottom)), 420px); }
+      .message { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); bottom: calc(12px + var(--sa-bottom)); max-width: none; }
     }
     @media (min-width: 1024px) {
       .left-controls { width: 360px; }
