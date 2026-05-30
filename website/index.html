@@ -1143,6 +1143,18 @@
       maxBounds: REGION_BOUNDS
     });
 
+    // Field "where am I" — blue dot + accuracy halo + follow mode. Position comes
+    // from the device GPS chip, so it works offline at the park; it only needs a
+    // secure context (HTTPS or localhost), same gate as the service worker.
+    // maplibregl.GeolocateControl wraps navigator.geolocation watch/clear for us.
+    const geolocate = new maplibregl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: true,
+      showUserLocation: true,
+      showAccuracyCircle: true
+    });
+    map.addControl(geolocate, 'top-right');
+
     const message = document.getElementById('message');
     const terrainToggle = document.getElementById('showTerrain');
     const landcoverToggle = document.getElementById('showLandcover');
