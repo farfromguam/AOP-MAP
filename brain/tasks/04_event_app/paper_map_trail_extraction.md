@@ -468,6 +468,58 @@ Moderate 44 / Difficult 40 / 4 roads. snap/trim auto-fixed 1 overshoot, 3 honest
 remain. Re-exported `aop_trail_network_2025_edit.svg` + overlay; verifier PASS. This is
 the current served `aop_trail_network.geojson`.
 
+**edited_8 imported + gold-export script (2026-05-29) — current served network.**
+`aop_trail_network_2025_edited_8.svg` (120 trail paths, osm merged into the one
+`traced_trails` layer — no separate `osm_tracks` group). Round-trip:
+`import_trace_svg.py aop_trail_network_2025_edited_8.svg` → 120 edges, 94 numbered,
+103 named, **0 grey** (the 4 `None`-difficulty features are exactly the 4 roads) →
+Easy 30 / Moderate 46 / Difficult 40 / Road 4. `snap_trim_trails.py` auto-fixed
+1 overshoot + 1 gap, **3 still dangling >18 m** (left for the human pass).
+
+New **`mvp/scripts/export_gold_trail_network.py`** formalizes the previously
+hand-done "gold" step: it replaces the importer's thin round-trip `_meta` with the
+full self-contained block (crs, `color_legend`, `difficulty_band`, feature/colour
+counts, `property_schema`, `generated_from`, and **auto-computed `review_flags`** —
+numbered trails whose hand-set colour contradicts their number band). Features are
+never touched; only `_meta` is rewritten, deterministically from the features, so
+the gold metadata is reproducible on a fresh install instead of hand-maintained.
+This makes the served `website/data/aop_trail_network.geojson` the **gold file the
+static viewer loads directly on a new install** — no DB, pipeline, or localStorage
+in the path (`index.html` `fetchJson('./data/aop_trail_network.geojson')`).
+
+**Marker auto-renaming bug FIXED (2026-05-29).** The user hit phantom trail renames
+("something is renaming 32 and 58"). Cause: `import_trace_svg.reattach_from_markers`
+assigned a nearby marker's `trail_number` to **unnamed** trails, and the name-fallback
+(`name = name or str(trail_number)`) then turned that into the trail's `name`. So a
+single hand-typed "32" became three (the #32 marker cluster sat near two unnamed
+neighbours), and "58"s appeared on unnamed trails near a #58 marker. Verified: the
+edited_10 SVG carries exactly one path named "32" (all SVG names unique), yet the old
+importer emitted three. **Fix: markers no longer assign `trail_number`/name — the user's
+typed object-name (`_editable_name`) is the sole authority for a trail's number/identity.
+Markers still bootstrap DIFFICULTY for trails the user left uncoloured (a colour
+bootstrap, not an identity one).** Re-import of edited_10 → 0 duplicate numbers (was a
+recurring 32/55/890 mess), 87 numbered / 100 named / 20 deliberately-unnamed (left for the
+user, not auto-stamped). This retires the duplicate-number find-and-fix loop for
+*auto-created* dups; any future dup is now genuinely user-typed.
+
+**edited_9 imported (2026-05-29) — current served network.** Same pipeline
+(`import → snap_trim → export_gold_trail_network --from aop_trail_network_2025_edited_9.svg`).
+Identical aggregate shape to edited_8 (120 / 94 numbered / 103 named / 0 grey;
+Easy 30 / Mod 46 / Diff 40 / Road 4; same 4 review flags 35/1/95/47) — the diff is
+geometric: **4 trails repositioned (11, 34, 47, Pretender)**, same total vertex
+count (2602), so reconnect/nudge fixes, not adds. Verifier PASS. This is the
+current served file; supersedes edited_8.
+
+Verified: network bbox sits fully inside the alignment envelope (georef sane), 0
+degenerate features, `playwright_verify_sfwda_trace.py` **PASS** (toggles
+`showAopTrailNetwork`, asserts `aop-trail-network` visible + renders >0 edges).
+This run's `review_flags` (band-vs-colour disagreements for the human pass): trail
+**35** (easy vs moderate band), **1** (moderate vs easy band — the long-standing
+Buggy-Entrance blue-circle "1"), **95** (easy vs moderate band), **47** (easy vs
+difficult band). Run order is now **`import_trace_svg.py <svg>` → `snap_trim_trails.py`
+→ `export_gold_trail_network.py --from <svg>`**. All `website/data/` + `mvp/scripts/`
+changes uncommitted. This is the current served `aop_trail_network.geojson`.
+
 **App label layer now shows non-numeric names (2026-05-29).** The data carried
 `name='Area 51'/'JW2'/…` correctly, but the `aop-trail-network-labels` symbol layer
 filtered `['has','trail_number']` and rendered `['get','trail_number']` — so the 9

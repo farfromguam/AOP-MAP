@@ -15,6 +15,72 @@ Each session pruned out of here lands at `session_context_<YYYYMMDD>.md`:
 - `session_context_20260525.md` — left-rail manilla-tab design exploration; five HTML mockup variants checked in under `website/leftrail_v*.html`. Build card: `tasks/03_event_app/_done/left_rail_collapse_tabs.md`. No `website/index.html` changes.
 - `session_context_20260527.md` — misc_4 items 1–5 shipped, plus the POI/About empty-space CSS fix and the tab-restore fix. All in the working tree (uncommitted). See `tasks/04_event_app/misc_4.md` "What shipped (2026-05-27)" block for the full close-out and the trail-lane verifier residue routed to `viewer_polish_followups.md`.
 
+**2026-05-30 (session 5e) — trail search wired up.** The merged `aop-trail-network`
+layer was never indexed for search, so trails were unfindable. Fixed in
+`website/index.html`: (1) `indexFeatures(aopTrailNetworkData, 'trail', aopTrailNetworkToggle,
+null, name→['trail <name>'])` registers every NAMED trail (number "32" or string "Riot
+Hill"); unnamed edges are skipped. (2) The 2-char search floor now lets a lone digit
+through (`/^\d$/`) so trails 1–9 are searchable. (3) New `searchRank()` orders matches
+exact→prefix→substring, so a bare number floats the trail above building addresses that
+merely contain the digit (without it, "9" buried trail 9 under "1094 Kelly Cove Road"…).
+Selecting a trail flies there, flips the network layer on, pulses the highlight. Durable
+coverage added to `playwright_verify_search.py` (trail-by-number, single-digit, string
+name, fly+auto-enable) — PASS, no regressions. NOTE: the **20 unnamed trails** (from the
+5d marker-rename fix) have no name → not searchable until the user names them in Affinity.
+`website/index.html` + `mvp/scripts/playwright_verify_search.py` uncommitted.
+
+**2026-05-29 (session 5d) — IMPORTER BUG FIXED (marker auto-renaming) + edited_10 reimported (current served).**
+User: "something is renaming 32 and 58." Root cause found in `import_trace_svg.py`
+`reattach_from_markers`: it stamped a nearby marker's `trail_number` onto UNNAMED
+trails (then the name-fallback turned that number into the `name`). So one hand-typed
+"32" became three "32"s — the #32 marker cluster sat near two unnamed neighbours — and
+phantom "58"s appeared from a #58 marker on an unnamed trail the user never named.
+Proof: edited_10 SVG has exactly one path named 32 and every SVG name unique, but the
+importer output three 32s (sfwda-42/43 were `name=None` in the SVG). **Fix: markers no
+longer assign `trail_number`/name at all — the user's typed object-name (`_editable_name`)
+is the SOLE source of a trail's number/identity; markers still bootstrap DIFFICULTY for
+uncoloured trails only.** Re-imported edited_10 with the fix → **0 duplicate numbers**,
+32→1, 58→gone, 87 numbered / 100 named / 20 genuinely-unnamed (left for the user to name,
+not auto-stamped). snap_trim 3 dangling, gold stamped, `playwright_verify_sfwda_trace.py`
+PASS. This (edited_10 + fix) is the current served `aop_trail_network.geojson`,
+superseding edited_11. The earlier dup find-and-fix loop (flag-red SVGs) is now moot for
+auto-created dups; any remaining dups would be genuinely user-typed. `import_trace_svg.py`
++ `website/data/` uncommitted.
+
+**2026-05-29 (session 5c) — edited_11 imported + dup find-and-fix (superseded by 5d).**
+Pipeline `import → snap_trim → export_gold_trail_network --from …edited_11.svg`: 120
+feats, 91 numbered, 0 grey (Easy 30 / Mod 42 / Diff 44 / Road 4). Verifier PASS.
+Duplicate-number QA loop with the user: I flag duplicate-number trails RED in a
+throwaway working copy → `export_trace_svg.py --color feature` → editable SVG
+`aop_trail_network_2025_dupflag_edit.svg` (gold geojson left untouched; temp file
+deleted after export). edited_11 cleared dups **1/47/90** (green 47→42, added 97) but
+**28, 32(×3), 55 still duplicated** (55 is new — a 56 was renamed to an already-used
+55). Also colour-vs-marker mismatches open: 35/95/97 green but markers moderate; 28(×2)
+& one 32 colored black but markers moderate (markers = sheet symbols, stronger than the
+number-band guess). Re-flagged SVG regenerated for the next pass. CAVEAT logged for the
+user: don't leave any stroke red on re-export — red's nearest import anchor is orange,
+so a leftover red imports as a *road*; recolour each to its real difficulty.
+
+**2026-05-29 (session 5b) — edited_9 imported.** Same pipeline; identical aggregate
+shape (120 / 94 numbered / 0 grey), diff geometric — 4 trails repositioned (11, 34, 47,
+Pretender). Verifier PASS. Superseded by edited_11.
+
+**2026-05-29 (session 5) — edited_8 imported + gold-export script.** Imported
+`aop_trail_network_2025_edited_8.svg` (120 trails, osm merged into the one
+`traced_trails` layer) → `website/data/aop_trail_network.geojson`: 120 edges, 94
+numbered, 103 named, **0 grey** (Easy 30 / Moderate 46 / Difficult 40 / Road 4).
+`snap_trim_trails.py` fixed 1 overshoot + 1 gap, 3 dangling >18 m left for review.
+New **`mvp/scripts/export_gold_trail_network.py`** makes the "gold" step
+reproducible: it rewrites only `_meta` (crs, colour legend, difficulty band, counts,
+schema, auto-computed band-vs-colour `review_flags`) so the served file is the
+self-contained gold the static viewer loads directly on a new install (no DB /
+pipeline / localStorage). Run order: `import_trace_svg.py <svg>` →
+`snap_trim_trails.py` → `export_gold_trail_network.py --from <svg>`. Verified: bbox
+inside envelope, 0 degenerate, `playwright_verify_sfwda_trace.py` PASS. Review flags
+this run: trails 35, 1, 95, 47 (colour vs number-band disagreements). Details in
+`tasks/04_event_app/paper_map_trail_extraction.md` "edited_8 imported" block. All
+`website/data/` + `mvp/scripts/` uncommitted.
+
 **2026-05-29 (session 4) — string trail names + difficulty colours + snap/trim
 (golden-data prep).** The merged network dropped `JW2`/`JW20` and other **named**
 trails because the round-trip treated name as an integer. Fixed in

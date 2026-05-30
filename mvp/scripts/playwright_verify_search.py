@@ -301,6 +301,64 @@ def main() -> int:
             page.locator("#showEventSchedule").is_checked(),
         )
 
+        print("\n== Trail-network search (find a trail by number / name) ==")
+        n_trail = page.evaluate("() => searchIndex.filter(e => e.kind === 'trail').length")
+        check("trail edges indexed for search", n_trail > 50, f"trail entries={n_trail}")
+
+        def trail_results(query: str) -> list[str]:
+            page.locator("#searchInput").fill("")
+            page.wait_for_timeout(120)
+            page.locator("#searchInput").click()
+            page.locator("#searchInput").fill(query)
+            page.wait_for_timeout(320)
+            items = page.locator(".search-item")
+            return [items.nth(i).inner_text() for i in range(items.count())]
+
+        r32 = trail_results("32")
+        check(
+            "two-digit number '32' returns trail 32 as the top result",
+            bool(r32) and r32[0].split("\n")[0] == "32" and "trail" in r32[0].lower(),
+            f"results={r32[:4]}",
+        )
+        # Single digit is allowed through the 2-char floor, and relevance ranking
+        # must float the exact trail above building addresses that contain the digit.
+        r9 = trail_results("9")
+        check(
+            "single-digit '9' returns trail 9 as the top result (not a building address)",
+            bool(r9) and r9[0].split("\n")[0] == "9" and "trail" in r9[0].lower(),
+            f"results={r9[:4]}",
+        )
+        r_named = trail_results("riot")
+        check(
+            "string-named trail 'Riot Hill' is searchable",
+            any("riot hill" in t.lower() for t in r_named),
+            f"results={r_named[:4]}",
+        )
+
+        print("\n== Select a trail: flies there + turns the network layer on ==")
+        net_before = layer_visibility(page, "aop-trail-network")
+        before_t = map_view(page)
+        trail_results("32")
+        page.locator(".search-item", has_text="32").first.click()
+        page.wait_for_timeout(450)
+        check(
+            "trail search auto-enabled the aop-trail-network layer",
+            net_before == "none" and layer_visibility(page, "aop-trail-network") == "visible",
+            f"{net_before} -> {layer_visibility(page, 'aop-trail-network')}",
+        )
+        check(
+            "search-highlight visible during flash",
+            layer_visibility(page, "search-highlight-line") == "visible",
+        )
+        page.wait_for_timeout(1300)
+        after_t = map_view(page)
+        moved_t = abs(after_t["lng"] - before_t["lng"]) + abs(after_t["lat"] - before_t["lat"])
+        check(
+            "map re-focused on the trail",
+            moved_t > 0.001 or abs(after_t["zoom"] - before_t["zoom"]) > 0.3,
+            f"center delta={moved_t:.5f}, zoom delta={abs(after_t['zoom'] - before_t['zoom']):.2f}",
+        )
+
         print("\n== Console summary ==")
         check(
             "no console errors",

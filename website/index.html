@@ -8613,6 +8613,20 @@
           },
           paint: { 'text-color': '#111', 'text-halo-color': '#fff', 'text-halo-width': 1.6 }
         });
+        // Make every named trail searchable. name is the trail's number ("32") or
+        // string name ("Riot Hill", "JW2"); unnamed edges (name=null) are skipped
+        // by indexFeatures. A match flies to the trail, flips the network layer on
+        // via aopTrailNetworkToggle, and pulses the highlight. `trail <name>` is
+        // added as an alias so single-digit trails are reachable by a 2+ char query
+        // too (e.g. typing "trail 9"); the bare number also works via the
+        // single-digit search path in renderSearchResults.
+        indexFeatures(
+          aopTrailNetworkData,
+          'trail',
+          aopTrailNetworkToggle,
+          null,
+          (props) => (props.name != null ? ['trail ' + String(props.name)] : null)
+        );
       }
 
       // --- SFWDA paper map raster + 9-patch alignment editor -------------
@@ -9556,15 +9570,33 @@
       return false;
     }
 
+    // Relevance rank for ordering matches (lower = better). Exact name beats a
+    // prefix beats a mid-string substring. Without this, a bare-number query like
+    // "9" sorts alphabetically and buries trail "9" under every building address
+    // that merely contains a 9. searchGroups is pre-sorted alphabetically, so a
+    // stable sort by rank keeps results alphabetical within each rank tier.
+    function searchRank(group, query) {
+      const n = group.name.toLowerCase();
+      if (n === query) return 0;
+      if (n.startsWith(query)) return 1;
+      if (group.aliases && group.aliases.some((a) => a.toLowerCase() === query)) return 1;
+      if (n.includes(query)) return 2;
+      return 3;                                // alias substring only
+    }
+
     function renderSearchResults() {
       const query = searchInput.value.trim().toLowerCase();
-      if (query.length < 2) {
+      // Require 2+ chars to avoid flooding the dropdown on every keystroke — EXCEPT
+      // a lone digit, which is a valid trail number (trails 1–9). A single letter
+      // still waits for a second char.
+      if (query.length < 2 && !/^\d$/.test(query)) {
         searchResults.style.display = 'none';
         searchMatches = [];
         return;
       }
       searchMatches = searchGroups
         .filter((group) => searchGroupMatchesQuery(group, query))
+        .sort((a, b) => searchRank(a, query) - searchRank(b, query))
         .slice(0, 8);
       if (!searchMatches.length) {
         searchResults.innerHTML = '<div class="search-empty">No match</div>';

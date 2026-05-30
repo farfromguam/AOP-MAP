@@ -333,20 +333,22 @@ def reattach_from_markers(feats, lat_min, lat_max, match_m=22.0):
         if f["properties"].get("kind") == "road":
             continue                            # roads sit off the trail axis — no marker inheritance
         pts = [xy(*c) for c in f["geometry"]["coordinates"]]
-        nums, diffs = [], []
+        diffs = []
         for (mx, my), num, diff in markers:
             d = min(pt_seg(mx, my, *pts[i], *pts[i+1]) for i in range(len(pts)-1))
-            if d <= match_m:
-                if num is not None:
-                    nums.append(num)
-                if diff:
-                    diffs.append(diff)
-        # A human-typed Inkscape label is authoritative — never overwrite it
-        # from marker proximity. Markers still fill an unlabelled number.
-        if nums and not f["properties"].get("_num_locked"):
-            f["properties"]["trail_number"] = Counter(nums).most_common(1)[0][0]
-        # Difficulty: the user's hand-coloured stroke wins. Markers only fill a
-        # trail the user left uncoloured (they are the bootstrap, not the override).
+            if d <= match_m and diff:
+                diffs.append(diff)
+        # NUMBER/NAME: markers no longer assign a trail_number. The user hand-authors
+        # every name in the editor's Objects panel, so the typed object-name is the
+        # SOLE source of a trail's number/name (read in main() via _editable_name).
+        # The old marker-proximity number-fill was a bootstrap that, once the user
+        # was naming trails by hand, "renamed" UNNAMED neighbours of a marker cluster
+        # to that marker's number — e.g. one typed "32" became three "32"s because the
+        # #32 markers sat near two unnamed trails. Markers near an unnamed trail leave
+        # it unnamed for the user to name; they never invent a number. (See card.)
+        #
+        # DIFFICULTY only: the user's hand-coloured stroke still wins; markers fill a
+        # trail the user left uncoloured (a colour bootstrap, not a name/identity one).
         if diffs and not f["properties"].get("difficulty"):
             f["properties"]["difficulty"] = Counter(diffs).most_common(1)[0][0]
 
