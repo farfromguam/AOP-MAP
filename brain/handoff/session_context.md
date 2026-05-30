@@ -15,6 +15,27 @@ Each session pruned out of here lands at `session_context_<YYYYMMDD>.md`:
 - `session_context_20260525.md` — left-rail manilla-tab design exploration; five HTML mockup variants checked in under `website/leftrail_v*.html`. Build card: `tasks/03_event_app/_done/left_rail_collapse_tabs.md`. No `website/index.html` changes.
 - `session_context_20260527.md` — misc_4 items 1–5 shipped, plus the POI/About empty-space CSS fix and the tab-restore fix. All in the working tree (uncommitted). See `tasks/04_event_app/misc_4.md` "What shipped (2026-05-27)" block for the full close-out and the trail-lane verifier residue routed to `viewer_polish_followups.md`.
 
+**2026-05-30 (session 5g) — Locate + Install moved into left-rail float groups (V2).**
+Two utility buttons that were scattered on the map chrome now stack as their own
+floating groups below the calendar tab icon in `.left-controls`: **Locate** (neutral
+cream 44px square, GPS-crosshair glyph) and **Install** (rust 44px square, download-to-tray
+glyph). Picked V2 ("accented install") from a 4-up compare round. Implementation in
+`website/index.html`: (1) new `.util-group`/`.util-btn`/`#pwaInstallBtn.util-install` CSS
+matched to the `.lr-icon-col` chrome; (2) MapLibre's default top-right `GeolocateControl`
+button is hidden (`.maplibregl-ctrl-top-right .maplibregl-ctrl-group{display:none}`) and
+surfaced via a new `#locateBtn` that calls `geolocate.trigger()` and mirrors
+`trackuserlocationstart/end`+`error` onto an `.active` (moss) state; (3) the old fixed
+bottom-left `#pwaInstallBtn` + `#pwaIosHint` were relocated into `.left-controls` — the
+install button *is* its own group and self-hides via the `hidden` attr until
+`beforeinstallprompt` (so no empty rust card shows), single id preserved, PWA script
+untouched (it's getElementById-based). Verified live (Playwright, geolocation granted):
+locate visible at x13/y697 44×44 below the drawer, install rust square at y750, default
+geolocate hidden, click → tracking + active state, 0 console errors. Compare round shipped
+as review artifacts linked from the right panel **Comparisons** section
+(`floatgroup_compare.html` + `floatgroup_v1_twins`/`v2_accent`/`v3_joined`/`v4_labeled`.html)
+— retire per the `misc_4` mockup-cleanup routing once the look is locked. `website/index.html`
++ the 5 `floatgroup_*.html` mockups uncommitted.
+
 **2026-05-30 (session 5f) — snap_trim "dangling" detector de-noised + the 3 ends verified.**
 User challenged the "3 dangling ends" warning; all three verified and they were right.
 `snap_trim_trails.py` had flagged any end >18 m from another feature, over-counting. Now

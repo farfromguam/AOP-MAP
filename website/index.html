@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>AOP Map Viewer</title>
   <!-- PWA: installable + offline. See sw.js and manifest.json. -->
   <link rel="manifest" href="./manifest.json" />
@@ -890,11 +890,11 @@
       </button>
     </div>
   </div>
-  <div class="panel">
-    <div class="panel-header" id="panelHeader" title="Collapse panel">
+  <div class="panel collapsed">
+    <div class="panel-header" id="panelHeader" title="Expand panel">
       <h1>AOP edit panel</h1>
       <button type="button" id="exportAll" class="panel-export" title="Copy a full snapshot — toggles, sliders, paints, geometry overrides, drawn POIs, per-feature visibility — to clipboard.">⧉</button>
-      <button type="button" id="panelCollapse" class="panel-collapse" aria-expanded="true" aria-controls="panelBody" title="Collapse panel">▾</button>
+      <button type="button" id="panelCollapse" class="panel-collapse" aria-expanded="false" aria-controls="panelBody" title="Expand panel">▸</button>
     </div>
     <div class="panel-body" id="panelBody">
       <small id="presetStatus">Park preset active.</small>
@@ -1392,7 +1392,8 @@
     const panelHeader = document.getElementById('panelHeader');
     const panelBody = document.getElementById('panelBody');
     const panelCollapse = document.getElementById('panelCollapse');
-    let panelCollapsed = false;
+    // Edit panel ships collapsed (header bar only); user opens it on demand.
+    let panelCollapsed = true;
 
     function togglePanel() {
       panelCollapsed = !panelCollapsed;
@@ -10164,5 +10165,25 @@
       });
     }
   </script>
+  <style id="pwa-ui-lock">
+    /* PWA hardening: UI controls are controls — they must never page-scroll,
+       page-zoom, rubber-band, text-select, or pop the iOS long-press callout.
+       Map pan/zoom gestures still live on the MapLibre canvas, which sets its
+       own touch-action. Scoped to chrome (not .panel-body) so the edit panel's
+       text inputs keep normal selection. */
+    html, body { overscroll-behavior: none; }
+    .left-controls, .left-controls *,
+    .panel-header, .panel-header *,
+    button, .maplibregl-ctrl, .maplibregl-ctrl * {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    button,
+    .left-controls, .panel,
+    .maplibregl-ctrl, .maplibregl-ctrl * {
+      touch-action: manipulation;
+    }
+  </style>
 </body>
 </html>
