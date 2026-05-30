@@ -15,6 +15,19 @@ Each session pruned out of here lands at `session_context_<YYYYMMDD>.md`:
 - `session_context_20260525.md` — left-rail manilla-tab design exploration; five HTML mockup variants checked in under `website/leftrail_v*.html`. Build card: `tasks/03_event_app/_done/left_rail_collapse_tabs.md`. No `website/index.html` changes.
 - `session_context_20260527.md` — misc_4 items 1–5 shipped, plus the POI/About empty-space CSS fix and the tab-restore fix. All in the working tree (uncommitted). See `tasks/04_event_app/misc_4.md` "What shipped (2026-05-27)" block for the full close-out and the trail-lane verifier residue routed to `viewer_polish_followups.md`.
 
+**2026-05-30 (session 5f) — snap_trim "dangling" detector de-noised + the 3 ends verified.**
+User challenged the "3 dangling ends" warning; all three verified and they were right.
+`snap_trim_trails.py` had flagged any end >18 m from another feature, over-counting. Now
+it classifies: **self-loops** (end rejoins its OWN line — trail "9" closes onto its own
+vertex #6 at 0 m, a lollipop; not a gap), **road dead-ends** (a road that terminates in
+space but joins the network at its other end — the unnamed road connects at 0 m one end,
+74 m spur the other), and **trail danglers** (the real review set). Result on edited_10:
+1 self-loop + 1 road dead-end + **1 true trail dangler** (unnamed trail start, 88 m from
+trail 50). New `SELF_LOOP_M=2.0`; report now lists each by kind/name/gap. Served gold data
+unchanged (re-run is 0 trim / 0 snap on edited_10). Minor latent bug noted: passing a
+*relative* out-path trips `out.relative_to(REPO)`; default in-place run is unaffected.
+`mvp/scripts/snap_trim_trails.py` uncommitted.
+
 **2026-05-30 (session 5e) — trail search wired up.** The merged `aop-trail-network`
 layer was never indexed for search, so trails were unfindable. Fixed in
 `website/index.html`: (1) `indexFeatures(aopTrailNetworkData, 'trail', aopTrailNetworkToggle,

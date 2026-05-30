@@ -33,11 +33,12 @@ NET = REPO / "website/data/aop_trail_network.geojson"
 SNAP_M = 18.0      # close a gap when an end is within this of another trail
 TRIM_M = 18.0      # trim an overshoot stub no longer than this past a crossing
 EPS_M = 0.5        # below this an end is already coincident — leave it
+SELF_LOOP_M = 2.0  # an end this close to its own non-adjacent vertex is a loop, not a gap
 
 
 def main():
-    src = Path(sys.argv[1]) if len(sys.argv) > 1 else NET
-    out = Path(sys.argv[2]) if len(sys.argv) > 2 else src
+    src = (Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else NET)
+    out = (Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else src)
     fc = json.loads(src.read_text())
     feats = fc["features"]
 
@@ -99,11 +100,24 @@ def main():
                 trimmed += 1
 
     # --- SNAP: close short gaps onto the nearest trail -----------------------
-    dangling = 0
+    # A free end is one >SNAP_M from any OTHER feature. Not every free end is a gap
+    # to fix — classify, don't cry wolf (the old code counted all three the same):
+    #   - SELF-LOOP: the end rejoins its OWN line (a lollipop / closed loop), so it
+    #     coincides with a non-adjacent vertex of the same feature — touches itself,
+    #     not nothing (e.g. trail "9" closes onto its own vertex at 0 m). Ignore.
+    #   - ROAD END: a road that terminates in space (it usually joins the network at
+    #     its other end). Roads legitimately dead-end at boundaries/lots — report,
+    #     don't flag for fixing.
+    #   - TRAIL DANGLER: a TRAIL end hanging >SNAP_M from anything and not a loop —
+    #     the real review set (e.g. an unnamed trail 88 m off trail 50).
+    self_loops = 0
+    road_ends = []                              # [feat_index, end_label, gap, nearest_index]
+    trail_danglers = []
     for i, pts in lines:
         others = shapely_for(i)
         if not others:
             continue
+        kind = feats[i]["properties"].get("kind", "trail")
         for ei, _ in ends(pts):
             P = Point(pts[ei])
             j, q, gap = None, None, float("inf")
@@ -117,8 +131,13 @@ def main():
                 pts[ei] = [q.x, q.y]
                 inserts.setdefault(j, []).append([q.x, q.y])
                 snapped += 1
+            elif any(math.dist(pts[ei], pts[v]) <= SELF_LOOP_M
+                     for v in range(len(pts)) if abs(v - ei) > 2):
+                self_loops += 1                 # end rejoins its own line — not a gap
             else:
-                dangling += 1
+                entry = [i, "start" if ei == 0 else "end", gap, j]
+                (road_ends if kind == "road" else trail_danglers).append(entry)
+    dangling = len(trail_danglers)
 
     # --- weld inserted points into target lines (collinear, shape-preserving) -
     for j, qs in inserts.items():
@@ -140,10 +159,25 @@ def main():
         feats[i]["geometry"]["coordinates"] = [to_ll(x, y) for x, y in pts]
 
     out.write_text(json.dumps(fc, indent=1))
-    print(f"snap/trim -> {out.relative_to(REPO)}")
+
+    def label(fi):
+        p = feats[fi]["properties"]
+        return f"{p.get('kind','trail')} \"{p.get('name')}\""
+
+    try:
+        shown = out.relative_to(REPO)
+    except ValueError:
+        shown = out
+    print(f"snap/trim -> {shown}")
     print(f"  trimmed overshoots: {trimmed}")
     print(f"  snapped gaps:       {snapped}  (<= {SNAP_M:.0f} m)")
-    print(f"  still dangling:     {dangling}  (> {SNAP_M:.0f} m from any trail — for the review pass)")
+    print(f"  self-loops ignored: {self_loops}  (end rejoins its own line — not a gap)")
+    print(f"  road dead-ends:     {len(road_ends)}  (roads terminate in space — expected, not a fix)")
+    print(f"  TRAIL danglers:     {dangling}  (> {SNAP_M:.0f} m from anything — the review set)")
+    for fi, end_label, gap, nj in trail_danglers:
+        print(f"     - {label(fi)} {end_label} end: {gap:.0f} m from {label(nj) if nj is not None else '—'}")
+    for fi, end_label, gap, nj in road_ends:
+        print(f"     · (road) {label(fi)} {end_label} end: {gap:.0f} m from {label(nj) if nj is not None else '—'}")
 
 
 def _pt_seg(p, a, b):
