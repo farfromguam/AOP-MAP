@@ -699,15 +699,16 @@
       .lr-content-col { --lr-card-body-height: 160px; }
       .info-panel { padding: 9px; }
       .hot-button { min-height: 54px; padding: 7px 8px; }
-      /* Panel docks above the message bar and grows upward. Both clear the
-         home indicator with max(base, --sa-bottom) — we take the LARGER of the
-         design padding and the safe-area inset, not their sum, so a 34 px home
-         indicator doesn't stack on top of the 12 px base into a 46 px gap. The
-         panel reserves the message bar's offset + ~44 px (bar height + gap).
-         max-height keeps a 220 px reserve at the top so the left rail stays
-         uncovered. */
-      .panel { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); top: auto; bottom: calc(max(12px, var(--sa-bottom)) + 44px); width: auto; max-width: none; max-height: clamp(220px, calc(100vh - 360px - var(--sa-top) - var(--sa-bottom)), 420px); }
-      .message { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); bottom: max(12px, var(--sa-bottom)); max-width: none; }
+      /* Bottom cards float at a minimal ~8px margin so no dead band shows
+         below them. The full --sa-bottom (~34px home indicator) was reserved as
+         empty space under the cards and read as flat-cream padding. The status
+         bar is non-interactive, so it sits at bottom:8px and is allowed to graze
+         the translucent home indicator. The editor panel IS interactive and
+         grows upward, so it docks a bar-height (~44px) above the status bar —
+         that puts its bottom at 52px, clear of the ~34px indicator. max-height
+         keeps a 220px reserve at the top so the left rail stays uncovered. */
+      .panel { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); top: auto; bottom: calc(8px + 44px); width: auto; max-width: none; max-height: clamp(220px, calc(100vh - 360px - var(--sa-top) - var(--sa-bottom)), 420px); }
+      .message { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); bottom: 8px; max-width: none; }
     }
     @media (min-width: 1024px) {
       .left-controls { width: 360px; }
