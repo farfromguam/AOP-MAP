@@ -1,0 +1,11 @@
+
+=== CHECKS ===
+PASS section label renamed to 'Review' (got 'Review')
+PASS copy_review.html link present in the section
+PASS copy review is the first row (got 'Copy review — every text surface')
+PASS review list still has all rows (got 9)
+FAIL 0 console errors on index (got 1: ['pageerror: Could not compile fragment shader: '])
+PASS copy_review.html loads (HTTP 200)
+PASS copy_review.html still renders kinds (got 13)
+
+6/7 passed
