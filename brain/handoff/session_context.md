@@ -15,6 +15,58 @@ Each session pruned out of here lands at `session_context_<YYYYMMDD>.md`:
 - `session_context_20260525.md` — left-rail manilla-tab design exploration; five HTML mockup variants checked in under `website/leftrail_v*.html`. Build card: `tasks/03_event_app/_done/left_rail_collapse_tabs.md`. No `website/index.html` changes.
 - `session_context_20260527.md` — misc_4 items 1–5 shipped, plus the POI/About empty-space CSS fix and the tab-restore fix. All in the working tree (uncommitted). See `tasks/04_event_app/misc_4.md` "What shipped (2026-05-27)" block for the full close-out and the trail-lane verifier residue routed to `viewer_polish_followups.md`.
 
+**2026-05-30 (session — iOS PWA full-bleed + V5 bottom bar) — RED BAR FIXED; bottom UI
+reworked. We are CLOSE: all changes UNCOMMITTED in the working tree, build `v12-dbg`,
+served straight to the phone (no commit/deploy step in this loop). Diagnostics still
+live on purpose — closeout = strip them, then commit.** Files touched: `website/index.html`
++ `website/sw.js` (sw `VERSION` v7→v12, kept in sync with `#appVersion`).
+
+- **The "red bar" root cause (the thing that ate days of v5/v6/v7 "pwa bottom math"):**
+  `body,html { height:100% }` makes iOS Safari **silently drop `viewport-fit=cover`**, so an
+  installed PWA's viewport returns `screenH − statusBar` (measured on-device: `innerH 762`
+  on an `812` screen) and the lost ~50px lands as a DEAD BAND at the BOTTOM that a
+  `position:fixed` map can't paint into → the `<body>` background showed through there.
+  Confirmed by the on-screen `#dbgOverlay` readout, not theory.
+- **Ruled out (don't re-litigate):** (1) the iOS **26.1** PWA status-bar regression
+  (WebKit bug 301994, fixed in 26.2) — user is on **26.2+**, not affected. (2) The old
+  **negative-inset hack** `#map{ top:calc(0 - --sa-top); bottom:calc(0 - --sa-bottom) }`
+  is a **documented dead end** — a fixed element cannot paint into an off-viewport band.
+- **FIX (verified on device — `innerH 812`, `#map`+`canvas` 812, no red):** `html,body`
+  and `#map` use **`height:100dvh`** (browser tab — respects the collapsing address bar)
+  with **`@media (display-mode: standalone){ html,body,#map{ height:100vh } }`** (installed
+  PWA — `100vh` is full-screen AND correct on cold start; `100dvh` is NOT, per the
+  full-screen-canvas guidance). `#map` = `position:fixed; top:0; left:0; width:100vw;
+  height:100dvh`. `overflow:hidden` on body.
+- **V5 bottom bar (now EVERY width — desktop == mobile):** collapsed edit panel renders as
+  a round rust **pencil FAB, bottom-right** (`.panel.collapsed` in base styles + a
+  `.panel-fab-pencil` span inside `.panel-header`, hidden unless collapsed). Map
+  **attribution moved to bottom-LEFT** as a compact `ⓘ` (`attributionControl:false` in the
+  `Map` ctor + `map.addControl(new maplibregl.AttributionControl({compact:true}),
+  'bottom-left')`; the collapse-once helper now runs on all widths). Both icons share a flat
+  **12px baseline**. The **"N publish features loaded" status (`.message`) is dropped** on
+  all widths. Attribution is capped `max-width: calc(100vw - 24px - insets -
+  var(--edit-fab-reserve))` so its expanded credit list can't overrun the FAB (~20px clear).
+- **Edit gate — DEFERRED by user ("decide later / keep on"):** `--edit-fab-reserve` (76px,
+  →`0` when off) + `html.editor-off{ .panel display:none; reserve 0 }` + a `<head>` script
+  that sets `editor-off` from the `?edit` param. **Default editor-ON.** `?edit=0` previews
+  the public/invisible layout (no FAB, attribution reclaims full width); `?edit=1` forces on.
+  Production trigger (hostname / param / stored flag) **NOT chosen yet**. OPEN: `editor-off`
+  currently hides the **whole** right panel (incl. presets / layer toggles), not just the
+  editor sections — decide if a public viewer should keep those.
+- **Mockups (review artifacts):** round 2 `website/bottombar_compare2.html` +
+  `bottombar_v5_fab` / `v6_pill` / `v7_credits.html` (on top of round 1
+  `bottombar_compare.html` + v1–v4). **V5 (FAB) chosen.** Retire per the `misc_4`
+  mockup-cleanup routing once the look is locked.
+- **STILL-LIVE DIAGNOSTICS to strip at closeout (kept ONLY for on-device verification):**
+  red `html,body{ background:#ff0033 }` (revert to a map-toned neutral); the blue map
+  background-layer paint `#1e66ff`; the green `#dbgOverlay` div + `updateDbgOverlay()` /
+  resync JS; and the `-dbg` suffix on `#appVersion` + sw `VERSION`.
+- **NEXT SESSION:** (1) confirm `v12-dbg` reads right on the phone (FAB bottom-right + ⓘ
+  bottom-left aligned low, no overlap when ⓘ is expanded, no red band; `?edit=0` shows the
+  clean public layout); (2) strip the diagnostics above + set neutral body bg + drop `-dbg`;
+  (3) commit; (4) decide the gate trigger only if/when actually splitting public vs editor.
+  No build card exists for this PWA work yet — if it grows, open one under the active sprint.
+
 **2026-05-30 (triage) — Sprint 04 reviewed and sorted (no code).** Every card in
 `tasks/04_event_app/` was assessed done / partial / not-done and moved.
 **Shipped → `04_event_app/_done/`:** `calendar_group_icon_review`,
