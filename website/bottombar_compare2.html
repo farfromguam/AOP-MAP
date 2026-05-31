@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bottom bar v2 — one edit button + attribution &amp; info (V5–V7)</title>
+  <style>
+    :root{
+      --brown-ink:#2e2418; --brown-mid:#4e4128; --brown-dark:#2a1f12; --brown-soft:#5a4828;
+      --cream-hover:#efe2c6; --cream-surface:#faf6eb; --cream-border:#d8cdb4;
+      --control-bg:#fffdf5; --control-border:#b9aa88;
+      --moss:#5f7157; --moss-dark:#384833; --moss-soft:#e3ebdc; --rust:#a85020;
+    }
+    *{box-sizing:border-box;}
+    body,html{margin:0; padding:0; background:var(--cream-surface);
+      font:15px/1.5 Inter,system-ui,sans-serif; color:var(--brown-ink);}
+    header.page{padding:26px 32px 18px; border-bottom:1px solid var(--cream-border); background:var(--control-bg);}
+    header.page h1{margin:0 0 8px; color:var(--moss-dark); font-size:1.4rem;}
+    header.page .sub{color:var(--brown-soft); font-size:0.92rem; max-width:96ch; line-height:1.55;}
+    header.page .sub strong{color:var(--brown-dark);}
+    header.page .sub code{background:var(--moss-soft); padding:1px 5px; border-radius:3px; font-size:0.85em;}
+    header.page .back{display:inline-block; margin-bottom:14px; color:var(--brown-mid); text-decoration:none;
+      font-size:0.84rem; border:1px solid var(--cream-border); border-radius:6px; padding:4px 10px; background:var(--cream-surface);}
+    header.page .back:hover{background:var(--cream-hover); color:var(--brown-dark);}
+    main{display:grid; gap:22px; padding:24px 28px;
+      grid-template-columns:repeat(auto-fit,minmax(440px,1fr)); max-width:1500px; margin:0 auto;}
+    section.variant{background:#fff; border:1px solid var(--cream-border); border-radius:12px;
+      overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,0.05); display:flex; flex-direction:column;}
+    section.variant header.v{padding:14px 18px; background:var(--moss-soft); border-bottom:1px solid var(--cream-border);}
+    section.variant header.v h2{margin:0; color:var(--moss-dark); font-size:1.05rem;
+      display:flex; align-items:center; gap:10px;}
+    section.variant header.v .num{display:inline-grid; place-items:center; width:30px; height:30px;
+      background:var(--moss); color:#f7f1e2; border-radius:50%;
+      font:800 0.78rem Inter,system-ui,sans-serif; letter-spacing:0.04em;}
+    section.variant header.v .angle{color:var(--brown-soft); font-size:0.86rem; font-style:italic;
+      margin:6px 0 0 40px; line-height:1.4;}
+    section.variant .frame{position:relative; width:100%; height:700px; background:#cfc6ac;}
+    section.variant iframe{position:absolute; inset:0; width:100%; height:100%; border:0;}
+    section.variant .links{display:flex; gap:10px; padding:10px 18px 14px; border-top:1px solid var(--cream-border);}
+    section.variant .links a{color:var(--brown-mid); text-decoration:none; padding:5px 10px;
+      border:1px solid var(--cream-border); border-radius:6px; font-size:0.82rem; background:var(--control-bg);}
+    section.variant .links a:hover{background:var(--cream-hover); color:var(--brown-dark);}
+    .tag{display:inline-block; padding:1px 8px; border-radius:10px; font-size:0.72rem; font-weight:800;
+      text-transform:uppercase; letter-spacing:0.04em; margin-right:6px; vertical-align:middle;}
+    .tag.quiet{background:rgba(95,113,87,0.22); color:var(--moss-dark);}
+    .tag.bold{background:rgba(168,80,32,0.16); color:var(--rust);}
+    .tag.scope{background:rgba(107,90,62,0.16); color:var(--brown-dark);}
+    .footnote{margin:14px 28px 28px; padding:16px 20px; background:var(--control-bg);
+      border:1px solid var(--cream-border); border-radius:10px;}
+    .footnote h2{margin:0 0 6px; color:var(--brown-dark); font-size:0.96rem;
+      text-transform:uppercase; letter-spacing:0.05em;}
+    .footnote ul{margin:0; padding-left:18px; color:var(--brown-soft); font-size:0.86rem; line-height:1.6;}
+    .footnote b{color:var(--brown-dark);}
+    table.axes{border-collapse:collapse; width:100%; margin-top:10px; font-size:0.84rem;}
+    table.axes th, table.axes td{border:1px solid var(--cream-border); padding:6px 9px; text-align:left; vertical-align:top;}
+    table.axes th{background:var(--moss-soft); color:var(--moss-dark); font-size:0.74rem;
+      text-transform:uppercase; letter-spacing:0.04em;}
+    table.axes td.axis{font-weight:800; color:var(--brown-dark); white-space:nowrap; background:#fbf7ec;}
+  </style>
+</head>
+<body>
+  <header class="page">
+    <a class="back" href="bottombar_compare.html">&larr; Round 1 (V1–V4: merge the two bars)</a>
+    <h1>Bottom bar v2 — one edit button, with attribution &amp; info given a home</h1>
+    <div class="sub">
+      <strong>New direction.</strong> Round 1 folded the two stacked bars into a single edit-panel
+      <em>header</em> (label + <code>&#x29C9;</code>&nbsp;export + <code>&#9656;</code>&nbsp;expand) and kept the
+      publish count. This round answers two things that round missed: <strong>(1) all you want on the map is
+      a single button that opens the edit panel</strong> — so the label and the export button leave the bar
+      entirely (export lives <em>inside</em> the panel once it's open); and <strong>(2) the bottom carries more
+      than a count.</strong> The map's real <strong>attribution</strong> is a stack of source credits — TDOT/TNMap
+      &amp; USDA NAIP imagery, USGS 3DEP lidar terrain/contours, USGS NHD water, USGS National Map roads, FEMA/ORNL
+      buildings, TN Comptroller parcels, RiderPlanet visitor context, rendered by MapLibre. Each variant gives the
+      <strong>information</strong> (publish count) and those <strong>attributions</strong> one honest home, and reduces
+      the edit panel to <strong>one button</strong>. (Live count is whatever <code>publish.geojson</code> holds;
+      it is <b>5</b> today.)
+    </div>
+  </header>
+
+  <main>
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V5</span>Edit FAB + info&middot;credits footer</h2>
+        <div class="angle"><span class="tag bold">Recommended</span>One round pencil button (the whole panel, collapsed). A single low dark footer line holds the publish count and an <b>ⓘ Sources</b> that opens the full credit list. Most map showing; clearest single tap target.</div>
+      </header>
+      <div class="frame"><iframe src="bottombar_v5_fab.html" loading="lazy" title="V5 edit FAB"></iframe></div>
+      <div class="links"><a href="bottombar_v5_fab.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V6</span>Edit pill + merged credit chip</h2>
+        <div class="angle"><span class="tag quiet">Legible</span>A labelled cream "✎ Edit" pill. Status + attribution merge into one cream chip (dot + count + <b>ⓘ</b>). Everything stays in the panel's own chrome — no dark overlay — so it reads as part of the app, not the map.</div>
+      </header>
+      <div class="frame"><iframe src="bottombar_v6_pill.html" loading="lazy" title="V6 edit pill"></iframe></div>
+      <div class="links"><a href="bottombar_v6_pill.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V7</span>Corner FAB + honest credit line</h2>
+        <div class="angle"><span class="tag scope">Most attribution</span>A square pencil button. One centred bottom line names the lead sources + count, and taps open to the <b>full</b> per-source list (shown expanded here). Use this if the credits should be visible, not just reachable.</div>
+      </header>
+      <div class="frame"><iframe src="bottombar_v7_credits.html" loading="lazy" title="V7 credit line"></iframe></div>
+      <div class="links"><a href="bottombar_v7_credits.html" target="_blank">Open full window</a></div>
+    </section>
+  </main>
+
+  <div class="footnote">
+    <h2>Attribute axes to pick from</h2>
+    <table class="axes">
+      <tr><th>Axis</th><th>V5 FAB</th><th>V6 Pill</th><th>V7 Credit line</th></tr>
+      <tr><td class="axis">Edit control</td><td>round pencil FAB</td><td>labelled "✎ Edit" pill</td><td>square pencil FAB</td></tr>
+      <tr><td class="axis">On the bar</td><td>just the button</td><td>just the button</td><td>just the button</td></tr>
+      <tr><td class="axis">Export &#x29C9;</td><td>moves inside panel</td><td>moves inside panel</td><td>moves inside panel</td></tr>
+      <tr><td class="axis">Status (info)</td><td>count in footer line</td><td>count in chip</td><td>count in credit line</td></tr>
+      <tr><td class="axis">Attribution</td><td>ⓘ Sources &rarr; full list</td><td>ⓘ in chip &rarr; full list</td><td>names inline &rarr; full list</td></tr>
+      <tr><td class="axis">Chrome</td><td>dark map overlay</td><td>cream app chrome</td><td>dark map overlay</td></tr>
+      <tr><td class="axis">Credits visible?</td><td>on tap</td><td>on tap</td><td>lead names always, full on tap</td></tr>
+    </table>
+    <ul style="margin-top:12px;">
+      <li><b>The single button (your ask):</b> all three drop the "AOP edit panel" label and the <code>&#x29C9;</code> export off the collapsed bar. The map just shows one pencil; export &amp; everything else live inside the panel once you open it. Round-1's header is gone.</li>
+      <li><b>Attribution is required, so it can't just be dropped.</b> The map carries real third-party source credits (imagery, lidar, hydrography, buildings, parcels) plus MapLibre. Today they sit in MapLibre's compact <b>ⓘ</b> control; these variants give that a deliberate home next to the publish count instead of leaving it as default map chrome.</li>
+      <li><b>Info vs attribution — same line or split?</b> V5/V7 put the publish count <em>in</em> the credit line (one footer object). V6 keeps the count as the chip's headline and tucks credits behind its ⓘ. If the count is ever dropped (round-1 item&nbsp;7), V5/V7 collapse to a pure credit line and V6 to a pure ⓘ chip.</li>
+      <li>All three keep the interactive edit button clear of the iOS home indicator (docked ~46&nbsp;px up); the credit/info footer is allowed to graze it, same rule as today's status pill.</li>
+      <li>This changes only the narrow-viewport stack. On desktop the panel + attribution already sit at opposite corners — say whether to carry the single-button treatment there too or leave desktop alone.</li>
+    </ul>
+    <p style="margin:8px 0 0; color:var(--brown-soft); font-size:0.85rem;">Pick a variant (or mix the axes) and I'll wire it into <b>index.html</b>: collapse <code>.panel.collapsed</code> to the single button in the <code>max-width:760px</code> block, relocate <code>&#x29C9;</code> export into the open panel, and route the merged status + MapLibre attribution into the chosen footer.</p>
+  </div>
+</body>
+</html>

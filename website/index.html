@@ -50,22 +50,23 @@
       --sa-left:   env(safe-area-inset-left, 0px);
       --sa-right:  env(safe-area-inset-right, 0px);
     }
-    body, html { margin: 0; padding: 0; height: 100%; font-family: Inter, system-ui, sans-serif; }
-    /* Map bleeds to the full viewport (incl. under the notch / home indicator).
-       position:fixed + inset:0 is keyed to the visual viewport. The explicit
-       height: 100dvh (with a 100vh fallback for older iOS) forces the container
-       to the full screen height even when an iOS standalone PWA reports a
-       bottom:0 that lands above the home indicator — without it the cream body
-       background shows through in that band. We also call map.resize() on
-       resize/orientationchange/visualViewport (see resyncViewport) so MapLibre's
-       canvas grows to match once iOS finalizes the standalone viewport. Body
-       background matches the map base so no stray strip can show even for a
-       frame. */
-    html, body { background: #ff0033; } /* DIAGNOSTIC: was #efe7d5 — red = body showing through */
-    /* DIAGNOSTIC FIX: extend the map PAST the safe-area containing block so it
-       covers the notch + home indicator even when iOS sizes the fixed ICB to the
-       safe area. On desktop --sa-* are 0px → equivalent to inset:0. */
-    #map { position: fixed; left: 0; right: 0; top: calc(0px - var(--sa-top)); bottom: calc(0px - var(--sa-bottom)); }
+    /* height:100vh (NOT 100%) is load-bearing for iOS PWA. With viewport-fit=cover +
+       black-translucent, a PERCENTAGE height makes Safari silently drop cover layout,
+       so the standalone viewport returns screenH − statusBar (e.g. 762 on an 812 screen)
+       and the lost ~50px shows as a dead band at the BOTTOM. 100vh = the large/full
+       viewport, which restores true cover (innerH == screenH). overflow:hidden stops
+       page rubber-band; the panel + left rail keep their own internal scroll. */
+    body, html { margin: 0; padding: 0; height: 100vh; overflow: hidden; font-family: Inter, system-ui, sans-serif; }
+    /* Full-bleed map. The proven iOS-PWA full-screen pattern is 100vw/100vh on a
+       fixed element — NOT 100% (breaks cover, see body rule above) and NOT the old
+       negative-inset hack `top:calc(-1*--sa-top); bottom:calc(-1*--sa-bottom)`, which
+       is a documented non-fix (it can't paint into the off-viewport band the % height
+       created). With cover restored, 100vh == the full screen, so the map covers
+       everything incl. under the status bar + home indicator. UI chrome stays clear of
+       the reserved areas via env(safe-area-inset-*) padding on the controls (below).
+       resyncViewport still calls map.resize() on rotate / return-from-background. */
+    html, body { background: #ff0033; } /* DIAGNOSTIC: red = body bleed-through. With the fix it should be fully covered (no red). Revert to a map-toned neutral once verified on device. */
+    #map { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; }
     /* Keep MapLibre's corner controls (geolocate, etc.) clear of the notch,
        status bar, home indicator, and rounded corners under viewport-fit=cover. */
     .maplibregl-ctrl-top-left    { margin-top: var(--sa-top); margin-left: var(--sa-left); }
@@ -907,7 +908,7 @@
     <!-- Build version, under the download icon. Always visible (the install
          button self-hides once installed). Keep this string in sync with
          VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v7-dbg</div>
+    <div class="util-version" id="appVersion" title="App build version">v8-dbg</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
