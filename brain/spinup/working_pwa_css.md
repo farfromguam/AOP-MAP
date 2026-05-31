@@ -179,10 +179,13 @@ the phone pulls the new build on reload. `aop-tiles` is unversioned on purpose.
 
 This is a `-**dbg**` build — the following are scaffolding, NOT durable layout:
 
-1. ~~`html, body { background: #ff0033; }` red bleed-through probe~~ — **RETIRED in
-   `v14-dbg`** to the manifest cream `#F5EFE0`. (The body bg is invisible in the PWA but
-   tints the iOS Safari **tab** status bar + toolbar, so it must stay a map-toned neutral,
-   not a debug color. This does not affect PWA layout.)
+1. ~~`html, body { background: #ff0033; }` red bleed-through probe~~ — **RETIRED**
+   (`#ff0033` red → `#F5EFE0` cream in v14 → **`#000` black in v15**). The body bg is
+   invisible in the PWA (the fixed map covers it) but in a SAFARI TAB iOS samples it to
+   tint the status bar + bottom toolbar — black makes those chrome strips read as the
+   device bezel/notch and "disappear." Safari samples the BODY bg here, NOT the rust
+   `theme-color` (proven: red bands despite theme-color=#a85020). Keep it black (or a
+   deliberate map-toned neutral), never a debug color. Does not affect PWA layout.
 2. Blue map background-layer paint `#1e66ff` (in the JS layer setup). **Still live.**
 3. `#dbgOverlay` div (markup ~799) + `updateDbgOverlay()` / its resync wiring —
    **including the `ⓘ fromBot N  ✎ fromBot N` baseline line** added this session.

@@ -126,9 +126,22 @@ clientH 663 / vv 663 @top0`, `screenH 812`, `#map t0 b663 h663`, `canvas h663`,
 - **STILL-LIVE diagnostics after this:** `#1e66ff` map background paint, the `#dbgOverlay`
   div + JS (incl. the `fromBot` line), the `-dbg` suffix. Closeout = strip those + drop
   `-dbg` + commit. The red body bg is already retired.
-- **OPEN for the user:** confirm the cream chrome reads right in Safari (and pick a
-  different map-toned neutral if cream clashes with the default blue-water view — trivial
-  one-liner). Then decide whether anything else about the Safari-tab look needs work.
+- **`v15-dbg` — top bar BLACK so it "disappears."** User asked to black out the top.
+  `html,body{background:#000}` → iOS tints the Safari status bar + bottom band black; on a
+  notched iPhone the black strips merge with the bezel/notch (white system text). One
+  change cleans BOTH ends (the dark Safari address pill blends into the black bottom band
+  too). Confirms the lever is body-bg sampling, not theme-color. Verify on device.
+- **NEXT — bottom bar "fill with map" (user is open to it).** Real technique but a
+  measure-and-iterate job, NOT a clean one-liner: Safari's bottom address bar is
+  translucent and floats over the page, so painting the map behind it means sizing the MAP
+  CANVAS to the large viewport (`100vh`/`100lvh`) while keeping controls on the visible
+  area. The snag: the ⓘ attribution lives INSIDE `#map` and is bottom-anchored, so a taller
+  `#map` pushes it behind the bar; iOS does NOT expose the tab toolbar height to CSS
+  (`env()` insets are 0 in a tab), so re-anchoring the ⓘ above the bar needs a JS measure
+  (`map.getBoundingClientRect().height − window.innerHeight` → a `--safari-bottombar` var)
+  + on-device screenshot tuning. The FAB is a fixed body child so it's unaffected. The TOP
+  status bar is NOT fillable in a tab — color/tint only (only the installed PWA goes
+  edge-to-edge under the status bar). Do this as its own version once the user says go.
 
 **2026-05-30 (triage) — Sprint 04 reviewed and sorted (no code).** Every card in
 `tasks/04_event_app/` was assessed done / partial / not-done and moved.
