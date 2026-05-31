@@ -17,3 +17,5 @@ How to place durable material:
 - work plans: `tasks/`
 - reusable process: `flows/` or `practices/`
 - assistant collaboration rules: `ai_rules/`
+
+Harness adapters (Claude Code skills, hooks, commands) are NOT a place for durable content — they are thin pointers into this brain. See `harness_adapters_are_thin.md`.

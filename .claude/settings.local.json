@@ -58,7 +58,6 @@
       "Bash(pip3 *)",
       "Bash(curl *)",
       "Bash(wget *)",
-      "Bash(git *)",
       "Bash(gh *)",
       "Bash(mkdir *)",
       "Bash(touch *)",
@@ -146,6 +145,24 @@
             "command": "\"/Users/christopherfryman/Documents/code/AOP MAP/.claude/hooks/block-redundant-cd.sh\"",
             "timeout": 10,
             "statusMessage": "Checking for redundant cd"
+          },
+          {
+            "type": "command",
+            "command": "\"/Users/christopherfryman/Documents/code/AOP MAP/.claude/hooks/block-unsolicited-git.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking git boundary"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/Users/christopherfryman/Documents/code/AOP MAP/.claude/hooks/session-bar.sh\"",
+            "timeout": 10,
+            "statusMessage": "Loading THE BAR"
           }
         ]
       }
