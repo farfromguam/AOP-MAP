@@ -51,7 +51,7 @@ rather than only cataloging in place.
   copy grouped by kind. Each section header shows the kind, status + where-it-lives
   badges, the **repo-relative root path** (the filesystem location) plus a
   clickable `view ↗` link for `website/`-rooted files, and the surfaces it shows
-  in. Gaps (null POI blurbs / `revisit_note`, `owed_work`, onX license note,
+  in. Gaps (null POI blurbs / `revisit_note`, `owed_work`,
   brand permission note, `proposed` caveats) render as ⚑ flags. Has a
   "Print / Save PDF" button, a "Show only gaps" filter, and a summary table.
 
@@ -144,12 +144,15 @@ geometry), mirroring the POI-index pattern:
 - `fetchTrailCatalog()` + `trailCatalogLookup(props)` join `aop_trail_catalog.json`
   to the gold `aop-trail-network` by `trail_number`.
 - **Slice 1:** new `bindPopup('aop-trail-network', …)` — name + map-color difficulty
-  (park authority) + catalog About / length / onX TR (secondary) / connects, with
-  the onX license note in the footer; un-catalogued trails → number + difficulty +
-  "owed".
+  (park authority) + catalog About / length / onX TR (secondary) / connects;
+  un-catalogued trails → number + difficulty + "owed". No license footer.
 - **Slice 2:** POI browser trails group repointed from the legacy
   `publish.geojson trail_centerlines` to the gold network + catalog (one row per
   trail, ~100 rows, 9 with write-ups, the rest "name/description owed").
+- **Descriptions rewritten in brain voice** (`brain/voice/voice_guide.md`): the 8
+  onX-sourced write-ups are now original AOP wording (same facts, new sentences),
+  so the prior onX-copyright caveat is dropped everywhere. Trail 96 keeps the
+  park's own 2015 wording.
 - `aop_copy_registry.json` `trail_catalog` kind updated to the 3 live surfaces.
 
 Verified by observation (`brain/output/trail_verify.log`, `trail_integration.png`).
