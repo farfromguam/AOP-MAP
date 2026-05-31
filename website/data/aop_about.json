@@ -1,0 +1,29 @@
+{
+  "schema": "aop-about-v1",
+  "updated_at": "2026-05-31",
+  "purpose": "Copy for the left-panel About tab. The viewer renders #aboutInfoPanel from this file (renderAbout in index.html) so the wording lives here as reviewable data instead of as inline HTML. Edit the text here, not in index.html.",
+  "heading": "About the Rock Warblers",
+  "intro": {
+    "lead": "Friday, June 19, 2026 we host the ",
+    "link": {
+      "text": "Trail Blazing Invitational",
+      "url": "https://www.facebook.com/events/adventure-offroad-park-nature-center/rock-warblers-trail-blazing-invitational/4541595172728436/"
+    },
+    "tail": " at Adventure Off Road Park — a Rock Warblers crawl on the Tennessee ridge with gated stages, real terrain, and a campfire night run to close it out."
+  },
+  "items": [
+    { "label": "Format", "text": "Three numbered stages, time-run. Gate touches, rolls, and driver assists cost you. Winching is free." },
+    { "label": "Mandatory skills", "text": "Water, a grade pull, and a taco-stand inside every stage." },
+    { "label": "Trail buddies", "text": "Required. Walk, mark, swap. Penalty winch travels with whoever isn’t carrying one." },
+    { "label": "Rigs", "text": "1/10 electric scale. 1.9″ and 1.55″ wheel classes. No dig, no rear steer. Five scale accessories minimum." },
+    { "label": "Night crawl", "text": "Lights on after dusk. Leaves the pavilion, finishes at the fire." },
+    { "label": "The park", "text": "Adventure Off Road Park & Nature Center, South Pittsburg, TN. Six hundred acres of private ridge. Pavilion is base camp: registration, driver meeting, awards, and the fire pit. Camping on-site, first come." },
+    { "label": "The map", "text": "On-day reference built from real terrain data and our own ride evidence. Use it in staging, at the pavilion, and walking a stage. Every line traces back to where it came from." },
+    { "label": "The crew", "text": "Rock Warblers. We build the rigs, walk the stages, throw the days. Find us at the pavilion or out walking a stage." }
+  ],
+  "note": "Built by Rock Warblers, for Rock Warblers. See you at the pavilion.",
+  "owed_work": [
+    "Confirm the six-hundred-acre figure against the parcel envelope (open MVP data-integrity item).",
+    "Confirm final format / mandatory-skills / class rules with the event lead before this reads as official."
+  ]
+}

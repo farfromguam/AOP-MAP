@@ -4,6 +4,31 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+**2026-05-31 (copy review surface) — copy-as-data + printable review page.**
+On branch **`copy-review`** (git worktree at `../aop-copy-review`), UNCOMMITTED.
+New card `tasks/04_event_app/copy_review_surface.md`. Built `website/copy_review.html`
+(prints every text surface in the app, each section headed with its repo-relative
+root file + status + ⚑ gap flags), driven by a master registry
+`website/data/aop_copy_registry.json` (13 copy kinds). Extracted the prose that
+was hardcoded in `index.html` into data files: About tab → `aop_about.json`,
+interface microcopy → `aop_ui_strings.json`; calendar title now reads
+`event.label` from `aop_event_schedule.json`. Viewer renders from those files via
+a copy-data bootstrap script (after SW-register) + `window.AOP_UI` with literal
+fallbacks. `#appVersion`/`sw.js VERSION` v18→**v19**; 3 new files added to the SW
+data precache. Verified: Playwright on `:8001` (worktree) — About renders from
+JSON, 0 console errors over 5 loads; review page assembles all 13 kinds, 0 errors.
+Screenshots + logs in `brain/output/copy_review_*`. The 4 `in_code` kinds (page
+metadata, layer labels, popup strings, attribution) are cataloged in place with
+file links — extraction deferred (interleaved with map render/preset logic).
+Merge `copy-review` → master when ready.
+Also on this branch: **trail research integration Slices 1–2 shipped** — the trail
+catalog (`aop_trail_catalog.json`) is now joined to the gold trail network at
+runtime (trail click popup with name/difficulty/description/onX-TR/license, and the
+POI browser trails group repointed from the legacy publish placeholder to the gold
+network + catalog). Card `tasks/04_event_app/trail_research_integration.md` (in the
+main checkout, untracked) marked Slices 1–2 shipped; verified
+(`brain/output/trail_verify.log`).
+
 ## Archive convention
 
 Each session pruned out of here lands at `session_context_<YYYYMMDD>.md`:

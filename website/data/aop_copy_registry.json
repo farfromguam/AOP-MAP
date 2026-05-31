@@ -1,0 +1,203 @@
+{
+  "schema": "aop-copy-registry-v1",
+  "updated_at": "2026-05-31",
+  "purpose": "Master index of every copy-bearing 'thing' in the AOP app. copy_review.html reads this file, then loads each kind's root file(s) and renders the actual text in one printable page. Each entry names the root file(s) (repo-relative — the filesystem location), where the copy surfaces in the app, its review status, and whether the copy lives in a data file ('data') or is still embedded in markup/JS ('in_code'). For in_code kinds, the literal copy is mirrored here under `copy` so the review page can show it without parsing index.html.",
+  "status_legend": {
+    "live": "Wording is in use and considered settled enough to print.",
+    "proposed": "Placeholder / planning copy; must be confirmed with AOP or the event lead before it reads as official.",
+    "owed": "Copy is missing — a gap flagged for someone to write."
+  },
+  "extraction_legend": {
+    "data": "Copy lives in its own data file under website/data/ — edit there.",
+    "in_code": "Copy is still embedded in index.html / manifest.json at the noted location; cataloged here, extraction deferred."
+  },
+  "kinds": [
+    {
+      "id": "about",
+      "label": "About tab",
+      "what": "The 'About the Rock Warblers' panel: event posture, format, rules, the park, the map, the crew.",
+      "surfaces": ["Left panel → About tab"],
+      "root_files": ["website/data/aop_about.json"],
+      "renderer": "about",
+      "status": "proposed",
+      "extraction": "data",
+      "gaps_field": "owed_work",
+      "review_priority": "high"
+    },
+    {
+      "id": "event_schedule",
+      "label": "Event schedule",
+      "what": "Event name, date labels, session titles + time/day labels, location labels, and the planning caveat.",
+      "surfaces": ["Left panel → Events tab", "calendar header", "map event-anchor / route layers", "hot button"],
+      "root_files": ["website/data/aop_event_schedule.json"],
+      "renderer": "event_schedule",
+      "status": "proposed",
+      "extraction": "data",
+      "gaps_field": "event.caveat",
+      "review_priority": "high"
+    },
+    {
+      "id": "poi_index",
+      "label": "POI visitor blurbs",
+      "what": "Group labels/notes and per-place visitor blurbs for the POI directory; null blurbs carry a revisit_note.",
+      "surfaces": ["Left panel → POI tab", "map feature popups"],
+      "root_files": ["website/data/aop_poi_index.json"],
+      "renderer": "poi_index",
+      "status": "proposed",
+      "extraction": "data",
+      "gaps_field": "owed_work",
+      "review_priority": "high"
+    },
+    {
+      "id": "trail_catalog",
+      "label": "Trail catalog",
+      "what": "Numbered-trail names + descriptions, named landmarks, difficulty legend, license notes. Now joined to the gold trail network at runtime by trail_number (9 of 87 numbered trails carry a write-up; the rest show number + difficulty only).",
+      "surfaces": ["Map trail popup (click a trail)", "Left panel → POI tab → Trails group", "search (trail by name/number)"],
+      "root_files": ["website/data/aop_trail_catalog.json"],
+      "renderer": "trail_catalog",
+      "status": "proposed",
+      "extraction": "data",
+      "gaps_field": "owed_work",
+      "review_priority": "high",
+      "note": "Wired via a runtime sidecar join (trailCatalogLookup in index.html), mirroring the POI-index pattern — descriptions are NOT baked into aop_trail_network.geojson. Descriptions rewritten in AOP's own voice (brain/voice/voice_guide.md): facts cross-checked against onX + observation, wording original, so the prior onX-copyright caveat no longer applies (no license footer). Trail 96 keeps the park's own 2015 wording. Integration card: brain/tasks/04_event_app/trail_research_integration.md."
+    },
+    {
+      "id": "visitor_context",
+      "label": "Visitor context callouts",
+      "what": "Two off-park support-area callouts (South Pittsburg/Kimball, Monteagle): labels, services, examples, distance/drive-time notes, source summaries.",
+      "surfaces": ["Map visitor-context layer", "callout popups", "search"],
+      "root_files": ["website/data/aop_visitor_context_callouts.geojson"],
+      "renderer": "visitor_context",
+      "status": "live",
+      "extraction": "data",
+      "gaps_field": null,
+      "review_priority": "medium",
+      "note": "Distances/times are planning estimates, not turn-by-turn routing."
+    },
+    {
+      "id": "brand_logos",
+      "label": "Brand logos",
+      "what": "On-map AOP and Rock Warblers logo names, attributions, and permission notes.",
+      "surfaces": ["Map brand-logo layer", "map attribution"],
+      "root_files": ["website/data/aop_brand_logos.geojson"],
+      "renderer": "brand_logos",
+      "status": "live",
+      "extraction": "data",
+      "gaps_field": null,
+      "review_priority": "low",
+      "note": "AOP badge is reference-only until AOP confirms reuse; Rock Warblers logo cleared by the user."
+    },
+    {
+      "id": "ui_strings",
+      "label": "Interface microcopy",
+      "what": "Page title, search placeholder, calendar/POI empty + loading states, hot-button labels, install steps, control labels.",
+      "surfaces": ["Search box", "calendar header", "hot button", "POI/calendar empty states", "install prompt", "control cluster"],
+      "root_files": ["website/data/aop_ui_strings.json"],
+      "renderer": "ui_strings",
+      "status": "live",
+      "extraction": "data",
+      "gaps_field": null,
+      "review_priority": "medium",
+      "note": "*_reference blocks in the file are still set in markup; everything else is wired via window.AOP_UI with literal fallbacks."
+    },
+    {
+      "id": "pwa_metadata",
+      "label": "PWA / install metadata",
+      "what": "Installable-app name, short name, and description shown on the home screen / install sheet.",
+      "surfaces": ["Home-screen icon label", "browser install sheet", "app switcher"],
+      "root_files": ["website/manifest.json"],
+      "renderer": "manifest",
+      "status": "live",
+      "extraction": "data",
+      "gaps_field": null,
+      "review_priority": "medium"
+    },
+    {
+      "id": "page_metadata",
+      "label": "Page title / metadata",
+      "what": "Browser tab title and Apple web-app title.",
+      "surfaces": ["Browser tab", "iOS home-screen title"],
+      "root_files": ["website/index.html"],
+      "renderer": "literal",
+      "status": "live",
+      "extraction": "in_code",
+      "in_code_locations": ["website/index.html:6 (<title>)", "website/index.html:13 (apple-mobile-web-app-title)"],
+      "review_priority": "low",
+      "copy": [
+        { "label": "<title>", "text": "AOP Map Viewer", "note": "Now also driven by aop_ui_strings.json app.title on load." },
+        { "label": "apple-mobile-web-app-title", "text": "AOP Map" }
+      ]
+    },
+    {
+      "id": "layer_labels",
+      "label": "Layer toggle labels",
+      "what": "The ~30 right-panel layer toggle names (also cataloged in brain/research/viewer.md).",
+      "surfaces": ["Right edit panel → layer toggles"],
+      "root_files": ["website/index.html", "brain/research/viewer.md"],
+      "renderer": "literal",
+      "status": "live",
+      "extraction": "in_code",
+      "in_code_locations": ["website/index.html (layer toggle markup, multiple)"],
+      "review_priority": "low",
+      "copy": [
+        { "label": "Publishable", "text": "Publishable trails · Publishable boundaries · Publishable trailheads" },
+        { "label": "Roads / cover", "text": "Asphalt roads (USGS National Map) · Land cover (NAIP) · Land cover — 9-patch (NAIP)" },
+        { "label": "Terrain", "text": "3D · Lidar hillshade (USGS 3DEP) · Lidar contours (5 ft, 1m DEM)" },
+        { "label": "Activity", "text": "Activity hotspots (GPX dwell) · Simulated Saturday activity" },
+        { "label": "Trails / trace", "text": "AOP trail network (merged truth, colour by difficulty) · SFWDA paper trail map · SFWDA traced trails (extracted) · SFWDA traced markers (difficulty)" },
+        { "label": "Event / context", "text": "Event schedule POIs · Visitor context callouts · Brand logos (AOP & Rock Warblers) · Drawn POIs" },
+        { "label": "Imagery / index", "text": "Satellite imagery (TNMap 2022) · USDA NAIP imagery (TN 2023) · 9-patch acquisition AOI · Lidar tile index (USGS 3DEP)" },
+        { "label": "Water / parcels", "text": "Streams & waterbodies (USGS NHD) · Springs & gages (USGS NHD) · Cemeteries (TN Comptroller parcels) · Building footprints (FEMA USA Structures)" },
+        { "label": "OSM", "text": "OSM park polygon · OSM tracks (highway=track) · OSM service roads · OSM named landmarks" }
+      ],
+      "note": "Authoritative catalog with provenance is brain/research/viewer.md 'Layer inventory'. Extraction to data deferred — labels are wired to toggle IDs and preset logic."
+    },
+    {
+      "id": "map_popups",
+      "label": "Map feature popups",
+      "what": "Per-layer popup field labels and source/confidence/review-status strings generated in index.html popup builders.",
+      "surfaces": ["Map popups on click for each layer"],
+      "root_files": ["website/index.html"],
+      "renderer": "literal",
+      "status": "live",
+      "extraction": "in_code",
+      "in_code_locations": ["website/index.html (popup builder functions, per layer)"],
+      "review_priority": "low",
+      "copy": [
+        { "label": "Trace feature status (stamped on export)", "text": "raw imagery trace; needs review before core/publish — confidence=draft" },
+        { "label": "Activity hotspot status", "text": "raw activity evidence; not a validated trail or facility" },
+        { "label": "Common fields", "text": "name · class · source · confidence · length / area · review status" }
+      ],
+      "note": "Field labels are largely structural; provenance wording is documented per layer in brain/research/viewer.md. Extraction deferred — strings are interleaved with map render logic."
+    },
+    {
+      "id": "map_attribution",
+      "label": "Map attribution / credits",
+      "what": "Bottom-left attribution control credit lines for the basemap and data sources.",
+      "surfaces": ["Map ⓘ attribution control"],
+      "root_files": ["website/index.html"],
+      "renderer": "literal",
+      "status": "live",
+      "extraction": "in_code",
+      "in_code_locations": ["website/index.html (AttributionControl + per-source attribution)"],
+      "review_priority": "low",
+      "copy": [
+        { "label": "Terrain", "text": "AWS Terrain Tiles (USGS 3DEP, SRTM, GMTED, ETOPO1)" },
+        { "label": "Imagery", "text": "TNMap orthoimagery (TDOT) · USDA NAIP" },
+        { "label": "Vectors", "text": "USGS National Map · USGS NHD · FEMA USA Structures · TN Comptroller · OpenStreetMap" }
+      ]
+    },
+    {
+      "id": "show_and_shine",
+      "label": "Show & Shine awards (not yet in app)",
+      "what": "Trail Blazing show & shine builder-stage posture and first-event award set.",
+      "surfaces": ["Not yet wired into the app — lives in the brain as event design"],
+      "root_files": ["brain/northstar/events/show_and_shine_northstar.md"],
+      "renderer": "doc_pointer",
+      "status": "owed",
+      "extraction": "in_code",
+      "review_priority": "medium",
+      "note": "Award names / theme copy live only in the brain. Wire into the schedule or a handout when the award set is locked."
+    }
+  ]
+}
