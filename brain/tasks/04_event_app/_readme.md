@@ -55,6 +55,16 @@ New work opened after the triage above lives directly in this folder:
 - `icon_system_normalize.md` — inline-UI icon stroke/optical normalization.
 - `pwa_qa.md` / `pwa_qa_2.md` / `pwa_qa_data_bakes.md` — iOS-PWA QA swarm + the
   split-out data-bake items.
+- `_done/app_code_review_fixes_batch1.md` — **DONE.** The 15 no-decision fixes
+  from the 2026-05-31 app code review **+ H4/L8** (the queued SW cache-staleness
+  decision, answered stale-while-revalidate; `VERSION` v20 → v21). Applied to the
+  working tree and verified (new verifier
+  `mvp/scripts/playwright_verify_code_review_fixes.py`, 0 console errors, SW
+  active). One sweep finding retracted as a false positive.
+- `app_code_review_followups.md` — **NOT DONE (active).** The 17 still-held
+  findings, self-contained, grouped (on-device / polish / refactor) with a
+  recommended order. All no-device work is done; next slice is the on-device
+  batch (H1, M12 first), verified on the iPhone.
 - `trail_research_integration.md` — **SCOPE.** Wire the persisted trail catalog
   (names + descriptions + landmarks) into the live viewer via a runtime sidecar
   join on `trail_number`. Surfaces: trail-click popup (new), left POI browser

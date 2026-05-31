@@ -12,16 +12,25 @@
  *                                     only available offline if it was viewed online.
  *                                     Capped by entry count so it can't crowd out the app.
  *
- * Exception: ./data/aop_event_schedule.json is stale-while-revalidate — it shows
- * instantly from cache but refreshes whenever there is signal, so installed users
- * don't get stuck on a stale event timetable.
+ * Exceptions (stale-while-revalidate — instant from cache, refresh on signal so
+ * installed users don't get stuck on stale content between VERSION bumps):
+ *   - ./data/aop_event_schedule.json (event timetable)
+ *   - ./data/aop_ui_strings.json, aop_about.json, aop_copy_registry.json (copy)
+ *   - the app shell HTML — navigations are network-first AND refresh the cached
+ *     shell; a non-navigation .html fetch is stale-while-revalidate.
+ * Bulky GeoJSON stays cache-first and only refreshes on a VERSION bump.
  *
  * Bump VERSION to invalidate the shell + data caches on the next deploy. The tile
  * cache is intentionally version-independent — tiles never change, so re-downloading
  * them on every release would waste the user's data.
  */
 
-const VERSION = 'v20'; // keep in sync with #appVersion in index.html
+// RELEASE CHECKLIST when app code or data changes:
+//   1. bump VERSION here   2. bump #appVersion in index.html (~line 1063)
+//   3. reconcile DATA_ASSETS below with `ls website/data/`
+// Shell HTML + copy JSON self-heal (stale-while-revalidate), so a missed bump is
+// less dangerous than before — but bulky GeoJSON only refreshes on a bump.
+const VERSION = 'v21'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
@@ -63,7 +72,6 @@ const DATA_ASSETS = [
   './data/aop_activity_hotspots.geojson',
   './data/aop_synthetic_activity_hotspots.geojson',
   './data/aop_synthetic_activity_tracks.geojson',
-  './data/aop_synthetic_activity_report.json',
   './data/aop_visitor_context_callouts.geojson',
   './data/aop_brand_logos.geojson',
   './data/aop_editor_seed_pois.geojson',
@@ -76,9 +84,19 @@ const DATA_ASSETS = [
   './data/sfwda_aop_trail_map.webp',
   './data/sfwda_raster_alignment.json',
   './data/sfwda_traced_trails.geojson',
-  './data/sfwda_traced_markers.geojson',
-  './data/sfwda_numbered_trails.geojson',
-  './data/sfwda_trails_edited.geojson',
+  // Removed as of v21 (unreferenced by index.html — present on disk only):
+  // aop_synthetic_activity_report.json, sfwda_traced_markers.geojson,
+  // sfwda_numbered_trails.geojson, sfwda_trails_edited.geojson. Re-add here if
+  // any gets wired into the viewer.
+];
+
+// Same-origin paths that are stale-while-revalidate instead of cache-first, so
+// edits reach installed users without a VERSION bump. Matched by pathname suffix.
+const SWR_SUFFIXES = [
+  '/data/aop_event_schedule.json',
+  '/data/aop_ui_strings.json',
+  '/data/aop_about.json',
+  '/data/aop_copy_registry.json',
 ];
 
 // Hosts whose responses are third-party raster basemap tiles.
@@ -131,7 +149,9 @@ async function cacheFirst(request, cacheName) {
   const hit = await cache.match(request);
   if (hit) return hit;
   const res = await fetch(request);
-  if (res && res.ok) cache.put(request, res.clone());
+  // status===200, not res.ok: a 206 Partial Content passes res.ok but throws on
+  // Cache.put. No ranged request reaches here today, but guard against it.
+  if (res && res.status === 200) cache.put(request, res.clone());
   return res;
 }
 
@@ -155,7 +175,7 @@ async function staleWhileRevalidate(request, cacheName) {
   const hit = await cache.match(request);
   const network = fetch(request)
     .then((res) => {
-      if (res && res.ok) cache.put(request, res.clone());
+      if (res && res.status === 200) cache.put(request, res.clone());
       return res;
     })
     .catch(() => null);
@@ -173,7 +193,14 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
       try {
-        return await fetch(request);
+        const res = await fetch(request);
+        // Refresh the cached shell so the offline fallback isn't frozen at the
+        // last VERSION bump (stale-while-revalidate for the app shell).
+        if (res && res.status === 200) {
+          const cache = await caches.open(SHELL_CACHE);
+          cache.put('./index.html', res.clone());
+        }
+        return res;
       } catch (_) {
         const cache = await caches.open(SHELL_CACHE);
         return (await cache.match('./index.html')) || (await cache.match('./')) || Response.error();
@@ -183,8 +210,8 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (sameOrigin) {
-    // Event schedule is the one thing a visitor wants fresh.
-    if (url.pathname.endsWith('/data/aop_event_schedule.json')) {
+    // Copy + event schedule self-heal between bumps (see SWR_SUFFIXES).
+    if (SWR_SUFFIXES.some((s) => url.pathname.endsWith(s))) {
       event.respondWith(staleWhileRevalidate(request, DATA_CACHE));
       return;
     }
@@ -192,8 +219,12 @@ self.addEventListener('fetch', (event) => {
       event.respondWith(cacheFirst(request, DATA_CACHE));
       return;
     }
+    if (url.pathname.endsWith('.html')) {
+      event.respondWith(staleWhileRevalidate(request, SHELL_CACHE));
+      return;
+    }
     if (url.pathname.includes('/vendor/') || url.pathname.includes('/icons/') ||
-        url.pathname.endsWith('/manifest.json') || url.pathname.endsWith('.html')) {
+        url.pathname.endsWith('/manifest.json')) {
       event.respondWith(cacheFirst(request, SHELL_CACHE));
       return;
     }

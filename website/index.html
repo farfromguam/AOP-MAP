@@ -1060,7 +1060,7 @@
          foldVersionIntoInfoControl() RELOCATES it into the bottom-left info ⓘ
          so the corner reads "ⓘ v18" (pwa_qa_2 item 3). Keep this string in sync
          with VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v20</div>
+    <div class="util-version" id="appVersion" title="App build version">v21</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
@@ -1458,7 +1458,14 @@
       if (!slice || typeof slice !== 'object') return;
       const all = readJsonStore(key, () => ({}));
       for (const [layerKey, layerSlice] of Object.entries(slice)) {
-        if (layerSlice) all[layerKey] = layerSlice;
+        // Shallow-merge per-layer so a partial slice (e.g. a one-section paste)
+        // adds to that layer's existing entries instead of replacing them all.
+        if (layerSlice && typeof layerSlice === 'object') {
+          const existing = (all[layerKey] && typeof all[layerKey] === 'object') ? all[layerKey] : {};
+          all[layerKey] = { ...existing, ...layerSlice };
+        } else if (layerSlice) {
+          all[layerKey] = layerSlice;
+        }
       }
       writeJsonStore(key, all);
     }
@@ -1700,13 +1707,28 @@
         panelBody.style.maxHeight = panelBody.scrollHeight + 'px';
         requestAnimationFrame(() => { panelBody.style.maxHeight = '0px'; });
       } else {
-        panelBody.style.maxHeight = panelBody.scrollHeight + 'px';
-        // Drop the cap once expanded so tall content can still grow and scroll.
+        // Expand: animate from the collapsed 0 up to the content height, then
+        // DROP the cap so the body grows to its natural height and `.panel`
+        // (overflow-y:auto) becomes the scroll container. The cap MUST be
+        // cleared. The old code set max-height straight to scrollHeight and
+        // relied on `transitionend` alone to clear it -- but the first expand
+        // animated from computed `max-height:none` (the collapsed class is
+        // removed before this runs), and browsers fire NO transitionend when
+        // animating from `none`. So the cap stuck at the expand-time
+        // scrollHeight and clipped everything opened afterwards (inner
+        // sections, feature lists) with overflow:hidden and no way to scroll.
+        const dropCap = () => { if (!panelCollapsed) panelBody.style.maxHeight = ''; };
+        panelBody.style.maxHeight = '0px';
+        requestAnimationFrame(() => { panelBody.style.maxHeight = panelBody.scrollHeight + 'px'; });
         panelBody.addEventListener('transitionend', function clear(e) {
           if (e.target !== panelBody || e.propertyName !== 'max-height') return;
-          panelBody.style.maxHeight = '';
+          dropCap();
           panelBody.removeEventListener('transitionend', clear);
         });
+        // Safety net: if transitionend never lands (reduced-motion, an
+        // interrupted or zero-delta transition), clear the cap anyway so the
+        // panel can never get stuck unscrollable. ~matches the 0.26s anim.
+        setTimeout(dropCap, 360);
       }
       // Recompute drawer geometry now (post-class-change) and after the panel's
       // max-height transition lands on its final rect.
@@ -1719,8 +1741,8 @@
       });
     }
 
-    panelCollapse.addEventListener('click', (e) => { e.stopPropagation(); togglePanel(); });
-    panelHeader.addEventListener('click', togglePanel);
+    panelCollapse?.addEventListener('click', (e) => { e.stopPropagation(); togglePanel(); });
+    panelHeader?.addEventListener('click', togglePanel);
 
     let viewerSessionState = (() => {
       const parsed = readJsonStore(VIEWER_SESSION_KEY, () => ({}));
@@ -2613,7 +2635,7 @@
           const props = feature.properties || {};
           if (props.highlight !== true) continue;
           pushRow('drawn_pois', {
-            id: `drawn:${props.id || props.name || Math.random()}`,
+            id: `drawn:${props.id || props.name || ('idx-' + editorPois.indexOf(feature))}`,
             name: props.name || props.category || 'Drawn POI',
             kind: props.category || 'drawn',
             blurb: props.notes || null,
@@ -2869,7 +2891,7 @@
 
     initializeLrCardResize();
 
-    calendarDays.addEventListener('click', (event) => {
+    calendarDays?.addEventListener('click', (event) => {
       const row = event.target.closest('.calendar-row');
       if (row?.dataset.sessionId) {
         gotoEventSession(row.dataset.sessionId);
@@ -2936,7 +2958,17 @@
     // The zoom-band knobs move only z0/z1; the opacity outputs are left as-is so
     // the per-preset / per-line-class opacity values survive a knob drag.
     function withZoomStops(expr, z0, z1) {
-      if (!Array.isArray(expr) || expr[0] !== 'interpolate') return expr;
+      // Only a 2-stop ['interpolate', interp, ['zoom'], z0, o0, z1, o1] keeps its
+      // zoom inputs at [3] and [5]. Anything else (flat value, 3+ stops, a
+      // non-zoom input) would be silently corrupted, so warn and pass through.
+      const looksLikeZoomInterp = Array.isArray(expr) && expr[0] === 'interpolate'
+        && expr.length === 7 && Array.isArray(expr[2]) && expr[2][0] === 'zoom';
+      if (!looksLikeZoomInterp) {
+        if (Array.isArray(expr) && expr[0] === 'interpolate') {
+          console.warn('withZoomStops: unexpected interpolate shape, left unchanged', expr);
+        }
+        return expr;
+      }
       const next = JSON.parse(JSON.stringify(expr));
       next[3] = z0;
       next[5] = z1;
@@ -3891,8 +3923,10 @@
         if (!entry) continue;
         if (entry.geometry) feature.geometry = JSON.parse(JSON.stringify(entry.geometry));
         feature.properties = feature.properties || {};
-        if (entry.highlight === true) feature.properties.highlight = true;
-        if (entry.locked === true) feature.properties.locked = true;
+        // Write the flag when the store has an opinion (true OR false) so an
+        // un-star/un-lock survives reload even if the base feature shipped true.
+        if (entry.highlight !== undefined) feature.properties.highlight = entry.highlight === true;
+        if (entry.locked !== undefined) feature.properties.locked = entry.locked === true;
         if (Number.isFinite(Number(entry.icon_size))) {
           feature.properties.icon_size = Number(entry.icon_size);
         }
@@ -5290,7 +5324,9 @@
       if (geom.type === 'Point') {
         const [lng, lat] = geom.coordinates || [];
         if (typeof lat !== 'number' || typeof lng !== 'number') return 'Point';
-        return `Point · ${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E`;
+        const ns = lat >= 0 ? 'N' : 'S';
+        const ew = lng >= 0 ? 'E' : 'W';
+        return `Point · ${Math.abs(lat).toFixed(5)}°${ns}, ${Math.abs(lng).toFixed(5)}°${ew}`;
       }
       if (geom.type === 'LineString') {
         const n = Array.isArray(geom.coordinates) ? geom.coordinates.length : 0;
@@ -5304,13 +5340,20 @@
       return geom.type;
     }
 
-    // The categories the Map editor section's create row offers. Mirrors
-    // the `<select id="poiCategory">` in the HTML — kept here so the
-    // editor's mutable Category dropdown has a single source of truth.
-    const EDITOR_POI_CATEGORIES = [
-      'Pavilion', 'Building', 'Restroom', 'Parking', 'Staging area',
-      'Gate', 'Trail trace', 'Road trace', 'Landmark', 'Hazard', 'Other'
-    ];
+    // Built from the <select id="poiCategory"> options at load so the editor's
+    // per-bucket Category dropdowns share one source of truth with the HTML
+    // (no hand-synced duplicate that drifts). Falls back to a literal list only
+    // if the select is missing.
+    const EDITOR_POI_CATEGORIES = (() => {
+      const sel = document.getElementById('poiCategory');
+      const fromDom = sel
+        ? [...sel.options].map((o) => (o.value || o.textContent).trim()).filter(Boolean)
+        : [];
+      return fromDom.length ? fromDom : [
+        'Pavilion', 'Building', 'Restroom', 'Parking', 'Staging area',
+        'Gate', 'Trail trace', 'Road trace', 'Landmark', 'Hazard', 'Other'
+      ];
+    })();
 
     function toggleFeatureEditor(layerKey, featureId) {
       const runtime = featureListRuntime[layerKey];
@@ -7269,6 +7312,12 @@
       scrollCalendarCurrentRowIntoView();
     }
 
+    // One page-lifetime ticker, created lazily on first schedule render and
+    // deliberately NOT torn down: the `!= null` guard makes both the 60s interval
+    // and the visibilitychange listener singletons (re-render/reset re-enters here
+    // and creates nothing new), and a reset still wants live session states, so
+    // there's nothing to stop. If this ever becomes a multi-view SPA, add a
+    // stopEventScheduleStateTicker() that clears both and call it on teardown.
     let eventScheduleStateTimer = null;
     function ensureEventScheduleStateTicker() {
       if (eventScheduleStateTimer != null) return;
@@ -7336,7 +7385,14 @@
     const HOT_CLUSTER_RADIUS_M = 260;
 
     function hotspotPolygonCentroid(feature) {
-      const ring = feature.geometry?.coordinates?.[0];
+      const geom = feature.geometry;
+      if (!geom) return null;
+      // Polygon: coordinates[0] is the outer ring. MultiPolygon: coordinates[0]
+      // is the first polygon, whose [0] is its outer ring. Average that ring
+      // either way so a multi-part hotspot is placed, not silently dropped (NaN).
+      const ring = geom.type === 'MultiPolygon'
+        ? geom.coordinates?.[0]?.[0]
+        : geom.coordinates?.[0];
       if (!Array.isArray(ring) || !ring.length) return null;
       let sx = 0, sy = 0, n = 0;
       for (const c of ring) {
@@ -7964,6 +8020,7 @@
       try {
         const response = await fetch(url, { cache: 'no-cache' });
         if (response.ok) return await response.json();
+        console.warn(`${label}: HTTP ${response.status}`);
       } catch (error) {
         console.warn(`${label}:`, error);
       }
@@ -8032,12 +8089,17 @@
         if (targetFeature?.layer?.id && !layerSet.has(targetFeature.layer.id)) return;
         const props = targetFeature?.properties || {};
         const title = typeof titleFor === 'function' ? titleFor(props) : titleFor;
-        let html = `<strong>${title}</strong><br/>${detailRows(rowsFor(props))}`;
+        // Titles are escaped centrally here so individual callers don't have to
+        // (and can't forget to). rowsFor is escaped by detailRows; footerFor
+        // returns intentional HTML and is left untouched.
+        let html = `<strong>${escapeHtml(title)}</strong><br/>${detailRows(rowsFor(props))}`;
         if (footerFor) {
           const footer = footerFor(props);
           if (footer) html += '<br/>' + footer;
         }
-        document.querySelectorAll('.maplibregl-popup').forEach((el) => el.remove());
+        // Close via MapLibre so each Popup instance's own 'close' handler fires
+        // (e.g. the event-session popup that clears activeEventSessionId).
+        closeAllMapPopups();
         new maplibregl.Popup().setLngLat(event.lngLat).setHTML(html).addTo(map);
       });
     }
@@ -8666,7 +8728,7 @@
         });
 
         bindPopup('event-anchor-points',
-          (props) => escapeHtml(props.name || 'Event location'),
+          (props) => props.name || 'Event location',
           (props) => [
             ['Tag', props.location_tag || ''],
             ['Role', props.role || ''],
@@ -8675,7 +8737,7 @@
             ['Caveat', props.caveat || '']
           ]);
         bindPopup('event-session-routes',
-          (props) => escapeHtml(props.title || 'Event route'),
+          (props) => props.title || 'Event route',
           (props) => [
             ['Date', props.day || ''],
             ['Time', props.window || ''],
@@ -8824,18 +8886,18 @@
           paint: { 'text-color': '#4a6c73', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.5 }
         });
 
-        bindPopup('streams', (props) => escapeHtml(props.name || 'Stream / flowline'), (props) => [
+        bindPopup('streams', (props) => props.name || 'Stream / flowline', (props) => [
           ['Class', props.water_class || 'unknown'],
           ['NHD ftype', props.ftype || ''],
           ['NHD fcode', props.fcode || ''],
           ['Length (km)', props.lengthkm != null ? Number(props.lengthkm).toFixed(2) : '']
         ]);
-        bindPopup(['waterbody-fill', 'water-area-fill'], (props) => escapeHtml(props.name || 'Waterbody'), (props) => [
+        bindPopup(['waterbody-fill', 'water-area-fill'], (props) => props.name || 'Waterbody', (props) => [
           ['Class', props.water_class || 'unknown'],
           ['NHD ftype', props.ftype || ''],
           ['Area (km²)', props.areasqkm != null ? Number(props.areasqkm).toFixed(4) : '']
         ]);
-        bindPopup('water-points', (props) => escapeHtml(props.name || 'Water point'), (props) => [
+        bindPopup('water-points', (props) => props.name || 'Water point', (props) => [
           ['Class', props.water_class || 'unknown'],
           ['NHD ftype', props.ftype || ''],
           ['GNIS id', props.gnis_id || '']
@@ -9028,7 +9090,7 @@
         });
 
         bindPopup(['visitor-context-fill', 'visitor-context-outline'],
-          (props) => escapeHtml(props.name || 'Visitor context'),
+          (props) => props.name || 'Visitor context',
           (props) => [
             ['Direction', props.direction || ''],
             ['Services', props.services || ''],
@@ -9111,7 +9173,7 @@
         });
 
         bindPopup(['cemetery-fill', 'cemetery-marker'],
-          (props) => escapeHtml(props.name || 'Cemetery'),
+          (props) => props.name || 'Cemetery',
           (props) => [
             ['Also known as', props.aka],
             ['Type', props.cemetery_type],
@@ -9213,7 +9275,7 @@
         });
 
         bindPopup(['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline'],
-          (props) => escapeHtml(props.building_label || 'Building footprint'),
+          (props) => props.building_label || 'Building footprint',
           (props) => [
             ['Occupancy', props.occupancy_class || 'unknown'],
             ['Primary use', props.primary_occupancy || ''],
@@ -9390,10 +9452,10 @@
             const num = props.trail_number != null ? props.trail_number
               : (props.name != null && /^\d+$/.test(String(props.name)) ? props.name : null);
             if (cat && cat.name) {
-              return escapeHtml(num != null && String(num) !== cat.name ? `${cat.name} (Trail ${num})` : cat.name);
+              return num != null && String(num) !== cat.name ? `${cat.name} (Trail ${num})` : cat.name;
             }
-            if (props.name) return escapeHtml(`Trail ${props.name}`);
-            return num != null ? escapeHtml(`Trail ${num}`) : 'Trail';
+            if (props.name) return `Trail ${props.name}`;
+            return num != null ? `Trail ${num}` : 'Trail';
           },
           (props) => {
             const cat = trailCatalogLookup(props);
@@ -9517,7 +9579,15 @@
       function applyMultiplyAlpha(canvas, strength) {
         if (strength <= 0) return canvas;
         const ctx = canvas.getContext('2d');
-        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        let img;
+        try {
+          img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        } catch (error) {
+          // A cross-origin (tainted) canvas throws here. Skip the multiply key
+          // rather than letting the throw abort the whole map-load chain.
+          console.warn('SFWDA multiply skipped (canvas read blocked):', error);
+          return canvas;
+        }
         const d = img.data;
         for (let i = 0; i < d.length; i += 4) {
           // keyed alpha: pure whites go fully transparent, colored ink stays opaque.
@@ -9584,6 +9654,7 @@
             sctx.imageSmoothingQuality = 'high';
             sctx.drawImage(canvas, x0, y0, x1 - x0, y1 - y0, 0, 0, sub.width, sub.height);
             row.push(sub.toDataURL('image/webp', 0.9));
+            sub.width = sub.height = 0; // release the slice's backing store
           }
           out.push(row);
         }
@@ -9596,6 +9667,7 @@
         const rotated = rotateToCanvas(sfwdaImageEl, sfwdaOrientationCw);
         applyMultiplyAlpha(rotated, sfwdaMultiplyStrength);
         tileURLs = sliceCanvasN(rotated, GRID_N);
+        rotated.width = rotated.height = 0; // release the full-size bake canvas
       }
       bakeTiles();
 
@@ -9932,7 +10004,7 @@
         ['OSM id', props.osm_id || '']
       ]);
 
-      bindPopup('osm-named-points', (props) => escapeHtml(props.name || 'OSM landmark'), (props) => [
+      bindPopup('osm-named-points', (props) => props.name || 'OSM landmark', (props) => [
         ['Kind', props.place || props.natural || props.highway || props.leisure || ''],
         ['Elevation (m)', props.ele || ''],
         ['OSM id', props.osm_id || '']
@@ -10012,7 +10084,7 @@
         });
 
         bindPopup('brand-logos-icons',
-          (props) => escapeHtml(props.name || 'Logo'),
+          (props) => props.name || 'Logo',
           (props) => [
             ['Attribution', props.attribution || ''],
             ['Source', props.source_url || '']
@@ -10914,7 +10986,11 @@
           if (about.intro.lead) p.append(document.createTextNode(about.intro.lead));
           if (about.intro.link && about.intro.link.url) {
             const a = document.createElement('a');
-            a.href = about.intro.link.url;
+            // Only assign an http(s) href; decline anything else (e.g. javascript:)
+            // so a hand-edited JSON link can't run script. The text still shows.
+            if (/^https?:\/\//i.test(String(about.intro.link.url))) {
+              a.href = about.intro.link.url;
+            }
             a.target = '_blank';
             a.rel = 'noopener noreferrer';
             a.textContent = about.intro.link.text || about.intro.link.url;
