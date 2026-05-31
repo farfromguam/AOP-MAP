@@ -48,6 +48,22 @@ branches noted below are destructive cleanup, still owed by the user.
 
 -----
 
+## Post-triage cards (added after 2026-05-30)
+
+New work opened after the triage above lives directly in this folder:
+
+- `icon_system_normalize.md` — inline-UI icon stroke/optical normalization.
+- `pwa_qa.md` / `pwa_qa_2.md` / `pwa_qa_data_bakes.md` — iOS-PWA QA swarm + the
+  split-out data-bake items.
+- `trail_research_integration.md` — **SCOPE.** Wire the persisted trail catalog
+  (names + descriptions + landmarks) into the live viewer via a runtime sidecar
+  join on `trail_number`. Surfaces: trail-click popup (new), left POI browser
+  (repoint to the gold network), search preview. Forks: license/publish gate +
+  which trail dataset is canonical. 9 of 87 numbered trails have descriptions
+  today; the rest are owed upstream.
+
+-----
+
 ## Current cards (pre-triage record)
 
 - `event_crud_upload_loop.md` - staff event CRUD, upload intake, contributor submissions, moderation, promotion, and the first event-ops view.

@@ -481,12 +481,20 @@ def main() -> int:
         page.wait_for_timeout(900)
         check("Trace button becomes active", page.locator("#presetTrace").evaluate("el => el.classList.contains('active')"))
         check("Trace turns land cover off", not is_checked(page, "showLandcover") and layer_visibility(page, "landcover-forest") == "none")
-        # Item 22 (misc_3.md): Trace preset now sits over the lidar hillshade,
-        # not the NAIP imagery. SFWDA + OSM tracks remain on as tracing refs.
-        check("Trace turns lidar hillshade and tracing references on",
+        # Item 22 (misc_3.md): Trace preset sits over the lidar hillshade, not
+        # the NAIP imagery, with the SFWDA paper-map raster + buildings on.
+        check("Trace turns lidar hillshade + SFWDA paper + buildings on",
               is_checked(page, "showHillshade") and not is_checked(page, "showUsdaNaip")
-              and is_checked(page, "showSfwda")
-              and is_checked(page, "showOsmTracks") and is_checked(page, "showBuildings"))
+              and is_checked(page, "showSfwda") and is_checked(page, "showBuildings"))
+        # pwa_qa_2 items 4+5: Trace is now "paper map vs. merged gold truth" —
+        # the OSM tracks / OSM park polygon / park-bounds clutter the user
+        # called out is OFF, and the merged aop-trail-network is ON.
+        check("Trace drops OSM tracks / OSM park polygon / park bounds",
+              not is_checked(page, "showOsmTracks") and not is_checked(page, "showOsmPark")
+              and not is_checked(page, "showBoundaries"))
+        check("Trace turns the merged gold network on",
+              is_checked(page, "showAopTrailNetwork")
+              and layer_visibility(page, "aop-trail-network") == "visible")
         check("Trace uses a relief-paper substrate instead of a black base",
               paint(page, "background", "background-color") == "#e7ddc4"
               and paint(page, "lidar-hillshade", "hillshade-highlight-color") == "#fff4d9"

@@ -15,6 +15,33 @@ Each session pruned out of here lands at `session_context_<YYYYMMDD>.md`:
 - `session_context_20260525.md` — left-rail manilla-tab design exploration; five HTML mockup variants checked in under `website/leftrail_v*.html`. Build card: `tasks/03_event_app/_done/left_rail_collapse_tabs.md`. No `website/index.html` changes.
 - `session_context_20260527.md` — misc_4 items 1–5 shipped, plus the POI/About empty-space CSS fix and the tab-restore fix. All in the working tree (uncommitted). See `tasks/04_event_app/misc_4.md` "What shipped (2026-05-27)" block for the full close-out and the trail-lane verifier residue routed to `viewer_polish_followups.md`.
 
+**2026-05-31 (pwa_qa_2) — items 1–5 shipped, 7 routed, 6 held.** Picked up
+`tasks/04_event_app/pwa_qa_2.md` in a clean session (the companion
+`pwa_qa_2_plan.md`'s calendar/region/item-6 code anchors were garbled by the
+prior corrupted channel — re-derived everything against the real
+`website/index.html`). Shipped in the working tree (UNCOMMITTED): **(1)**
+calendar→event popup pins to a fixed `bottom` anchor + dropped the redundant 2nd
+corrective pan (the "jerk"); **(2)** mobile calendar-pick now folds the cal card
+too (`lrCloseCard('cal')`); **(3)** build version folded into the bottom-left
+info ⓘ → "ⓘ v18" (`foldVersionIntoInfoControl`, standalone chip removed);
+**(4+5)** Trace preset reworked to "paper map vs merged gold truth" — park bounds
++ OSM park polygon + OSM tracks OFF, SFWDA paper raster kept, merged
+`aop-trail-network` ON (added a trace paint so Topo→Trace keeps difficulty
+colour), legacy demo trails OFF. **Item 6** (logo overshoot on zoom-out) NOT
+shipped — it's GeoJSON-symbol parent-tile scaling (device/GL only); the cap is
+already a per-frame GPU expr with allow-overlap, so nothing safe to change
+headlessly + the user's instruction is cut off. **Item 7** (Ellis cemetery bake)
+routed → `pwa_qa_data_bakes.md` "Item E"; its paired "hide other cemeteries"
+RETRACTED (item 9 hold). Plan items 8 (calendar-icon centering) + 10 (region
+preset) are no-ops on false premises (see the Disposition table). New verifier
+`mvp/scripts/playwright_verify_pwa_qa2.py` — all items PASS, 0 console errors
+(served on **8002**; 8001 held a second agent's worktree review, left alone).
+`playwright_verify_presets.py` Trace assertion updated to the new intent (it
+crashes earlier on a pre-existing headless click-interception, below my edit).
+**Version bumped v18→v19** (user call): `#appVersion` + `sw.js VERSION`. The
+other agent is also on v19 in a worktree — reconcile at merge. Commit owed to
+the user.
+
 **2026-05-31 (icon system) — icon master sheet built.** All 13 inline UI icons in
 `website/index.html` collected into a standalone tool **`website/icon_master.html`**:
 as-built vs normalized compare grid, global stroke-width + optical-fit controls,

@@ -270,7 +270,13 @@ def main() -> int:
                 }
               }
               const msg = document.querySelector('.message');
-              if (msg) bottom = Math.min(bottom, msg.getBoundingClientRect().top);
+              // `.message` is display:none since V5 (rect all-zero); only a
+              // genuinely-rendered bottom bar should eat into the slice — else
+              // bottom collapses to 0. Mirrors the app's visibleMapRect() fix.
+              if (msg) {
+                const mr = msg.getBoundingClientRect();
+                if (mr.height > 0) bottom = Math.min(bottom, mr.top);
+              }
               return {
                 ok: true,
                 popup: { top: r.top, bottom: r.bottom, left: r.left, right: r.right },

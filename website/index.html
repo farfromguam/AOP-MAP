@@ -293,6 +293,17 @@
       letter-spacing: 0.03em; color: var(--brown-mid);
       user-select: none; cursor: default;
     }
+    /* pwa_qa_2 item 3: when the version chip is folded into the bottom-left
+       info ⓘ (relocated there in JS), the corner lays out as a row so it reads
+       "ⓘ v18", and the chip drops its full-width card sizing for a small pill
+       whose 18px bottom margin lines up with the attribution control. */
+    /* MapLibre defaults the corner container to flex-direction:column — force a
+       row so the version sits BESIDE the ⓘ ("ⓘ v18"), not stacked under it. */
+    .maplibregl-ctrl-bottom-left.attrib-with-version { display: flex; flex-direction: row; align-items: flex-end; }
+    .maplibregl-ctrl-bottom-left.attrib-with-version .util-version {
+      width: auto; margin: 0 0 18px 5px; padding: 1px 6px;
+      border-radius: 7px; font-size: 0.62rem; box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    }
     /* The Locate control now lives in the left rail — hide MapLibre's
        default top-right geolocate button (it is the only top-right ctrl). */
     .maplibregl-ctrl-top-right .maplibregl-ctrl-group { display: none; }
@@ -1053,10 +1064,11 @@
         <path d="M4.5 15v2.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V15"/>
       </svg>
     </button>
-    <!-- Build version, under the download icon. Always visible (the install
-         button self-hides once installed). Keep this string in sync with
-         VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v18</div>
+    <!-- Build version. Authored here so it ships in static markup; at runtime
+         foldVersionIntoInfoControl() RELOCATES it into the bottom-left info ⓘ
+         so the corner reads "ⓘ v18" (pwa_qa_2 item 3). Keep this string in sync
+         with VERSION in sw.js — both name the same build. -->
+    <div class="util-version" id="appVersion" title="App build version">v19</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
@@ -1488,6 +1500,20 @@
 
     // V5: attribution lives bottom-left as a compact ⓘ, clear of the bottom-right edit FAB.
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
+
+    // pwa_qa_2 item 3: fold the build version INTO that bottom-left ⓘ so the
+    // corner reads "ⓘ v18" — one pill, version beside the icon, click still
+    // expands the credits as before. Relocates the standalone #appVersion node
+    // out from under the Install square into the attribution control's
+    // bottom-left container (created synchronously by the addControl above).
+    (function foldVersionIntoInfoControl() {
+      const bottomLeft = map.getContainer().querySelector('.maplibregl-ctrl-bottom-left');
+      const versionEl = document.getElementById('appVersion');
+      if (bottomLeft && versionEl) {
+        bottomLeft.classList.add('attrib-with-version');
+        bottomLeft.appendChild(versionEl);
+      }
+    })();
 
     // Field "where am I" — blue dot + accuracy halo + follow mode. Position comes
     // from the device GPS chip, so it works offline at the park; it only needs a
@@ -2791,14 +2817,16 @@
       const row = event.target.closest('.calendar-row');
       if (row?.dataset.sessionId) {
         gotoEventSession(row.dataset.sessionId);
-        // Item 10 (misc_3.md): on mobile, collapse the search + hot cards
-        // after a calendar pick so the calendar isn't fighting the other
-        // drawer cards for the limited vertical real estate.
+        // Item 10 (misc_3.md) + pwa_qa_2 item 2: on mobile, fold the whole left
+        // drawer after a calendar pick so the map + the event popup own the
+        // screen. Search + hot collapse via their tab toggle; the calendar
+        // itself collapses via the drawer's public lrCloseCard hook.
         if (window.innerWidth <= 760) {
           const searchTab = document.getElementById('lrTabSearch');
           const hotTab = document.getElementById('lrTabHot');
           if (searchTab?.classList.contains('open')) searchTab.click();
           if (hotTab?.classList.contains('open')) hotTab.click();
+          if (typeof window.lrCloseCard === 'function') window.lrCloseCard('cal');
         }
       }
     });
@@ -5530,17 +5558,23 @@
           showSprings: false,
           showCemeteries: false,
           showBuildings: true,
-          showOsmPark: true,
-          showOsmTracks: true,
+          // pwa_qa_2 items 4+5: Trace is now "paper trail map vs. merged gold
+          // truth" — drop the OSM/boundary alignment clutter the user called
+          // out (park bounds + OSM park polygon + OSM tracks OFF), keep the
+          // SFWDA paper-map raster, and turn the merged aop-trail-network ON as
+          // the canonical trail layer. The extracted SFWDA trace trails
+          // (sfwda-trace-trails) stay out of every preset (default OFF). OSM
+          // service + named points were not in the user's list, so left ON.
+          showOsmPark: false,
+          showOsmTracks: false,
           showOsmService: true,
           showOsmNamed: true,
           showSfwda: true,
-          showTrails: true,
-          // pwa_qa item 13: Trace is the source-comparison view (OSM tracks +
-          // SFWDA paper trace). Keep the gold network explicitly OFF here so a
-          // Park→Trace switch doesn't leak it on top of the alignment refs.
-          showAopTrailNetwork: false,
-          showBoundaries: true,
+          // Legacy publish-trails demo segments OFF here too (as in Park/Topo)
+          // so only the merged gold network draws as the trail "truth".
+          showTrails: false,
+          showAopTrailNetwork: true,
+          showBoundaries: false,
           showTrailheads: true,
           showEditorPois: true
         },
@@ -5558,6 +5592,14 @@
           'publish-boundary-fill': { 'fill-color': '#fff0b8', 'fill-opacity': 0.03 },
           'publish-boundaries': { 'line-color': '#fff0b8', 'line-width': 3.4, 'line-opacity': 1 },
           'publish-trails': { 'line-color': '#ffb347', 'line-width': 4, 'line-opacity': 1 },
+          // pwa_qa_2 item 5: merged gold network is now ON in Trace as the
+          // canonical trail layer. Reset it to its baked per-difficulty colour
+          // (green/blue/black/orange) — same as Park — so a Topo→Trace switch
+          // doesn't carry Topo's flat-orange override onto the paper backdrop.
+          'aop-trail-network': { 'line-color': ['coalesce', ['get', 'color'], '#888888'], 'line-width': 3.4, 'line-opacity': 0.95 },
+          // Trail-number labels read over the busy SFWDA paper map: cream text
+          // on a near-black halo, matching the other Trace label overrides.
+          'aop-trail-network-labels': { 'text-color': '#fff0b8', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
           'publish-trailheads': { 'circle-color': '#ffe08a', 'circle-radius': 7, 'circle-opacity': 1 },
           'osm-park-outline': { 'line-color': '#d4ff86', 'line-width': 2.4 },
           'osm-tracks': { 'line-color': '#ff6b3d', 'line-width': 3, 'line-opacity': 0.98 },
@@ -7543,8 +7585,13 @@
       }
       if (bottomEl) {
         const r = bottomEl.getBoundingClientRect();
-        // Always pinned bottom; treat its top edge as the visible bottom.
-        bottom = Math.min(bottom, r.top);
+        // pwa_qa_2 item 1 root-cause fix: `.message` has been display:none
+        // since V5, so its rect is all-zero (top 0). The old unconditional
+        // `Math.min(bottom, 0)` collapsed the whole visible slice to bottom=0,
+        // which made visibleMapPadding()'s bottom enormous and yanked every
+        // event flyTo target upward, then panPopupIntoView jerked to fit a
+        // zero-height slice. Only a GENUINELY rendered bottom bar should eat in.
+        if (r.height > 0) bottom = Math.min(bottom, r.top);
       }
       return { top, bottom, left, right };
     }
@@ -7653,7 +7700,12 @@
         const slice = visibleMapRect();
         const sliceWidth = Math.max(0, slice.right - slice.left);
         const popupMax = Math.max(200, Math.min(280, sliceWidth - 28));
-        const popup = new maplibregl.Popup({ maxWidth: `${popupMax}px` })
+        // pwa_qa_2 item 1: pin the popup to a FIXED `bottom` anchor so it always
+        // opens above the start point. Default auto-anchor recomputes on every
+        // `move` frame and flips the popup side mid-flight — that re-anchoring
+        // is the "jerks around" the user saw. `focusAfterOpen:false` stops the
+        // popup stealing focus and nudging the fixed map.
+        const popup = new maplibregl.Popup({ maxWidth: `${popupMax}px`, anchor: 'bottom', offset: 14, focusAfterOpen: false })
           .setLngLat(popupCoord)
           .setHTML(sessionPopupHtml(feature.properties))
           .addTo(map);
@@ -7663,12 +7715,12 @@
           persistViewerSessionState({ active_event_session_id: null });
           if (eventScheduleConfig && eventScheduleData) renderEventSchedule(eventScheduleConfig, eventScheduleData);
         });
-        // After the fitBounds/flyTo settles, scroll the popup into the
-        // unoccluded slice if narrow-screen chrome is clipping it. Belt-and-
-        // braces: a second pan ~1.2 s in catches the case where moveend
-        // fired before the popup element finished sizing.
+        // ONE corrective pan after the flight settles, to slide the popup fully
+        // into the unoccluded slice if narrow-screen chrome is clipping it.
+        // panPopupIntoView already measures inside requestAnimationFrame, so the
+        // popup element is sized by the time it runs — the old extra setTimeout
+        // pan ~1.2 s later was a second, visible jerk and is gone.
         map.once('moveend', () => panPopupIntoView(popup));
-        setTimeout(() => panPopupIntoView(popup), 1200);
       }
     }
 

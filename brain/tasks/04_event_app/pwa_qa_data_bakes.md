@@ -72,6 +72,33 @@ so they get their own card instead of blocking the chrome swarm.
 - Cross-links: `research/aop_data_bounds.md`, `data_integrity_publishability.md`
   (item 10 DEM swap lives there too), `research/viewer.md`.
 
+## Item E (from pwa_qa_2.md item 7) — bake Ellis Cemetery info into the derived set
+
+> "bake info from ellis cementary into our derived dataset. stop showing other
+> cementaries on the 9 patch in the [park preset]"
+
+- **Routed here 2026-05-31** from `pwa_qa_2.md` — data-pipeline, not viewer chrome.
+- **Current state:** `website/data/aop_cemeteries.geojson` carries 8 features =
+  4 cemeteries each doubled (Tate, Gilliam, Bible, **Ellis**), all with the same
+  parcel-derived prop set (`parcel_id`, `parcel_owner`, `acres`, `aop_inholding`,
+  `note`, …). Ellis is the **AOP inholding** (parcel 110 008.04, 0.12 ac) and is
+  ALREADY published as a POI via `mvp/scripts/seed_core_pois.sql`
+  (`core.pois` → `publish.pois`, the rich blurb lives there).
+- **What "bake info … into our derived dataset" means:** promote Ellis's authored
+  detail (the burial/inholding context) into the derived/published cemetery layer
+  itself — not only the POI point — so a fresh static install carries it without
+  the seed SQL. Decide the source of the richer info: the handoff's owed
+  **USGenWeb Ellis burial roster** (`northstar/source_register.md` lists it as a
+  raw source still owed a `source_register.sources` row before any publish). Hold
+  to `source_register.md`: a roster promotes through `raw → core → publish`, and
+  publishability is gated on permission/confidence.
+- **First step:** confirm whether the doubling in `aop_cemeteries.geojson` is
+  marker+polygon or an accidental dup before baking (avoid baking a dup).
+- **The paired "stop showing other cemeteries on the 9-patch" is RETRACTED** —
+  `pwa_qa_2.md` item 9: the user likes the other cemeteries showing and is still
+  deciding. Do NOT add a hide/filter for Tate/Gilliam/Bible. (Also honors
+  `no_limiting_code_mvp.md` — no data-rejecting constraint.)
+
 ## Done-when
 
 - Item 4: a fresh static install renders region callouts from the baked geojson;
@@ -81,3 +108,6 @@ so they get their own card instead of blocking the chrome swarm.
 - Item 17: at the worst-case viewport aspect ratios, the fitted camera shows map
   data to every edge — no cream band — with `REGION_BOUNDS` widened to match the
   new imagery AOI.
+- Item E: Ellis Cemetery's authored detail rides in the derived/published
+  cemetery dataset (provenance recorded per `source_register.md`); the other
+  cemeteries stay visible (hide retracted); no dup baked.
