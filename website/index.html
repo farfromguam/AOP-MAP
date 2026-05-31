@@ -52,12 +52,17 @@
     }
     body, html { margin: 0; padding: 0; height: 100%; font-family: Inter, system-ui, sans-serif; }
     /* Map bleeds to the full viewport (incl. under the notch / home indicator).
-       position:fixed + inset:0 is keyed to the visual viewport, so it stays
-       gap-free in an iOS standalone PWA where html/body height:100% can fall
-       short of the screen under viewport-fit=cover. Body background matches the
-       map base so no stray strip can show even for a frame. */
+       position:fixed + inset:0 is keyed to the visual viewport. The explicit
+       height: 100dvh (with a 100vh fallback for older iOS) forces the container
+       to the full screen height even when an iOS standalone PWA reports a
+       bottom:0 that lands above the home indicator — without it the cream body
+       background shows through in that band. We also call map.resize() on
+       resize/orientationchange/visualViewport (see resyncViewport) so MapLibre's
+       canvas grows to match once iOS finalizes the standalone viewport. Body
+       background matches the map base so no stray strip can show even for a
+       frame. */
     html, body { background: #efe7d5; }
-    #map { position: fixed; inset: 0; }
+    #map { position: fixed; inset: 0; height: 100vh; height: 100dvh; }
     /* Keep MapLibre's corner controls (geolocate, etc.) clear of the notch,
        status bar, home indicator, and rounded corners under viewport-fit=cover. */
     .maplibregl-ctrl-top-left    { margin-top: var(--sa-top); margin-left: var(--sa-left); }
@@ -9733,9 +9738,22 @@
       searchResults.style.top = `${rect.bottom + 4}px`;
       searchResults.style.width = `${rect.width}px`;
     }
-    window.addEventListener('resize', () => {
+    // Keep MapLibre's canvas matched to the container after the viewport
+    // changes. iOS standalone finalizes its height late (status bar / home
+    // indicator settle, rotation, return from background), and MapLibre's
+    // ResizeObserver on a position:fixed container does not always catch it —
+    // an unresized canvas leaves the cream body background showing under the
+    // home indicator. resize() is cheap and idempotent.
+    const resyncViewport = () => {
+      map.resize();
       if (searchResults.style.display === 'block') positionSearchResults();
-    });
+    };
+    window.addEventListener('resize', resyncViewport);
+    window.addEventListener('orientationchange', () => setTimeout(resyncViewport, 250));
+    window.addEventListener('pageshow', resyncViewport);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', resyncViewport);
+    }
     window.addEventListener('scroll', () => {
       if (searchResults.style.display === 'block') positionSearchResults();
     }, true);

@@ -1,3 +1,5 @@
+all comparison mockups should be put on the right sidebar with a link the the item to look at. I will review and pull attributes from each different column.
+
 bottom row items should all fit on one horizontal row.
 make a few mockups to compare this. minimal. 
 
@@ -88,9 +90,7 @@ event name  start date - end date.
 
 ---
 
-all comparison mockups should be put on the right sidebar with a link the the item to look at. I will review and pull attributes from each different column.
 
----
 
 ## iOS bottom padding (home indicator) — RESOLVED 2026-05-30
 
@@ -112,6 +112,28 @@ minimal margin instead of clearing the full inset.
 Verified with Playwright at 393×852 + a simulated 34px inset: gap below the
 message = 8px at both 0 and 34px insets, 0 console errors. Superseded the prior
 `max(12px, var(--sa-bottom))` "v5" approach.
+
+Second fix — cream bar under the home indicator (separate from the card
+positions). Pulling the cards down did NOT clear it. Root cause: on a real iOS
+standalone PWA the map's `position:fixed; inset:0` container's `bottom:0` lands
+ABOVE the home indicator and/or MapLibre sized the canvas before iOS finalized
+the standalone viewport, so the cream `body`/`#map` background shows in the band.
+Chromium can't reproduce it (canvas == container == innerHeight, bottom strip
+renders map terrain not cream), so it's iOS-standalone-specific. Two-part fix in
+`website/index.html`:
+- CSS: `#map { position: fixed; inset: 0; height: 100vh; height: 100dvh; }` —
+  the explicit dynamic-viewport height forces the container to full screen even
+  when `inset:0`'s bottom is short (dvh overrides vh where supported; vh is the
+  fallback for older iOS).
+- JS: new `resyncViewport()` calls `map.resize()` on `resize`,
+  `orientationchange` (250ms deferred), `pageshow`, and `visualViewport` resize.
+  The old handler only repositioned the search dropdown and never resized the
+  map, so a late iOS viewport change left the canvas short.
+Verified in Chromium: growing the viewport 852→900 now drives the canvas height
+to match (was static before), 0 console/page errors. Needs on-device confirm. If
+a cream band STILL shows after this, the remaining suspect is map data-coverage
+(camera panned past the raster bounds → `#efe7d5` background layer), which is a
+different fix (extend data / change background-layer colour), not safe-area.
 
 iOS 26 note (the "home row thing" the user noticed): iOS 26 / iPadOS 26 made the
 Home indicator AUTO-HIDE — it fades after you switch into an app and only returns
