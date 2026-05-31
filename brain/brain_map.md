@@ -48,7 +48,7 @@ brain/
 
 `research/viewer.md` is the catalog for the static MapLibre viewer (`website/index.html`): every layer, where its data comes from, and which doc records how it was built. Read it before adding or changing a viewer layer.
 
-`spinup/mvp_runbook.md` is the durable local MVP runbook. Use it for CWC checks, Docker/PostGIS startup, QGIS connection settings, port collisions, publish export checks, and viewer spinup. `spinup/add_image_to_viewer.md` is the runbook for putting a new raster icon on the map; `spinup/viewer_storage_migration.md` is the forward-only rule for bumping `aop_*_v1` localStorage keys and `aop-*-v1` bundle schemas.
+`spinup/mvp_runbook.md` is the durable local MVP runbook. Use it for CWC checks, Docker/PostGIS startup, QGIS connection settings, port collisions, publish export checks, and viewer spinup. `spinup/add_image_to_viewer.md` is the runbook for putting a new raster icon on the map; `spinup/viewer_storage_migration.md` is the forward-only rule for bumping `aop_*_v1` localStorage keys and `aop-*-v1` bundle schemas. `spinup/working_pwa_css.md` is the **locked known-good iOS-PWA layout snapshot** (build `v13-dbg`, 2026-05-30) — the verbatim full-bleed map + safe-area chrome + bottom-bar CSS/markup, with the hard-won rules (no `height:100%`, `100vh` PWA vs `100dvh` tab, `position:fixed` bottom chrome). Diff against it if the PWA layout regresses; do NOT edit its standalone rules to chase a Safari-tab bug without re-confirming the PWA on-device.
 
 Sprint 03 is closed. Its reviewed cards live in `tasks/03_event_app/_done/`,
 with `tasks/03_event_app/misc_3.md` left active by request. Sprint 04 starts at

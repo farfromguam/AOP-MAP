@@ -113,6 +113,11 @@ review our icons and ensure they all have similar line weights.
 
 ---
 
+the bottom left icon expanded content overflows the edit button.
+it should give it some breathing room. 
+
+---
+
 
 ## iOS bottom padding (home indicator) — RESOLVED 2026-05-30
 

@@ -48,6 +48,7 @@ TL;DR:
 - cemetery, Ellis Cemetery, hole in the plot, inholding, carve-out, interior ring, gap in the boundary: `research/aop_ellis_cemetery.md`, then `tasks/01_mvp/_done/cemeteries_layer.md`
 - forest, land cover, 9-patch land cover, vegetation, tree canopy, canopy height, CHM, lidar canopy, hag, PDAL, NAIP, vectorize satellite, classification, Muted Earth palette, viewer restyle: `tasks/01_mvp/_done/landcover_layer.md`, then `research/viewer.md`
 - print map, wall map, whiteboard validation, board markup: `northstar/map_northstar.md`, then `tasks/01_mvp/_done/aop_south_pittsburg_map_build_card.md`
+- PWA, iOS PWA, installed app, add to home screen, standalone, full-bleed map, viewport-fit cover, safe area, env(safe-area-inset), notch, home indicator, red bar, red band, bottom bleed-through, bottom bar, FAB baseline, pencil FAB, ⓘ attribution alignment, 100dvh vs 100vh, position fixed panel, dbg overlay, on-device viewport math, black-translucent status bar, working pwa css: `spinup/working_pwa_css.md`, then `brain/handoff/session_context.md` (2026-05-30 blocks)
 
 ## Working method
 

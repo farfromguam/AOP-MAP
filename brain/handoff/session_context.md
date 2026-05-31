@@ -96,6 +96,24 @@ phone.** Files: `website/index.html` + `website/sw.js` (VERSION v12→v13).
   `innerH − getBoundingClientRect().bottom` for both icons so the phone can confirm
   alignment by number. Desktop shows `18 / 18`; the phone MUST now also show equal numbers
   (was 12 / 62). **Strip this line with the other diagnostics at closeout.**
+- **PWA LAYOUT LOCKED → snapshot saved.** User called the PWA styles "on point." The
+  full working iOS-PWA markup + CSS (verbatim, annotated, with the five hard-won rules and
+  the diagnostics-to-strip list) is now `brain/spinup/working_pwa_css.md`, pointed to from
+  `brain_map.md` + `search_map.md`. This is the restore point — diff against it if the PWA
+  layout ever regresses. **Not git-committed** (diagnostics still live; commit is the
+  closeout step — offered to the user).
+
+**PHASE 2 (next) — iOS SAFARI TAB (non-standalone) layout needs work.** PWA is done; the
+browser-tab path is the new target. Differences to expect: the `@media (display-mode:
+standalone)` override does NOT apply, so `html,body,#map` stay at `100dvh` (the
+collapsing Safari address/toolbar path); `apple-mobile-web-app-status-bar-style` is inert;
+and iOS Safari's `env(safe-area-inset-bottom)` flips with the bottom toolbar (≈0 when the
+toolbar is shown, home-indicator height when minimized) — likely culprit for the bottom
+bar (ⓘ + FAB) colliding with / hiding behind the toolbar. **Per the phase-1 lesson, get
+device ground truth FIRST:** a Safari-tab screenshot + the `#dbgOverlay` readout
+(`standalone:false` + the fromBot numbers). Do NOT theorise-and-edit; do NOT touch the
+locked standalone rules without re-confirming the PWA on-device. Bump to `v14-dbg` when
+Safari edits land.
 
 **2026-05-30 (triage) — Sprint 04 reviewed and sorted (no code).** Every card in
 `tasks/04_event_app/` was assessed done / partial / not-done and moved.
