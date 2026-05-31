@@ -89,7 +89,14 @@
        status bar + home indicator. UI chrome stays clear of the reserved areas via
        env(safe-area-inset-*) padding on the controls (below). resyncViewport still
        calls map.resize() on rotate / return-from-background. */
-    html, body { background: #ff0033; } /* DIAGNOSTIC: red = body bleed-through. Verified covered in the PWA (no red). Revert to a map-toned neutral once the layout is locked. */
+    /* Resting background = the manifest's background_color (#F5EFE0 cream). In a SAFARI
+       TAB this is the color iOS samples to tint the status bar (top) + address-bar
+       toolbar (bottom) — a tab can't paint the map under that chrome (the map fills the
+       full 663px web area; Safari keeps ~149px for its own UI), so this neutral is what
+       shows there instead of the old red. In the installed PWA it's never visible (the
+       fixed map covers everything; the red probe already proved no bleed-through). Was
+       the `#ff0033` red diagnostic — retired now that both layouts are confirmed. */
+    html, body { background: #F5EFE0; }
     #map { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; }
     /* Installed PWA only: 100vh == the full screen and is correct on cold start
        (100dvh is not), which is what closes the bottom band. A browser tab keeps the
@@ -977,7 +984,7 @@
     <!-- Build version, under the download icon. Always visible (the install
          button self-hides once installed). Keep this string in sync with
          VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v13-dbg</div>
+    <div class="util-version" id="appVersion" title="App build version">v14-dbg</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->

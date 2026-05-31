@@ -103,17 +103,32 @@ phone.** Files: `website/index.html` + `website/sw.js` (VERSION v12→v13).
   layout ever regresses. **Not git-committed** (diagnostics still live; commit is the
   closeout step — offered to the user).
 
-**PHASE 2 (next) — iOS SAFARI TAB (non-standalone) layout needs work.** PWA is done; the
-browser-tab path is the new target. Differences to expect: the `@media (display-mode:
-standalone)` override does NOT apply, so `html,body,#map` stay at `100dvh` (the
-collapsing Safari address/toolbar path); `apple-mobile-web-app-status-bar-style` is inert;
-and iOS Safari's `env(safe-area-inset-bottom)` flips with the bottom toolbar (≈0 when the
-toolbar is shown, home-indicator height when minimized) — likely culprit for the bottom
-bar (ⓘ + FAB) colliding with / hiding behind the toolbar. **Per the phase-1 lesson, get
-device ground truth FIRST:** a Safari-tab screenshot + the `#dbgOverlay` readout
-(`standalone:false` + the fromBot numbers). Do NOT theorise-and-edit; do NOT touch the
-locked standalone rules without re-confirming the PWA on-device. Bump to `v14-dbg` when
-Safari edits land.
+**PHASE 2 — iOS SAFARI TAB (`v14-dbg`) — diagnosed + red retired.** Device screenshot
+`IMG_0719.PNG` + its `#dbgOverlay` gave ground truth: `standalone:false`, `innerH 663 /
+clientH 663 / vv 663 @top0`, `screenH 812`, `#map t0 b663 h663`, `canvas h663`,
+`safe T0 B0`, `ⓘ fromBot 18  ✎ fromBot 18`.
+- **There is NO "short map" bug.** `#map` is `100dvh` = **663px** in the tab, and it fills
+  it exactly (`#map h663` == `innerH 663` == `vv 663`). The missing `812 − 663 = 149px` is
+  **Safari's own chrome** — top status bar (~50) + bottom address-bar toolbar (~99). A page
+  in a Safari TAB cannot paint under that chrome (the PWA can, hence full 812). User asked
+  "is there code to make it short?" — answer logged: no, it's Safari reserving the space.
+- **The red bands were the diagnostic body bg.** iOS Safari tints its status bar + toolbar
+  by sampling the page background; `html,body{background:#ff0033}` made both chrome zones
+  red. **FIX: retired the red → manifest cream `#F5EFE0`** (`html,body{background:#F5EFE0}`).
+  Invisible in the PWA (fixed map covers it); in the tab it's the neutral tint Safari shows
+  in its chrome. Verify on device: bands should now read cream, not red. **The map cannot
+  be made to fill Safari's chrome in a tab — that is by design, not a bug.**
+- **Considered + rejected (don't re-litigate):** switching the tab to `#map{height:100vh}`
+  to paint under the bottom toolbar — the §3 working-CSS comment already rejects it ("100vh
+  runs too tall in a tab", bottom hidden behind the bar). Allowing scroll to minimize the
+  toolbar (grows dvh) is out — we are deliberately `overflow:hidden`, no scroll, and it's
+  janky. iOS `apple-mobile-web-app-status-bar-style` is inert in a tab.
+- **STILL-LIVE diagnostics after this:** `#1e66ff` map background paint, the `#dbgOverlay`
+  div + JS (incl. the `fromBot` line), the `-dbg` suffix. Closeout = strip those + drop
+  `-dbg` + commit. The red body bg is already retired.
+- **OPEN for the user:** confirm the cream chrome reads right in Safari (and pick a
+  different map-toned neutral if cream clashes with the default blue-water view — trivial
+  one-liner). Then decide whether anything else about the Safari-tab look needs work.
 
 **2026-05-30 (triage) — Sprint 04 reviewed and sorted (no code).** Every card in
 `tasks/04_event_app/` was assessed done / partial / not-done and moved.
