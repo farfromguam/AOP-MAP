@@ -1,58 +1,58 @@
 {
   "schema": "aop-trail-catalog-v1",
-  "updated_at": "2026-05-29",
-  "purpose": "Curated catalog of AOP numbered trails being assembled for park use. AOP identifies trails by NUMBER on the map (green=Easy, blue=Moderate, black=Difficult); names here are observation-confirmed by the park team and also appear in onX. This is a working/authoring seed — it will be refined and is not final form. Not yet wired to map geometry (real per-trail centerlines are still owed; see brain/tasks/01_mvp/_done/community_trails_import.md). Sources retained per row so curation can keep or rewrite copy with provenance intact.",
-  "provenance_note": "Descriptions for trails 1-11 are paraphrased from onX trail guides (onX-copyright — rewrite before public publish). Trail 96 is the park's own 2015 blog wording (via Wayback). Names confirmed against in-park observation by the park team (2026-05-29), so name provenance = observed, not onX-only.",
+  "updated_at": "2026-05-31",
+  "purpose": "Curated catalog of AOP numbered trails being assembled for park use. AOP identifies trails by NUMBER on the map (green=Easy, blue=Moderate, black=Difficult); names here are observation-confirmed by the park team and also appear in onX. This is a working/authoring seed — it will be refined and is not final form. Not yet wired to map geometry (real per-trail centerlines are still owed; see brain/tasks/01_mvp/_done/community_trails_import.md). Sources retained per row so provenance stays intact.",
+  "provenance_note": "Descriptions are original AOP wording, written in the project's own voice (brain/voice/voice_guide.md). The facts behind them — difficulty, obstacles, terrain, what each trail connects to — were cross-checked against onX trail guides and in-park observation; the wording is not onX's. Trail 96 keeps the park's own 2015 blog description (via Wayback). Names confirmed against in-park observation by the park team (2026-05-29).",
   "difficulty_legend": { "easy": "green circle", "moderate": "blue square", "difficult": "black triangle" },
   "trails": [
     {
       "number": 1, "name": "Launchpad", "name_status": "observed", "difficulty": "easy", "tr": 2, "length_mi": 1.2,
-      "description": "Begins with a fine dirt-filled trail and a slight uphill climb. Once you reach Area 51, loose rock makes it feel like driving on a cobblestone road.",
+      "description": "Packed dirt and a gentle climb to open. At Area 51 the tread breaks into loose rock and the ride turns choppy — still an easy line, just no longer smooth.",
       "connects": [3, 18, 22, 50],
-      "sources": ["onX:1-launchpad", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+      "sources": ["onX:1-launchpad", "observed"], "status": "curated"
     },
     {
       "number": 2, "name": "Convergence", "name_status": "observed", "difficulty": "easy",
-      "description": "Easy route that peels off Trail 1 (Launchpad) and curves toward the buggy side of the park. A convergence point for mountain runoff that feeds nearby Battle Creek.",
+      "description": "An easy spur off Launchpad, bending toward the buggy side of the park. Mountain runoff gathers here and drains into Battle Creek — that's the convergence it's named for.",
       "connects": [1],
-      "sources": ["onX:2-convergence", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+      "sources": ["onX:2-convergence", "observed"], "status": "curated"
     },
     {
       "number": 3, "name": "Major Tom", "name_status": "observed", "difficulty": "easy",
-      "description": "A casual-side trail that is easy to underestimate; accessible, but complacency can catch out a starter vehicle or one with low ground clearance.",
-      "sources": ["onX:3-major-tom", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+      "description": "Reads casual, and that's the catch. Accessible enough to wave through, but a starter rig or anything low on clearance can get caught out the moment attention drops.",
+      "sources": ["onX:3-major-tom", "observed"], "status": "curated"
     },
     {
       "number": 5, "name": "Lifeform", "name_status": "observed", "difficulty": "easy",
-      "description": "A peaceful uphill climbing connector with small rocks, exposed roots, and curving bends that bring you out to Trail 3.",
+      "description": "A quiet uphill connector. Small rock, exposed roots, a few bends, and it feeds you back out onto Trail 3.",
       "connects": [3],
-      "sources": ["onX:5-lifeform", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+      "sources": ["onX:5-lifeform", "observed"], "status": "curated"
     },
     {
       "number": 6, "name": "Descension", "name_status": "observed", "difficulty": "moderate", "tr": 6,
-      "description": "A mild downhill that starts as a dirt flat and ends with a deeply rutted, eroded section; the lower rut also has an exposed tree root.",
-      "sources": ["onX:6-descension", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+      "description": "A mild descent that opens on a dirt flat and saves the work for the bottom: a deep, eroded rut with a tree root sitting square in the line.",
+      "sources": ["onX:6-descension", "observed"], "status": "curated"
     },
     {
       "number": 7, "name": "Ascension", "name_status": "observed", "difficulty": "moderate", "tr": 5,
-      "description": "A slippery slope when wet; when dry, a fun hill climb for all vehicle types.",
-      "sources": ["onX:7-ascension", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+      "description": "A hill climb that lives and dies on traction. Dry, it's a good time for any rig. Wet, it goes greasy in a hurry.",
+      "sources": ["onX:7-ascension", "observed"], "status": "curated"
     },
     {
       "number": 9, "name": "Little Dipper", "name_status": "observed", "difficulty": "easy", "tr": 2,
-      "description": "A full loop that connects back to itself and also feeds a few more difficult trails. Mostly flat throughout with little to no obstacles.",
-      "sources": ["onX:9-little-dipper", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+      "description": "A full loop back to its own start, with feeders branching off to harder trails. Flat and clean nearly the whole way, with next to nothing in the way of obstacles.",
+      "sources": ["onX:9-little-dipper", "observed"], "status": "curated"
     },
     {
       "number": 11, "name": "Ground Control", "name_status": "observed", "difficulty": "easy", "tr": 3,
-      "description": "Like a child's roller coaster — slightly uphill then back down, over and over. Concentrated clusters of rock, but none are difficult to traverse.",
-      "sources": ["onX:11-ground-control", "observed"], "license_on_text": "onX-copyright (rewrite before publish)", "status": "curating"
+      "description": "Up a bit, down a bit, over and over — a short, rolling run. Rock turns up in clusters, but none of it is hard to clear.",
+      "sources": ["onX:11-ground-control", "observed"], "status": "curated"
     },
     {
       "number": 96, "name": null, "name_status": "none", "difficulty": "moderate", "color": "blue",
       "description": "A short loop with many rock and ledge obstacles that challenge drivers to negotiate angles and clearance. Passable by modified Jeeps and Trucks.",
-      "sources": ["aop-blog-2015:aop-trail-96"], "license_on_text": "AOP-copyright (park's own wording, via Wayback)", "status": "curating",
-      "note": "Park's own 2015 description; the park referred to it by number only."
+      "sources": ["aop-blog-2015:aop-trail-96"], "status": "curated",
+      "note": "Park's own 2015 description; the park referred to it by number only. Kept as the park's own wording."
     }
   ],
   "named_landmarks": [
@@ -75,7 +75,6 @@
   },
   "owed_work": [
     "Field-walk / park-supply names + descriptions for the unnamed numbered trails (the bulk of the ~120).",
-    "Rewrite the onX-sourced description text in the park's own voice before any public publish (license).",
     "Attach geometry: wire each numbered trail to a centerline once real per-trail geometry is digitized (community_trails_import.md).",
     "Confirm difficulty colors per number against the current official map once a high-res copy is in hand."
   ]

@@ -21,7 +21,7 @@
  * them on every release would waste the user's data.
  */
 
-const VERSION = 'v18'; // keep in sync with #appVersion in index.html
+const VERSION = 'v19'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
@@ -68,6 +68,9 @@ const DATA_ASSETS = [
   './data/aop_brand_logos.geojson',
   './data/aop_editor_seed_pois.geojson',
   './data/aop_event_schedule.json',
+  './data/aop_about.json',
+  './data/aop_ui_strings.json',
+  './data/aop_copy_registry.json',
   './data/osm_aop_9patch.geojson',
   './data/osm_aop_named.geojson',
   './data/sfwda_aop_trail_map.webp',
