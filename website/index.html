@@ -985,7 +985,7 @@
                tab-switch height jump. -->
           <div id="calendarToggle" class="calendar-heading" aria-controls="calendarBody">
             <span>
-              <span class="calendar-title">Rock Warblers Trail Blazing Invitational</span>
+              <span class="calendar-title" id="calendarTitle">Rock Warblers Trail Blazing Invitational</span>
               <span class="calendar-range" id="calendarRange">Friday, June 19, 2026 – Sunday, June 21, 2026</span>
             </span>
           </div>
@@ -1006,20 +1006,12 @@
         <div id="poiResizeHandle" class="lr-resize-handle" role="separator" aria-label="Resize POI list" aria-orientation="horizontal" aria-controls="poiList" aria-valuenow="240" tabindex="0"></div>
       </div>
       <div id="aboutTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabAbout" hidden>
+        <!-- About copy is rendered from website/data/aop_about.json by renderAbout()
+             (see the copy-data bootstrap script near the end of <body>). The single
+             line below is a no-JS / fetch-failure fallback only; the authored copy
+             lives in the JSON, not here. -->
         <div class="info-panel" id="aboutInfoPanel">
-          <h2>About the Rock Warblers</h2>
-          <p class="info-copy">Friday, June 19, 2026 we host the <a href="https://www.facebook.com/events/adventure-offroad-park-nature-center/rock-warblers-trail-blazing-invitational/4541595172728436/" target="_blank" rel="noopener noreferrer">Trail Blazing Invitational</a> at Adventure Off Road Park &mdash; a Rock Warblers crawl on the Tennessee ridge with gated stages, real terrain, and a campfire night run to close it out.</p>
-          <ul class="info-list">
-            <li><span class="info-label">Format</span><span>Three numbered stages, time-run. Gate touches, rolls, and driver assists cost you. Winching is free.</span></li>
-            <li><span class="info-label">Mandatory skills</span><span>Water, a grade pull, and a taco-stand inside every stage.</span></li>
-            <li><span class="info-label">Trail buddies</span><span>Required. Walk, mark, swap. Penalty winch travels with whoever isn&rsquo;t carrying one.</span></li>
-            <li><span class="info-label">Rigs</span><span>1/10 electric scale. 1.9&Prime; and 1.55&Prime; wheel classes. No dig, no rear steer. Five scale accessories minimum.</span></li>
-            <li><span class="info-label">Night crawl</span><span>Lights on after dusk. Leaves the pavilion, finishes at the fire.</span></li>
-            <li><span class="info-label">The park</span><span>Adventure Off Road Park &amp; Nature Center, South Pittsburg, TN. Six hundred acres of private ridge. Pavilion is base camp: registration, driver meeting, awards, and the fire pit. Camping on-site, first come.</span></li>
-            <li><span class="info-label">The map</span><span>On-day reference built from real terrain data and our own ride evidence. Use it in staging, at the pavilion, and walking a stage. Every line traces back to where it came from.</span></li>
-            <li><span class="info-label">The crew</span><span>Rock Warblers. We build the rigs, walk the stages, throw the days. Find us at the pavilion or out walking a stage.</span></li>
-          </ul>
-          <p class="info-note">Built by Rock Warblers, for Rock Warblers. See you at the pavilion.</p>
+          <p class="info-copy">About the Rock Warblers Trail Blazing Invitational at Adventure Off Road Park — loading…</p>
         </div>
         <div id="aboutResizeHandle" class="lr-resize-handle" role="separator" aria-label="Resize about" aria-orientation="horizontal" aria-controls="aboutInfoPanel" aria-valuenow="240" tabindex="0"></div>
       </div>
@@ -1056,7 +1048,7 @@
     <!-- Build version, under the download icon. Always visible (the install
          button self-hides once installed). Keep this string in sync with
          VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v18</div>
+    <div class="util-version" id="appVersion" title="App build version">v19</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
@@ -1739,6 +1731,7 @@
     // its temporal-dead-zone when the immediate fetchPoiIndex() call fires.
     let publishDataCache = null;
     let poiIndex = null;
+    let aopTrailNetworkCache = null; // gold trail network, set on map load (POI browser join target)
 
     function isPoiTabActive() {
       const panel = document.getElementById('poiTabPanel');
@@ -1765,6 +1758,41 @@
     }
     // Kick off the fetch immediately; the renderer is resilient to a null index.
     fetchPoiIndex();
+
+    // --- Trail catalog (names + descriptions) sidecar --------------------
+    // Mirrors the POI-index pattern: curated trail write-ups live in
+    // website/data/aop_trail_catalog.json and are joined to the gold trail
+    // network at runtime by trail_number, so a re-export of geometry never
+    // overwrites authored (and onX-licensed) prose. Surfaces in the trail
+    // click popup, the left POI browser trails group, and (catalog is the
+    // source of truth for the copy-review page). Card:
+    // brain/tasks/04_event_app/trail_research_integration.md.
+    let trailCatalog = null; // Map<number → catalog trail entry>
+    async function fetchTrailCatalog() {
+      if (trailCatalog) return trailCatalog;
+      trailCatalog = new Map();
+      try {
+        const response = await fetch('./data/aop_trail_catalog.json');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const cat = await response.json();
+        (cat.trails || []).forEach((t) => { if (t.number != null) trailCatalog.set(Number(t.number), t); });
+        console.info('Trail catalog loaded', trailCatalog.size, 'trails');
+      } catch (error) {
+        console.error('Trail catalog load failed', error);
+      }
+      renderPoiTabIfActive();
+      return trailCatalog;
+    }
+    fetchTrailCatalog();
+
+    // Join a gold-network feature's props to its catalog entry by trail_number
+    // (or a numeric name fallback). Null when no catalogued write-up exists.
+    function trailCatalogLookup(props) {
+      if (!trailCatalog || !props) return null;
+      let num = props.trail_number != null ? Number(props.trail_number) : null;
+      if (num == null && props.name != null && /^\d+$/.test(String(props.name))) num = Number(props.name);
+      return num != null ? (trailCatalog.get(num) || null) : null;
+    }
 
     // --- Unified editor tree (V3c) ---------------------------------------
     // The Map editor section is a three-bucket tree by geometry kind (Point /
@@ -2456,23 +2484,46 @@
         }
       }
 
-      // --- Trails (publish.geojson trail_centerlines) ------------------
-      if (publishDataCache && Array.isArray(publishDataCache.features)) {
-        for (const feature of publishDataCache.features) {
+      // --- Trails (gold aop-trail-network + catalog write-ups) ----------
+      // Slice 2 (trail_research_integration.md): repointed from the legacy
+      // publish.geojson trail_centerlines placeholder (2 observed GPX segments)
+      // to the GOLD network that actually renders, enriched from the trail
+      // catalog by trail_number. The network has multiple edges per number, so
+      // dedupe to one row per trail; unnamed edges (no number, no name) are
+      // skipped. The 9 catalogued trails get their write-up; the rest carry a
+      // "name/description owed" placeholder so the gap stays auditable (same
+      // convention as the POI index). Numbered trails sort first, in order.
+      if (aopTrailNetworkCache && Array.isArray(aopTrailNetworkCache.features)) {
+        const trailFeatures = aopTrailNetworkCache.features.slice().sort((a, b) => {
+          const na = a.properties && a.properties.trail_number;
+          const nb = b.properties && b.properties.trail_number;
+          if (na != null && nb != null) return Number(na) - Number(nb);
+          if (na != null) return -1;
+          if (nb != null) return 1;
+          return String((a.properties && a.properties.name) || '').localeCompare(String((b.properties && b.properties.name) || ''));
+        });
+        const seenTrails = new Set();
+        for (const feature of trailFeatures) {
           const props = feature.properties || {};
-          if (props.layer !== 'trail_centerlines') continue;
-          const entry = poiIndexLookup({ source: 'publish', layer: 'trail_centerlines', name: props.name });
+          const num = props.trail_number != null ? Number(props.trail_number) : null;
+          const name = (props.name != null && String(props.name) !== '') ? String(props.name) : null;
+          if (num == null && name == null) continue; // unnamed edge — not a directory entry
+          const key = num != null ? `n:${num}` : `name:${name}`;
+          if (seenTrails.has(key)) continue; // one row per trail (network has several edges per number)
+          seenTrails.add(key);
+          const cat = trailCatalogLookup(props);
           pushRow('trails', {
-            id: `trail:${props.id || props.name}`,
-            name: props.name || 'Trail',
+            id: `trail:${key}`,
+            name: (cat && cat.name) ? cat.name : (name || `Trail ${num}`),
             kind: props.difficulty ? `trail · ${props.difficulty}` : 'trail',
-            blurb: entry && entry.blurb ? entry.blurb : null,
-            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
-            status: props.status || props.confidence || 'observed',
-            source: 'publish.geojson',
-            caveat: null,
+            blurb: (cat && cat.description) ? cat.description : null,
+            revisitNote: (cat && cat.description) ? null
+              : 'Name / description owed — number + difficulty only on the map today.',
+            status: props.difficulty || props.review_status || 'observed',
+            source: 'aop_trail_network.geojson (gold) + aop_trail_catalog.json',
+            caveat: (cat && cat.license_on_text) ? cat.license_on_text : null,
             feature,
-            toggle: trailToggle,
+            toggle: aopTrailNetworkToggle,
             popupCoord: firstCoordinate(feature.geometry)
           });
         }
@@ -2573,8 +2624,8 @@
         const empty = document.createElement('p');
         empty.className = 'poi-empty';
         empty.textContent = poiIndex
-          ? 'No places loaded yet. Toggle layers in the right panel, or wait for the map to finish loading.'
-          : 'Loading places…';
+          ? (window.AOP_UI?.poi?.empty || 'No places loaded yet. Toggle layers in the right panel, or wait for the map to finish loading.')
+          : (window.AOP_UI?.poi?.loading || 'Loading places…');
         container.append(empty);
         return;
       }
@@ -7401,8 +7452,9 @@
       trailBtn.hidden = !haveHotspots;
       trailBtn.disabled = !haveHotspots;
       trailBtn.dataset.hotState = 'trail-hot';
-      if (trailTitle) trailTitle.textContent = trailOn ? 'Trail activity on' : 'Trail activity';
-      if (trailDetail) trailDetail.textContent = trailOn ? 'Tap to hide hotspots' : 'Where rigs spent time';
+      const HOT = window.AOP_UI?.hot || {};
+      if (trailTitle) trailTitle.textContent = trailOn ? (HOT.trail_on_title || 'Trail activity on') : (HOT.trail_idle_title || 'Trail activity');
+      if (trailDetail) trailDetail.textContent = trailOn ? (HOT.trail_on_detail || 'Tap to hide hotspots') : (HOT.trail_idle_detail || 'Where rigs spent time');
       const trailGlyph = document.getElementById('hotTrailButtonGlyph');
       if (trailGlyph) trailGlyph.textContent = trailOn ? '✓' : '❖';
       trailBtn.setAttribute('aria-label', trailOn ? 'Hide trail activity' : 'Show trail activity');
@@ -7417,12 +7469,12 @@
         if (glyph) glyph.innerHTML = '<svg viewBox="0 0 22 22" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.082 4.78A7.564 7.564 0 0 1 11 19.25 7.562 7.562 0 0 1 5.535 6.46 7.596 7.596 0 0 0 8.25 8.801a8.234 8.234 0 0 1 3.081-6.295 7.526 7.526 0 0 0 2.751 2.273Z"/><path d="M11 16.5a3.438 3.438 0 0 0 .454-6.845 5.491 5.491 0 0 0-1.765 3.25 5.476 5.476 0 0 1-1.955-.918A3.438 3.438 0 0 0 11 16.5Z"/></svg>';
         if (decision.kind === 'live') {
           const mins = (decision.target.endMs - now.getTime()) / 60000;
-          if (title) title.textContent = 'Live event';
+          if (title) title.textContent = HOT.event_live_title || 'Live event';
           if (detail) detail.textContent = `${props.title || 'Session'} · ${eventScheduleFormatMinutes(mins)} left`;
           if (status) status.textContent = selected === 'event' ? 'Event live' : 'Event live';
         } else {
           const mins = (decision.target.startMs - now.getTime()) / 60000;
-          if (title) title.textContent = 'Starting soon';
+          if (title) title.textContent = HOT.event_soon_title || 'Starting soon';
           if (detail) detail.textContent = `${props.title || 'Session'} · in ${eventScheduleFormatMinutes(mins)}`;
           if (status) status.textContent = selected === 'event' ? 'Event soon' : 'Event soon';
         }
@@ -7433,7 +7485,7 @@
         eventBtn.dataset.targetSessionId = props.session_id || '';
         const mins = (decision.target.startMs - now.getTime()) / 60000;
         if (glyph) glyph.textContent = '◷'; // upper-right circular sector
-        if (title) title.textContent = 'Next event';
+        if (title) title.textContent = HOT.event_next_title || 'Next event';
         if (detail) {
           const dayPart = props.day ? `${props.day} ` : '';
           const timePart = props.window || props.start_local || '';
@@ -7445,8 +7497,8 @@
         eventBtn.disabled = true;
         eventBtn.dataset.targetSessionId = '';
         if (glyph) glyph.textContent = '◷';
-        if (title) title.textContent = 'No event';
-        if (detail) detail.textContent = 'Trail activity available';
+        if (title) title.textContent = HOT.event_none_title || 'No event';
+        if (detail) detail.textContent = HOT.event_none_detail || 'Trail activity available';
         if (status) status.textContent = haveHotspots ? 'Trail activity' : 'No target';
         eventBtn.setAttribute('aria-label', 'No event target');
       }
@@ -7455,11 +7507,15 @@
     function renderEventSchedule(config, data) {
       const event = config?.event || {};
       calendarRange.textContent = composeEventDateRangeLabel(event);
+      // Calendar title is the event label from aop_event_schedule.json — single
+      // source with the rest of the schedule copy (was hardcoded in the markup).
+      const calendarTitleEl = document.getElementById('calendarTitle');
+      if (calendarTitleEl && event.label) calendarTitleEl.textContent = event.label;
       const sessions = (data?.features || [])
         .filter((feature) => feature.properties?.feature_kind === 'event_session')
         .sort((a, b) => Number(a.properties.sort_order || 0) - Number(b.properties.sort_order || 0));
       if (!sessions.length) {
-        calendarDays.innerHTML = '<li class="calendar-empty">No schedule rows.</li>';
+        calendarDays.innerHTML = `<li class="calendar-empty">${escapeHtml(window.AOP_UI?.calendar?.empty || 'No schedule rows.')}</li>`;
         return;
       }
       calendarDays.innerHTML = sessions.map((feature) => {
@@ -8607,7 +8663,7 @@
           }, 300);
         }
       } else {
-        calendarDays.innerHTML = '<li class="calendar-empty">Schedule unavailable.</li>';
+        calendarDays.innerHTML = `<li class="calendar-empty">${escapeHtml(window.AOP_UI?.calendar?.unavailable || 'Schedule unavailable.')}</li>`;
       }
 
       // --- USGS NHD hydrography (streams, waterbodies, springs) -----------
@@ -9225,6 +9281,7 @@
       // baked-in `color` property so cut-at-intersection pieces read as one colour.
       const aopTrailNetworkData = await fetchJson('./data/aop_trail_network.geojson', 'AOP trail network missing');
       if (aopTrailNetworkData) {
+        aopTrailNetworkCache = aopTrailNetworkData; // POI browser trails group joins against this
         map.addSource('aop-trail-network', { type: 'geojson', data: aopTrailNetworkData });
         map.addLayer({
           id: 'aop-trail-network',
@@ -9261,6 +9318,46 @@
           aopTrailNetworkToggle,
           null,
           (props) => (props.name != null ? ['trail ' + String(props.name)] : null)
+        );
+
+        // Slice 1 (trail_research_integration.md): clicking a trail had no popup.
+        // Now it shows number + difficulty (the MAP COLOR is the park's own
+        // difficulty authority — lead with it), and when the trail is catalogued
+        // the curated write-up: name, description, length, onX TR (secondary),
+        // and what it connects to. Un-catalogued trails show "write-up owed".
+        // The onX license note rides in the footer so the provenance is visible
+        // in the editor view before any public-gated, voice-rewritten build.
+        bindPopup('aop-trail-network',
+          (props) => {
+            const cat = trailCatalogLookup(props);
+            const num = props.trail_number != null ? props.trail_number
+              : (props.name != null && /^\d+$/.test(String(props.name)) ? props.name : null);
+            if (cat && cat.name) {
+              return escapeHtml(num != null && String(num) !== cat.name ? `${cat.name} (Trail ${num})` : cat.name);
+            }
+            if (props.name) return escapeHtml(`Trail ${props.name}`);
+            return num != null ? escapeHtml(`Trail ${num}`) : 'Trail';
+          },
+          (props) => {
+            const cat = trailCatalogLookup(props);
+            const rows = [
+              ['Number', props.trail_number ?? (props.name && /^\d+$/.test(String(props.name)) ? props.name : '')],
+              ['Difficulty', props.difficulty || 'unknown']
+            ];
+            if (cat) {
+              if (cat.description) rows.push(['About', cat.description]);
+              if (cat.length_mi != null) rows.push(['Length', `${cat.length_mi} mi`]);
+              if (cat.tr != null) rows.push(['onX rating', `TR${cat.tr}`]);
+              if (Array.isArray(cat.connects) && cat.connects.length) rows.push(['Connects to', cat.connects.join(', ')]);
+            } else {
+              rows.push(['Write-up', 'name / description owed']);
+            }
+            return rows;
+          },
+          (props) => {
+            const cat = trailCatalogLookup(props);
+            return cat && cat.license_on_text ? `<em>${escapeHtml(cat.license_on_text)}</em>` : '';
+          }
         );
       }
 
@@ -10718,6 +10815,87 @@
         });
       });
     }
+  </script>
+
+  <!-- Copy-data bootstrap: pull interface microcopy + the About panel out of the
+       markup and into data files, so wording lives as reviewable data (see
+       data/aop_copy_registry.json + copy_review.html). Both fetches are
+       best-effort — every string has a literal fallback already in the markup or
+       in window.AOP_UI consumers, so a missing file never breaks the viewer. -->
+  <script>
+    (function () {
+      // --- Interface microcopy (data/aop_ui_strings.json) ----------------------
+      fetch('./data/aop_ui_strings.json')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((ui) => {
+          if (!ui) return;
+          window.AOP_UI = ui;
+          if (ui.app && ui.app.title) document.title = ui.app.title;
+          const search = document.getElementById('searchInput');
+          if (search && ui.search && ui.search.placeholder) search.placeholder = ui.search.placeholder;
+          const cd = document.querySelector('.calendar-countdown-label');
+          if (cd && ui.calendar && ui.calendar.countdown_label) cd.textContent = ui.calendar.countdown_label;
+          // Initial loading placeholders (overwritten once data renders).
+          const calEmpty = document.querySelector('#calendarDays .calendar-empty');
+          if (calEmpty && ui.calendar && ui.calendar.loading) calEmpty.textContent = ui.calendar.loading;
+          const poiEmpty = document.querySelector('#poiList .poi-empty');
+          if (poiEmpty && ui.poi && ui.poi.loading) poiEmpty.textContent = ui.poi.loading;
+        })
+        .catch(() => {});
+
+      // --- About panel (data/aop_about.json) -----------------------------------
+      function renderAbout(about, panel) {
+        panel.textContent = '';
+        if (about.heading) {
+          const h = document.createElement('h2');
+          h.textContent = about.heading;
+          panel.append(h);
+        }
+        if (about.intro) {
+          const p = document.createElement('p');
+          p.className = 'info-copy';
+          if (about.intro.lead) p.append(document.createTextNode(about.intro.lead));
+          if (about.intro.link && about.intro.link.url) {
+            const a = document.createElement('a');
+            a.href = about.intro.link.url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = about.intro.link.text || about.intro.link.url;
+            p.append(a);
+          }
+          if (about.intro.tail) p.append(document.createTextNode(about.intro.tail));
+          panel.append(p);
+        }
+        if (Array.isArray(about.items) && about.items.length) {
+          const ul = document.createElement('ul');
+          ul.className = 'info-list';
+          about.items.forEach((item) => {
+            const li = document.createElement('li');
+            const label = document.createElement('span');
+            label.className = 'info-label';
+            label.textContent = item.label || '';
+            const body = document.createElement('span');
+            body.textContent = item.text || '';
+            li.append(label, body);
+            ul.append(li);
+          });
+          panel.append(ul);
+        }
+        if (about.note) {
+          const note = document.createElement('p');
+          note.className = 'info-note';
+          note.textContent = about.note;
+          panel.append(note);
+        }
+      }
+      const panel = document.getElementById('aboutInfoPanel');
+      if (panel) {
+        fetch('./data/aop_about.json')
+          .then((res) => (res.ok ? res.json() : null))
+          .then((about) => { if (about) renderAbout(about, panel); })
+          .catch(() => {});
+      }
+    })();
   </script>
   <style id="pwa-ui-lock">
     /* PWA hardening: UI controls are controls — they must never page-scroll,
