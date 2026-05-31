@@ -11,6 +11,20 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="AOP Map" />
+  <script>
+    /* Edit-mode gate. The edit FAB + panel are an authoring surface; gating them off
+       leaves the public viewer as just the map (the ⓘ attribution then spans full
+       width — see --edit-fab-reserve). Runs in <head> so the class is set before first
+       paint (no FAB flash). Default ON for now; ?edit=0 previews the public/invisible
+       layout, ?edit=1 forces editor. Production trigger (hostname / param / stored) TBD. */
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search).get('edit');
+        var editorOn = q === null ? true : q !== '0';
+        if (!editorOn) document.documentElement.classList.add('editor-off');
+      } catch (_) {}
+    })();
+  </script>
   <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
   <style>
     /* Palette tokens. Cream/brown stack used by the panel chrome, calendar
@@ -49,6 +63,12 @@
       --sa-bottom: env(safe-area-inset-bottom, 0px);
       --sa-left:   env(safe-area-inset-left, 0px);
       --sa-right:  env(safe-area-inset-right, 0px);
+
+      /* Width the bottom-right edit FAB occupies. The bottom-left ⓘ attribution caps
+         its expanded width short of this so the two never overlap. html.editor-off
+         zeroes it (below) so the attribution reclaims the full width once the FAB is
+         gated away — the layout works with the edit button present OR absent. */
+      --edit-fab-reserve: 76px;
     }
     /* Viewport height is context-split (see the display-mode override below):
        - Browser TAB → 100dvh: respects the collapsing address bar so the bottom
@@ -82,7 +102,11 @@
        status bar, home indicator, and rounded corners under viewport-fit=cover. */
     .maplibregl-ctrl-top-left    { margin-top: var(--sa-top); margin-left: var(--sa-left); }
     .maplibregl-ctrl-top-right   { margin-top: var(--sa-top); margin-right: var(--sa-right); }
-    .maplibregl-ctrl-bottom-left { margin-bottom: var(--sa-bottom); margin-left: var(--sa-left); }
+    /* V5: ⓘ attribution baseline = the bottom-right FAB's (flat 12px). Target the
+       control's own margin, not the corner container's — MapLibre also puts a 10px
+       margin on .maplibregl-ctrl, which otherwise stacks to ~22px. */
+    .maplibregl-ctrl-bottom-left { margin: 0; }
+    .maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib { margin: 0 0 12px 12px; max-width: calc(100vw - 24px - var(--sa-left) - var(--sa-right) - var(--edit-fab-reserve)); }
     .maplibregl-ctrl-bottom-right{ margin-bottom: var(--sa-bottom); margin-right: var(--sa-right); }
     .left-controls { position: absolute; left: calc(12px + var(--sa-left)); top: calc(12px + var(--sa-top)); z-index: 3; width: 340px; max-width: calc(100vw - 392px - var(--sa-left) - var(--sa-right)); display: grid; gap: 8px; }
     .left-controls * { box-sizing: border-box; letter-spacing: 0; }
@@ -269,6 +293,31 @@
     .panel-fab-pencil { display: none; } /* shown only as the collapsed mobile FAB (V5) */
     .panel-body { overflow: hidden; transition: max-height 0.26s ease; }
     .panel.collapsed .panel-body { max-height: 0; }
+    /* V5 (every width): the collapsed edit panel is a round pencil FAB pinned to the
+       bottom-right; the ⓘ attribution sits at the matching baseline in the bottom-left
+       (see .maplibregl-ctrl-bottom-left + the AttributionControl move in JS). Both use a
+       flat 12px baseline so they align and sit low. Tapping the FAB expands the panel
+       (label + Export ⧉ live inside it). */
+    .panel.collapsed {
+      left: auto; right: 12px; bottom: 12px;
+      width: 56px; height: 56px; min-width: 0; padding: 0;
+      max-width: none; max-height: none;
+      border-radius: 50%;
+      background: var(--rust);
+      box-shadow: 0 8px 22px rgba(120,52,18,0.42), 0 0 0 4px rgba(255,253,245,0.55);
+      overflow: hidden;
+    }
+    .panel.collapsed .panel-header { height: 100%; justify-content: center; gap: 0; }
+    .panel.collapsed .panel-header h1,
+    .panel.collapsed #exportAll,
+    .panel.collapsed #panelCollapse { display: none; }
+    .panel.collapsed .panel-fab-pencil { display: grid; place-items: center; color: #fff7e9; }
+    .panel.collapsed .panel-fab-pencil svg { width: 24px; height: 24px; }
+    /* Edit-mode gate (env-driven; the class is set on <html> by the head script).
+       OFF = public viewer: the edit FAB/panel is hidden and the ⓘ attribution
+       reclaims the FAB's reserved width, so the bottom bar reads correctly either way. */
+    html.editor-off .panel { display: none; }
+    html.editor-off { --edit-fab-reserve: 0px; }
     .panel label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.94rem; }
     .panel small { display: block; margin-top: 8px; color: #444; }
     .panel hr { border: 0; border-top: 1px solid #d8d8d8; margin: 10px 0; }
@@ -559,7 +608,7 @@
     .comparisons-list a:hover { border-color: var(--rust); color: var(--rust); }
     .poi-popup input { font: inherit; width: 100%; box-sizing: border-box; margin: 6px 0; padding: 3px 5px; }
     .poi-popup button { font: inherit; padding: 3px 9px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
-    .message { position: absolute; left: 12px; bottom: 12px; background: rgba(255,255,255,0.95); padding: 10px 12px; border-radius: 10px; font-size: 0.9rem; max-width: 60ch; }
+    .message { display: none; } /* V5: publish-count status dropped on every width */
     .search { position: relative; margin-bottom: 10px; }
     .left-controls .search { margin-bottom: 0; width: 100%; }
     .search input { width: 100%; box-sizing: border-box; padding: 8px 10px 8px 32px; font: inherit; border: 1px solid var(--control-border); border-radius: 7px; background: var(--control-bg); color: var(--brown-ink); }
@@ -720,33 +769,9 @@
       .lr-content-col { --lr-card-body-height: 160px; }
       .info-panel { padding: 9px; }
       .hot-button { min-height: 54px; padding: 7px 8px; }
-      /* V5 bottom treatment (narrow viewports only):
-         - COLLAPSED edit panel = a round pencil FAB in the bottom-right corner.
-           It is interactive, so it docks above the ~34px home-indicator zone.
-         - Tapping it expands the full-width panel upward as before; the label +
-           Export (⧉) live inside the open panel.
-         - The "N publish features loaded" status text is dropped (.message hidden).
-         - MapLibre's bottom-right attribution ⓘ is nudged left so it clears the
-           FAB — the count is gone but source credits stay one tap away. */
+      /* Expanded edit panel fills the bottom on narrow viewports. The collapsed
+         FAB + the ⓘ attribution baseline are universal now — see base styles. */
       .panel { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); top: auto; bottom: calc(8px + var(--sa-bottom)); width: auto; max-width: none; max-height: clamp(220px, calc(100vh - 360px - var(--sa-top) - var(--sa-bottom)), 420px); }
-      .panel.collapsed {
-        left: auto; right: calc(12px + var(--sa-right));
-        bottom: calc(12px + var(--sa-bottom));
-        width: 56px; height: 56px; min-width: 0; padding: 0;
-        max-width: none; max-height: none;
-        border-radius: 50%;
-        background: var(--rust);
-        box-shadow: 0 8px 22px rgba(120,52,18,0.42), 0 0 0 4px rgba(255,253,245,0.55);
-        overflow: hidden;
-      }
-      .panel.collapsed .panel-header { height: 100%; justify-content: center; gap: 0; }
-      .panel.collapsed .panel-header h1,
-      .panel.collapsed #exportAll,
-      .panel.collapsed #panelCollapse { display: none; }
-      .panel.collapsed .panel-fab-pencil { display: grid; place-items: center; color: #fff7e9; }
-      .panel.collapsed .panel-fab-pencil svg { width: 24px; height: 24px; }
-      .message { display: none; }
-      .maplibregl-ctrl-bottom-right { margin-right: calc(76px + var(--sa-right)); }
     }
     @media (min-width: 1024px) {
       .left-controls { width: 360px; }
@@ -937,7 +962,7 @@
     <!-- Build version, under the download icon. Always visible (the install
          button self-hides once installed). Keep this string in sync with
          VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v10-dbg</div>
+    <div class="util-version" id="appVersion" title="App build version">v12-dbg</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
@@ -1313,8 +1338,11 @@
       center: [-85.75, 35.0925],
       zoom: 12,
       bearing: -90,
-      maxBounds: REGION_BOUNDS
+      maxBounds: REGION_BOUNDS,
+      attributionControl: false
     });
+    // V5: attribution lives bottom-left as a compact ⓘ, clear of the bottom-right edit FAB.
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
 
     // Field "where am I" — blue dot + accuracy halo + follow mode. Position comes
     // from the device GPS chip, so it works offline at the park; it only needs a
@@ -1341,7 +1369,7 @@
     // build's control carries the `maplibregl-compact` class even when wide, so
     // the width check, not the class, is what scopes this to phones).
     const collapseAttribOnce = () => {
-      if (window.innerWidth > 640) return;   // desktop: leave the full attribution bar
+      // V5: collapse to the compact ⓘ on every width (desktop now matches mobile).
       const el = document.querySelector('.maplibregl-ctrl-attrib.maplibregl-compact');
       if (!el) return;
       el.classList.remove('maplibregl-compact-show');

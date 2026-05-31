@@ -109,6 +109,9 @@ on tall phones or wide monitors our 9 patch is not enough coverage to not see th
 we need to extend the 9 patch to ~bigger.
 
 ---
+review our icons and ensure they all have similar line weights. 
+
+---
 
 
 ## iOS bottom padding (home indicator) — RESOLVED 2026-05-30
