@@ -61,7 +61,7 @@
        canvas grows to match once iOS finalizes the standalone viewport. Body
        background matches the map base so no stray strip can show even for a
        frame. */
-    html, body { background: #efe7d5; }
+    html, body { background: #ff0033; } /* DIAGNOSTIC: was #efe7d5 — red = body showing through */
     #map { position: fixed; inset: 0; height: 100vh; height: 100dvh; }
     /* Keep MapLibre's corner controls (geolocate, etc.) clear of the notch,
        status bar, home indicator, and rounded corners under viewport-fit=cover. */
@@ -902,7 +902,7 @@
     <!-- Build version, under the download icon. Always visible (the install
          button self-hides once installed). Keep this string in sync with
          VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v5</div>
+    <div class="util-version" id="appVersion" title="App build version">v6-dbg</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
@@ -964,6 +964,7 @@
         </div>
         <div class="section-content">
           <div class="comparisons-list">
+            <a href="bottombar_compare.html" target="_blank" rel="noopener">Bottom bar — one row (V1–V4)</a>
             <a href="leftrail_compare_v2.html" target="_blank" rel="noopener">Left rail — element variants</a>
             <a href="editor_unified_v3_create_compare.html" target="_blank" rel="noopener">Editor V3 — per-bucket create</a>
             <a href="right_sidebar_compare.html" target="_blank" rel="noopener">Right sidebar — edit toolkit (A/B/C)</a>
@@ -1267,7 +1268,7 @@
           {
             id: 'background',
             type: 'background',
-            paint: { 'background-color': '#efe7d5' }
+            paint: { 'background-color': '#1e66ff' } /* DIAGNOSTIC: was #efe7d5 — blue = map background layer (no data there) */
           }
         ]
       },
@@ -4973,7 +4974,7 @@
         },
         sliders: { landcover9Opacity: 55, sfwdaOpacity: 70, sfwdaMultiply: 0 },
         paints: {
-          background: { 'background-color': '#efe7d5' },
+          background: { 'background-color': '#1e66ff' }, /* DIAGNOSTIC: was #efe7d5 */
           'landcover-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.9 },
           'landcover-forest-outline': { 'line-color': LANDCOVER_MUTED_OUTLINE, 'line-width': 0.8, 'line-opacity': 0.55 },
           'landcover-9patch-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.55 },
@@ -5204,7 +5205,7 @@
         },
         sliders: { landcover9Opacity: 0, sfwdaOpacity: 0, sfwdaMultiply: 0 },
         paints: {
-          background: { 'background-color': '#efe7d5' },
+          background: { 'background-color': '#1e66ff' }, /* DIAGNOSTIC: was #efe7d5 */
           'tnmap-satellite': { 'raster-opacity': 1 },
           'usda-naip-satellite': { 'raster-opacity': 0 }
         }

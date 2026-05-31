@@ -3,6 +3,21 @@ all comparison mockups should be put on the right sidebar with a link the the it
 bottom row items should all fit on one horizontal row.
 make a few mockups to compare this. minimal. 
 
+> **Mockups shipped 2026-05-30 (awaiting pick).** The two stacked bottom bars
+> on the phone PWA — collapsed `.panel` "AOP edit panel" header (⧉ export + ▸
+> expand) and the `.message` "N publish features loaded" pill — folded into one
+> horizontal row, 4 minimal takes:
+> - **V1 split** (`bottombar_v1_split.html`) — moss status zone (count) | edit header, one hairline.
+> - **V2 chip** (`bottombar_v2_badge.html`) — edit header owns the bar; status is a small count chip by the buttons.
+> - **V3 icon** (`bottombar_v3_iconbar.html`) — pencil + "Edit", status = single load dot; tightest.
+> - **V4 cells** (`bottombar_v4_cells.html`) — two named cells ("5 published" | edit); most legible, largest.
+>
+> Compare page: `website/bottombar_compare.html` (phone frames + attribute
+> table), linked from the right-sidebar **Comparisons** section of `index.html`.
+> Real count today = 5 (publish.geojson). Open: drop the status entirely (ties
+> to item 7); apply to desktop too or leave it. Retire the mockups per the
+> `viewer_polish_followups.md` "Mockup Cleanup" routing once a look is locked.
+
 ---
 
 [X] restrict zoom on buttons

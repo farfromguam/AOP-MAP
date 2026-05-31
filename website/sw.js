@@ -21,7 +21,7 @@
  * them on every release would waste the user's data.
  */
 
-const VERSION = 'v5'; // keep in sync with #appVersion in index.html
+const VERSION = 'v6'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
