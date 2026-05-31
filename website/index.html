@@ -102,11 +102,16 @@
        status bar, home indicator, and rounded corners under viewport-fit=cover. */
     .maplibregl-ctrl-top-left    { margin-top: var(--sa-top); margin-left: var(--sa-left); }
     .maplibregl-ctrl-top-right   { margin-top: var(--sa-top); margin-right: var(--sa-right); }
-    /* V5: ⓘ attribution baseline = the bottom-right FAB's (flat 12px). Target the
-       control's own margin, not the corner container's — MapLibre also puts a 10px
-       margin on .maplibregl-ctrl, which otherwise stacks to ~22px. */
+    /* V5: ⓘ attribution baseline = the bottom-right FAB's. Target the control's own
+       margin, not the corner container's — MapLibre also puts a 10px margin on
+       .maplibregl-ctrl, which otherwise stacks to ~22px. Baseline nudged 12→18px (up
+       "a bit") and left 12→16px (right "a bit") per on-device review; the pencil FAB
+       matches the 18px bottom (see .panel.collapsed). The ⓘ already anchors to the true
+       viewport because it lives inside the position:fixed #map — that is the baseline
+       the FAB had to be made to match (the FAB was position:absolute, which iOS resolves
+       against the 762px <html> box, landing it 50px high; #map is fixed = 812px). */
     .maplibregl-ctrl-bottom-left { margin: 0; }
-    .maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib { margin: 0 0 12px 12px; max-width: calc(100vw - 24px - var(--sa-left) - var(--sa-right) - var(--edit-fab-reserve)); }
+    .maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib { margin: 0 0 18px 16px; max-width: calc(100vw - 24px - var(--sa-left) - var(--sa-right) - var(--edit-fab-reserve)); }
     .maplibregl-ctrl-bottom-right{ margin-bottom: var(--sa-bottom); margin-right: var(--sa-right); }
     .left-controls { position: absolute; left: calc(12px + var(--sa-left)); top: calc(12px + var(--sa-top)); z-index: 3; width: 340px; max-width: calc(100vw - 392px - var(--sa-left) - var(--sa-right)); display: grid; gap: 8px; }
     .left-controls * { box-sizing: border-box; letter-spacing: 0; }
@@ -284,7 +289,15 @@
        narrow viewports. Expanded panel still fills the right column up to
        max-height; the visual difference on a tall desktop is negligible
        because the panel already filled top→bottom. */
-    .panel { position: absolute; right: calc(12px + var(--sa-right)); bottom: max(12px, var(--sa-bottom)); top: auto; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); width: 380px; max-width: calc(100vw - 24px - var(--sa-left) - var(--sa-right)); max-height: calc(100vh - 24px - var(--sa-top) - var(--sa-bottom)); overflow-y: auto; z-index: 2; box-sizing: border-box; }
+    /* position:FIXED, not absolute. On iOS an absolutely-positioned panel anchors to
+       the <html> content box (measured 762px on an 812px screen — the 50px top safe
+       area), so `bottom:12px` landed the collapsed FAB 50px HIGH of the ⓘ attribution,
+       which lives inside the position:fixed #map (true 812px viewport). Fixed makes both
+       resolve against the same viewport so their bottoms actually align on the device.
+       On desktop (no scroll, body overflow:hidden) fixed == absolute, so this is inert
+       there. Verified from the device screenshot, not Playwright — Playwright reports
+       both at bottom:12 because it has no safe area to expose the absolute/fixed split. */
+    .panel { position: fixed; right: calc(12px + var(--sa-right)); bottom: max(12px, var(--sa-bottom)); top: auto; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); width: 380px; max-width: calc(100vw - 24px - var(--sa-left) - var(--sa-right)); max-height: calc(100vh - 24px - var(--sa-top) - var(--sa-bottom)); overflow-y: auto; z-index: 2; box-sizing: border-box; }
     .panel h1 { margin: 0 0 8px; font-size: 1rem; }
     .panel-header { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
     .panel-header h1 { margin: 0; flex: 1; min-width: 0; }
@@ -296,10 +309,12 @@
     /* V5 (every width): the collapsed edit panel is a round pencil FAB pinned to the
        bottom-right; the ⓘ attribution sits at the matching baseline in the bottom-left
        (see .maplibregl-ctrl-bottom-left + the AttributionControl move in JS). Both use a
-       flat 12px baseline so they align and sit low. Tapping the FAB expands the panel
-       (label + Export ⧉ live inside it). */
+       flat 18px bottom (12→18 "up a bit" per on-device review) so they align and sit low.
+       This only aligns because .panel is now position:fixed (see base rule) — as absolute
+       it landed 50px high of the ⓘ on iOS. Tapping the FAB expands the panel (label +
+       Export ⧉ live inside it). */
     .panel.collapsed {
-      left: auto; right: 12px; bottom: 12px;
+      left: auto; right: 12px; bottom: 18px;
       width: 56px; height: 56px; min-width: 0; padding: 0;
       max-width: none; max-height: none;
       border-radius: 50%;
@@ -962,7 +977,7 @@
     <!-- Build version, under the download icon. Always visible (the install
          button self-hides once installed). Keep this string in sync with
          VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v12-dbg</div>
+    <div class="util-version" id="appVersion" title="App build version">v13-dbg</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
@@ -9832,7 +9847,16 @@
         `vv ${vv ? Math.round(vv.height) + ' @top' + Math.round(vv.offsetTop) : 'n/a'}\n` +
         `#map t${mr ? Math.round(mr.top) : '?'} b${mr ? Math.round(mr.bottom) : '?'} h${mr ? Math.round(mr.height) : '?'}\n` +
         `canvas h${cv ? cv.clientHeight : '?'}\n` +
-        `safe T${saT} B${saB}`;
+        `safe T${saT} B${saB}\n` +
+        // On-device baseline check (DIAGNOSTIC): the two bottom icons should report
+        // the SAME fromBottom now that .panel is position:fixed. Read these off the
+        // phone to confirm alignment instead of eyeballing — they were 12 vs 62.
+        (() => {
+          const ih = window.innerHeight;
+          const fb = (sel) => { const e = document.querySelector(sel);
+            return e ? Math.round(ih - e.getBoundingClientRect().bottom) : '?'; };
+          return `ⓘ fromBot ${fb('.maplibregl-ctrl-attrib')}  ✎ fromBot ${fb('.panel.collapsed')}`;
+        })();
     }
 
     const resyncViewport = () => {

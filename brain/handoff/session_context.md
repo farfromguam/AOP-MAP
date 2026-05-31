@@ -61,11 +61,41 @@ live on purpose — closeout = strip them, then commit.** Files touched: `websit
   red `html,body{ background:#ff0033 }` (revert to a map-toned neutral); the blue map
   background-layer paint `#1e66ff`; the green `#dbgOverlay` div + `updateDbgOverlay()` /
   resync JS; and the `-dbg` suffix on `#appVersion` + sw `VERSION`.
-- **NEXT SESSION:** (1) confirm `v12-dbg` reads right on the phone (FAB bottom-right + ⓘ
+- **NEXT SESSION:** (1) confirm `v13-dbg` reads right on the phone (FAB bottom-right + ⓘ
   bottom-left aligned low, no overlap when ⓘ is expanded, no red band; `?edit=0` shows the
   clean public layout); (2) strip the diagnostics above + set neutral body bg + drop `-dbg`;
   (3) commit; (4) decide the gate trigger only if/when actually splitting public vs editor.
   No build card exists for this PWA work yet — if it grows, open one under the active sprint.
+
+**2026-05-30 (session — bottom-icon baseline aligned, `v13-dbg`) — the ⓘ and the pencil
+FAB now share a baseline ON THE DEVICE. Working tree, uncommitted, served straight to the
+phone.** Files: `website/index.html` + `website/sw.js` (VERSION v12→v13).
+- **The bug (measured from the device screenshot, NOT theorised):** `Screenshot
+  2026-05-30 at 23.30.30.png` is 1125×2436 = iPhone @3x (375×812pt, so 1pt=3px). The ⓘ
+  bottom sat **12pt** off the screen bottom (= its `margin-bottom:12px`); the pencil FAB
+  bottom sat **62pt** off — a **50pt** gap — even though both CSS rules said `bottom:12px`.
+- **Root cause (it was already in the dbg overlay):** the overlay reads `innerH 812 /
+  clientH 762`. The ⓘ is a MapLibre control INSIDE `#map` (`position:fixed`) → anchors to
+  the true 812px visual viewport. The pencil is `.panel` with **`position:absolute`** →
+  iOS anchors it to the `<html>` content box, which it measures as **762px** (812 − the
+  50px top safe area). `762−12 = 750` from top = **62px off the bottom**. `62−12 = 50` =
+  exactly the top safe area. Different positioning contexts, same `bottom:12px`, 50px split.
+- **WHY PLAYWRIGHT IS USELESS HERE (don't reach for it on PWA safe-area bugs again):**
+  desktop Chromium has no safe area, so `env(safe-area-inset-*)`=0 and `innerH==clientH`.
+  Absolute and fixed then resolve identically → Playwright reported BOTH icons at
+  `fromBottom:12` (aligned). It actively masks the exact split that matters. Ground truth
+  for this class of bug is the device screenshot + the on-screen dbg readout. (This is the
+  same trap that ate v5–v11's "pwa bottom math".)
+- **FIX:** `.panel` base rule `position:absolute → position:fixed` (anchors to the same
+  viewport as the ⓘ; inert on desktop where body has no scroll). Both baselines nudged
+  `12→18px` ("up a bit" per review). ⓘ left `12→16px` ("right a bit"). Pencil kept at
+  `right:12px` — read "do it for the pencil" as *match the baseline*, not mirror the
+  horizontal nudge (moving the FAB "right" would push it into its own corner). Say so to
+  the user; easy to also nudge if they meant literal.
+- **NEW DIAGNOSTIC line in `#dbgOverlay`:** `ⓘ fromBot N  ✎ fromBot N` — live
+  `innerH − getBoundingClientRect().bottom` for both icons so the phone can confirm
+  alignment by number. Desktop shows `18 / 18`; the phone MUST now also show equal numbers
+  (was 12 / 62). **Strip this line with the other diagnostics at closeout.**
 
 **2026-05-30 (triage) — Sprint 04 reviewed and sorted (no code).** Every card in
 `tasks/04_event_app/` was assessed done / partial / not-done and moved.
