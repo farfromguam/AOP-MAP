@@ -1,4 +1,9 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
       "Bash(cd *)",
@@ -64,7 +69,6 @@
       "Bash(cp *)",
       "Bash(mv *)",
       "Bash(open *)",
-      "Bash(./*)",
       "Skill(update-config)",
       "Bash(docker compose *)",
       "Bash(bash \"/Users/christopherfryman/Documents/code/AOP MAP/mvp/scripts/export_publish_geojson.sh\")",
@@ -100,6 +104,8 @@
       "Bash(cargo install*)",
       "Bash(go install*)",
       "Bash(pipx install*)",
+      "Bash(git *)",
+      "Bash(git)",
       "Bash(git push --force*)",
       "Bash(git push -f *)",
       "Bash(git push -f)",
