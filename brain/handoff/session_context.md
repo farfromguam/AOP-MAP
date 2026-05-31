@@ -27,10 +27,15 @@ done (`.message` dropped). Split to **new card `pwa_qa_data_bakes.md`**: items 4
 superseded by V5; item 20 shipped a tree SVG (`website/img/tree.svg` tiled as a
 `landcover-forest-trees` fill-pattern on satellite). On-device confirm owed for
 7/13/15/20 (touch+GL, unverifiable headless). Full per-item table + merge-integrity
-notes in the card's "Disposition" block. 7 harness-locked agent worktrees remain
-under `.claude/worktrees/` — cleanup left to user/harness (`git worktree remove
--f -f <path>` + `git branch -D worktree-agent-*`); consolidated backup branch
-`integration-pwa-qa` (swarm only; item 20 is working-tree-only).
+notes in the card's "Disposition" block. **Worktree cleanup DONE (2026-05-31):**
+the 7 harness-locked agent worktrees were removed and their `worktree-agent-*`
+branches force-deleted after verifying each slice is in master — proof was that
+the consolidated `integration-pwa-qa` branch differs from master by only item 20
+(the `landcover-forest-trees` tree pattern + `tree.svg`, which master has), and
+no worktree carried uncommitted work. The empty `.claude/worktrees/` dir was
+removed. Consolidated backup branch `integration-pwa-qa` **retained** (swarm
+only; item 20 is working-tree/master-only) as the safety net — delete it once the
+v18 swarm result is confirmed on device.
 
 **2026-05-30 (session — iOS PWA full-bleed + V5 bottom bar) — RED BAR FIXED; bottom UI
 reworked. We are CLOSE: all changes UNCOMMITTED in the working tree, build `v12-dbg`,
