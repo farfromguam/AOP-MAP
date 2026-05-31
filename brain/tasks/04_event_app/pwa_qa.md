@@ -1,3 +1,51 @@
+## Disposition — QA swarm (2026-05-31)
+
+A 7-agent worktree swarm resolved most of this card. Each agent owned a disjoint
+region of `website/index.html`, committed in its own worktree, and I merged the
+seven branches into the master working tree (uncommitted, per `no_commits.md`).
+Consolidated backup branch: `integration-pwa-qa`. Merge verified: all inline
+script blocks `node --check` clean, the one overlapping hunk (hot-lane glyph
+~7083) hand-confirmed coherent, 0 non-GL console/page errors on load, DOM
+reflects each change. The map canvas will not paint in this headless env (GL
+context fails — the documented "Playwright unreliable for this viewer's GL"
+trap), so per-item map-render behavior was verified by each agent in isolation
+and final on-device/visual confirm is owed where noted.
+
+| # | Item | Status |
+|---|---|---|
+| 1 | comparison mockups on right sidebar | standing rule; followed (topo compare added to Comparisons) |
+| 2 | bottom row on one horizontal row (V1–V4 mockups) | **DONE** — confirmed (2026-05-31) superseded by the shipped V5 pencil-FAB rework; retire V1–V7 bottom-bar mockups per the cleanup routing |
+| 3 | restrict zoom on buttons | DONE (pre-existing; verified not regressed) |
+| 4 | bake region callouts to geojson | → `pwa_qa_data_bakes.md` |
+| 5 | logo max size + slider + export | **SHIPPED** (zoom-clamped icon-size cap, `#brandLogoCapSlider` + ⧉ export; verified region/park ratio 0.18). Tune-and-return open |
+| 6 | bake in-park / exclude region buildings from search | → `pwa_qa_data_bakes.md` |
+| 7 | two-finger pinch responsiveness | **SHIPPED** (`touchZoomRotate.disableRotation()`); on-device pinch confirm owed |
+| 8 | "X published features" — drop it | ALREADY DONE (`.message{display:none}`, the V5 drop) |
+| 9 | remove trail dots | **SHIPPED** (`sfwda-trace-markers` circle layer removed; numbered labels kept) |
+| 10 | "1X" in a search for trail "1" | **SHIPPED** (verified: trail 1 top, 1X surfaced, buildings demoted) |
+| 11 | calendar auto-scroll + header scrolls with body | **SHIPPED** (verified: tab heights equal, auto-scroll lands on live row) |
+| 12 | park zoom tighter than region | **SHIPPED** (verified: Region 13.74 / Park 14.61→14.75, delta +1.01) |
+| 13 | topo colors / OSM off / blue-green-black map, orange topo | **SHIPPED** (OSM tracks off, trail network default-on, orange on topo, contours lightened, `topo_color_compare.html` for final pick); on-device color confirm owed |
+| 14 | hot-spot button first-click + toggle + 2nd state | **SHIPPED** (verified cold-click→on→off; new `data-hot-on` state) |
+| 15 | drawer offset after edit-panel collapse | **SHIPPED** (`window.lrReflow` recompute on collapse); on-device drag confirm owed |
+| 16 | end date on calendar | **SHIPPED** (verified: "Friday, June 19 – Sunday, June 21, 2026") |
+| 17 | extend 9-patch imagery coverage | → `pwa_qa_data_bakes.md` |
+| 18 | icon line weights | **SHIPPED** (normalized to render ~1.6px) |
+| 19 | bottom-left attribution overflow breathing room | **SHIPPED** (clearance widened; clears the FAB by ~24px) |
+| 20 | satellite tree icon | **SHIPPED** (2026-05-31, per "find or create a tree svg") — new editable `website/img/tree.svg` tiled as a `fill-pattern` on a new `landcover-forest-trees` layer over the FOREST polygons, wired to the satellite toggle so trees show only on the aerial. SVG rasterizes + 0 load errors verified; on-device visual confirm owed |
+| 21 | icon groups 3-4-1 width | **SHIPPED** (`3fr 4fr 1fr`; per-icon width spread 13.2px→1.75px) |
+| — | iOS bottom padding | RESOLVED (pre-existing, see below) |
+
+**Owed on-device confirm** (touch/GL — cannot be checked headless): 7 pinch,
+13 rendered colors, 15 drag-under-finger, 20 tree-pattern look. **Open forks:**
+none — 2 confirmed superseded by V5, 20 resolved as a tree SVG (both
+2026-05-31). **Worktrees:** 7 harness-locked agent
+worktrees remain under `.claude/worktrees/` — cleanup left to the user/harness
+(`git worktree remove -f -f <path>` + `git branch -D worktree-agent-*`), consistent
+with the existing convention.
+
+-----
+
 all comparison mockups should be put on the right sidebar with a link the the item to look at. I will review and pull attributes from each different column.
 
 bottom row items should all fit on one horizontal row.

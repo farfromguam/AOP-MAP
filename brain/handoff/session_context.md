@@ -15,6 +15,23 @@ Each session pruned out of here lands at `session_context_<YYYYMMDD>.md`:
 - `session_context_20260525.md` — left-rail manilla-tab design exploration; five HTML mockup variants checked in under `website/leftrail_v*.html`. Build card: `tasks/03_event_app/_done/left_rail_collapse_tabs.md`. No `website/index.html` changes.
 - `session_context_20260527.md` — misc_4 items 1–5 shipped, plus the POI/About empty-space CSS fix and the tab-restore fix. All in the working tree (uncommitted). See `tasks/04_event_app/misc_4.md` "What shipped (2026-05-27)" block for the full close-out and the trail-lane verifier residue routed to `viewer_polish_followups.md`.
 
+**2026-05-31 (PWA QA swarm) — most of `tasks/04_event_app/pwa_qa.md` resolved.**
+7 worktree agents, each owning a disjoint region of `website/index.html`, merged
+into the master working tree (UNCOMMITTED; backup branch `integration-pwa-qa`).
+Shipped: items 5 (logo max-size cap + slider/export), 7 (pinch), 9 (trail dots
+removed), 10 (1X search), 11+16 (calendar scroll/header/end-date), 12 (park
+zoom tighter), 13 (topo/trail colors + `topo_color_compare.html`), 14 (hot
+button toggle), 15 (drawer reflow), 18/19/21 (chrome icons). Item 8 was already
+done (`.message` dropped). Split to **new card `pwa_qa_data_bakes.md`**: items 4,
+6, 17 (data-bake/acquisition). Then both forks resolved: item 2 confirmed
+superseded by V5; item 20 shipped a tree SVG (`website/img/tree.svg` tiled as a
+`landcover-forest-trees` fill-pattern on satellite). On-device confirm owed for
+7/13/15/20 (touch+GL, unverifiable headless). Full per-item table + merge-integrity
+notes in the card's "Disposition" block. 7 harness-locked agent worktrees remain
+under `.claude/worktrees/` — cleanup left to user/harness (`git worktree remove
+-f -f <path>` + `git branch -D worktree-agent-*`); consolidated backup branch
+`integration-pwa-qa` (swarm only; item 20 is working-tree-only).
+
 **2026-05-30 (session — iOS PWA full-bleed + V5 bottom bar) — RED BAR FIXED; bottom UI
 reworked. We are CLOSE: all changes UNCOMMITTED in the working tree, build `v12-dbg`,
 served straight to the phone (no commit/deploy step in this loop). Diagnostics still

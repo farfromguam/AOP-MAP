@@ -74,11 +74,16 @@
       --sa-left:   env(safe-area-inset-left, 0px);
       --sa-right:  env(safe-area-inset-right, 0px);
 
-      /* Width the bottom-right edit FAB occupies. The bottom-left ⓘ attribution caps
-         its expanded width short of this so the two never overlap. html.editor-off
+      /* Width the bottom-right edit FAB occupies, PLUS breathing room. The bottom-left ⓘ
+         attribution caps its expanded CONTENT width short of this so the two never crowd.
+         Item 19 measured math (phone, sa=0): the attribution is content-box with 16px
+         left margin + 28px/8px padding (the compact ⓘ toggle reserves the 28px), so its
+         rendered right edge = 100vw - reserve + 28, while the FAB left edge = 100vw - 68
+         (56px FAB at right:12px). Gap = reserve - 96. The old 76px gave a NEGATIVE gap
+         (overlap); 96px gave 0px (grazing); 120px gives a ~24px breathing gap. html.editor-off
          zeroes it (below) so the attribution reclaims the full width once the FAB is
          gated away — the layout works with the edit button present OR absent. */
-      --edit-fab-reserve: 76px;
+      --edit-fab-reserve: 120px;
 
       /* Radius of the inverted (concave) black corner fillets that round the map
          into the Safari-tab black chrome bands. Tunable; 0 = sharp corners. */
@@ -312,8 +317,12 @@
     .lr-panel .search-shell { display: flex; height: var(--tab-h); padding: 0 8px; align-items: center; }
     /* Pill bar above the search — three pill groups in one row:
        [Region · Park · Pavilion]  [Park-style · Topo · Trace · Satellite]  [3D]
-       No vertical pipes between groups; grouping reads from the pill chrome. */
-    .pill-bar { display: grid; grid-template-columns: 3fr 3fr 1fr; gap: 8px; align-items: stretch; }
+       No vertical pipes between groups; grouping reads from the pill chrome.
+       Columns track the ICON COUNT per group (3 / 4 / 1) so every icon gets the
+       same width across groups. Item 21: the 2nd group grew from 3→4 icons; at the
+       old 3fr 3fr 1fr it kept the same track width as the 3-icon group, squeezing
+       each preset icon. 4fr gives it the extra column so per-icon width re-equalizes. */
+    .pill-bar { display: grid; grid-template-columns: 3fr 4fr 1fr; gap: 8px; align-items: stretch; }
     .pill-bar .pill { display: flex; width: 100%; border: 1px solid var(--control-border); border-radius: 999px; background: var(--control-bg); overflow: hidden; box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
     .pill-bar .pill > button { flex: 1; min-width: 0; min-height: 36px; padding: 6px 8px; border: 0; background: transparent; color: var(--brown-ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
     .pill-bar .pill > button + button { border-left: 1px solid var(--control-border); }
@@ -487,6 +496,18 @@
     .feature-row .feature-size-control { display: grid; grid-template-columns: 64px 34px; align-items: center; gap: 4px; width: 102px; }
     .feature-row .feature-size-control input { width: 64px; min-width: 0; }
     .feature-row .feature-size-control output { font-size: 0.72rem; color: var(--brown-soft); text-align: right; }
+    /* Brand-logo max-size cap footer (item 5): a single global slider +
+       export button under the logo rows. The slider clamps the on-screen
+       logo size at park zoom so zooming out doesn't grow the logo. */
+    .brand-logo-cap { display: grid; gap: 4px; padding: 6px 4px 2px; margin-top: 2px; border-top: 1px dashed var(--cream-border); }
+    .brand-logo-cap-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+    .brand-logo-cap-control { display: grid; grid-template-columns: auto minmax(0, 1fr) 34px; align-items: center; gap: 6px; margin: 0; }
+    .brand-logo-cap-control .brand-logo-cap-label { font-size: 0.74rem; color: var(--brown-mid); white-space: nowrap; }
+    .brand-logo-cap-control input { width: 100%; min-width: 0; }
+    .brand-logo-cap-control output { font-size: 0.72rem; color: var(--brown-soft); text-align: right; }
+    .brand-logo-cap-export { font-size: 0.72rem; padding: 3px 8px; border: 1px solid var(--cream-border); border-radius: 5px; background: #f6efdc; color: var(--brown-dark); cursor: pointer; white-space: nowrap; }
+    .brand-logo-cap-export:hover { background: #efe6cf; }
+    .brand-logo-cap-status { font-size: 0.7rem; color: var(--brown-soft); min-height: 0.9em; }
     /* Tag input on taggable rows (buildings, drawn POIs). Binds a #tag to the
        feature so the event-schedule JSON can omit coordinates for that tag.
        Card: brain/tasks/02_edit/named_feature_tagging.md. */
@@ -684,10 +705,11 @@
     .left-tab[aria-selected="true"] { background: var(--rust); border-color: #8b431b; color: var(--control-bg); box-shadow: inset 0 -2px 0 rgba(46,36,24,0.28); }
     .left-tab-panel[hidden] { display: none; }
     /* Panels stack naturally; the active one displays, others use the generic
-       [hidden] rule. We accept the ~62 px tab-switch shift between Events
-       (has .calendar-heading) and POI/About — that shift is less bad than
-       the dead space the grid-stack-to-tallest produced under POI/About.
-       Reverts misc_3.md item 21 in favor of misc_4.md "white space". */
+       [hidden] rule. misc_4.md item 11: the calendar heading now scrolls
+       INSIDE #calendarBody (the shared --lr-card-body-height scroll box), so
+       the Events / POI / About panels are all the same height — the prior
+       ~62 px Events-vs-POI/About shift (from the pinned .calendar-heading) is
+       gone. Each panel = one fixed-height scroll body + one resize handle. */
     .left-tab-panels { display: block; }
     /* POI tab — left-rail browseable directory of places. Mirrors the
        feature-list-group convention from the right panel so the two
@@ -799,6 +821,13 @@
     .hot-button[data-hot-state="trail-hot"] { background: var(--moss); }
     .hot-button[data-hot-selected="true"] { box-shadow: 0 0 0 2px rgba(247, 241, 226, 0.82), 0 0 0 4px rgba(42, 33, 22, 0.16); }
     .hot-button[data-hot-priority="alert"][data-hot-selected="false"] { box-shadow: 0 0 0 2px rgba(191, 90, 54, 0.4); }
+    /* Item 14: a clear ON state for the Trail-activity toggle, distinct from the
+       data-hot-selected "recommended lane" halo. data-hot-on="true" means the
+       activity-hotspot layer is actually rendered, so the button reads as a
+       pressed/active toggle (brighter moss + inset ring) and shows a check glyph. */
+    .hot-button[data-hot-lane="trails"][data-hot-on="true"] { background: var(--moss-dark, #4e6a34);
+      box-shadow: inset 0 0 0 2px rgba(247, 241, 226, 0.92), 0 0 0 2px rgba(78, 106, 52, 0.5); }
+    .hot-button[data-hot-lane="trails"][data-hot-on="true"] .hot-button-glyph { color: #eaf3d6; }
     .hot-button-glyph { display: inline-flex; align-items: center; justify-content: center;
       width: 24px; height: 24px; font-size: 1.1rem; line-height: 1; }
     .hot-button-text { display: block; min-width: 0; }
@@ -847,24 +876,24 @@
           <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 8V3h5M14 3h5v5M19 14v5h-5M8 19H3v-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         </button>
         <button id="zoomPark" type="button" data-view="park" title="Fit the AOP park boundary" aria-label="Fit park boundary">
-          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M4 7L7 3L15 4L18 9L17 16L9 18L4 14Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/></svg>
+          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M4 7L7 3L15 4L18 9L17 16L9 18L4 14Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/></svg>
         </button>
         <button id="zoomPavilion" type="button" data-view="pavilion" title="Zoom in tight on the pavilion" aria-label="Pavilion zoom">
-          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 9L11 3L19 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 9V18M9 9V18M13 9V18M17 9V18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 18H19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 9L11 3L19 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 9V18M9 9V18M13 9V18M17 9V18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3 18H19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         </button>
       </div>
       <div class="pill preset-bar" role="group" aria-label="Map preset">
         <button id="presetPark" type="button" data-preset="park" class="active" title="Park preset (default map)" aria-label="Park preset">
-          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 6L8 4L14 6L19 4V16L14 18L8 16L3 18Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 4V16M14 6V18" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 6L8 4L14 6L19 4V16L14 18L8 16L3 18Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 4V16M14 6V18" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
         </button>
         <button id="presetTopo" type="button" data-preset="topo" title="Topo preset (contour-led)" aria-label="Topo preset">
-          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 7c3-2 6-2 9 0s5 2 7 0M3 11c3-2 6-2 9 0s5 2 7 0M3 15c3-2 6-2 9 0s5 2 7 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 7c3-2 6-2 9 0s5 2 7 0M3 11c3-2 6-2 9 0s5 2 7 0M3 15c3-2 6-2 9 0s5 2 7 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         </button>
         <button id="presetTrace" type="button" data-preset="trace" title="Trace preset (lidar hillshade + trail refs)" aria-label="Trace preset">
-          <svg viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="3" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5 16c2-1 3-4 6-4s4 3 6 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="16" r="1.3" fill="currentColor"/><circle cx="17" cy="14" r="1.3" fill="currentColor"/></svg>
+          <svg viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="3" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 16c2-1 3-4 6-4s4 3 6 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="6" cy="16" r="1.3" fill="currentColor"/><circle cx="17" cy="14" r="1.3" fill="currentColor"/></svg>
         </button>
         <button id="presetSatellite" type="button" data-preset="satellite" title="Satellite preset (2022 aerial)" aria-label="Satellite preset">
-          <svg viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M11 3a8 8 0 0 1 5.6 2.3M11 19a8 8 0 0 1-5.6-2.3"/><path d="M3 11h4m8 0h4"/><path d="M11 7v2m0 6v2"/><circle cx="11" cy="11" r="2" fill="currentColor" stroke="none"/></svg>
+          <svg viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M11 3a8 8 0 0 1 5.6 2.3M11 19a8 8 0 0 1-5.6-2.3"/><path d="M3 11h4m8 0h4"/><path d="M11 7v2m0 6v2"/><circle cx="11" cy="11" r="2" fill="currentColor" stroke="none"/></svg>
         </button>
       </div>
       <div class="pill" role="group" aria-label="3D toggle">
@@ -881,7 +910,7 @@
           </svg>
         </button>
         <button class="lr-tab" id="lrTabHot" type="button" aria-pressed="false" aria-controls="lrPanelHot" title="Hot now">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3.001 2.48Z"/>
             <path d="M12 18a3.75 3.75 0 0 0 .495-7.467 5.99 5.99 0 0 0-1.925 3.546 5.974 5.974 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/>
           </svg>
@@ -889,11 +918,11 @@
         </button>
         <button class="lr-tab open" id="lrTabCal" type="button" aria-pressed="true" aria-controls="lrPanelCal" title="Events / POI / About">
           <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
-            <rect x="4" y="5" width="14" height="15" rx="1.6" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M8.5 5 V 3.5 Q8.5 3 9 3 h4 Q13.5 3 13.5 3.5 V 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-            <path d="M7 9.5 H 15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <path d="M7 12.5 H 15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <path d="M7 15.5 H 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <rect x="4" y="5" width="14" height="15" rx="1.6" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M8.5 5 V 3.5 Q8.5 3 9 3 h4 Q13.5 3 13.5 3.5 V 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M7 9.5 H 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M7 12.5 H 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M7 15.5 H 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
           </svg>
         </button>
       </div>
@@ -943,13 +972,18 @@
       </div>
       <div class="left-tab-panels">
       <div id="eventsTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabEvents">
-        <div id="calendarToggle" class="calendar-heading" aria-controls="calendarBody">
-          <span>
-            <span class="calendar-title">Rock Warblers Trail Blazing Invitational</span>
-            <span class="calendar-range" id="calendarRange">Friday, June 19, 2026</span>
-          </span>
-        </div>
         <div id="calendarBody" class="calendar-body">
+          <!-- misc_4.md item 11: the heading scrolls WITH the body inside the
+               single fixed-height scroll container so the Events tab's height
+               equals POI/About (which had no pinned heading). Previously the
+               heading sat outside #calendarBody and added ~62px, causing the
+               tab-switch height jump. -->
+          <div id="calendarToggle" class="calendar-heading" aria-controls="calendarBody">
+            <span>
+              <span class="calendar-title">Rock Warblers Trail Blazing Invitational</span>
+              <span class="calendar-range" id="calendarRange">Friday, June 19, 2026 – Sunday, June 21, 2026</span>
+            </span>
+          </div>
           <div id="calendarCountdown" class="calendar-countdown" hidden>
             <span class="calendar-countdown-label">Gates open in</span>
             <span class="calendar-countdown-value" id="calendarCountdownValue">--</span>
@@ -1038,7 +1072,7 @@
   <div class="panel collapsed">
     <div class="panel-header" id="panelHeader" title="Expand panel">
       <span class="panel-fab-pencil" aria-hidden="true">
-        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5l4 4L8 18l-4.5 1L4.5 14.5 14.5 3.5z"/></svg>
+        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5l4 4L8 18l-4.5 1L4.5 14.5 14.5 3.5z"/></svg>
       </span>
       <h1>AOP edit panel</h1>
       <button type="button" id="exportAll" class="panel-export" title="Copy a full snapshot — toggles, sliders, paints, geometry overrides, drawn POIs, per-feature visibility — to clipboard.">⧉</button>
@@ -1090,6 +1124,7 @@
             <a href="right_sidebar_compare.html" target="_blank" rel="noopener">Right sidebar — edit toolkit (A/B/C)</a>
             <a href="floatgroup_compare.html" target="_blank" rel="noopener">Locate / Install — float groups (V1–V4)</a>
             <a href="park_bounds_icon_review.html" target="_blank" rel="noopener">Park bounds icon</a>
+            <a href="topo_color_compare.html" target="_blank" rel="noopener">Topo contour colours (A–F)</a>
           </div>
         </div>
       </section>
@@ -1149,7 +1184,7 @@
           <label><input type="checkbox" id="showHillshade" /> Lidar hillshade (USGS 3DEP)</label>
           <label><input type="checkbox" id="showContours" /> Lidar contours (5 ft, 1m DEM)</label>
           <label><input type="checkbox" id="showBoundaries" checked /> Publishable boundaries</label>
-          <label><input type="checkbox" id="showAopTrailNetwork" /> AOP trail network (merged truth, colour by difficulty)</label>
+          <label><input type="checkbox" id="showAopTrailNetwork" checked /> AOP trail network (merged truth, colour by difficulty)</label>
           <label><input type="checkbox" id="showSyntheticActivity" /> Simulated Saturday activity</label>
         </div>
       </section>
@@ -1172,7 +1207,6 @@
           <label><input type="checkbox" id="showOsmNamed" /> OSM named landmarks</label>
           <label><input type="checkbox" id="showSfwda" /> SFWDA paper trail map</label>
           <label><input type="checkbox" id="showSfwdaTraceTrails" /> SFWDA traced trails (extracted)</label>
-          <label><input type="checkbox" id="showSfwdaTraceMarkers" /> SFWDA traced markers (difficulty)</label>
         </div>
       </section>
 
@@ -1260,7 +1294,7 @@
           </button>
         </div>
         <div class="section-content">
-          <small>Terrain: use the 3D button with any preset. AWS Terrain Tiles, derived from USGS 3DEP. Drag with right-click (or two-finger drag) to tilt and rotate.</small>
+          <small>Terrain: use the 3D button with any preset. AWS Terrain Tiles, derived from USGS 3DEP. Two-finger drag tilts; right-click drag rotates (pinch zooms).</small>
           <small>Satellite tiles served by TDOT/TNMap — inspection use only, not for redistribution.</small>
           <small>USDA NAIP traces are raw candidates. Keep them out of publish until source, confidence, and field/imagery review are attached.</small>
           <small>Contours: USGS 3DEP 1 m lidar DEM. Detail tiers by zoom — 50 ft index lines when zoomed out, all 25 ft index lines at mid-zoom, fine 5 ft lines when zoomed in.</small>
@@ -1285,6 +1319,13 @@
     // The 9-patch data-acquisition AOI doubles as the camera leash: maxBounds
     // stops users panning or zooming out past where there is any map data.
     const REGION_BOUNDS = [[-85.782935283, 35.067164188], [-85.717154097, 35.117928496]];
+
+    // Tighter-than-region fallback for the Park camera preset. The live park
+    // bounds come from publish.geojson's `park_boundaries` parcel
+    // (parkViewBounds, derived on load); this is the static stand-in for when
+    // that data hasn't loaded — same parcel envelope, so Park never collapses
+    // back to the full-region zoom. Spans ~1/3 of REGION_BOUNDS per side.
+    const PARK_BOUNDS_FALLBACK = [[-85.761008221, 35.084085624], [-85.739081159, 35.10100706]];
 
     // Every localStorage key the viewer owns. Centralized so a typo on a
     // string literal cannot silently lose user state (the silent-drop class
@@ -1363,7 +1404,10 @@
       VIEWER_PRESET_KEY,
       LEFT_RAIL_DRAWER_KEY,
       VIRTUAL_CLOCK_KEY,
-      VIEWER_SESSION_KEY
+      VIEWER_SESSION_KEY,
+      // Brand-logo max-size cap (item 5). Literal because BRAND_LOGO_CAP_KEY
+      // is declared later in the module scope (TDZ); the string is stable.
+      'aop_brand_logo_cap_v1'
     ];
 
     // Read a layered store (a flat object keyed by layerKey), merge a subset
@@ -1398,6 +1442,19 @@
       maxBounds: REGION_BOUNDS,
       attributionControl: false
     });
+
+    // Touch: make a SIMULTANEOUS two-finger pinch start zooming immediately.
+    // MapLibre's default touch handler bundles pinch-zoom with two-finger
+    // twist-rotate, and when both fingers land at once it stalls deciding
+    // between them — so a clean two-finger pinch often fails to start, while
+    // landing one finger then the second works (the gesture is already
+    // disambiguated). disableRotation() drops the twist-rotate arbitration so
+    // pinch-zoom fires on first move. Kept: two-finger drag-to-TILT (the
+    // separate TouchPitch handler) and right-click drag rotate — so the 3D
+    // tilt/rotate the help text promises still works; only the rarely-used
+    // two-finger twist is gone. (pwa_qa item 7 — touch-only, confirm on device.)
+    map.touchZoomRotate.disableRotation();
+
     // V5: attribution lives bottom-left as a compact ⓘ, clear of the bottom-right edit FAB.
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
 
@@ -1476,7 +1533,6 @@
     const osmNamedToggle = document.getElementById('showOsmNamed');
     const sfwdaToggle = document.getElementById('showSfwda');
     const sfwdaTraceTrailsToggle = document.getElementById('showSfwdaTraceTrails');
-    const sfwdaTraceMarkersToggle = document.getElementById('showSfwdaTraceMarkers');
     const aopTrailNetworkToggle = document.getElementById('showAopTrailNetwork');
     const sfwdaOpacity = document.getElementById('sfwdaOpacity');
     const sfwdaMultiply = document.getElementById('sfwdaMultiply');
@@ -1569,6 +1625,16 @@
     // Edit panel ships collapsed (header bar only); user opens it on demand.
     let panelCollapsed = true;
 
+    // Item 15: the left-rail drawer's floating icon column derives its tab
+    // offsets from live panel rects (window.lrReflow). Collapsing/expanding the
+    // right edit panel reflows the page, so recompute that geometry against
+    // fresh rects -- otherwise the drawer handle and offset go stale and a drag
+    // no longer tracks the finger. Reflow on the next frame (initial layout
+    // shift) and again on transitionend (final settled rect).
+    function reflowLeftRailDrawer() {
+      if (typeof window.lrReflow === 'function') window.lrReflow();
+    }
+
     function togglePanel() {
       panelCollapsed = !panelCollapsed;
       panel.classList.toggle('collapsed', panelCollapsed);
@@ -1588,6 +1654,15 @@
           panelBody.removeEventListener('transitionend', clear);
         });
       }
+      // Recompute drawer geometry now (post-class-change) and after the panel's
+      // max-height transition lands on its final rect.
+      requestAnimationFrame(reflowLeftRailDrawer);
+      panel.addEventListener('transitionend', function settle(e) {
+        if (e.target !== panel && e.target !== panelBody) return;
+        if (e.propertyName !== 'max-height' && e.propertyName !== 'width' && e.propertyName !== 'height') return;
+        reflowLeftRailDrawer();
+        panel.removeEventListener('transitionend', settle);
+      });
     }
 
     panelCollapse.addEventListener('click', (e) => { e.stopPropagation(); togglePanel(); });
@@ -1864,6 +1939,14 @@
             slot.hidden = true;
             sourceBody.append(slot);
             registerFeatureListTarget(leaf.layerKey, slot, { onlyGroupId: leaf.onlyGroupId });
+          }
+
+          // Brand-logo max-size cap (item 5): a single global control under
+          // the logo rows. The slider re-clamps the icon-size expression live
+          // (caps the on-screen logo size at park zoom); export copies the
+          // tuned value so the user can send it back.
+          if (source.id === 'brand') {
+            sourceBody.append(buildBrandLogoCapFooter());
           }
 
           sourceWrap.append(sourceHead, sourceBody);
@@ -2617,6 +2700,10 @@
       }
       if (persist) writeJsonStore(LR_CARD_HEIGHT_KEY, next);
       scrollCalendarCurrentRowIntoView();
+      // Item 15: resizing a card body shifts every panel's offsetTop, so the
+      // floating icon-column tabs must be re-laid-out against the new rects or
+      // they drift away from their panels mid-drag.
+      if (typeof window.lrReflow === 'function') window.lrReflow();
     }
 
     function initializeLrCardResize() {
@@ -2866,7 +2953,7 @@
       [activityHotspotsToggle, ['activity-hotspots-heat', 'activity-hotspots-fill', 'activity-hotspots-outline', 'activity-hotspots-labels'], 'showActivityHotspots'],
       [syntheticActivityToggle, ['synthetic-activity-tracks', 'synthetic-activity-hotspots-heat', 'synthetic-activity-hotspots-fill', 'synthetic-activity-hotspots-outline', 'synthetic-activity-hotspots-labels'], 'showSyntheticActivity'],
       [eventScheduleToggle, ['event-session-routes', 'event-route-labels', 'event-anchor-points', 'event-anchor-labels'], 'showEventSchedule'],
-      [satelliteToggle, ['tnmap-satellite'], 'showSatellite'],
+      [satelliteToggle, ['tnmap-satellite', 'landcover-forest-trees'], 'showSatellite'],
       [usdaNaipToggle, ['usda-naip-satellite'], 'showUsdaNaip'],
       [ninePatchToggle, ['nine-patch-fill', 'nine-patch-outline', 'nine-patch-labels'], 'showNinePatch'],
       [lidarTilesToggle, ['lidar-tiles-fill', 'lidar-tiles-outline', 'lidar-tiles-labels'], 'showLidarTiles'],
@@ -2890,7 +2977,8 @@
       // out of every preset object so applyPreset never forces them -- default
       // OFF, review-only, refine later.
       [sfwdaTraceTrailsToggle, ['sfwda-trace-trails'], 'showSfwdaTraceTrails'],
-      [sfwdaTraceMarkersToggle, ['sfwda-trace-markers', 'sfwda-trace-marker-labels'], 'showSfwdaTraceMarkers'],
+      // pwa_qa item 9: SFWDA trace marker DOTS removed (dev artifact); the gold
+      // aop-trail-network carries the numbered labels instead.
       [aopTrailNetworkToggle, ['aop-trail-network', 'aop-trail-network-labels'], 'showAopTrailNetwork'],
       [trailToggle, ['publish-trails'], 'showTrails'],
       [boundaryToggle, ['publish-boundary-fill', 'publish-boundaries'], 'showBoundaries'],
@@ -3754,6 +3842,155 @@
       if (source && brandLogosData) source.setData(brandLogosData);
     }
 
+    // --- Brand-logo zoom-cap (item 5) ------------------------------------
+    // The per-feature `icon_size` above is a flat MapLibre icon-size factor:
+    // it holds a CONSTANT screen-pixel size at every zoom. Anchored to a
+    // geographic point, that means zooming OUT (toward region) keeps the
+    // logo the same on-screen size while the map content shrinks — so the
+    // logo eats a larger and larger share of the visible park. The user
+    // wants it to "max out at park size and not grow much more at region
+    // level."
+    //
+    // Fix: multiply the per-feature size by a zoom factor that CLAMPS to a
+    // max at/above park zoom and HALVES per zoom level below it. Halving the
+    // screen size per zoom-out level holds the logo's geographic footprint
+    // (and thus its share of the visible park) constant — i.e. it caps at
+    // its park-zoom footprint and shrinks on screen as you zoom further out,
+    // instead of growing relative to the map. The `BRAND_LOGO_CAP` slider
+    // scales that capped park-zoom size live; export ships the tuned value
+    // back. Persisted in its own localStorage slot so a reload keeps it.
+    const BRAND_LOGO_CAP_ZOOM = 15;        // park anchor (Park view fits at maxZoom 15.5)
+    const BRAND_LOGO_CAP_MIN = 0.4;
+    const BRAND_LOGO_CAP_MAX = 2.5;
+    const BRAND_LOGO_CAP_STEP = 0.05;
+    const BRAND_LOGO_CAP_DEFAULT = 1;
+    const BRAND_LOGO_CAP_KEY = 'aop_brand_logo_cap_v1';
+    let brandLogoCap = BRAND_LOGO_CAP_DEFAULT;
+
+    function loadBrandLogoCap() {
+      const raw = readJsonStore(BRAND_LOGO_CAP_KEY, () => null);
+      // Only adopt a genuinely stored number; `null`/missing keeps the
+      // default (Number(null) === 0 would otherwise clamp to MIN).
+      if (typeof raw === 'number' && Number.isFinite(raw)) {
+        brandLogoCap = Math.min(BRAND_LOGO_CAP_MAX, Math.max(BRAND_LOGO_CAP_MIN, raw));
+      }
+      return brandLogoCap;
+    }
+
+    function formatBrandLogoCap(value) {
+      return Number(value).toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+    }
+
+    // The MapLibre `icon-size` expression: per-feature size × global cap ×
+    // a zoom factor that is 1 at/above park zoom and 2^(zoom − park) below
+    // it (exponential base 2 → halves per zoom level out). `interpolate`
+    // clamps to the endpoint values outside the stop range, so above park
+    // zoom the factor stays 1 (capped, no further on-screen growth) and far
+    // below it stays at the lower stop's tiny factor.
+    //
+    // MapLibre rule: a `["zoom"]` expression may ONLY appear as the input to
+    // a TOP-LEVEL interpolate/step — it cannot be nested inside an outer
+    // `["*", …]`. So the per-feature size and the cap are folded INTO each
+    // stop's output value (perFeat × cap × factor), with `interpolate` as the
+    // outermost node. Each stop output is itself a `["*", get(icon_size), k]`.
+    function brandLogoIconSizeExpr() {
+      const cap = brandLogoCap;
+      const lowZoom = BRAND_LOGO_CAP_ZOOM - 5;        // 5 levels below park
+      const lowFactor = Math.pow(2, lowZoom - BRAND_LOGO_CAP_ZOOM); // = 0.03125
+      const perFeat = ['coalesce', ['get', 'icon_size'], BRAND_LOGO_SIZE_DEFAULT];
+      return [
+        'interpolate', ['exponential', 2], ['zoom'],
+        lowZoom, ['*', perFeat, cap * lowFactor],
+        BRAND_LOGO_CAP_ZOOM, ['*', perFeat, cap]
+      ];
+    }
+
+    function applyBrandLogoCap() {
+      if (map && map.getLayer && map.getLayer('brand-logos-icons')) {
+        map.setLayoutProperty('brand-logos-icons', 'icon-size', brandLogoIconSizeExpr());
+      }
+    }
+
+    function setBrandLogoCap(value) {
+      const clamped = Math.min(BRAND_LOGO_CAP_MAX, Math.max(BRAND_LOGO_CAP_MIN, Number(value)));
+      if (!Number.isFinite(clamped)) return;
+      brandLogoCap = Number(clamped.toFixed(3));
+      writeJsonStore(BRAND_LOGO_CAP_KEY, brandLogoCap);
+      applyBrandLogoCap();
+    }
+
+    // Small JSON the user can copy and send back so a tuned cap is portable.
+    function brandLogoCapExportPayload() {
+      return {
+        schema: 'aop-brand-logo-cap-v1',
+        exported_at: new Date().toISOString(),
+        brand_logo_size_cap: brandLogoCap,
+        cap_zoom: BRAND_LOGO_CAP_ZOOM,
+        note: 'Max on-screen logo size at/above park zoom; logo shrinks (holds geographic footprint) as you zoom out below cap_zoom.'
+      };
+    }
+
+    async function exportBrandLogoCap(statusEl) {
+      const text = JSON.stringify(brandLogoCapExportPayload(), null, 2) + '\n';
+      try {
+        const copied = await copyText(text);
+        if (statusEl) statusEl.textContent = copied ? 'Logo cap copied to clipboard.' : 'Clipboard copy failed.';
+      } catch (error) {
+        console.warn('Brand-logo cap export failed:', error);
+        if (statusEl) statusEl.textContent = 'Clipboard copy failed.';
+      }
+    }
+
+    // The footer DOM that lives under the brand-logo rows: max-size slider +
+    // ⧉ export button + a status line. Mirrors the per-feature size slider
+    // (.feature-size-control) and the preset ⧉ copy pattern.
+    function buildBrandLogoCapFooter() {
+      const footer = document.createElement('div');
+      footer.className = 'brand-logo-cap';
+
+      const row = document.createElement('div');
+      row.className = 'brand-logo-cap-row';
+
+      const label = document.createElement('label');
+      label.className = 'brand-logo-cap-control';
+      label.title = 'Maximum on-screen logo size (caps at park zoom; logos shrink as you zoom out past it)';
+      const text = document.createElement('span');
+      text.className = 'brand-logo-cap-label';
+      text.textContent = 'Max size';
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.id = 'brandLogoCapSlider';
+      slider.className = 'brand-logo-cap-slider';
+      slider.min = String(BRAND_LOGO_CAP_MIN);
+      slider.max = String(BRAND_LOGO_CAP_MAX);
+      slider.step = String(BRAND_LOGO_CAP_STEP);
+      slider.value = String(brandLogoCap);
+      const out = document.createElement('output');
+      out.className = 'brand-logo-cap-out';
+      out.textContent = formatBrandLogoCap(brandLogoCap);
+      slider.addEventListener('input', () => {
+        setBrandLogoCap(slider.value);
+        out.textContent = formatBrandLogoCap(brandLogoCap);
+      });
+      label.append(text, slider, out);
+
+      const exportBtn = document.createElement('button');
+      exportBtn.type = 'button';
+      exportBtn.id = 'brandLogoCapExport';
+      exportBtn.className = 'brand-logo-cap-export';
+      exportBtn.textContent = '⧉ Export';
+      exportBtn.title = 'Copy the current max-size cap as JSON to send back';
+
+      const status = document.createElement('div');
+      status.className = 'brand-logo-cap-status';
+      status.id = 'brandLogoCapStatus';
+      exportBtn.addEventListener('click', () => exportBrandLogoCap(status));
+
+      row.append(label, exportBtn);
+      footer.append(row, status);
+      return footer;
+    }
+
     // Per-layer runtime state: data, base filters captured at addLayer time,
     // the resolved feature → group bucket, expanded/collapsed UI state.
     // Storage key for the persisted visibility set lives at the top of the
@@ -3762,6 +3999,9 @@
     // Now that the runtime and FEATURE_LIST_LAYERS are bound, build the
     // unified editor tree. Registering tree targets here means any
     // registerFeatureListLayer call later in boot lands rows in the tree.
+    // Load the persisted brand-logo size cap first so the footer slider the
+    // tree renders shows the saved value (the layer re-reads it on add too).
+    loadBrandLogoCap();
     buildEditorTree();
     // Active move-mode target. While set, the next map click commits the
     // staged feature to the clicked lngLat; Esc or the panel's Cancel button
@@ -5032,6 +5272,10 @@
 
     const EXTRA_PRESET_PAINTS = [
       ['background', 'background-color'],
+      // pwa_qa item 13c/13d: capture the gold trail-network line colour so the
+      // Park (difficulty blue/green/black) vs Topo (orange) override round-trips
+      // through save-current / section export.
+      ['aop-trail-network', 'line-color'],
       ['lidar-hillshade', 'hillshade-highlight-color'],
       ['lidar-hillshade', 'hillshade-accent-color'],
       ['water-points', 'circle-color'],
@@ -5090,7 +5334,12 @@
           showOsmService: false,
           showOsmNamed: false,
           showSfwda: false,
-          showTrails: true,
+          // pwa_qa item 13b/13c: the map view's trail story is the gold-derived
+          // aop-trail-network (blue/green/black by difficulty, baked colour),
+          // ON by default. The legacy publish-trails demo segments + OSM tracks
+          // stay OFF here so only the gold network draws.
+          showTrails: false,
+          showAopTrailNetwork: true,
           showBoundaries: true,
           showTrailheads: true,
           showEditorPois: true
@@ -5128,6 +5377,11 @@
           'publish-boundary-fill': { 'fill-color': '#d8c8a2', 'fill-opacity': 0.1 },
           'publish-boundaries': { 'line-color': '#6e5a3c', 'line-width': 2.5, 'line-opacity': 1 },
           'publish-trails': { 'line-color': '#9a5a32', 'line-width': 3.5, 'line-opacity': 1 },
+          // pwa_qa item 13c: gold network coloured by baked-in difficulty colour
+          // (green=easy #1f9d3a, blue=moderate #2438c8, black=difficult #111111,
+          // orange=road #f25e0d). Reset here so a switch back from Topo's orange
+          // override restores the blue/green/black difficulty colours.
+          'aop-trail-network': { 'line-color': ['coalesce', ['get', 'color'], '#888888'], 'line-width': 3, 'line-opacity': 0.92 },
           'publish-trailheads': { 'circle-color': '#6f8a5c', 'circle-radius': 6, 'circle-opacity': 1 },
           'osm-tracks': { 'line-color': '#9a5a32', 'line-width': 2, 'line-opacity': 0.95 },
           'osm-service': { 'line-color': '#a89a7e', 'line-width': 1.5, 'line-opacity': 0.85 },
@@ -5164,7 +5418,10 @@
           showOsmService: false,
           showOsmNamed: false,
           showSfwda: false,
-          showTrails: true,
+          // pwa_qa item 13b/13d: gold network ON, recoloured orange in the Topo
+          // paint below; legacy demo trails + OSM tracks stay OFF.
+          showTrails: false,
+          showAopTrailNetwork: true,
           showBoundaries: true,
           showTrailheads: true,
           showEditorPois: true
@@ -5182,9 +5439,14 @@
             'hillshade-highlight-color': '#fff4d9',
             'hillshade-accent-color': '#6f604c'
           },
-          'contours-minor': { 'line-color': '#8e7a5c', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0, 17.5, 0.8], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.65, 16, 1.55] },
-          'contours-index': { 'line-color': '#5f4934', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 0.98, 0], 16, 0.98], 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.25, 16, 3.1] },
-          'contours-labels': { 'text-color': '#4e3d2c', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 1, 0], 16, 1] },
+          // pwa_qa item 13a: the Topo contour lines read too dark (index was
+          // #5f4934 near-black-brown). Lightened to a warm sienna so the relief
+          // + trails stay legible. Compare options in topo_color_compare.html
+          // (linked from the right-rail Comparisons section); this is the
+          // "Warm sienna" default — swap if the user picks another column.
+          'contours-minor': { 'line-color': '#b08a5e', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0, 17.5, 0.8], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.65, 16, 1.55] },
+          'contours-index': { 'line-color': '#946638', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 0.98, 0], 16, 0.98], 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.25, 16, 3.1] },
+          'contours-labels': { 'text-color': '#7a5530', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 1, 0], 16, 1] },
           'activity-hotspots-heat': { 'heatmap-opacity': 0.62 },
           'activity-hotspots-fill': { 'fill-opacity': ACTIVITY_HOTSPOT_OPACITY },
           'activity-hotspots-outline': { 'line-color': '#6e2a22', 'line-width': 1.25, 'line-opacity': 0.62 },
@@ -5197,6 +5459,10 @@
           'publish-boundary-fill': { 'fill-color': '#e7c982', 'fill-opacity': 0.08 },
           'publish-boundaries': { 'line-color': '#4d3928', 'line-width': 3, 'line-opacity': 1 },
           'publish-trails': { 'line-color': '#7d4328', 'line-width': 3.8, 'line-opacity': 1 },
+          // pwa_qa item 13d: on the Topo view the gold trail network reads as a
+          // single ORANGE line (overrides the per-difficulty blue/green/black)
+          // so trails pop against the brown contour + hillshade relief.
+          'aop-trail-network': { 'line-color': '#f25e0d', 'line-width': 3.4, 'line-opacity': 0.95 },
           'publish-trailheads': { 'circle-color': '#546f4b', 'circle-radius': 6.5, 'circle-opacity': 1 },
           'roads-local': { 'line-color': '#908773', 'line-opacity': 0.82 },
           'roads-connecting': { 'line-color': '#b9905b', 'line-opacity': 0.9 },
@@ -5239,6 +5505,10 @@
           showOsmNamed: true,
           showSfwda: true,
           showTrails: true,
+          // pwa_qa item 13: Trace is the source-comparison view (OSM tracks +
+          // SFWDA paper trace). Keep the gold network explicitly OFF here so a
+          // Park→Trace switch doesn't leak it on top of the alignment refs.
+          showAopTrailNetwork: false,
           showBoundaries: true,
           showTrailheads: true,
           showEditorPois: true
@@ -5322,6 +5592,9 @@
           showOsmNamed: false,
           showSfwda: false,
           showTrails: false,
+          // pwa_qa item 13: clean aerial — gold network OFF so a Park→Satellite
+          // switch doesn't leave trail lines over the imagery.
+          showAopTrailNetwork: false,
           showBoundaries: false,
           showTrailheads: false,
           showEditorPois: false
@@ -6670,6 +6943,19 @@
       return new Date(friday.getFullYear(), friday.getMonth(), friday.getDate() + 1, 0, 0, 0, 0);
     }
 
+    // misc_4.md item 16: the calendar heading shows the event's START date
+    // (`date_range_label`). Render it as "start – end" when the schema also
+    // carries `end_date_label`. Falls back to start-only when no end date is
+    // present or the two are identical (single-day event), so an event is
+    // never dropped or shown blank (no_limiting_code_mvp).
+    function composeEventDateRangeLabel(event) {
+      const start = (event?.date_range_label || '').trim();
+      const end = (event?.end_date_label || '').trim();
+      if (!end || end === start) return start;
+      // en dash, spaced — matches the user's "start date - end date" shape.
+      return `${start} – ${end}`;
+    }
+
     // Session-start Date for a row given a resolved anchor Saturday.
     function eventScheduleStartFromAnchor(dayLabel, startLocal, anchorSat) {
       if (!anchorSat) return null;
@@ -6961,11 +7247,25 @@
       });
     }
 
+    // Single source of truth for "are trail hotspots actually ON". The Trail
+    // lane is a real toggle over the activity-hotspots layer, so its pressed
+    // state must read the live checkbox, not the preferred-lane heuristic.
+    // (Item 14: on a cold load selectedHotLane() could mark the lane
+    // "selected" while the layer was still hidden, so the first click hit the
+    // OFF branch and nothing turned on.)
+    function trailHotspotsActive() {
+      return !!(activityHotspotsToggle && activityHotspotsToggle.checked);
+    }
+
+    function setTrailHotspotsVisible(on) {
+      if (!activityHotspotsToggle) return;
+      if (activityHotspotsToggle.checked === on) return;
+      activityHotspotsToggle.checked = on;
+      activityHotspotsToggle.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
     function hotButtonFlyToHotspots() {
-      if (activityHotspotsToggle && !activityHotspotsToggle.checked) {
-        activityHotspotsToggle.checked = true;
-        activityHotspotsToggle.dispatchEvent(new Event('change', { bubbles: true }));
-      }
+      setTrailHotspotsVisible(true);
       const bbox = findDensestHotspotCluster();
       if (!bbox) return;
       const pad = visibleMapPadding(20);
@@ -7009,14 +7309,17 @@
         trailBtn.dataset.bound = '1';
         trailBtn.addEventListener('click', () => {
           if (trailBtn.disabled) return;
-          // Toggle: a second tap on the active trail lane turns hot mode off.
-          if (trailBtn.dataset.hotSelected === 'true') {
+          // Real toggle keyed off the live layer state, not the recommended-lane
+          // halo. Second tap (layer already ON) turns the hotspots OFF; first tap
+          // from cold (layer OFF) turns them ON and flies to the densest cluster.
+          if (trailHotspotsActive()) {
             preferredHotLane = null;
+            setTrailHotspotsVisible(false);
             refreshHotButton();
           } else {
             preferredHotLane = 'trails';
+            hotButtonFlyToHotspots(); // turns the layer ON, then refresh paints state
             refreshHotButton();
-            hotButtonFlyToHotspots();
           }
         });
       }
@@ -7054,15 +7357,24 @@
         window.lrOpenCard('hot', { auto: true });
       }
       const selected = selectedHotLane(decision, haveHotspots);
+      // Trail lane is a toggle: its pressed/active state mirrors the live
+      // hotspot layer, not the recommended-lane heuristic. This keeps the
+      // visual and the click logic on the same truth so the FIRST cold click
+      // turns hotspots ON (was marked "selected" while still hidden before).
+      const trailOn = haveHotspots && trailHotspotsActive();
       if (lanes) lanes.dataset.laneCount = haveHotspots ? '2' : '1';
       eventBtn.dataset.hotSelected = selected === 'event' ? 'true' : 'false';
-      trailBtn.dataset.hotSelected = selected === 'trails' ? 'true' : 'false';
+      trailBtn.dataset.hotSelected = trailOn ? 'true' : 'false';
+      trailBtn.dataset.hotOn = trailOn ? 'true' : 'false';
+      trailBtn.setAttribute('aria-pressed', trailOn ? 'true' : 'false');
       trailBtn.hidden = !haveHotspots;
       trailBtn.disabled = !haveHotspots;
       trailBtn.dataset.hotState = 'trail-hot';
-      if (trailTitle) trailTitle.textContent = 'Trail activity';
-      if (trailDetail) trailDetail.textContent = 'Where rigs spent time';
-      trailBtn.setAttribute('aria-label', 'Show trail activity');
+      if (trailTitle) trailTitle.textContent = trailOn ? 'Trail activity on' : 'Trail activity';
+      if (trailDetail) trailDetail.textContent = trailOn ? 'Tap to hide hotspots' : 'Where rigs spent time';
+      const trailGlyph = document.getElementById('hotTrailButtonGlyph');
+      if (trailGlyph) trailGlyph.textContent = trailOn ? '✓' : '❖';
+      trailBtn.setAttribute('aria-label', trailOn ? 'Hide trail activity' : 'Show trail activity');
 
       eventBtn.dataset.hotState = decision.state;
       eventBtn.dataset.hotPriority = decision.state === 'hot-now' ? 'alert' : '';
@@ -7071,7 +7383,7 @@
         const props = decision.target.feature.properties || {};
         eventBtn.disabled = false;
         eventBtn.dataset.targetSessionId = props.session_id || '';
-        if (glyph) glyph.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3.001 2.48Z"/><path d="M12 18a3.75 3.75 0 0 0 .495-7.467 5.99 5.99 0 0 0-1.925 3.546 5.974 5.974 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/></svg>';
+        if (glyph) glyph.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3.001 2.48Z"/><path d="M12 18a3.75 3.75 0 0 0 .495-7.467 5.99 5.99 0 0 0-1.925 3.546 5.974 5.974 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/></svg>';
         if (decision.kind === 'live') {
           const mins = (decision.target.endMs - now.getTime()) / 60000;
           if (title) title.textContent = 'Live event';
@@ -7111,7 +7423,7 @@
 
     function renderEventSchedule(config, data) {
       const event = config?.event || {};
-      calendarRange.textContent = event.date_range_label || '';
+      calendarRange.textContent = composeEventDateRangeLabel(event);
       const sessions = (data?.features || [])
         .filter((feature) => feature.properties?.feature_kind === 'event_session')
         .sort((a, b) => Number(a.properties.sort_order || 0) - Number(b.properties.sort_order || 0));
@@ -7637,8 +7949,14 @@
         return;
       }
       if (view === 'park') {
-        map.fitBounds(parkViewBounds || REGION_BOUNDS, {
-          padding: 60, bearing: VIEW_BEARING, pitch: VIEW_PITCH, duration: 1100, maxZoom: 15.5
+        // Tight padding so the park parcel fills the frame — at padding:60 the
+        // small parcel only landed ~0.87 zoom tighter than Region (reads as
+        // "same zoom"); padding:20 lands it ~1.0+ tighter (measured 14.75 vs
+        // Region 13.74), a clearly visible step in. Fall back to the park-parcel
+        // envelope (not REGION_BOUNDS) so Park is always tighter than Region
+        // even before publish.geojson loads.
+        map.fitBounds(parkViewBounds || PARK_BOUNDS_FALLBACK, {
+          padding: 20, bearing: VIEW_BEARING, pitch: VIEW_PITCH, duration: 1100, maxZoom: 15.5
         });
         return;
       }
@@ -7732,6 +8050,25 @@
           type: 'line',
           source: 'aop-landcover',
           paint: { 'line-color': LANDCOVER_OUTLINE, 'line-width': 0.8, 'line-opacity': 0.55 }
+        });
+        // pwa_qa item 20: a tiled tree-SVG fill over the FOREST polygons,
+        // wired to the satellite toggle's layer list so it shows only with
+        // the aerial (the flat green forest fill is off in that preset) —
+        // treed areas then read as trees on the bare imagery. The icon is
+        // the editable website/img/tree.svg; tune colours/size there.
+        if (!map.hasImage('forest-trees')) {
+          const treeImg = new Image();
+          treeImg.onload = () => { if (!map.hasImage('forest-trees')) map.addImage('forest-trees', treeImg, { pixelRatio: 2 }); };
+          treeImg.onerror = () => console.warn('forest tree icon failed to load');
+          treeImg.src = './img/tree.svg';
+        }
+        map.addLayer({
+          id: 'landcover-forest-trees',
+          type: 'fill',
+          source: 'aop-landcover',
+          filter: ['match', ['get', 'class'], ['forest_deciduous', 'forest_evergreen'], true, false],
+          layout: { visibility: 'none' },
+          paint: { 'fill-pattern': 'forest-trees', 'fill-opacity': 0.85 }
         });
       }
 
@@ -8865,39 +9202,11 @@
           paint: { 'line-color': TRACE_DIFF_COLOR, 'line-width': 2.5, 'line-opacity': 0.9 }
         });
       }
-      const sfwdaTraceMarkersData = await fetchJson('./data/sfwda_traced_markers.geojson', 'SFWDA traced markers missing');
-      if (sfwdaTraceMarkersData) {
-        map.addSource('sfwda-trace-markers', { type: 'geojson', data: sfwdaTraceMarkersData });
-        map.addLayer({
-          id: 'sfwda-trace-markers',
-          type: 'circle',
-          source: 'sfwda-trace-markers',
-          layout: { visibility: 'none' },
-          paint: {
-            'circle-radius': 5,
-            'circle-color': TRACE_DIFF_COLOR,
-            'circle-stroke-color': '#ffffff',
-            'circle-stroke-width': 1.2,
-            'circle-opacity': 0.92
-          }
-        });
-        // trail-number labels on the markers (the hand-read numbers) -- share the
-        // markers toggle so they show/hide together.
-        map.addLayer({
-          id: 'sfwda-trace-marker-labels',
-          type: 'symbol',
-          source: 'sfwda-trace-markers',
-          filter: ['has', 'trail_number'],
-          layout: {
-            visibility: 'none',
-            'text-field': ['to-string', ['get', 'trail_number']],
-            'text-size': 11,
-            'text-allow-overlap': true,
-            'text-ignore-placement': true
-          },
-          paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.1 }
-        });
-      }
+      // pwa_qa item 9: the SFWDA traced "marker" DOTS were a dev-workflow
+      // artifact of the paper-map extraction (one difficulty-coloured dot per
+      // read trail number). The gold `aop-trail-network` now carries the
+      // numbered trail labels (aop-trail-network-labels), so the dots layer is
+      // removed. The `sfwda-trace-trails` line review overlay above is kept.
 
       // --- AOP merged trail network (hand-cleaned SFWDA trails + OSM tracks) ----
       // The "new truth": one feature per trail edge, each coloured per-trail via the
@@ -9518,13 +9827,18 @@
           attribution: 'Brand logos: AOP, Rock Warblers'
         });
 
+        // Restore the persisted size cap (item 5) before composing the
+        // zoom-clamped icon-size expression so a reload keeps the tuned cap.
+        loadBrandLogoCap();
         map.addLayer({
           id: 'brand-logos-icons',
           type: 'symbol',
           source: 'brand-logos',
           layout: {
             'icon-image': ['get', 'icon_image'],
-            'icon-size': ['coalesce', ['get', 'icon_size'], 0.06],
+            // Per-feature icon_size × global cap × zoom factor that maxes out
+            // at park zoom and shrinks below it (see brandLogoIconSizeExpr).
+            'icon-size': brandLogoIconSizeExpr(),
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
             'icon-anchor': 'center'
@@ -9902,13 +10216,30 @@
     // "9" sorts alphabetically and buries trail "9" under every building address
     // that merely contains a 9. searchGroups is pre-sorted alphabetically, so a
     // stable sort by rank keeps results alphabetical within each rank tier.
+    //
+    // Trail-number queries (the query starts with a digit) are the trail
+    // search path: a bare "1" must surface the 1-prefixed trails ("1X", "10",
+    // "11"…), not the building addresses that also start with "1" (e.g. "1010
+    // Ellis Cove Road"). Those addresses prefix-match too and, sorted only by
+    // base rank + alphabetically, fill the 8-slot dropdown before "1X" ever
+    // sorts in. So within each rank tier we float trails above non-trails for
+    // digit-leading queries (base rank doubled, +1 for non-trail). Exact name
+    // (rank 0) stays unbeatable, so trail "1" itself still tops the list.
     function searchRank(group, query) {
       const n = group.name.toLowerCase();
-      if (n === query) return 0;
-      if (n.startsWith(query)) return 1;
-      if (group.aliases && group.aliases.some((a) => a.toLowerCase() === query)) return 1;
-      if (n.includes(query)) return 2;
-      return 3;                                // alias substring only
+      let base;
+      if (n === query) base = 0;
+      else if (n.startsWith(query)) base = 1;
+      else if (group.aliases && group.aliases.some((a) => a.toLowerCase() === query)) base = 1;
+      else if (n.includes(query)) base = 2;
+      else base = 3;                           // alias substring only
+      // For trail-number queries, break rank ties in favour of trails so the
+      // 1-prefixed trails are not crowded out of the dropdown by 1-prefixed
+      // building addresses. base 0 (exact) is preserved as 0.
+      if (base > 0 && /^\d/.test(query)) {
+        return base * 2 + (group.kind === 'trail' ? 0 : 1);
+      }
+      return base;
     }
 
     function renderSearchResults() {
@@ -9921,10 +10252,17 @@
         searchMatches = [];
         return;
       }
+      // Cap the dropdown so a broad query doesn't flood it. A trail-number
+      // query ("1") legitimately matches a whole family of short trail names
+      // ("1", "10", "11"…"18", "1X") — there are 10 trails starting with "1",
+      // so an 8-row cap would silently drop "1X" (it sorts last among them).
+      // Widen the cap for digit-leading queries so the full 1-prefixed trail
+      // set is reachable; the dropdown already scrolls (max-height:240px).
+      const limit = /^\d/.test(query) ? 12 : 8;
       searchMatches = searchGroups
         .filter((group) => searchGroupMatchesQuery(group, query))
         .sort((a, b) => searchRank(a, query) - searchRank(b, query))
-        .slice(0, 8);
+        .slice(0, limit);
       if (!searchMatches.length) {
         searchResults.innerHTML = '<div class="search-empty">No match</div>';
         searchResults.style.display = 'block';
@@ -10121,6 +10459,15 @@
       toggle.addEventListener('change', updateLayerVisibility);
     }
 
+    // Item 14: the Trail-activity hot lane is a toggle over the activity-hotspot
+    // layer, so flipping that layer anywhere (the layer panel, a preset, the hot
+    // button itself) must resync the button's pressed/active visual.
+    if (activityHotspotsToggle) {
+      activityHotspotsToggle.addEventListener('change', () => {
+        if (typeof refreshHotButton === 'function') refreshHotButton();
+      });
+    }
+
     for (const id of PRESET_TOGGLE_IDS) {
       const element = document.getElementById(id);
       if (element) {
@@ -10284,6 +10631,14 @@
         lrHasSavedState = false;
         lrRender();
       };
+      // Item 15: the icon-column tab offsets in lrRender are computed from live
+      // panel.offsetTop rects. When the right edit `.panel` collapses to the
+      // pencil FAB, or a card body is resized by drag, the page reflows and
+      // those cached offsets go stale -- the floating tab icons (and the handle
+      // under them) drift off the panels they label, so a drag no longer tracks
+      // the finger. Expose a public recompute so those events can re-run the
+      // geometry against fresh rects instead of leaving the old margins in place.
+      window.lrReflow = lrRender;
 
       lrRender();
     })();
