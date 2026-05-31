@@ -118,6 +118,19 @@ it should give it some breathing room.
 
 ---
 
+satalite view needs a better tree icon
+
+---
+
+the icon groups at the top
+ 
+3 4 1, used to be all the same width when it was  3 3 1 
+
+now that we have 4 in the second group that group is tight.
+
+---
+
+
 
 ## iOS bottom padding (home indicator) — RESOLVED 2026-05-30
 

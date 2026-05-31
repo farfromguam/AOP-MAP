@@ -131,6 +131,24 @@ clientH 663 / vv 663 @top0`, `screenH 812`, `#map t0 b663 h663`, `canvas h663`,
   notched iPhone the black strips merge with the bezel/notch (white system text). One
   change cleans BOTH ends (the dark Safari address pill blends into the black bottom band
   too). Confirms the lever is body-bg sampling, not theme-color. Verify on device.
+- **`v16-dbg` — inverted (concave) rounded corners.** User wanted the black frame
+  rounded, not sharp. Four fixed `.screen-corner` divs (tl/tr/bl/br) after `#map`, each a
+  `--frame-radius` (18px, tunable in `:root`) square painted with a radial-gradient that's
+  transparent in a quarter-disc toward the map and `#000` in the outer L → a concave black
+  corner that blends with the body bg + bands. `pointer-events:none`, `z-index:1` (above
+  the map canvas, below all controls z≥2 so it never covers the pills/FAB). Hidden via
+  `@media (display-mode: standalone)` (no bands in the PWA; device rounds the screen).
+  Mechanism verified on desktop (Playwright): outer corner pixels `#000`, interiors reveal
+  map/controls, 0 errors. On-device look (radius + alignment with the bands) is the user's
+  to confirm; tune `--frame-radius` if 18px is too tight/loose.
+- **`v17-dbg` — corner fillets scoped to iOS Safari TAB only.** Per user ("only iphone
+  browser, no pwa, no browser"): `.screen-corner` is now `display:none` by default and
+  shown only under `html.ios-browser`, a class the `<head>` script adds when `isIOS &&
+  !standalone` (UA `/iP(hone|od|ad)/` or MacIntel+touch for iPad; standalone via
+  matchMedia/navigator.standalone). Dropped the old `@media (display-mode: standalone)`
+  hide. Verified (Playwright UA swap): default desktop → no `ios-browser` class, corner
+  `display:none`; iPhone UA → class present, `display:block`. So PWA and desktop/non-iOS
+  browsers get sharp corners; only the iOS Safari tab gets the rounded frame.
 - **NEXT — bottom bar "fill with map" (user is open to it).** Real technique but a
   measure-and-iterate job, NOT a clean one-liner: Safari's bottom address bar is
   translucent and floats over the page, so painting the map behind it means sizing the MAP

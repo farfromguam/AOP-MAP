@@ -22,6 +22,16 @@
         var q = new URLSearchParams(location.search).get('edit');
         var editorOn = q === null ? true : q !== '0';
         if (!editorOn) document.documentElement.classList.add('editor-off');
+        // Rounded corner fillets (.screen-corner) round the map into iOS Safari's black
+        // chrome bands. Only meaningful in an iOS Safari TAB — not the installed PWA (no
+        // bands) and not desktop / non-iOS browsers. Set the gate class before first paint
+        // so the corners never flash on the wrong surface. iPad reports as MacIntel with
+        // touch, so cover it via maxTouchPoints.
+        var isIOS = /iP(hone|od|ad)/.test(navigator.userAgent) ||
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var standalone = window.matchMedia('(display-mode: standalone)').matches ||
+                         navigator.standalone === true;
+        if (isIOS && !standalone) document.documentElement.classList.add('ios-browser');
       } catch (_) {}
     })();
   </script>
@@ -69,6 +79,10 @@
          zeroes it (below) so the attribution reclaims the full width once the FAB is
          gated away — the layout works with the edit button present OR absent. */
       --edit-fab-reserve: 76px;
+
+      /* Radius of the inverted (concave) black corner fillets that round the map
+         into the Safari-tab black chrome bands. Tunable; 0 = sharp corners. */
+      --frame-radius: 18px;
     }
     /* Viewport height is context-split (see the display-mode override below):
        - Browser TAB → 100dvh: respects the collapsing address bar so the bottom
@@ -106,6 +120,22 @@
     @media (display-mode: standalone) {
       html, body, #map { height: 100vh; }
     }
+    /* Inverted (concave) corner fillets — round the map into the black Safari-tab
+       chrome bands so the frame reads rounded, not sharp. Each is a fixed --frame-radius
+       square whose radial-gradient is transparent in a quarter-disc toward the map and
+       #000 in the outer L, i.e. a CONCAVE black corner. Black blends with the body bg +
+       the status/toolbar bands. pointer-events:none keeps the map draggable; z-index:1
+       sits above the map canvas (z auto) but below every control (z≥2) so the fillets
+       never paint over the pills/FAB. SCOPED TO iOS SAFARI TAB ONLY — default hidden;
+       shown only when the <head> script adds html.ios-browser (iOS device AND not
+       standalone). So: NOT the installed PWA (no bands; the device rounds the screen),
+       NOT desktop / non-iOS browsers (no chrome bands to round into). */
+    .screen-corner { display: none; position: fixed; width: var(--frame-radius); height: var(--frame-radius); z-index: 1; pointer-events: none; }
+    html.ios-browser .screen-corner { display: block; }
+    .screen-corner.tl { top: 0;    left: 0;  background: radial-gradient(circle at bottom right, transparent calc(var(--frame-radius) - 0.5px), #000 var(--frame-radius)); }
+    .screen-corner.tr { top: 0;    right: 0; background: radial-gradient(circle at bottom left,  transparent calc(var(--frame-radius) - 0.5px), #000 var(--frame-radius)); }
+    .screen-corner.bl { bottom: 0; left: 0;  background: radial-gradient(circle at top right,     transparent calc(var(--frame-radius) - 0.5px), #000 var(--frame-radius)); }
+    .screen-corner.br { bottom: 0; right: 0; background: radial-gradient(circle at top left,      transparent calc(var(--frame-radius) - 0.5px), #000 var(--frame-radius)); }
     /* Keep MapLibre's corner controls (geolocate, etc.) clear of the notch,
        status bar, home indicator, and rounded corners under viewport-fit=cover. */
     .maplibregl-ctrl-top-left    { margin-top: var(--sa-top); margin-left: var(--sa-left); }
@@ -804,6 +834,12 @@
 </head>
 <body>
   <div id="map"></div>
+  <!-- Inverted black corner fillets that round the map into the Safari-tab chrome (see
+       .screen-corner). Hidden in the installed PWA. -->
+  <div class="screen-corner tl" aria-hidden="true"></div>
+  <div class="screen-corner tr" aria-hidden="true"></div>
+  <div class="screen-corner bl" aria-hidden="true"></div>
+  <div class="screen-corner br" aria-hidden="true"></div>
   <!-- DIAGNOSTIC: on-screen viewport readout. Remove with the other DIAGNOSTIC blocks. -->
   <div id="dbgOverlay" style="position:fixed; top:40%; left:6px; z-index:99999; background:rgba(0,0,0,0.82); color:#0f0; font:11px/1.35 ui-monospace,Menlo,monospace; padding:6px 8px; border-radius:6px; white-space:pre; pointer-events:none; max-width:64vw;">dbg…</div>
   <div class="left-controls">
@@ -985,7 +1021,7 @@
     <!-- Build version, under the download icon. Always visible (the install
          button self-hides once installed). Keep this string in sync with
          VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v15-dbg</div>
+    <div class="util-version" id="appVersion" title="App build version">v17-dbg</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
