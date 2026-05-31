@@ -4,6 +4,37 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+**2026-05-31 (app code review + fix batch 1).** App code review (4 High / 20
+Medium / 13 Low across `website/index.html` + `sw.js` + `manifest.json`; one
+sweep finding — `composeFeatureFilter` id-type — retracted as a false positive
+after hand-check). **Split into two cards:** DONE record at
+`tasks/04_event_app/_done/app_code_review_fixes_batch1.md` and the held items at
+`tasks/04_event_app/app_code_review_followups.md` (now 20 findings, grouped, with
+a recommended order; next cheap slice = forks M7/M14/M17, then the on-device
+batch). **Queued decision H4+L8 (SW cache-staleness) ANSWERED + shipped:** user
+chose stale-while-revalidate — shell HTML self-heals (navigate caches the
+response; non-nav `.html` SWR), copy JSON joins the SWR path (`SWR_SUFFIXES`),
+release-checklist comment added, **`VERSION`/#appVersion v20 → v21**. SW verified
+active (state=activated). **Then the no-device forks M7/M14/M17 shipped too:** M7
+(ticker confirmed singleton + documented page-lifetime), M14 (4 unreferenced
+files dropped from `sw.js` precache, ride v21), M17 (`EDITOR_POI_CATEGORIES`
+derived from `#poiCategory` options — drift gone, verified 11/11). **20 of 37
+findings now resolved, 17 held (all on-device or refactor — no decision-gated
+work left).** All in the working tree (UNCOMMITTED). Verified by observation
+(smoke PASS, 0 console errors): M1 (popup `closeAllMapPopups`), M2 (central popup-title escape +
+stripped 12 redundant caller escapes), M3 (`fetchJson` warns on non-OK), M6
+(MultiPolygon hotspot centroid), M11 (stable POI row id), M15 (About href gate),
+M16 (`mergeStoreSlice` shallow-merge), M18 (positioned-feature flag clear), M20
+(`?.` listener guards), H2 (free bake canvases), H3 (tainted-canvas guard), L4
+(`withZoomStops` shape guard), L5 (hemisphere label), L6 (`sw.js` `status===200`),
+L7 (manifest `id`). New durable verifier
+`mvp/scripts/playwright_verify_code_review_fixes.py` → **PASS, 0 console errors**
+(popup no-stack + no-double-escape + presets + renderAbout all confirmed). The
+report's "Resolution status" block lists what was **held** (on-device/interaction
+verify, cache-strategy decisions, polish-routed) with reasons. `sw.js` (L6) needs
+a `VERSION` bump to reach installed users — user's call.
+
+
 **2026-05-31 (copy review surface) — copy-as-data + printable review page.**
 On branch **`copy-review`** (git worktree at `../aop-copy-review`), UNCOMMITTED.
 New card `tasks/04_event_app/copy_review_surface.md`. Built `website/copy_review.html`
