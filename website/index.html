@@ -1118,16 +1118,21 @@
 
       <section class="panel-section collapsed" data-section="comparisons">
         <div class="section-header">
-          <span class="section-label">Comparisons</span>
+          <span class="section-label">Review</span>
           <button type="button" class="section-toggle" aria-expanded="false">
             <span class="section-chevron">▸</span>
           </button>
         </div>
         <div class="section-content">
           <!-- Each row carries a status badge: green ✓ = the winning variant is
-               live in index.html (applied); rust ◌ = still the user's pick.
+               live in index.html (applied); rust ◌ = still the user's pick, or a
+               standing review tool (copy review, icon master sheet).
                Update the badge when a comparison resolves. -->
           <div class="comparisons-list">
+            <a href="copy_review.html" target="_blank" rel="noopener">
+              <span class="cmp-label">Copy review — every text surface</span>
+              <span class="cmp-status cmp-open" title="Master page — every copy/text surface in the app assembled to proof and print, each with its root file, status, and gap flags">◌ Master page</span>
+            </a>
             <a href="icon_master.html" target="_blank" rel="noopener">
               <span class="cmp-label">Icon master sheet — all UI icons</span>
               <span class="cmp-status cmp-open" title="Tool — collect / compare / normalize every interface icon; revise stroke + optical size and export back to index.html">◌ Master sheet</span>
