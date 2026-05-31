@@ -1,8 +1,9 @@
 # Trail Research Integration — scope
 
-Status: **Slices 1–2 SHIPPED 2026-05-31** on branch `copy-review` (alongside the
-copy-as-data / copy-review work — see `copy_review_surface.md`). Slices 3–4 and
-the public-publish voice-rewrite remain deferred. Authored 2026-05-31.
+Status: **Slices 1–2 SHIPPED 2026-05-31**, merged to `master` (`67df0f4`) on top of
+the pwa_qa2 v19 build — see `copy_review_surface.md`. The onX→park-voice rewrite is
+**DONE** (descriptions are now original AOP wording, brain voice), so the onX-copyright
+caveat is dropped. Slices 3–4 remain deferred. Authored 2026-05-31.
 
 Goal: wire the persisted trail research (names + descriptions + named landmarks)
 into the live viewer so a trail on the map carries its name, difficulty, and
@@ -23,32 +24,37 @@ Runtime sidecar join, exactly as recommended below. No prose baked into geometry
 - **Slice 1 — trail click popup (NEW).** `bindPopup('aop-trail-network', …)`:
   title = catalog name + number (`Little Dipper (Trail 9)`); rows lead with the
   **map-color Difficulty** (park authority), then catalog About / Length / onX TR
-  (secondary) / Connects-to; footer carries the onX license note. Un-catalogued
-  trails show Number + Difficulty + "write-up owed". (Fork 3 = map color first; done.)
+  (secondary) / Connects-to. Un-catalogued trails show Number + Difficulty +
+  "write-up owed". (Fork 3 = map color first; done.) No license footer — the
+  descriptions are original AOP wording (see Fork 1).
 - **Slice 2 — POI browser trails group repointed.** Was iterating the legacy
   `publishDataCache` `trail_centerlines` (2 observed GPX segments); now iterates the
   **gold `aop-trail-network`** (Fork 2 = gold; done), deduped to one row per trail
   (network has multiple edges per number), unnamed edges skipped, numbered-first
   sort. 9 catalogued trails get the write-up; the rest carry a "name/description
-  owed" placeholder so the gap stays auditable; row popup shows the onX license
-  caveat.
-- **Fork 1 (license gate):** descriptions surface in the editor/default view with
-  the onX license note visible (popup footer + POI-row Caveat). Voice-rewrite
-  before any public-gated build is still owed (see "Out of scope").
+  owed" placeholder so the gap stays auditable.
+- **Fork 1 (license) — RESOLVED by rewriting.** The 8 onX-sourced descriptions were
+  rewritten in the project's own voice (`brain/voice/voice_guide.md`): same facts
+  (difficulty, obstacles, what connects), original wording. The onX-copyright concern
+  no longer applies, so the license footer/caveat was dropped from the trail popup,
+  the POI row popup, and the registry. Trail 96 keeps the park's own 2015 wording.
+  Fact provenance stays in each catalog row's `sources` array.
 - **Copy registry updated** — `aop_copy_registry.json` `trail_catalog` kind now
-  lists the three live surfaces + the runtime-join + license note, so the printable
-  copy-review page reflects the wiring.
+  lists the three live surfaces + the runtime-join (no license note; descriptions
+  rewritten in brain voice), so the printable copy-review page reflects the wiring.
 
 **Verified by observation** (Playwright on `:8001`, worktree): POI trails group
-121 rows incl. ~100 trails, "Launchpad" joined to its description, 101 owed-placeholder
-chips, Launchpad row popup shows description + `onX-copyright` caveat; trail map
-popup observed for un-catalogued (Trail 50/68 → Number + Difficulty + owed) AND
-catalogued (`Little Dipper (Trail 9)` → About + onX TR2 + license footer); 0 console
-errors. Logs/screenshot: `brain/output/trail_verify.log`, `trail_integration.png`.
+121 rows incl. ~100 trails, "Launchpad" joined to its rewritten description, 101
+owed-placeholder chips, Launchpad row popup shows the rewritten description with no
+onX caveat; trail map popup observed for un-catalogued (Trail 50/68 → Number +
+Difficulty + owed) AND catalogued (`Little Dipper (Trail 9)` → About + onX TR2, no
+license footer); 0 console errors. Re-verified against the merged `master`
+(copy-review 20/20, trail 11/11). Logs/screenshot: `brain/output/trail_verify.log`,
+`trail_integration.png`.
 
 **Still owed:** Slice 3 (search description preview), Slice 4 (landmark geometry),
-names/descriptions for the ~110 un-catalogued trails, the public voice-rewrite, and
-promotion to `publish.*` (license + source rows). Whether to retire the legacy
+names/descriptions for the ~110 un-catalogued trails, and promotion to `publish.*`
+(source rows). Whether to retire the legacy
 `publish.geojson trail_centerlines` + its `bindPopup('publish-trails')` is still
 open (MVP backlog item 9 / `data_integrity_publishability.md`).
 
