@@ -1,5 +1,18 @@
 # Paper-map trail extraction (vectorize the SFWDA raster)
 
+> **Deferred — Sprint 04 triage (2026-05-30).** This card is heavily progressed
+> and still **actively iterated** (the extracted `aop_trail_network.geojson` is
+> the current served network; new `edited_N` SVG imports were landing through
+> 2026-05-30). The extraction pipeline (scripts, SVG round-trip, gold export,
+> app wiring) is shipped, but the card's promise is **not complete and is
+> deferred because** it awaits a user review pass + a promotion decision: the
+> trace lives in the **raw zone**, not `publish`; promotion through
+> `northstar/source_register.md` is owed, and the open items below (blue-circle
+> "1" band-flag, 8 `unjoined_gaps`, wiring `sfwda_numbered_trails.geojson`) need
+> a human/field call. **NOTE for the user:** if you intend to keep feeding edited
+> SVGs, you may prefer to keep this on an *active* sprint rather than deferred —
+> flagged in the triage report.
+
 Started: 2026-05-29
 Status: PROTOTYPE — stages A/B/D/E/F running end-to-end (2026-05-29). OCR,
 boundary-split, facility-icon filter, and viewer wiring still open.

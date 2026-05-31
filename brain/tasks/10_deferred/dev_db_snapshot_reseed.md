@@ -1,5 +1,11 @@
 # Dev DB Snapshot + Reseed
 
+> **Deferred — Sprint 04 triage (2026-05-30).** The POI dev-fixture-in-fresh-DB
+> piece shipped 2026-05-29 (recorded in the "Wired 2026-05-29" block below and
+> split to `_done/bake_first_poi_serve_slice.md`). The card's main promise — a
+> reviewable DB-data export + reseed-into-fresh-DB mechanism — is **deferred
+> because** it is still unbuilt and wants a stable `core` schema baseline first.
+
 Carry Sprint 03's dev/pre-prod data dump need into Sprint 04.
 
 This is not production backup design. It is a repeatable way to keep configured

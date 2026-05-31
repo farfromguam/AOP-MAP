@@ -1,5 +1,11 @@
 # Rock Warblers Content Audit
 
+> **Deferred — Sprint 04 triage (2026-05-30).** Not done. **Deferred because** it
+> is gated on external truth: it needs Rock Warblers to confirm the real event
+> details (format, skills, schedule clock-times, contacts, etc.) before the
+> placeholder sister-event copy can be replaced. Until those confirmations land,
+> the UI stays confident and the source data carries the uncertainty.
+
 Sprint 03 put production-voice event copy into the left sidebar using the thin
 public event record plus sister-event patterns.
 

@@ -52,9 +52,13 @@ brain/
 
 Sprint 03 is closed. Its reviewed cards live in `tasks/03_event_app/_done/`,
 with `tasks/03_event_app/misc_3.md` left active by request. Sprint 04 starts at
-`tasks/04_event_app/_readme.md`; it carries the extracted app-loop,
+`tasks/04_event_app/_readme.md`; it carried the extracted app-loop,
 dev-reseed, content-audit, data-integrity, viewer-polish, POI-editor, brand,
-and Park-icon work. `tasks/01_mvp/_done/aop_south_pittsburg_map_build_card.md`
+and Park-icon work. **Triaged 2026-05-30:** every Sprint 04 card was sorted to
+`tasks/04_event_app/_done/` (the editor passes, calendar icon, misc_4, and the
+split-out bake-first POI slice) or to `tasks/10_deferred/` (the rest — see the
+triage block in the `04_event_app/_readme.md` and the deferred `_readme.md`).
+`tasks/01_mvp/_done/aop_south_pittsburg_map_build_card.md`
 is the closed Sprint 01 build card, kept as the historical promise. Cards are
 direction, not gospel; update them as the map learns.
 

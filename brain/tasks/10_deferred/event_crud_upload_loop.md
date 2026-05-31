@@ -1,5 +1,13 @@
 # Event CRUD + Upload Loop
 
+> **Deferred — Sprint 04 triage (2026-05-30).** Not started — every Acceptance
+> box is open. **Deferred because** it is large multi-phase work that needs
+> scoping decisions first (the Open Questions below: invite-codes vs accounts,
+> who moderates, R2 vs S3, photo publishability, GPX-timestamp handling, whether
+> QGIS review stays mandatory) and a stable `core`/storage baseline. This is the
+> sprint's main future thrust; promote back to an active sprint once the forks
+> are answered.
+
 Sprint 03 proved the shape in an audit. Sprint 04 is where the app loop becomes
 real: staff event CRUD first, upload-backed evidence second, contributor
 submissions behind a review gate third.

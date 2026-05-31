@@ -1,5 +1,11 @@
 # Viewer Polish Follow-ups
 
+> **Deferred — Sprint 04 triage (2026-05-30).** This is an open follow-ups /
+> verifier-residue backlog. A handful of items shipped (marked `[x]` inline);
+> the bulk are open and the Acceptance section is unmet. **Deferred because** it
+> is a standing polish backlog waiting on focus, not a discrete deliverable —
+> pull individual items into an active sprint as they earn priority.
+
 Sprint 03 shipped the big viewer chrome moves. This card is the residue worth
 keeping visible in Sprint 04.
 

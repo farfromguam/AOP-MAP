@@ -56,7 +56,7 @@
        gap-free in an iOS standalone PWA where html/body height:100% can fall
        short of the screen under viewport-fit=cover. Body background matches the
        map base so no stray strip can show even for a frame. */
-    body { background: #efe7d5; }
+    html, body { background: #efe7d5; }
     #map { position: fixed; inset: 0; }
     /* Keep MapLibre's corner controls (geolocate, etc.) clear of the notch,
        status bar, home indicator, and rounded corners under viewport-fit=cover. */
@@ -188,6 +188,19 @@
     #pwaInstallBtn.util-install[hidden] { display: none; }
     /* iOS Add-to-Home-Screen hint, now flowing under the install square. */
     #pwaIosHint.util-ios-hint { justify-self: start; max-width: 240px; }
+    /* Build-version chip, sized to the float-group column and sitting under the
+       Install square. Always visible — the install button self-hides once the
+       app is installed, which is exactly when knowing the build matters most. */
+    .util-version {
+      width: var(--tab-h); justify-self: start;
+      display: grid; place-items: center;
+      padding: 4px 0; border-radius: 8px;
+      background: var(--cream-surface); border: 1px solid var(--cream-border);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+      font: 800 0.6rem Inter, system-ui, sans-serif;
+      letter-spacing: 0.03em; color: var(--brown-mid);
+      user-select: none; cursor: default;
+    }
     /* The Locate control now lives in the left rail — hide MapLibre's
        default top-right geolocate button (it is the only top-right ctrl). */
     .maplibregl-ctrl-top-right .maplibregl-ctrl-group { display: none; }
@@ -227,7 +240,7 @@
        narrow viewports. Expanded panel still fills the right column up to
        max-height; the visual difference on a tall desktop is negligible
        because the panel already filled top→bottom. */
-    .panel { position: absolute; right: calc(12px + var(--sa-right)); bottom: calc(12px + var(--sa-bottom)); top: auto; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); width: 380px; max-width: calc(100vw - 24px - var(--sa-left) - var(--sa-right)); max-height: calc(100vh - 24px - var(--sa-top) - var(--sa-bottom)); overflow-y: auto; z-index: 2; box-sizing: border-box; }
+    .panel { position: absolute; right: calc(12px + var(--sa-right)); bottom: max(12px, var(--sa-bottom)); top: auto; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); width: 380px; max-width: calc(100vw - 24px - var(--sa-left) - var(--sa-right)); max-height: calc(100vh - 24px - var(--sa-top) - var(--sa-bottom)); overflow-y: auto; z-index: 2; box-sizing: border-box; }
     .panel h1 { margin: 0 0 8px; font-size: 1rem; }
     .panel-header { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
     .panel-header h1 { margin: 0; flex: 1; min-width: 0; }
@@ -686,11 +699,15 @@
       .lr-content-col { --lr-card-body-height: 160px; }
       .info-panel { padding: 9px; }
       .hot-button { min-height: 54px; padding: 7px 8px; }
-      /* Panel docks above the message bar (which is at bottom: 8px, ~40 px
-         tall) and grows upward. max-height keeps a 220 px reserve at the
-         top so the left rail stays uncovered. */
-      .panel { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); top: auto; bottom: calc(56px + var(--sa-bottom)); width: auto; max-width: none; max-height: clamp(220px, calc(100vh - 360px - var(--sa-top) - var(--sa-bottom)), 420px); }
-      .message { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); bottom: calc(12px + var(--sa-bottom)); max-width: none; }
+      /* Panel docks above the message bar and grows upward. Both clear the
+         home indicator with max(base, --sa-bottom) — we take the LARGER of the
+         design padding and the safe-area inset, not their sum, so a 34 px home
+         indicator doesn't stack on top of the 12 px base into a 46 px gap. The
+         panel reserves the message bar's offset + ~44 px (bar height + gap).
+         max-height keeps a 220 px reserve at the top so the left rail stays
+         uncovered. */
+      .panel { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); top: auto; bottom: calc(max(12px, var(--sa-bottom)) + 44px); width: auto; max-width: none; max-height: clamp(220px, calc(100vh - 360px - var(--sa-top) - var(--sa-bottom)), 420px); }
+      .message { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); bottom: max(12px, var(--sa-bottom)); max-width: none; }
     }
     @media (min-width: 1024px) {
       .left-controls { width: 360px; }
@@ -876,6 +893,11 @@
         <path d="M4.5 15v2.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V15"/>
       </svg>
     </button>
+    <!-- Build version, under the download icon. Always visible (the install
+         button self-hides once installed). Keep this string in sync with
+         VERSION in sw.js — both name the same build. -->
+    <div class="util-version" id="appVersion" title="App build version">v5</div>
+
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
     <div id="pwaIosHint" class="util-ios-hint" hidden role="dialog" aria-label="Install instructions"
@@ -1260,6 +1282,28 @@
       showAccuracyCircle: true
     });
     map.addControl(geolocate, 'top-right');
+
+    // On phones, start the attribution collapsed to the ⓘ. MapLibre's compact
+    // attribution starts EXPANDED — the full per-source credits show as a tall
+    // white text band under the map (a real eyesore at narrow PWA widths) and
+    // only minimize to the ⓘ on the first map drag. The `maplibregl-compact-show`
+    // class is auto-added once, when the first attributed source loads
+    // (empty→content transition); because this viewer adds sources dynamically
+    // after `load`, we listen on `sourcedata`, collapse once it appears, and
+    // unbind. After that MapLibre never re-adds compact-show on its own, so we
+    // never fight the user's later ⓘ taps. Guarded to narrow viewports only —
+    // wider screens keep the full attribution bar they've always shown (this
+    // build's control carries the `maplibregl-compact` class even when wide, so
+    // the width check, not the class, is what scopes this to phones).
+    const collapseAttribOnce = () => {
+      if (window.innerWidth > 640) return;   // desktop: leave the full attribution bar
+      const el = document.querySelector('.maplibregl-ctrl-attrib.maplibregl-compact');
+      if (!el) return;
+      el.classList.remove('maplibregl-compact-show');
+      el.removeAttribute('open');
+      map.off('sourcedata', collapseAttribOnce);
+    };
+    map.on('sourcedata', collapseAttribOnce);
 
     // The default top-right geolocate button is hidden by CSS; surface it as
     // the Locate float-group button in the left rail. trigger() drives the

@@ -1,5 +1,12 @@
 # Star-driven POI list — one authoring pipeline, not file reconciliation
 
+> **Deferred — Sprint 04 triage (2026-05-30).** The bake-first SERVE slice
+> shipped and was split to `../04_event_app/_done/bake_first_poi_serve_slice.md`.
+> What remains here is **deferred because** it needs a user decision: the AUTHOR
+> half (who writes `core.pois` — web editor vs QGIS vs both) and the open
+> pipeline forks (localStorage's role, bake artifact shape, dev-time-only vs
+> prod write path) are unresolved. No code until those are picked.
+
 Date: 2026-05-29
 
 TL;DR:

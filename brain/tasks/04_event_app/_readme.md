@@ -10,7 +10,45 @@ The goal is not to reopen every Sprint 03 card. The shipped cards move to
 
 -----
 
-## Current cards
+## Sprint 04 triage (2026-05-30)
+
+Reviewed every card in this folder and sorted it to `_done/` or `10_deferred/`.
+The lists below this block are the **pre-triage** record (kept for history).
+
+**Shipped → `_done/`:**
+
+- `calendar_group_icon_review.md` — clipboard glyph wired into `#lrTabCal`.
+- `editor_unified_tree.md` — five-bucket editor tree (shipped 05-27).
+- `editor_three_buckets_v3c.md` — collapsed to three buckets + per-bucket create
+  (shipped 05-28; supersedes the tree pass).
+- `editor_unified_positioned_features.md` — unified override store + lock flag
+  (shipped 05-29).
+- `misc_4.md` — items 1–5, the PENDING block, and the images/region-callout
+  export bake; remaining lines routed or user-held (close-out header added).
+- `bake_first_poi_serve_slice.md` — **new card, split out** of
+  `star_driven_poi_list.md` + `dev_db_snapshot_reseed.md`: the shipped bake-first
+  POI SERVE pipeline (`core.pois` → `publish.pois` → `publish.geojson` → viewer)
+  plus the fresh-DB seed mount.
+
+**Deferred → `../10_deferred/`** (each carries its own "Deferred because"):
+
+- `event_crud_upload_loop.md`, `paper_map_trail_extraction.md` (partial/active),
+  `star_driven_poi_list.md` (remainder), `dev_db_snapshot_reseed.md` (remainder),
+  `data_integrity_publishability.md`, `brand_assets_and_permissions.md`,
+  `calendar_placeholder_state.md`, `park_bounds_icon_apply.md`,
+  `rock_warblers_content_audit.md`, `poi_editor_followups.md`,
+  `viewer_polish_followups.md`.
+
+**Left in place:** `source_layers.md` — a reference layer-inventory list (used by
+the provenance grouping in `paper_map_trail_extraction.md` / `research/viewer.md`),
+not a task card with acceptance criteria, so it was not sorted.
+
+**Open chore (unchanged):** the three locked agent worktrees + `worktree-agent-*`
+branches noted below are destructive cleanup, still owed by the user.
+
+-----
+
+## Current cards (pre-triage record)
 
 - `event_crud_upload_loop.md` - staff event CRUD, upload intake, contributor submissions, moderation, promotion, and the first event-ops view.
 - `dev_db_snapshot_reseed.md` - repeatable dev/pre-prod PostGIS dump and reseed.

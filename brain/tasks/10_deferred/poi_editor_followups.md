@@ -1,5 +1,12 @@
 # POI Editor Follow-ups
 
+> **Deferred — Sprint 04 triage (2026-05-30).** Open follow-ups backlog; all
+> Work/Acceptance boxes here are unchecked. (Note: the `setEditorFeatureNotes`
+> trim-naming S3 item was bundled into the shipped `_done/editor_unified_tree.md`
+> pass.) **Deferred because** these are discretionary editor refinements waiting
+> on demand/priority, and the source-register editor-fields item explicitly waits
+> for the event/submission loop to land real storage.
+
 Sprint 03 made the drawn-POI editor usable: tree groups, inline accordion,
 notes, category edits, seed file, and the pavilion tag migration.
 

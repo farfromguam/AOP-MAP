@@ -1,5 +1,14 @@
 # Data Integrity + Publishability
 
+> **Deferred — Sprint 04 triage (2026-05-30).** Only the positioned-feature bake
+> sub-item is done (marked `[x]` below; also recorded in `_done/misc_4.md`).
+> Everything else is **deferred because** it is gated on outside truth: real
+> source-backed trail/trailhead data (rides on the SFWDA extraction), the
+> acreage reconciliation, the DEM upgrade decision, the POI placeholder
+> resolutions, and the synthetic-activity honesty call. Also owns the
+> building-tag promotion routed out of `_done/misc_4.md` (1033 farmhouse / 880
+> park offices / 1010 pavilion → native footprints), gated on source verification.
+
 The viewer chrome is ahead of the trusted data spine.
 
 Sprint 04 needs to pay down the publishability blockers before the event app

@@ -1,5 +1,13 @@
 # Brand Assets + Permission Posture
 
+> **Deferred — Sprint 04 triage (2026-05-30).** Nothing on this card is done.
+> **Deferred because** the load-bearing item is a user/external decision: the
+> brand-use permission posture must be settled to resolve the default-on conflict
+> (the live viewer currently ships `showBrandLogos: true` while this card's
+> original text said keep it off until permission lands). The asset cleanup
+> (downsize rasters, transparent Rock Warblers PNG, normalize the size-slider
+> range) can follow once the posture is fixed.
+
 Sprint 03 defaulted brand logos off until reuse permission is confirmed.
 
 Sprint 04 should clean the assets themselves and keep the permission posture

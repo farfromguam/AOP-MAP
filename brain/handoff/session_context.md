@@ -15,6 +15,23 @@ Each session pruned out of here lands at `session_context_<YYYYMMDD>.md`:
 - `session_context_20260525.md` — left-rail manilla-tab design exploration; five HTML mockup variants checked in under `website/leftrail_v*.html`. Build card: `tasks/03_event_app/_done/left_rail_collapse_tabs.md`. No `website/index.html` changes.
 - `session_context_20260527.md` — misc_4 items 1–5 shipped, plus the POI/About empty-space CSS fix and the tab-restore fix. All in the working tree (uncommitted). See `tasks/04_event_app/misc_4.md` "What shipped (2026-05-27)" block for the full close-out and the trail-lane verifier residue routed to `viewer_polish_followups.md`.
 
+**2026-05-30 (triage) — Sprint 04 reviewed and sorted (no code).** Every card in
+`tasks/04_event_app/` was assessed done / partial / not-done and moved.
+**Shipped → `04_event_app/_done/`:** `calendar_group_icon_review`,
+`editor_unified_tree`, `editor_three_buckets_v3c`,
+`editor_unified_positioned_features`, `misc_4` (close-out header added), and a
+**new split card** `bake_first_poi_serve_slice` (the shipped bake-first POI SERVE
+pipeline carved out of `star_driven_poi_list` + `dev_db_snapshot_reseed`).
+**Deferred → `tasks/10_deferred/`** (each got a "Deferred because" header):
+`event_crud_upload_loop`, `paper_map_trail_extraction` (partial/active — flagged
+it may belong on an active sprint if the edited-SVG loop continues),
+`star_driven_poi_list`, `dev_db_snapshot_reseed`, `data_integrity_publishability`,
+`brand_assets_and_permissions`, `calendar_placeholder_state`,
+`park_bounds_icon_apply`, `rock_warblers_content_audit`, `poi_editor_followups`,
+`viewer_polish_followups`. `source_layers.md` left in place (reference list, not a
+card). `04_event_app/_readme.md` + `10_deferred/_readme.md` updated with the
+disposition; pre-triage card list kept for history. Doc moves only, uncommitted.
+
 **2026-05-30 (session 5g) — Locate + Install moved into left-rail float groups (V2).**
 Two utility buttons that were scattered on the map chrome now stack as their own
 floating groups below the calendar tab icon in `.left-controls`: **Locate** (neutral

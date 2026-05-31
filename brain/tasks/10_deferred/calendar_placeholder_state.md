@@ -1,5 +1,11 @@
 # Calendar loading placeholder
 
+> **Deferred — Sprint 04 triage (2026-05-30).** Not done. **Deferred because** it
+> is blocked on a user pick: four mockup variants
+> (`website/calendar_placeholder_v*.html`) are checked in and waiting for the
+> user to choose one before it can be wired into `website/index.html`. (Also
+> tracked in `viewer_polish_followups.md` "Mockup Cleanup".)
+
 TL;DR:
 - The left-rail calendar today flashes an ugly `<div>Loading…</div>` before content arrives.
 - Four side-by-side mockup variants are checked in under `website/calendar_placeholder_*` for a pick.

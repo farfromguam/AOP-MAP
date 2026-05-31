@@ -1,5 +1,10 @@
 # Park Bounds Icon Apply
 
+> **Deferred — Sprint 04 triage (2026-05-30).** Not done. **Deferred because** it
+> is blocked on a user pick: choose one variant (`PB1`–`PB9` from
+> `website/park_bounds_icon_review.html`) before the inline SVG inside `#zoomPark`
+> can be swapped in.
+
 Sprint 03 produced the review artifact. Sprint 04 picks one boundary-derived
 icon and wires it into the Park zoom button.
 

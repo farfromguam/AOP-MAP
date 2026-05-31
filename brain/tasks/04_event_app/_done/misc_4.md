@@ -1,5 +1,22 @@
 misc 4 (also in sprint 4)
 
+> **Closed — Sprint 04 triage (2026-05-30).** Every line below is shipped,
+> routed, or held by the user; nothing actionable remains on this card:
+> - Items 1–5 + the "PENDING BELOW" block (POI/About empty space, tab restore):
+>   **shipped 2026-05-27** (see "What shipped" below).
+> - Images + region callouts in the export script: **shipped 2026-05-30** (bake
+>   script `export_positioned_features.py`; positions reviewed + confirmed
+>   already-committed).
+> - Item 6 (sticky header scroll-with-events): **held by the user** — "leave it
+>   alone." Won't-do, not pending.
+> - Building tags (1033 farmhouse / 880 park offices / 1010 pavilion → native
+>   footprints in DB): **routed** to `10_deferred/data_integrity_publishability.md`;
+>   gated on source verification before promotion.
+> - "cleanup worktrees that are unused": **user-owned chore** (destructive
+>   `git worktree remove --force`; left to the user per `ai_rules/no_commits.md`,
+>   also tracked in `04_event_app/_readme.md`).
+> User-written directives preserved verbatim below.
+
 events show past events button needs to go.
 poi expand all groups needs to go.
 about events page link needs to be added to the body of the text above as a url body link not a button
@@ -133,6 +150,73 @@ the seed GeoJSON via `export_positioned_features.py`:
     intentional.
 
 Town coords verified via web (Monteagle 35.2384/-85.8255, South Pittsburg
-35.0094/-85.7017, Kimball 35.0561/-85.6739). Both seed files changed +
-uncommitted. Playwright verifiers (`playwright_verify_brand_logos.py`,
-`playwright_verify_visitor_context.py`) not yet run.
+35.0094/-85.7017, Kimball 35.0561/-85.6739).
+
+NOTE: the bake output is **byte-identical to committed HEAD** — both seed files
+`git diff` empty. HEAD (`747e5bc "bake image positions"` + `7c8e9d2 "bump
+version"`) already carries the correct end state, including the **NNW-corrected
+Monteagle** (35.10362, -85.75093). So the positions are already baked + committed;
+this pass re-derived and confirmed them rather than producing a new data change.
+The viewer-localStorage export the user pasted held a stale NNE Monteagle drag —
+committing it would have *regressed* the already-correct file. No data commit
+needed; only this note + the regenerated verifier screenshots are uncommitted.
+
+Verifiers run against the baked files (server on :8001):
+- `playwright_verify_visitor_context.py` -- **PASS** (all green: two callouts,
+  labels/drive-times, deep-links, circles render, search jump, 0 console errors).
+- `playwright_verify_brand_logos.py` -- **PASS on the baked data**; the only two
+  FAILs are in the "Feature list panel" section ("feature list opens with 2 rows
+  -- []" / "rows expose both logo_ids -- set()"). Verified **pre-existing** by
+  swapping in the HEAD version of the file and replaying -- identical failures, so
+  the panel-row selector is broken independent of this change. All data
+  assertions passed with the new coords/sizes (seed, icon_image registration,
+  icon_size slider live+persisted, drag-to-move, reload persistence). The
+  panel-row regression belongs to `viewer_polish_followups.md`, not this edit.
+
+### 2026-05-30 (later) — PWA bottom-space fix (notch follow-up)
+
+After the notch/safe-area work (`viewport-fit=cover`, `--sa-*` insets), the user
+flagged the BOTTOM in the installed PWA: "white space below the map margin" +
+"excess padding." Two distinct causes, both fixed in `website/index.html`:
+
+1. **White band = the MapLibre attribution control, not a map gap.** The map
+   canvas fills the viewport fine (`#map` is `position:fixed; inset:0`, canvas
+   measured 390×844 in sim). The "white space" was the verbose per-source
+   attribution string wrapping to a ~104px **solid-white box** at the narrow PWA
+   width. MapLibre v5.24 auto-compacts the control at container width ≤640px but
+   starts it EXPANDED (`maplibregl-compact-show`), only minimizing to the ⓘ on
+   the first map *drag*. The class is auto-added once, at the empty→first-content
+   transition (after `load`, since this viewer adds sources dynamically). Fix: a
+   `sourcedata` listener (`collapseAttribOnce`) waits for `maplibregl-compact`,
+   removes `compact-show` + the `open` attr once, and unbinds — so it starts as
+   the ⓘ and still expands on tap. **Guarded to `innerWidth ≤ 640`** so desktop
+   keeps its full-width attribution bar (this build carries the `compact` class
+   even when wide, an init-timing quirk, so the width check — not the class — is
+   what scopes the collapse to phones). Verified: mobile 24×24 ⓘ, tap→expands;
+   desktop full bar unchanged (matches the committed original); 0 console errors.
+
+2. **Excess padding = base offset stacked on the home-indicator inset.** Bottom
+   chrome used `calc(BASE + var(--sa-bottom))`, so a 34px home indicator added to
+   the 12px base = a 46px gap. Switched the edge-anchored bottoms to
+   `max(BASE, var(--sa-bottom))` (take the larger, don't sum): `.message` and the
+   desktop `.panel` → `max(12px, var(--sa-bottom))`; the mobile `.panel`'s
+   message-bar reserve → `calc(max(12px, var(--sa-bottom)) + 44px)`. In the PWA:
+   message gap 46→34px, panel gap 90→78px. In a plain browser (sa=0): unchanged.
+   Also set `html` background to the map cream (was `body` only) as a belt against
+   any sub-pixel strip on real iOS.
+
+Bundled in: a build-version chip (`.util-version` / `#appVersion`, "v5") under the
+Install square in the left rail — always visible since the install button
+self-hides once installed — and a `sw.js` bump `VERSION v4→v5` (the two name the
+same build, kept in sync by comment).
+
+NOT the same as the `poi`/`about` left-tab "white space at the bottom" items
+above — those are the left-rail content-panel heights, still open.
+
+Verified by observation only (Playwright, simulated `--sa-top:47px`/
+`--sa-bottom:34px` per the code's DevTools-override note — Chromium can't emulate
+iOS `env(safe-area-inset-*)`). Before/after sim screenshots confirmed the white
+band gone and the tighter bottom. Originally done on the `worktree-pwa-bottom-space`
+worktree; **merged into the main checkout** (`website/index.html` + `website/sw.js`,
+3-way merged over the `callapse panel` commit — disjoint regions, 0 conflicts) and
+the worktree removed.
