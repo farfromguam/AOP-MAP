@@ -15,6 +15,17 @@ Each session pruned out of here lands at `session_context_<YYYYMMDD>.md`:
 - `session_context_20260525.md` — left-rail manilla-tab design exploration; five HTML mockup variants checked in under `website/leftrail_v*.html`. Build card: `tasks/03_event_app/_done/left_rail_collapse_tabs.md`. No `website/index.html` changes.
 - `session_context_20260527.md` — misc_4 items 1–5 shipped, plus the POI/About empty-space CSS fix and the tab-restore fix. All in the working tree (uncommitted). See `tasks/04_event_app/misc_4.md` "What shipped (2026-05-27)" block for the full close-out and the trail-lane verifier residue routed to `viewer_polish_followups.md`.
 
+**2026-05-31 (icon system) — icon master sheet built.** All 13 inline UI icons in
+`website/index.html` collected into a standalone tool **`website/icon_master.html`**:
+as-built vs normalized compare grid, global stroke-width + optical-fit controls,
+outlier flagging, inline markup editing, and paste-ready SVG export. Source audit:
+all already SVG + uniform `22×22` canvas, but **3 stroke widths ship** (1.6 most,
+1.4 Tree/Install, 1.2 Pencil) and art-fill ranges 68–91% (Locate is oversized at
+91%). Flagged outliers: Tree, Install, Pencil (off-spec stroke), Locate (too big).
+`index.html` left untouched — the page is the revision surface; recommended target
++ the 4 paste-back edits are in the new card **`tasks/04_event_app/icon_system_normalize.md`**.
+Verified by Playwright (13 cards, 0 console errors). Uncommitted.
+
 **2026-05-31 (PWA QA swarm) — most of `tasks/04_event_app/pwa_qa.md` resolved.**
 7 worktree agents, each owning a disjoint region of `website/index.html`, merged
 into the master working tree (UNCOMMITTED; backup branch `integration-pwa-qa`).

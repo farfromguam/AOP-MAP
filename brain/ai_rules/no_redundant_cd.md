@@ -14,4 +14,20 @@ A transcript audit (2026-05-29) found that 86% of Bash calls were compound and 5
 - Only `cd` when you genuinely need a different directory (e.g. a worktree). `Bash(cd *)` is now allowlisted, but the chained `cd` is still noise — set the directory once, not on every command.
 - For reading and searching code, reach for the **Read / Grep / Glob** tools before Bash `cat`/`grep`/`find`. They are read-only and never prompt. Use Bash for reads only when a pipeline genuinely needs it.
 
+## Harness-level enforcement (2026-05-31)
+
+The rule alone kept getting ignored across sessions, so it is now enforced by a
+hook, not just trusted to memory. `.claude/hooks/block-redundant-cd.sh` is a
+`PreToolUse` Bash hook (wired in `.claude/settings.local.json`) that **denies**
+any command starting with `cd <project root> && …` (or `;` / `||`) and bounces
+it back with instructions to drop the `cd`. The user is not prompted on a hook
+deny. A real `cd` into a *subdir* (`cd website`, `cd mvp` — the canonical
+spinup commands) passes straight through, as does `cd` into a worktree or
+`/tmp`. `Bash(cd *)` is allowlisted so legitimate `cd` never prompts.
+
+If you get bounced by this hook: you wrote a redundant root-`cd`. Re-run the
+command on its own — the cwd is already the project root. Adding a hook
+mid-session needs a config reload (`/hooks` then Esc, or restart) before it goes
+live.
+
 See also: `act_dont_ask.md` (questions are fatigue; so are permission prompts), `canonical_spinup_commands.md`.

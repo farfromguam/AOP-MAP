@@ -13,7 +13,7 @@ and final on-device/visual confirm is owed where noted.
 
 | # | Item | Status |
 |---|---|---|
-| 1 | comparison mockups on right sidebar | standing rule; followed (topo compare added to Comparisons) |
+| 1 | comparison mockups on right sidebar | standing rule; followed (topo compare added to Comparisons). **2026-05-31: each Comparisons row now carries an applied/open status badge** — green `✓` (winning variant live in `index.html`, with the variant name in the badge: V5 FAB / Applied / V3c / V2 / A·sienna) vs rust `◌` (still the user's pick: Right-sidebar A/B/C toolkit = Open, Park-bounds icon = Pick owed). Badge `title` carries the one-line disposition; update the badge when a comparison resolves. CSS `.cmp-status`/`.cmp-applied`/`.cmp-open`. |
 | 2 | bottom row on one horizontal row (V1–V4 mockups) | **DONE** — confirmed (2026-05-31) superseded by the shipped V5 pencil-FAB rework; retire V1–V7 bottom-bar mockups per the cleanup routing |
 | 3 | restrict zoom on buttons | DONE (pre-existing; verified not regressed) |
 | 4 | bake region callouts to geojson | → `pwa_qa_data_bakes.md` |
@@ -30,16 +30,17 @@ and final on-device/visual confirm is owed where noted.
 | 15 | drawer offset after edit-panel collapse | **SHIPPED** (`window.lrReflow` recompute on collapse); on-device drag confirm owed |
 | 16 | end date on calendar | **SHIPPED** (verified: "Friday, June 19 – Sunday, June 21, 2026") |
 | 17 | extend 9-patch imagery coverage | → `pwa_qa_data_bakes.md` |
-| 18 | icon line weights | **SHIPPED** (normalized to render ~1.6px) |
+| 18 | icon line weights | **REWORKED — cohesive icon family, optically normalized + measured** (2026-05-31). The 05-31 swarm typed `stroke-width="1.6"` on everything (fudging the vb24 icons to 1.75/2.1) and declared it done without measuring — and never touched the bottom util icons at all. **Real root cause (per the user, confirmed by measurement):** not viewBox (all vb22) and not stroke number (all ~1.6) — it's **optical size** (how big the art is drawn *inside* the canvas) plus **white-on-rust bloom**. Icons whose art filled less of the 22 box (`locate`'s r5 circle, my narrow tree + flame) read FAT at the same stroke; the rust-fill `install`/pencil-`FAB` bloomed heavier. **Fix (one icon family):** all on vb22, art normalized to fill the same optical box (enlarged `locate` circle r5→6.4, widened the tree + flame, redrew the foreign Heroicons flame — both `lrTabHot` and the live-event JS glyph — as a geometric line flame); single 1.6 stroke with **principled, documented exceptions**: tree 1.4 (acute conifer joins bulge), `install` 1.4 + pencil FAB 1.2 (white-on-rust bloom). Shrank `zoomPark`'s blob dot r1.6→1.1. **Verified** by optical re-measurement (Playwright DSF6 + art-bbox/run-length, `brain/output/icon_audit/`): the stroke/art-size spread tightened 0.077–0.126 → **0.077–0.104**, and the `all_icons.png` strip now reads as one family. Two lessons logged: equal stroke *number* ≠ equal *rendered* weight; and equal rendered weight ≠ equal *optical* weight (art size matters). 0 vb24 icons remain. |
 | 19 | bottom-left attribution overflow breathing room | **SHIPPED** (clearance widened; clears the FAB by ~24px) |
-| 20 | satellite tree icon | **SHIPPED** (2026-05-31, per "find or create a tree svg") — new editable `website/img/tree.svg` tiled as a `fill-pattern` on a new `landcover-forest-trees` layer over the FOREST polygons, wired to the satellite toggle so trees show only on the aerial. SVG rasterizes + 0 load errors verified; on-device visual confirm owed |
+| 20 | satellite tree icon | **REWORKED — wrong interpretation removed, button glyph is now a tree** (2026-05-31). The request "satellite view needs a better tree icon" meant the **single icon that represents the satellite preset** — top-row button #7, `presetSatellite` — should be a tree. The 05-31 swarm instead read it as *tile a tree SVG across the forest polygons* and built a `landcover-forest-trees` fill-pattern layer (+ `website/img/tree.svg`) wired to the satellite toggle ("the jank ass icon field"). User rejected that: it "should never have been created." **Removed entirely:** the `landcover-forest-trees` layer, its `forest-trees` image load, its entry in the satellite `LAYER_TOGGLES` row, and the orphaned `website/img/tree.svg`. **Replaced** the satellite preset button's globe-reticle glyph with a 2-tier conifer (`fill="none" stroke="currentColor" stroke-width="1.6"`, matches the three sibling preset glyphs and inverts cleanly on the moss `.active` state). Lesson logged: I debugged *why the field wasn't rendering* (layer order) instead of questioning whether the field should exist — anchored on the prior session's framing, not the user's words. Inline script `node --check` clean; glyph swap grep-confirmed |
 | 21 | icon groups 3-4-1 width | **SHIPPED** (`3fr 4fr 1fr`; per-icon width spread 13.2px→1.75px) |
 | — | iOS bottom padding | RESOLVED (pre-existing, see below) |
 
 **Owed on-device confirm** (touch/GL — cannot be checked headless): 7 pinch,
-13 rendered colors, 15 drag-under-finger, 20 tree-pattern look. **Open forks:**
-none — 2 confirmed superseded by V5, 20 resolved as a tree SVG (both
-2026-05-31). **Worktrees:** 7 harness-locked agent
+13 rendered colors, 15 drag-under-finger. **Open forks:** none — 2 confirmed
+superseded by V5. **Item 20 was reworked 2026-05-31:** the swarm's tiled tree
+FIELD was the wrong reading of the request and was removed wholesale; the
+satellite preset button glyph (top-row #7) is now a tree — see the item 20 row. **Worktrees:** 7 harness-locked agent
 worktrees remain under `.claude/worktrees/` — cleanup left to the user/harness
 (`git worktree remove -f -f <path>` + `git branch -D worktree-agent-*`), consistent
 with the existing convention.

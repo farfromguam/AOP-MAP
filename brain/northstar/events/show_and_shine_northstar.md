@@ -81,6 +81,89 @@ Other names in the same family:
 Use those as category names or future themes. Don't use all of them at once.
 
 
+## Future event themes (proposed)
+
+The Advance Party is the first-event theme. These are seeds for the events after
+it. Same test as always -- "what does this rig carry, and why?" -- so each is a
+build prompt, not a livery pack. Pick one per event. Most of these crack open a
+name from the family list above into a full theme; the last two are whole-event
+themes in the Pro-Line "Rockabilly / Old West / Survival" mold.
+
+### Recovery Detail
+
+Prompt: your rig's job is getting other rigs unstuck. Winch, straps, snatch
+blocks, traction boards, a jib or crane, a spare-everything box.
+
+Why it fits: AOP doesn't penalize winching or recovery -- the format already
+treats recovery as honest trail work, so a theme built on it rhymes with the
+event instead of fighting it. Run it on a stage day where rigs actually get
+stuck and the recovery builds have something to do.
+
+Welcomes: wreckers, dedicated tow rigs, 6x6 support trucks, the buddy's rig.
+Award angle: Recovery Lead. Good sponsor fit (a winch or strap maker).
+
+### Night Shift
+
+Prompt: your rig works after dark. Rock lights, light bar, work lamps, beacon,
+reflective tape, a believable power source.
+
+Why it fits: maps straight onto a Pro-Line "Into The Night" dusk run. Judge it
+at dusk so the lights are the point, not a spec sheet.
+
+Welcomes: anything kitted for low light -- survey, recovery, or camp rigs all
+qualify if they're built to run dark. Award angle: Night Scout.
+
+### Basecamp Crew
+
+Prompt: your rig is the weekend. It carries camp -- roof tent, kitchen, water,
+fuel, fridge, chairs, the awning.
+
+Why it fits: this is Pro-Line By The Fire camp life at 1/10. Overland is the
+single biggest scale-build lane and this theme is built straight for it.
+
+Welcomes: overlanders, expedition rigs, support trailers. Award angle: Camp
+Support. Pairs naturally with an actual on-site camp.
+
+### The Marking Crew
+
+Prompt: your rig lays out the course. Flags, stakes, gate markers, survey tape,
+clipboards, GPS, paper maps, antennas.
+
+Why it fits: the theme that rhymes hardest with the map project -- the first
+useful work is finding, marking, and reporting what's true. Tighter and more
+wayfinding-focused than The Advance Party, so it works as its own later event or
+as a category inside one.
+
+Welcomes: survey trucks, trail-crew rigs, anything with a wayfinding loadout.
+Award angle: Best Field Detail.
+
+### Old World Expedition
+
+Prompt: your rig is a sponsored expedition truck from the golden age of
+overlanding. Camel Trophy sand-yellow or G4 livery, roof rack, sand ladders, the
+full period kit.
+
+Why it fits: this is the cultural root G6 itself names -- Camel Trophy and the
+Land Rover G4 Challenge. A whole-event theme with a strong look that still
+demands real accessories, not just a paint job.
+
+Welcomes: Defenders, Land Cruisers, period expedition builds, anyone chasing a
+livery. Award angle: Best Theme / livery.
+
+### The Convoy
+
+Prompt: your rig is one truck in a relief convoy after the storm -- comms,
+medical, water, fuel, recovery, or lighting. No single hero truck; the build has
+to make sense as part of a column.
+
+Why it fits: a whole-event theme (Survival-adjacent) that opens every accessory
+lane at once and rewards rigs that look like they belong to a bigger operation.
+Good for a club turnout or a high-headcount event.
+
+Welcomes: comms trucks, field ambulances, water/fuel haulers, recovery, command
+rigs. Award angle: Best of Show goes to the truck you'd most want in the column.
+
+
 ## Accessory lanes
 
 The theme should invite builders to add details with a job.

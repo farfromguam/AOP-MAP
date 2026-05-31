@@ -22,15 +22,16 @@ You are an AI agent (Claude, Codex, or otherwise) opening this repo for the firs
 2. Read `brain/brain_map.md` — the territory map of the brain.
 3. Read `brain/handoff/session_context.md` — what the last session left you.
 4. Read `brain/northstar/map_northstar.md` — the project promise.
-5. Read `brain/tasks/` — the current build card is named in the brain map.
+5. Read `brain/ai_rules/` — how you collaborate here. THE BAR above names these as the standard you are judged on, so they are a boot read, not a conditional one. At minimum: `work_independently.md`, `act_dont_ask.md`, `commit_in_prose.md`, `no_redundant_cd.md`, `no_commits.md`, `verify_by_observation.md`.
+6. Read `brain/tasks/` — the current build card is named in the brain map.
 
-Only after those five reads should you take action on the user's request.
+Only after those six reads should you take action on the user's request.
 
 ## Where to look next
 
 If you need to find something specific, use `brain/search_map.md` before grepping the codebase. It routes keywords to the right brain file.
 
-If the user asks you how to collaborate, what tone to use, or what not to touch, read `brain/ai_rules/`. Those rules are durable and apply to every agent in this repo.
+`brain/ai_rules/` is a boot read (step 5 above), not optional. Those rules are durable and apply to every agent in this repo on every turn — how to collaborate, what tone to use, what not to touch. Re-open them when a specific question comes up; don't wait for one to read them the first time.
 
 If the user asks how to run the app, read `brain/spinup/discovery.md` and the repo `README.md`.
 

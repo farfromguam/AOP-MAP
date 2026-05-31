@@ -374,7 +374,7 @@
     .panel.collapsed #exportAll,
     .panel.collapsed #panelCollapse { display: none; }
     .panel.collapsed .panel-fab-pencil { display: grid; place-items: center; color: #fff7e9; }
-    .panel.collapsed .panel-fab-pencil svg { width: 24px; height: 24px; }
+    .panel.collapsed .panel-fab-pencil svg { width: 22px; height: 22px; }
     /* Edit-mode gate (env-driven; the class is set on <html> by the head script).
        OFF = public viewer: the edit FAB/panel is hidden and the ⓘ attribution
        reclaims the FAB's reserved width, so the bottom bar reads correctly either way. */
@@ -678,8 +678,13 @@
     .session-clock-status { display: inline-flex; align-items: center; min-height: 22px; padding: 2px 7px; border: 1px solid var(--cream-border); border-radius: 5px; background: rgba(247, 241, 226, 0.78); color: var(--brown-soft); font: 700 0.72rem Inter, system-ui, sans-serif; }
     .session-clock-status[data-clock-active="true"] { background: #ecd9b1; border-color: rgba(85, 67, 44, 0.35); color: var(--brown-dark); }
     .comparisons-list { display: grid; gap: 4px; }
-    .comparisons-list a { display: block; padding: 5px 8px; border: 1px solid var(--cream-border); border-radius: 6px; background: var(--control-bg); color: var(--brown-ink); font-size: 0.82rem; text-decoration: none; }
+    .comparisons-list a { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border: 1px solid var(--cream-border); border-radius: 6px; background: var(--control-bg); color: var(--brown-ink); font-size: 0.82rem; text-decoration: none; }
     .comparisons-list a:hover { border-color: var(--rust); color: var(--rust); }
+    .comparisons-list .cmp-label { flex: 1 1 auto; min-width: 0; }
+    .comparisons-list .cmp-status { flex: 0 0 auto; font: 700 0.66rem Inter, system-ui, sans-serif; letter-spacing: 0.02em; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+    /* applied = the winning variant is live in index.html; open = still the user's pick */
+    .comparisons-list .cmp-applied { background: rgba(56, 72, 51, 0.16); color: var(--moss-dark); border: 1px solid rgba(56, 72, 51, 0.4); }
+    .comparisons-list .cmp-open { background: rgba(168, 80, 32, 0.12); color: var(--rust); border: 1px solid rgba(168, 80, 32, 0.4); }
     .poi-popup input { font: inherit; width: 100%; box-sizing: border-box; margin: 6px 0; padding: 3px 5px; }
     .poi-popup button { font: inherit; padding: 3px 9px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
     .message { display: none; } /* V5: publish-count status dropped on every width */
@@ -845,7 +850,7 @@
       .search-shell { padding: 4px; }
       .pill-bar { gap: 6px; }
       .pill-bar .pill > button { min-height: 32px; padding: 4px 6px; }
-      .pill-bar .pill > button svg { width: 20px; height: 20px; }
+      .pill-bar .pill > button svg { width: 22px; height: 22px; }
       .left-tabs { padding: 4px; }
       .left-tab { min-height: 30px; font-size: 0.74rem; }
       .lr-content-col { --lr-card-body-height: 160px; }
@@ -873,27 +878,27 @@
     <div class="pill-bar" role="group" aria-label="Map view controls">
       <div class="pill zoom-bar" role="group" aria-label="Zoom to area">
         <button id="zoomRegion" type="button" data-view="region" title="Zoom out to the full 9-patch region" aria-label="Region zoom">
-          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 8V3h5M14 3h5v5M19 14v5h-5M8 19H3v-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V3h5M14 3h5v5M19 14v5h-5M8 19H3v-5"/></svg>
         </button>
         <button id="zoomPark" type="button" data-view="park" title="Fit the AOP park boundary" aria-label="Fit park boundary">
-          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M4 7L7 3L15 4L18 9L17 16L9 18L4 14Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/></svg>
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7L7 3L15 4L18 9L17 16L9 18L4 14Z"/><circle cx="11" cy="11" r="1.4" fill="currentColor" stroke="none"/></svg>
         </button>
         <button id="zoomPavilion" type="button" data-view="pavilion" title="Zoom in tight on the pavilion" aria-label="Pavilion zoom">
-          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 9L11 3L19 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 9V18M9 9V18M13 9V18M17 9V18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3 18H19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9L11 3L19 9"/><path d="M5 9V18M9 9V18M13 9V18M17 9V18"/><path d="M3 18H19"/></svg>
         </button>
       </div>
       <div class="pill preset-bar" role="group" aria-label="Map preset">
         <button id="presetPark" type="button" data-preset="park" class="active" title="Park preset (default map)" aria-label="Park preset">
-          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 6L8 4L14 6L19 4V16L14 18L8 16L3 18Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 4V16M14 6V18" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6L8 4L14 6L19 4V16L14 18L8 16L3 18Z"/><path d="M8 4V16M14 6V18"/></svg>
         </button>
         <button id="presetTopo" type="button" data-preset="topo" title="Topo preset (contour-led)" aria-label="Topo preset">
-          <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 7c3-2 6-2 9 0s5 2 7 0M3 11c3-2 6-2 9 0s5 2 7 0M3 15c3-2 6-2 9 0s5 2 7 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7c3-2 6-2 9 0s5 2 7 0M3 11c3-2 6-2 9 0s5 2 7 0M3 15c3-2 6-2 9 0s5 2 7 0"/></svg>
         </button>
         <button id="presetTrace" type="button" data-preset="trace" title="Trace preset (lidar hillshade + trail refs)" aria-label="Trace preset">
-          <svg viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="3" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 16c2-1 3-4 6-4s4 3 6 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="6" cy="16" r="1.3" fill="currentColor"/><circle cx="17" cy="14" r="1.3" fill="currentColor"/></svg>
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="16" height="16" rx="2"/><path d="M5 16c2-1 3-4 6-4s4 3 6 2"/><circle cx="6" cy="16" r="1.4" fill="currentColor" stroke="none"/><circle cx="17" cy="14" r="1.4" fill="currentColor" stroke="none"/></svg>
         </button>
-        <button id="presetSatellite" type="button" data-preset="satellite" title="Satellite preset (2022 aerial)" aria-label="Satellite preset">
-          <svg viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M11 3a8 8 0 0 1 5.6 2.3M11 19a8 8 0 0 1-5.6-2.3"/><path d="M3 11h4m8 0h4"/><path d="M11 7v2m0 6v2"/><circle cx="11" cy="11" r="2" fill="currentColor" stroke="none"/></svg>
+        <button id="presetSatellite" type="button" data-preset="satellite" title="Satellite preset (aerial)" aria-label="Satellite preset">
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 3 L16.5 11 H13.5 L17.5 17.5 H4.5 L8.5 11 H5.5 Z"/><path d="M11 17.5 V20"/></svg>
         </button>
       </div>
       <div class="pill" role="group" aria-label="3D toggle">
@@ -904,25 +909,25 @@
     <div class="lr-drawer" id="lrDrawer">
       <div class="lr-icon-col" id="lrIconCol">
         <button class="lr-tab open" id="lrTabSearch" type="button" aria-pressed="true" aria-controls="lrPanelSearch" title="Search">
-          <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
-            <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.6"/>
-            <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="9.5" cy="9.5" r="6"/>
+            <path d="M14.2 14.2 L19 19"/>
           </svg>
         </button>
         <button class="lr-tab" id="lrTabHot" type="button" aria-pressed="false" aria-controls="lrPanelHot" title="Hot now">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3.001 2.48Z"/>
-            <path d="M12 18a3.75 3.75 0 0 0 .495-7.467 5.99 5.99 0 0 0-1.925 3.546 5.974 5.974 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/>
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14.082 4.78A7.564 7.564 0 0 1 11 19.25 7.562 7.562 0 0 1 5.535 6.46 7.596 7.596 0 0 0 8.25 8.801a8.234 8.234 0 0 1 3.081-6.295 7.526 7.526 0 0 0 2.751 2.273Z"/>
+            <path d="M11 16.5a3.438 3.438 0 0 0 .454-6.845 5.491 5.491 0 0 0-1.765 3.25 5.476 5.476 0 0 1-1.955-.918A3.438 3.438 0 0 0 11 16.5Z"/>
           </svg>
           <span class="lr-live-dot" aria-hidden="true" title="Hot now"></span>
         </button>
         <button class="lr-tab open" id="lrTabCal" type="button" aria-pressed="true" aria-controls="lrPanelCal" title="Events / POI / About">
-          <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
-            <rect x="4" y="5" width="14" height="15" rx="1.6" stroke="currentColor" stroke-width="1.6"/>
-            <path d="M8.5 5 V 3.5 Q8.5 3 9 3 h4 Q13.5 3 13.5 3.5 V 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-            <path d="M7 9.5 H 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-            <path d="M7 12.5 H 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-            <path d="M7 15.5 H 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="4" y="5" width="14" height="15" rx="1.6"/>
+            <path d="M8.5 5 V 3.5 Q8.5 3 9 3 h4 Q13.5 3 13.5 3.5 V 5"/>
+            <path d="M7 9.5 H 15"/>
+            <path d="M7 12.5 H 15"/>
+            <path d="M7 15.5 H 12"/>
           </svg>
         </button>
       </div>
@@ -930,9 +935,9 @@
         <div class="lr-panel open" id="lrPanelSearch" data-card="search">
     <div class="search-shell">
       <div class="search">
-        <svg class="search-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <circle cx="9.5" cy="9.5" r="6" stroke="currentColor" stroke-width="1.6"/>
-          <path d="M14.2 14.2 L19 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <svg class="search-icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="9.5" cy="9.5" r="6"/>
+          <path d="M14.2 14.2 L19 19"/>
         </svg>
         <input type="text" id="searchInput" placeholder="Search the map…" autocomplete="off" />
         <div class="search-results" id="searchResults"></div>
@@ -1030,11 +1035,10 @@
     <div class="util-group util-locate" role="group" aria-label="Locate">
       <button type="button" id="locateBtn" class="util-btn" aria-pressed="false"
               title="Show my location" aria-label="Show my location">
-        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6"
-             stroke-linecap="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="5"/>
-          <path d="M11 1.5v3M11 17.5v3M1.5 11h3M17.5 11h3"/>
-          <circle cx="11" cy="11" r="1.6" fill="currentColor" stroke="none"/>
+        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="5.4"/>
+          <path d="M11 2.5v2.7M11 16.8v2.7M2.5 11h2.7M16.8 11h2.7"/>
+          <circle cx="11" cy="11" r="1.3" fill="currentColor" stroke="none"/>
         </svg>
       </button>
     </div>
@@ -1044,8 +1048,7 @@
          app is installable, so no empty card shows. Logic in the PWA script. -->
     <button type="button" id="pwaInstallBtn" class="util-install" hidden
             title="Install app" aria-label="Install AOP Map as an app">
-      <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6"
-           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M11 3v9M7.5 8.5 11 12l3.5-3.5"/>
         <path d="M4.5 15v2.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V15"/>
       </svg>
@@ -1072,7 +1075,7 @@
   <div class="panel collapsed">
     <div class="panel-header" id="panelHeader" title="Expand panel">
       <span class="panel-fab-pencil" aria-hidden="true">
-        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5l4 4L8 18l-4.5 1L4.5 14.5 14.5 3.5z"/></svg>
+        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4l4 4L8 18.5l-4.5 1L4.5 15 14.5 4z"/></svg>
       </span>
       <h1>AOP edit panel</h1>
       <button type="button" id="exportAll" class="panel-export" title="Copy a full snapshot — toggles, sliders, paints, geometry overrides, drawn POIs, per-feature visibility — to clipboard.">⧉</button>
@@ -1117,14 +1120,42 @@
           </button>
         </div>
         <div class="section-content">
+          <!-- Each row carries a status badge: green ✓ = the winning variant is
+               live in index.html (applied); rust ◌ = still the user's pick.
+               Update the badge when a comparison resolves. -->
           <div class="comparisons-list">
-            <a href="bottombar_compare.html" target="_blank" rel="noopener">Bottom bar — one row (V1–V4)</a>
-            <a href="leftrail_compare_v2.html" target="_blank" rel="noopener">Left rail — element variants</a>
-            <a href="editor_unified_v3_create_compare.html" target="_blank" rel="noopener">Editor V3 — per-bucket create</a>
-            <a href="right_sidebar_compare.html" target="_blank" rel="noopener">Right sidebar — edit toolkit (A/B/C)</a>
-            <a href="floatgroup_compare.html" target="_blank" rel="noopener">Locate / Install — float groups (V1–V4)</a>
-            <a href="park_bounds_icon_review.html" target="_blank" rel="noopener">Park bounds icon</a>
-            <a href="topo_color_compare.html" target="_blank" rel="noopener">Topo contour colours (A–F)</a>
+            <a href="icon_master.html" target="_blank" rel="noopener">
+              <span class="cmp-label">Icon master sheet — all UI icons</span>
+              <span class="cmp-status cmp-open" title="Tool — collect / compare / normalize every interface icon; revise stroke + optical size and export back to index.html">◌ Master sheet</span>
+            </a>
+            <a href="bottombar_compare.html" target="_blank" rel="noopener">
+              <span class="cmp-label">Bottom bar — one row (V1–V4)</span>
+              <span class="cmp-status cmp-applied" title="Applied — superseded by the round-2 V5 pencil FAB + bottom-left ⓘ, locked 2026-05-30">✓ V5 FAB</span>
+            </a>
+            <a href="leftrail_compare_v2.html" target="_blank" rel="noopener">
+              <span class="cmp-label">Left rail — element variants</span>
+              <span class="cmp-status cmp-applied" title="Applied — Search / Hot / Calendar two-column drawer shipped 2026-05-26">✓ Applied</span>
+            </a>
+            <a href="editor_unified_v3_create_compare.html" target="_blank" rel="noopener">
+              <span class="cmp-label">Editor V3 — per-bucket create</span>
+              <span class="cmp-status cmp-applied" title="Applied — V3c inline per-bucket create row is the live Map editor tree">✓ V3c</span>
+            </a>
+            <a href="right_sidebar_compare.html" target="_blank" rel="noopener">
+              <span class="cmp-label">Right sidebar — edit toolkit (A/B/C)</span>
+              <span class="cmp-status cmp-open" title="Open — bucket tree is live, but the per-row toolkit (A/B/C) is still an attribute-pull, no single winner applied">◌ Open</span>
+            </a>
+            <a href="floatgroup_compare.html" target="_blank" rel="noopener">
+              <span class="cmp-label">Locate / Install — float groups (V1–V4)</span>
+              <span class="cmp-status cmp-applied" title="Applied — V2 accented-install float group shipped 2026-05-30">✓ V2</span>
+            </a>
+            <a href="park_bounds_icon_review.html" target="_blank" rel="noopener">
+              <span class="cmp-label">Park bounds icon</span>
+              <span class="cmp-status cmp-open" title="Deferred — blocked on a user pick (PB1–PB9) before the #zoomPark SVG is swapped in">◌ Pick owed</span>
+            </a>
+            <a href="topo_color_compare.html" target="_blank" rel="noopener">
+              <span class="cmp-label">Topo contour colours (A–F)</span>
+              <span class="cmp-status cmp-applied" title="Applied — option A Warm sienna is the live contour paint (#b08a5e / #946638)">✓ A · sienna</span>
+            </a>
           </div>
         </div>
       </section>
@@ -2953,7 +2984,7 @@
       [activityHotspotsToggle, ['activity-hotspots-heat', 'activity-hotspots-fill', 'activity-hotspots-outline', 'activity-hotspots-labels'], 'showActivityHotspots'],
       [syntheticActivityToggle, ['synthetic-activity-tracks', 'synthetic-activity-hotspots-heat', 'synthetic-activity-hotspots-fill', 'synthetic-activity-hotspots-outline', 'synthetic-activity-hotspots-labels'], 'showSyntheticActivity'],
       [eventScheduleToggle, ['event-session-routes', 'event-route-labels', 'event-anchor-points', 'event-anchor-labels'], 'showEventSchedule'],
-      [satelliteToggle, ['tnmap-satellite', 'landcover-forest-trees'], 'showSatellite'],
+      [satelliteToggle, ['tnmap-satellite'], 'showSatellite'],
       [usdaNaipToggle, ['usda-naip-satellite'], 'showUsdaNaip'],
       [ninePatchToggle, ['nine-patch-fill', 'nine-patch-outline', 'nine-patch-labels'], 'showNinePatch'],
       [lidarTilesToggle, ['lidar-tiles-fill', 'lidar-tiles-outline', 'lidar-tiles-labels'], 'showLidarTiles'],
@@ -7383,7 +7414,7 @@
         const props = decision.target.feature.properties || {};
         eventBtn.disabled = false;
         eventBtn.dataset.targetSessionId = props.session_id || '';
-        if (glyph) glyph.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3.001 2.48Z"/><path d="M12 18a3.75 3.75 0 0 0 .495-7.467 5.99 5.99 0 0 0-1.925 3.546 5.974 5.974 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/></svg>';
+        if (glyph) glyph.innerHTML = '<svg viewBox="0 0 22 22" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.082 4.78A7.564 7.564 0 0 1 11 19.25 7.562 7.562 0 0 1 5.535 6.46 7.596 7.596 0 0 0 8.25 8.801a8.234 8.234 0 0 1 3.081-6.295 7.526 7.526 0 0 0 2.751 2.273Z"/><path d="M11 16.5a3.438 3.438 0 0 0 .454-6.845 5.491 5.491 0 0 0-1.765 3.25 5.476 5.476 0 0 1-1.955-.918A3.438 3.438 0 0 0 11 16.5Z"/></svg>';
         if (decision.kind === 'live') {
           const mins = (decision.target.endMs - now.getTime()) / 60000;
           if (title) title.textContent = 'Live event';
@@ -8050,25 +8081,6 @@
           type: 'line',
           source: 'aop-landcover',
           paint: { 'line-color': LANDCOVER_OUTLINE, 'line-width': 0.8, 'line-opacity': 0.55 }
-        });
-        // pwa_qa item 20: a tiled tree-SVG fill over the FOREST polygons,
-        // wired to the satellite toggle's layer list so it shows only with
-        // the aerial (the flat green forest fill is off in that preset) —
-        // treed areas then read as trees on the bare imagery. The icon is
-        // the editable website/img/tree.svg; tune colours/size there.
-        if (!map.hasImage('forest-trees')) {
-          const treeImg = new Image();
-          treeImg.onload = () => { if (!map.hasImage('forest-trees')) map.addImage('forest-trees', treeImg, { pixelRatio: 2 }); };
-          treeImg.onerror = () => console.warn('forest tree icon failed to load');
-          treeImg.src = './img/tree.svg';
-        }
-        map.addLayer({
-          id: 'landcover-forest-trees',
-          type: 'fill',
-          source: 'aop-landcover',
-          filter: ['match', ['get', 'class'], ['forest_deciduous', 'forest_evergreen'], true, false],
-          layout: { visibility: 'none' },
-          paint: { 'fill-pattern': 'forest-trees', 'fill-opacity': 0.85 }
         });
       }
 

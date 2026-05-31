@@ -71,7 +71,9 @@
       "Bash(bash \"/Users/christopherfryman/Documents/code/AOP MAP/mvp/scripts/export_publish_geojson.sh\")",
       "Bash(WEBSITE_URL=http://localhost:8001/ python3 playwright_verify_baked_pois.py)",
       "WebSearch",
-      "WebFetch(domain:www.onxmaps.com)"
+      "WebFetch(domain:www.onxmaps.com)",
+      "Bash(python3 -c \"import PIL; print\\('pillow', PIL.__version__\\)\")",
+      "Bash(python3 -c \"import numpy; print\\('numpy', numpy.__version__\\)\")"
     ],
     "deny": [
       "Bash(sudo *)",
@@ -130,5 +132,20 @@
       "Write(/Library/**)"
     ],
     "defaultMode": "acceptEdits"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/Users/christopherfryman/Documents/code/AOP MAP/.claude/hooks/block-redundant-cd.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking for redundant cd"
+          }
+        ]
+      }
+    ]
   }
 }
