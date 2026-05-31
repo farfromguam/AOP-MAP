@@ -50,23 +50,34 @@
       --sa-left:   env(safe-area-inset-left, 0px);
       --sa-right:  env(safe-area-inset-right, 0px);
     }
-    /* height:100vh (NOT 100%) is load-bearing for iOS PWA. With viewport-fit=cover +
-       black-translucent, a PERCENTAGE height makes Safari silently drop cover layout,
-       so the standalone viewport returns screenH − statusBar (e.g. 762 on an 812 screen)
-       and the lost ~50px shows as a dead band at the BOTTOM. 100vh = the large/full
-       viewport, which restores true cover (innerH == screenH). overflow:hidden stops
-       page rubber-band; the panel + left rail keep their own internal scroll. */
-    body, html { margin: 0; padding: 0; height: 100vh; overflow: hidden; font-family: Inter, system-ui, sans-serif; }
-    /* Full-bleed map. The proven iOS-PWA full-screen pattern is 100vw/100vh on a
-       fixed element — NOT 100% (breaks cover, see body rule above) and NOT the old
-       negative-inset hack `top:calc(-1*--sa-top); bottom:calc(-1*--sa-bottom)`, which
-       is a documented non-fix (it can't paint into the off-viewport band the % height
-       created). With cover restored, 100vh == the full screen, so the map covers
-       everything incl. under the status bar + home indicator. UI chrome stays clear of
-       the reserved areas via env(safe-area-inset-*) padding on the controls (below).
-       resyncViewport still calls map.resize() on rotate / return-from-background. */
-    html, body { background: #ff0033; } /* DIAGNOSTIC: red = body bleed-through. With the fix it should be fully covered (no red). Revert to a map-toned neutral once verified on device. */
-    #map { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; }
+    /* Viewport height is context-split (see the display-mode override below):
+       - Browser TAB → 100dvh: respects the collapsing address bar so the bottom
+         isn't hidden behind it (100vh runs too tall in a tab).
+       - Installed PWA → 100vh: no toolbar, and unlike 100dvh it is correct on
+         cold start. This is what closes the iOS bottom band — with
+         viewport-fit=cover + black-translucent a PERCENTAGE height (the old
+         `height:100%`) made Safari drop cover layout, returning screenH−statusBar
+         (762 on an 812 screen) and dumping the lost ~50px as dead space at the
+         bottom. overflow:hidden stops page rubber-band; the panel + left rail keep
+         their own internal scroll. */
+    body, html { margin: 0; padding: 0; height: 100dvh; overflow: hidden; font-family: Inter, system-ui, sans-serif; }
+    /* Full-bleed map. Fixed + full-screen, NOT 100% (breaks cover, see body rule) and
+       NOT the old negative-inset hack `top:calc(-1*--sa-top); bottom:calc(-1*--sa-bottom)`
+       (a documented non-fix — it can't paint into the off-viewport band the % height
+       created). Height mirrors the body split: 100dvh base for browser tabs, 100vh in
+       the installed PWA (override below) where it covers everything incl. under the
+       status bar + home indicator. UI chrome stays clear of the reserved areas via
+       env(safe-area-inset-*) padding on the controls (below). resyncViewport still
+       calls map.resize() on rotate / return-from-background. */
+    html, body { background: #ff0033; } /* DIAGNOSTIC: red = body bleed-through. Verified covered in the PWA (no red). Revert to a map-toned neutral once the layout is locked. */
+    #map { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; }
+    /* Installed PWA only: 100vh == the full screen and is correct on cold start
+       (100dvh is not), which is what closes the bottom band. A browser tab keeps the
+       100dvh base so the collapsing address bar doesn't clip the bottom. iOS 16+/26
+       and Chromium both match (display-mode: standalone). */
+    @media (display-mode: standalone) {
+      html, body, #map { height: 100vh; }
+    }
     /* Keep MapLibre's corner controls (geolocate, etc.) clear of the notch,
        status bar, home indicator, and rounded corners under viewport-fit=cover. */
     .maplibregl-ctrl-top-left    { margin-top: var(--sa-top); margin-left: var(--sa-left); }
@@ -255,6 +266,7 @@
     .panel-header h1 { margin: 0; flex: 1; min-width: 0; }
     .panel-collapse { flex: 0 0 auto; margin: 0; padding: 1px 8px; font-size: 1.15rem; line-height: 1.1; color: var(--brown-mid); }
     .panel-export { flex: 0 0 auto; }
+    .panel-fab-pencil { display: none; } /* shown only as the collapsed mobile FAB (V5) */
     .panel-body { overflow: hidden; transition: max-height 0.26s ease; }
     .panel.collapsed .panel-body { max-height: 0; }
     .panel label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.94rem; }
@@ -708,16 +720,33 @@
       .lr-content-col { --lr-card-body-height: 160px; }
       .info-panel { padding: 9px; }
       .hot-button { min-height: 54px; padding: 7px 8px; }
-      /* Bottom cards float at a minimal ~8px margin so no dead band shows
-         below them. The full --sa-bottom (~34px home indicator) was reserved as
-         empty space under the cards and read as flat-cream padding. The status
-         bar is non-interactive, so it sits at bottom:8px and is allowed to graze
-         the translucent home indicator. The editor panel IS interactive and
-         grows upward, so it docks a bar-height (~44px) above the status bar —
-         that puts its bottom at 52px, clear of the ~34px indicator. max-height
-         keeps a 220px reserve at the top so the left rail stays uncovered. */
-      .panel { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); top: auto; bottom: calc(8px + 44px); width: auto; max-width: none; max-height: clamp(220px, calc(100vh - 360px - var(--sa-top) - var(--sa-bottom)), 420px); }
-      .message { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); bottom: 8px; max-width: none; }
+      /* V5 bottom treatment (narrow viewports only):
+         - COLLAPSED edit panel = a round pencil FAB in the bottom-right corner.
+           It is interactive, so it docks above the ~34px home-indicator zone.
+         - Tapping it expands the full-width panel upward as before; the label +
+           Export (⧉) live inside the open panel.
+         - The "N publish features loaded" status text is dropped (.message hidden).
+         - MapLibre's bottom-right attribution ⓘ is nudged left so it clears the
+           FAB — the count is gone but source credits stay one tap away. */
+      .panel { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); top: auto; bottom: calc(8px + var(--sa-bottom)); width: auto; max-width: none; max-height: clamp(220px, calc(100vh - 360px - var(--sa-top) - var(--sa-bottom)), 420px); }
+      .panel.collapsed {
+        left: auto; right: calc(12px + var(--sa-right));
+        bottom: calc(12px + var(--sa-bottom));
+        width: 56px; height: 56px; min-width: 0; padding: 0;
+        max-width: none; max-height: none;
+        border-radius: 50%;
+        background: var(--rust);
+        box-shadow: 0 8px 22px rgba(120,52,18,0.42), 0 0 0 4px rgba(255,253,245,0.55);
+        overflow: hidden;
+      }
+      .panel.collapsed .panel-header { height: 100%; justify-content: center; gap: 0; }
+      .panel.collapsed .panel-header h1,
+      .panel.collapsed #exportAll,
+      .panel.collapsed #panelCollapse { display: none; }
+      .panel.collapsed .panel-fab-pencil { display: grid; place-items: center; color: #fff7e9; }
+      .panel.collapsed .panel-fab-pencil svg { width: 24px; height: 24px; }
+      .message { display: none; }
+      .maplibregl-ctrl-bottom-right { margin-right: calc(76px + var(--sa-right)); }
     }
     @media (min-width: 1024px) {
       .left-controls { width: 360px; }
@@ -908,7 +937,7 @@
     <!-- Build version, under the download icon. Always visible (the install
          button self-hides once installed). Keep this string in sync with
          VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v8-dbg</div>
+    <div class="util-version" id="appVersion" title="App build version">v10-dbg</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
@@ -926,6 +955,9 @@
   </div>
   <div class="panel collapsed">
     <div class="panel-header" id="panelHeader" title="Expand panel">
+      <span class="panel-fab-pencil" aria-hidden="true">
+        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5l4 4L8 18l-4.5 1L4.5 14.5 14.5 3.5z"/></svg>
+      </span>
       <h1>AOP edit panel</h1>
       <button type="button" id="exportAll" class="panel-export" title="Copy a full snapshot — toggles, sliders, paints, geometry overrides, drawn POIs, per-feature visibility — to clipboard.">⧉</button>
       <button type="button" id="panelCollapse" class="panel-collapse" aria-expanded="false" aria-controls="panelBody" title="Expand panel">▸</button>

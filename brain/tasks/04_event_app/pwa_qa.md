@@ -105,6 +105,10 @@ event name  start date - end date.
 
 ---
 
+on tall phones or wide monitors our 9 patch is not enough coverage to not see the edges of the map. 
+we need to extend the 9 patch to ~bigger.
+
+---
 
 
 ## iOS bottom padding (home indicator) — RESOLVED 2026-05-30
