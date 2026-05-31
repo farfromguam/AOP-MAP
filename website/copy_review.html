@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AOP Copy Review</title>
+  <style>
+    :root {
+      --paper: #faf6ec;
+      --ink: #2f2418;
+      --ink-soft: #6b5b46;
+      --rule: #d8cdb4;
+      --rust: #a85020;
+      --moss: #5d6b3a;
+      --flag-bg: #fff4d6;
+      --flag-border: #d9b54a;
+      --flag-ink: #7a5a10;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: #efe7d5; color: var(--ink); }
+    body { font: 15px/1.5 "Inter", system-ui, -apple-system, sans-serif; }
+    .sheet { max-width: 860px; margin: 0 auto; padding: 28px 30px 80px; background: var(--paper); min-height: 100vh; box-shadow: 0 0 24px rgba(0,0,0,0.08); }
+
+    header.doc { border-bottom: 3px solid var(--rust); padding-bottom: 14px; margin-bottom: 8px; }
+    header.doc h1 { font-size: 1.7rem; margin: 0 0 2px; letter-spacing: -0.01em; }
+    header.doc .sub { color: var(--ink-soft); font-size: 0.9rem; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0 6px; }
+    .toolbar button { font: inherit; font-size: 0.85rem; padding: 6px 12px; border: 1px solid var(--rust); background: var(--rust); color: #fff; border-radius: 6px; cursor: pointer; }
+    .toolbar button.ghost { background: #fff; color: var(--rust); }
+    .toolbar label { font-size: 0.82rem; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 0.78rem; color: var(--ink-soft); margin: 10px 0 18px; }
+    .badge { display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 2px 7px; border-radius: 4px; vertical-align: middle; }
+    .badge.live { background: #e4ecd6; color: #41521f; }
+    .badge.proposed { background: #fbeccb; color: var(--flag-ink); }
+    .badge.owed { background: #f6d6cc; color: #8a3318; }
+    .badge.data { background: #dde6ef; color: #2c4a6b; }
+    .badge.in_code { background: #ece4d2; color: #6b5b46; }
+
+    /* Summary table */
+    table.summary { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin: 6px 0 26px; }
+    table.summary th, table.summary td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+    table.summary th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); }
+    table.summary tr td:first-child { font-weight: 600; white-space: nowrap; }
+
+    /* Kind sections */
+    section.kind { margin: 0 0 26px; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: #fff; }
+    section.kind > .khead { background: #f3ecdb; padding: 12px 16px; border-bottom: 1px solid var(--rule); }
+    section.kind h2 { margin: 0; font-size: 1.18rem; }
+    section.kind .what { color: var(--ink-soft); font-size: 0.88rem; margin: 4px 0 0; }
+    .meta-row { font-size: 0.78rem; color: var(--ink-soft); margin-top: 8px; display: grid; gap: 3px; }
+    .meta-row .k { font-weight: 700; color: var(--ink); text-transform: uppercase; font-size: 0.66rem; letter-spacing: 0.04em; margin-right: 6px; }
+    .path { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.78rem; background: #f3ecdb; padding: 1px 5px; border-radius: 4px; color: #5a4a34; }
+    a.viewlink { font-size: 0.72rem; color: var(--rust); text-decoration: none; margin-left: 6px; }
+    a.viewlink:hover { text-decoration: underline; }
+
+    .kbody { padding: 14px 16px; }
+    .copy-block { margin: 0 0 14px; }
+    .copy-block:last-child { margin-bottom: 0; }
+    .copy-block h3 { font-size: 0.95rem; margin: 0 0 6px; color: var(--rust); border-bottom: 1px dotted var(--rule); padding-bottom: 3px; }
+    .field { display: grid; grid-template-columns: 150px 1fr; gap: 4px 12px; padding: 4px 0; border-bottom: 1px solid #f0e9d8; font-size: 0.9rem; }
+    .field:last-child { border-bottom: none; }
+    .field .label { font-weight: 600; color: var(--ink-soft); font-size: 0.82rem; }
+    .field .val { white-space: pre-wrap; }
+    .row { padding: 7px 0; border-bottom: 1px solid #f0e9d8; }
+    .row:last-child { border-bottom: none; }
+    .row .title { font-weight: 600; }
+    .row .tag { font-family: ui-monospace, monospace; font-size: 0.76rem; color: var(--moss); }
+    .row .desc { font-size: 0.9rem; margin-top: 2px; }
+    .muted { color: var(--ink-soft); }
+    .flag { background: var(--flag-bg); border: 1px solid var(--flag-border); color: var(--flag-ink); border-radius: 5px; padding: 6px 9px; font-size: 0.85rem; margin-top: 4px; }
+    .flag::before { content: "⚑ "; }
+    .owed { margin: 8px 0 0; padding: 10px 12px; background: #fff7e6; border: 1px dashed var(--flag-border); border-radius: 6px; font-size: 0.85rem; }
+    .owed h4 { margin: 0 0 5px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--flag-ink); }
+    .owed ul { margin: 0; padding-left: 18px; }
+    .err { color: #8a3318; font-size: 0.85rem; }
+    .count { color: var(--ink-soft); font-weight: 400; font-size: 0.8rem; }
+
+    @media print {
+      html, body { background: #fff; }
+      .sheet { box-shadow: none; max-width: none; padding: 0 12px; }
+      .toolbar { display: none; }
+      section.kind { break-inside: avoid; page-break-inside: avoid; border-color: #ccc; }
+      section.kind > .khead { background: #f3f3f3 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      a.viewlink { display: none; }
+      .badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <header class="doc">
+      <h1>AOP Copy Review</h1>
+      <div class="sub">Every text surface in the app, assembled for proofing. Each section names the root file where the copy lives.</div>
+    </header>
+
+    <div class="toolbar">
+      <button onclick="window.print()">Print / Save PDF</button>
+      <button class="ghost" id="toggleGaps">Show only gaps</button>
+      <span class="sub" id="genline"></span>
+    </div>
+
+    <div class="legend">
+      <span><span class="badge live">live</span> settled enough to print</span>
+      <span><span class="badge proposed">proposed</span> confirm before official</span>
+      <span><span class="badge owed">owed</span> copy still missing</span>
+      <span><span class="badge data">data</span> lives in a data file</span>
+      <span><span class="badge in_code">in code</span> still in index.html / manifest</span>
+    </div>
+
+    <div id="summaryWrap"></div>
+    <div id="out"><p class="muted">Loading copy…</p></div>
+  </div>
+
+  <script>
+  (function () {
+    const out = document.getElementById('out');
+    const summaryWrap = document.getElementById('summaryWrap');
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    // A root_file is repo-relative (e.g. website/data/x.json). copy_review.html
+    // lives in website/, so anything under website/ gets a clickable relative
+    // link; everything else (brain/, mvp/) shows the path only — it would 404
+    // under a server rooted at website/.
+    function fileLinks(paths) {
+      return (paths || []).map((p) => {
+        let link = '';
+        if (p.indexOf('website/') === 0) {
+          const rel = p.slice('website/'.length);
+          link = ' <a class="viewlink" href="' + esc(rel) + '" target="_blank" rel="noopener">view ↗</a>';
+        }
+        return '<span class="path">' + esc(p) + '</span>' + link;
+      }).join('<br>');
+    }
+    async function getJson(relFromWebsite) {
+      const res = await fetch(relFromWebsite);
+      if (!res.ok) throw new Error(relFromWebsite + ' → HTTP ' + res.status);
+      return res.json();
+    }
+    // website/data/x.json → data/x.json (relative to this page)
+    function webRel(p) { return p.indexOf('website/') === 0 ? p.slice('website/'.length) : p; }
+
+    function field(label, val) {
+      if (val == null || val === '') return '';
+      return '<div class="field"><span class="label">' + esc(label) + '</span><span class="val">' + esc(val) + '</span></div>';
+    }
+    function block(title, inner) {
+      if (!inner) return '';
+      return '<div class="copy-block"><h3>' + esc(title) + '</h3>' + inner + '</div>';
+    }
+    function flag(text) { return '<div class="flag">' + esc(text) + '</div>'; }
+    function owedList(title, arr) {
+      if (!Array.isArray(arr) || !arr.length) return '';
+      return '<div class="owed"><h4>' + esc(title) + '</h4><ul>' +
+        arr.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul></div>';
+    }
+
+    // ---- per-kind renderers: return { html, hasGap } ------------------------
+    const renderers = {
+      about(d) {
+        let h = '';
+        let intro = '';
+        if (d.intro) intro = esc(d.intro.lead || '') +
+          (d.intro.link ? esc(d.intro.link.text || '') + ' [' + esc(d.intro.link.url || '') + ']' : '') +
+          esc(d.intro.tail || '');
+        h += block(d.heading || 'About', intro ? '<div class="field"><span class="label">Intro</span><span class="val">' + intro + '</span></div>' : '');
+        h += block('List items', (d.items || []).map((i) => field(i.label, i.text)).join(''));
+        if (d.note) h += block('Closing note', '<div class="field"><span class="label">note</span><span class="val">' + esc(d.note) + '</span></div>');
+        const owed = owedList('Owed', d.owed_work);
+        return { html: h + owed, hasGap: !!(d.owed_work && d.owed_work.length) };
+      },
+      event_schedule(d) {
+        const e = d.event || {};
+        let h = block('Event', field('Label', e.label) + field('Dates', e.date_range_label) +
+          field('End', e.end_date_label) + field('Source summary', e.source_summary) + field('Caveat', e.caveat));
+        const locs = Object.entries(d.locations || {})
+          .filter(([, v]) => !v.hidden)
+          .map(([tag, v]) => field(tag, [v.label, v.map_label && '→ ' + v.map_label, v.caveat && '(' + v.caveat + ')'].filter(Boolean).join('  '))).join('');
+        h += block('Location labels', locs);
+        const sess = (d.sessions || []).map((s) =>
+          '<div class="row"><span class="title">' + esc(s.title) + '</span> ' +
+          '<span class="tag">' + esc(s.date_label || '') + ' ' + esc(s.start_local || '') + ' · ' + esc(s.location_tag || '') + '</span>' +
+          (s.status ? ' <span class="badge ' + esc(s.status) + '">' + esc(s.status) + '</span>' : '') + '</div>').join('');
+        h += block('Sessions <span class="count">(' + (d.sessions || []).length + ')</span>', sess);
+        return { html: h, hasGap: e.caveat ? true : false };
+      },
+      poi_index(d) {
+        let h = block('Group notes', (d.groups || []).map((g) => field(g.label, g.note)).join(''));
+        let gap = false;
+        const rows = (d.entries || []).map((en) => {
+          const who = en.match ? Object.values(en.match).join(' · ') : '';
+          if (en.blurb) {
+            return '<div class="row"><span class="tag">' + esc(en.group) + ' · ' + esc(who) + '</span><div class="desc">' + esc(en.blurb) + '</div></div>';
+          }
+          gap = true;
+          return '<div class="row"><span class="tag">' + esc(en.group) + ' · ' + esc(who) + '</span>' + flag(en.revisit_note || 'blurb owed') + '</div>';
+        }).join('');
+        h += block('Entries <span class="count">(' + (d.entries || []).length + ')</span>', rows);
+        h += owedList('Owed', d.owed_work);
+        return { html: h, hasGap: gap || !!(d.owed_work && d.owed_work.length) };
+      },
+      trail_catalog(d) {
+        let h = '';
+        if (d.provenance_note) h += flag(d.provenance_note);
+        const rows = (d.trails || []).map((t) =>
+          '<div class="row"><span class="title">' + esc(t.number) + (t.name ? ' · ' + esc(t.name) : ' · (unnamed)') + '</span> ' +
+          '<span class="tag">' + esc(t.difficulty || '') + (t.license_on_text ? ' · ' + esc(t.license_on_text) : '') + '</span>' +
+          '<div class="desc">' + esc(t.description || '') + '</div></div>').join('');
+        h += block('Trails <span class="count">(' + (d.trails || []).length + ')</span>', rows);
+        const lm = (d.named_landmarks || []).map((l) => field(l.name, [l.kind, l.note].filter(Boolean).join(' — '))).join('');
+        h += block('Named landmarks', lm);
+        h += owedList('Owed', d.owed_work);
+        return { html: h, hasGap: true };
+      },
+      visitor_context(d) {
+        const rows = (d.features || []).map((f) => {
+          const p = f.properties || {};
+          return block(p.name, field('Map label', (p.label || '').replace(/\n/g, '  /  ')) +
+            field('Services', p.services) + field('Examples', p.examples) +
+            field('Distance note', p.distance_note) + field('Drive note', p.drive_time_note) +
+            field('Source summary', p.source_summary));
+        }).join('');
+        return { html: rows, hasGap: false };
+      },
+      brand_logos(d) {
+        let h = '';
+        if (d.metadata && d.metadata.permission_note) h += flag(d.metadata.permission_note);
+        h += (d.features || []).map((f) => {
+          const p = f.properties || {};
+          return block(p.name, field('Attribution', p.attribution) + field('Source', p.source_url));
+        }).join('');
+        return { html: h, hasGap: false };
+      },
+      ui_strings(d) {
+        let h = '';
+        const groups = ['app', 'search', 'calendar', 'poi', 'hot'];
+        groups.forEach((g) => {
+          if (!d[g]) return;
+          h += block(g, Object.entries(d[g]).map(([k, v]) => field(k, v)).join(''));
+        });
+        Object.keys(d).filter((k) => k.endsWith('_reference')).forEach((k) => {
+          const ref = d[k];
+          const inner = Object.entries(ref).filter(([kk]) => kk !== '_where' && kk !== '_note')
+            .map(([kk, vv]) => field(kk, Array.isArray(vv) ? vv.join(' · ') : vv)).join('');
+          h += block(k + (ref._where ? ' — ' + ref._where : ''), inner);
+        });
+        return { html: h, hasGap: false };
+      },
+      manifest(d) {
+        return { html: block('Manifest', field('name', d.name) + field('short_name', d.short_name) + field('description', d.description)), hasGap: false };
+      },
+      literal(d, entry) {
+        const rows = (entry.copy || []).map((c) => field(c.label, c.text + (c.note ? '  — ' + c.note : ''))).join('');
+        let h = block('Copy (in markup)', rows);
+        if (entry.in_code_locations) h += '<div class="meta-row"><span><span class="k">at</span>' +
+          entry.in_code_locations.map((l) => '<span class="path">' + esc(l) + '</span>').join(' ') + '</span></div>';
+        if (entry.note) h += flag(entry.note);
+        return { html: h, hasGap: entry.status === 'owed' };
+      },
+      doc_pointer(d, entry) {
+        let h = '<p class="muted">' + esc(entry.note || 'Lives in the brain — see the root file.') + '</p>';
+        return { html: h, hasGap: true };
+      }
+    };
+
+    function statusBadge(s) { return '<span class="badge ' + esc(s) + '">' + esc(s) + '</span>'; }
+
+    async function renderKind(entry) {
+      const r = renderers[entry.renderer] || renderers.literal;
+      let body = '';
+      let hasGap = entry.status === 'owed';
+      // Data-backed renderers load the first website/-rooted root file.
+      const dataNeeded = ['about', 'event_schedule', 'poi_index', 'trail_catalog', 'visitor_context', 'brand_logos', 'ui_strings', 'manifest'];
+      try {
+        if (dataNeeded.indexOf(entry.renderer) !== -1) {
+          const src = (entry.root_files || []).find((p) => p.indexOf('website/') === 0);
+          const d = src ? await getJson(webRel(src)) : {};
+          const res = r(d, entry);
+          body = res.html; hasGap = hasGap || res.hasGap;
+        } else {
+          const res = r({}, entry);
+          body = res.html; hasGap = hasGap || res.hasGap;
+        }
+      } catch (e) {
+        body = '<p class="err">Could not load copy: ' + esc(e.message) + '</p>';
+        hasGap = true;
+      }
+      const sec = document.createElement('section');
+      sec.className = 'kind';
+      sec.dataset.gap = hasGap ? '1' : '0';
+      sec.innerHTML =
+        '<div class="khead">' +
+          '<h2>' + esc(entry.label) + ' ' + statusBadge(entry.status) + ' <span class="badge ' + esc(entry.extraction) + '">' + (entry.extraction === 'data' ? 'data' : 'in code') + '</span></h2>' +
+          (entry.what ? '<p class="what">' + esc(entry.what) + '</p>' : '') +
+          '<div class="meta-row">' +
+            '<span><span class="k">root</span>' + fileLinks(entry.root_files) + '</span>' +
+            (entry.surfaces ? '<span><span class="k">shows in</span>' + esc(entry.surfaces.join(' · ')) + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="kbody">' + body + '</div>';
+      return sec;
+    }
+
+    function renderSummary(reg) {
+      const rows = reg.kinds.map((k) =>
+        '<tr><td>' + esc(k.label) + '</td><td>' + statusBadge(k.status) + '</td><td><span class="badge ' + esc(k.extraction) + '">' + (k.extraction === 'data' ? 'data' : 'in code') + '</span></td>' +
+        '<td>' + esc((k.review_priority || '').toUpperCase()) + '</td>' +
+        '<td>' + (k.root_files || []).map((p) => '<span class="path">' + esc(p) + '</span>').join('<br>') + '</td></tr>').join('');
+      summaryWrap.innerHTML = '<table class="summary"><thead><tr><th>Kind</th><th>Status</th><th>Where</th><th>Priority</th><th>Root file(s)</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    }
+
+    (async function () {
+      let reg;
+      try {
+        reg = await getJson('data/aop_copy_registry.json');
+      } catch (e) {
+        out.innerHTML = '<p class="err">Could not load data/aop_copy_registry.json — ' + esc(e.message) +
+          '. Serve this page over HTTP (e.g. <code>python3 -m http.server</code> from website/).</p>';
+        return;
+      }
+      document.getElementById('genline').textContent = 'Registry updated ' + (reg.updated_at || '?') + ' · ' + reg.kinds.length + ' kinds';
+      renderSummary(reg);
+      out.innerHTML = '';
+      for (const entry of reg.kinds) {
+        out.appendChild(await renderKind(entry));
+      }
+
+      // "Show only gaps" filter
+      let gapsOnly = false;
+      document.getElementById('toggleGaps').addEventListener('click', (ev) => {
+        gapsOnly = !gapsOnly;
+        ev.target.textContent = gapsOnly ? 'Show all' : 'Show only gaps';
+        document.querySelectorAll('section.kind').forEach((s) => {
+          s.style.display = (gapsOnly && s.dataset.gap !== '1') ? 'none' : '';
+        });
+      });
+    })();
+  })();
+  </script>
+</body>
+</html>
