@@ -840,8 +840,6 @@
   <div class="screen-corner tr" aria-hidden="true"></div>
   <div class="screen-corner bl" aria-hidden="true"></div>
   <div class="screen-corner br" aria-hidden="true"></div>
-  <!-- DIAGNOSTIC: on-screen viewport readout. Remove with the other DIAGNOSTIC blocks. -->
-  <div id="dbgOverlay" style="position:fixed; top:40%; left:6px; z-index:99999; background:rgba(0,0,0,0.82); color:#0f0; font:11px/1.35 ui-monospace,Menlo,monospace; padding:6px 8px; border-radius:6px; white-space:pre; pointer-events:none; max-width:64vw;">dbg…</div>
   <div class="left-controls">
     <div class="pill-bar" role="group" aria-label="Map view controls">
       <div class="pill zoom-bar" role="group" aria-label="Zoom to area">
@@ -1021,7 +1019,7 @@
     <!-- Build version, under the download icon. Always visible (the install
          button self-hides once installed). Keep this string in sync with
          VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v17-dbg</div>
+    <div class="util-version" id="appVersion" title="App build version">v18</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
@@ -1390,7 +1388,7 @@
           {
             id: 'background',
             type: 'background',
-            paint: { 'background-color': '#1e66ff' } /* DIAGNOSTIC: was #efe7d5 — blue = map background layer (no data there) */
+            paint: { 'background-color': '#efe7d5' }
           }
         ]
       },
@@ -5099,7 +5097,7 @@
         },
         sliders: { landcover9Opacity: 55, sfwdaOpacity: 70, sfwdaMultiply: 0 },
         paints: {
-          background: { 'background-color': '#1e66ff' }, /* DIAGNOSTIC: was #efe7d5 */
+          background: { 'background-color': '#efe7d5' },
           'landcover-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.9 },
           'landcover-forest-outline': { 'line-color': LANDCOVER_MUTED_OUTLINE, 'line-width': 0.8, 'line-opacity': 0.55 },
           'landcover-9patch-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.55 },
@@ -5330,7 +5328,7 @@
         },
         sliders: { landcover9Opacity: 0, sfwdaOpacity: 0, sfwdaMultiply: 0 },
         paints: {
-          background: { 'background-color': '#1e66ff' }, /* DIAGNOSTIC: was #efe7d5 */
+          background: { 'background-color': '#efe7d5' },
           'tnmap-satellite': { 'raster-opacity': 1 },
           'usda-naip-satellite': { 'raster-opacity': 0 }
         }
@@ -9868,44 +9866,10 @@
     // changes. iOS standalone finalizes its height late (status bar / home
     // indicator settle, rotation, return from background), and MapLibre's
     // ResizeObserver on a position:fixed container does not always catch it —
-    // an unresized canvas leaves the cream body background showing under the
-    // home indicator. resize() is cheap and idempotent.
-    // DIAGNOSTIC: paint the live viewport geometry on screen so the device can
-    // report exact numbers. Remove with the other DIAGNOSTIC blocks.
-    function updateDbgOverlay() {
-      const el = document.getElementById('dbgOverlay');
-      if (!el) return;
-      const cs = getComputedStyle(document.documentElement);
-      const saT = cs.getPropertyValue('--sa-top').trim() || '0';
-      const saB = cs.getPropertyValue('--sa-bottom').trim() || '0';
-      const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-      const mr = (document.getElementById('map') || {}).getBoundingClientRect
-        ? document.getElementById('map').getBoundingClientRect() : null;
-      const cv = document.querySelector('.maplibregl-canvas');
-      const vv = window.visualViewport;
-      const badge = (document.getElementById('appVersion') || {}).textContent || '';
-      el.textContent =
-        `${badge} standalone:${standalone}\n` +
-        `innerH ${window.innerHeight}  clientH ${document.documentElement.clientHeight}\n` +
-        `screenH ${window.screen ? window.screen.height : '?'}\n` +
-        `vv ${vv ? Math.round(vv.height) + ' @top' + Math.round(vv.offsetTop) : 'n/a'}\n` +
-        `#map t${mr ? Math.round(mr.top) : '?'} b${mr ? Math.round(mr.bottom) : '?'} h${mr ? Math.round(mr.height) : '?'}\n` +
-        `canvas h${cv ? cv.clientHeight : '?'}\n` +
-        `safe T${saT} B${saB}\n` +
-        // On-device baseline check (DIAGNOSTIC): the two bottom icons should report
-        // the SAME fromBottom now that .panel is position:fixed. Read these off the
-        // phone to confirm alignment instead of eyeballing — they were 12 vs 62.
-        (() => {
-          const ih = window.innerHeight;
-          const fb = (sel) => { const e = document.querySelector(sel);
-            return e ? Math.round(ih - e.getBoundingClientRect().bottom) : '?'; };
-          return `ⓘ fromBot ${fb('.maplibregl-ctrl-attrib')}  ✎ fromBot ${fb('.panel.collapsed')}`;
-        })();
-    }
-
+    // an unresized canvas leaves the body background showing under the home
+    // indicator. resize() is cheap and idempotent.
     const resyncViewport = () => {
       map.resize();
-      updateDbgOverlay();
       if (searchResults.style.display === 'block') positionSearchResults();
     };
     window.addEventListener('resize', resyncViewport);
@@ -9913,10 +9877,7 @@
     window.addEventListener('pageshow', resyncViewport);
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', resyncViewport);
-      window.visualViewport.addEventListener('scroll', updateDbgOverlay);
     }
-    window.addEventListener('load', () => setTimeout(updateDbgOverlay, 600));
-    setTimeout(updateDbgOverlay, 1500);
     window.addEventListener('scroll', () => {
       if (searchResults.style.display === 'block') positionSearchResults();
     }, true);

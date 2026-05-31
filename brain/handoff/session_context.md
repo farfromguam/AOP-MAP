@@ -123,9 +123,8 @@ clientH 663 / vv 663 @top0`, `screenH 812`, `#map t0 b663 h663`, `canvas h663`,
   runs too tall in a tab", bottom hidden behind the bar). Allowing scroll to minimize the
   toolbar (grows dvh) is out — we are deliberately `overflow:hidden`, no scroll, and it's
   janky. iOS `apple-mobile-web-app-status-bar-style` is inert in a tab.
-- **STILL-LIVE diagnostics after this:** `#1e66ff` map background paint, the `#dbgOverlay`
-  div + JS (incl. the `fromBot` line), the `-dbg` suffix. Closeout = strip those + drop
-  `-dbg` + commit. The red body bg is already retired.
+- **Diagnostics after v15:** `#1e66ff` map background paint, the `#dbgOverlay` div + JS
+  (incl. the `fromBot` line), the `-dbg` suffix — **ALL STRIPPED at v18 (see below).**
 - **`v15-dbg` — top bar BLACK so it "disappears."** User asked to black out the top.
   `html,body{background:#000}` → iOS tints the Safari status bar + bottom band black; on a
   notched iPhone the black strips merge with the bezel/notch (white system text). One
@@ -149,6 +148,20 @@ clientH 663 / vv 663 @top0`, `screenH 812`, `#map t0 b663 h663`, `canvas h663`,
   hide. Verified (Playwright UA swap): default desktop → no `ios-browser` class, corner
   `display:none`; iPhone UA → class present, `display:block`. So PWA and desktop/non-iOS
   browsers get sharp corners; only the iOS Safari tab gets the rounded frame.
+- **`v18` — DIAGNOSTICS STRIPPED, build clean (user: "happy with mobile styles").** All
+  scaffolding removed: (1) the `#1e66ff` blue map-background paint → restored to `#efe7d5`
+  at 3 sites (base style + two preset `paints.background`); (2) the `#dbgOverlay` div +
+  `updateDbgOverlay()` + its resync wiring (incl. the `fromBot` line) deleted —
+  `resyncViewport` kept (its `map.resize()` + search reposition are functional, only the
+  overlay call dropped); (3) `-dbg` suffix dropped from `#appVersion` + `sw.js VERSION`,
+  both now `v18`. **KEEPERS (not diagnostics):** the `#000` body bg (the black "disappear"
+  chrome) and the four `.screen-corner` inverted fillets (iOS-tab-scoped). Smoke-checked:
+  no console errors, no `dbgOverlay`/`updateDbgOverlay`/`1e66ff`/`-dbg` remnants (grep
+  clean), body bg black, `resyncViewport` intact. The PWA §1-§8 layout rules in
+  `spinup/working_pwa_css.md` are unchanged. **Still UNCOMMITTED** — the working tree is
+  now the clean closeout build and is ready to commit whenever the user confirms the v18
+  reload on the phone. (No build card was ever opened for this PWA work; open one under the
+  active sprint if it grows.)
 - **NEXT — bottom bar "fill with map" (user is open to it).** Real technique but a
   measure-and-iterate job, NOT a clean one-liner: Safari's bottom address bar is
   translucent and floats over the page, so painting the map behind it means sizing the MAP

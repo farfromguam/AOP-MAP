@@ -3,8 +3,11 @@
 TL;DR:
 - This is the **locked, working** iOS-PWA (installed / `display-mode: standalone`)
   layout for `website/index.html`. Captured the moment it read right on-device.
-- **Marker:** build **`v13-dbg`**, 2026-05-30. Device: iPhone 375×812pt @3x
-  (`screenH 812`, `safe T50 B34`), iOS **26.2+**. Served straight to the phone.
+- **Marker:** PWA layout locked at build `v13-dbg`, 2026-05-30; **diagnostics stripped
+  at `v18`, 2026-05-31** (clean build, no `-dbg`). Device: iPhone 375×812pt @3x
+  (`screenH 812`, `safe T50 B34`), iOS **26.2+**. Served straight to the phone. The PWA
+  layout rules are unchanged across v13→v18 — only the body bg, the Safari-tab corner
+  fillets, and diagnostic removal happened after v13.
 - If the PWA layout ever regresses, diff against the verbatim blocks below — they
   are the source of truth for the full-bleed map + safe-area chrome + bottom bar.
 - Phase 2 (iOS **Safari tab**, non-standalone) is a SEPARATE problem — do not edit
@@ -175,24 +178,28 @@ the phone pulls the new build on reload. `aop-tiles` is unversioned on purpose.
 
 -----
 
-## STILL-LIVE DIAGNOSTICS (this snapshot includes them; strip at closeout)
+## DIAGNOSTICS — all stripped at `v18` (2026-05-31)
 
-This is a `-**dbg**` build — the following are scaffolding, NOT durable layout:
+The `-dbg` builds carried scaffolding; it is all gone now. For the record:
 
-1. ~~`html, body { background: #ff0033; }` red bleed-through probe~~ — **RETIRED**
-   (`#ff0033` red → `#F5EFE0` cream in v14 → **`#000` black in v15**). The body bg is
-   invisible in the PWA (the fixed map covers it) but in a SAFARI TAB iOS samples it to
-   tint the status bar + bottom toolbar — black makes those chrome strips read as the
-   device bezel/notch and "disappear." Safari samples the BODY bg here, NOT the rust
-   `theme-color` (proven: red bands despite theme-color=#a85020). Keep it black (or a
-   deliberate map-toned neutral), never a debug color. Does not affect PWA layout.
-2. Blue map background-layer paint `#1e66ff` (in the JS layer setup). **Still live.**
-3. `#dbgOverlay` div (markup ~799) + `updateDbgOverlay()` / its resync wiring —
-   **including the `ⓘ fromBot N  ✎ fromBot N` baseline line** added this session.
-4. The `-dbg` suffix on `#appVersion` + the matching `sw.js VERSION`.
+1. ~~`html, body { background: #ff0033; }` red bleed-through probe~~ → **now `#000`
+   black, BY DESIGN** (`#ff0033` red → `#F5EFE0` cream v14 → `#000` v15). Invisible in
+   the PWA (the fixed map covers it); in a SAFARI TAB iOS samples the body bg to tint the
+   status bar + bottom toolbar, so black makes those chrome strips read as the device
+   bezel/notch and "disappear." Safari samples the BODY bg here, NOT the rust
+   `theme-color` (proven: red bands despite theme-color=#a85020). Keep it a deliberate
+   color (black), never a debug color. **This is a keeper, not a diagnostic.**
+2. ~~Blue map background-layer paint `#1e66ff`~~ → **RESTORED to `#efe7d5`** at v18
+   (3 sites: the base style + two preset `paints.background`).
+3. ~~`#dbgOverlay` div + `updateDbgOverlay()` + its resync wiring (incl. the
+   `ⓘ fromBot / ✎ fromBot` line)~~ → **REMOVED** at v18. `resyncViewport` kept (its
+   `map.resize()` + search reposition are functional), minus the overlay call.
+4. ~~`-dbg` suffix on `#appVersion` + `sw.js VERSION`~~ → **DROPPED** at v18 (both read
+   `v18`).
 
-Closeout = strip 1-4, set neutral body bg, drop `-dbg`, then commit. The layout
-rules in §1-§8 stay.
+Also a keeper, not a diagnostic: the four `.screen-corner` inverted fillets (rounded
+corners), scoped to the iOS Safari TAB via `html.ios-browser` (set by the head script);
+hidden in the PWA and on desktop/non-iOS. The §1-§8 layout rules are unchanged.
 
 -----
 
