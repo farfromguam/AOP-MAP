@@ -1066,7 +1066,7 @@
          foldVersionIntoInfoControl() RELOCATES it into the bottom-left info ⓘ
          so the corner reads "ⓘ v18" (pwa_qa_2 item 3). Keep this string in sync
          with VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v23</div>
+    <div class="util-version" id="appVersion" title="App build version">v24</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
@@ -9741,6 +9741,22 @@
         }
       }
 
+      // rAF-coalesce rebakes driven by the multiply slider (H1). A full rebake is
+      // a 36-tile getImageData + per-pixel keying + 36 toDataURL pass; the slider's
+      // `input` fires dozens of times/sec while dragging, which locks the main
+      // thread on mid/low-end devices. Collapse to at most one rebake per frame —
+      // the rAF callback reads the latest sfwdaMultiplyStrength, so the final
+      // (released) value always wins. One-shot callers (rotate, reset, substrate
+      // toggle) stay on the immediate rebakeTiles().
+      let rebakeRAF = 0;
+      function scheduleRebakeTiles() {
+        if (rebakeRAF) return;
+        rebakeRAF = requestAnimationFrame(() => {
+          rebakeRAF = 0;
+          rebakeTiles();
+        });
+      }
+
       const alignmentHandles = [];
       function clearAlignmentHandles() {
         while (alignmentHandles.length) alignmentHandles.pop().remove();
@@ -9853,7 +9869,7 @@
       sfwdaMultiply.addEventListener('input', () => {
         if (!applyingPreset) sfwdaMultiplyUserTouched = true;
         sfwdaMultiplyStrength = sliderPercent(sfwdaMultiply);
-        rebakeTiles();
+        scheduleRebakeTiles();
       });
 
       function applySubstrateMultiplyDefault() {
@@ -10967,10 +10983,12 @@
 
       btn.addEventListener('click', async () => {
         if (!deferredPrompt) return; // iOS path handled above
-        btn.hidden = true;
         deferredPrompt.prompt();
-        await deferredPrompt.userChoice;
-        deferredPrompt = null;       // a prompt can only be used once
+        const { outcome } = await deferredPrompt.userChoice;
+        deferredPrompt = null;       // this prompt is spent; a fresh beforeinstallprompt re-arms it
+        // Only retire the affordance on accept (appinstalled also hides). A
+        // dismiss keeps the button visible so the user can install later (M12).
+        if (outcome === 'accepted') btn.hidden = true;
       });
 
       // Fired after a successful install (Chromium) — nothing left to offer.

@@ -20,10 +20,26 @@
 ## ▶ Next up
 
 All no-device work is done (H4+L8, M7, M14, M17 — see the done card). **What
-remains needs a real device or is a refactor pass.** The next slice is **Group B
-(on-device)** — I implement, the user confirms on the iPhone. Recommended first
-within Group B: **H1** (slider debounce) and **M12** (install button) — the
-smallest, most isolated.
+remains needs a real device or is a refactor pass.**
+
+**H1 + M12 IMPLEMENTED 2026-06-01** (working tree, UNCOMMITTED; `VERSION` v23 →
+**v24**). H1: the `sfwdaMultiply` slider's `input` now routes through a new
+rAF-coalesced `scheduleRebakeTiles()` (at most one 36-tile bake per frame; the
+one-shot rotate/reset/substrate callers stay on the immediate `rebakeTiles()`).
+M12: the install button no longer hides before awaiting `userChoice` — it hides
+only on `outcome === 'accepted'`, so a dismiss keeps the affordance. **Verified
+by observation** (new `mvp/scripts/playwright_verify_code_review_groupb.py`,
+PASS, 0 console errors): a synchronous burst of 12 slider inputs fires **0**
+`toDataURL` calls before the frame then **one** coalesced bake (36 calls, vs
+~432 pre-fix); the install button stays visible after a simulated dismiss and
+hides after accept. **Still owed — on-device feel confirm** (slider drag smoothness
+on the iPhone + a real install prompt), per `verify_by_observation`; headless
+can't fake the touch/GL/native-prompt path.
+
+Next within Group B: **M4** (fetch parallelize), **M5** (row-in-place render),
+**M8** (resize-coalesce), **M9+M10** (move-mode anchor + armed commit) — I
+implement, they ride into the same on-device pass. **M13** (install-precache
+trim) rides this `VERSION` bump or the next.
 
 -----
 
@@ -44,12 +60,14 @@ interaction that headless Playwright can't fake (the same trap documented in
 `spinup/working_pwa_css.md`). I'll implement on request; the user confirms on the
 iPhone.
 
-### H1 — SFWDA multiply slider re-bakes all 36 tiles per input tick
+### H1 — SFWDA multiply slider re-bakes all 36 tiles per input tick  ✅ DONE (headless) 2026-06-01
 `index.html` (~9790). Dragging the slider runs a full `getImageData` + per-pixel
 loop + 36 `toDataURL` encodes dozens of times/sec → main-thread lock on
 mid/low-end devices. **Fix:** rAF-coalesce the `sfwdaMultiply` handler (one
 rebake/frame) or rebake on `change`, live-preview opacity during drag. **Verify:**
-slider feel on device.
+slider feel on device. — **Shipped:** rAF-coalesced via `scheduleRebakeTiles()`;
+slider `input` now schedules one rebake/frame. Headless-proven (burst of 12 →
+one bake); **slider feel still owed on device.**
 
 ### M4 — ~20 independent data fetches are fully serialized, no timeout
 `index.html` `map.on('load')` body (~8167+). Each overlay is `await fetchJson(...)`
@@ -83,11 +101,15 @@ registration one tick (`requestAnimationFrame`/`setTimeout 0`). **Verify:**
 actually drag a polygon + a multi-part feature and confirm the drop point + that
 a stray click doesn't commit.
 
-### M12 — PWA install button vanishes on a dismissed prompt
+### M12 — PWA install button vanishes on a dismissed prompt  ✅ DONE (headless) 2026-06-01
 `index.html` (~10866). `btn.hidden = true` runs **before** awaiting `userChoice`,
 then nulls `deferredPrompt`; a dismiss removes the affordance for the session.
 **Fix:** only hide on `outcome === 'accepted'`; keep visible on `'dismissed'`.
-**Verify:** install flow on a real installable browser/device.
+**Verify:** install flow on a real installable browser/device. — **Shipped:**
+the click handler awaits `userChoice` first and hides only on accept; a dismiss
+keeps the button (a fresh `beforeinstallprompt` re-arms it). Headless-proven
+(simulated dismiss keeps it visible, accept hides it); **real install flow still
+owed on a device.**
 
 ### M13 — 22 MB forced precache on install
 `sw.js` (~97-103); `aop_contours.geojson` 14 MB + `aop_landcover_9patch.geojson`
@@ -161,8 +183,9 @@ Mechanical / structural cleanups; no behavior change. Lowest priority.
 
 1. ~~**H4 + L8**~~ — **DONE** (stale-while-revalidate, shipped with the v21 bump).
 2. ~~**Quick decision-forks** (M7, M14, M17)~~ — **DONE**.
-3. **On-device batch** (next): H1, M12 first (smallest), then M5, M8, M9+M10, M4
-   — I implement, user verifies on the iPhone. M13 (install-precache trim) rides
-   a future `VERSION` bump.
+3. **On-device batch**: ~~H1, M12~~ **DONE (headless) 2026-06-01** — see ▶ Next up;
+   then M5, M8, M9+M10, M4 — I implement, user verifies on the iPhone (H1/M12 feel
+   + install flow ride this same device pass). M13 (install-precache trim) rides a
+   future `VERSION` bump.
 4. **Refactors** (L1 whitespace first, then L2/L3/L11) and the polish-routed
    Group C — as priority allows.

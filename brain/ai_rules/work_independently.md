@@ -17,6 +17,10 @@ This is the top-priority collaboration standard in this repo. It outranks the in
 - Chain the whole arc of a task in one go: read → change → verify by observation → summarize. Checkpoints are for true forks and irreversible actions, not for every increment.
 - Report what you **did and found**, with the result in hand. Not "want me to?", not "should I?", not "does this look right?"
 
+## Independent ≠ off the farm
+
+Independence is autonomy on the **means** of a task the user directed — *not* license to expand its **scope**. Do the directed work fully and without hand-holding, then stop and report; do not invent adjacent changes, "improve" unasked things, or touch the user's git gate. Walking off the farm (unrequested changes) destroys trust exactly as fast as approval-seeking does — they are the two failure modes, and this BAR forbids both. See `stay_on_the_farm.md` and `no_commits.md`.
+
 ## The only times to stop
 
 Unchanged from `act_dont_ask.md`: a genuine fork that changes scope or visible behavior, a destructive/irreversible action, or the brain being silent on something only the user can decide. When you must ask, ask **once**, lead with your recommendation, and keep moving on everything else.

@@ -4,6 +4,23 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+**2026-06-01 (worktree cleanup verified + Group B H1/M12 shipped).** (1) **Worktree
+chore resolved.** The "three locked agent worktrees" chore was **stale** — already
+gone. Real remaining clutter = `aop-copy-review` worktree + `copy-review` branch
+(`git cherry` → fully in master) + `integration-pwa-qa` safety-net (all swarm items
+in master; its only non-master content was the **intentionally-dropped** tree-
+landcover pattern, user-confirmed, recoverable at `5d825f4`). Verified-redundant;
+deletion commands handed to the user via `!` (git is the user's surface). **NOTE:**
+the older `session_context` blocks below claiming "master has item 20 (tree pattern)"
+are now wrong — it was removed at `2fd9cc4 "icons. omg…"` on purpose. (2) **Group B
+H1 + M12 shipped** (working tree, UNCOMMITTED, `VERSION` v23 → **v24**). H1: SFWDA
+multiply slider `input` now rAF-coalesced via `scheduleRebakeTiles()` (one bake/
+frame). M12: install button hides only on `outcome === 'accepted'`, survives a
+dismiss. New durable verifier `mvp/scripts/playwright_verify_code_review_groupb.py`
+→ PASS, 0 errors (12-input burst → one coalesced bake; dismiss keeps button, accept
+hides). On-device feel/install-flow confirm still owed. Next P1: Group B M4/M5/M8/
+M9+M10. See `tasks/04_event_app/app_code_review_followups.md` ▶ Next up.
+
 **2026-05-31 (Sprint 04 triage pass — doc only, no code).** Re-sorted the open
 Sprint 04 cards. **Moved → `04_event_app/_done/`:** `copy_review_surface.md`,
 `icon_system_normalize.md`, `pwa_qa.md` (all shipped + verified; pwa_qa's only

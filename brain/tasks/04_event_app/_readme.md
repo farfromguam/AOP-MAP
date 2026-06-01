@@ -43,8 +43,17 @@ The lists below this block are the **pre-triage** record (kept for history).
 the provenance grouping in `paper_map_trail_extraction.md` / `research/viewer.md`),
 not a task card with acceptance criteria, so it was not sorted.
 
-**Open chore (unchanged):** the three locked agent worktrees + `worktree-agent-*`
-branches noted below are destructive cleanup, still owed by the user.
+**Worktree cleanup (2026-06-01) — verified, commands handed to the user.** The
+"three locked agent worktrees" chore below is **stale: those are already gone**
+(`.claude/worktrees/` empty, no `worktree-agent-*` branches, `/tmp` patches gone).
+What actually remained: the `aop-copy-review` worktree + `copy-review` branch
+(`git cherry` → fully patch-present in master) and the `integration-pwa-qa`
+safety-net branch (all swarm items shipped in master; its only non-master content
+was the **intentionally-dropped** tree-landcover pattern — user confirmed
+2026-06-01 — recoverable from history at `5d825f4`). All three are
+verified-redundant; deletion commands (`git worktree remove --force` +
+`git branch -D copy-review integration-pwa-qa` + `git worktree prune`) handed to
+the user to run via `!` (git mutations are the user's surface, `no_commits.md`).
 
 -----
 
@@ -112,10 +121,11 @@ gated on the user (decision or device) or owed upstream.
 1. ~~`trail_research_integration.md` **Slice 3**~~ — **SHIPPED 2026-06-01**
    (uncommitted). Catalogued trail search hits now preview their one-line
    description; verifier extended + PASS, 0 console errors. `VERSION` bump owed.
-2. `app_code_review_followups.md` **Group B** — implement the real fixes (H1, M12
-   first, then M4 fetch-parallelize, M5 row-in-place, M8 resize-coalesce, M9+M10
-   move-mode). I write them; they ride into the on-device pass for the user to
-   confirm. **← next P1.**
+2. `app_code_review_followups.md` **Group B** — ~~H1 (slider rAF-coalesce), M12
+   (install-button dismiss)~~ **SHIPPED 2026-06-01** (working tree, `VERSION` v23 →
+   **v24**; headless-verified by `playwright_verify_code_review_groupb.py`, on-device
+   feel owed). **Next:** M4 fetch-parallelize, M5 row-in-place, M8 resize-coalesce,
+   M9+M10 move-mode. I write them; they ride into the on-device pass. **← next P1.**
 
 **P2 — decisions to unblock (bundle for one decision session):**
 
