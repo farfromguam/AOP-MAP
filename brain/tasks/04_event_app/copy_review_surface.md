@@ -30,6 +30,63 @@ Decision taken (user picked "extract everything now"): pull the hardcoded prose
 out of `index.html` into per-kind data files and rewire the viewer to read them,
 rather than only cataloging in place.
 
+## Framing — Rock Warblers-first (2026-05-31)
+
+User correction: **this app is a Rock Warblers product, not an AOP product.** The
+Rock Warblers crew built it for their own events (the Trail Blazing Invitational
+first) at Adventure Off Road Park — AOP is the **venue / host**, not the publisher.
+The underlying source-traceable map and data spine is still the AOP map (the
+northstar promise is unchanged); it's the shipped *viewer / PWA* that fronts as
+Rock Warblers.
+
+What that means for copy:
+
+- **App identity / chrome was AOP-first** and is the frame to flip: `manifest.json`
+  name + short_name + description ("AOP Map — Adventure Off Road Park", "AOP Map",
+  "trail map for Adventure Off Road Park"), `aop_ui_strings.json` `app.title`
+  ("AOP Map Viewer") + `app.home_screen_title` ("AOP Map"), and the in-code
+  `<title>` + `apple-mobile-web-app-title` in `index.html`. Lead with Rock
+  Warblers; keep AOP as the venue line.
+- **Already Rock Warblers-first, left as-is:** the About tab ("About the Rock
+  Warblers", "Built by Rock Warblers, for Rock Warblers"), the calendar (the Rock
+  Warblers schedule), the Rock Warblers brand logo.
+- **AOP-described copy is fine** — POI blurbs, trail catalog, visitor context
+  describe the *place*. AOP is the place; describing it isn't an AOP-first framing
+  problem and should stay.
+
+This is really a project-shape fact, so it likely belongs in the northstar
+(`whats_this_for.md` / `personas.md`), scoped to the *app surface* — elevate once
+confirmed (northstar is locked, so flagged rather than written there unprompted).
+App name is a small branding fork: crew-forward ("Rock Warblers Trail Map") vs
+event-forward ("Trail Blazing Invitational") vs crew+venue ("Rock Warblers @ AOP").
+
+**Reframed — shipped 2026-05-31 (mainline).** First cut went crew-forward
+("Rock Warblers Trail Map" / "Rock Warblers"); user pulled it back — it read like
+Rock Warblers *owns the park*. It's a Rock Warblers app, but **AOP is the
+venue / host, not RW's land**. Landed **event-forward** instead — the name is the
+RW event, AOP is plainly just where it happens:
+- `manifest.json`: name → "Trail Blazing Invitational — Rock Warblers", short_name
+  → "Trail Blazing", description → "The Rock Warblers' Trail Blazing Invitational
+  at Adventure Off Road Park, South Pittsburg, TN. Trail map + event guide, works
+  offline."
+- `aop_ui_strings.json` `app.title` → "Trail Blazing Invitational",
+  `home_screen_title` → "Trail Blazing" (drives the live `document.title`).
+- `index.html` `<title>` → "Trail Blazing Invitational",
+  `apple-mobile-web-app-title` → "Trail Blazing"; the `aop_copy_registry.json`
+  `page_metadata` mirror updated to match.
+
+**Voice rule learned: lead with the Rock Warblers event; never word the app so it
+implies RW owns AOP.** The About tab already keeps this straight (crew = "Rock
+Warblers… we build the rigs, walk the stages"; park = "Adventure Off Road Park…
+private ridge") — left as-is.
+
+Verified by observation (Playwright on mainline): live `document.title` =
+"Trail Blazing Invitational", apple title = "Trail Blazing", manifest reframed,
+copy-review page shows the new strings, zero old-name / AOP-first leftovers, 0
+console/page errors. **Owed (user's call):** `#appVersion` + `sw.js VERSION` bump
+(now v21) — chrome + manifest are SW-cached, so installed PWA users keep the old
+name until the version moves.
+
 ## What shipped
 
 ### New data files (`website/data/`)
@@ -127,7 +184,9 @@ Served the worktree `website/` on `:8001`; Playwright + screenshots:
 - This is **proposed** event copy — confirm the About format/rules and the
   600-acre figure with the event lead / AOP before it reads as official
   (`aop_about.json` `owed_work`).
-- POI blurbs: 11 null blurbs still carry `revisit_note` gaps (`aop_poi_index.json`).
+- POI blurbs: authored blurbs are now in the project voice (see the 2026-05-31
+  voice-pass block below); 11 `null` blurbs still carry `revisit_note` gaps
+  (`aop_poi_index.json`).
 - Trail catalog: rewrite onX-sourced descriptions in the park's voice before any
   public publish (license).
 - Wire the Show & Shine award set into the schedule or a handout once locked.
@@ -157,6 +216,38 @@ geometry), mirroring the POI-index pattern:
 
 Verified by observation (`brain/output/trail_verify.log`, `trail_integration.png`).
 Full record + remaining forks in `trail_research_integration.md`.
+
+## POI-blurb voice pass (2026-05-31)
+
+The About tab and the trail catalog were already rewritten in the project voice
+(`brain/voice/voice_guide.md`); the **POI visitor blurbs** in `aop_poi_index.json`
+still read like the older 2026-05-25 authoring — serviceable, but a notch off the
+bar and leaking plumbing into reader copy. Brought them up:
+
+- `#pavilion`, `#registration`, and the 1010 building blurb dropped the
+  implementation tails (`via the #pavilion tag`, `via the #registration alias`,
+  `confirmed by the user`) for reader-facing wording — provenance kept (which
+  building, FEMA footprint, AOP-confirmed), plumbing gone.
+- `#observed-trailhead` + Saturday-segment-2 blurbs tightened to the present-author
+  voice; every fact preserved.
+- `updated_at` → 2026-05-31. Six string edits, no key/structure change.
+
+What was deliberately **left**: the 11 `null`-blurb `revisit_note` gaps (real owed
+work, not voice), all internal `purpose`/group-`note`/provenance metadata,
+the `in_code` kinds (popup/attribution/layer-label/page-title strings — structural
+source-name strings, extraction still deferred), and **trail 96**'s preserved 2015
+park wording. One thing to flag: trail 96's kept line ("Passable by modified Jeeps
+and Trucks") is literal 1:1-OHV framing in a scale-RC catalog — intentional as a
+historical artifact, but worth a look on the user's own edit pass.
+
+Verified by observation: `copy_review.html` renders all 13 kind sections, 0
+console/page errors, all 5 rewrites present and all 3 plumbing strings gone; the
+viewer consumes `aop_poi_index.json` with 0 console errors and shows the rewrites
+in the POI tab (1 transient headless-WebGL shader `pageerror`, the documented
+flake, unrelated to copy). Edited in an isolated worktree, then the **content was
+moved into the master working tree directly (no git merge)** at the user's
+direction — there are upstream git changes the merge should not disturb. The
+worktree's file is byte-identical to what shipped to master.
 
 ## Files (branch `copy-review`, uncommitted)
 - new: `website/copy_review.html`, `website/data/aop_about.json`,

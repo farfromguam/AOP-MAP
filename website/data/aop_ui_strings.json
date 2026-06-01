@@ -3,8 +3,8 @@
   "updated_at": "2026-05-31",
   "purpose": "Interface microcopy for the AOP viewer — page title, search placeholder, calendar/POI empty + loading states, and the hot-button labels. index.html applies these on load (window.AOP_UI) and falls back to the literal in code if this file is missing, so wording lives here as reviewable data. Entries under *_reference are NOT wired yet — they are still set in the markup at the noted location and are listed here only so the copy-review page can show them.",
   "app": {
-    "title": "AOP Map Viewer",
-    "home_screen_title": "AOP Map"
+    "title": "Trail Blazing Invitational",
+    "home_screen_title": "Trail Blazing"
   },
   "search": {
     "placeholder": "Search the map…"

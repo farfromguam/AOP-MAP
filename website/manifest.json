@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "AOP Map — Adventure Off Road Park",
-  "short_name": "AOP Map",
-  "description": "Offline-capable trail map for Adventure Off Road Park, South Pittsburg, TN.",
+  "name": "Trail Blazing Invitational — Rock Warblers",
+  "short_name": "Trail Blazing",
+  "description": "The Rock Warblers' Trail Blazing Invitational at Adventure Off Road Park, South Pittsburg, TN. Trail map + event guide, works offline.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

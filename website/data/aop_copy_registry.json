@@ -124,8 +124,8 @@
       "in_code_locations": ["website/index.html:6 (<title>)", "website/index.html:13 (apple-mobile-web-app-title)"],
       "review_priority": "low",
       "copy": [
-        { "label": "<title>", "text": "AOP Map Viewer", "note": "Now also driven by aop_ui_strings.json app.title on load." },
-        { "label": "apple-mobile-web-app-title", "text": "AOP Map" }
+        { "label": "<title>", "text": "Trail Blazing Invitational", "note": "Now also driven by aop_ui_strings.json app.title on load." },
+        { "label": "apple-mobile-web-app-title", "text": "Trail Blazing" }
       ]
     },
     {

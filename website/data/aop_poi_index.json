@@ -1,6 +1,6 @@
 {
   "schema": "aop-poi-index-v1",
-  "updated_at": "2026-05-25",
+  "updated_at": "2026-05-31",
   "purpose": "Visitor-facing blurbs for the left-panel POI tab. The viewer reads this file to attach short, person-readable copy to features that already exist on the map. Blurbs live here, not on the source GeoJSONs, so a re-export of buildings/cemeteries/publish data does not overwrite this content. Entries with blurb=null carry a revisit_note explaining what info is missing; the viewer surfaces those as 'info needed' placeholders so the gaps stay auditable in git instead of hiding as TODOs in code.",
   "match_fields": "Each entry matches a feature by `source` (which layer/dataset it lives in) plus one identifying property. Order in `entries` is the order rows render under each group when no other sort is applied.",
   "groups": [
@@ -44,19 +44,19 @@
     {
       "group": "event_anchors",
       "match": { "source": "event_schedule", "location_tag": "#pavilion" },
-      "blurb": "AOP Pavilion / G-Central. Registration, driver meeting, awards, and the campfire all happen here. Resolved to the 1010 Ellis Cove Road building footprint via the #pavilion tag.",
+      "blurb": "AOP Pavilion / G-Central. Registration, the driver meeting, awards, and the campfire all happen here — base camp for the weekend. The 1010 Ellis Cove Road building.",
       "revisit_note": null
     },
     {
       "group": "event_anchors",
       "match": { "source": "event_schedule", "location_tag": "#registration" },
-      "blurb": "Registration desk. Wristband pickup, tech check, late entries. Colocated with the pavilion via the #registration alias.",
+      "blurb": "Registration desk. Wristband pickup, tech check, late entries. Same spot as the pavilion.",
       "revisit_note": null
     },
     {
       "group": "event_anchors",
       "match": { "source": "event_schedule", "location_tag": "#observed-trailhead" },
-      "blurb": "Where the recorded Saturday Afternoon ride started its second segment. Used as the event-day stage start until AOP names an official trailhead.",
+      "blurb": "Where a recorded Saturday-afternoon ride picked up its second segment. Standing in as the event-day stage start until AOP names an official trailhead.",
       "revisit_note": null
     },
     {
@@ -92,7 +92,7 @@
     {
       "group": "buildings",
       "match": { "source": "buildings", "address": "1010 Ellis Cove Road" },
-      "blurb": "AOP Pavilion / G-Central. The on-site building hosting registration, awards, and the campfire. FEMA-derived footprint; confirmed by the user as the pavilion.",
+      "blurb": "AOP Pavilion / G-Central. The on-site building that hosts registration, awards, and the campfire. Footprint from FEMA structures data; AOP confirms it's the pavilion.",
       "revisit_note": null
     },
     {
@@ -122,7 +122,7 @@
     {
       "group": "trails",
       "match": { "source": "publish", "layer": "trail_centerlines", "name": "Saturday Afternoon Activity (segment 2)" },
-      "blurb": "Second segment of the recorded Saturday Afternoon ride. Connects the trailhead toward the pavilion area; same evidence-only status as segment 1.",
+      "blurb": "Second segment of the recorded Saturday-afternoon ride, running from the trailhead toward the pavilion. Same evidence-only status as segment 1.",
       "revisit_note": "Promote to a real trail row once SFWDA numbered trail names land."
     },
     {
