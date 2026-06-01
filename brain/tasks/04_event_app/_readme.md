@@ -109,12 +109,13 @@ gated on the user (decision or device) or owed upstream.
 
 **P1 — actionable headless, do next (no gate):**
 
-1. `trail_research_integration.md` **Slice 3** — search description preview for
-   catalogued trail hits. Small (builds on the shipped Slices 1–2), high value.
+1. ~~`trail_research_integration.md` **Slice 3**~~ — **SHIPPED 2026-06-01**
+   (uncommitted). Catalogued trail search hits now preview their one-line
+   description; verifier extended + PASS, 0 console errors. `VERSION` bump owed.
 2. `app_code_review_followups.md` **Group B** — implement the real fixes (H1, M12
    first, then M4 fetch-parallelize, M5 row-in-place, M8 resize-coalesce, M9+M10
    move-mode). I write them; they ride into the on-device pass for the user to
-   confirm.
+   confirm. **← next P1.**
 
 **P2 — decisions to unblock (bundle for one decision session):**
 

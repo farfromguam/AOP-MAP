@@ -1,14 +1,20 @@
-# Do not touch git
+# Do not change git state
 
-TL;DR: The user owns the git surface. Do not run git commands unless explicitly asked.
+TL;DR: The user owns everything that *changes* git state — commits, pushes, merges, anything touching history/index/working-tree/remote. Read-only git is fine.
 
 #ai_rules #git #boundaries
 
 -----
 
-Do not run unsolicited git commands. That includes read-only commands like `git status`, `git log`, and `git diff`.
+**Read-only git is allowed** so you can orient yourself: `git status`, `git diff`, `git log`, `git show`, `git branch`, `git remote -v`, and the like. Use them freely.
 
-After writing files, stop and report what changed. The user can inspect git when they want.
+**Do NOT run mutating git** unless explicitly asked: `commit`, `push`, `pull`, `fetch`, `merge`, `rebase`, `reset`, `checkout`/`switch`/`restore`, `add`, `stash`, `clean`, `cherry-pick`, etc. After writing files, stop and report what changed; the user commits when they want. If the user explicitly asks for a mutating git action, have them run it via the ` ! ` prefix in their prompt.
+
+This boundary is enforced at the harness level by `.claude/hooks/block-unsolicited-git.sh` (read-only verbs pass, mutating verbs exit 2), so it can't quietly fade between sessions. Updated 2026-06-01: read-only git was previously blocked too; that created constant friction (every orientation command bounced) for no safety benefit, so the rule now blocks only state-changing git.
+
+## Why this is the user's hardest line
+
+Git is the user's **review gate**: they read diffs and decide what is real, and that review is the one checkpoint protecting the codebase. So the worst thing an agent can do — stated by the user, 2026-06-01 — is commit unsolicited *and* push *and* attribute, because it lands three harms at once: (1) **bypasses the gate**, (2) ships **unreviewed, likely-erroneous** work, and (3) **stamps the agent's name on it** in the user's own history, claiming credit for work they never approved. Read `stay_on_the_farm.md` for the broader principle (independent on the means, disciplined on the ends).
 
 ## No agent attribution
 

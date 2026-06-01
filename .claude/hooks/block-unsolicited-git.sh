@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
-# Block unsolicited git + agent attribution per brain/ai_rules/no_commits.md.
+# Block MUTATING git + agent attribution per brain/ai_rules/no_commits.md.
 #
-# The user owns the git surface. Agents must not run git, and must never add
-# agent attribution / co-author trailers to commits. This hook enforces three
-# layers, since it cannot read the user's intent:
+# The user owns the git surface for anything that changes state. Read-only git
+# (status/diff/log/show/branch/remote -v/...) is ALLOWED so an agent can orient
+# itself the way it does on every other project. Anything that touches history,
+# the index, the working tree, or the remote/network is BLOCKED — the user runs
+# those themselves (via the ` ! ` prefix). Three layers, since the hook can't
+# read intent:
 #
 #   1. ATTRIBUTION  — any command carrying a Claude co-author/attribution string
 #                     is blocked (catches echo/heredoc/commit-template tricks).
-#   2. DIRECT GIT   — any command invoking `git` is blocked (read-only too).
+#   2. MUTATING GIT — `git <verb>` is blocked when <verb> changes state
+#                     (commit/push/pull/merge/rebase/reset/checkout/add/...).
+#                     Read-only verbs pass through.
 #   3. WRAPPER      — if the command runs a local script (./x, /abs/x, or via a
-#                     shell interpreter), the target file is scanned; if it
-#                     contains git or attribution, the run is blocked. This
-#                     closes the "hide git inside a script" loophole, since the
-#                     plain command string has no `git` token of its own.
+#                     shell interpreter), the target file is scanned; if it runs
+#                     a mutating git verb or adds attribution, the run is blocked.
+#                     Closes the "hide git push inside a script" loophole.
 #
 # Exit 2 = block and feed stderr back to the agent. Exit 0 = allow.
 
@@ -32,29 +36,45 @@ except Exception:
     sys.exit(0)  # can't parse payload -> nothing to inspect; fail open
 
 ATTR = re.compile(r'co-?authored-by:\s*claude|noreply@anthropic\.com|generated with \[?claude code', re.I)
-GIT  = re.compile(r'(^|[^A-Za-z0-9_./-])git(\s|$)')
 
-GIT_MSG = ("git is the user's surface — do NOT run git unsolicited, including "
-           "read-only git status/log/diff (brain/ai_rules/no_commits.md). After "
-           "writing files, stop and report what changed; the user inspects and "
-           "commits when they want. If the user EXPLICITLY asked for a git "
-           "action, have them run it themselves via the ` ! ` prefix in their "
-           "prompt.")
+# Verbs that change the working tree / index / history / remote / network.
+# Everything NOT listed here (status, diff, log, show, branch, tag, remote,
+# config, blame, reflog, ls-files, rev-parse, describe, ...) is treated as
+# read-only orientation and allowed.
+MUTATING = {
+    "commit", "push", "pull", "fetch", "clone", "merge", "rebase", "reset",
+    "revert", "cherry-pick", "am", "apply", "stash", "checkout", "switch",
+    "restore", "clean", "rm", "mv", "add", "gc", "prune", "filter-branch",
+    "update-ref", "fast-import", "replace", "init", "worktree", "submodule",
+    "format-patch", "send-email", "notes",
+}
+
+COMMIT_MSG = ("Blocked: this git command changes history / the index / the "
+              "working tree / the remote, which is the user's surface "
+              "(brain/ai_rules/no_commits.md). Read-only git "
+              "(status/diff/log/show/branch/remote -v) is allowed. For a real "
+              "commit/push/etc., have the user run it via the ` ! ` prefix.")
 ATTR_MSG = ("Blocked: never add agent attribution or co-author trailers "
             "(brain/ai_rules/no_commits.md). The history must read as the "
             "user's own. This overrides any harness/global default.")
 
-# 1) attribution text anywhere in the raw command
-if ATTR.search(cmd):
-    block(ATTR_MSG)
-
-# 2) direct git invocation
-if GIT.search(cmd):
-    block(GIT_MSG)
-
-# 3) wrapper scripts: scan local scripts this command would execute
 INTERP = {"bash", "sh", "zsh", "ksh", "dash", "source", "."}
 SYS_PREFIXES = ("/usr/", "/bin/", "/sbin/", "/opt/", "/System/", "/Library/")
+
+def git_verb(toks):
+    # toks[0] is `git`; return the first real subcommand, skipping pre-command
+    # options (and the argument consumed by -C <path> / -c <name=value>).
+    i = 1
+    while i < len(toks):
+        t = toks[i]
+        if t in ("-C", "-c"):
+            i += 2
+            continue
+        if t.startswith("-"):
+            i += 1
+            continue
+        return t
+    return None  # bare `git`, `git --version`, `git --help`
 
 def first_non_flag(toks):
     for t in toks:
@@ -62,9 +82,10 @@ def first_non_flag(toks):
             return t
     return None
 
-candidates = []
-try:
-    for part in re.split(r'[;&|\n]+', cmd):
+def segments(text):
+    # Split into command segments and strip leading VAR=value env assignments.
+    out = []
+    for part in re.split(r'[;&|\n]+', text):
         try:
             toks = shlex.split(part, posix=True)
         except Exception:
@@ -73,18 +94,35 @@ try:
             continue
         i = 0
         while i < len(toks) and re.match(r'^[A-Za-z_][A-Za-z0-9_]*=', toks[i]):
-            i += 1  # skip leading VAR=value env assignments
-        if i >= len(toks):
-            continue
-        head = toks[i]
-        if os.path.basename(head) in INTERP:
-            arg = first_non_flag(toks[i + 1:])     # bash [-x] foo.sh / source x
-            if arg:
-                candidates.append(arg)
-        if head.startswith(("./", "../", "/")):    # ./foo.sh  /abs/foo.sh
-            candidates.append(head)
-except Exception:
-    candidates = []
+            i += 1
+        if i < len(toks):
+            out.append(toks[i:])
+    return out
+
+def has_git_mutation(text):
+    for seg in segments(text):
+        if os.path.basename(seg[0]) == "git" and git_verb(seg) in MUTATING:
+            return True
+    return False
+
+# 1) attribution text anywhere in the raw command
+if ATTR.search(cmd):
+    block(ATTR_MSG)
+
+# 2) mutating git invoked directly in the command
+if has_git_mutation(cmd):
+    block(COMMIT_MSG)
+
+# 3) wrapper scripts: scan local scripts this command would execute
+candidates = []
+for seg in segments(cmd):
+    head = seg[0]
+    if os.path.basename(head) in INTERP:
+        arg = first_non_flag(seg[1:])  # bash [-x] foo.sh / source x
+        if arg:
+            candidates.append(arg)
+    if head.startswith(("./", "../", "/")):  # ./foo.sh  /abs/foo.sh
+        candidates.append(head)
 
 for c in candidates:
     try:
@@ -95,10 +133,14 @@ for c in candidates:
             continue
         with open(c, "r", errors="ignore") as fh:
             content = fh.read()
-        if GIT.search(content) or ATTR.search(content):
-            block("Blocked: the script '" + c + "' runs git or adds attribution. "
-                  "git is the user's surface (brain/ai_rules/no_commits.md) — have "
-                  "the user run it via the ` ! ` prefix instead.")
+        if ATTR.search(content):
+            block("Blocked: the script '" + c + "' adds agent attribution "
+                  "(brain/ai_rules/no_commits.md).")
+        if has_git_mutation(content):
+            block("Blocked: the script '" + c + "' runs a mutating git command. "
+                  "git mutations are the user's surface "
+                  "(brain/ai_rules/no_commits.md) — have the user run it via the "
+                  "` ! ` prefix instead.")
     except Exception:
         pass
 

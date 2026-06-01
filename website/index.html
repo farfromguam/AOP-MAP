@@ -709,9 +709,15 @@
        many left-rail cards are expanded. JS sets left/top/width to match
        the input below. */
     .search-results { position: fixed; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 240px; overflow-y: auto; display: none; z-index: 1000; }
-    .search-item { display: flex; justify-content: space-between; gap: 10px; padding: 6px 9px; cursor: pointer; font-size: 0.9rem; }
+    .search-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 6px 9px; cursor: pointer; font-size: 0.9rem; }
     .search-item:hover, .search-item.active { background: #e8dcc3; }
-    .search-kind { color: #888; font-size: 0.78rem; }
+    .search-kind { color: #888; font-size: 0.78rem; flex: none; padding-top: 1px; }
+    /* Slice 3: a catalogued trail row stacks its number/name over a muted,
+       one-line description. .search-result-text is the vertical column so the
+       label and desc share the left side while .search-kind stays top-right. */
+    .search-result-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
+    .search-result-label { font-size: 0.9rem; color: var(--brown-ink); }
+    .search-result-desc { font-size: 0.74rem; line-height: 1.25; color: var(--brown-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .search-empty { padding: 6px 9px; color: #999; font-size: 0.88rem; }
     .left-context-card { display: block; overflow: hidden; }
     .calendar-card { display: block; padding: 0; overflow: hidden; }
@@ -1060,7 +1066,7 @@
          foldVersionIntoInfoControl() RELOCATES it into the bottom-left info ⓘ
          so the corner reads "ⓘ v18" (pwa_qa_2 item 3). Keep this string in sync
          with VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v22</div>
+    <div class="util-version" id="appVersion" title="App build version">v23</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
@@ -10508,11 +10514,50 @@
         return;
       }
       searchResults.innerHTML = searchMatches
-        .map((match, i) =>
-          `<div class="search-item${i === searchActive ? ' active' : ''}" data-i="${i}">`
-          + `<span>${escapeHtml(match.name)}</span>`
-          + `<span class="search-kind">${escapeHtml(match.kind)}</span></div>`)
+        .map((match, i) => {
+          // Slice 3: a catalogued trail row gains a second, muted line with its
+          // curated description (truncated). The search group carries no feature
+          // props, but trailCatalogLookup keys off a numeric name, so a trail's
+          // display name ("1", "32") resolves to its catalog entry the same way
+          // the popup and POI browser do. Non-trail / un-catalogued / no-desc
+          // rows render exactly as before (single line, no .search-result-text).
+          let desc = null;
+          if (match.kind === 'trail') {
+            const cat = trailCatalogLookup({ name: match.name });
+            if (cat && cat.description) {
+              desc = cat.description.length > 80
+                ? cat.description.slice(0, 79).trimEnd() + '…'
+                : cat.description;
+            }
+          }
+          const head = `<div class="search-item${i === searchActive ? ' active' : ''}" data-i="${i}">`;
+          if (!desc) {
+            return head
+              + `<span>${escapeHtml(match.name)}</span>`
+              + `<span class="search-kind">${escapeHtml(match.kind)}</span></div>`;
+          }
+          return head
+            + `<span class="search-result-text">`
+            + `<span class="search-result-label">${escapeHtml(match.name)}</span>`
+            + `<span class="search-result-desc"></span>`
+            + `</span>`
+            + `<span class="search-kind">${escapeHtml(match.kind)}</span></div>`;
+        })
         .join('');
+      // Set descriptions via textContent (not innerHTML) so first-party copy is
+      // never parsed as markup. Paired by index with the matches above.
+      const descNodes = searchResults.querySelectorAll('.search-item');
+      searchMatches.forEach((match, i) => {
+        if (match.kind !== 'trail') return;
+        const cat = trailCatalogLookup({ name: match.name });
+        if (!cat || !cat.description) return;
+        const node = descNodes[i] && descNodes[i].querySelector('.search-result-desc');
+        if (node) {
+          node.textContent = cat.description.length > 80
+            ? cat.description.slice(0, 79).trimEnd() + '…'
+            : cat.description;
+        }
+      });
       searchResults.style.display = 'block';
       positionSearchResults();
     }

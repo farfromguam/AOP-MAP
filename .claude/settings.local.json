@@ -6,6 +6,7 @@
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
+      "Bash(*)",
       "Bash(cd *)",
       "Bash(ls)",
       "Bash(ls *)",
@@ -104,8 +105,6 @@
       "Bash(cargo install*)",
       "Bash(go install*)",
       "Bash(pipx install*)",
-      "Bash(git *)",
-      "Bash(git)",
       "Bash(git push --force*)",
       "Bash(git push -f *)",
       "Bash(git push -f)",

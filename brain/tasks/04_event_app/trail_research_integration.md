@@ -1,9 +1,10 @@
 # Trail Research Integration — scope
 
-Status: **Slices 1–2 SHIPPED 2026-05-31**, merged to `master` (`67df0f4`) on top of
+Status: **Slices 1–3 SHIPPED**, merged to `master` (`67df0f4`) on top of
 the pwa_qa2 v19 build — see `copy_review_surface.md`. The onX→park-voice rewrite is
 **DONE** (descriptions are now original AOP wording, brain voice), so the onX-copyright
-caveat is dropped. Slices 3–4 remain deferred. Authored 2026-05-31.
+caveat is dropped. **Slice 3 shipped 2026-06-01** (uncommitted, main checkout).
+Slice 4 (landmark geometry) remains deferred. Authored 2026-05-31.
 
 Goal: wire the persisted trail research (names + descriptions + named landmarks)
 into the live viewer so a trail on the map carries its name, difficulty, and
@@ -43,6 +44,43 @@ Runtime sidecar join, exactly as recommended below. No prose baked into geometry
   lists the three live surfaces + the runtime-join (no license note; descriptions
   rewritten in brain voice), so the printable copy-review page reflects the wiring.
 
+### Slice 3 — search description preview (SHIPPED 2026-06-01, main checkout, uncommitted)
+
+When a search hit is a catalogued trail, the result row now stacks the trail
+number/name over a muted, one-line description so the dropdown previews the
+write-up before you click. Implementation in `website/index.html`:
+
+- **`renderSearchResults()` (~10516).** For `match.kind === 'trail'`, look up the
+  catalog via `trailCatalogLookup({ name: match.name })` — the search groups carry
+  no feature props, but the gold network's display name *is* the trail number
+  ("9", "32"), and the lookup keys off a numeric name, so it resolves the same
+  entry the popup + POI browser do. If `cat.description` exists, the row wraps the
+  label + a new `.search-result-desc` in a vertical `.search-result-text` column
+  (with `.search-kind` kept as a top-aligned flex sibling); description truncated
+  to ~80 chars + `…`. **Non-trail / un-catalogued / no-description rows render
+  byte-identically to before** (single line, no wrapper). Description text is set
+  via `textContent` in a second pass (not `innerHTML`) so first-party copy is never
+  parsed as markup.
+- **CSS (~712).** `.search-item` gained `align-items: flex-start`; new
+  `.search-result-text` (vertical column), `.search-result-label`, and
+  `.search-result-desc` (0.74rem, `--brown-soft`, one-line ellipsis clamp). Uses
+  the real `:root` palette vars.
+- **Coverage:** the same 9 catalogued trails (1, 2, 3, 5, 6, 7, 9, 11, 96) that
+  light up in the popup/browser now preview in search; the other ~110 show the
+  bare number/name as before — the gap stays visible, not hidden.
+
+**Verified by observation** (Playwright `playwright_verify_search.py` on `:8001`,
+main checkout, re-run by hand 2026-06-01): full suite **PASS, 0 console errors**.
+Durable Slice 3 assertions added to the verifier — trail 96 + trail 11 rows carry
+a `.search-result-desc` with the catalog text (truncated to 80 chars ending `…`);
+un-catalogued `11X` and road/address hits carry **no** desc line. (One pre-existing
+verifier setup bug fixed alongside: the "trail search auto-enables the network
+layer" check lacked a `showAopTrailNetwork` reset, so an earlier trail search left
+the layer on and the precondition was stale — added the reset, in-pattern with the
+file's other pre-assertion resets; test-setup only, doesn't mask the feature.)
+A user-facing `VERSION` bump is **owed** for this change but **not** done (user's
+call, per `ai_rules/no_commits.md`).
+
 **Verified by observation** (Playwright on `:8001`, worktree): POI trails group
 121 rows incl. ~100 trails, "Launchpad" joined to its rewritten description, 101
 owed-placeholder chips, Launchpad row popup shows the rewritten description with no
@@ -52,11 +90,13 @@ license footer); 0 console errors. Re-verified against the merged `master`
 (copy-review 20/20, trail 11/11). Logs/screenshot: `brain/output/trail_verify.log`,
 `trail_integration.png`.
 
-**Still owed:** Slice 3 (search description preview), Slice 4 (landmark geometry),
-names/descriptions for the ~110 un-catalogued trails, and promotion to `publish.*`
-(source rows). Whether to retire the legacy
+**Still owed:** Slice 4 (landmark geometry — blocked on placing the 8 catalog
+landmarks, most have no coordinates), names/descriptions for the ~110
+un-catalogued trails (field work / park-supplied list), and promotion to
+`publish.*` (source rows + license gate). Whether to retire the legacy
 `publish.geojson trail_centerlines` + its `bindPopup('publish-trails')` is still
-open (MVP backlog item 9 / `data_integrity_publishability.md`).
+open (MVP backlog item 9 / `data_integrity_publishability.md`). A `VERSION` bump
+covering Slices 1–3 is owed (user's call).
 
 -----
 

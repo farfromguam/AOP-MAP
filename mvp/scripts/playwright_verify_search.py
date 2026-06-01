@@ -336,6 +336,13 @@ def main() -> int:
         )
 
         print("\n== Select a trail: flies there + turns the network layer on ==")
+        # Earlier trail searches in this run ('saturday', '32', '9') already
+        # auto-enabled the trail layer, so reset it OFF first — otherwise the
+        # "was none -> visible" precondition is stale and trivially fails. This
+        # mirrors the showWater / showEventSchedule resets done above before
+        # their auto-enable assertions. The aop-trail-network layer is driven by
+        # #showAopTrailNetwork (the aopTrailNetworkToggle), not #showTrails.
+        set_toggle(page, "showAopTrailNetwork", False)
         net_before = layer_visibility(page, "aop-trail-network")
         before_t = map_view(page)
         trail_results("32")
@@ -357,6 +364,74 @@ def main() -> int:
             "map re-focused on the trail",
             moved_t > 0.001 or abs(after_t["zoom"] - before_t["zoom"]) > 0.3,
             f"center delta={moved_t:.5f}, zoom delta={abs(after_t['zoom'] - before_t['zoom']):.2f}",
+        )
+
+        print("\n== Slice 3: catalogued trail rows carry a description line ==")
+
+        def desc_for(query: str, row_first_token: str):
+            """Type `query`, find the row whose first line == row_first_token,
+            and return (row_locator, desc_count, desc_text)."""
+            page.locator("#searchInput").fill("")
+            page.wait_for_timeout(120)
+            page.locator("#searchInput").click()
+            page.locator("#searchInput").fill(query)
+            page.wait_for_timeout(320)
+            items = page.locator(".search-item")
+            for i in range(items.count()):
+                row = items.nth(i)
+                first = row.inner_text().split("\n", 1)[0].strip()
+                if first == row_first_token:
+                    desc = row.locator(".search-result-desc")
+                    dc = desc.count()
+                    return row, dc, (desc.inner_text() if dc else "")
+            return None, 0, ""
+
+        # Trail 96 is catalogued (description: "A short loop with many rock and
+        # ledge obstacles…"). Its row must show a truncated, ellipsised desc.
+        _, dc96, dtext96 = desc_for("96", "96")
+        check(
+            "catalogued trail 96 row shows a .search-result-desc",
+            dc96 == 1,
+            f"desc_count={dc96}",
+        )
+        check(
+            "trail 96 desc carries the catalog text",
+            "rock and ledge" in dtext96,
+            f"desc={dtext96!r}",
+        )
+        check(
+            "trail 96 desc is truncated (~80 chars + ellipsis)",
+            dtext96.endswith("…") and len(dtext96) <= 82,
+            f"len={len(dtext96)} desc={dtext96!r}",
+        )
+
+        # Trail 11 (Ground Control) is catalogued and "11x" is NOT. Querying
+        # "11" surfaces both, so the same dropdown proves the positive and the
+        # negative case: 11 has a desc line, 11x has none.
+        _, dc11, dtext11 = desc_for("11", "11")
+        check(
+            "catalogued trail 11 row shows a description",
+            dc11 == 1 and bool(dtext11),
+            f"desc_count={dc11} desc={dtext11!r}",
+        )
+        _, dc11x, _ = desc_for("11", "11X")
+        check(
+            "un-catalogued trail 11X has NO description line",
+            dc11x == 0,
+            f"desc_count={dc11x}",
+        )
+
+        # A non-trail dropdown (roads/addresses) must stay single-line: no
+        # .search-result-desc node anywhere in the results.
+        page.locator("#searchInput").fill("")
+        page.wait_for_timeout(120)
+        page.locator("#searchInput").fill("ellis")
+        page.wait_for_timeout(320)
+        non_trail_descs = page.locator(".search-item .search-result-desc").count()
+        check(
+            "non-trail (road/address) rows carry no description line",
+            non_trail_descs == 0,
+            f"unexpected desc nodes={non_trail_descs}",
         )
 
         print("\n== Console summary ==")
