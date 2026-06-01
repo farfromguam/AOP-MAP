@@ -1,9 +1,12 @@
 # Viewer Source Split — plan (no build step)
 
-Status: **Stage 1 SHIPPED + verified (2026-06-01). Stage 2 (JS subdivision)
-BLOCKED on a user decision — the planned ES-module path is unsafe here (see
-"What shipped" + "Discoveries").** Authored 2026-06-01; line numbers below were
-approximate-at-planning and have since drifted (index.html is now ~673 lines).
+Status: **CLOSED 2026-06-01 — Stage 1 SHIPPED + verified + COMMITTED**
+(`d795f11` "split apart index.html"; `VERSION`/#appVersion **v26**; tree clean).
+**User chose to STOP at Stage 1**, so Stage 2 (JS subdivision) is **not owed
+work** — the ES-module (c) and classic-multi-file (b) carve options are retained
+below as *future options only*; open a fresh card if JS sub-navigation is ever
+wanted. Authored 2026-06-01; the line numbers throughout are now doubly stale
+(index.html is **672 lines** AND the script moved to `website/js/main.js`).
 
 -----
 

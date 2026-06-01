@@ -3,8 +3,11 @@
 Status: **Slices 1–3 SHIPPED**, merged to `master` (`67df0f4`) on top of
 the pwa_qa2 v19 build — see `copy_review_surface.md`. The onX→park-voice rewrite is
 **DONE** (descriptions are now original AOP wording, brain voice), so the onX-copyright
-caveat is dropped. **Slice 3 shipped 2026-06-01** (uncommitted, main checkout).
-Slice 4 (landmark geometry) remains deferred. Authored 2026-05-31.
+caveat is dropped. **Slice 3 shipped 2026-06-01 and is now COMMITTED** (tree
+clean; `search-result-desc` + `renderSearchResults` confirmed in
+`website/js/main.js` after the source split). Slice 4 (landmark geometry) remains
+deferred (blocked on landmark coordinates, most of which do not exist yet). The
+license/publish gate is still owed before any public publish. Authored 2026-05-31.
 
 Goal: wire the persisted trail research (names + descriptions + named landmarks)
 into the live viewer so a trail on the map carries its name, difficulty, and

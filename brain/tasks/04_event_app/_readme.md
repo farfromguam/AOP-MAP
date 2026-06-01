@@ -92,14 +92,26 @@ New work opened after the triage above lives directly in this folder. The
   residue (L1 whitespace, broad L2 extractions, L9 raw-hex/focus-trap) routed to
   `10_deferred/viewer_polish_followups.md`; on-device feel/touch/GL confirm owed.
 
+**Closed since this block was written:**
+
+- `viewer_source_split.md` — **DONE → `_done/` (2026-06-01).** Stage 1 shipped +
+  verified + **committed** (`d795f11` "split apart index.html"): `<style>` →
+  `website/css/app.css` (867 lines), main script → `website/js/main.js` (9,769
+  lines, classic `<script src>`), `index.html` 11,299 → **672 lines**, `sw.js`/
+  `#appVersion` → **v26**. User **chose to stop at Stage 1**; Stage 2 (JS
+  subdivision) is retained in the card as a future option only, not owed work.
+  **NOTE for every other card:** the JS now lives in `website/js/main.js`, so all
+  `index.html ~line N` anchors in the cards below are stale — search `main.js`.
+
 **Still active (this folder):**
 
-- `trail_research_integration.md` — **ACTIVE (Slices 1–2 shipped).** Trail catalog
-  joined to the gold network at runtime: trail-click popup (new) + POI browser
-  repointed to the gold network, both shipped + verified. Owed: Slice 3 (search
-  description preview, actionable), Slice 4 (landmark geometry, blocked),
-  license/publish gate + canonical-dataset fork, and ~110 un-catalogued trail
-  names/descriptions upstream.
+- `trail_research_integration.md` — **ACTIVE (Slices 1–3 shipped + committed).**
+  Trail catalog joined to the gold network at runtime: trail-click popup (new) +
+  POI browser repointed to the gold network + search description preview (Slice 3),
+  all shipped, verified, and committed (tree clean; confirmed in `main.js`). Owed:
+  Slice 4 (landmark geometry, **blocked** on landmark coordinates that mostly do
+  not exist yet), license/publish gate + canonical-dataset fork, and ~110
+  un-catalogued trail names/descriptions upstream.
 - `pwa_qa_2.md` — **ACTIVE (near-done, user-gated).** Items 1–5 shipped + verified
   (`playwright_verify_pwa_qa2.py`, `VERSION` v18 → v19); 7 routed to
   `pwa_qa_data_bakes.md`; 8/10 no-op (false premises). **Open:** item 6 (logo
@@ -111,15 +123,6 @@ New work opened after the triage above lives directly in this folder. The
   callouts bake), 6 (in-park vs region buildings + search exclusion), 17 (extend
   the 9-patch AOI), E (Ellis cemetery info bake). All need a product/boundary/
   source call before code — no actionable headless work.
-- `viewer_source_split.md` — **PLANNED (no code yet, 2026-06-01).** How to split
-  the ~11.3k-line `website/index.html` (CSS + ~9.76k-line global-scope script)
-  into external CSS + native ES modules — **no build step / no package manager**
-  (user-settled). Measured: file size is *not* the driver (142 KB gzipped; vendor
-  libs dwarf it), maintainability + multi-agent edit collisions are. De-risked:
-  zero inline `on*=` handlers, tiny `window` surface. Phased slices (CSS first,
-  then leaf utils, then one seam at a time), 27 verifiers as the parity net.
-  P4-class. **Gated on the file going quiescent** + one open fork (cut shape
-  A/B/C — recommend C). Pulled forward by user request.
 
 -----
 

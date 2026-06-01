@@ -4,6 +4,22 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+**2026-06-01 (Sprint 04 review pass — doc only, no code).** Reviewed every active
+Sprint 04 card against the real repo. **Key correction: the working tree is now
+CLEAN — everything is committed** (`d795f11 split apart index.html` is HEAD, v26).
+So **every "UNCOMMITTED" / "VERSION-owed" note in the blocks below is STALE** —
+the user did a commit pass; trail Slices 1–3 (`search-result-desc`/
+`renderSearchResults`) and the source split are confirmed in committed code.
+**Closed → `_done/`: `viewer_source_split.md`** (Stage 1 shipped+verified+committed;
+user chose to stop at Stage 1 — Stage 2 is a future option, not owed). **The JS now
+lives in `website/js/main.js`** (index.html is 672 lines), so all `index.html ~line N`
+anchors in the cards are stale — search `main.js` instead. **Still active (4 cards):**
+`trail_research_integration.md` (Slices 1–3 done; Slice 4 blocked on landmark coords
++ license gate owed), `pwa_qa_2.md` (items 6 device+cut-off-instruction / 9 cemetery
+decision owed), `pwa_qa_2_plan.md` (companion), `pwa_qa_data_bakes.md` (items 4/6/17/E
+all blocked on a product/source decision). The P2 "decision session" bundle in
+`04_event_app/_readme.md` is the right next move with the user. `_readme.md` updated.
+
 **2026-06-01 (verifier-rot fix — test-only, no app code).** Picked up the ungated
 P4 item from `10_deferred/viewer_polish_followups.md` after confirming all Sprint 04
 P1 headless work is shipped+committed (incl. trail Slice 3 — the trail card's
