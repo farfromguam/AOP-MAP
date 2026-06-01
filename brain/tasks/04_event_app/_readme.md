@@ -125,8 +125,11 @@ gated on the user (decision or device) or owed upstream.
    M13~~ **ALL SHIPPED 2026-06-01.** v24 (committed, `c4e080c`) = H1+M12; **v25**
    (working tree, uncommitted) = M4+M5+M8+M9+M10+M13. Headless-verified by
    `playwright_verify_code_review_groupb.py` 15/15 + `feature_list`/`sfwda_multiply`;
-   on-device feel/install-cost owed. **Only Groups C–D (refactor/polish) remain on
-   the card. Next P1: Groups C–D, or the on-device pass.**
+   on-device feel/install-cost owed. **Groups C–D also worked 2026-06-01** (still v25):
+   L10/L12/L3/L11 done, M19 stale (no change), L9 partial (dead-rule). **Remaining on
+   the card = own-pass deferrals** (L1 whitespace, broad L2 extractions, L9
+   raw-hex/focus-trap; L13 note-only) **+ the on-device pass.** Card is effectively
+   closed bar those. **Next P1: the on-device pass, or a fresh card.**
 
 **P2 — decisions to unblock (bundle for one decision session):**
 

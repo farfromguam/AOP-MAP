@@ -158,7 +158,7 @@
     .maplibregl-ctrl-bottom-right{ margin-bottom: var(--sa-bottom); margin-right: var(--sa-right); }
     .left-controls { position: absolute; left: calc(12px + var(--sa-left)); top: calc(12px + var(--sa-top)); z-index: 3; width: 340px; max-width: calc(100vw - 392px - var(--sa-left) - var(--sa-right)); display: grid; gap: 8px; }
     .left-controls * { box-sizing: border-box; letter-spacing: 0; }
-    .search-shell, .left-context-card, .calendar-card, .hot-control { border: 1px solid rgba(155,132,92,0.34); border-radius: 8px; background: var(--cream-surface); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .search-shell, .calendar-card, .hot-control { border: 1px solid rgba(155,132,92,0.34); border-radius: 8px; background: var(--cream-surface); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
     .search-shell { display: flex; gap: 6px; padding: 6px; }
 
     /* ── Left-rail drawer (col1 icons + col2 content) ──────────────────
@@ -719,7 +719,6 @@
     .search-result-label { font-size: 0.9rem; color: var(--brown-ink); }
     .search-result-desc { font-size: 0.74rem; line-height: 1.25; color: var(--brown-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .search-empty { padding: 6px 9px; color: #999; font-size: 0.88rem; }
-    .left-context-card { display: block; overflow: hidden; }
     .calendar-card { display: block; padding: 0; overflow: hidden; }
     .left-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 8px; border-bottom: 0; background: transparent; }
     .left-tab { min-width: 0; min-height: 32px; margin: 0; padding: 5px 4px; border: 1px solid var(--cream-border); border-radius: 6px; background: rgba(255,248,232,0.88); color: var(--brown-mid); cursor: pointer; font: 800 0.76rem Inter, system-ui, sans-serif; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: inset 0 -1px 0 rgba(46,36,24,0.06); }
@@ -1496,6 +1495,11 @@
       attributionControl: false
     });
 
+    // Log style/glyph/source errors. Registered at construction (not inside the
+    // 'load' handler) so failures during the INITIAL style + glyph load are caught
+    // too — a load-handler registration misses everything before 'load' fires (L12).
+    map.on('error', (e) => { console.error(e.error || e); });
+
     // Touch: make a SIMULTANEOUS two-finger pinch start zooming immediately.
     // MapLibre's default touch handler bundles pinch-zoom with two-finger
     // twist-rotate, and when both fingers land at once it stalls deciding
@@ -1739,12 +1743,22 @@
       // Recompute drawer geometry now (post-class-change) and after the panel's
       // max-height transition lands on its final rect.
       requestAnimationFrame(reflowLeftRailDrawer);
-      panel.addEventListener('transitionend', function settle(e) {
+      let settleTimer = 0;
+      const settle = (e) => {
         if (e.target !== panel && e.target !== panelBody) return;
         if (e.propertyName !== 'max-height' && e.propertyName !== 'width' && e.propertyName !== 'height') return;
         reflowLeftRailDrawer();
         panel.removeEventListener('transitionend', settle);
-      });
+        clearTimeout(settleTimer);
+      };
+      panel.addEventListener('transitionend', settle);
+      // Safety net (L10): if transitionend never lands (reduced-motion, an
+      // interrupted/zero-delta transition, or a rapid re-toggle), reflow and drop
+      // the listener anyway so it can't leak. ~matches the 0.26s anim.
+      settleTimer = setTimeout(() => {
+        reflowLeftRailDrawer();
+        panel.removeEventListener('transitionend', settle);
+      }, 360);
     }
 
     panelCollapse?.addEventListener('click', (e) => { e.stopPropagation(); togglePanel(); });
@@ -1777,6 +1791,7 @@
       }
       if (tabKey === 'events') scrollCalendarCurrentRowIntoView();
       if (tabKey === 'poi') renderPoiTab();
+      return tabKey; // resolved key — callers persist THIS, not the raw input (L10)
     }
 
     function persistLeftTab(tabKey) {
@@ -2793,8 +2808,7 @@
 
     for (const button of leftTabButtons) {
       button.addEventListener('click', () => {
-        setLeftTab(button.dataset.leftTab);
-        persistLeftTab(button.dataset.leftTab);
+        persistLeftTab(setLeftTab(button.dataset.leftTab));
       });
       button.addEventListener('keydown', (event) => {
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
@@ -2806,8 +2820,7 @@
         else next = (current + (event.key === 'ArrowRight' ? 1 : -1) + leftTabButtons.length) % leftTabButtons.length;
         const nextButton = leftTabButtons[next];
         if (nextButton) {
-          setLeftTab(nextButton.dataset.leftTab);
-          persistLeftTab(nextButton.dataset.leftTab);
+          persistLeftTab(setLeftTab(nextButton.dataset.leftTab));
           nextButton.focus();
         }
       });
@@ -8300,9 +8313,8 @@
     }
 
     map.on('load', async () => {
-      map.on('error', (e) => {
-        console.error(e.error || e);
-      });
+      // map.on('error') is now registered at construction (L12) so initial
+      // style/glyph errors are caught too.
 
       // M4: warm every overlay fetch in parallel up front. fetchJson is memoized
       // by URL, so the `await fetchJson(...)` at each add-site below resolves
@@ -9824,7 +9836,10 @@
       bakeTiles();
 
       function tileSourceId(r, c) { return `sfwda-tile-${r}-${c}`; }
-      function tileLayerId(r, c)  { return `sfwda-tile-${r}-${c}`; }
+      // Same id space as the source on purpose — the SFWDA raster tile uses one id
+      // for both its source and its layer. Deriving from tileSourceId (rather than
+      // a second identical literal) removes the desync footgun (L3).
+      function tileLayerId(r, c)  { return tileSourceId(r, c); }
       function tileCornerCoords(r, c) {
         return [
           sfwdaGrid[r][c],         // image-TL
@@ -10408,7 +10423,10 @@
       // it into view, and flash. The previous MapLibre rename/delete
       // popup retired with the inline-editor card. During move mode the
       // click belongs to the move primitive.
+      const editorClickBound = new Set();
       function bindEditorClick(layerId) {
+        if (editorClickBound.has(layerId)) return; // idempotent — safe if init re-runs (L11)
+        editorClickBound.add(layerId);
         map.on('click', layerId, (event) => {
           if (draw && draw.getMode() !== 'static') return;
           if (moveState) return;

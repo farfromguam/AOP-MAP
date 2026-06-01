@@ -4,7 +4,7 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
-**2026-06-01 (worktree cleanup verified + Group B fully shipped incl. M13).** (1) **Worktree
+**2026-06-01 (worktree cleanup + Group B fully shipped incl. M13 + Groups C–D worked).** (1) **Worktree
 chore resolved.** The "three locked agent worktrees" chore was **stale** — already
 gone. Real remaining clutter = `aop-copy-review` worktree + `copy-review` branch
 (`git cherry` → fully in master) + `integration-pwa-qa` safety-net (all swarm items
@@ -30,9 +30,22 @@ loaded; M13 served SW excludes the 2 layers, keeps essentials, SW activates at v
 `aop-data-v25`); `feature_list` move-commit + visibility PASS (only pre-existing
 publishable-export FAIL); `sfwda_multiply` 5/5. On-device confirm owed (H1 slider,
 M12 prompt, M8 iOS keyboard, M9/M10 drag, M13 install cost + offline-after-once).
-**Group B is complete; only Groups C–D (refactor/polish) remain on the card.** NOTE: `playwright_verify_poi_editor.py` has 2 pre-existing fails
-(stale `<title>` assertion; collapsed-panel click-timeout from the v12
-collapse-on-all-widths change) — not from this batch. See
+**Group B complete.** (3) **Groups C–D worked** (still v25, index.html): **L10**
+`setLeftTab` returns the resolved key (persist callers wrapped) + `togglePanel`
+`settle` listener now has a 360 ms safety net; **L12** `map.on('error')` moved to
+construction (catches initial-load errors); **L3** `tileLayerId` delegates to
+`tileSourceId`; **L11** `bindEditorClick` idempotence guard; **L9** removed dead
+`.left-context-card` rules (KEPT `#message` — verifier-critical load proxy, not
+dead). **M19 stale** (no change — `#calendarToggle` not interactive; `#panelHeader`
+accessible via its `#panelCollapse` button). **Deferred to own pass:** L1 whitespace
+(88 tab lines), broad L2 extractions, L9 raw-hex sweep + pwaIosHint focus-trap; L13
+note-only. Verified: `groupb` 15/15, `feature_list` (0 errors, only pre-existing
+publishable FAIL), `sfwda_multiply` 5/5. **Verifier rot (pre-existing, NOT this
+batch):** `session_tools` (`#clockUseInputs`) + `poi_editor` (`editor-bucket-add`,
+stale `<title>`) crash in headless on a `Locator.click` the full-bleed `#map` canvas
+intercepts — same class as `presets`; worth a separate force-click/reposition pass.
+The card's substantive fixes are all landed; remaining = the own-pass deferrals + the
+on-device confirm. See
 `tasks/04_event_app/app_code_review_followups.md` ▶ Next up.
 
 **2026-05-31 (Sprint 04 triage pass — doc only, no code).** Re-sorted the open

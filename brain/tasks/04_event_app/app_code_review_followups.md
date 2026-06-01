@@ -20,9 +20,12 @@
 ## ▶ Next up
 
 All no-device work is done (H4+L8, M7, M14, M17 — see the done card). **Group B is
-now fully implemented (H1, M12, M4, M5, M8, M9, M10, M13).** All that remains on
-this card is **Groups C–D** (refactor/polish) + the **on-device feel confirm** the
-batch is owed.
+fully implemented (H1, M12, M4, M5, M8, M9, M10, M13)** and **Groups C–D are worked
+(2026-06-01): L10, L12, L3, L11 done; M19 was a stale finding (no change); L9 partial
+(dead-rule removed, raw-hex sweep + pwaIosHint focus-trap deferred); L1 + the broad L2
+extractions deferred to their own pass; L13 note-only.** What remains on this card is
+the **deferred sub-items** (L1 whitespace, L2 broad extractions, L9 raw-hex/focus-trap
+— own pass) + the **on-device feel confirm** the batch is owed.
 
 **Versions:** **v24** (committed, `c4e080c "v24 batch"`) = H1 + M12. **v25**
 (working tree, UNCOMMITTED) = M4 + M5 + M8 + M9 + M10 + M13. **GROUP B IMPLEMENTED
@@ -75,8 +78,17 @@ can't fake touch/GL/native-prompt. (`playwright_verify_poi_editor.py` has two
 collapsed-panel click timeout from the v12 collapse-on-all-widths change —
 editorPois paths are covered by `feature_list.py` instead.)
 
-Next: **Groups C–D** (refactor/polish) — or the on-device pass, whenever the user
-takes the phone to it.
+Next: the **on-device pass** (whenever the phone's in hand) + the deferred
+own-pass items (L1 whitespace, L2 broad extractions, L9 raw-hex/focus-trap). The
+card's substantive fixes are all landed.
+
+**Verifier note (pre-existing, not from this batch):** `playwright_verify_session_tools.py`
+and `playwright_verify_poi_editor.py` crash in headless on a `Locator.click` the
+full-bleed `#map` canvas intercepts (session_tools: `#clockUseInputs`; poi_editor:
+`editor-bucket-add`) — same class flagged for `presets`. The exercised paths are
+covered by `feature_list`/`groupb`/`sfwda_multiply` (all green, 0 console errors).
+Worth a separate verifier-maintenance pass (force-click / reposition) so the suite
+runs clean — not done here (out of card scope).
 
 -----
 
@@ -159,47 +171,61 @@ view. **Verify:** install cost + that those layers still work offline-after-once
 
 -----
 
-## Group C — Routed to the polish backlog
+## Group C — polish (worked 2026-06-01)
 
-Already-flagged polish; logged in
-[`viewer_polish_followups.md`](viewer_polish_followups.md) rather than re-tracked
-here.
+**No `VERSION` bump for Groups C–D (deliberate).** v25 is already committed
+(`c9fae3e`); these changes are `index.html`-only (the app shell), which the SW serves
+**stale-while-revalidate** — installed users self-heal to the new shell on the next
+navigation with no bump. Bumping would needlessly invalidate the version-keyed DATA
+cache and force a full GeoJSON re-download for a no-data refactor. So C–D rides v25.
 
-- **M19** — clickable `<div>`s (`#calendarToggle` ~997, `.panel-header` ~1080)
-  have no `role`/`tabindex`/`aria-expanded`/keyboard → not operable by keyboard
-  or AT. Make them `<button>` or add the role + keydown + aria.
-- **L9** — CSS hygiene: dead `.left-context-card` + permanently-hidden `#message`
-  rules; inline styles on `#pwaIosHint` duplicating palette tokens; dozens of raw
-  hex bypassing the `:root` palette; `#pwaIosHint role="dialog"` with no
-  modal/focus-trap.
-- **L10** — `setLeftTab` persists the raw (possibly stale) tab key instead of the
-  resolved one; `togglePanel`'s `settle` transitionend listener has no
-  `setTimeout` safety net (rapid double-toggle can leak it).
-- **L12** — `map.on('error')` is registered *inside* the `load` handler, so
-  style/glyph errors during initial load go unlogged. Register at construction.
+- **M19** — ✅ **investigated, no change (stale finding).** `#calendarToggle` has no
+  click handler and no `cursor:pointer` — it's a static heading, not a clickable div
+  (the calendar collapse moved to the left-rail tab icon). `#panelHeader` is already
+  keyboard-operable via the **`#panelCollapse` button it contains** (real button,
+  `aria-expanded`/`aria-controls`); making the wrapping div `role=button` would be
+  invalid (it nests buttons). No accessible gap to fix. (Vestigial `aria-controls`
+  on `#calendarToggle` left as harmless.)
+- **L9** — ✅ **partial.** Removed the genuinely-dead `.left-context-card` rules (2
+  sites — no element uses the class). **KEPT `#message`** — it is NOT dead: the
+  element ships at index.html ~1359 and the verifiers (`sfwda_multiply` waits on its
+  "publish feature" text) use it as a load proxy; JS writes to it though it's
+  `display:none`. **Deferred to its own pass:** the raw-hex→`:root`-token sweep
+  (dozens of sites, visual-regression risk) and the `#pwaIosHint` dialog focus-trap
+  (interaction-risky for a minor iOS-only hint).
+- **L10** — ✅ **DONE.** `setLeftTab` now returns the resolved key and both persist
+  callers use `persistLeftTab(setLeftTab(...))` so a stale/invalid key can't be
+  stored. `togglePanel`'s `settle` transitionend listener is now a named handler with
+  a 360 ms `setTimeout` safety net (reflows + drops the listener) so a rapid
+  re-toggle / missing transitionend can't leak it.
+- **L12** — ✅ **DONE.** `map.on('error')` moved out of the `load` handler to right
+  after the `Map` constructor, so style/glyph errors during the initial load are
+  logged too.
 
 -----
 
-## Group D — Code-health refactors (own pass)
+## Group D — Code-health refactors (worked 2026-06-01; rides v25, see Group C note)
 
 Mechanical / structural cleanups; no behavior change. Lowest priority.
 
-- **L1** — 88 tab-indented lines in a space-indented file (`index.html` lines
-  4379-4410, 4715-4723, 5440, 5753-5759, 6874-6897, 7003-7049, 10255-10260).
-  Held only to keep the batch-1 fix diff reviewable; do as its own whitespace-only
-  pass.
-- **L2** — duplication worth a shared helper: three identical `loadXStore`
-  wrappers (3859/4146/4283), near-identical row builders
-  (`renderVisitorListGroup`/`renderPoiTab`), brand-logo clamp/format triads,
-  ~10 road `addLayer` objects, 3 tile-loop reimplementations. Extract
-  `loadObjectStore`, `buildFeatureRow`, `clampRound`/`trimZeros`, a roads config
-  array, `forEachTile`.
-- **L3** — `tileSourceId` and `tileLayerId` are byte-identical (`index.html`
-  ~9617-9618); collapse to one id fn to remove the desync footgun.
-- **L11** — `bindEditorClick`/map listeners have no idempotence guard; fine today
-  (single-shot init) but latent multi-fire if init ever re-runs.
-- **L13** — `trimCache` is fire-and-forget + racy (`sw.js` ~147); cosmetic at the
-  1500-entry cap. Note only.
+- **L1** — ⏸ **DEFERRED to its own whitespace pass** (the card's own recommendation).
+  88 leading-tab lines remain (now scattered ~4404–4429, ~7003-area, ~10255-area —
+  the original line ranges drifted with the v19→v25 churn). A bulk tab→space
+  conversion is safe only if each line's space-count matches its surrounding indent;
+  doing it carefully across 88 scattered lines is its own pass, not worth mixing into
+  this batch.
+- **L2** — ⏸ **mostly DEFERRED** (own pass). Only the cheap, safe one was done here
+  (see L3). The broad extractions — `loadObjectStore` (3 sites), `buildFeatureRow`
+  (the ~250-line row builder; risky, M5 territory), `clampRound`/`trimZeros`, a roads
+  config array, `forEachTile` — are a multi-site refactor with real regression
+  surface for "no behavior change" cleanup; left for a dedicated pass.
+- **L3** — ✅ **DONE.** `tileLayerId` now delegates to `tileSourceId` (one literal,
+  the layer id derives from the source id) — desync footgun gone.
+- **L11** — ✅ **DONE.** `bindEditorClick` guards on an `editorClickBound` Set —
+  re-binding a layer is now a no-op, so a re-run of init can't multi-fire the
+  click/hover handlers.
+- **L13** — ℹ️ **note only** (per the card). `trimCache` fire-and-forget race is
+  cosmetic at the 1500-entry cap; left as-is.
 
 -----
 
@@ -223,6 +249,6 @@ Mechanical / structural cleanups; no behavior change. Lowest priority.
 3. **On-device batch**: ~~H1, M12, M5, M8, M9+M10, M4, M13~~ **ALL DONE (headless)
    2026-06-01** — see ▶ Next up (M4/M5/M8/M9/M10/M13 = `VERSION` v25). User verifies
    the feel/touch/GL paths + install cost on the iPhone in one pass.
-4. **Groups C–D** (refactor/polish) — all that's left on this card.
-4. **Refactors** (L1 whitespace first, then L2/L3/L11) and the polish-routed
-   Group C — as priority allows.
+4. ~~**Groups C–D** (refactor/polish)~~ — **WORKED 2026-06-01:** L10, L12, L3, L11
+   done; M19 stale (no change); L9 partial (dead-rule done). **Remaining = own pass:**
+   L1 whitespace, the broad L2 extractions, L9 raw-hex/focus-trap (L13 note-only).
