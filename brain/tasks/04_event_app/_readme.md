@@ -50,27 +50,94 @@ branches noted below are destructive cleanup, still owed by the user.
 
 ## Post-triage cards (added after 2026-05-30)
 
-New work opened after the triage above lives directly in this folder:
+New work opened after the triage above lives directly in this folder. The
+**2026-05-31 triage pass** (below) re-sorted them; current state:
 
-- `icon_system_normalize.md` — inline-UI icon stroke/optical normalization.
-- `pwa_qa.md` / `pwa_qa_2.md` / `pwa_qa_data_bakes.md` — iOS-PWA QA swarm + the
-  split-out data-bake items.
+**Shipped → `_done/` (2026-05-31):**
+
+- `copy_review_surface.md` — **DONE.** Copy-as-data registry (13 kinds) +
+  printable `copy_review.html`; About/UI-strings/calendar-title extracted to
+  `website/data/`; POI-blurb voice pass; `VERSION` v21 → v22. Shipped to
+  mainline + Playwright-verified (0 console errors). Owed work is upstream
+  (license, 11 null POI blurbs, public-gate confirm) — not card-blocking.
+- `icon_system_normalize.md` — **DONE.** All 14 inline UI icons normalized to one
+  family (vb22, 1.6 stroke + documented exceptions, optical-size measured). Tool
+  `website/icon_master.html` + sidebar link live. Playwright-verified, "No open
+  forks."
+- `pwa_qa.md` — **DONE.** 21/21 items shipped / reworked / superseded / routed by
+  the 7-agent swarm; "Open forks: none." Data items (4, 6, 17) were split to
+  `pwa_qa_data_bakes.md`. The only remainder is the perpetual **on-device
+  feel-confirm** (items 7 pinch / 13 colors / 15 drag) — recorded in the card's
+  Disposition table; see the on-device pass in the priority block below.
 - `_done/app_code_review_fixes_batch1.md` — **DONE.** The 15 no-decision fixes
   from the 2026-05-31 app code review **+ H4/L8** (the queued SW cache-staleness
   decision, answered stale-while-revalidate; `VERSION` v20 → v21). Applied to the
   working tree and verified (new verifier
   `mvp/scripts/playwright_verify_code_review_fixes.py`, 0 console errors, SW
   active). One sweep finding retracted as a false positive.
-- `app_code_review_followups.md` — **NOT DONE (active).** The 17 still-held
-  findings, self-contained, grouped (on-device / polish / refactor) with a
-  recommended order. All no-device work is done; next slice is the on-device
-  batch (H1, M12 first), verified on the iPhone.
-- `trail_research_integration.md` — **SCOPE.** Wire the persisted trail catalog
-  (names + descriptions + landmarks) into the live viewer via a runtime sidecar
-  join on `trail_number`. Surfaces: trail-click popup (new), left POI browser
-  (repoint to the gold network), search preview. Forks: license/publish gate +
-  which trail dataset is canonical. 9 of 87 numbered trails have descriptions
-  today; the rest are owed upstream.
+
+**Still active (this folder):**
+
+- `app_code_review_followups.md` — **ACTIVE.** The 17 still-held findings,
+  self-contained, grouped (on-device / polish / refactor) with a recommended
+  order. All no-device decision work is done; next slice is the on-device batch
+  (H1, M12 first), implemented by me + verified on the iPhone.
+- `trail_research_integration.md` — **ACTIVE (Slices 1–2 shipped).** Trail catalog
+  joined to the gold network at runtime: trail-click popup (new) + POI browser
+  repointed to the gold network, both shipped + verified. Owed: Slice 3 (search
+  description preview, actionable), Slice 4 (landmark geometry, blocked),
+  license/publish gate + canonical-dataset fork, and ~110 un-catalogued trail
+  names/descriptions upstream.
+- `pwa_qa_2.md` — **ACTIVE (near-done, user-gated).** Items 1–5 shipped + verified
+  (`playwright_verify_pwa_qa2.py`, `VERSION` v18 → v19); 7 routed to
+  `pwa_qa_data_bakes.md`; 8/10 no-op (false premises). **Open:** item 6 (logo
+  overshoot on zoom-out — device-only GL + the user's instruction was cut off) and
+  item 9 (cemetery visibility — user "let me think").
+- `pwa_qa_2_plan.md` — **ACTIVE (companion).** The executed triage/anchors plan for
+  `pwa_qa_2.md`; kept beside it as reference until that card closes.
+- `pwa_qa_data_bakes.md` — **ACTIVE (blocked on decisions).** Items 4 (region
+  callouts bake), 6 (in-park vs region buildings + search exclusion), 17 (extend
+  the 9-patch AOI), E (Ellis cemetery info bake). All need a product/boundary/
+  source call before code — no actionable headless work.
+
+-----
+
+## Sprint 04 priority (2026-05-31)
+
+Ranked across the active cards. P1 is what I can take end-to-end now; the rest is
+gated on the user (decision or device) or owed upstream.
+
+**P1 — actionable headless, do next (no gate):**
+
+1. `trail_research_integration.md` **Slice 3** — search description preview for
+   catalogued trail hits. Small (builds on the shipped Slices 1–2), high value.
+2. `app_code_review_followups.md` **Group B** — implement the real fixes (H1, M12
+   first, then M4 fetch-parallelize, M5 row-in-place, M8 resize-coalesce, M9+M10
+   move-mode). I write them; they ride into the on-device pass for the user to
+   confirm.
+
+**P2 — decisions to unblock (bundle for one decision session):**
+
+3. `pwa_qa_data_bakes.md` items 4 / 6 / 17 / E + `pwa_qa_2.md` item 9 (cemetery
+   visibility) — all are "what's in-park vs region / which source / how big the
+   AOI" calls. Answer once, then the bakes become P1.
+4. `pwa_qa_2.md` item 6 — needs the user's cut-off instruction + a device session
+   before touching a working logo-size cap.
+
+**P3 — on-device verification pass (user confirms on the iPhone):**
+
+5. The owed touch/GL confirms now sitting in `_done/pwa_qa.md` (7 pinch, 13 topo
+   colors, 15 drawer-drag) + `pwa_qa_2.md` item 1 feel + whatever P1 Group B
+   produces. One phone session clears the batch.
+
+**P4 — refactor / polish (own pass, lowest):**
+
+6. `app_code_review_followups.md` Groups C–D and the `10_deferred/viewer_polish_followups.md`
+   residue — a11y on clickable divs, CSS hygiene, shared helpers, whitespace.
+
+**Owed upstream (not codeable now):** ~110 un-catalogued trail names/descriptions
++ the trail license/publish gate (`trail_research_integration.md`); 11 null POI
+blurbs + public-gate confirm (`_done/copy_review_surface.md`).
 
 -----
 

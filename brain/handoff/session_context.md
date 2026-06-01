@@ -4,6 +4,18 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+**2026-05-31 (Sprint 04 triage pass — doc only, no code).** Re-sorted the open
+Sprint 04 cards. **Moved → `04_event_app/_done/`:** `copy_review_surface.md`,
+`icon_system_normalize.md`, `pwa_qa.md` (all shipped + verified; pwa_qa's only
+remainder is the perpetual on-device feel-confirm, kept in its Disposition).
+**Still active:** `app_code_review_followups.md`, `trail_research_integration.md`,
+`pwa_qa_2.md` (near-done, user-gated on items 6 + 9), `pwa_qa_2_plan.md`
+(companion), `pwa_qa_data_bakes.md` (blocked on product/boundary/source calls).
+The **priority ranking** lives in `04_event_app/_readme.md` "Sprint 04 priority
+(2026-05-31)": P1 = trail Slice 3 + app-review Group B (actionable now); P2 =
+the data-bake decision bundle; P3 = on-device verify pass; P4 = refactor/polish.
+Doc moves only, uncommitted.
+
 **2026-05-31 (app code review + fix batch 1).** App code review (4 High / 20
 Medium / 13 Low across `website/index.html` + `sw.js` + `manifest.json`; one
 sweep finding — `composeFeatureFilter` id-type — retracted as a false positive
