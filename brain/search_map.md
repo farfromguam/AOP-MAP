@@ -56,6 +56,7 @@ TL;DR:
 - conflicting facts, sources disagree, evidence mismatch: `practices/02_triangulation.md`
 - stop the line, drift, unreconciled conflict: `practices/03_andon.md`
 - first pass, slice, V1, proof: `practices/04_thin_vertical_slices.md`
+- progressive disclosure, spec-first, docs-as-spec, inverted pyramid, north-star triangle, brain pattern, agent-native docs, memory bank, llms.txt, lunch and learn, L&L: `practices/progressive_disclosure_spec.md`
 - research brief: `flows/research_flow.md`
 - task planning: `flows/plan_task.md`, `tasks/_extend.md`
 - task execution: `flows/work_task.md`

@@ -1,0 +1,867 @@
+/* AOP viewer styles — extracted verbatim from website/index.html (Slice A,
+   viewer_source_split). Two former <style> blocks: the main stylesheet, then
+   the PWA UI-lock rules that were inline at the end of <body>. No rule edits. */
+
+    /* Palette tokens. Cream/brown stack used by the panel chrome, calendar
+       card, feature list, and tune controls. Hoisted so the dark-text ink
+       and the rust accent aren't typed by hand at every selector. */
+    :root {
+      --brown-ink: #2e2418;    /* dark text on cream — higher-contrast baseline */
+      --brown-mid: #4e4128;    /* secondary text, icons, chevrons */
+      --brown-dark: #2a1f12;   /* hover/active text */
+      --brown-soft: #5a4828;   /* tertiary labels, captions */
+      --cream-hover: #efe2c6;  /* button hover, active row */
+      --cream-surface: rgba(250, 246, 235, 0.96);
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --control-border: #b9aa88;
+      --moss: #5f7157;
+      --moss-dark: #384833;
+      --moss-soft: #e3ebdc;
+      --rust: #a85020;         /* primary accent / active border — contrast bump */
+
+      /* Left-rail drawer tokens. --tab-h drives icon size, icon-col min
+         height, and the search-row height so the search bar sits flush
+         with one tab. The two -hover tokens are the open/closed tab
+         hover fills; --hairline is the divider between tabs/panels. */
+      --tab-h: 44px;
+      --hairline: rgba(46, 36, 24, 0.14);
+      --moss-tint-hover: #d6e0cb;
+      --cream-wash-hover: #f1e8d2;
+
+      /* iOS notch / home-indicator / rounded-corner padding. We set
+         viewport-fit=cover, so edge-anchored UI must add these or it
+         slides under the notch. Default 0 on devices without insets, so
+         desktop layout is unchanged. To fake a notch on desktop for
+         testing, override these in DevTools (e.g. --sa-top: 59px). */
+      --sa-top:    env(safe-area-inset-top, 0px);
+      --sa-bottom: env(safe-area-inset-bottom, 0px);
+      --sa-left:   env(safe-area-inset-left, 0px);
+      --sa-right:  env(safe-area-inset-right, 0px);
+
+      /* Width the bottom-right edit FAB occupies, PLUS breathing room. The bottom-left ⓘ
+         attribution caps its expanded CONTENT width short of this so the two never crowd.
+         Item 19 measured math (phone, sa=0): the attribution is content-box with 16px
+         left margin + 28px/8px padding (the compact ⓘ toggle reserves the 28px), so its
+         rendered right edge = 100vw - reserve + 28, while the FAB left edge = 100vw - 68
+         (56px FAB at right:12px). Gap = reserve - 96. The old 76px gave a NEGATIVE gap
+         (overlap); 96px gave 0px (grazing); 120px gives a ~24px breathing gap. html.editor-off
+         zeroes it (below) so the attribution reclaims the full width once the FAB is
+         gated away — the layout works with the edit button present OR absent. */
+      --edit-fab-reserve: 120px;
+
+      /* Radius of the inverted (concave) black corner fillets that round the map
+         into the Safari-tab black chrome bands. Tunable; 0 = sharp corners. */
+      --frame-radius: 18px;
+    }
+    /* Viewport height is context-split (see the display-mode override below):
+       - Browser TAB → 100dvh: respects the collapsing address bar so the bottom
+         isn't hidden behind it (100vh runs too tall in a tab).
+       - Installed PWA → 100vh: no toolbar, and unlike 100dvh it is correct on
+         cold start. This is what closes the iOS bottom band — with
+         viewport-fit=cover + black-translucent a PERCENTAGE height (the old
+         `height:100%`) made Safari drop cover layout, returning screenH−statusBar
+         (762 on an 812 screen) and dumping the lost ~50px as dead space at the
+         bottom. overflow:hidden stops page rubber-band; the panel + left rail keep
+         their own internal scroll. */
+    body, html { margin: 0; padding: 0; height: 100dvh; overflow: hidden; font-family: Inter, system-ui, sans-serif; }
+    /* Full-bleed map. Fixed + full-screen, NOT 100% (breaks cover, see body rule) and
+       NOT the old negative-inset hack `top:calc(-1*--sa-top); bottom:calc(-1*--sa-bottom)`
+       (a documented non-fix — it can't paint into the off-viewport band the % height
+       created). Height mirrors the body split: 100dvh base for browser tabs, 100vh in
+       the installed PWA (override below) where it covers everything incl. under the
+       status bar + home indicator. UI chrome stays clear of the reserved areas via
+       env(safe-area-inset-*) padding on the controls (below). resyncViewport still
+       calls map.resize() on rotate / return-from-background. */
+    /* Resting background = BLACK on purpose. In a SAFARI TAB iOS samples this color to
+       tint the status bar (top) + address-bar toolbar (bottom) — a tab can't paint the
+       map under that chrome (the map fills the full 663px web area; Safari keeps ~149px
+       for its own UI). Black makes both chrome strips read as the device bezel/notch so
+       they visually "disappear" (white system text on black). Proven that Safari samples
+       the BODY background here, not the rust theme-color (the old #ff0033 diagnostic
+       tinted the bars red despite theme-color=#a85020). Invisible in the installed PWA —
+       the fixed map covers it. (Was #ff0033 red probe → #F5EFE0 cream → now #000.) */
+    html, body { background: #000; }
+    #map { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; }
+    /* Installed PWA only: 100vh == the full screen and is correct on cold start
+       (100dvh is not), which is what closes the bottom band. A browser tab keeps the
+       100dvh base so the collapsing address bar doesn't clip the bottom. iOS 16+/26
+       and Chromium both match (display-mode: standalone). */
+    @media (display-mode: standalone) {
+      html, body, #map { height: 100vh; }
+    }
+    /* Inverted (concave) corner fillets — round the map into the black Safari-tab
+       chrome bands so the frame reads rounded, not sharp. Each is a fixed --frame-radius
+       square whose radial-gradient is transparent in a quarter-disc toward the map and
+       #000 in the outer L, i.e. a CONCAVE black corner. Black blends with the body bg +
+       the status/toolbar bands. pointer-events:none keeps the map draggable; z-index:1
+       sits above the map canvas (z auto) but below every control (z≥2) so the fillets
+       never paint over the pills/FAB. SCOPED TO iOS SAFARI TAB ONLY — default hidden;
+       shown only when the <head> script adds html.ios-browser (iOS device AND not
+       standalone). So: NOT the installed PWA (no bands; the device rounds the screen),
+       NOT desktop / non-iOS browsers (no chrome bands to round into). */
+    .screen-corner { display: none; position: fixed; width: var(--frame-radius); height: var(--frame-radius); z-index: 1; pointer-events: none; }
+    html.ios-browser .screen-corner { display: block; }
+    .screen-corner.tl { top: 0;    left: 0;  background: radial-gradient(circle at bottom right, transparent calc(var(--frame-radius) - 0.5px), #000 var(--frame-radius)); }
+    .screen-corner.tr { top: 0;    right: 0; background: radial-gradient(circle at bottom left,  transparent calc(var(--frame-radius) - 0.5px), #000 var(--frame-radius)); }
+    .screen-corner.bl { bottom: 0; left: 0;  background: radial-gradient(circle at top right,     transparent calc(var(--frame-radius) - 0.5px), #000 var(--frame-radius)); }
+    .screen-corner.br { bottom: 0; right: 0; background: radial-gradient(circle at top left,      transparent calc(var(--frame-radius) - 0.5px), #000 var(--frame-radius)); }
+    /* Keep MapLibre's corner controls (geolocate, etc.) clear of the notch,
+       status bar, home indicator, and rounded corners under viewport-fit=cover. */
+    .maplibregl-ctrl-top-left    { margin-top: var(--sa-top); margin-left: var(--sa-left); }
+    .maplibregl-ctrl-top-right   { margin-top: var(--sa-top); margin-right: var(--sa-right); }
+    /* V5: ⓘ attribution baseline = the bottom-right FAB's. Target the control's own
+       margin, not the corner container's — MapLibre also puts a 10px margin on
+       .maplibregl-ctrl, which otherwise stacks to ~22px. Baseline nudged 12→18px (up
+       "a bit") and left 12→16px (right "a bit") per on-device review; the pencil FAB
+       matches the 18px bottom (see .panel.collapsed). The ⓘ already anchors to the true
+       viewport because it lives inside the position:fixed #map — that is the baseline
+       the FAB had to be made to match (the FAB was position:absolute, which iOS resolves
+       against the 762px <html> box, landing it 50px high; #map is fixed = 812px). */
+    .maplibregl-ctrl-bottom-left { margin: 0; }
+    .maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib { margin: 0 0 18px 16px; max-width: calc(100vw - 24px - var(--sa-left) - var(--sa-right) - var(--edit-fab-reserve)); }
+    .maplibregl-ctrl-bottom-right{ margin-bottom: var(--sa-bottom); margin-right: var(--sa-right); }
+    .left-controls { position: absolute; left: calc(12px + var(--sa-left)); top: calc(12px + var(--sa-top)); z-index: 3; width: 340px; max-width: calc(100vw - 392px - var(--sa-left) - var(--sa-right)); display: grid; gap: 8px; }
+    .left-controls * { box-sizing: border-box; letter-spacing: 0; }
+    .search-shell, .calendar-card, .hot-control { border: 1px solid rgba(155,132,92,0.34); border-radius: 8px; background: var(--cream-surface); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .search-shell { display: flex; gap: 6px; padding: 6px; }
+
+    /* ── Left-rail drawer (col1 icons + col2 content) ──────────────────
+       Replaces the vertical stack of search / hot / calendar cards.
+       Col1 (.lr-icon-col) holds three tab buttons with a min-height of
+       3 × --tab-h. Col2 (.lr-content-col) holds the open panels stacked
+       in tab order at the top. Icons keep canonical order (search, hot,
+       cal) but float DOWN to meet their panel's top — never up, never
+       reordered. See drawer JS at the foot of the file. */
+    .lr-drawer { display: flex; align-items: stretch; }
+
+    .lr-icon-col {
+      flex: 0 0 var(--tab-h);
+      width: var(--tab-h);
+      min-height: calc(var(--tab-h) * 3);
+      display: flex;
+      flex-direction: column;
+      background: var(--cream-surface);
+      border: 1px solid var(--cream-border);
+      border-radius: 8px 0 0 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    .lr-icon-col.standalone { border-radius: 8px; }
+    .lr-icon-col.col2-short { border-bottom-right-radius: 8px; }
+
+    .lr-content-col {
+      flex: 1 1 auto;
+      min-width: 0;
+      align-self: flex-start;
+      display: flex;
+      flex-direction: column;
+      background: var(--cream-surface);
+      border: 1px solid var(--cream-border);
+      border-left: 0;
+      border-radius: 0 8px 8px 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .lr-content-col[hidden] { display: none; }
+
+    .lr-tab {
+      position: relative;
+      flex: 0 0 var(--tab-h);
+      width: var(--tab-h); height: var(--tab-h);
+      display: grid; place-items: center;
+      border: 0;
+      background: transparent;
+      color: var(--brown-mid);
+      cursor: pointer;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+    .lr-tab svg { width: 22px; height: 22px; }
+    .lr-tab + .lr-tab { border-top: 1px solid var(--hairline); }
+    .lr-tab:hover { background: var(--cream-wash-hover); }
+    .lr-tab:focus-visible { outline: 2px solid var(--moss); outline-offset: -2px; }
+    .lr-tab.open { background: var(--moss-soft); color: var(--moss-dark); }
+    .lr-tab.open:hover { background: var(--moss-tint-hover); }
+
+    /* Live-pip on the Hot tab — small rust dot ringed by the surrounding
+       fill so it reads clean against both closed and open tab states. */
+    .lr-tab .lr-live-dot {
+      position: absolute; top: 6px; right: 6px;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--rust);
+      box-shadow: 0 0 0 1.5px var(--cream-surface);
+      animation: lrPulse 2s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .lr-tab.open .lr-live-dot { box-shadow: 0 0 0 1.5px var(--moss-soft); }
+    @keyframes lrPulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.18); }
+    }
+    .lr-tab .lr-day-cap {
+      position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
+      font: 800 0.52rem Inter, system-ui, sans-serif;
+      letter-spacing: 0.04em; color: var(--brown-mid);
+      pointer-events: none;
+    }
+    .lr-tab.open .lr-day-cap { color: var(--moss-dark); }
+
+    /* ── Locate / Install float groups ────────────────────────────────
+       Two standalone floating squares stacked below the calendar tab
+       icon in .left-controls. Each is its own group, matched to the
+       .lr-icon-col chrome; the 8px .left-controls grid gap separates
+       them. Locate stays neutral cream; Install keeps the rust CTA fill
+       and self-hides until the app is installable (the button IS the
+       group, so no empty card shows). */
+    .util-group {
+      width: var(--tab-h); justify-self: start;
+      border-radius: 8px; overflow: hidden;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+    }
+    .util-btn {
+      width: var(--tab-h); height: var(--tab-h);
+      display: grid; place-items: center;
+      border: 0; padding: 0; cursor: pointer;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+    .util-btn svg { width: 22px; height: 22px; }
+    .util-group.util-locate { background: var(--cream-surface); border: 1px solid var(--cream-border); }
+    .util-group.util-locate .util-btn { background: transparent; color: var(--brown-mid); }
+    .util-group.util-locate .util-btn:hover { background: var(--cream-wash-hover); color: var(--brown-dark); }
+    .util-group.util-locate .util-btn:focus-visible { outline: 2px solid var(--moss); outline-offset: -2px; }
+    /* Active = the GeolocateControl is tracking — mirror the open-tab look. */
+    .util-group.util-locate .util-btn.active { background: var(--moss-soft); color: var(--moss-dark); }
+    /* Install button carries the group chrome itself (square, rust). */
+    #pwaInstallBtn.util-install {
+      width: var(--tab-h); height: var(--tab-h); justify-self: start;
+      display: grid; place-items: center; padding: 0;
+      border: 1px solid var(--rust); border-radius: 8px;
+      background: var(--rust); color: #fff; cursor: pointer;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+    }
+    #pwaInstallBtn.util-install svg { width: 22px; height: 22px; }
+    #pwaInstallBtn.util-install:hover { background: #96461b; }
+    #pwaInstallBtn.util-install:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
+    #pwaInstallBtn.util-install[hidden] { display: none; }
+    /* iOS Add-to-Home-Screen hint, now flowing under the install square. */
+    #pwaIosHint.util-ios-hint { justify-self: start; max-width: 240px; }
+    /* Build-version chip, sized to the float-group column and sitting under the
+       Install square. Always visible — the install button self-hides once the
+       app is installed, which is exactly when knowing the build matters most. */
+    .util-version {
+      width: var(--tab-h); justify-self: start;
+      display: grid; place-items: center;
+      padding: 4px 0; border-radius: 8px;
+      background: var(--cream-surface); border: 1px solid var(--cream-border);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+      font: 800 0.6rem Inter, system-ui, sans-serif;
+      letter-spacing: 0.03em; color: var(--brown-mid);
+      user-select: none; cursor: default;
+    }
+    /* pwa_qa_2 item 3: when the version chip is folded into the bottom-left
+       info ⓘ (relocated there in JS), the corner lays out as a row so it reads
+       "ⓘ v18", and the chip drops its full-width card sizing for a small pill
+       whose 18px bottom margin lines up with the attribution control. */
+    /* MapLibre defaults the corner container to flex-direction:column — force a
+       row so the version sits BESIDE the ⓘ ("ⓘ v18"), not stacked under it. */
+    .maplibregl-ctrl-bottom-left.attrib-with-version { display: flex; flex-direction: row; align-items: flex-end; }
+    .maplibregl-ctrl-bottom-left.attrib-with-version .util-version {
+      width: auto; margin: 0 0 18px 5px; padding: 1px 6px;
+      border-radius: 7px; font-size: 0.62rem; box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    }
+    /* The Locate control now lives in the left rail — hide MapLibre's
+       default top-right geolocate button (it is the only top-right ctrl). */
+    .maplibregl-ctrl-top-right .maplibregl-ctrl-group { display: none; }
+
+    .lr-panel { display: none; position: relative; min-width: 0; }
+    .lr-panel.open { display: block; }
+    .lr-panel.open ~ .lr-panel.open { border-top: 1px solid var(--hairline); }
+
+    /* Suppress the standalone card chrome on the three inner shells when
+       they live inside the drawer — the drawer is now the only shell. */
+    .lr-panel .search-shell,
+    .lr-panel .hot-control,
+    .lr-panel .calendar-card {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    /* Search row pinned to one tab unit so it lines up with the icon.
+       display:flex is explicit (defends against the general .search-shell
+       rule above being overridden again) so the input vertically centers. */
+    .lr-panel .search-shell { display: flex; height: var(--tab-h); padding: 0 8px; align-items: center; }
+    /* Pill bar above the search — three pill groups in one row:
+       [Region · Park · Pavilion]  [Park-style · Topo · Trace · Satellite]  [3D]
+       No vertical pipes between groups; grouping reads from the pill chrome.
+       Columns track the ICON COUNT per group (3 / 4 / 1) so every icon gets the
+       same width across groups. Item 21: the 2nd group grew from 3→4 icons; at the
+       old 3fr 3fr 1fr it kept the same track width as the 3-icon group, squeezing
+       each preset icon. 4fr gives it the extra column so per-icon width re-equalizes. */
+    .pill-bar { display: grid; grid-template-columns: 3fr 4fr 1fr; gap: 8px; align-items: stretch; }
+    .pill-bar .pill { display: flex; width: 100%; border: 1px solid var(--control-border); border-radius: 999px; background: var(--control-bg); overflow: hidden; box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .pill-bar .pill > button { flex: 1; min-width: 0; min-height: 36px; padding: 6px 8px; border: 0; background: transparent; color: var(--brown-ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+    .pill-bar .pill > button + button { border-left: 1px solid var(--control-border); }
+    .pill-bar .pill > button:hover:not(.active):not(:disabled) { background: var(--cream-hover); }
+    .pill-bar .pill > button.active { background: var(--moss); color: var(--control-bg); border-left-color: transparent; }
+    .pill-bar .pill > button svg { width: 22px; height: 22px; }
+    .pill-bar .pill > button.terrain-button { font: 800 0.86rem Inter, system-ui, sans-serif; letter-spacing: 0.04em; }
+    /* Sprint 02 B3: panel docks at bottom-right so the collapsed state lives
+       at the bottom corner (a tray that "pops up" toward the top when
+       expanded) instead of leaving the header floating mid-screen on
+       narrow viewports. Expanded panel still fills the right column up to
+       max-height; the visual difference on a tall desktop is negligible
+       because the panel already filled top→bottom. */
+    /* position:FIXED, not absolute. On iOS an absolutely-positioned panel anchors to
+       the <html> content box (measured 762px on an 812px screen — the 50px top safe
+       area), so `bottom:12px` landed the collapsed FAB 50px HIGH of the ⓘ attribution,
+       which lives inside the position:fixed #map (true 812px viewport). Fixed makes both
+       resolve against the same viewport so their bottoms actually align on the device.
+       On desktop (no scroll, body overflow:hidden) fixed == absolute, so this is inert
+       there. Verified from the device screenshot, not Playwright — Playwright reports
+       both at bottom:12 because it has no safe area to expose the absolute/fixed split. */
+    .panel { position: fixed; right: calc(12px + var(--sa-right)); bottom: max(12px, var(--sa-bottom)); top: auto; background: rgba(255,255,255,0.94); padding: 14px; border-radius: 12px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); width: 380px; max-width: calc(100vw - 24px - var(--sa-left) - var(--sa-right)); max-height: calc(100vh - 24px - var(--sa-top) - var(--sa-bottom)); overflow-y: auto; z-index: 2; box-sizing: border-box; }
+    .panel h1 { margin: 0 0 8px; font-size: 1rem; }
+    .panel-header { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+    .panel-header h1 { margin: 0; flex: 1; min-width: 0; }
+    .panel-collapse { flex: 0 0 auto; margin: 0; padding: 1px 8px; font-size: 1.15rem; line-height: 1.1; color: var(--brown-mid); }
+    .panel-export { flex: 0 0 auto; }
+    .panel-fab-pencil { display: none; } /* shown only as the collapsed mobile FAB (V5) */
+    .panel-body { overflow: hidden; transition: max-height 0.26s ease; }
+    .panel.collapsed .panel-body { max-height: 0; }
+    /* V5 (every width): the collapsed edit panel is a round pencil FAB pinned to the
+       bottom-right; the ⓘ attribution sits at the matching baseline in the bottom-left
+       (see .maplibregl-ctrl-bottom-left + the AttributionControl move in JS). Both use a
+       flat 18px bottom (12→18 "up a bit" per on-device review) so they align and sit low.
+       This only aligns because .panel is now position:fixed (see base rule) — as absolute
+       it landed 50px high of the ⓘ on iOS. Tapping the FAB expands the panel (label +
+       Export ⧉ live inside it). */
+    .panel.collapsed {
+      left: auto; right: 12px; bottom: 18px;
+      width: 56px; height: 56px; min-width: 0; padding: 0;
+      max-width: none; max-height: none;
+      border-radius: 50%;
+      background: var(--rust);
+      box-shadow: 0 8px 22px rgba(120,52,18,0.42), 0 0 0 4px rgba(255,253,245,0.55);
+      overflow: hidden;
+    }
+    .panel.collapsed .panel-header { height: 100%; justify-content: center; gap: 0; }
+    .panel.collapsed .panel-header h1,
+    .panel.collapsed #exportAll,
+    .panel.collapsed #panelCollapse { display: none; }
+    .panel.collapsed .panel-fab-pencil { display: grid; place-items: center; color: #fff7e9; }
+    .panel.collapsed .panel-fab-pencil svg { width: 22px; height: 22px; }
+    /* Edit-mode gate (env-driven; the class is set on <html> by the head script).
+       OFF = public viewer: the edit FAB/panel is hidden and the ⓘ attribution
+       reclaims the FAB's reserved width, so the bottom bar reads correctly either way. */
+    html.editor-off .panel { display: none; }
+    html.editor-off { --edit-fab-reserve: 0px; }
+    .panel label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.94rem; }
+    .panel small { display: block; margin-top: 8px; color: #444; }
+    .panel hr { border: 0; border-top: 1px solid #d8d8d8; margin: 10px 0; }
+    .panel-section { border-top: 1px solid #d8d0bd; padding-top: 8px; margin-top: 10px; }
+    .panel-section:first-of-type { margin-top: 8px; }
+    /* Compact chevron-buttons in the right rail. Scoped under .panel so the
+       (0,2,0) class+class specificity beats the generic `.panel button` rule
+       at (0,1,1) without needing !important. Pass 4 dropped 6 !important
+       declarations here by raising specificity instead of overriding. */
+    .panel .section-toggle, .panel .layer-expand, .panel .panel-collapse, .panel .panel-export, .panel .group-chevron { display: inline-grid; place-items: center; width: 28px; height: 24px; margin: 0; padding: 0; border: 1px solid #d8d0bd; border-radius: 6px; background: #fff8e8; color: var(--brown-mid); cursor: pointer; line-height: 1; }
+    .panel .section-toggle:hover, .panel .layer-expand:hover, .panel .panel-collapse:hover, .panel .panel-export:hover, .panel .group-chevron:hover { color: var(--brown-dark); border-color: #c8b8a0; background: var(--cream-hover); }
+    .section-label { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    /* Section header with inline Export / Import per panel section. The chevron
+       stays right-edge; the action buttons sit between label and chevron. Each
+       fires buildSectionPayload / applySectionPayload for its data-section. */
+    .section-header { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 4px; margin: 0 0 6px; }
+    .section-header .section-toggle { grid-column: 3; }
+    .section-header .section-label { grid-column: 1; }
+    .section-action { background: transparent; border: 1px solid #d8d0bd; padding: 1px 6px; font: 700 0.72rem Inter, system-ui, sans-serif; line-height: 1.1; color: var(--brown-mid); cursor: pointer; border-radius: 4px; }
+    .section-action:hover { background: var(--cream-hover); border-color: #c8b8a0; color: var(--brown-dark); }
+    .panel-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #d8d0bd; }
+    .panel-actions.panel-actions-single { grid-template-columns: 1fr; }
+    .panel-actions button { font: 700 0.82rem Inter, system-ui, sans-serif; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--control-border); background: #fff8e8; color: var(--brown-ink); cursor: pointer; }
+    .panel-actions button:hover { background: var(--cream-hover); }
+    .section-chevron { font-size: 1.05rem; line-height: 1; }
+    .panel-section.collapsed .section-content { display: none; }
+    .panel button { font: inherit; padding: 4px 10px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
+    .panel button:hover { background: #ececec; }
+    .panel button[disabled] { opacity: 0.55; filter: saturate(0.7); cursor: not-allowed; }
+    .panel button.active { background: var(--rust); color: #fff; border-color: var(--rust); }
+    .panel select { font: inherit; padding: 3px 5px; border-radius: 6px; border: 1px solid #bbb; }
+    .layer-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; margin: 0 0 4px; padding: 3px 4px 3px 6px; border-radius: 6px; }
+    .layer-row.active { background: #f6edda; color: var(--brown-dark); box-shadow: inset 3px 0 0 0 var(--rust); }
+    .layer-row.active:hover { background: #ecddc5; box-shadow: inset 3px 0 0 0 var(--rust), inset 0 0 0 1px rgba(180,95,67,0.18); }
+    .layer-row.expanded { background: var(--cream-hover); color: var(--brown-dark); }
+    .layer-row label { min-width: 0; margin: 0; cursor: pointer; }
+    .layer-expand { font-size: 1.05rem; }
+    .panel label.tune-visible { margin: 0; white-space: nowrap; }
+    .layer-editor { margin: 0 0 10px 18px; padding: 10px; border-left: 3px solid var(--rust); border-radius: 8px; background: rgba(247,241,226,0.92); }
+    .layer-editor[hidden] { display: none; }
+    .layer-editor-heading { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .layer-editor-heading strong { font-size: 0.9rem; color: var(--brown-ink); }
+    .tune-controls { display: grid; gap: 7px; }
+    /* .tune-control is rendered as a <label>, so `.panel label` (0,1,1) wins
+       over a bare `.tune-control` (0,1,0). Scope to `.panel .tune-control`
+       (0,2,0) so the grid layout, gap, and zero margin land without
+       !important. The [hidden] variant is already (0,2,0) on its own — same
+       specificity, declared later, so display:none still wins when hidden. */
+    .panel .tune-control { display: grid; grid-template-columns: minmax(84px, 1fr) minmax(92px, 1.35fr) 42px; gap: 8px; align-items: center; margin-bottom: 0; }
+    .panel .tune-control[hidden] { display: none; }
+    .tune-label { min-width: 0; overflow-wrap: anywhere; color: var(--brown-ink); font-size: 0.82rem; line-height: 1.15; }
+    .tune-control input[type="range"] { width: 100%; min-width: 0; }
+    .tune-control input[type="color"] { width: 100%; height: 28px; padding: 0; border: 1px solid #bbb; border-radius: 5px; background: #fff; }
+    .tune-control output { text-align: right; font-size: 0.82rem; color: #5c5548; }
+    .tune-band { display: grid; gap: 4px; }
+    .tune-band-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .tune-band-head .tune-label { font-size: 0.82rem; }
+    .tune-band-head output { text-align: right; font-size: 0.82rem; color: #5c5548; white-space: nowrap; }
+    .dual-range { position: relative; height: 24px; }
+    .dual-range .dual-track { position: absolute; top: 10px; left: 0; right: 0; height: 4px; border-radius: 2px; background: var(--cream-border); }
+    .dual-range .dual-fill { position: absolute; top: 10px; height: 4px; border-radius: 2px; background: var(--rust); }
+    .dual-range input[type="range"] { position: absolute; top: 0; left: 0; width: 100%; height: 24px; margin: 0; -webkit-appearance: none; appearance: none; background: none; pointer-events: none; }
+    .dual-range input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: transparent; }
+    .dual-range input[type="range"]::-moz-range-track { height: 4px; background: transparent; }
+    .dual-range input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; pointer-events: auto; margin-top: -5.5px; width: 15px; height: 15px; border-radius: 50%; background: #f7f1e2; border: 2px solid var(--rust); cursor: pointer; }
+    .dual-range input[type="range"]::-moz-range-thumb { pointer-events: auto; box-sizing: border-box; width: 15px; height: 15px; border-radius: 50%; background: #f7f1e2; border: 2px solid var(--rust); cursor: pointer; }
+    .tune-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+    .tune-actions button { margin-right: 0; }
+    .drawer-extra-controls { display: grid; gap: 7px; margin-top: 7px; padding-top: 8px; border-top: 1px solid var(--cream-border); }
+    .drawer-extra-controls[hidden] { display: none; }
+    /* Feature list panel — per-feature visibility under a layer drawer.
+       Drops into #layerEditor when the active layer declares a feature list
+       (buildings, cemeteries, future: POIs, callouts). One row per feature
+       with a visibility checkbox and a click-to-fly target. Grouped lists
+       collapse the bulk row (e.g. "Other buildings in 9-patch") so a 200-row
+       layer stays operable. See brain/tasks/02_edit/poi_editor_v2.md. */
+    .feature-list { display: grid; gap: 6px; margin-bottom: 9px; padding-bottom: 8px; border-bottom: 1px solid var(--cream-border); }
+    .feature-list[hidden] { display: none; }
+    .feature-list-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 0.82rem; color: var(--brown-ink); }
+    .feature-list-heading .feature-list-count { color: var(--brown-soft); font-weight: 400; }
+    .feature-list-group { display: grid; gap: 3px; }
+    .feature-list-group-head { display: grid; grid-template-columns: 22px 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 5px; background: rgba(247,241,226,0.7); font-size: 0.8rem; color: var(--brown-ink); }
+    .feature-list-group-head .group-chevron { width: 22px; height: 22px; font-size: 0.95rem; }
+    .feature-list-group-head .group-name { min-width: 0; overflow-wrap: anywhere; }
+    .feature-list-group-head .group-count { color: var(--brown-soft); font-size: 0.75rem; }
+    .feature-list-rows { display: grid; gap: 2px; padding: 2px 0 4px 22px; }
+    .feature-list-rows[hidden] { display: none; }
+    .feature-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto auto auto auto; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 5px; font-size: 0.82rem; color: var(--brown-ink); }
+    /* Editor POI rows carry a ★ highlight toggle next to the visibility
+       checkbox, so the grid gains an extra 22px slot to its left. */
+    .feature-row.has-highlight { grid-template-columns: 18px 22px minmax(0, 1fr) auto auto auto auto auto; }
+    .feature-row:hover { background: rgba(247,235,200,0.6); }
+    .feature-row .feature-highlight { background: none; border: 0; padding: 0; width: 22px; height: 22px; line-height: 1; cursor: pointer; font-size: 1rem; color: var(--brown-soft); border-radius: 4px; }
+    .feature-row .feature-highlight:hover { background: #f1e6cf; color: var(--brown-dark); }
+    .feature-row .feature-highlight.on { color: var(--rust); }
+    .feature-row .feature-highlight.on:hover { color: #8c3d1f; }
+    .feature-row .feature-name { min-width: 0; overflow-wrap: anywhere; cursor: pointer; }
+    .feature-row .feature-fly { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; }
+    .feature-row .feature-fly:hover { background: #f1e6cf; color: var(--brown-dark); }
+    .feature-row .feature-move { background: none; border: 0; padding: 1px 5px; cursor: grab; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; }
+    .feature-row .feature-move:hover { background: #f1e6cf; color: var(--brown-dark); }
+    .feature-row .feature-move:disabled { cursor: not-allowed; color: var(--brown-soft); opacity: 0.5; }
+    .feature-row .feature-move:disabled:hover { background: transparent; color: var(--brown-soft); }
+    .feature-row .feature-lock { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; }
+    .feature-row .feature-lock:hover { background: #f1e6cf; color: var(--brown-dark); }
+    .feature-row .feature-lock.on { color: var(--rust); }
+    .feature-row .feature-copy { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; }
+    .feature-row .feature-copy:hover { background: #f1e6cf; color: var(--brown-dark); }
+    /* Locked rows: dim the position-affecting controls so the user reads
+       "this is parked." Size slider on brand logos also locks because the
+       size is part of how the logo sits on the cartography. */
+    .feature-row.is-locked .feature-size-control input { opacity: 0.5; pointer-events: none; }
+    .feature-row.is-locked .feature-size-control output { color: var(--brown-soft); }
+    .feature-row .feature-size-control { display: grid; grid-template-columns: 64px 34px; align-items: center; gap: 4px; width: 102px; }
+    .feature-row .feature-size-control input { width: 64px; min-width: 0; }
+    .feature-row .feature-size-control output { font-size: 0.72rem; color: var(--brown-soft); text-align: right; }
+    /* Brand-logo max-size cap footer (item 5): a single global slider +
+       export button under the logo rows. The slider clamps the on-screen
+       logo size at park zoom so zooming out doesn't grow the logo. */
+    .brand-logo-cap { display: grid; gap: 4px; padding: 6px 4px 2px; margin-top: 2px; border-top: 1px dashed var(--cream-border); }
+    .brand-logo-cap-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+    .brand-logo-cap-control { display: grid; grid-template-columns: auto minmax(0, 1fr) 34px; align-items: center; gap: 6px; margin: 0; }
+    .brand-logo-cap-control .brand-logo-cap-label { font-size: 0.74rem; color: var(--brown-mid); white-space: nowrap; }
+    .brand-logo-cap-control input { width: 100%; min-width: 0; }
+    .brand-logo-cap-control output { font-size: 0.72rem; color: var(--brown-soft); text-align: right; }
+    .brand-logo-cap-export { font-size: 0.72rem; padding: 3px 8px; border: 1px solid var(--cream-border); border-radius: 5px; background: #f6efdc; color: var(--brown-dark); cursor: pointer; white-space: nowrap; }
+    .brand-logo-cap-export:hover { background: #efe6cf; }
+    .brand-logo-cap-status { font-size: 0.7rem; color: var(--brown-soft); min-height: 0.9em; }
+    /* Tag input on taggable rows (buildings, drawn POIs). Binds a #tag to the
+       feature so the event-schedule JSON can omit coordinates for that tag.
+       Card: brain/tasks/02_edit/named_feature_tagging.md. */
+    .feature-row .feature-tag { width: 84px; padding: 1px 4px; font-size: 0.74rem; border: 1px solid #c8b88d; border-radius: 4px; background: #fffcef; color: var(--brown-ink); }
+    .feature-row .feature-tag:focus { outline: none; border-color: #8b5f38; background: #fff; }
+    .feature-row .feature-tag.bound { background: #f3e6c4; border-color: #b08a4a; }
+    .feature-row.move-target { background: #f7e3b5; }
+    .feature-row.move-target .feature-move { cursor: grabbing; }
+    /* Inline accordion rows (editorPois). The trailing chevron toggles a
+       full editor block below the row. Tag input and copy button move into
+       that editor, so the row grid trims back to 7 columns:
+       check · ★ · name · 🎯 · ✋ · 🔒 · chevron. Editor block lives in the
+       same .feature-list-rows grid as the rows and spans full width. */
+    .feature-row.has-highlight.has-inline-editor { grid-template-columns: 18px 22px minmax(0, 1fr) auto auto auto auto; }
+    .feature-row .feature-row-expand { background: none; border: 0; padding: 1px 5px; cursor: pointer; color: var(--brown-mid); font-size: 0.78rem; border-radius: 4px; line-height: 1; }
+    .feature-row .feature-row-expand:hover { background: #f1e6cf; color: var(--brown-dark); }
+    .feature-row.editor-open { background: #f6edda; box-shadow: inset 3px 0 0 0 var(--rust); color: var(--brown-dark); }
+    .feature-row.editor-open .feature-row-expand { color: var(--rust); }
+    .feature-row-editor { margin: 2px -22px 6px 0; padding: 10px 12px; border: 1px solid var(--cream-border); border-radius: 8px; background: linear-gradient(180deg, #fffdf5, #f7f0dc); box-shadow: inset 3px 0 0 0 var(--rust); display: grid; gap: 8px; font-size: 0.82rem; color: var(--brown-ink); }
+    .feature-row-editor .editor-head { display: flex; align-items: center; gap: 8px; }
+    .feature-row-editor .editor-title { font: 700 0.92rem Inter, system-ui, sans-serif; color: var(--brown-dark); flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .feature-row-editor .editor-geom-chip { font-size: 0.72rem; padding: 1px 7px; border-radius: 10px; background: var(--moss-soft); color: var(--moss-dark); font-weight: 600; }
+    .feature-row-editor .editor-close { background: none; border: 0; color: var(--brown-mid); font-size: 1rem; cursor: pointer; padding: 0 4px; line-height: 1; }
+    .feature-row-editor .editor-close:hover { color: var(--rust); }
+    .feature-row-editor .editor-grid { display: grid; grid-template-columns: 72px 1fr; gap: 5px 10px; align-items: center; }
+    .feature-row-editor .editor-grid label { color: var(--brown-mid); font-weight: 600; font-size: 0.76rem; }
+    .feature-row-editor .editor-grid input[type="text"],
+    .feature-row-editor .editor-grid select,
+    .feature-row-editor .editor-grid textarea { font: inherit; padding: 3px 6px; border: 1px solid var(--control-border); border-radius: 5px; background: var(--control-bg); width: 100%; color: var(--brown-ink); box-sizing: border-box; }
+    .feature-row-editor .editor-grid textarea { min-height: 40px; resize: vertical; line-height: 1.35; }
+    .feature-row-editor .editor-grid .editor-geom-summary { color: var(--brown-ink); font-size: 0.76rem; font-family: ui-monospace, SFMono-Regular, monospace; }
+    .feature-row-editor .editor-actions { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 6px; border-top: 1px solid var(--cream-border); }
+    .feature-row-editor .editor-action { padding: 3px 8px; border: 1px solid var(--control-border); background: var(--control-bg); color: var(--brown-ink); border-radius: 5px; cursor: pointer; font: 600 0.76rem Inter, system-ui, sans-serif; }
+    .feature-row-editor .editor-action:hover { background: var(--cream-hover); }
+    .feature-row-editor .editor-action.danger { color: var(--rust); border-color: #e7c2ad; margin-left: auto; }
+    .feature-row-editor .editor-action.danger:hover { background: #f1d8c6; }
+    /* Kind glyph in group head (● POI / ▭ Footprint / ╱ Line). */
+    .feature-list-group-head .group-kind-glyph { color: var(--brown-soft); margin-right: 2px; }
+    /* --- Unified editor tree --------------------------------------------
+       The Map editor section's body is:
+         .editor-layer-strip    — the 5 source-layer toggles (Event schedule,
+                                  trailheads, visitor context, brand logos,
+                                  drawn POIs). Compact, single-column.
+         #editorTree            — the bucket tree (Visitor list + Point /
+                                  Line / Polygon / Image / Callout). Each
+                                  bucket wraps existing .feature-list rows.
+         .editor-create-footer  — the create row (category + draw buttons +
+                                  export + clear + status + help). At the
+                                  bottom so the tree leads.
+       Card: brain/tasks/04_event_app/editor_unified_tree.md. */
+    /* Hidden form block hosting the 5 legacy layer-visibility toggles and the
+       three legacy draw buttons. The visible UI for those affordances moved
+       into per-bucket sub-group bulk checkboxes and per-bucket + buttons in
+       V3c (card: brain/tasks/04_event_app/editor_three_buckets_v3c.md). The
+       legacy nodes survive so existing getElementById wiring, preset capture/
+       apply, and MapLibre layer-visibility plumbing keep working unchanged. */
+    #legacyLayerToggles { display: none; }
+    .editor-tree { display: grid; gap: 10px; }
+    .editor-bucket { display: grid; gap: 4px; padding: 4px 0; border-radius: 6px; }
+    .editor-bucket[data-bucket="visitor-list"] { padding: 4px 6px; background: rgba(212, 168, 102, 0.10); border: 1px solid rgba(212, 168, 102, 0.30); }
+    .editor-bucket-head { display: grid; grid-template-columns: 22px 18px minmax(0, 1fr) auto auto; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 5px; background: rgba(247, 241, 226, 0.92); font-size: 0.82rem; color: var(--brown-dark); font-weight: 600; }
+    .editor-bucket[data-bucket="visitor-list"] .editor-bucket-head { background: rgba(212, 168, 102, 0.18); grid-template-columns: 22px 18px minmax(0, 1fr) auto; }
+    .editor-bucket-head .editor-bucket-chevron { background: none; border: 0; cursor: pointer; padding: 0; width: 22px; height: 22px; font-size: 0.95rem; color: var(--brown-soft); }
+    .editor-bucket-head .editor-bucket-chevron:hover { color: var(--brown-dark); }
+    .editor-bucket-head .editor-bucket-glyph { color: var(--brown-soft); margin-right: 2px; }
+    .editor-bucket-head .editor-bucket-label { min-width: 0; overflow-wrap: anywhere; }
+    .editor-bucket-head .editor-bucket-count { color: var(--brown-soft); font-size: 0.75rem; font-weight: 400; }
+    .editor-bucket-body { display: grid; gap: 6px; padding: 2px 0 4px 8px; }
+    .editor-bucket-body[hidden] { display: none; }
+    .editor-bucket-body .feature-list { margin: 0; padding-bottom: 0; border-bottom: 0; }
+    .editor-bucket-body .feature-list-heading { display: none; }
+    /* The bucket head already announces the geometry kind (● Point / ╱ Line /
+       ▭ Polygon), so the inner feature-list-group-head ("● POI 1/1") is just
+       three-deep nesting saying the same thing. The sub-group bulk-checkbox
+       covers the layer-level on/off, and individual row checkboxes cover
+       per-feature visibility; hiding the kind group-head loses no axis. */
+    .editor-bucket-body .feature-list-group-head { display: none; }
+    /* Three nested left-paddings (bucket body + subgroup body + feature-list-
+       rows) used to eat ~64 px of row width inside an editor bucket, which
+       crushed the brand-logo row's name column to one character wide. Zero
+       the innermost padding so the row gets its full width back. */
+    .editor-bucket-body .feature-list-rows { padding-left: 0; }
+    .editor-bucket-empty { font-size: 0.78rem; color: var(--brown-soft); font-style: italic; padding: 2px 0; }
+    /* V3c: bucket-head + button. Click expands an inline create row inside the
+       bucket body, calls setDrawMode for that bucket's geometry kind, and
+       echoes an active state (rust fill). */
+    .editor-bucket-head .editor-bucket-add { background: var(--moss-soft); border: 1px solid var(--moss); color: var(--moss-dark); cursor: pointer; padding: 0; width: 22px; height: 22px; border-radius: 5px; font: 700 0.95rem Inter, system-ui, sans-serif; line-height: 1; }
+    .editor-bucket-head .editor-bucket-add:hover { background: var(--moss); color: #f7f1e2; }
+    .editor-bucket-head .editor-bucket-add.active { background: var(--rust); border-color: var(--rust); color: #fff7e8; box-shadow: 0 0 0 2px rgba(168, 80, 32, 0.18); }
+    /* V3c: per-bucket inline create row. Lives at the top of the bucket body
+       while the + is active; carries a bucket-scoped category select + the
+       matching primary action (Place / Draw / Trace) + cancel ✕. */
+    .editor-create-inline { background: linear-gradient(180deg, #fff8e2, #fff3cc); border: 1px solid #d4a866; border-radius: 6px; padding: 8px; display: grid; gap: 6px; margin: 0 0 6px; }
+    .editor-create-inline .editor-create-label-row { display: flex; align-items: center; gap: 6px; font: 700 0.78rem Inter, system-ui, sans-serif; color: var(--brown-dark); }
+    .editor-create-inline .editor-create-glyph { color: var(--brown-soft); }
+    .editor-create-inline .editor-create-cancel { margin-left: auto; background: none; border: 0; color: var(--brown-mid); cursor: pointer; font-size: 0.92rem; padding: 0 4px; }
+    .editor-create-inline .editor-create-control-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+    .editor-create-inline .editor-create-control-row .editor-create-category-label { font-size: 0.76rem; color: var(--brown-mid); }
+    .editor-create-inline select { padding: 5px 6px; font: inherit; border: 1px solid var(--control-border); border-radius: 5px; background: var(--control-bg); min-width: 0; }
+    .editor-create-inline .editor-create-start { padding: 5px 10px; font: 700 0.82rem Inter, system-ui, sans-serif; border: 1px solid var(--moss); background: var(--moss); color: #f7f1e2; border-radius: 6px; cursor: pointer; }
+    .editor-create-inline .editor-create-start:hover { background: var(--moss-dark); }
+    .editor-create-inline .editor-create-start.active { background: var(--rust); border-color: var(--rust); }
+    .editor-create-inline small { color: var(--brown-mid); font-size: 0.72rem; line-height: 1.35; }
+    /* V3c: source sub-group inside a bucket body. Head carries a chevron, a
+       bulk-vis checkbox (two-way bridged to the hidden legacy layer toggle),
+       a source dot, the source label, and the count. Drawn = open default;
+       reference sources = collapsed default. */
+    .editor-subgroup { border-radius: 6px; }
+    .editor-subgroup-head { display: grid; grid-template-columns: 18px 16px 10px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 3px 4px; font-size: 0.78rem; color: var(--brown-mid); background: #f6efdc; border-radius: 5px; }
+    .editor-subgroup-head .editor-subgroup-chev { background: none; border: 0; padding: 0; width: 18px; height: 18px; font-size: 0.82rem; color: var(--brown-soft); cursor: pointer; }
+    .editor-subgroup-head .editor-subgroup-chev:hover { color: var(--brown-dark); }
+    .editor-subgroup-head .editor-subgroup-bulk { margin: 0; }
+    .editor-subgroup-head .editor-subgroup-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; justify-self: center; }
+    .editor-subgroup-head .editor-subgroup-dot.drawn { background: var(--rust); }
+    .editor-subgroup-head .editor-subgroup-dot.trailhead { background: #4f76a4; }
+    .editor-subgroup-head .editor-subgroup-dot.brand { background: #d4a866; }
+    .editor-subgroup-head .editor-subgroup-dot.visitor { background: #b35c93; }
+    .editor-subgroup-head .editor-subgroup-label { font-weight: 600; color: var(--brown-dark); cursor: pointer; }
+    .editor-subgroup-head .editor-subgroup-count { color: var(--brown-soft); font-size: 0.72rem; }
+    .editor-subgroup.collapsed .editor-subgroup-body { display: none; }
+    /* The chev's glyph itself is the orientation cue (▾ when expanded, ▸ when
+       collapsed — same JS toggle as the bucket chevrons). Don't rotate the
+       glyph on top of that or it ends up pointing up instead of right. */
+    .editor-subgroup.collapsed .editor-subgroup-head { opacity: 0.82; }
+    .editor-subgroup-body { display: grid; gap: 4px; padding: 4px 4px 4px 8px; }
+    /* The Drawn POIs sub-group is the bucket's primary content — the bucket
+       head already announces it ("● Point" / "╱ Line" / "▭ Polygon" with the
+       + button right there). A second "● Drawn POIs" head bar below the
+       bucket head was a near-clone (chevron + checkbox + dot + label + count),
+       so render Drawn rows flush in the bucket body and drop the "No items
+       yet" placeholder for empty Drawn (the bucket's + button is the action).
+       Reference sub-groups (Trailheads / Brand logos / Visitor context) keep
+       their full heads since they're a real second axis. */
+    .editor-subgroup[data-source="drawn"] > .editor-subgroup-head { display: none; }
+    .editor-subgroup[data-source="drawn"] > .editor-subgroup-body { padding: 0; }
+    .editor-subgroup[data-source="drawn"] > .editor-subgroup-body > .editor-bucket-empty { display: none; }
+    .editor-visitor-list-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 5px; cursor: pointer; }
+    .editor-visitor-list-row:hover { background: rgba(247, 241, 226, 0.8); }
+    .editor-visitor-list-row .vrow-name { font-size: 0.82rem; color: var(--brown-dark); overflow-wrap: anywhere; min-width: 0; }
+    .editor-visitor-list-row .vrow-chip { font-size: 0.70rem; padding: 1px 6px; border-radius: 9px; background: var(--moss-soft); color: var(--moss-dark); font-weight: 600; white-space: nowrap; }
+    .editor-visitor-list-row .vrow-fly, .editor-visitor-list-row .vrow-star { background: none; border: 0; padding: 0; cursor: pointer; font-size: 0.95rem; color: var(--brown-soft); }
+    .editor-visitor-list-row .vrow-star.on { color: var(--rust); }
+    .editor-visitor-list-row .vrow-fly:hover, .editor-visitor-list-row .vrow-star:hover { color: var(--brown-dark); }
+    .editor-create-footer { display: grid; gap: 4px; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--cream-border); }
+    /* Map-click → panel-reveal flash. A row that was just selected from the
+       map briefly glows so the eye finds it even on a long list. The class
+       is added by revealFeatureInPanel and removed ~1.8 s later. */
+    .feature-row.revealed { animation: feature-row-flash 1.8s ease; }
+    @keyframes feature-row-flash {
+      0% { background: #f7d36b; box-shadow: inset 0 0 0 2px #c8a463; }
+      80% { background: #f7d36b; box-shadow: inset 0 0 0 2px #c8a463; }
+      100% { background: transparent; box-shadow: none; }
+    }
+    /* Move-mode banner pinned to the top of the feature list panel while a
+       feature is staged for repositioning. Keeps the "click the map to place"
+       affordance visible no matter how long the list is. */
+    .feature-list-move-banner { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 6px; background: #f7e3b5; border: 1px solid #c8a463; color: var(--brown-ink); font-size: 0.82rem; }
+    .feature-list-move-banner .move-cancel { background: #fff8e8; border: 1px solid var(--control-border); padding: 2px 8px; border-radius: 5px; cursor: pointer; font-size: 0.78rem; color: var(--brown-ink); }
+    .feature-list-move-banner .move-cancel:hover { background: var(--cream-hover); }
+    #presetStatus { min-height: 1.2em; }
+    .editor-row { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; }
+    .editor-row button { flex: 1; margin-right: 0; }
+    .session-tools { display: grid; gap: 8px; }
+    .session-tools-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .session-tools-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+    .session-tools-wide { grid-column: 1 / -1; }
+    .session-tools input { min-width: 0; width: 100%; box-sizing: border-box; padding: 4px 6px; border: 1px solid var(--control-border); border-radius: 6px; background: var(--control-bg); color: var(--brown-ink); font: inherit; }
+    .session-clock-status { display: inline-flex; align-items: center; min-height: 22px; padding: 2px 7px; border: 1px solid var(--cream-border); border-radius: 5px; background: rgba(247, 241, 226, 0.78); color: var(--brown-soft); font: 700 0.72rem Inter, system-ui, sans-serif; }
+    .session-clock-status[data-clock-active="true"] { background: #ecd9b1; border-color: rgba(85, 67, 44, 0.35); color: var(--brown-dark); }
+    .comparisons-list { display: grid; gap: 4px; }
+    .comparisons-list a { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border: 1px solid var(--cream-border); border-radius: 6px; background: var(--control-bg); color: var(--brown-ink); font-size: 0.82rem; text-decoration: none; }
+    .comparisons-list a:hover { border-color: var(--rust); color: var(--rust); }
+    .comparisons-list .cmp-label { flex: 1 1 auto; min-width: 0; }
+    .comparisons-list .cmp-status { flex: 0 0 auto; font: 700 0.66rem Inter, system-ui, sans-serif; letter-spacing: 0.02em; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+    /* applied = the winning variant is live in index.html; open = still the user's pick */
+    .comparisons-list .cmp-applied { background: rgba(56, 72, 51, 0.16); color: var(--moss-dark); border: 1px solid rgba(56, 72, 51, 0.4); }
+    .comparisons-list .cmp-open { background: rgba(168, 80, 32, 0.12); color: var(--rust); border: 1px solid rgba(168, 80, 32, 0.4); }
+    .poi-popup input { font: inherit; width: 100%; box-sizing: border-box; margin: 6px 0; padding: 3px 5px; }
+    .poi-popup button { font: inherit; padding: 3px 9px; margin-right: 6px; border-radius: 6px; border: 1px solid #bbb; background: #f6f6f6; cursor: pointer; }
+    .message { display: none; } /* V5: publish-count status dropped on every width */
+    .search { position: relative; margin-bottom: 10px; }
+    .left-controls .search { margin-bottom: 0; width: 100%; }
+    .search input { width: 100%; box-sizing: border-box; padding: 8px 10px 8px 32px; font: inherit; border: 1px solid var(--control-border); border-radius: 7px; background: var(--control-bg); color: var(--brown-ink); }
+    .search input:focus { outline: 2px solid var(--moss-dark); border-color: var(--moss); }
+    .search-icon { position: absolute; left: 10px; top: 50%; width: 15px; height: 15px; transform: translateY(-50%); color: var(--brown-soft); pointer-events: none; z-index: 1; }
+    /* Item 1 (misc_3.md): position fixed escapes the .lr-content-col
+       overflow:hidden clip so the dropdown stays visible regardless of how
+       many left-rail cards are expanded. JS sets left/top/width to match
+       the input below. */
+    .search-results { position: fixed; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 240px; overflow-y: auto; display: none; z-index: 1000; }
+    .search-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 6px 9px; cursor: pointer; font-size: 0.9rem; }
+    .search-item:hover, .search-item.active { background: #e8dcc3; }
+    .search-kind { color: #888; font-size: 0.78rem; flex: none; padding-top: 1px; }
+    /* Slice 3: a catalogued trail row stacks its number/name over a muted,
+       one-line description. .search-result-text is the vertical column so the
+       label and desc share the left side while .search-kind stays top-right. */
+    .search-result-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
+    .search-result-label { font-size: 0.9rem; color: var(--brown-ink); }
+    .search-result-desc { font-size: 0.74rem; line-height: 1.25; color: var(--brown-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .search-empty { padding: 6px 9px; color: #999; font-size: 0.88rem; }
+    .calendar-card { display: block; padding: 0; overflow: hidden; }
+    .left-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 8px; border-bottom: 0; background: transparent; }
+    .left-tab { min-width: 0; min-height: 32px; margin: 0; padding: 5px 4px; border: 1px solid var(--cream-border); border-radius: 6px; background: rgba(255,248,232,0.88); color: var(--brown-mid); cursor: pointer; font: 800 0.76rem Inter, system-ui, sans-serif; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: inset 0 -1px 0 rgba(46,36,24,0.06); }
+    .left-tab:hover { background: var(--cream-hover); border-color: var(--control-border); color: var(--brown-dark); }
+    .left-tab[aria-selected="true"] { background: var(--rust); border-color: #8b431b; color: var(--control-bg); box-shadow: inset 0 -2px 0 rgba(46,36,24,0.28); }
+    .left-tab-panel[hidden] { display: none; }
+    /* Panels stack naturally; the active one displays, others use the generic
+       [hidden] rule. misc_4.md item 11: the calendar heading now scrolls
+       INSIDE #calendarBody (the shared --lr-card-body-height scroll box), so
+       the Events / POI / About panels are all the same height — the prior
+       ~62 px Events-vs-POI/About shift (from the pinned .calendar-heading) is
+       gone. Each panel = one fixed-height scroll body + one resize handle. */
+    .left-tab-panels { display: block; }
+    /* POI tab — left-rail browseable directory of places. Mirrors the
+       feature-list-group convention from the right panel so the two
+       inventories read the same. Card: brain/tasks/03_event_app/left_panel_poi_browser.md.
+       Visitor copy + placeholder revisit notes are sourced from
+       website/data/aop_poi_index.json. */
+    .poi-list { height: var(--lr-card-body-height, 240px); overflow-y: auto; padding: 8px 8px 10px; display: grid; gap: 8px; align-content: start; }
+    .poi-list-group { display: grid; gap: 3px; }
+    .poi-list-group-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 3px 4px 2px; border-bottom: 1px solid var(--cream-border); font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; color: var(--brown-mid); }
+    .poi-list-group-count { color: var(--brown-soft); font: 700 0.72rem Inter, system-ui, sans-serif; text-transform: none; letter-spacing: 0; }
+    .poi-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; margin: 0; padding: 7px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--brown-ink); cursor: pointer; text-align: left; font: inherit; }
+    .poi-row:hover, .poi-row:focus-visible { background: var(--cream-hover); border-color: var(--cream-border); outline: none; }
+    .poi-row-name { font: 700 0.88rem Inter, system-ui, sans-serif; line-height: 1.2; overflow-wrap: anywhere; }
+    .poi-row-subtitle { margin-top: 2px; font-size: 0.78rem; line-height: 1.3; color: var(--brown-soft); overflow-wrap: anywhere; }
+    .poi-row-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; font: 600 0.66rem Inter, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.03em; color: var(--brown-soft); }
+    .poi-row-meta span { padding: 1px 5px; background: rgba(247, 241, 226, 0.7); border: 1px solid var(--cream-border); border-radius: 4px; }
+    .poi-row-meta .poi-placeholder-chip { background: #ecd9b1; color: var(--brown-dark); border-color: rgba(85, 67, 44, 0.35); }
+    .poi-empty { padding: 14px 10px; font-size: 0.86rem; line-height: 1.35; color: var(--brown-soft); text-align: center; }
+    .poi-tab-popup .poi-popup-title { margin: 0 0 4px; font: 800 0.92rem Inter, system-ui, sans-serif; line-height: 1.2; color: var(--brown-ink); }
+    .poi-tab-popup .poi-popup-subtitle { margin: 0 0 6px; font-size: 0.82rem; line-height: 1.3; color: var(--brown-ink); }
+    .poi-tab-popup .poi-popup-placeholder { margin: 0 0 6px; padding: 6px 7px; border-radius: 5px; background: #ecd9b1; color: var(--brown-dark); font-size: 0.78rem; line-height: 1.3; }
+    .poi-tab-popup .poi-popup-meta { margin: 0; padding: 0; font-size: 0.74rem; color: var(--brown-soft); }
+    .poi-tab-popup .poi-popup-meta dt { display: inline; font-weight: 700; }
+    .poi-tab-popup .poi-popup-meta dd { display: inline; margin: 0 8px 0 4px; }
+    .poi-tab-popup .poi-popup-meta dt::before { content: ""; display: block; }
+    .left-controls button:focus-visible, .calendar-row:focus-visible, .lr-resize-handle:focus-visible, .search input:focus-visible { outline: 2px solid var(--moss-dark); outline-offset: 2px; }
+    .calendar-heading { width: 100%; display: block; margin: 0; padding: 8px 10px; border: 0; background: transparent; color: var(--brown-ink); text-align: left; }
+    .calendar-title { display: block; font: 800 0.78rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+    .calendar-range { display: block; margin-top: 1px; font-size: 0.76rem; color: var(--brown-soft); }
+    .calendar-body { height: var(--lr-card-body-height, 240px); overflow-y: auto; padding: 0; opacity: 1; scrollbar-gutter: stable; }
+    .calendar-days { list-style: none; display: grid; gap: 0; margin: 0; padding: 0; }
+    .calendar-days li { margin: 0; padding: 0; border-top: 1px solid var(--cream-border); color: var(--brown-ink); }
+    .calendar-row { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 8px; margin: 0; padding: 7px 10px; border: 0; border-radius: 0; background: transparent; color: var(--brown-ink); cursor: pointer; text-align: left; }
+    .calendar-row:hover, .calendar-row.active { background: var(--cream-hover); }
+    .calendar-day { padding-top: 2px; font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; color: var(--brown-mid); }
+    .calendar-time { display: block; min-width: 0; font: 700 0.74rem Inter, system-ui, sans-serif; line-height: 1.15; color: var(--brown-soft); overflow-wrap: anywhere; }
+    .calendar-name { display: block; margin-top: 1px; font-size: 0.88rem; line-height: 1.18; overflow-wrap: anywhere; }
+    .calendar-location { display: block; margin-top: 2px; font-size: 0.74rem; line-height: 1.15; color: var(--brown-soft); overflow-wrap: anywhere; }
+    .calendar-empty { padding: 8px; font-size: 0.86rem; color: var(--brown-soft); }
+    /* Variation B4-info: badges carry timing info; structure identical to B4. */
+    .calendar-days li[data-session-state] { position: relative; }
+    .calendar-days li[data-session-state="happening"] { background: #dde2cf; box-shadow: inset 3px 0 0 0 var(--rust); }
+    .calendar-days li[data-session-state="upcoming_next"] { background: #ecd9b1; box-shadow: inset 3px 0 0 0 var(--brown-dark); }
+    .calendar-days li[data-session-state="past"] { opacity: 0.5; }
+    .calendar-days li[data-session-state="happening"] .calendar-name { font-weight: 700; }
+    .calendar-days li[data-session-state="upcoming_next"] .calendar-name { font-weight: 400; }
+    .cal-live-badge, .cal-soon-badge { position: absolute; top: 8px; right: 8px; padding: 1px 6px; border-radius: 3px;
+      font: 700 10px Inter, system-ui, sans-serif; text-transform: uppercase;
+      color: #f7f1e2; white-space: nowrap; pointer-events: none; }
+    .cal-live-badge { background: var(--rust); }
+    /* Next-event chip (N1 close-mode): rust outline on a transparent surface,
+       tabular numerals, lowercase "in 47m". Replaces the prior filled NEXT pill. */
+    .cal-soon-badge { top: 7px; padding: 0 5px; background: transparent;
+      border: 1px solid var(--rust); color: var(--rust);
+      font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+      text-transform: lowercase; }
+    /* Gates-open ticker (G2): slim hairline tier, no fill, rust live-dot
+       before the value, tabular scoreboard digits. */
+    .calendar-countdown { display: flex; align-items: baseline; justify-content: space-between;
+      gap: 8px; margin: 0; padding: 5px 10px; border-radius: 0;
+      background: rgba(250, 246, 235, 0.3); color: var(--brown-dark);
+      border-bottom: 0; box-shadow: none; }
+    .calendar-countdown[hidden] { display: none; }
+    .calendar-countdown-label { font: 800 0.66rem Inter, system-ui, sans-serif;
+      text-transform: uppercase; letter-spacing: 0.04em; color: var(--brown-mid); }
+    .calendar-countdown-value { position: relative; padding-left: 12px;
+      font: 800 1.02rem Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums;
+      color: var(--brown-dark); }
+    .calendar-countdown-value::before { content: ""; position: absolute;
+      left: 0; top: 50%; transform: translateY(-50%);
+      width: 4px; height: 4px; border-radius: 50%; background: var(--rust); }
+    /* Shared resize handle for Events / POI / About card bodies. Sits as a
+       sibling at the bottom of each tab panel — outside the scrollable body —
+       so the affordance is always visible regardless of content height. All
+       three handles drive the same --lr-card-body-height var on
+       .lr-content-col, so card heights stay consistent across tab switches.
+       No min/max — drag to 0 collapses. */
+    .lr-resize-handle { position: relative; width: 100%; height: 13px; margin: 0; border: 0; border-top: 1px solid var(--cream-border); background: linear-gradient(180deg, rgba(250,246,235,0.92), rgba(239,226,198,0.96)); cursor: ns-resize; touch-action: none; }
+    .lr-resize-handle::before { content: ""; position: absolute; left: 50%; top: 50%; width: 36px; height: 4px; transform: translate(-50%, -50%); border-top: 1px solid rgba(78,65,40,0.48); border-bottom: 1px solid rgba(78,65,40,0.34); }
+    .lr-resize-handle:active { background: var(--cream-hover); }
+    .info-panel { height: var(--lr-card-body-height, 240px); overflow-y: auto; padding: 10px; border-top: 1px solid rgba(216,205,180,0.78); color: var(--brown-ink); }
+    .info-panel h2 { margin: 0 0 6px; font-size: 0.95rem; line-height: 1.15; }
+    .info-copy { margin: 0 0 9px; font-size: 0.86rem; line-height: 1.36; }
+    .info-list { list-style: none; display: grid; gap: 6px; margin: 0; padding: 0; }
+    .info-list li { display: grid; gap: 2px; padding-top: 6px; border-top: 1px solid rgba(216,205,180,0.78); font-size: 0.82rem; line-height: 1.28; }
+    .info-label { font-weight: 800; color: var(--moss-dark); }
+    .info-note { margin: 10px 0 0; padding-top: 7px; border-top: 1px solid rgba(216,205,180,0.78); font-size: 0.78rem; line-height: 1.3; color: var(--brown-soft); }
+    /* Two-lane hot control: Event and Trails are separate actions so schedule
+       users and trail-heat users do not fight one fallback button. Card:
+       brain/tasks/02_edit/hot_control_two_lane.md. */
+    .hot-control { display: grid; gap: 6px; padding: 8px; }
+    .hot-control[hidden] { display: none; }
+    .hot-control-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 2px;
+      color: var(--brown-ink); }
+    .hot-control-title { font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+    .hot-control-status { min-width: 0; font: 600 0.68rem Inter, system-ui, sans-serif; color: var(--brown-soft);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hot-lanes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .hot-lanes[data-lane-count="1"] { grid-template-columns: minmax(0, 1fr); }
+    .hot-button { width: 100%; min-height: 64px; display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 7px;
+      margin: 0; padding: 8px 9px; border: 1px solid rgba(85, 67, 44, 0.25); border-radius: 8px; background: var(--brown-mid);
+      color: #f7f1e2; cursor: pointer; text-align: left; font: 700 0.74rem Inter, system-ui, sans-serif;
+      text-transform: uppercase; }
+    .hot-button[hidden] { display: none; }
+    .hot-button:hover:not(:disabled) { filter: brightness(1.06); }
+    .hot-button:disabled { cursor: default; opacity: 0.55; filter: saturate(0.7); }
+    .hot-button[data-hot-state="hot-now"] { background: var(--rust); }
+    .hot-button[data-hot-state="coming-up"] { background: var(--brown-dark); }
+    .hot-button[data-hot-state="trail-hot"] { background: var(--moss); }
+    .hot-button[data-hot-selected="true"] { box-shadow: 0 0 0 2px rgba(247, 241, 226, 0.82), 0 0 0 4px rgba(42, 33, 22, 0.16); }
+    .hot-button[data-hot-priority="alert"][data-hot-selected="false"] { box-shadow: 0 0 0 2px rgba(191, 90, 54, 0.4); }
+    /* Item 14: a clear ON state for the Trail-activity toggle, distinct from the
+       data-hot-selected "recommended lane" halo. data-hot-on="true" means the
+       activity-hotspot layer is actually rendered, so the button reads as a
+       pressed/active toggle (brighter moss + inset ring) and shows a check glyph. */
+    .hot-button[data-hot-lane="trails"][data-hot-on="true"] { background: var(--moss-dark, #4e6a34);
+      box-shadow: inset 0 0 0 2px rgba(247, 241, 226, 0.92), 0 0 0 2px rgba(78, 106, 52, 0.5); }
+    .hot-button[data-hot-lane="trails"][data-hot-on="true"] .hot-button-glyph { color: #eaf3d6; }
+    .hot-button-glyph { display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; font-size: 1.1rem; line-height: 1; }
+    .hot-button-text { display: block; min-width: 0; }
+    .hot-button-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hot-button-detail { display: block; margin-top: 1px; font: 400 0.72rem Inter, system-ui, sans-serif;
+      text-transform: none; letter-spacing: 0; color: rgba(247, 241, 226, 0.88); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .align-handle { background: #ff3366; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #000, 0 2px 6px rgba(0,0,0,0.4); cursor: grab; }
+    .align-handle:active { cursor: grabbing; filter: brightness(1.15); }
+    .align-handle-corner { width: 18px; height: 18px; background: #ff3366; }
+    .align-handle-edge { width: 13px; height: 13px; background: #ff9500; }
+    .align-handle-interior { width: 11px; height: 11px; background: #ffd400; }
+    .align-handle::after { content: attr(data-label); position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none; }
+    @media (max-width: 760px) {
+      .left-controls { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); top: calc(8px + var(--sa-top)); width: auto; max-width: none; gap: 6px; }
+      .search-shell { padding: 4px; }
+      .pill-bar { gap: 6px; }
+      .pill-bar .pill > button { min-height: 32px; padding: 4px 6px; }
+      .pill-bar .pill > button svg { width: 22px; height: 22px; }
+      .left-tabs { padding: 4px; }
+      .left-tab { min-height: 30px; font-size: 0.74rem; }
+      .lr-content-col { --lr-card-body-height: 160px; }
+      .info-panel { padding: 9px; }
+      .hot-button { min-height: 54px; padding: 7px 8px; }
+      /* Expanded edit panel fills the bottom on narrow viewports. The collapsed
+         FAB + the ⓘ attribution baseline are universal now — see base styles. */
+      .panel { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); top: auto; bottom: calc(8px + var(--sa-bottom)); width: auto; max-width: none; max-height: clamp(220px, calc(100vh - 360px - var(--sa-top) - var(--sa-bottom)), 420px); }
+    }
+    @media (min-width: 1024px) {
+      .left-controls { width: 360px; }
+      .lr-content-col { --lr-card-body-height: min(42vh, 360px); }
+    }
+
+/* ===== PWA UI lock — was <style id="pwa-ui-lock"> at end of <body> ===== */
+    /* PWA hardening: UI controls are controls — they must never page-scroll,
+       page-zoom, rubber-band, text-select, or pop the iOS long-press callout.
+       Map pan/zoom gestures still live on the MapLibre canvas, which sets its
+       own touch-action. Scoped to chrome (not .panel-body) so the edit panel's
+       text inputs keep normal selection. */
+    html, body { overscroll-behavior: none; }
+    .left-controls, .left-controls *,
+    .panel-header, .panel-header *,
+    button, .maplibregl-ctrl, .maplibregl-ctrl * {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    button,
+    .left-controls, .panel,
+    .maplibregl-ctrl, .maplibregl-ctrl * {
+      touch-action: manipulation;
+    }

@@ -22,3 +22,5 @@ Read order:
 2. `02_triangulation.md`
 3. `03_andon.md`
 4. `04_thin_vertical_slices.md`
+
+`progressive_disclosure_spec.md` sits outside that order -- it's a meta doc about the shape of the brain itself (docs-as-spec, the inverted-pyramid + progressive-disclosure pattern), written portable for an L&L. Read it when you're thinking about the brain, not the map.

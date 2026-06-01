@@ -1,10 +1,88 @@
 # Viewer Source Split — plan (no build step)
 
-Status: **PLANNING ONLY — no code written.** Authored 2026-06-01. A second
-agent was actively editing `website/index.html` when this was planned, so every
-line number below is **approximate and will drift** — seams are named by their
-banner-comment text and nearest stable symbol, not by line. **Execution is gated
-on the file going quiescent** (see Execution order, gate 0).
+Status: **Stage 1 SHIPPED + verified (2026-06-01). Stage 2 (JS subdivision)
+BLOCKED on a user decision — the planned ES-module path is unsafe here (see
+"What shipped" + "Discoveries").** Authored 2026-06-01; line numbers below were
+approximate-at-planning and have since drifted (index.html is now ~673 lines).
+
+-----
+
+## What shipped — Stage 1 (CSS + JS extraction), 2026-06-01
+
+The monolith is split into HTML + CSS + JS, served as-is, **no build step / no
+package manager**. Verified at full parity (see Discoveries for the one change
+to the chosen approach).
+
+- **`website/css/app.css`** (867 lines) — both former `<style>` blocks (main +
+  `#pwa-ui-lock`) moved **verbatim**, linked from `<head>` after the vendor CSS.
+- **`website/js/main.js`** (9,770 lines) — the entire main script moved
+  **verbatim**, loaded as a **classic** `<script src="./js/main.js">` (NOT a
+  module — see Discoveries). `node --check` clean.
+- **`website/index.html`: 11,299 → 673 lines** (markup + `<head>` + the 3 tail
+  IIFEs only). The collision-magnet is gone: CSS / JS / markup now live in
+  separate files.
+- **`sw.js`**: `VERSION` v25 → v26; `./css/app.css` + `./js/main.js` added to
+  `SHELL_ASSETS` (precache) and routed through **stale-while-revalidate** against
+  the shell cache (same self-heal guarantee as the HTML shell — they fall through
+  to network-only otherwise). `#appVersion` → v26.
+- **Verifier touch:** `playwright_verify_code_review_groupb.py` version-pin
+  `aop-data-v25` → `v26` (a version-bump-tied edit, not a behavior change).
+
+**Verification (verify_by_observation):** full 27-suite run, **18 PASS / 9 FAIL,
+zero new failures**. Every FAIL was proven pre-existing by serving the original
+git-HEAD `index.html` on a second port (8011) and reproducing each identically:
+satellite (stale title), feature_list (publishable export), event_schedule
+(trail-lane fallback), presets (canvas-intercept + 3 assertions), pwa_qa2 (stale
+`v18` assertion → now reads v26), brand_logos (empty feature-list open),
+code_review_fixes (headless GPU `fragment shader` + calendar click timeout),
+geolocate (canvas-intercept click timeout), sfwda_trace (marker layers removed at
+v21). `code_review_groupb` PASSED at v26 — confirms the SW installs + activates
+with the new shell files precached. 0 console errors across all passing suites.
+
+## Discoveries (why the plan changed)
+
+1. **ES modules (Option C) break the verifier harness.** ~20 verifiers reach app
+   internals as **bare globals** — e.g. `page.evaluate("window.map = map")` reads
+   the global `map`, and the harness also touches `tagToFeature`,
+   `eventLocationByTag`, `__tdCount`, `setFeatureTag`, `refreshHotButton`, etc.
+   A module hides all top-level bindings in module scope → `page.evaluate` can't
+   see them → the hooks throw and every map-touching verifier fails (observed:
+   `visibility=None`, tracebacks, **with the app itself error-free** — the failure
+   is in the test hook, not the code). So the verbatim extraction had to be a
+   **classic** external script, and full module conversion would mean rewriting
+   the safety net at the same time as the code.
+2. **`main.js` interleaves top-level execution with declarations and relies on
+   whole-file function hoisting** (a top-level call at ~line 2818 resolves a
+   `function` declared at ~line 8000). Separate classic `<script>` files do NOT
+   share hoisting, so a naive cut-at-the-seams split throws `X is not defined` at
+   load. A safe classic carve needs the bootstrap restructured (all declarations
+   before all execution, or explicit load ordering) — a real refactor, not a cut.
+
+## Stage 2 — the open fork (was: "carve into ES modules")
+
+**DECISION (2026-06-01): user chose (a) — stop at Stage 1.** The monolith split
+solved the stated problem; `main.js` stays one isolated file. (b) and (c) are
+kept below as future options if JS sub-navigation is ever wanted.
+
+Pick one:
+- **(a) Stop at Stage 1.** The stated problem ("file too big / split it up") is
+  solved — index.html is 673 lines, concerns separated, no build step. `main.js`
+  stays one (large but isolated) file. Lowest risk. **Recommended unless the JS
+  itself needs sub-navigation.**
+- **(b) Classic multi-file carve (Option A).** Split `main.js` into ordered
+  classic `<script src>` files (js/constants, js/map, js/poi, js/editor,
+  js/calendar, js/hot, js/draw, js/search …). Preserves bare globals → harness
+  stays usable. Cost: restructure the bootstrap so no cross-file top-level
+  forward-reference; go seam-by-seam with a full verifier run after each. No
+  build step, no module scope.
+- **(c) ES modules (Option C) + harness migration.** True encapsulation, but
+  requires exposing a deliberate `window` test-surface AND rewriting the
+  `page.evaluate("window.map = map")`-style hooks across ~20 verifiers — i.e.
+  changing the safety net and the code together. Highest risk/effort.
+
+Original planning notes (pre-Stage-1) follow below for reference.
+
+-----
 
 Goal: break the one ~11.3k-line `website/index.html` into a navigable,
 multi-editable set of files **without adding a build step or package manager** —

@@ -32,7 +32,7 @@
 //   3. reconcile DATA_ASSETS below with `ls website/data/`
 // Shell HTML + copy JSON self-heal (stale-while-revalidate), so a missed bump is
 // less dangerous than before — but bulky GeoJSON only refreshes on a bump.
-const VERSION = 'v25'; // keep in sync with #appVersion in index.html
+const VERSION = 'v26'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
@@ -48,6 +48,11 @@ const SHELL_ASSETS = [
   './vendor/maplibre-gl.js',
   './vendor/terra-draw.umd.js',
   './vendor/terra-draw-maplibre-gl-adapter.umd.js',
+  // App shell code, split out of index.html (viewer_source_split). Served
+  // stale-while-revalidate (see fetch handler) so a missed VERSION bump still
+  // self-heals like the HTML shell; precached here for offline-first load.
+  './css/app.css',
+  './js/main.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
@@ -227,6 +232,13 @@ self.addEventListener('fetch', (event) => {
       return;
     }
     if (url.pathname.endsWith('.html')) {
+      event.respondWith(staleWhileRevalidate(request, SHELL_CACHE));
+      return;
+    }
+    // App shell code split out of index.html (./css/, ./js/). Stale-while-
+    // revalidate like the HTML shell so edits reach installed users on the next
+    // reload even if a VERSION bump is missed; precached in SHELL_ASSETS too.
+    if (url.pathname.includes('/css/') || url.pathname.includes('/js/')) {
       event.respondWith(staleWhileRevalidate(request, SHELL_CACHE));
       return;
     }

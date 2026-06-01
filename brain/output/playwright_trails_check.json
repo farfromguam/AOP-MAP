@@ -5,7 +5,7 @@
     {
       "id": "publish-trails",
       "present": true,
-      "visibility": "visible"
+      "visibility": "none"
     },
     {
       "id": "publish-boundaries",
@@ -23,7 +23,7 @@
       "visibility": "visible"
     }
   ],
-  "trails_rendered": 2,
+  "trails_rendered": 0,
   "boundaries_rendered": 2,
   "trailheads_rendered": 0,
   "console_errors": []

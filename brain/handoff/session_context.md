@@ -22,18 +22,27 @@ publishable/source-section ones, 1 "Topo restyles index contours" never previous
 reached) → flagged as its own follow-up in that card. All changes are in
 `mvp/scripts/` (test harness only — no `website/` change). UNCOMMITTED.
 
-**2026-06-01 (planning only — no code) — viewer source split card opened.** User
-asked whether the project needs a build step / package manager given the growing
-file, and to plan splitting it. Verdict (recorded in the new card): **no build
-step, no package manager** — file size is not the problem (`index.html` is 562 KB
-raw / **142 KB gzipped**; the vendor libs — maplibre 1 MB — dwarf our ~9.76k-line
-script). The real pain is maintainability + parallel-edit collisions. Plan = split
-into external CSS + **native ES modules**, served/SW-cached as-is. New card
-`tasks/04_event_app/viewer_source_split.md` (phased slices: CSS first, then leaf
-utils, then one seam at a time; 27 Playwright verifiers as the parity net; gated
-on `index.html` going quiescent; open fork = cut shape A/B/C, recommend C). **No
-code touched** — a second agent was live in `index.html` at planning time.
-Registered in `04_event_app/_readme.md` "Still active".
+**2026-06-01 (viewer source split — Stage 1 SHIPPED + verified, UNCOMMITTED).**
+Verdict on the "do we need a build step / package manager" question: **no** — file
+size isn't the problem (index.html was 562 KB raw / **142 KB gzipped**; the vendor
+libs, maplibre 1 MB, dwarf our script). The pain was maintainability + parallel-edit
+collisions on one 11.3k-line file. **Shipped (no build step / no package manager):**
+both `<style>` blocks → **`website/css/app.css`** (verbatim); the entire main script
+→ **`website/js/main.js`** (verbatim, loaded as a **classic** `<script src>`);
+**`index.html` 11,299 → 673 lines**. `sw.js` v25→v26 (+ `#appVersion`), css/js added
+to `SHELL_ASSETS` + routed SWR. **Verified by observation: full 27-suite, 18 PASS /
+9 FAIL, zero new fails** — every fail proven pre-existing by reproducing it against
+the original git-HEAD index.html served on port 8011. **Two discoveries forced a
+plan change** (see card): (1) ES modules (the chosen Option C) **break the verifier
+harness** — ~20 verifiers read app internals as bare globals (`page.evaluate(
+"window.map = map")`); module scope hides them. (2) `main.js` interleaves top-level
+execution with declarations + relies on whole-file hoisting → a naive classic
+multi-file split throws at load. So Stage 1 is a classic external script, and
+**Stage 2 (subdividing the JS) — user chose to STOP at Stage 1 (2026-06-01).**
+`main.js` stays one isolated file; the carve options (b classic multi-file / c
+modules + harness migration) are kept in the card as future options, not done.
+Card: `tasks/04_event_app/viewer_source_split.md` ("What shipped" + "Discoveries").
+One verifier edited: `playwright_verify_code_review_groupb.py` version-pin v25→v26.
 
 **2026-06-01 (worktree cleanup + Group B fully shipped incl. M13 + Groups C–D worked).** (1) **Worktree
 chore resolved.** The "three locked agent worktrees" chore was **stale** — already
