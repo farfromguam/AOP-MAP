@@ -83,9 +83,9 @@ private ridge") — left as-is.
 Verified by observation (Playwright on mainline): live `document.title` =
 "Trail Blazing Invitational", apple title = "Trail Blazing", manifest reframed,
 copy-review page shows the new strings, zero old-name / AOP-first leftovers, 0
-console/page errors. **Owed (user's call):** `#appVersion` + `sw.js VERSION` bump
-(now v21) — chrome + manifest are SW-cached, so installed PWA users keep the old
-name until the version moves.
+console/page errors. **Version bumped v21 → v22** (`#appVersion` + `sw.js VERSION`,
+verified in sync + rendered) so installed PWA users pull the reframed chrome +
+manifest on next load — they were SW-cached and would otherwise keep the old name.
 
 ## What shipped
 
