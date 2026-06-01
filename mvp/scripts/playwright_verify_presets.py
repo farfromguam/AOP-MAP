@@ -197,7 +197,15 @@ def main() -> int:
             "legacy POI section is gone",
             page.locator('section[data-section="poi"]').count() == 0,
         )
-        page.locator('section[data-section="editor"] .section-toggle').click()
+        # Dispatch the toggle via JS (not a synthetic click): since v25 the
+        # full-bleed position:fixed #map canvas overlaps the panel body's
+        # coordinates in the headless viewport, so a real .click() on this
+        # in-body toggle is intercepted by the canvas / sticky #panelHeader and
+        # times out. Mirrors the section-toggle dispatch this file already uses
+        # below and click_in_section/set_toggle in playwright_base.
+        page.evaluate(
+            "() => document.querySelector('section[data-section=\"editor\"] .section-toggle')?.click()"
+        )
         page.wait_for_timeout(150)
         bucket_ids = page.locator('#editorTree .editor-bucket').evaluate_all(
             "els => els.map((el) => el.dataset.bucket)"

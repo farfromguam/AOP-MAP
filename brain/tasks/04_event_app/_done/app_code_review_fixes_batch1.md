@@ -6,7 +6,7 @@
 > verified by observation: the 15 no-decision fixes, H4+L8 (the queued
 > "stale-while-revalidate" decision), and the M7/M14/M17 no-device forks. The 17
 > still-held items (on-device checks + refactors) live in
-> [`../app_code_review_followups.md`](../app_code_review_followups.md).
+> [`app_code_review_followups.md`](app_code_review_followups.md).
 
 #aop #04_event_app #code_health #review #done
 
@@ -111,6 +111,6 @@ side is correct. No change made. (Logged here so it isn't "re-found" later.)
 
 The 20 still-held findings — decisions, on-device checks, and refactors — with
 full context and a recommended order are in
-[`../app_code_review_followups.md`](../app_code_review_followups.md). With the SW
+[`app_code_review_followups.md`](app_code_review_followups.md). With the SW
 decision resolved, the next cheap slice is the small no-device forks (M7 ticker
 teardown, M14 unused-precache cleanup, M17 categories-from-select).

@@ -101,8 +101,16 @@ def click_in_section(page, selector: str) -> None:
 
     Sprint 02 made panel sections default-collapsed, so a button inside
     one (Place POI, a layer's tune-expand chevron, etc.) is not hit by a
-    plain `.click()` — Playwright waits for it to be visible and times
-    out. This helper opens the section in the DOM and then clicks.
+    plain `.click()` until its section is open. Since the v25 full-bleed
+    map, a *second* problem also bites: the `position:fixed` #map canvas
+    covers the right panel's coordinates in the headless viewport, so even
+    a visible button's centre point fails Playwright's hit-test (the canvas
+    or the sticky #panelHeader "intercepts pointer events" and the click
+    retries until it times out). So this helper opens the section and then
+    fires the element's own `click()` via JS — the same dispatch `set_toggle`
+    uses, for the same reason. The real click handler still runs; only the
+    synthetic-mouse hit-test is bypassed, which is a headless-geometry
+    artifact (on device the panel sits above the map), not a product bug.
     """
     page.evaluate(
         """(sel) => {
@@ -113,7 +121,10 @@ def click_in_section(page, selector: str) -> None:
             const toggle = section.querySelector('.section-toggle');
             if (toggle) toggle.click();
           }
+          el.click();
         }""",
         selector,
     )
-    page.locator(selector).click()
+    # Let the section-expand + click handlers settle before the caller reads
+    # DOM/map state (mirrors set_toggle; the old locator click auto-waited).
+    page.wait_for_timeout(150)

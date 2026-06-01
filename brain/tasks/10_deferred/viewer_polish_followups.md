@@ -80,6 +80,56 @@ readability, or verifier coverage, land it.
 - [ ] Keep one right-panel comparison surface for layout/CSS review. Current candidate is `website/poi_crud_compare.html` with V1 chosen; decide whether to keep the compare page, keep only `poi_crud_v1_accordion.html`, or replace it with a newer right-panel baseline.
 - [ ] Remove stale variant files only after the winning behavior is documented in the owning card.
 
+## Code-review refactor residue (from `app_code_review_followups`, 2026-06-01)
+
+The app code-review card closed (`04_event_app/_done/app_code_review_followups.md`)
+with these lowest-priority refactor items consciously deferred to their own pass —
+no behavior change, no urgency. Pulled here so they're not stranded in a `_done` card.
+
+- [ ] **L1 — whitespace.** ~88 leading-tab lines in the space-indented
+  `website/index.html` (scattered ~4404–4429, ~7003-area, ~10255-area — original
+  ranges drifted with v19→v25). Own whitespace-only pass; convert tabs→spaces matching
+  each line's surrounding indent.
+- [ ] **L2 — shared-helper extractions** (deferred subset). `loadObjectStore` (3
+  identical `loadXStore` wrappers), `buildFeatureRow` (the ~250-line row builder —
+  risky, coordinate with M5's in-place path), `clampRound`/`trimZeros`, a roads config
+  array (~10 near-identical `addLayer` objects), `forEachTile` (3 tile-loop reimpls).
+- [ ] **L9 — palette + dialog** (deferred subset). The raw-hex→`:root`-token sweep
+  (dozens of sites; do with screenshot diffs to catch visual regressions) + a
+  `#pwaIosHint` `role="dialog"` focus-trap/return-focus. (Dead `.left-context-card`
+  rules already removed; `#message` intentionally KEPT — verifier load proxy, not dead.)
+- [x] **Verifier rot — `session_tools` + `poi_editor` FIXED (2026-06-01).** Both
+  crashed in headless because the v25 full-bleed `position:fixed` `#map` canvas now
+  overlaps the right-panel buttons' hit-test points, so a real `Locator.click` is
+  intercepted by the canvas / sticky `#panelHeader` and retries until it times out.
+  **Fix:** the shared `click_in_section` helper (`mvp/scripts/playwright_base.py`) now
+  dispatches the element's own `click()` via JS after expanding its section — the same
+  dispatch `set_toggle` already uses for the same documented "real click times out"
+  reason (the real handler still runs; only the synthetic-mouse hit-test, a headless
+  geometry artifact, is bypassed). `poi_editor`'s panel-interior clicks
+  (`editor-bucket-add` point/polygon/line, the inline-editor deletes, the line-bucket
+  bulk) routed through it, and its stale `<title>` assertion fixed
+  (`"AOP Map Viewer"` → `"Trail Blazing Invitational"`). `session_tools`' clock/reset
+  buttons routed through it (its preset/tab/calendar clicks are not panel-interior and
+  were never occluded). **Verified by observation (`:8001`, 2026-06-01):**
+  `session_tools` ALL PASS / 0 console errors; `poi_editor` RESULT: PASS / 0 console
+  errors. Regression-checked the helper's other callers: `community_trails` 16/16,
+  `landcover` PASS.
+- [ ] **`presets` verifier rot + gated assertion FAILs (own pass).** `presets` is the
+  same click-rot class. Its first crash (the editor `.section-toggle` raw click) was
+  fixed 2026-06-01 (JS-dispatch, mirroring the file's own line-387 pattern), which
+  revives **51 checks** that now actually run. But it still (a) crashes again later in
+  the "Inline layer tuning + snapshot" section on another panel-interior raw click
+  (route the same way), and (b) reports 3 assertion FAILs: "visitor context lives with
+  publishable map layers" + "source/reference inputs live under Source layers" — these
+  two are the **decision-gated** publishable-section / OSM-section-move fails already
+  tracked in the "Right Panel" block above (the editor unified-tree rework moved those
+  sections; assertions await the reintroduce-section-vs-rewrite-assertion decision) —
+  and "Topo restyles index contours", which was never being *reached* before (presets
+  crashed earlier) so it needs a fresh look before assuming it's a real regression.
+  Left as a flagged follow-up: `presets` is separately tracked and partly
+  decision-gated, so it is not made fully green by the click-rot fix alone.
+
 ## Process
 
 - [ ] Add a tiny `decisions/` log pattern for future multi-variant explorations before pruning artifacts. It should capture short variant summaries and why the winner won.

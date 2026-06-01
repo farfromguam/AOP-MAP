@@ -114,7 +114,7 @@ def main() -> int:
         wait_for_viewer(page)
 
         print("\n== Initial state ==")
-        check("title is AOP Map Viewer", page.title() == "AOP Map Viewer", page.title())
+        check("title is Trail Blazing Invitational", page.title() == "Trail Blazing Invitational", page.title())
         check(
             "terra-draw UMD bundle loaded",
             page.evaluate("typeof window.terraDraw === 'object' && !!terraDraw.TerraDraw"),
@@ -194,7 +194,7 @@ def main() -> int:
         print("\n== Draw a footprint (polygon mode) ==")
         # Clicking another bucket's + closes the prior create row and starts
         # the new mode.
-        page.locator('[data-editor-bucket-add="polygon"]').click()
+        click_in_section(page, '[data-editor-bucket-add="polygon"]')
         page.wait_for_timeout(200)
         check("draw mode is 'polygon' after clicking Polygon +",
               page.evaluate("draw.getMode()") == "polygon")
@@ -224,7 +224,7 @@ def main() -> int:
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["footprint"]))
 
         print("\n== Trace a line (linestring mode) ==")
-        page.locator('[data-editor-bucket-add="line"]').click()
+        click_in_section(page, '[data-editor-bucket-add="line"]')
         page.wait_for_timeout(200)
         check("draw mode is 'linestring' after clicking Line +",
               page.evaluate("draw.getMode()") == "linestring")
@@ -333,7 +333,7 @@ def main() -> int:
               and page.locator(f"{editor_selector} .editor-category").count() == 1
               and page.locator(f"{editor_selector} .editor-notes").count() == 1)
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["popup"]))
-        page.locator(f"{editor_selector} .editor-action.danger").click()
+        click_in_section(page, f"{editor_selector} .editor-action.danger")
         page.wait_for_timeout(300)
         check("POI deleted via inline editor", kind_count(page, "Point") == 2,
               f"points={kind_count(page, 'Point')}")
@@ -352,7 +352,7 @@ def main() -> int:
         page.wait_for_timeout(300)
         poly_editor = f".feature-row-editor[data-feature-id=\"{first_poly_id}\"]"
         check("footprint editor opened", page.locator(poly_editor).count() == 1)
-        page.locator(f"{poly_editor} .editor-action.danger").click()
+        click_in_section(page, f"{poly_editor} .editor-action.danger")
         page.wait_for_timeout(300)
         check("footprint deleted via inline editor", kind_count(page, "Polygon") == 0)
         check("two POIs and one trace remain", feature_count(page) == 3, f"count={feature_count(page)}")
@@ -377,7 +377,7 @@ def main() -> int:
             "Line bucket bulk starts checked (showEditorPois is on)",
             page.locator(line_bucket_bulk).is_checked(),
         )
-        page.locator(line_bucket_bulk).click()
+        click_in_section(page, line_bucket_bulk)
         page.wait_for_timeout(250)
         check(
             "all editor layers hidden after bucket toggle off",
@@ -388,7 +388,7 @@ def main() -> int:
             page.evaluate("document.getElementById('showEditorPois').checked") is False,
         )
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["hidden"]))
-        page.locator(line_bucket_bulk).click()
+        click_in_section(page, line_bucket_bulk)
         page.wait_for_timeout(250)
         check(
             "all editor layers visible after toggle on",

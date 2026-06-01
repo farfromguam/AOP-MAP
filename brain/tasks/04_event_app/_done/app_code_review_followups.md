@@ -1,8 +1,19 @@
-# App Code Review — Follow-ups (NOT done)
+# App Code Review — Follow-ups (CLOSED 2026-06-01)
+
+> **CLOSED 2026-06-01.** Every held finding is resolved or consciously deferred.
+> **Done & verified:** Group B — H1, M12, M4, M5, M8, M9, M10, M13 (`VERSION` v24
+> committed = H1/M12; v25 committed = the rest); Group C/D — L10, L12, L3, L11 (+ L9
+> dead-rule); M19 was a stale finding (no change). See `▶ Next up` for the full
+> per-item record + verifier results (`playwright_verify_code_review_groupb.py`
+> 15/15, `feature_list`, `sfwda_multiply`). **Deferred to their own pass** (routed to
+> `10_deferred/viewer_polish_followups.md` → "Code-review refactor residue"): L1
+> whitespace, the broad L2 extractions, the L9 raw-hex sweep + pwaIosHint focus-trap;
+> L13 note-only. **Still owed:** the on-device feel/touch/GL confirm (one iPhone pass).
+> Kept as the historical record of the review.
 
 > **The held half of the 2026-05-31 app code review.** Batch 1 (15 no-decision
 > fixes) shipped and is verified — see
-> [`_done/app_code_review_fixes_batch1.md`](_done/app_code_review_fixes_batch1.md).
+> [`app_code_review_fixes_batch1.md`](app_code_review_fixes_batch1.md).
 > This card carries the **17 remaining findings** with enough context to act on
 > each without re-reading anything. They are held because they need an
 > **on-device / interaction check** (Group B) or are **refactors / polish** worth
@@ -11,7 +22,7 @@
 > **Resolved since (now in the done card):** the queued decision **H4 + L8** (SW
 > cache-staleness, stale-while-revalidate) and the **M7 / M14 / M17** no-device
 > forks — see
-> [`_done/app_code_review_fixes_batch1.md`](_done/app_code_review_fixes_batch1.md).
+> [`app_code_review_fixes_batch1.md`](app_code_review_fixes_batch1.md).
 
 #aop #04_event_app #code_health #review #followups #decision
 
@@ -95,7 +106,7 @@ runs clean — not done here (out of card scope).
 ## Group A — Decisions / forks  ✅ DONE
 
 H4+L8, M7, M14, M17 all resolved — see
-[`_done/app_code_review_fixes_batch1.md`](_done/app_code_review_fixes_batch1.md).
+[`app_code_review_fixes_batch1.md`](app_code_review_fixes_batch1.md).
 Nothing decision-gated remains; everything below needs a device or is a refactor.
 
 -----
@@ -103,7 +114,7 @@ Nothing decision-gated remains; everything below needs a device or is a refactor
 ## Group B — On-device / interaction verification needed
 
 These are real fixes, but the AOP rule
-[`verify_by_observation`](../../ai_rules/verify_by_observation.md) wants the
+[`verify_by_observation`](../../../ai_rules/verify_by_observation.md) wants the
 running system observed — and these only manifest on a touch device / GL / live
 interaction that headless Playwright can't fake (the same trap documented in
 `spinup/working_pwa_css.md`). I'll implement on request; the user confirms on the

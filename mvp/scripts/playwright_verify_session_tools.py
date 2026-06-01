@@ -11,7 +11,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from playwright_base import viewer_url
+from playwright_base import viewer_url, click_in_section
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -137,7 +137,7 @@ def main() -> int:
         print("\n== Virtual clock ==")
         page.locator("#virtualClockDate").fill("2026-06-20")
         page.locator("#virtualClockTime").fill("13:15")
-        page.locator("#clockUseInputs").click()
+        click_in_section(page, "#clockUseInputs")
         page.wait_for_timeout(350)
         state = session_state(page)
         first_ms = state["clock"]["ms"] if state["clock"] else None
@@ -145,19 +145,19 @@ def main() -> int:
         check("test clock persists to localStorage", isinstance(first_ms, int), str(state.get("clock")))
         check("13:15 fixture makes Proving Grounds the imminent event", state["hotTitle"] == "Starting soon", str(state))
 
-        page.locator("#clockPlusHour").click()
+        click_in_section(page, "#clockPlusHour")
         page.wait_for_timeout(350)
         state = session_state(page)
         second_ms = state["clock"]["ms"] if state["clock"] else None
         check("+1h advances the stored clock", second_ms - first_ms == 60 * 60 * 1000, f"first={first_ms} second={second_ms}")
         check("+1h changes the hot lane to live event", state["hotTitle"] == "Live event", str(state))
 
-        page.locator("#clockPlusDay").click()
+        click_in_section(page, "#clockPlusDay")
         page.wait_for_timeout(150)
         state = session_state(page)
         third_ms = state["clock"]["ms"] if state["clock"] else None
         check("+1d advances the stored clock by one day", third_ms - second_ms == 24 * 60 * 60 * 1000, f"second={second_ms} third={third_ms}")
-        page.locator("#clockClear").click()
+        click_in_section(page, "#clockClear")
         page.wait_for_timeout(250)
         state = session_state(page)
         check("clear returns to wall clock", state["clockActive"] == "false" and state["clock"] is None, str(state))
@@ -217,7 +217,7 @@ def main() -> int:
               localStorage.setItem('aop_feature_tags_seeded_v1', '1');
             }"""
         )
-        page.locator("#resetViewerState").click()
+        click_in_section(page, "#resetViewerState")
         # Reset wipes every viewer-owned key, then `maybeSeedEditorPois`
         # re-fetches `aop_editor_seed_pois.geojson` and re-installs it. We
         # wait for that async install to complete before asserting state.

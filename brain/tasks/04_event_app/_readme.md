@@ -84,13 +84,16 @@ New work opened after the triage above lives directly in this folder. The
   working tree and verified (new verifier
   `mvp/scripts/playwright_verify_code_review_fixes.py`, 0 console errors, SW
   active). One sweep finding retracted as a false positive.
+- `app_code_review_followups.md` — **DONE → `_done/` (2026-06-01).** Every held
+  finding resolved or consciously deferred: Group B (H1/M12/M4/M5/M8/M9/M10/M13,
+  `VERSION` v24→v25, both committed) + Group C/D (L10/L12/L3/L11 + L9 dead-rule);
+  M19 was a stale finding (no change). Verified (`playwright_verify_code_review_groupb.py`
+  15/15 + `feature_list`/`sfwda_multiply`, 0 console errors). Deferred refactor
+  residue (L1 whitespace, broad L2 extractions, L9 raw-hex/focus-trap) routed to
+  `10_deferred/viewer_polish_followups.md`; on-device feel/touch/GL confirm owed.
 
 **Still active (this folder):**
 
-- `app_code_review_followups.md` — **ACTIVE.** The 17 still-held findings,
-  self-contained, grouped (on-device / polish / refactor) with a recommended
-  order. All no-device decision work is done; next slice is the on-device batch
-  (H1, M12 first), implemented by me + verified on the iPhone.
 - `trail_research_integration.md` — **ACTIVE (Slices 1–2 shipped).** Trail catalog
   joined to the gold network at runtime: trail-click popup (new) + POI browser
   repointed to the gold network, both shipped + verified. Owed: Slice 3 (search
@@ -108,6 +111,15 @@ New work opened after the triage above lives directly in this folder. The
   callouts bake), 6 (in-park vs region buildings + search exclusion), 17 (extend
   the 9-patch AOI), E (Ellis cemetery info bake). All need a product/boundary/
   source call before code — no actionable headless work.
+- `viewer_source_split.md` — **PLANNED (no code yet, 2026-06-01).** How to split
+  the ~11.3k-line `website/index.html` (CSS + ~9.76k-line global-scope script)
+  into external CSS + native ES modules — **no build step / no package manager**
+  (user-settled). Measured: file size is *not* the driver (142 KB gzipped; vendor
+  libs dwarf it), maintainability + multi-agent edit collisions are. De-risked:
+  zero inline `on*=` handlers, tiny `window` surface. Phased slices (CSS first,
+  then leaf utils, then one seam at a time), 27 verifiers as the parity net.
+  P4-class. **Gated on the file going quiescent** + one open fork (cut shape
+  A/B/C — recommend C). Pulled forward by user request.
 
 -----
 
@@ -121,15 +133,13 @@ gated on the user (decision or device) or owed upstream.
 1. ~~`trail_research_integration.md` **Slice 3**~~ — **SHIPPED 2026-06-01**
    (uncommitted). Catalogued trail search hits now preview their one-line
    description; verifier extended + PASS, 0 console errors. `VERSION` bump owed.
-2. `app_code_review_followups.md` **Group B** — ~~H1, M12, M4, M5, M8, M9+M10,
-   M13~~ **ALL SHIPPED 2026-06-01.** v24 (committed, `c4e080c`) = H1+M12; **v25**
-   (working tree, uncommitted) = M4+M5+M8+M9+M10+M13. Headless-verified by
-   `playwright_verify_code_review_groupb.py` 15/15 + `feature_list`/`sfwda_multiply`;
-   on-device feel/install-cost owed. **Groups C–D also worked 2026-06-01** (still v25):
-   L10/L12/L3/L11 done, M19 stale (no change), L9 partial (dead-rule). **Remaining on
-   the card = own-pass deferrals** (L1 whitespace, broad L2 extractions, L9
-   raw-hex/focus-trap; L13 note-only) **+ the on-device pass.** Card is effectively
-   closed bar those. **Next P1: the on-device pass, or a fresh card.**
+2. ~~`app_code_review_followups.md`~~ — **CLOSED → `_done/` (2026-06-01).** Group B
+   (H1/M12/M4/M5/M8/M9/M10/M13; v24 committed `c4e080c` = H1/M12, v25 committed
+   `c9fae3e` = the rest) + Group C/D (L10/L12/L3/L11 + L9 dead-rule, riding v25,
+   shell-only no bump); M19 was a stale finding (no change). Headless-verified
+   (`playwright_verify_code_review_groupb.py` 15/15 + `feature_list`/`sfwda_multiply`,
+   0 console errors). Deferred refactor residue → `10_deferred/viewer_polish_followups.md`;
+   on-device feel/touch/GL confirm owed. **No headless P1 left on this card.**
 
 **P2 — decisions to unblock (bundle for one decision session):**
 
@@ -147,8 +157,10 @@ gated on the user (decision or device) or owed upstream.
 
 **P4 — refactor / polish (own pass, lowest):**
 
-6. `app_code_review_followups.md` Groups C–D and the `10_deferred/viewer_polish_followups.md`
-   residue — a11y on clickable divs, CSS hygiene, shared helpers, whitespace.
+6. ~~`app_code_review_followups.md` Groups C–D~~ — **DONE 2026-06-01** (card closed →
+   `_done/`). The deferred residue (L1 whitespace, broad L2 extractions, L9
+   raw-hex/focus-trap) now lives in `10_deferred/viewer_polish_followups.md` →
+   "Code-review refactor residue" — own pass, lowest priority.
 
 **Owed upstream (not codeable now):** ~110 un-catalogued trail names/descriptions
 + the trail license/publish gate (`trail_research_integration.md`); 11 null POI

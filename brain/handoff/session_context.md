@@ -4,6 +4,37 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+**2026-06-01 (verifier-rot fix — test-only, no app code).** Picked up the ungated
+P4 item from `10_deferred/viewer_polish_followups.md` after confirming all Sprint 04
+P1 headless work is shipped+committed (incl. trail Slice 3 — the trail card's
+"uncommitted/VERSION-owed" header is **stale**; Slice 3 is in `master` at v25,
+`8be6e99`). The v25 full-bleed `position:fixed` `#map` canvas now occludes right-panel
+buttons' hit-test points, so real `Locator.click`s timed out. **Fixed:** shared
+`click_in_section` (`mvp/scripts/playwright_base.py`) now JS-dispatches the element's own
+`click()` after expanding its section (the `set_toggle` pattern); `poi_editor` panel
+clicks routed through it + stale `<title>` → "Trail Blazing Invitational"; `session_tools`
+clock/reset routed through it. **Verified:** `session_tools` ALL PASS, `poi_editor`
+RESULT: PASS, both 0 console errors; helper's other callers regression-clean
+(`community_trails` 16/16, `landcover` PASS). `presets` (same class, separately tracked)
+partly revived — its first toggle-click crash fixed (now runs 51 checks) but it still has
+a downstream panel-click crash + 3 assertion FAILs (2 are the documented decision-gated
+publishable/source-section ones, 1 "Topo restyles index contours" never previously
+reached) → flagged as its own follow-up in that card. All changes are in
+`mvp/scripts/` (test harness only — no `website/` change). UNCOMMITTED.
+
+**2026-06-01 (planning only — no code) — viewer source split card opened.** User
+asked whether the project needs a build step / package manager given the growing
+file, and to plan splitting it. Verdict (recorded in the new card): **no build
+step, no package manager** — file size is not the problem (`index.html` is 562 KB
+raw / **142 KB gzipped**; the vendor libs — maplibre 1 MB — dwarf our ~9.76k-line
+script). The real pain is maintainability + parallel-edit collisions. Plan = split
+into external CSS + **native ES modules**, served/SW-cached as-is. New card
+`tasks/04_event_app/viewer_source_split.md` (phased slices: CSS first, then leaf
+utils, then one seam at a time; 27 Playwright verifiers as the parity net; gated
+on `index.html` going quiescent; open fork = cut shape A/B/C, recommend C). **No
+code touched** — a second agent was live in `index.html` at planning time.
+Registered in `04_event_app/_readme.md` "Still active".
+
 **2026-06-01 (worktree cleanup + Group B fully shipped incl. M13 + Groups C–D worked).** (1) **Worktree
 chore resolved.** The "three locked agent worktrees" chore was **stale** — already
 gone. Real remaining clutter = `aop-copy-review` worktree + `copy-review` branch
@@ -45,8 +76,9 @@ batch):** `session_tools` (`#clockUseInputs`) + `poi_editor` (`editor-bucket-add
 stale `<title>`) crash in headless on a `Locator.click` the full-bleed `#map` canvas
 intercepts — same class as `presets`; worth a separate force-click/reposition pass.
 The card's substantive fixes are all landed; remaining = the own-pass deferrals + the
-on-device confirm. See
-`tasks/04_event_app/app_code_review_followups.md` ▶ Next up.
+on-device confirm. **Card CLOSED → moved to `tasks/04_event_app/_done/app_code_review_followups.md`**
+(deferred refactor residue routed to `tasks/10_deferred/viewer_polish_followups.md`).
+See the closed card's ▶ Next up for the full per-item record.
 
 **2026-05-31 (Sprint 04 triage pass — doc only, no code).** Re-sorted the open
 Sprint 04 cards. **Moved → `04_event_app/_done/`:** `copy_review_surface.md`,
