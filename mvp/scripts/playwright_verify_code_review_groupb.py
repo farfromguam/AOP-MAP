@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Smoke verifier for the app-code-review Group B fixes (H1, M12).
+"""Smoke verifier for the app-code-review Group B fixes (H1, M12, M5, M4).
 
 Both are "on-device feel" fixes whose *feel* the user confirms on the iPhone
 (per ai_rules/verify_by_observation.md), but the code paths are observable
@@ -133,9 +133,92 @@ def main():
         record("install button hides after accept", visible_after_accept is False,
                "visible" if visible_after_accept else "hidden")
 
+        # --- M5: visibility toggle updates counts IN PLACE (no subtree rebuild) ---
+        # A rendered feature-list group existing at all also confirms M4 (its
+        # geojson loaded via the warmed/memoized fetchJson). We tag the rows
+        # container + a row with JS-property sentinels (not serialized to
+        # innerHTML), toggle a row's visibility checkbox, then re-query: if a full
+        # renderFeatureList ran it would wipe innerHTML and the sentinels would be
+        # gone. In-place => sentinels survive AND the (captured) count node updates.
+        m5 = page.evaluate(
+            """() => {
+                const groups = [...document.querySelectorAll('.feature-list-group')];
+                let groupEl = null, countEl = null;
+                for (const g of groups) {
+                    const c = g.querySelector('.group-count');
+                    const cb = g.querySelector('.feature-row input[type=checkbox]');
+                    if (c && cb) { groupEl = g; countEl = c; break; }
+                }
+                if (!groupEl) return { ok: false, why: 'no rendered feature-list group on load' };
+                const rows = groupEl.querySelector('.feature-list-rows') || groupEl;
+                const row = groupEl.querySelector('.feature-row');
+                rows.__m5probe = 'rows';
+                row.__m5probe = 'row';
+                const before = countEl.textContent;
+                const cb = groupEl.querySelector('.feature-row input[type=checkbox]');
+                cb.checked = !cb.checked;
+                cb.dispatchEvent(new Event('change', { bubbles: true }));
+                const after = countEl.textContent;            // captured node — updated only if in-place
+                const rowsAfter = groupEl.querySelector('.feature-list-rows') || groupEl;
+                const rowAfter = groupEl.querySelector('.feature-row');
+                return {
+                    ok: true, before, after,
+                    countChanged: before !== after,
+                    nodesReused: rowsAfter.__m5probe === 'rows' && !!rowAfter && rowAfter.__m5probe === 'row',
+                };
+            }"""
+        )
+        record("M5/M4: feature-list group rendered (geojson loaded)", bool(m5.get("ok")), m5.get("why", ""))
+        if m5.get("ok"):
+            record("M5: visibility toggle updates the group count", bool(m5.get("countChanged")),
+                   f"{m5.get('before')} -> {m5.get('after')}")
+            record("M5: rows updated in place, not rebuilt (DOM nodes reused)", bool(m5.get("nodesReused")),
+                   f"nodesReused={m5.get('nodesReused')}")
+
+        # --- M13: heavy default-off layers dropped from the install precache -----
+        # The change is in the SERVED sw.js precache list; the cache-first /data/
+        # fetch handler is unchanged, so the dropped layers still lazy-cache on
+        # first view (offline-after-once). We assert the served SW excludes the two
+        # heavy layers from precache yet keeps essentials + the /data/ cacheFirst
+        # route, and that the SW actually activates at v25 (no parse error, bump took).
+        m13 = page.evaluate(
+            """async () => {
+                const sw = await (await fetch('./sw.js', { cache: 'no-store' })).text();
+                // Isolate the DATA_ASSETS precache literal so a URL mentioned in a
+                // comment elsewhere can't fool the check.
+                const m = sw.match(/const DATA_ASSETS = \\[([\\s\\S]*?)\\];/);
+                const precache = m ? m[1] : '';
+                const listed = (u) => new RegExp("['\\\"]" + u.replace(/[.]/g, '\\\\.') + "['\\\"]").test(precache);
+                let active = null, cacheNames = [];
+                try {
+                    const reg = await navigator.serviceWorker.ready;
+                    active = reg.active && reg.active.state;
+                    cacheNames = await caches.keys();
+                } catch (e) { active = 'ERR:' + e; }
+                return {
+                    contoursPrecached: listed('./data/aop_contours.geojson'),
+                    synthTracksPrecached: listed('./data/aop_synthetic_activity_tracks.geojson'),
+                    publishPrecached: listed('./data/publish.geojson'),
+                    landcover9Precached: listed('./data/aop_landcover_9patch.geojson'),
+                    dataCacheFirst: /\\/data\\/[\\s\\S]*?cacheFirst\\(request, DATA_CACHE\\)/.test(sw),
+                    active, cacheNames,
+                };
+            }"""
+        )
+        record("M13: contours NOT in install precache", m13.get("contoursPrecached") is False)
+        record("M13: synthetic-activity tracks NOT in install precache", m13.get("synthTracksPrecached") is False)
+        record("M13: essentials still precached (publish + default-on landcover-9patch)",
+               m13.get("publishPrecached") is True and m13.get("landcover9Precached") is True,
+               f"publish={m13.get('publishPrecached')} landcover9={m13.get('landcover9Precached')}")
+        record("M13: /data/ still cache-first (dropped layers lazy-cache on first view)",
+               m13.get("dataCacheFirst") is True)
+        record("M13: SW activates at v25 (bump took, no parse error)",
+               m13.get("active") == "activated" and ("aop-data-v25" in (m13.get("cacheNames") or [])),
+               f"state={m13.get('active')} caches={m13.get('cacheNames')}")
+
         browser.close()
 
-    print("\n=== code-review Group B smoke (H1, M12) ===")
+    print("\n=== code-review Group B smoke (H1, M12, M5, M4, M13) ===")
     all_ok = True
     for label, ok, detail in results:
         if not ok:

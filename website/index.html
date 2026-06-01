@@ -1066,7 +1066,7 @@
          foldVersionIntoInfoControl() RELOCATES it into the bottom-left info ⓘ
          so the corner reads "ⓘ v18" (pwa_qa_2 item 3). Keep this string in sync
          with VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v24</div>
+    <div class="util-version" id="appVersion" title="App build version">v25</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
@@ -3692,7 +3692,7 @@
           if (feature.geometry.type === 'Point') {
             feature.geometry.coordinates = [newLng, newLat];
           } else {
-            const centroid = geometryCentroid(feature.geometry);
+            const centroid = geometryBboxCenter(feature.geometry);
             if (!centroid) return;
             const dLng = newLng - centroid[0];
             const dLat = newLat - centroid[1];
@@ -3724,7 +3724,7 @@
         }],
         onMove: (feature, lngLat) => {
           if (!feature || !feature.geometry) return;
-          const centroid = geometryCentroid(feature.geometry);
+          const centroid = geometryBboxCenter(feature.geometry);
           if (!centroid) return;
           const dLng = lngLat.lng - centroid[0];
           const dLat = lngLat.lat - centroid[1];
@@ -4499,6 +4499,32 @@
       return null;
     }
 
+    // Bounding-box center of ANY geometry, including Multi* parts. Used as the
+    // move anchor (M9): geometryCentroid above is a vertex-density mean — skewed
+    // for uneven polygons, and it returns null for MultiPolygon/MultiLineString/
+    // GeometryCollection, which silently no-oped a move (onMove bails on a null
+    // anchor). The bbox center is well-defined for every coordinate tree and is a
+    // stable grab point. Kept separate so popup placement (which still calls
+    // geometryCentroid) is untouched.
+    function geometryBboxCenter(geometry) {
+      if (!geometry || !geometry.coordinates || !geometry.coordinates.length) return null;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      const walk = (coords) => {
+        if (typeof coords[0] === 'number') {
+          const x = coords[0], y = coords[1];
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+          return;
+        }
+        for (const child of coords) walk(child);
+      };
+      walk(geometry.coordinates);
+      if (!isFinite(minX)) return null;
+      return [(minX + maxX) / 2, (minY + maxY) / 2];
+    }
+
     // In-place translate of a coordinate tree (recursive) by (dLng, dLat).
     // Mutates so the feature reference shared with editorPois stays current.
     function translateCoordinates(coords, dLng, dLat) {
@@ -4622,7 +4648,19 @@
       moveState = { layerKey, featureId: item.id, feature: item.feature };
       setMoveCursor(true);
       moveMapClickHandler = (event) => commitMoveMode(event.lngLat);
-      map.on('click', moveMapClickHandler);
+      // Arm the commit-click on the NEXT frame, not synchronously (M10).
+      // enterMoveMode is frequently triggered BY a click (a row "Move" button, a
+      // long-press, or a map-click reveal); arming the listener now lets that same
+      // click — or a stray immediate tap — fire commitMoveMode and drop the feature
+      // at the wrong point with no "armed" guard. Defer one frame, and only arm if
+      // this exact move is still pending: cancelMoveMode (Escape) nulls
+      // moveMapClickHandler, and a re-entry on another feature swaps it.
+      const armMoveHandler = moveMapClickHandler;
+      requestAnimationFrame(() => {
+        if (moveState && moveMapClickHandler === armMoveHandler) {
+          map.on('click', armMoveHandler);
+        }
+      });
       moveEscHandler = (event) => {
         if (event.key === 'Escape') {
           event.preventDefault();
@@ -4818,6 +4856,64 @@
       if (typeof renderVisitorListGroup === 'function') renderVisitorListGroup();
     }
 
+    // In-place count refresh for the visibility toggle (M5). Toggling one row's
+    // checkbox used to call renderFeatureList, which wipes innerHTML and rebuilds
+    // every row + reattaches ~10 listeners each (3× for editorPois). But the
+    // clicked checkbox already shows the new state and setFeatureVisible already
+    // did the map update — the only stale DOM is the per-group count + bulk
+    // checkbox and the heading count. This re-derives those from runtime.state
+    // (the single source of truth, so it can't desync) and writes them into the
+    // EXISTING nodes — no rebuild, no listener churn, no focus loss. Returns false
+    // if the expected structure isn't found so the caller falls back to a full
+    // render. Counts use the same templates as renderFeatureListInto.
+    function refreshFeatureListCounts(layerKey) {
+      const runtime = featureListRuntime[layerKey];
+      if (!runtime || !runtime.state) return false;
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      const highlightable = spec && spec.highlightable === true;
+      const targets = featureListTargetsFor(layerKey);
+      if (!targets.length) return false;
+      const esc = (v) => String(v).replace(/(["\\])/g, '\\$1');
+      for (const entry of targets) {
+        const target = entry.target;
+        if (!target) continue;
+        const onlyGroupId = entry.onlyGroupId;
+        const renderedGroups = onlyGroupId
+          ? runtime.state.groups.filter((b) => b.group && b.group.id === onlyGroupId)
+          : runtime.state.groups;
+        for (const bucket of renderedGroups) {
+          const group = bucket.group;
+          if (!group.label) continue; // unlabeled groups render no head
+          const groupEl = target.querySelector(`.feature-list-group[data-group-id="${esc(group.id)}"]`);
+          if (!groupEl) continue;
+          const visibleInGroup = bucket.features.filter((f) => runtime.state.visibleIds.has(f.id)).length;
+          const countEl = groupEl.querySelector('.group-count');
+          if (countEl) countEl.textContent = `${visibleInGroup}/${bucket.features.length}`;
+          const bulk = groupEl.querySelector('.feature-list-group-head input[type="checkbox"]');
+          if (bulk) {
+            const allOn = visibleInGroup === bucket.features.length;
+            const noneOn = visibleInGroup === 0;
+            bulk.checked = allOn;
+            bulk.indeterminate = !allOn && !noneOn;
+          }
+        }
+        if (!onlyGroupId) {
+          const totalCount = renderedGroups.reduce((s, b) => s + b.features.length, 0);
+          const visibleInGroups = renderedGroups.reduce((s, b) => s + b.features.filter((f) => runtime.state.visibleIds.has(f.id)).length, 0);
+          const headCountEl = target.querySelector('.feature-list-heading .feature-list-count');
+          if (headCountEl) {
+            if (highlightable) {
+              const highlightCount = renderedGroups.reduce((s, b) => s + b.features.filter((f) => f.feature && f.feature.properties && f.feature.properties.highlight === true).length, 0);
+              headCountEl.textContent = `${visibleInGroups} of ${totalCount} visible · ${highlightCount} ★ to visitors`;
+            } else {
+              headCountEl.textContent = `${visibleInGroups} of ${totalCount} visible`;
+            }
+          }
+        }
+      }
+      return true;
+    }
+
     function renderFeatureListInto(target, layerKey, opts) {
       if (!target) return;
       target.innerHTML = '';
@@ -4947,7 +5043,12 @@
           check.checked = runtime.state.visibleIds.has(item.id);
           check.addEventListener('change', () => {
             setFeatureVisible(layerKey, item.id, check.checked);
-            renderFeatureList(layerKey);
+            // M5: visibility is the hot toggle — refresh the dependent counts in
+            // place (this row's checkbox already shows the new state, and the map
+            // update happened in setFeatureVisible) instead of rebuilding the
+            // whole subtree. Fall back to a full render if the in-place path can't
+            // find the expected nodes.
+            if (!refreshFeatureListCounts(layerKey)) renderFeatureList(layerKey);
           });
           // ★ highlight toggle (editorPois). Sits next to the visibility
           // checkbox so the two "include this in...?" flags read as a pair:
@@ -8022,15 +8123,30 @@
 
     // Fetch an optional overlay. Returns undefined (and warns) if it cannot load,
     // so a missing overlay never aborts the rest of the viewer.
-    async function fetchJson(url, label) {
-      try {
-        const response = await fetch(url, { cache: 'no-cache' });
-        if (response.ok) return await response.json();
-        console.warn(`${label}: HTTP ${response.status}`);
-      } catch (error) {
-        console.warn(`${label}:`, error);
-      }
-      return undefined;
+    // Memoized by URL (M4): the warm-up loop at the top of map.on('load') kicks
+    // every overlay fetch off in parallel, so the `await fetchJson(...)` calls at
+    // each layer's add-site resolve against the in-flight request instead of
+    // starting a fresh, serialized one. Net effect: the total fetch wait drops
+    // from the SUM of every file's load time to the MAX (one slow file — e.g. the
+    // 14 MB contours — no longer sits behind all the layers queued after it). All
+    // these files are static and fetched once per page, so caching the promise is
+    // safe. The warm list is a perf hint only — a URL missing from it just fetches
+    // lazily; an extra one just warms unused. Neither changes behavior.
+    const _fetchJsonCache = new Map();
+    function fetchJson(url, label) {
+      if (_fetchJsonCache.has(url)) return _fetchJsonCache.get(url);
+      const promise = (async () => {
+        try {
+          const response = await fetch(url, { cache: 'no-cache' });
+          if (response.ok) return await response.json();
+          console.warn(`${label}: HTTP ${response.status}`);
+        } catch (error) {
+          console.warn(`${label}:`, error);
+        }
+        return undefined;
+      })();
+      _fetchJsonCache.set(url, promise);
+      return promise;
     }
 
     const popupLayers = new Set();
@@ -8187,6 +8303,36 @@
       map.on('error', (e) => {
         console.error(e.error || e);
       });
+
+      // M4: warm every overlay fetch in parallel up front. fetchJson is memoized
+      // by URL, so the `await fetchJson(...)` at each add-site below resolves
+      // against these in-flight requests instead of starting a fresh serialized
+      // one — a slow file (e.g. the 14 MB contours) no longer stalls the layers
+      // queued after it. Perf hint only: this list is not authoritative (a URL
+      // here but not awaited just warms unused; one awaited but not listed simply
+      // fetches lazily). Pass the URL as the warn label so a failed warm names it.
+      [
+        './data/aop_landcover_9patch.geojson',
+        './data/aop_landcover.geojson',
+        './data/aop_9_patch.geojson',
+        './data/aop_lidar_tiles.geojson',
+        './data/aop_contours.geojson',
+        './data/aop_activity_hotspots.geojson',
+        './data/aop_synthetic_activity_tracks.geojson',
+        './data/aop_synthetic_activity_hotspots.geojson',
+        './data/aop_event_schedule.json',
+        './data/aop_water.geojson',
+        './data/aop_roads.geojson',
+        './data/aop_visitor_context_callouts.geojson',
+        './data/aop_cemeteries.geojson',
+        './data/aop_buildings.geojson',
+        './data/osm_aop_9patch.geojson',
+        './data/osm_aop_named.geojson',
+        './data/sfwda_traced_trails.geojson',
+        './data/aop_trail_network.geojson',
+        './data/sfwda_raster_alignment.json',
+        './data/aop_brand_logos.geojson',
+      ].forEach((url) => { fetchJson(url, url); });
 
       // Land-cover palette. The classifier emits five classes; each gets a
       // Muted Earth fill and a slightly darker same-family outline. The
@@ -10442,9 +10588,27 @@
     // ResizeObserver on a position:fixed container does not always catch it —
     // an unresized canvas leaves the body background showing under the home
     // indicator. resize() is cheap and idempotent.
-    const resyncViewport = () => {
-      map.resize();
+    // rAF-coalesced (M8). visualViewport 'resize' fires continuously while the
+    // iOS keyboard / URL bar animates, and each map.resize() is a layout + GL
+    // viewport reset. Collapse to one resync per frame, and skip the resize when
+    // the map container's pixel box hasn't actually changed (resize() would be a
+    // no-op anyway). The search-dropdown reposition still runs every frame — it's
+    // cheap and the input can shift even when the container box doesn't.
+    let resyncRAF = 0;
+    let lastMapSize = '';
+    const doResyncViewport = () => {
+      resyncRAF = 0;
+      const c = map.getContainer();
+      const size = `${c.clientWidth}x${c.clientHeight}`;
+      if (size !== lastMapSize) {
+        lastMapSize = size;
+        map.resize();
+      }
       if (searchResults.style.display === 'block') positionSearchResults();
+    };
+    const resyncViewport = () => {
+      if (resyncRAF) return;
+      resyncRAF = requestAnimationFrame(doResyncViewport);
     };
     window.addEventListener('resize', resyncViewport);
     window.addEventListener('orientationchange', () => setTimeout(resyncViewport, 250));

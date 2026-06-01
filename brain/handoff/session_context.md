@@ -4,7 +4,7 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
-**2026-06-01 (worktree cleanup verified + Group B H1/M12 shipped).** (1) **Worktree
+**2026-06-01 (worktree cleanup verified + Group B fully shipped incl. M13).** (1) **Worktree
 chore resolved.** The "three locked agent worktrees" chore was **stale** — already
 gone. Real remaining clutter = `aop-copy-review` worktree + `copy-review` branch
 (`git cherry` → fully in master) + `integration-pwa-qa` safety-net (all swarm items
@@ -13,13 +13,27 @@ landcover pattern, user-confirmed, recoverable at `5d825f4`). Verified-redundant
 deletion commands handed to the user via `!` (git is the user's surface). **NOTE:**
 the older `session_context` blocks below claiming "master has item 20 (tree pattern)"
 are now wrong — it was removed at `2fd9cc4 "icons. omg…"` on purpose. (2) **Group B
-H1 + M12 shipped** (working tree, UNCOMMITTED, `VERSION` v23 → **v24**). H1: SFWDA
-multiply slider `input` now rAF-coalesced via `scheduleRebakeTiles()` (one bake/
-frame). M12: install button hides only on `outcome === 'accepted'`, survives a
-dismiss. New durable verifier `mvp/scripts/playwright_verify_code_review_groupb.py`
-→ PASS, 0 errors (12-input burst → one coalesced bake; dismiss keeps button, accept
-hides). On-device feel/install-flow confirm still owed. Next P1: Group B M4/M5/M8/
-M9+M10. See `tasks/04_event_app/app_code_review_followups.md` ▶ Next up.
+fully shipped.** Versions: **v24** committed (`c4e080c "v24 batch"`) = H1+M12; **v25**
+working-tree UNCOMMITTED = M4+M5+M8+M9+M10+M13. Changes: **H1** slider rAF-coalesce
+(`scheduleRebakeTiles`, index.html), **M12** install button keeps affordance on
+dismiss (index.html), **M4** `fetchJson` memoized + warm-up loop (parallel overlay
+fetch; SUM→MAX, index.html), **M5** per-row visibility updates counts in place
+(`refreshFeatureListCounts`, no subtree rebuild, index.html), **M8** `resyncViewport`
+rAF-coalesced + size-guarded (index.html), **M9** move anchor → `geometryBboxCenter`
+(fixes multi-part no-op, index.html), **M10** commit-click armed next frame
+(index.html), **M13** dropped contours (~14 MB) + synthetic-tracks (~1 MB) from the
+`sw.js` install precache (both default-off; cache-first `/data/` still lazy-caches
+them → offline-after-once). Verified by observation:
+`mvp/scripts/playwright_verify_code_review_groupb.py` **15/15 PASS 0 errors** (H1
+burst→1 bake; M12 dismiss/accept; M5 count `1/1→0/1` DOM nodes reused; M4 geojson
+loaded; M13 served SW excludes the 2 layers, keeps essentials, SW activates at v25 /
+`aop-data-v25`); `feature_list` move-commit + visibility PASS (only pre-existing
+publishable-export FAIL); `sfwda_multiply` 5/5. On-device confirm owed (H1 slider,
+M12 prompt, M8 iOS keyboard, M9/M10 drag, M13 install cost + offline-after-once).
+**Group B is complete; only Groups C–D (refactor/polish) remain on the card.** NOTE: `playwright_verify_poi_editor.py` has 2 pre-existing fails
+(stale `<title>` assertion; collapsed-panel click-timeout from the v12
+collapse-on-all-widths change) — not from this batch. See
+`tasks/04_event_app/app_code_review_followups.md` ▶ Next up.
 
 **2026-05-31 (Sprint 04 triage pass — doc only, no code).** Re-sorted the open
 Sprint 04 cards. **Moved → `04_event_app/_done/`:** `copy_review_surface.md`,

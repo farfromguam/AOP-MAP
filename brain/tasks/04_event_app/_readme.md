@@ -121,11 +121,12 @@ gated on the user (decision or device) or owed upstream.
 1. ~~`trail_research_integration.md` **Slice 3**~~ — **SHIPPED 2026-06-01**
    (uncommitted). Catalogued trail search hits now preview their one-line
    description; verifier extended + PASS, 0 console errors. `VERSION` bump owed.
-2. `app_code_review_followups.md` **Group B** — ~~H1 (slider rAF-coalesce), M12
-   (install-button dismiss)~~ **SHIPPED 2026-06-01** (working tree, `VERSION` v23 →
-   **v24**; headless-verified by `playwright_verify_code_review_groupb.py`, on-device
-   feel owed). **Next:** M4 fetch-parallelize, M5 row-in-place, M8 resize-coalesce,
-   M9+M10 move-mode. I write them; they ride into the on-device pass. **← next P1.**
+2. `app_code_review_followups.md` **Group B** — ~~H1, M12, M4, M5, M8, M9+M10,
+   M13~~ **ALL SHIPPED 2026-06-01.** v24 (committed, `c4e080c`) = H1+M12; **v25**
+   (working tree, uncommitted) = M4+M5+M8+M9+M10+M13. Headless-verified by
+   `playwright_verify_code_review_groupb.py` 15/15 + `feature_list`/`sfwda_multiply`;
+   on-device feel/install-cost owed. **Only Groups C–D (refactor/polish) remain on
+   the card. Next P1: Groups C–D, or the on-device pass.**
 
 **P2 — decisions to unblock (bundle for one decision session):**
 

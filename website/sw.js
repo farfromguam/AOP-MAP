@@ -5,8 +5,10 @@
  *                                     app opens with no network once installed.
  *   - data   (cache-first)            local GeoJSON/JSON/WebP under ./data/.
  *                                     Best-effort precached on install so a single
- *                                     online "install + open" warms every layer for
- *                                     the field; anything missed is cached on first view.
+ *                                     online "install + open" warms most layers for
+ *                                     the field; the two heaviest default-off layers
+ *                                     are excluded (see DATA_ASSETS / M13) and
+ *                                     anything missed is cached on first view.
  *   - tiles  (cache-first, capped)    third-party raster basemaps (TNMap satellite,
  *                                     AWS terrain, USDA NAIP). Best-effort: a tile is
  *                                     only available offline if it was viewed online.
@@ -30,7 +32,7 @@
 //   3. reconcile DATA_ASSETS below with `ls website/data/`
 // Shell HTML + copy JSON self-heal (stale-while-revalidate), so a missed bump is
 // less dangerous than before — but bulky GeoJSON only refreshes on a bump.
-const VERSION = 'v24'; // keep in sync with #appVersion in index.html
+const VERSION = 'v25'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
@@ -64,15 +66,20 @@ const DATA_ASSETS = [
   './data/aop_water.geojson',
   './data/aop_buildings.geojson',
   './data/aop_cemeteries.geojson',
-  './data/aop_contours.geojson',
   './data/aop_landcover.geojson',
   './data/aop_landcover_9patch.geojson',
   './data/aop_9_patch.geojson',
   './data/aop_lidar_tiles.geojson',
   './data/aop_activity_hotspots.geojson',
   './data/aop_synthetic_activity_hotspots.geojson',
-  './data/aop_synthetic_activity_tracks.geojson',
   './data/aop_visitor_context_callouts.geojson',
+  // Deliberately NOT precached (M13): aop_contours.geojson (~14 MB) and
+  // aop_synthetic_activity_tracks.geojson (~1 MB) are the two heaviest layers and
+  // both default OFF (showContours / showSyntheticActivity unchecked). Precaching
+  // them forced a ~15 MB background download the moment a phone installs — bad on
+  // weak field signal, for layers most installs never turn on. The cache-first
+  // `/data/` fetch handler still caches each the first time it IS viewed online,
+  // so "offline-after-once" holds for whoever actually enables them.
   './data/aop_brand_logos.geojson',
   './data/aop_editor_seed_pois.geojson',
   './data/aop_event_schedule.json',
