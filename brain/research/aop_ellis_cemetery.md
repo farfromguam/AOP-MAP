@@ -93,9 +93,15 @@ into the 1980s.
 - **Burial roster:** USGenWeb Archives, Marion County, TN cemeteries —
   transcription contributed by Leslie Paul Ellis. USGenWeb terms (below) allow
   free non-commercial use as long as the contributor notice travels with the
-  data; they forbid reproduction for profit. Treat the roster as community
-  research, not a publishable AOP layer, until permission/use is settled
-  against `northstar/source_register.md`.
+  data; they forbid reproduction for profit. **Publish decision (2026-06-03,
+  owner): PUBLISHABLE — keep the roster in the served cemetery layer.** AOP is a
+  non-commercial hobby-event map (`northstar/whats_this_for.md`), so the use falls
+  inside USGenWeb's free-non-commercial grant; the contributor notice travels with
+  the data (`burial_source` + `burial_terms` are baked onto every Ellis feature in
+  `website/data/aop_cemeteries.geojson`), satisfying their hard requirement. The
+  prior "community research, not publishable until settled" caveat is now resolved
+  in favor of publishing. If AOP ever monetizes (paid handouts, sponsored print),
+  re-open this against `northstar/source_register.md` before that export.
 
 ### USGenWeb record, retained verbatim
 
@@ -151,8 +157,10 @@ recorded only as "Baby".
 - Whether the cemetery's statutory access route crosses AOP land, and what
   that means for park traffic near the Battle Creek bridge, is an AOP
   operational question, not a mapping one — flag for AOP.
-- Burial-roster publishability needs a `source_register` decision before the
-  roster ships beyond the inspection viewer.
+- ~~Burial-roster publishability needs a `source_register` decision before the
+  roster ships beyond the inspection viewer.~~ **RESOLVED 2026-06-03 (owner):
+  publishable — keep shipping; non-commercial hobby use, contributor notice
+  travels in-data. See the Sources section above. Re-open only if AOP monetizes.**
 
 ## Where this is wired
 

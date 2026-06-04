@@ -4,8 +4,10 @@
 Covers the per-feature visibility primitive added 2026-05-23:
   - Cemeteries: Ellis pre-ticked, other three default-unhidden by user; only
     Ellis draws on layer-on; ticking Bible adds it to the rendered set.
-  - Buildings: 4 in-park (Ellis Cove Rd) pre-ticked, 198 others collapsed and
-    default-off; bulk-toggling the "Other" group makes them visible.
+  - Buildings (curated/derived set, 5 total): 3 public facilities (Pavilion /
+    Farmhouse / Front Office) pre-ticked, 2 private-structure boxes collapsed
+    and default-off; bulk-toggling the "Private structures" group makes them
+    visible. (The ~197 raw 9-patch context footprints were dropped 2026-06-03.)
   - Persistence: per-feature visibility survives a page reload
     (localStorage `aop_feature_visibility_v1`).
   - Search auto-unhide: searching an unticked cemetery flips its row on.
@@ -301,15 +303,15 @@ def main() -> int:
         check("2 cemeteries draw after ticking Bible", visible == 2, f"{visible} drawable")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["cemeteries_bible_on"]))
 
-        # ---- Buildings: in-park only ----
-        print("\n== Buildings: only 4 in-park draw by default ==")
+        # ---- Buildings: public facilities only ----
+        print("\n== Buildings: only 3 public facilities draw by default ==")
         # Close cemetery drawer to avoid confusion
         open_layer_editor(page, "cemeteries")  # toggle off
         page.wait_for_timeout(150)
         set_toggle(page, "showBuildings", True)
         page.wait_for_timeout(500)
         visible = visible_count_in_source(page, "./data/aop_buildings.geojson", "building-footprint-fill", "build_id")
-        check("only 4 buildings (in-park) draw when layer is on", visible == 4,
+        check("only 3 public facilities draw when layer is on", visible == 3,
               f"{visible} drawable")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["buildings_in_park_only"]))
 
@@ -320,30 +322,32 @@ def main() -> int:
         check("feature list panel is open on buildings", summary.get("open") is True)
         if summary.get("open"):
             groups = {g["id"]: g for g in summary["groups"]}
-            check("in_park group present and labeled",
-                  "in_park" in groups and groups["in_park"]["label"] == "In park")
-            check("other group present and labeled",
-                  "other" in groups
-                  and groups["other"]["label"] == "Other buildings in 9-patch")
-            if "in_park" in groups:
-                in_park_rows = groups["in_park"]["rows"]
-                check("4 in-park rows", len(in_park_rows) == 4, str(len(in_park_rows)))
-                check("all in-park rows pre-ticked",
-                      all(r["checked"] for r in in_park_rows),
-                      str([r["checked"] for r in in_park_rows]))
-                names = " | ".join(r["name"] or "" for r in in_park_rows)
-                check("1010 row annotated as pavilion", "pavilion" in names.lower(), names)
-            if "other" in groups:
-                check("198 other rows",
-                      len(groups["other"]["rows"]) == 198,
-                      str(len(groups["other"]["rows"])))
+            check("facilities group present and labeled",
+                  "facilities" in groups and groups["facilities"]["label"] == "Park facilities")
+            check("private group present and labeled",
+                  "private" in groups
+                  and groups["private"]["label"] == "Private structures")
+            if "facilities" in groups:
+                facility_rows = groups["facilities"]["rows"]
+                check("3 facility rows", len(facility_rows) == 3, str(len(facility_rows)))
+                check("all facility rows pre-ticked",
+                      all(r["checked"] for r in facility_rows),
+                      str([r["checked"] for r in facility_rows]))
+                names = " | ".join(r["name"] or "" for r in facility_rows).lower()
+                check("facility rows annotated (pavilion / farmhouse / front office)",
+                      all(tag in names for tag in ("pavilion", "farmhouse", "front office")),
+                      names)
+            if "private" in groups:
+                check("2 private-structure rows",
+                      len(groups["private"]["rows"]) == 2,
+                      str(len(groups["private"]["rows"])))
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["buildings_panel_open"]))
 
-        # ---- Bulk-toggle "Other" → all 202 visible ----
-        print("\n== Buildings: bulk-toggle 'Other' group ==")
-        toggle_group_bulk(page, "other")
+        # ---- Bulk-toggle "Private structures" → all 5 curated visible ----
+        print("\n== Buildings: bulk-toggle 'Private structures' group ==")
+        toggle_group_bulk(page, "private")
         visible = visible_count_in_source(page, "./data/aop_buildings.geojson", "building-footprint-fill", "build_id")
-        check("all 202 buildings drawable after bulk-on", visible == 202,
+        check("all 5 curated buildings drawable after bulk-on", visible == 5,
               f"{visible} drawable")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["buildings_all_on"]))
 
@@ -366,8 +370,8 @@ def main() -> int:
         check("Bible still drawable after reload (2 cemeteries)",
               post_cemetery == 2, f"{post_cemetery} drawable")
         post_building = visible_count_in_source(page, "./data/aop_buildings.geojson", "building-footprint-fill", "build_id")
-        check("Other group still bulk-on after reload (202 buildings)",
-              post_building == 202, f"{post_building} drawable")
+        check("Private group still bulk-on after reload (5 curated buildings)",
+              post_building == 5, f"{post_building} drawable")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["after_reload"]))
 
         # ---- Search auto-unhide ----
@@ -525,18 +529,32 @@ def main() -> int:
         # it triggers the same enterMoveMode() path the ✋ button hits.
         print("\n== POIs drag-to-move ==")
 
-        def click_move_button(row_id: str) -> None:
+        def click_editor_action(fid: str, action: str) -> None:
+            # v1 editor: Move / Lock / Copy GeoJSON etc. are labeled buttons
+            # inside the inline accordion, not row-level emoji icons. Open the
+            # row's editor via its ▸ chevron, then click the named action.
             page.evaluate(
-                """(fid) => {
+                """({ fid, action }) => {
                   const row = document.querySelector(`.feature-row[data-feature-id="${fid}"]`);
                   if (!row) throw new Error('row ' + fid + ' not found');
-                  const btn = row.querySelector('.feature-move');
-                  if (!btn) throw new Error('move button missing for ' + fid);
+                  if (!row.classList.contains('editor-open')) {
+                    const chev = row.querySelector('.feature-row-expand');
+                    if (!chev) throw new Error('no editor chevron for ' + fid);
+                    chev.click();
+                  }
+                  const ed = document.querySelector(`.feature-row-editor[data-feature-id="${fid}"]`);
+                  if (!ed) throw new Error('editor did not open for ' + fid);
+                  const btn = [...ed.querySelectorAll('.editor-action')].find(
+                    (b) => b.textContent.trim() === action);
+                  if (!btn) throw new Error(action + ' action missing for ' + fid);
                   btn.click();
                 }""",
-                row_id,
+                {"fid": fid, "action": action},
             )
             page.wait_for_timeout(150)
+
+        def click_move_button(row_id: str) -> None:
+            click_editor_action(row_id, "Move")
 
         def banner_text():
             return page.evaluate(
@@ -675,11 +693,17 @@ def main() -> int:
               names == sorted(["Monteagle plateau services",
                               "South Pittsburg / Kimball supply run"]),
               str(names))
-        # The move button should exist on visitor-context rows.
+        # The Move action should exist in the accordion for visitor-context rows.
         has_move_btn = page.evaluate(
-            "!!document.querySelector('.feature-row[data-feature-id=\"Monteagle plateau services\"] .feature-move')"
+            """() => {
+              const row = document.querySelector('.feature-row[data-feature-id="Monteagle plateau services"]');
+              if (!row) return false;
+              if (!row.classList.contains('editor-open')) row.querySelector('.feature-row-expand').click();
+              const ed = document.querySelector('.feature-row-editor[data-feature-id="Monteagle plateau services"]');
+              return !!(ed && [...ed.querySelectorAll('.editor-action')].find((b) => b.textContent.trim() === 'Move'));
+            }"""
         )
-        check("✋ button present on visitor-context rows", has_move_btn is True)
+        check("Move action present on visitor-context rows", has_move_btn is True)
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["visitor_context_panel"]))
 
         # Read the original centroid of the Monteagle callout so we can assert
@@ -697,15 +721,8 @@ def main() -> int:
             target_name,
         )
 
-        # Click ✋ on the Monteagle row, then click the map at a known pixel.
-        page.evaluate(
-            """(name) => {
-              const row = document.querySelector(`.feature-row[data-feature-id="${name}"]`);
-              row.querySelector('.feature-move').click();
-            }""",
-            target_name,
-        )
-        page.wait_for_timeout(150)
+        # Click Move in the Monteagle row's accordion, then click the map.
+        click_editor_action(target_name, "Move")
         check("visitor-context banner up after ✋",
               "Move mode" in (banner_text() or ""),
               str(banner_text()))
@@ -777,7 +794,7 @@ def main() -> int:
 
         # ---- Map-click → panel reveal (user request 2026-05-23) ----
         # Clicking a feature on the map should expand its right-panel drawer,
-        # expand the containing group if collapsed (buildings "Other"), scroll
+        # expand the containing group if collapsed (buildings "Private structures"), scroll
         # the row into view, and flash it briefly. Existing popups stay.
         print("\n== Map-click → right-panel reveal ==")
 
@@ -842,44 +859,48 @@ def main() -> int:
               str(state["revealedIds"]))
 
         # --- 2) revealFeatureInPanel auto-expands a collapsed group ---
-        # Drop into the "Other" group: pick a building NOT in the in-park set.
+        # Drop into the "Private structures" group: pick a private-structure box
+        # (889 Ellis reads outside the boundary). reveal works on the list row
+        # directly (programmatic), so it surfaces a presence-only box even though
+        # the box isn't an interactive map layer.
         other_id = page.evaluate(
             """async () => {
               const r = await fetch('./data/aop_buildings.geojson');
               const d = await r.json();
               const f = d.features.find((x) =>
-                (x.properties || {}).inside_aop_boundary !== true);
+                (x.properties || {}).aop_structure_box === true);
               return f && f.properties.build_id;
             }"""
         )
-        check("non-in-park building build_id resolved", other_id is not None,
+        check("private-structure build_id resolved", other_id is not None,
               str(other_id))
-        # Re-render fresh so the "Other" group is in its default collapsed state.
+        # Re-render fresh so the "Private structures" group is in its default
+        # collapsed state.
         close_any_drawer()
         # Open buildings drawer to seed the collapsed default, then close again
         # so reveal has to handle a cold-start re-expansion.
         page.evaluate("() => toggleTunableExpansion('buildings')")
         page.wait_for_timeout(150)
-        # Confirm "Other" is collapsed by default.
+        # Confirm "Private structures" is collapsed by default.
         other_collapsed = page.evaluate(
-            "() => featureListRuntime.buildings.collapsed.other"
+            "() => featureListRuntime.buildings.collapsed.private"
         )
-        check("'Other' group collapsed by default",
+        check("'Private structures' group collapsed by default",
               other_collapsed is True, str(other_collapsed))
         # Now ask the reveal to surface a row from the collapsed group.
         page.evaluate("(id) => revealFeatureInPanel('buildings', id)", other_id)
         page.wait_for_timeout(250)
         post_collapsed = page.evaluate(
-            "() => featureListRuntime.buildings.collapsed.other"
+            "() => featureListRuntime.buildings.collapsed.private"
         )
-        check("reveal expanded the 'Other' group", post_collapsed is False,
+        check("reveal expanded the 'Private structures' group", post_collapsed is False,
               str(post_collapsed))
-        # The other-id row should now exist in the DOM.
+        # The private-structure row should now exist in the DOM.
         row_present = page.evaluate(
             """(id) => !!document.querySelector(`.feature-row[data-feature-id="${id}"]`)""",
             other_id,
         )
-        check("non-in-park row visible after reveal", row_present is True)
+        check("private-structure row visible after reveal", row_present is True)
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["reveal_building_other"]))
 
         # --- 3) revealFeatureInPanel for cemetery + visitor-context + POI ---
@@ -1008,13 +1029,7 @@ def main() -> int:
             "() => { if (expandedTuneKey !== 'visitorContext') toggleTunableExpansion('visitorContext'); }"
         )
         page.wait_for_timeout(150)
-        page.evaluate(
-            """() => {
-              const row = document.querySelector('.feature-row[data-feature-id="South Pittsburg / Kimball supply run"]');
-              row.querySelector('.feature-move').click();
-            }"""
-        )
-        page.wait_for_timeout(150)
+        click_editor_action("South Pittsburg / Kimball supply run", "Move")
         check("move banner appeared in move-suppression test",
               "Move mode" in (banner_text() or ""))
         # While staged, click the OTHER callout. Reveal must NOT switch drawers
@@ -1081,30 +1096,21 @@ def main() -> int:
         # only that section's toggles/sliders/paints/runtime. An import
         # only touches that section.
         print("\n== Per-section Export / Import ==")
-        # Every targeted section header carries the export-only ↑ button.
-        # Import is intentionally not exposed in the UI per user direction
-        # 2026-05-23 ("I will pass to you or put directly in code") — the
-        # apply functions still exist for code-level use.
-        # Publishable joined the per-section export set on 2026-05-25
-        # (right_panel_editor_consistency build card). POI section is still
-        # excluded — its toggles are derived bindings of `show*` IDs that
-        # sectionInputs does not collect.
-        for sid in ("derived-layers", "source-layers", "editor", "publishable"):
-            exp = page.evaluate(
-                """(sid) => !!document.querySelector(`[data-section-export="${sid}"]`)""",
-                sid,
-            )
-            check(f"{sid}: ↑ Export button present", exp is True)
-        # Per-section import buttons were retired — none should exist.
+        # v1 editor (2026-06-03): the only export path is GeoJSON copy
+        # (per-feature ⧉ Copy GeoJSON in the accordion + the per-layer "Copy
+        # all"). The per-section "copy settings" ⧉ buttons and per-section
+        # import buttons were all removed from the UI. The underlying
+        # buildSectionPayload / applySectionPayload functions stay (they back
+        # preset save/apply), so the round-trip below still exercises them.
+        any_section_export = page.evaluate(
+            "() => document.querySelectorAll('[data-section-export]').length"
+        )
+        check("section copy-settings ⧉ buttons removed", any_section_export == 0,
+              f"{any_section_export} remain")
         any_import_btn = page.evaluate(
             "() => !!document.querySelector('[data-section-import]')"
         )
         check("no per-section ↓ Import buttons", any_import_btn is False)
-        # POI + Notes sections do NOT get export.
-        no_poi = page.evaluate(
-            "!!document.querySelector('[data-section-export=\"poi\"]') === false"
-        )
-        check("poi section has no export button", no_poi is True)
 
         # --- editor section round-trip ---
         # Snapshot the editor payload, mutate, then restore.
@@ -1146,11 +1152,11 @@ def main() -> int:
         check("source-layers payload has cemeteries visibility",
               "cemeteries" in (source_payload.get("runtime", {}).get("feature_visibility") or {}),
               str((source_payload.get("runtime", {}) or {}).get("feature_visibility", {})))
-        check("source-layers payload has buildings visibility",
-              "buildings" in (source_payload.get("runtime", {}).get("feature_visibility") or {}))
-        # Source-layers payload should NOT include positioned-features
-        # overrides (visitor-context + brand logos slices ride with the editor
-        # section's runtime under the unified store).
+        # Buildings moved to derived-layers (curated/derived set), so the
+        # source-layers payload no longer carries them.
+        check("source-layers payload no longer carries buildings (moved to derived)",
+              "buildings" not in (source_payload.get("runtime", {}).get("feature_visibility") or {}))
+        # Source-layers has no positionable layers, so no positioned-features key.
         check("source-layers payload does NOT carry positioned_features overrides",
               "positioned_features" not in (source_payload.get("runtime") or {}))
 
@@ -1168,9 +1174,15 @@ def main() -> int:
               str(list(pf_slice.keys())))
 
         # --- derived-layers section round-trip ---
+        # Buildings now live here (curated/derived set) and are drag-adjustable,
+        # so the derived-layers payload carries buildings visibility + a
+        # positioned-features slot (keyed buildings:<build_id>).
         derived_payload = page.evaluate("() => buildSectionPayload('derived-layers')")
-        check("derived-layers payload does NOT carry positioned_features overrides",
-              "positioned_features" not in (derived_payload.get("runtime") or {}))
+        check("derived-layers payload carries buildings visibility",
+              "buildings" in (derived_payload.get("runtime", {}).get("feature_visibility") or {}),
+              str((derived_payload.get("runtime", {}) or {}).get("feature_visibility", {})))
+        check("derived-layers payload carries positioned_features slot (buildings positionable)",
+              "positioned_features" in (derived_payload.get("runtime") or {}))
         check("derived-layers payload still carries background paint",
               "background" in (derived_payload.get("paints") or {}),
               str(list((derived_payload.get("paints") or {}).keys()))[:200])
@@ -1213,10 +1225,12 @@ def main() -> int:
             "() => !document.getElementById('importAll')"
         )
         check("importAll button removed", no_import_all is True)
-        export_all_present = page.evaluate(
-            "() => !!document.getElementById('exportAll')"
+        # v1 editor: the panel-header settings-snapshot button (#exportAll) was
+        # removed — the only export path is GeoJSON copy.
+        export_all_gone = page.evaluate(
+            "() => !document.getElementById('exportAll')"
         )
-        check("Export-all button still present", export_all_present is True)
+        check("Export-all settings button removed", export_all_gone is True)
 
         # --- Per-feature copy button: drop-in GeoJSON Feature ---
         # Re-open the visitor-context drawer; each row should now carry an ↑
@@ -1230,17 +1244,23 @@ def main() -> int:
             "() => { if (expandedTuneKey !== 'visitorContext') toggleTunableExpansion('visitorContext'); }"
         )
         page.wait_for_timeout(150)
+        # v1 editor: "Copy GeoJSON" is a labeled action inside the accordion.
         has_copy_btn = page.evaluate(
-            """() => !!document.querySelector(
-              '.feature-row[data-feature-id="Monteagle plateau services"] .feature-copy'
-            )"""
+            """() => {
+              const row = document.querySelector('.feature-row[data-feature-id="Monteagle plateau services"]');
+              if (!row) return false;
+              if (!row.classList.contains('editor-open')) row.querySelector('.feature-row-expand').click();
+              const ed = document.querySelector('.feature-row-editor[data-feature-id="Monteagle plateau services"]');
+              return !!(ed && [...ed.querySelectorAll('.editor-action')].find((b) => b.textContent.trim() === 'Copy GeoJSON'));
+            }"""
         )
-        check("per-feature ↑ copy button present on visitor-context row",
+        check("Copy GeoJSON action present on visitor-context row",
               has_copy_btn is True)
         page.evaluate(
-            """() => document.querySelector(
-              '.feature-row[data-feature-id="Monteagle plateau services"] .feature-copy'
-            ).click()"""
+            """() => {
+              const ed = document.querySelector('.feature-row-editor[data-feature-id="Monteagle plateau services"]');
+              [...ed.querySelectorAll('.editor-action')].find((b) => b.textContent.trim() === 'Copy GeoJSON').click();
+            }"""
         )
         page.wait_for_timeout(400)
         copied = page.evaluate("() => navigator.clipboard.readText()")

@@ -1,0 +1,3 @@
+
+aspergers is something like a alien child trying to integrate with the world.
+-- I feel like there is a term for this...

@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
-"""Import FEMA USA Structures building footprints for the AOP 9-patch.
+"""Import the curated AOP park buildings from FEMA USA Structures.
 
 Pulls FEMA/ORNL USA Structures footprints that intersect the AOP 9-patch
 envelope, normalizes the ArcGIS fields into compact map properties, tags whether
 each footprint's representative point falls inside the current AOP working
-boundary, and writes website/data/aop_buildings.geojson.
+boundary, then KEEPS ONLY the owner-curated AOP buildings (CURATED_ADDRESSES:
+3 facilities + 2 private-structure boxes) and writes
+website/data/aop_buildings.geojson. The ~197 raw 9-patch context footprints are
+dropped on purpose — the served buildings layer is the derived/curated set.
+
+Hand-nudged footprint geometry already on disk (the viewer's drag-to-adjust,
+baked back via export_positioned_features.py) is preserved across re-imports so
+a refresh never clobbers a correction to FEMA's slightly-off footprints.
 
 Stdlib only. Re-runnable; atomic write.
 """
@@ -35,6 +42,80 @@ SOURCE_NAME = "FEMA USA Structures / ORNL"
 
 # AOP 9-patch acquisition envelope (WGS84 west, south, east, north).
 BBOX = (-85.782935283, 35.067164188, -85.717154097, 35.117928496)
+
+# Owner-confirmed AOP building identity (user, 2026-06-01), keyed by the
+# title-cased address. These authored designations OVERRIDE the geometric
+# `inside_aop_boundary` centroid test on purpose: the owner knows the park
+# firsthand (e.g. 889 is "loosely in the bounds" but is a private residence the
+# centroid test reads as outside). Two tiers:
+#   - FACILITIES: public destinations -> searchable, clickable, in the POI list.
+#   - PRIVATE STRUCTURES: present-but-private -> rendered as a non-interactive
+#     black-box presence marker (no search, no popup). Privacy posture for
+#     private homes on AOP land (northstar: show what's real, gate what's private).
+# Every other footprint is region/reference context we don't classify.
+AOP_FACILITIES = {
+    "1010 Ellis Cove Road": {
+        "name": "Pavilion",
+        "role": "Pavilion / G-Central — registration, awards, campfire",
+    },
+    "1033 Ellis Cove Road": {
+        "name": "Farmhouse",
+        "role": "Rentable farmhouse (public)",
+    },
+    "880 Ellis Cove Road": {
+        "name": "Front Office",
+        "role": "Front office (public)",
+    },
+}
+AOP_PRIVATE_STRUCTURES = {
+    "665 Ellis Cove Road",   # private residence
+    "889 Ellis Cove Road",   # private residence, loosely in-bounds (centroid reads outside)
+}
+
+# The served buildings layer is the CURATED / DERIVED set: only the owner-chosen
+# AOP buildings ship (3 facilities + 2 private-structure boxes). The ~197 raw
+# FEMA 9-patch context footprints are dropped on purpose (owner decision,
+# 2026-06-03) — "derived" here means the curated/published set, matching the
+# rest of the project's derived layers. The full FEMA dump is always
+# re-derivable from the live service via this importer; we just don't store it.
+CURATED_ADDRESSES = set(AOP_FACILITIES) | AOP_PRIVATE_STRUCTURES
+
+
+def apply_authored_building_tags(props: dict) -> None:
+    """Stamp owner-confirmed facility / private-structure designations in place.
+
+    Keyed on the title-cased ``address``. Idempotent and safe to re-run over an
+    already-tagged collection, so it can be applied both at import time and as a
+    re-stamp over the existing served geojson without a network refetch.
+    """
+    address = props.get("address") or ""
+    facility = AOP_FACILITIES.get(address)
+    if facility:
+        props["aop_facility"] = True
+        props["facility_name"] = facility["name"]
+        props["facility_role"] = facility["role"]
+        props["publish_status"] = "facility"
+        props.pop("aop_structure_box", None)
+        props.pop("aop_private", None)
+    elif address in AOP_PRIVATE_STRUCTURES:
+        props["aop_structure_box"] = True
+        props["aop_private"] = True
+        props["publish_status"] = "presence_only"
+        props["license_or_permission"] = (
+            "Private structure on AOP land; shown as presence only, not published "
+            "as a destination"
+        )
+        props.pop("aop_facility", None)
+        props.pop("facility_name", None)
+        props.pop("facility_role", None)
+    else:
+        # Region / unclassified context — clear any stale flags so re-runs over an
+        # edited file stay honest.
+        for key in (
+            "aop_facility", "facility_name", "facility_role",
+            "aop_structure_box", "aop_private",
+        ):
+            props.pop(key, None)
 
 OUT_FIELDS = [
     "OBJECTID",
@@ -239,7 +320,31 @@ def normalize_feature(feature: dict, aop_boundary: dict | None) -> dict:
         "publish_status": "raw_context",
         "confidence": "medium",
     }
+    apply_authored_building_tags(normalized_props)
     return {"type": "Feature", "properties": normalized_props, "geometry": geometry}
+
+
+def load_prior_geometry() -> dict:
+    """Map of ``build_id`` -> geometry from the existing served file, if any.
+
+    The curated footprints are drag-adjustable in the viewer and baked back into
+    aop_buildings.geojson (export_positioned_features.py). FEMA's footprints are
+    "a little off", so those hand-nudged positions are the corrected truth — a
+    re-import must NOT clobber them with the raw service geometry. We keep the
+    on-disk geometry for any build_id we already have.
+    """
+    try:
+        with open(OUT_FILE, "r") as fh:
+            data = json.load(fh)
+    except (FileNotFoundError, ValueError):
+        return {}
+    prior: dict = {}
+    for feature in data.get("features", []):
+        bid = (feature.get("properties") or {}).get("build_id")
+        geom = feature.get("geometry")
+        if bid is not None and geom:
+            prior[bid] = geom
+    return prior
 
 
 def main() -> int:
@@ -251,11 +356,27 @@ def main() -> int:
 
     raw_features = fetch_features(object_ids)
     aop_boundary = load_aop_boundary()
-    features = [normalize_feature(feature, aop_boundary) for feature in raw_features]
+    all_features = [normalize_feature(feature, aop_boundary) for feature in raw_features]
+    fetched_total = len(all_features)
+
+    # Curated / derived output: keep only the owner-chosen AOP buildings. The
+    # raw 9-patch context footprints are dropped on purpose (see
+    # CURATED_ADDRESSES). Preserve any hand-nudged geometry already on disk so a
+    # re-import doesn't undo viewer corrections to FEMA's slightly-off footprints.
+    prior_geometry = load_prior_geometry()
+    features = []
+    for feat in all_features:
+        if (feat["properties"].get("address") or "") not in CURATED_ADDRESSES:
+            continue
+        prior = prior_geometry.get(feat["properties"].get("build_id"))
+        if prior:
+            feat["geometry"] = prior
+        features.append(feat)
     features.sort(key=lambda f: (
         f["properties"]["building_label"],
         f["properties"]["source_object_id"] or 0,
     ))
+    dropped = fetched_total - len(features)
 
     collection = {
         "type": "FeatureCollection",
@@ -265,10 +386,21 @@ def main() -> int:
         "_generated_by": "mvp/scripts/import_fema_buildings.py",
         "_retrieved_on": dt.date.today().isoformat(),
         "_aop_9_patch_bbox": list(BBOX),
+        "_derived": (
+            "Curated AOP park buildings only: 3 public facilities (Pavilion, "
+            "Farmhouse, Front Office) + 2 private-structure presence boxes "
+            "(665, 889). Raw FEMA 9-patch context footprints are dropped on "
+            "purpose (derived = curated/published set). Footprints are "
+            "drag-adjustable in the viewer; bake moves back with "
+            "mvp/scripts/export_positioned_features.py."
+        ),
         "_sources_checked": [
             {
                 "name": "FEMA USA Structures",
-                "result": f"{len(features)} polygon footprints imported",
+                "result": (
+                    f"{len(features)} curated AOP buildings kept from "
+                    f"{fetched_total} FEMA footprints (raw 9-patch context dropped)"
+                ),
                 "selected": True,
             },
             {
@@ -299,7 +431,10 @@ def main() -> int:
         raise
 
     inside = sum(1 for f in features if f["properties"]["inside_aop_boundary"])
-    print(f"Wrote {len(features)} building footprints to {OUT_FILE}")
+    preserved = sum(1 for f in features if f["properties"].get("build_id") in prior_geometry)
+    print(f"Wrote {len(features)} curated building footprints to {OUT_FILE}")
+    print(f"  dropped {dropped} raw 9-patch context footprint(s) (kept curated only)")
+    print(f"  preserved {preserved} hand-nudged geometry from the prior served file")
     print(f"  {inside} footprint(s) have centroids inside the current AOP boundary")
     print("  by occupancy class:")
     counts: dict[str, int] = {}

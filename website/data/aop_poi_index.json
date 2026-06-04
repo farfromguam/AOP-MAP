@@ -17,7 +17,7 @@
     {
       "id": "buildings",
       "label": "Buildings in the park",
-      "note": "FEMA USA Structures footprints with their representative point inside the AOP working envelope. AOP confirms 1010 as the pavilion; the other three remain unconfirmed-purpose."
+      "note": "Public park facilities from FEMA USA Structures footprints, AOP-confirmed (2026-06): 1010 Pavilion, 1033 rentable Farmhouse, 880 Front Office. Private residences on AOP land (665, 889) are intentionally not listed — they render as non-interactive black-box presence markers only."
     },
     {
       "id": "trails",
@@ -98,20 +98,14 @@
     {
       "group": "buildings",
       "match": { "source": "buildings", "address": "1033 Ellis Cove Road" },
-      "blurb": null,
-      "revisit_note": "What is at 1033 Ellis Cove? FEMA tags it Residential / Single Family — verify whether it is a residence, an outbuilding the event uses, or off-limits before writing visitor copy."
-    },
-    {
-      "group": "buildings",
-      "match": { "source": "buildings", "address": "665 Ellis Cove Road" },
-      "blurb": null,
-      "revisit_note": "What is at 665 Ellis Cove? FEMA tags it Residential / Single Family but the event schedule lists it as a Proving Grounds candidate. Confirm actual use with AOP."
+      "blurb": "The Farmhouse — a public building on AOP land that can be rented. The 1033 Ellis Cove Road footprint; AOP-confirmed as the rentable farmhouse (2026-06).",
+      "revisit_note": null
     },
     {
       "group": "buildings",
       "match": { "source": "buildings", "address": "880 Ellis Cove Road" },
-      "blurb": null,
-      "revisit_note": "What is at 880 Ellis Cove? FEMA-derived footprint, residential class, no known event role. Confirm whether it matters to visitors."
+      "blurb": "The Front Office — public building at 880 Ellis Cove Road. AOP-confirmed (2026-06).",
+      "revisit_note": null
     },
     {
       "group": "trails",

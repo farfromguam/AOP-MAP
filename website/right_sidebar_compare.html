@@ -3,59 +3,374 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Right sidebar — compare A / B / C</title>
+  <title>Right sidebar — C · edit dock visible or not</title>
   <style>
     :root {
-      --brown-ink:#2e2418; --brown-mid:#4e4128; --brown-dark:#2a1f12;
-      --cream-border:#d8cdb4; --moss-dark:#384833; --gold:#d4a866;
+      --brown-ink:#2e2418; --brown-mid:#4e4128; --brown-dark:#2a1f12; --brown-soft:#6a5638;
+      --cream-hover:#efe2c6; --cream-surface:#faf6eb; --cream-border:#d8cdb4;
+      --control-bg:#fffdf5; --control-border:#b9aa88;
+      --moss:#5f7157; --moss-dark:#384833; --moss-soft:#e3ebdc;
+      --rust:#a85020; --rust-soft:#f1d8c6;
+      --gold:#d4a866; --gold-soft:rgba(212,168,102,0.18);
     }
     *{box-sizing:border-box;}
-    body,html{margin:0;height:100%;font:14px/1.4 Inter,system-ui,sans-serif;color:var(--brown-ink);background:#1f1c14;}
-    .header{padding:10px 16px;color:#f7f1e2;background:var(--moss-dark);display:flex;align-items:center;gap:14px;}
+    body,html{margin:0;font:14px/1.45 Inter,system-ui,sans-serif;color:var(--brown-ink);background:#1f1c14;}
+    body{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+    .header{padding:10px 16px;color:#f7f1e2;background:var(--moss-dark);display:flex;align-items:baseline;gap:14px;flex:0 0 auto;}
     .header h1{margin:0;font-size:1rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
-    .header .lede{font-size:.78rem;color:rgba(247,241,226,.78);max-width:780px;}
-    .axis{padding:10px 16px;background:#2a2718;color:#f4ead0;font-size:.8rem;border-bottom:1px solid #3b3624;display:flex;gap:18px;flex-wrap:wrap;}
+    .header .lede{font-size:.78rem;color:rgba(247,241,226,.78);max-width:840px;}
+    .axis{padding:9px 16px;background:#2a2718;color:#f4ead0;font-size:.8rem;border-bottom:1px solid #3b3624;display:flex;gap:18px;flex-wrap:wrap;flex:0 0 auto;}
     .axis b{color:#f7d99a;}
-    .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;}
-    .cell{position:relative;border-right:1px solid #3b3624;height:calc(100vh - 96px);overflow:hidden;}
+
+    .grid{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:1fr 1fr;}
+    .cell{position:relative;min-height:0;overflow:hidden;border-right:1px solid #3b3624;}
     .cell:last-child{border-right:0;}
-    .cell iframe{width:100%;height:100%;border:0;background:#fff;}
-    .cell-label{position:absolute;top:8px;right:8px;z-index:3;background:rgba(0,0,0,.55);color:#fff;padding:4px 10px;border-radius:4px;font:700 .7rem Inter,system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;pointer-events:none;}
-    .open-link{position:absolute;bottom:8px;right:8px;z-index:3;background:#fff8e8;border:1px solid var(--gold);padding:3px 8px;border-radius:5px;font:700 .7rem Inter,system-ui,sans-serif;text-decoration:none;color:var(--brown-dark);}
+    .cell .map{position:absolute;inset:0;background:
+      radial-gradient(circle at 30% 30%,#c9d6b7,transparent 60%),
+      radial-gradient(circle at 70% 70%,#b9c2a0,transparent 55%),
+      linear-gradient(135deg,#9eab8a,#7e8b6a);}
+    .cell .map::after{content:"";position:absolute;inset:0;background-image:
+      linear-gradient(rgba(255,255,255,0.05) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,0.05) 1px,transparent 1px);
+      background-size:60px 60px;}
+    .state-label{position:absolute;top:12px;left:12px;z-index:6;background:var(--moss-dark);color:#f7f1e2;
+      padding:6px 12px;border-radius:6px;font:700 .74rem Inter,system-ui,sans-serif;letter-spacing:.04em;
+      text-transform:uppercase;box-shadow:0 4px 14px rgba(0,0,0,.22);max-width:calc(100% - 24px);}
+    .state-label small{display:block;font:400 .72rem Inter,system-ui,sans-serif;text-transform:none;letter-spacing:0;color:rgba(247,241,226,.8);margin-top:2px;}
+
+    /* ---- panel: flex column, FIXED height → tree scrolls, dock (if any) pins to bottom ---- */
+    .panel{position:absolute;top:12px;bottom:12px;right:12px;width:min(400px,calc(100% - 24px));
+      display:flex;flex-direction:column;overflow:hidden;
+      background:rgba(255,255,255,.94);border-radius:12px;box-shadow:0 10px 35px rgba(0,0,0,.18);}
+    .panel-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;padding:14px;}
+
+    .panel-header{display:flex;align-items:center;gap:8px;}
+    .panel-header h1{margin:0;flex:1;font-size:1rem;}
+    .panel-export,.panel-collapse{background:#fff8e8;border:1px solid #d8d0bd;border-radius:6px;width:28px;height:24px;color:var(--brown-mid);cursor:pointer;}
+    .preset-status{display:block;color:var(--brown-soft);font-size:.78rem;margin:6px 0 0;}
+    .panel-section{border-top:1px solid #d8d0bd;padding-top:8px;margin-top:10px;}
+    .panel-section.collapsed .section-content{display:none;}
+    .section-header{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:4px;margin-bottom:8px;}
+    .section-label{font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--brown-ink);}
+    .section-action,.section-toggle{background:#fff8e8;border:1px solid #d8d0bd;border-radius:6px;color:var(--brown-mid);cursor:pointer;}
+    .section-action{padding:1px 6px;font:700 .72rem Inter,system-ui,sans-serif;}
+    .section-toggle{width:28px;height:24px;}
+    .panel-section.collapsed .section-chevron{display:inline-block;transform:rotate(-90deg);}
+
+    /* ---- tree: flat. no box around buckets, no colored source dots ---- */
+    .editor-tree{display:grid;gap:10px;}
+    .editor-bucket{display:grid;gap:4px;}
+    .editor-bucket-head{display:grid;grid-template-columns:22px 18px minmax(0,1fr) auto auto;gap:6px;align-items:center;padding:2px 2px 4px;border-bottom:1px solid var(--cream-border);font-size:.84rem;color:var(--brown-dark);font-weight:700;}
+    .editor-bucket-head .chev{background:none;border:0;cursor:pointer;padding:0;width:22px;height:22px;font-size:.95rem;color:var(--brown-soft);}
+    .editor-bucket-head .glyph{color:var(--brown-soft);margin-right:2px;}
+    .editor-bucket-head .count{color:var(--brown-soft);font-size:.75rem;font-weight:400;}
+    .editor-bucket-head .add-btn{background:var(--moss-soft);border:1px solid var(--moss);color:var(--moss-dark);cursor:pointer;padding:0;width:22px;height:22px;border-radius:5px;font:700 .95rem Inter,system-ui,sans-serif;line-height:1;}
+    .editor-bucket[data-bucket="visitor"] .editor-bucket-head{grid-template-columns:22px 18px minmax(0,1fr) auto;}
+    .editor-bucket-body{padding:0;display:grid;gap:4px;}
+
+    .editor-subgroup{border-radius:6px;}
+    .editor-subgroup-head{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:6px;align-items:center;padding:3px 6px;font-size:.78rem;color:var(--brown-mid);cursor:pointer;}
+    .editor-subgroup-head .chev{background:none;border:0;padding:0;width:18px;height:18px;font-size:.82rem;color:var(--brown-soft);cursor:pointer;}
+    .editor-subgroup-head .label{font-weight:600;color:var(--brown-dark);}
+    .editor-subgroup-head .count{color:var(--brown-soft);font-size:.72rem;}
+    .editor-subgroup-body{display:grid;gap:2px;padding:2px 4px 4px 22px;}
+
+    /* row stays ultra-thin: ☑ ★ name (click selects into dock) */
+    .row{display:grid;grid-template-columns:16px 22px minmax(0,1fr);gap:6px;align-items:center;
+      padding:3px 4px;border-radius:5px;font-size:.82rem;cursor:pointer;}
+    .row:hover{background:rgba(247,235,200,.6);}
+    .row input[type=checkbox]{margin:0;}
+    .row .star{background:none;border:0;width:22px;height:22px;font-size:1rem;color:var(--brown-soft);cursor:pointer;padding:0;}
+    .row .star.on{color:var(--rust);}
+    .row .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .row .name .tag{color:var(--rust);font-weight:600;font-size:.76rem;margin-left:4px;}
+    .row.selected{background:var(--rust-soft);outline:1px solid var(--rust);}
+    .row.selected .name{color:var(--brown-dark);font-weight:600;}
+
+    .visitor-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:6px;align-items:center;
+      padding:4px;border-radius:5px;font-size:.82rem;cursor:pointer;}
+    .visitor-row:hover{background:rgba(247,235,200,.6);}
+    .visitor-row .star{color:var(--rust);background:none;border:0;width:22px;height:22px;font-size:1rem;padding:0;}
+    .visitor-row .name{min-width:0;overflow:hidden;text-overflow:ellipsis;}
+    .visitor-row .chip-pill{font-size:.62rem;padding:1px 6px;border-radius:8px;background:var(--moss-soft);color:var(--moss-dark);text-transform:uppercase;letter-spacing:.02em;font-weight:700;}
+
+    .editor-create-footer{border-top:1px dashed var(--cream-border);margin-top:10px;padding-top:10px;display:grid;gap:6px;}
+    .editor-create-footer .row-buttons{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+    .editor-create-footer button{padding:6px 4px;font:700 .8rem Inter,system-ui,sans-serif;border:1px solid var(--control-border);background:#fff8e8;color:var(--brown-ink);border-radius:6px;cursor:pointer;}
+
+    /* ---- the edit dock: shows ONLY when a feature is selected; pinned to panel bottom ---- */
+    .edit-dock{flex:0 0 auto;display:flex;flex-direction:column;max-height:62%;
+      background:linear-gradient(180deg,#fff8e2,#fff3cc);border-top:1px solid var(--gold);
+      border-radius:0 0 12px 12px;overflow:hidden;box-shadow:0 -6px 18px rgba(0,0,0,.07);}
+    .dock-head{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;padding:7px 10px;background:#f6e5b8;border-bottom:1px solid var(--gold);flex:0 0 auto;}
+    .dock-head .pill{display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--gold);border-radius:999px;padding:1px 8px;font:700 .68rem Inter,system-ui,sans-serif;color:var(--brown-dark);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+    .dock-head .title{font-weight:700;color:var(--brown-dark);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .dock-head .icon-btn{background:#fff;border:1px solid var(--gold);border-radius:5px;width:24px;height:24px;color:var(--brown-mid);cursor:pointer;font-size:.85rem;line-height:1;}
+    .dock-head .close{background:none;border:0;color:var(--brown-mid);cursor:pointer;font-size:.95rem;width:24px;height:24px;}
+    .dock-tabs{display:flex;background:#fff8e2;border-bottom:1px solid var(--gold);flex:0 0 auto;}
+    .dock-tabs button{flex:1;background:none;border:0;padding:6px 4px;font:700 .72rem Inter,system-ui,sans-serif;color:var(--brown-soft);cursor:pointer;text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid transparent;}
+    .dock-tabs button.on{color:var(--brown-dark);border-bottom-color:var(--rust);background:rgba(255,255,255,.65);}
+    .dock-body{padding:10px;display:grid;gap:8px;flex:1 1 auto;min-height:0;overflow-y:auto;}
+    .dock-field{display:grid;grid-template-columns:84px minmax(0,1fr);gap:6px;align-items:center;font-size:.78rem;color:var(--brown-mid);}
+    .dock-field .k{color:var(--brown-soft);font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;}
+    .dock-field input[type=text],.dock-field select,.dock-field textarea{width:100%;padding:5px 6px;font:inherit;border:1px solid var(--control-border);border-radius:5px;background:var(--control-bg);}
+    .dock-field textarea{min-height:44px;resize:vertical;}
+    .dock-actions{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px 10px;border-top:1px dashed var(--gold);background:rgba(255,255,255,.4);flex:0 0 auto;}
+    .dock-actions button{padding:5px 9px;font:700 .74rem Inter,system-ui,sans-serif;border:1px solid var(--control-border);background:#fffdf5;color:var(--brown-ink);border-radius:5px;cursor:pointer;}
+    .dock-actions button.primary{border-color:var(--moss);background:var(--moss-soft);color:var(--moss-dark);}
+    .dock-actions button.danger{border-color:var(--rust);color:var(--rust);background:#fff;}
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>Right sidebar · A / B / C</h1>
+    <h1>Right sidebar · C</h1>
     <span class="lede">
-      All three share the V3c bucket tree (★ Visitor list · Point · Line · Polygon with
-      Drawn / Trailheads / Brand / Visitor source sub-groups). They differ only in the
-      per-row edit toolkit. Pick which way the toolkit should live; the bucket tree itself
-      is not in scope here.
+      Flat tree — no box around the Point / Line / Polygon buckets, no colored source dots.
+      A feature's source group is set from the dock instead. One rule for the dock:
+      <b>it exists only while a feature is selected.</b> Nothing selected → no dock, the tree
+      owns the whole panel. Selected → the dock pins to the bottom and the tree scrolls above it.
     </span>
   </div>
   <div class="axis">
-    <span><b>Shared:</b> every feature type gets the same row controls and the same drawer/dock structure — ★ is wired for every promotable type, not a privileged few.</span>
-    <span><b>A:</b> slim row, tabbed drawer (Identify · Edit · Display).</span>
-    <span><b>B:</b> row + 🎯, chip-grid drawer where unavailable chips grey out.</span>
-    <span><b>C:</b> ultra-thin row, persistent edit dock at the bottom holds the toolkit for the selected feature.</span>
+    <span><b>Flat:</b> buckets are headings with a hairline, not cards.</span>
+    <span><b>Group is settable:</b> the subgroup (Drawn / Trailhead / Brand…) is a field in the dock, not a dot.</span>
+    <span><b>Two states only:</b> dock visible or not — no collapsed bar, no empty placeholder.</span>
   </div>
+
   <div class="grid">
+
+    <!-- ====================== CELL 1 · NOTHING SELECTED → NO DOCK ====================== -->
     <div class="cell">
-      <span class="cell-label">A · slim + tabbed drawer</span>
-      <a class="open-link" href="right_sidebar_a_slim.html" target="_blank" rel="noopener">open ↗</a>
-      <iframe src="right_sidebar_a_slim.html" title="A"></iframe>
+      <div class="map"></div>
+      <div class="state-label">Nothing selected<small>no dock — tree owns the panel</small></div>
+      <div class="panel">
+        <div class="panel-scroll">
+          <div class="panel-header">
+            <h1>AOP edit panel</h1>
+            <button class="panel-export">⧉</button>
+            <button class="panel-collapse">▾</button>
+          </div>
+          <small class="preset-status">Park preset active.</small>
+
+          <section class="panel-section collapsed"><div class="section-header"><span class="section-label">Source layers</span><button class="section-action">⧉</button><button class="section-toggle"><span class="section-chevron">▸</span></button></div></section>
+          <section class="panel-section collapsed"><div class="section-header"><span class="section-label">Derived layers</span><button class="section-action">⧉</button><button class="section-toggle"><span class="section-chevron">▸</span></button></div></section>
+
+          <section class="panel-section">
+            <div class="section-header">
+              <span class="section-label">Map editor</span>
+              <button class="section-action">⧉</button>
+              <button class="section-toggle"><span class="section-chevron">▾</span></button>
+            </div>
+            <div class="section-content">
+              <div class="editor-tree">
+                <div class="editor-bucket" data-bucket="visitor">
+                  <div class="editor-bucket-head"><button class="chev">▾</button><span></span><span><span class="glyph">★</span> Visitor list</span><span class="count">3</span></div>
+                  <div class="editor-bucket-body">
+                    <div class="visitor-row"><button class="star">★</button><span class="name">Pavilion</span><span class="chip-pill">drawn · point</span></div>
+                    <div class="visitor-row"><button class="star">★</button><span class="name">AOP badge</span><span class="chip-pill">brand · point</span></div>
+                    <div class="visitor-row"><button class="star">★</button><span class="name">Monteagle plateau services</span><span class="chip-pill">visitor · poly</span></div>
+                  </div>
+                </div>
+                <div class="editor-bucket" data-bucket="point">
+                  <div class="editor-bucket-head"><button class="chev">▾</button><input type="checkbox" checked /><span><span class="glyph">●</span> Point</span><span class="count">9/9 · 1 ★</span><button class="add-btn">+</button></div>
+                  <div class="editor-bucket-body">
+                    <div class="editor-subgroup">
+                      <div class="editor-subgroup-head"><button class="chev">▾</button><span class="label">Drawn POIs</span><span class="count">5/5 · 1 ★</span></div>
+                      <div class="editor-subgroup-body">
+                        <div class="row"><input type="checkbox" checked /><button class="star on">★</button><span class="name">Pavilion <span class="tag">#pavilion</span></span></div>
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Registration <span class="tag">#registration</span></span></div>
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Coffee <span class="tag">#coffee</span></span></div>
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Pit lane <span class="tag">#pit_lane</span></span></div>
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Hazard — rebar</span></div>
+                      </div>
+                    </div>
+                    <div class="editor-subgroup">
+                      <div class="editor-subgroup-head"><button class="chev">▾</button><span class="label">Trailheads</span><span class="count">2/2</span></div>
+                      <div class="editor-subgroup-body">
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Main gate trailhead</span></div>
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">East rim trailhead</span></div>
+                      </div>
+                    </div>
+                    <div class="editor-subgroup">
+                      <div class="editor-subgroup-head"><button class="chev">▾</button><span class="label">Brand logos</span><span class="count">2/2 · 1 ★</span></div>
+                      <div class="editor-subgroup-body">
+                        <div class="row"><input type="checkbox" checked /><button class="star on">★</button><span class="name">AOP badge</span></div>
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Rock Warblers</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="editor-bucket" data-bucket="line">
+                  <div class="editor-bucket-head"><button class="chev">▾</button><input type="checkbox" checked /><span><span class="glyph">╱</span> Line</span><span class="count">1/1</span><button class="add-btn">+</button></div>
+                  <div class="editor-bucket-body">
+                    <div class="editor-subgroup">
+                      <div class="editor-subgroup-head"><button class="chev">▾</button><span class="label">Drawn POIs</span><span class="count">1/1</span></div>
+                      <div class="editor-subgroup-body">
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">North loop trace</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="editor-bucket" data-bucket="polygon">
+                  <div class="editor-bucket-head"><button class="chev">▾</button><input type="checkbox" checked /><span><span class="glyph">▭</span> Polygon</span><span class="count">3/3 · 1 ★</span><button class="add-btn">+</button></div>
+                  <div class="editor-bucket-body">
+                    <div class="editor-subgroup">
+                      <div class="editor-subgroup-head"><button class="chev">▾</button><span class="label">Drawn POIs</span><span class="count">1/1</span></div>
+                      <div class="editor-subgroup-body">
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Big tent footprint</span></div>
+                      </div>
+                    </div>
+                    <div class="editor-subgroup">
+                      <div class="editor-subgroup-head"><button class="chev">▾</button><span class="label">Visitor context</span><span class="count">2/2 · 1 ★</span></div>
+                      <div class="editor-subgroup-body">
+                        <div class="row"><input type="checkbox" checked /><button class="star on">★</button><span class="name">Monteagle plateau services</span></div>
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Sequatchie supply run</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="editor-create-footer">
+                <div class="row-buttons"><button>Export GeoJSON</button><button>Clear all</button></div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <!-- no .edit-dock here: nothing is selected -->
+      </div>
     </div>
+
+    <!-- ====================== CELL 2 · SELECTED → EDIT DOCK ====================== -->
     <div class="cell">
-      <span class="cell-label">B · chip-grid drawer</span>
-      <a class="open-link" href="right_sidebar_b_chips.html" target="_blank" rel="noopener">open ↗</a>
-      <iframe src="right_sidebar_b_chips.html" title="B"></iframe>
+      <div class="map"></div>
+      <div class="state-label">Editing<small>feature selected · dock pinned to bottom</small></div>
+      <div class="panel">
+        <div class="panel-scroll">
+          <div class="panel-header">
+            <h1>AOP edit panel</h1>
+            <button class="panel-export">⧉</button>
+            <button class="panel-collapse">▾</button>
+          </div>
+          <small class="preset-status">Park preset active.</small>
+
+          <section class="panel-section collapsed"><div class="section-header"><span class="section-label">Source layers</span><button class="section-action">⧉</button><button class="section-toggle"><span class="section-chevron">▸</span></button></div></section>
+          <section class="panel-section collapsed"><div class="section-header"><span class="section-label">Derived layers</span><button class="section-action">⧉</button><button class="section-toggle"><span class="section-chevron">▸</span></button></div></section>
+
+          <section class="panel-section">
+            <div class="section-header">
+              <span class="section-label">Map editor</span>
+              <button class="section-action">⧉</button>
+              <button class="section-toggle"><span class="section-chevron">▾</span></button>
+            </div>
+            <div class="section-content">
+              <div class="editor-tree">
+                <div class="editor-bucket" data-bucket="visitor">
+                  <div class="editor-bucket-head"><button class="chev">▾</button><span></span><span><span class="glyph">★</span> Visitor list</span><span class="count">3</span></div>
+                  <div class="editor-bucket-body">
+                    <div class="visitor-row"><button class="star">★</button><span class="name">Pavilion</span><span class="chip-pill">drawn · point</span></div>
+                    <div class="visitor-row"><button class="star">★</button><span class="name">AOP badge</span><span class="chip-pill">brand · point</span></div>
+                    <div class="visitor-row"><button class="star">★</button><span class="name">Monteagle plateau services</span><span class="chip-pill">visitor · poly</span></div>
+                  </div>
+                </div>
+                <div class="editor-bucket" data-bucket="point">
+                  <div class="editor-bucket-head"><button class="chev">▾</button><input type="checkbox" checked /><span><span class="glyph">●</span> Point</span><span class="count">9/9 · 1 ★</span><button class="add-btn">+</button></div>
+                  <div class="editor-bucket-body">
+                    <div class="editor-subgroup">
+                      <div class="editor-subgroup-head"><button class="chev">▾</button><span class="label">Drawn POIs</span><span class="count">5/5 · 1 ★</span></div>
+                      <div class="editor-subgroup-body">
+                        <div class="row selected"><input type="checkbox" checked /><button class="star on">★</button><span class="name">Pavilion <span class="tag">#pavilion</span></span></div>
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Registration <span class="tag">#registration</span></span></div>
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Coffee <span class="tag">#coffee</span></span></div>
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Pit lane <span class="tag">#pit_lane</span></span></div>
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Hazard — rebar</span></div>
+                      </div>
+                    </div>
+                    <div class="editor-subgroup">
+                      <div class="editor-subgroup-head"><button class="chev">▾</button><span class="label">Trailheads</span><span class="count">2/2</span></div>
+                      <div class="editor-subgroup-body">
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Main gate trailhead</span></div>
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">East rim trailhead</span></div>
+                      </div>
+                    </div>
+                    <div class="editor-subgroup">
+                      <div class="editor-subgroup-head"><button class="chev">▾</button><span class="label">Brand logos</span><span class="count">2/2 · 1 ★</span></div>
+                      <div class="editor-subgroup-body">
+                        <div class="row"><input type="checkbox" checked /><button class="star on">★</button><span class="name">AOP badge</span></div>
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Rock Warblers</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="editor-bucket" data-bucket="line">
+                  <div class="editor-bucket-head"><button class="chev">▾</button><input type="checkbox" checked /><span><span class="glyph">╱</span> Line</span><span class="count">1/1</span><button class="add-btn">+</button></div>
+                  <div class="editor-bucket-body">
+                    <div class="editor-subgroup">
+                      <div class="editor-subgroup-head"><button class="chev">▾</button><span class="label">Drawn POIs</span><span class="count">1/1</span></div>
+                      <div class="editor-subgroup-body">
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">North loop trace</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="editor-bucket" data-bucket="polygon">
+                  <div class="editor-bucket-head"><button class="chev">▾</button><input type="checkbox" checked /><span><span class="glyph">▭</span> Polygon</span><span class="count">3/3 · 1 ★</span><button class="add-btn">+</button></div>
+                  <div class="editor-bucket-body">
+                    <div class="editor-subgroup">
+                      <div class="editor-subgroup-head"><button class="chev">▾</button><span class="label">Drawn POIs</span><span class="count">1/1</span></div>
+                      <div class="editor-subgroup-body">
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Big tent footprint</span></div>
+                      </div>
+                    </div>
+                    <div class="editor-subgroup">
+                      <div class="editor-subgroup-head"><button class="chev">▾</button><span class="label">Visitor context</span><span class="count">2/2 · 1 ★</span></div>
+                      <div class="editor-subgroup-body">
+                        <div class="row"><input type="checkbox" checked /><button class="star on">★</button><span class="name">Monteagle plateau services</span></div>
+                        <div class="row"><input type="checkbox" checked /><button class="star">☆</button><span class="name">Sequatchie supply run</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="editor-create-footer">
+                <div class="row-buttons"><button>Export GeoJSON</button><button>Clear all</button></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- dock: shown because a feature is selected -->
+        <div class="edit-dock">
+          <div class="dock-head">
+            <span class="pill">Point</span>
+            <span class="title">Pavilion <span style="color:var(--rust);font-size:.78rem">#pavilion</span></span>
+            <button class="icon-btn" title="Fly to">🎯</button>
+            <button class="close" title="Clear selection">✕</button>
+          </div>
+          <div class="dock-tabs">
+            <button class="on">Identify</button>
+            <button>Edit</button>
+            <button>Display</button>
+            <button>Source</button>
+          </div>
+          <div class="dock-body">
+            <div class="dock-field"><span class="k">Source</span><span>Drawn POI · seeded · 2026-05-26</span></div>
+            <div class="dock-field"><span class="k">Group</span>
+              <select><option>Drawn POIs</option><option>Trailheads</option><option>Brand logos</option></select>
+            </div>
+            <div class="dock-field"><span class="k">Coords</span><span>35.0419, −85.6928</span></div>
+            <div class="dock-field"><span class="k">Name</span><input type="text" value="Pavilion" /></div>
+            <div class="dock-field"><span class="k">Category</span>
+              <select><option>Pavilion</option><option>Building</option><option>Restroom</option><option>Hazard</option></select>
+            </div>
+            <div class="dock-field"><span class="k">Tag</span><input type="text" value="#pavilion" /></div>
+            <div class="dock-field"><span class="k">Notes</span><textarea>Open-sided structure; main gathering point on event day.</textarea></div>
+          </div>
+          <!-- actions (Move / Vertices / Duplicate / Copy / Lock / Delete) now live in the Edit tab -->
+        </div>
+      </div>
     </div>
-    <div class="cell">
-      <span class="cell-label">C · master-detail dock</span>
-      <a class="open-link" href="right_sidebar_c_dock.html" target="_blank" rel="noopener">open ↗</a>
-      <iframe src="right_sidebar_c_dock.html" title="C"></iframe>
-    </div>
+
   </div>
 </body>
 </html>

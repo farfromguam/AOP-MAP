@@ -828,28 +828,35 @@ def main() -> int:
         page.evaluate("() => { try { document.querySelector('.maplibregl-popup-close-button')?.click(); } catch(_){} }")
         page.evaluate("() => window.toggleTunableExpansion && window.toggleTunableExpansion('buildings')")
         page.wait_for_timeout(400)
-        tag_inputs = page.evaluate(
+        # v1 editor: the #tag input moved off the row into each row's inline
+        # accordion editor. Collect the building rows, then open the first
+        # row's accordion and confirm it exposes a #tag input.
+        building_rows = page.evaluate(
+            """() => Array.from(document.querySelectorAll('#featureList .feature-row')).map((r) => ({
+                 id: r.dataset.featureId,
+                 label: r.querySelector('.feature-name') ? r.querySelector('.feature-name').textContent : ''
+               }))"""
+        )
+        check("buildings drawer renders rows", len(building_rows) > 0,
+              f"{len(building_rows)} rows")
+        accordion_tag = page.evaluate(
             """() => {
-              const rows = Array.from(document.querySelectorAll('#featureList .feature-row'));
-              return rows.map((r) => {
-                const tag = r.querySelector('.feature-tag');
-                const label = r.querySelector('.feature-name');
-                return {
-                  id: r.dataset.featureId,
-                  label: label ? label.textContent : '',
-                  has_tag_input: !!tag,
-                  tag_value: tag ? tag.value : null
-                };
-              });
+              const row = document.querySelector('#featureList .feature-row.has-inline-editor');
+              if (!row) return { ok: false, reason: 'no inline-editor building row' };
+              if (!row.classList.contains('editor-open')) row.querySelector('.feature-row-expand').click();
+              const ed = document.querySelector(`.feature-row-editor[data-feature-id="${row.dataset.featureId}"]`);
+              const tag = ed ? ed.querySelector('.editor-tag') : null;
+              return { ok: !!tag, value: tag ? tag.value : null };
             }"""
         )
-        check("buildings drawer renders feature-tag input on every row",
-              len(tag_inputs) > 0 and all(r.get("has_tag_input") for r in tag_inputs),
-              f"{sum(1 for r in tag_inputs if r.get('has_tag_input'))}/{len(tag_inputs)} rows have tag input")
-        pavilion_rows = [r for r in tag_inputs if r.get("tag_value") == "#pavilion"]
+        check("building row accordion exposes a #tag input",
+              accordion_tag.get("ok") is True, str(accordion_tag))
+        # #pavilion lives on the seeded editor POI, not a building.
+        pavilion_bound = page.evaluate(
+            "() => { const b = window.tagToFeature.get('#pavilion'); return b ? b.layerKey : null; }"
+        )
         check("no building row carries the #pavilion binding (moved to seeded POI)",
-              len(pavilion_rows) == 0,
-              f"rows tagged #pavilion in buildings: {[r.get('label') for r in pavilion_rows]}")
+              pavilion_bound != "buildings", f"#pavilion bound to {pavilion_bound}")
 
         # Live re-resolve test: drive `setFeatureTag` directly to move
         # #pavilion onto an arbitrary building row, confirm the event
@@ -857,7 +864,7 @@ def main() -> int:
         # back on the seeded POI. The tag now lives in the inline editor
         # surface (not the buildings drawer row), so we exercise the
         # underlying helper rather than the DOM input.
-        target_id = next((r["id"] for r in tag_inputs if r.get("has_tag_input")), None)
+        target_id = next((r["id"] for r in building_rows), None)
         check("there is a building row available for the live re-resolve test",
               target_id is not None, "no building rows found")
         if target_id:

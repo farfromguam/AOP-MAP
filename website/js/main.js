@@ -284,6 +284,7 @@
     const terrainButton = document.getElementById('terrainButton');
     const layerEditor = document.getElementById('layerEditor');
     const layerEditorTitle = document.getElementById('layerEditorTitle');
+    const copyLayerBtn = document.getElementById('copyLayerBtn');
     const tuneControls = document.getElementById('tuneControls');
     const sfwdaDrawerControls = document.getElementById('sfwdaDrawerControls');
     const featureListEl = document.getElementById('featureList');
@@ -1178,16 +1179,16 @@
         }
       }
 
-      // --- Buildings (in-park only) ------------------------------------
+      // --- Buildings (public park facilities only) ---------------------
       const buildingsRt = featureListRuntime && featureListRuntime.buildings;
       if (buildingsRt && buildingsRt.data && Array.isArray(buildingsRt.data.features)) {
         for (const feature of buildingsRt.data.features) {
           const props = feature.properties || {};
-          if (props.inside_aop_boundary !== true) continue;
+          if (props.aop_facility !== true) continue;
           const entry = poiIndexLookup({ source: 'buildings', address: props.address });
           pushRow('buildings', {
             id: `building:${props.uuid || props.address}`,
-            name: props.name || props.address || 'Building',
+            name: props.facility_name || props.name || props.address || 'Building',
             kind: props.primary_occupancy ? props.primary_occupancy.toLowerCase() : 'building',
             blurb: entry && entry.blurb ? entry.blurb : null,
             revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
@@ -2231,6 +2232,7 @@
       cemeteries: {
         label: 'Cemeteries',
         idField: 'parcel_id',
+        inlineEditor: true,
         rowLabel: (props) => `${props.name || 'Cemetery'} — ${props.parcel_id}`,
         targetLayers: ['cemetery-fill', 'cemetery-outline', 'cemetery-marker', 'cemetery-label'],
         groups: [{
@@ -2243,6 +2245,7 @@
       buildings: {
         label: 'Buildings',
         idField: 'build_id',
+        inlineEditor: true,
         // Tag input on each row binds a #tag to the building so the event
         // schedule can resolve coords through this binding. The 1010
         // building's #pavilion binding moved to the seeded editor POI on
@@ -2253,27 +2256,61 @@
         taggable: true,
         rowLabel: (props) => {
           const base = props.building_label || props.address || `build_id ${props.build_id}`;
-          // Annotate the 1010 pavilion so it reads at a glance.
-          if (String(props.address || '').startsWith('1010 ')) return `${base} — pavilion`;
+          // Annotate the public facilities (Pavilion / Farmhouse / Front Office).
+          if (props.facility_name) return `${base} — ${props.facility_name.toLowerCase()}`;
           return base;
         },
         targetLayers: ['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline'],
         groups: [
           {
-            id: 'in_park',
-            label: 'In park',
-            match: (props) => props.inside_aop_boundary === true,
+            id: 'facilities',
+            label: 'Park facilities',
+            match: (props) => props.aop_facility === true,
             defaultVisible: () => true,
             collapsedDefault: false
           },
           {
-            id: 'other',
-            label: 'Other buildings in 9-patch',
-            match: () => true,                       // catches everything not already matched
+            // The buildings layer is now the curated/derived set (raw 9-patch
+            // context dropped), so "other" is just the private-structure boxes
+            // (665, 889). They render via the always-on `building-structure-box`
+            // layer regardless of this toggle; the row is here so they show in
+            // the list and can be drag-adjusted like the facilities.
+            id: 'private',
+            label: 'Private structures',
+            match: (props) => props.aop_structure_box === true,
+            // Presence-only: these always render via the standalone
+            // `building-structure-box` layer, so their list tick (which drives
+            // fill/outline) is inert — default off + collapsed, same UX as
+            // before. The row is still here so the box can be drag-adjusted.
             defaultVisible: () => false,
             collapsedDefault: true
           }
-        ]
+        ],
+        // Drag-to-adjust the footprints — FEMA's polygons sit a little off, so
+        // a move nudges the whole footprint to land its bbox-center at the
+        // click (shape preserved). Mirrors the visitor-context pattern: the
+        // override commits to the unified positioned-features store (keyed
+        // `buildings:<build_id>`) so it survives reload, and bakes back into
+        // website/data/aop_buildings.geojson via export_positioned_features.py.
+        onMove: (feature, lngLat) => {
+          if (!feature || !feature.geometry) return;
+          const centroid = geometryBboxCenter(feature.geometry);
+          if (!centroid) return;
+          const dLng = lngLat.lng - centroid[0];
+          const dLat = lngLat.lat - centroid[1];
+          translateCoordinates(feature.geometry.coordinates, dLng, dLat);
+          savePositionedFeature('buildings', feature, {
+            geometry: JSON.parse(JSON.stringify(feature.geometry))
+          });
+          // The feature reference is shared with buildingsData.features, so the
+          // collection already reflects the new coords — push it to the live
+          // source to move the rendered footprint (and private box) at once.
+          const source = map.getSource('fema-buildings');
+          if (source && buildingsData) source.setData(buildingsData);
+          // Re-register so the feature-list runtime picks up the moved centroid
+          // (fly-to / reveal math).
+          if (buildingsData) registerFeatureListLayer('buildings', buildingsData);
+        }
       },
       // POIs (drawn editor features). Unlike buildings/cemeteries, the data here
       // mutates as the user draws/deletes — see `refreshEditorSource()` for the
@@ -2373,6 +2410,7 @@
         // Default off — same curation gate as editor POIs.
         highlightable: true,
         rowLabel: (props) => props.name || 'Visitor context',
+        inlineEditor: true,
         targetLayers: ['visitor-context-fill', 'visitor-context-outline', 'visitor-context-labels'],
         groups: [{
           id: 'all',
@@ -2500,6 +2538,7 @@
         highlightable: true,
         rowLabel: (props) => props.name || 'Logo',
         sizeEditable: true,
+        inlineEditor: true,
         targetLayers: ['brand-logos-icons'],
         groups: [{
           id: 'all',
@@ -2528,6 +2567,14 @@
     // entry — the user re-positions and it overwrites cleanly. Storage key
     // declared at the top of the script with the others.
     let visitorContextData = null;
+    // Hoisted so the buildings spec's onMove (drag-to-adjust) can reach the
+    // live FeatureCollection — same pattern as visitorContextData. Assigned
+    // during layer load, not redeclared there.
+    let buildingsData = null;
+    // Hoisted (was a load-scoped const) so the positioned-features override
+    // store + source refresh can reach the cemetery collection — cemeteries
+    // are now editable like the other served layers.
+    let cemeteryData = null;
 
     // --- Unified positioned-features store -------------------------------
     // Replaces the two per-layer override stores (visitor-context, brand
@@ -2569,6 +2616,12 @@
       if (patch.icon_size !== undefined && Number.isFinite(Number(patch.icon_size))) {
         next.icon_size = Number(patch.icon_size);
       }
+      // Editable property overrides (name/label/notes/category) for served
+      // layers. These mutate feature.properties so the row label, the map
+      // popup, and the "Copy as GeoJSON" output all read the edited value.
+      if (patch.properties && typeof patch.properties === 'object') {
+        next.properties = { ...(existing.properties || {}), ...patch.properties };
+      }
       next.updated = new Date().toISOString();
       store[key] = next;
       writeJsonStore(POSITIONED_FEATURES_KEY, store);
@@ -2593,6 +2646,10 @@
         if (entry.locked !== undefined) feature.properties.locked = entry.locked === true;
         if (Number.isFinite(Number(entry.icon_size))) {
           feature.properties.icon_size = Number(entry.icon_size);
+        }
+        // Replay editable property overrides (name/label/notes/category).
+        if (entry.properties && typeof entry.properties === 'object') {
+          Object.assign(feature.properties, entry.properties);
         }
       }
       return data;
@@ -3235,9 +3292,11 @@
         saveEditorPois();
         return;
       }
-      if (layerKey === 'visitorContext' || layerKey === 'brandLogos') {
-        savePositionedFeature(layerKey, feature, patch);
-      }
+      // Every other editable layer (buildings, cemeteries, visitorContext,
+      // brandLogos) persists its overrides in the unified positioned-features
+      // store, keyed by layerKey + idField — so highlight/lock/geometry and the
+      // editable name/notes all survive reload without baking the on-disk seed.
+      savePositionedFeature(layerKey, feature, patch);
     }
 
     function findFeatureById(layerKey, featureId) {
@@ -3764,109 +3823,24 @@
           });
           if (highlight) row.append(check, highlight, name);
           else row.append(check, name);
-          // Tag input on taggable layers. For inlineEditor layers the tag
-          // input lives inside the expanded editor block instead of on the
-          // row — keeps the row compact and gives the tag a labeled home
-          // alongside name/category/notes. Buildings (taggable, no inline
-          // editor) still get the row-level tag input.
-          if (spec.taggable && !spec.inlineEditor) {
-            const tagInput = document.createElement('input');
-            tagInput.type = 'text';
-            tagInput.className = 'feature-tag';
-            tagInput.placeholder = '#tag';
-            const currentTag = tagForFeature(layerKey, item.id);
-            tagInput.value = currentTag;
-            if (currentTag) tagInput.classList.add('bound');
-            tagInput.title = 'Bind a #tag (e.g. #pavilion). Used by the event-schedule resolver.';
-            tagInput.addEventListener('change', () => {
-              setFeatureTag(layerKey, item.id, tagInput.value);
-              // Re-render so a tag moved off another row visibly clears.
-              renderFeatureList(layerKey);
-            });
-            // Long-press to enter move mode listens on the row body via
-            // pointerdown. Typing in the input should not arm it.
-            tagInput.addEventListener('pointerdown', (event) => event.stopPropagation());
-            tagInput.addEventListener('click', (event) => event.stopPropagation());
-            row.append(tagInput);
-          }
-          if (spec.sizeEditable) {
-            const sizeWrap = document.createElement('label');
-            sizeWrap.className = 'feature-size-control';
-            sizeWrap.title = 'Logo size';
-            const sizeInput = document.createElement('input');
-            sizeInput.type = 'range';
-            sizeInput.className = 'feature-size';
-            sizeInput.min = String(BRAND_LOGO_SIZE_MIN);
-            sizeInput.max = String(BRAND_LOGO_SIZE_MAX);
-            sizeInput.step = String(BRAND_LOGO_SIZE_STEP);
-            sizeInput.value = String(brandLogoSize(item.feature));
-            const sizeOutput = document.createElement('output');
-            sizeOutput.textContent = formatBrandLogoSize(sizeInput.value);
-            sizeInput.addEventListener('input', () => {
-              setBrandLogoSize(item.feature, sizeInput.value);
-              sizeOutput.textContent = formatBrandLogoSize(sizeInput.value);
-            });
-            // Keep row long-press/move handling from arming while the slider is used.
-            sizeInput.addEventListener('pointerdown', (event) => event.stopPropagation());
-            sizeInput.addEventListener('click', (event) => event.stopPropagation());
-            sizeWrap.append(sizeInput, sizeOutput);
-            row.append(sizeWrap);
-          }
-          // Copy stays on the row for layers that don't use the inline
-          // editor; inlineEditor layers expose `⧉ Copy GeoJSON` inside the
-          // editor instead so the compact row keeps to visibility + fly + move.
-          if (!spec.inlineEditor) row.append(copy);
-          row.append(fly);
-          const isLocked = movable && item.feature && item.feature.properties && item.feature.properties.locked === true;
-          let move = null;
-          let lock = null;
-          if (movable) {
+          if (spec.inlineEditor) {
+            // Editable layers keep a clean row — [vis] [★] name [edit ▸]. Every
+            // action (fly / move / lock / copy / tag / notes / category / size /
+            // delete) lives as a labeled control in the accordion the chevron
+            // opens, so the row never crams cryptic emoji buttons or a tag
+            // input against the name. The chevron is appended just below.
+            const isLocked = movable && item.feature && item.feature.properties && item.feature.properties.locked === true;
             if (isLocked) row.classList.add('is-locked');
-            move = document.createElement('button');
-            move.type = 'button';
-            move.className = 'feature-move';
-            move.textContent = '✋';
-            if (isLocked) {
-              move.disabled = true;
-              move.title = 'Feature is locked — click 🔒 to unlock before moving.';
-            } else {
-              move.title = 'Move this feature (click ✋ then click the map)';
-              move.addEventListener('click', (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                enterMoveMode(layerKey, item.id);
-              });
-            }
-            row.append(move);
-            // 🔒 / 🔓 lock toggle. Locked features stay rendered + starrable
-            // but their move handle goes inert. Used when a placement has
-            // landed where the user wants it and they don't want to nudge it
-            // off accidentally.
-            lock = document.createElement('button');
-            lock.type = 'button';
-            lock.className = 'feature-lock' + (isLocked ? ' on' : '');
-            lock.textContent = isLocked ? '🔒' : '🔓';
-            lock.title = isLocked
-              ? 'Unlock — allow this feature to be moved'
-              : 'Lock — pin this feature so move becomes a no-op';
-            lock.setAttribute('aria-pressed', String(isLocked));
-            lock.addEventListener('click', (event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              toggleFeatureLocked(layerKey, item.id);
-            });
-            row.append(lock);
-            // Long-press anywhere on the row body also enters move mode —
-            // the path the card calls out for mobile users. Locked rows skip
-            // the long-press entirely.
-            if (!isLocked) {
+            // Long-press anywhere on the row still arms move mode for a movable,
+            // unlocked feature (the mobile path); the explicit Move button lives
+            // in the accordion. Skip the chevron + visibility tick.
+            if (movable && !isLocked) {
               let pressTimer = null;
               let pressStart = null;
               const startPress = (event) => {
-                // Skip presses that landed on the inline controls — they have
-                // their own handlers and shouldn't double-arm move mode.
-                if (event.target === check || event.target === fly || event.target === move || event.target === lock) return;
+                if (event.target === check) return;
                 if (highlight && event.target === highlight) return;
+                if (event.target.closest && event.target.closest('.feature-row-expand')) return;
                 pressStart = { x: event.clientX, y: event.clientY };
                 pressTimer = window.setTimeout(() => {
                   pressTimer = null;
@@ -3889,13 +3863,19 @@
               row.addEventListener('pointercancel', cancelPress);
               row.addEventListener('pointerleave', cancelPress);
             }
+          } else {
+            // Read-only / non-editable layers (activity hotspots, synthetic
+            // activity, event-schedule anchors) have no accordion — keep a
+            // quick copy + fly on the row.
+            row.append(copy);
+            row.append(fly);
           }
           // Inline-editor chevron — last cell on the row. Toggles the
           // expanded editor block below. The has-inline-editor class
           // tightens the row grid (no row-level tag/copy buttons).
           if (spec.inlineEditor) {
             row.classList.add('has-inline-editor');
-            const isExpanded = String(runtime.expandedFeatureId) === String(item.id);
+            const isExpanded = dockSelectionMatches(layerKey, item.id);
             const expand = document.createElement('button');
             expand.type = 'button';
             expand.className = 'feature-row-expand';
@@ -3913,11 +3893,9 @@
             if (isExpanded) row.classList.add('editor-open');
           }
           rows.append(row);
-          // After the row, if this leaf is the expanded one, inject the
-          // inline editor block (accordion). One open at a time per layer.
-          if (spec.inlineEditor && String(runtime.expandedFeatureId) === String(item.id)) {
-            rows.append(buildInlineEditor(layerKey, item, spec));
-          }
+          // The editor for a selected leaf now renders in the pinned #editDock
+          // (renderEditDock) — one selection across all layers, not an inline
+          // accordion per row.
         }
         groupEl.append(rows);
         target.append(groupEl);
@@ -3930,21 +3908,293 @@
     // row it edits. Reads `feature.properties` directly; writes flow
     // through setFeatureName / setFeatureCategory / setFeatureNotes / the
     // existing visibility + tag + highlight helpers + saveEditorPois.
+    // ===== Unified edit dock =================================================
+    // One feature selected at a time across every layer; the editor renders in
+    // the pinned #editDock (bottom of the panel), not as a per-row accordion.
+    // Replaces buildInlineEditor + folds the layer-paint drawer into the Edit
+    // tab. Tabs: Identify (what it is) · Edit (change it + layer paint) ·
+    // Display (how it looks) · Source (where it came from, read-only).
+    let dockSelection = null;        // { layerKey, featureId } or null
+    let dockActiveTab = 'identify';  // identify | edit | display | source
+
+    function dockSelectionMatches(layerKey, featureId) {
+      return !!dockSelection
+        && dockSelection.layerKey === layerKey
+        && String(dockSelection.featureId) === String(featureId);
+    }
+
+    function selectFeatureForDock(layerKey, featureId) {
+      const same = dockSelectionMatches(layerKey, featureId);
+      const prevLayer = dockSelection ? dockSelection.layerKey : null;
+      dockSelection = same ? null : { layerKey, featureId };
+      if (!same) dockActiveTab = 'identify';
+      renderFeatureList(layerKey);                                   // refresh row highlight
+      if (prevLayer && prevLayer !== layerKey) renderFeatureList(prevLayer);
+      renderEditDock();
+    }
+
+    function clearDockSelection() {
+      if (!dockSelection) return;
+      const layerKey = dockSelection.layerKey;
+      dockSelection = null;
+      renderFeatureList(layerKey);
+      renderEditDock();
+    }
+
+    function renderEditDock() {
+      const host = document.getElementById('editDock');
+      if (!host) return;
+      if (!dockSelection) { host.hidden = true; host.innerHTML = ''; return; }
+      const { layerKey, featureId } = dockSelection;
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      const item = spec ? findFeatureById(layerKey, featureId) : null;
+      if (!spec || !item || !item.feature) { dockSelection = null; host.hidden = true; host.innerHTML = ''; return; }
+      host.innerHTML = '';
+      host.append(buildEditDock(layerKey, item, spec));
+      host.hidden = false;
+    }
+
+    function dockFieldRow(labelText, control, top) {
+      const row = document.createElement('div');
+      row.className = top ? 'dock-f top' : 'dock-f';
+      const k = document.createElement('span');
+      k.className = 'dock-k';
+      k.textContent = labelText;
+      row.append(k, control);
+      return row;
+    }
+
+    function dockReadonly(text) {
+      const s = document.createElement('span');
+      s.className = 'dock-ro';
+      s.textContent = text;
+      return s;
+    }
+
+    function dockToggleRow(labelText, initialOn, onToggle) {
+      const row = document.createElement('div');
+      row.className = 'dock-tg';
+      const span = document.createElement('span');
+      span.textContent = labelText;
+      const sw = document.createElement('button');
+      sw.type = 'button';
+      sw.className = initialOn ? 'dock-sw on' : 'dock-sw';
+      sw.setAttribute('aria-pressed', String(initialOn));
+      sw.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const next = !sw.classList.contains('on');
+        sw.classList.toggle('on', next);
+        sw.setAttribute('aria-pressed', String(next));
+        onToggle(next);
+      });
+      row.append(span, sw);
+      return row;
+    }
+
+    // The "group" a feature reads as: for drawn POIs it's the geometry bucket;
+    // for curated layers it's the layer itself (fixed). Read-only — moving a
+    // feature across source groups means a cross-layer migration we don't do yet.
+    function dockGroupContext(layerKey, item) {
+      if (layerKey === 'editorPois') {
+        const t = item.feature && item.feature.geometry && item.feature.geometry.type;
+        const g = t === 'Point' ? 'Point' : t === 'Polygon' ? 'Footprint' : t === 'LineString' ? 'Line' : (t || '—');
+        return `Drawn POIs · ${g}`;
+      }
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      return (spec && spec.label) || layerKey;
+    }
+
+    function buildEditDock(layerKey, item, spec) {
+      const dock = document.createElement('div');
+      dock.className = 'dock-card';
+      const props = (item.feature && item.feature.properties) || {};
+      const nameProp = FEATURE_NAME_PROP[layerKey] || 'name';
+      const kind = (item.feature && item.feature.geometry && item.feature.geometry.type) || 'Point';
+      const kindLabel = kind === 'Point' ? 'Point' : kind === 'Polygon' ? 'Polygon' : kind === 'LineString' ? 'Line' : kind;
+      const kindGlyph = kind === 'Point' ? '●' : kind === 'Polygon' ? '▭' : kind === 'LineString' ? '╱' : '◇';
+      const movable = typeof spec.onMove === 'function';
+      const featureLocked = props.locked === true;
+      const titleText = () => (String(props[nameProp] || '').trim() || props.category || 'Untitled');
+
+      // -- header --
+      const head = document.createElement('div');
+      head.className = 'dock-head';
+      const pill = document.createElement('span');
+      pill.className = 'dock-pill';
+      pill.textContent = `${kindGlyph} ${kindLabel}`;
+      const title = document.createElement('span');
+      title.className = 'dock-title';
+      title.textContent = titleText();
+      const fly = document.createElement('button');
+      fly.type = 'button'; fly.className = 'dock-ico'; fly.title = 'Fly to feature'; fly.textContent = '🎯';
+      fly.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); flyToFeature(item.feature); });
+      const close = document.createElement('button');
+      close.type = 'button'; close.className = 'dock-x'; close.title = 'Clear selection'; close.textContent = '✕';
+      close.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); clearDockSelection(); });
+      head.append(pill, title, fly, close);
+      dock.append(head);
+
+      // -- tabs --
+      const TABS = [['identify', 'Identify'], ['edit', 'Edit'], ['display', 'Display'], ['source', 'Source']];
+      const tabBar = document.createElement('div');
+      tabBar.className = 'dock-tabs';
+      const panels = {};
+      const buttons = {};
+      for (const [key, label] of TABS) {
+        const b = document.createElement('button');
+        b.type = 'button'; b.textContent = label;
+        b.classList.toggle('on', dockActiveTab === key);
+        b.addEventListener('click', () => {
+          dockActiveTab = key;
+          for (const [k] of TABS) {
+            buttons[k].classList.toggle('on', k === key);
+            panels[k].hidden = k !== key;
+          }
+        });
+        tabBar.append(b);
+        buttons[key] = b;
+      }
+      dock.append(tabBar);
+
+      // -- Identify --
+      const idp = document.createElement('div');
+      idp.className = 'dock-body';
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.value = props[nameProp] || '';
+      nameInput.addEventListener('change', () => {
+        setFeatureProperty(layerKey, item.id, nameProp, nameInput.value);
+        title.textContent = titleText();
+      });
+      idp.append(dockFieldRow('Name', nameInput));
+      if (layerKey === 'editorPois') {
+        const cat = document.createElement('select');
+        for (const c of EDITOR_POI_CATEGORIES) {
+          const o = document.createElement('option');
+          o.value = c; o.textContent = c;
+          if (props.category === c) o.selected = true;
+          cat.append(o);
+        }
+        cat.addEventListener('change', () => setFeatureProperty(layerKey, item.id, 'category', cat.value));
+        idp.append(dockFieldRow('Category', cat));
+      }
+      idp.append(dockFieldRow('Group', dockReadonly(dockGroupContext(layerKey, item))));
+      if (layerKey === 'buildings') {
+        const status = props.aop_facility ? 'Public facility' : props.aop_structure_box ? 'Private structure' : '—';
+        idp.append(dockFieldRow('Status', dockReadonly(status)));
+      }
+      if (spec.taggable) {
+        const tag = document.createElement('input');
+        tag.type = 'text'; tag.placeholder = '#tag'; tag.value = tagForFeature(layerKey, item.id);
+        tag.title = 'Bind a #tag (e.g. #pavilion). Used by the event-schedule resolver.';
+        tag.addEventListener('change', () => { setFeatureTag(layerKey, item.id, tag.value); renderFeatureList(layerKey); });
+        idp.append(dockFieldRow('Tag', tag));
+      }
+      const notes = document.createElement('textarea');
+      notes.value = props.notes || '';
+      notes.placeholder = 'Optional — context, source, why this is here';
+      notes.addEventListener('change', () => setFeatureProperty(layerKey, item.id, 'notes', notes.value.trim()));
+      idp.append(dockFieldRow('Notes', notes, true));
+      panels.identify = idp;
+
+      // -- Edit (per-feature actions + the layer's paint) --
+      const ed = document.createElement('div');
+      ed.className = 'dock-body';
+      const ag = document.createElement('div');
+      ag.className = 'dock-grp first';
+      ag.textContent = `This feature · ${describeGeometry(item.feature)}`;
+      ed.append(ag);
+      const acts = document.createElement('div');
+      acts.className = 'dock-acts';
+      if (movable) {
+        const mv = makeEditorAction('✋ Move', featureLocked ? 'Locked — unlock to move' : 'Move (click here, then click the map)', () => enterMoveMode(layerKey, item.id));
+        mv.classList.add('primary');
+        if (featureLocked) mv.disabled = true;
+        acts.append(mv);
+        acts.append(makeEditorAction(featureLocked ? '🔓 Unlock' : '🔒 Lock', featureLocked ? 'Unlock so this can be moved' : 'Lock so move becomes a no-op', () => toggleFeatureLocked(layerKey, item.id)));
+      }
+      acts.append(makeEditorAction('⧉ Copy GeoJSON', 'Copy this feature as a drop-in GeoJSON Feature', () => copyFeatureAsDropIn(item.feature)));
+      if (layerKey === 'editorPois') {
+        acts.append(makeEditorAction('⎘ Duplicate', 'Duplicate this feature', () => duplicateEditorFeature(item.id)));
+        const del = makeEditorAction('🗑 Delete', 'Delete this feature', () => deleteEditorFeature(item.id));
+        del.classList.add('danger');
+        acts.append(del);
+      }
+      ed.append(acts);
+      if (TUNABLE_LAYERS[layerKey]) {
+        const pg = document.createElement('div');
+        pg.className = 'dock-grp';
+        pg.textContent = `Layer paint · ${TUNABLE_LAYERS[layerKey].label || (spec.label || layerKey)}`;
+        ed.append(pg);
+        const paint = document.createElement('div');
+        paint.className = 'tune-controls dock-paint';
+        renderTuneControls(TUNABLE_LAYERS[layerKey], paint);
+        paint.addEventListener('input', handleTuneInput);
+        ed.append(paint);
+      }
+      panels.edit = ed;
+
+      // -- Display --
+      const dp = document.createElement('div');
+      dp.className = 'dock-body';
+      const runtime = featureListRuntime[layerKey];
+      const visible = !!(runtime && runtime.state && runtime.state.visibleIds.has(item.id));
+      dp.append(dockToggleRow('Visible on map', visible, (on) => setFeatureVisible(layerKey, item.id, on)));
+      if (spec.highlightable) {
+        dp.append(dockToggleRow('★ Surface to visitor list', props.highlight === true, () => toggleFeatureHighlight(layerKey, item.id)));
+      }
+      if (spec.sizeEditable) {
+        const wrap = document.createElement('div');
+        wrap.className = 'dock-size';
+        const range = document.createElement('input');
+        range.type = 'range';
+        range.min = String(BRAND_LOGO_SIZE_MIN); range.max = String(BRAND_LOGO_SIZE_MAX); range.step = String(BRAND_LOGO_SIZE_STEP);
+        range.value = String(brandLogoSize(item.feature));
+        const out = document.createElement('output');
+        out.textContent = formatBrandLogoSize(range.value);
+        range.addEventListener('input', () => { setBrandLogoSize(item.feature, range.value); out.textContent = formatBrandLogoSize(range.value); });
+        wrap.append(range, out);
+        dp.append(dockFieldRow('Size', wrap));
+      }
+      panels.display = dp;
+
+      // -- Source (read-only provenance) --
+      const sp = document.createElement('div');
+      sp.className = 'dock-body';
+      sp.append(dockFieldRow('ID', dockReadonly(String(item.id))));
+      sp.append(dockFieldRow('Geometry', dockReadonly(describeGeometry(item.feature))));
+      for (const key of ['source', 'confidence', 'license', 'license_or_permission', 'retrieved_on', 'address', 'facility_name']) {
+        if (props[key]) sp.append(dockFieldRow(key.replace(/_/g, ' '), dockReadonly(String(props[key]))));
+      }
+      panels.source = sp;
+
+      dock.append(idp, ed, dp, sp);
+      for (const [k] of TABS) panels[k].hidden = dockActiveTab !== k;
+      dock.addEventListener('pointerdown', (event) => event.stopPropagation());
+      return dock;
+    }
+
+    // NOTE: buildInlineEditor below is superseded by buildEditDock and is no
+    // longer called (the inline accordion was removed). Kept temporarily; safe
+    // to delete in a cleanup pass.
     function buildInlineEditor(layerKey, item, spec) {
       const editor = document.createElement('div');
       editor.className = 'feature-row-editor';
       editor.dataset.featureId = String(item.id);
 
       const props = item.feature?.properties || {};
+      const nameProp = FEATURE_NAME_PROP[layerKey] || 'name';
       const kind = item.feature?.geometry?.type || 'Point';
-      const kindLabel = kind === 'Point' ? 'POI' : kind === 'Polygon' ? 'Footprint' : kind === 'LineString' ? 'Line' : kind;
+      const kindLabel = kind === 'Point' ? 'Point' : kind === 'Polygon' ? 'Polygon' : kind === 'LineString' ? 'Line' : kind;
       const kindGlyph = kind === 'Point' ? '●' : kind === 'Polygon' ? '▭' : kind === 'LineString' ? '╱' : '◇';
+      const titleText = () => (String(props[nameProp] || '').trim() || props.category || 'Untitled');
 
       const head = document.createElement('div');
       head.className = 'editor-head';
       const title = document.createElement('span');
       title.className = 'editor-title';
-      title.textContent = (props.name || '').trim() || (props.category || 'Untitled');
+      title.textContent = titleText();
       const chip = document.createElement('span');
       chip.className = 'editor-geom-chip';
       chip.textContent = `${kindGlyph} ${kindLabel}`;
@@ -3964,50 +4214,75 @@
       const grid = document.createElement('div');
       grid.className = 'editor-grid';
 
-      // Name
+      // Name — writes the property this layer's rowLabel reads, so the rename
+      // shows in the row, the map popup, and the GeoJSON copy at once.
       grid.append(makeEditorLabel('Name'));
       const nameInput = document.createElement('input');
       nameInput.type = 'text';
       nameInput.className = 'editor-name';
-      nameInput.value = props.name || '';
+      nameInput.value = props[nameProp] || '';
       nameInput.addEventListener('change', () => {
-        setEditorFeatureName(item.id, nameInput.value);
-        title.textContent = (nameInput.value || '').trim() || (props.category || 'Untitled');
+        setFeatureProperty(layerKey, item.id, nameProp, nameInput.value);
+        title.textContent = titleText();
       });
       grid.append(nameInput);
 
-      // Category — now mutable post-create.
-      grid.append(makeEditorLabel('Category'));
-      const categorySelect = document.createElement('select');
-      categorySelect.className = 'editor-category';
-      for (const cat of EDITOR_POI_CATEGORIES) {
-        const opt = document.createElement('option');
-        opt.value = cat;
-        opt.textContent = cat;
-        if (props.category === cat) opt.selected = true;
-        categorySelect.append(opt);
+      // Category — drawn POIs only (served/curated layers have no category axis).
+      if (layerKey === 'editorPois') {
+        grid.append(makeEditorLabel('Category'));
+        const categorySelect = document.createElement('select');
+        categorySelect.className = 'editor-category';
+        for (const cat of EDITOR_POI_CATEGORIES) {
+          const opt = document.createElement('option');
+          opt.value = cat;
+          opt.textContent = cat;
+          if (props.category === cat) opt.selected = true;
+          categorySelect.append(opt);
+        }
+        categorySelect.addEventListener('change', () => {
+          setFeatureProperty(layerKey, item.id, 'category', categorySelect.value);
+        });
+        grid.append(categorySelect);
       }
-      categorySelect.addEventListener('change', () => {
-        setEditorFeatureCategory(item.id, categorySelect.value);
-      });
-      grid.append(categorySelect);
 
-      // Tag — moved off the row.
-      grid.append(makeEditorLabel('Tag'));
-      const tagInput = document.createElement('input');
-      tagInput.type = 'text';
-      tagInput.className = 'editor-tag';
-      tagInput.placeholder = '#tag';
-      const currentTag = tagForFeature(layerKey, item.id);
-      tagInput.value = currentTag;
-      tagInput.title = 'Bind a #tag (e.g. #pavilion). Used by the event-schedule resolver.';
-      tagInput.addEventListener('change', () => {
-        setFeatureTag(layerKey, item.id, tagInput.value);
-        renderFeatureList(layerKey);
-      });
-      grid.append(tagInput);
+      // Size — sizeEditable layers (brand logos) only.
+      if (spec.sizeEditable) {
+        grid.append(makeEditorLabel('Size'));
+        const sizeWrap = document.createElement('div');
+        sizeWrap.className = 'editor-size';
+        const sizeInput = document.createElement('input');
+        sizeInput.type = 'range';
+        sizeInput.min = String(BRAND_LOGO_SIZE_MIN);
+        sizeInput.max = String(BRAND_LOGO_SIZE_MAX);
+        sizeInput.step = String(BRAND_LOGO_SIZE_STEP);
+        sizeInput.value = String(brandLogoSize(item.feature));
+        const sizeOut = document.createElement('output');
+        sizeOut.textContent = formatBrandLogoSize(sizeInput.value);
+        sizeInput.addEventListener('input', () => {
+          setBrandLogoSize(item.feature, sizeInput.value);
+          sizeOut.textContent = formatBrandLogoSize(sizeInput.value);
+        });
+        sizeWrap.append(sizeInput, sizeOut);
+        grid.append(sizeWrap);
+      }
 
-      // Notes — new field. Persists in feature.properties.notes.
+      // Tag — taggable layers (drawn POIs, buildings) bind a #tag.
+      if (spec.taggable) {
+        grid.append(makeEditorLabel('Tag'));
+        const tagInput = document.createElement('input');
+        tagInput.type = 'text';
+        tagInput.className = 'editor-tag';
+        tagInput.placeholder = '#tag';
+        tagInput.value = tagForFeature(layerKey, item.id);
+        tagInput.title = 'Bind a #tag (e.g. #pavilion). Used by the event-schedule resolver.';
+        tagInput.addEventListener('change', () => {
+          setFeatureTag(layerKey, item.id, tagInput.value);
+          renderFeatureList(layerKey);
+        });
+        grid.append(tagInput);
+      }
+
+      // Notes — every editable layer.
       grid.append(makeEditorLabel('Notes'));
       const notes = document.createElement('textarea');
       notes.className = 'editor-notes';
@@ -4015,7 +4290,7 @@
       notes.placeholder = 'Optional — context, source, why this is here';
       notes.value = props.notes || '';
       notes.addEventListener('change', () => {
-        setEditorFeatureNotes(item.id, notes.value);
+        setFeatureProperty(layerKey, item.id, 'notes', notes.value.trim());
       });
       grid.append(notes);
 
@@ -4028,32 +4303,36 @@
 
       editor.append(grid);
 
-      // Action row.
+      // Action row — labeled buttons (replaces the cryptic row emoji cluster).
       const actions = document.createElement('div');
       actions.className = 'editor-actions';
-      const featureLocked = item.feature && item.feature.properties && item.feature.properties.locked === true;
-      actions.append(
-        makeEditorAction('🎯 Fly', 'Fly to feature', () => flyToFeature(item.feature))
-      );
-      const moveAction = makeEditorAction(
-        '✋ Move',
-        featureLocked ? 'Feature is locked — unlock to move' : 'Move this feature (click then click the map)',
-        () => enterMoveMode(layerKey, item.id)
-      );
-      if (featureLocked) moveAction.disabled = true;
-      actions.append(moveAction);
-      actions.append(makeEditorAction(
-        featureLocked ? '🔒 Unlock' : '🔓 Lock',
-        featureLocked ? 'Unlock so this feature can be moved again' : 'Lock this feature so move becomes a no-op',
-        () => toggleFeatureLocked(layerKey, item.id)
-      ));
-      actions.append(
-        makeEditorAction('⎘ Duplicate', 'Duplicate this feature', () => duplicateEditorFeature(item.id)),
-        makeEditorAction('⧉ Copy GeoJSON', 'Copy as drop-in GeoJSON Feature', () => copyFeatureAsDropIn(item.feature))
-      );
-      const delBtn = makeEditorAction('Delete', 'Delete this feature', () => deleteEditorFeature(item.id));
-      delBtn.classList.add('danger');
-      actions.append(delBtn);
+      const featureLocked = props.locked === true;
+      const movable = typeof spec.onMove === 'function';
+      actions.append(makeEditorAction('Fly here', 'Fly to this feature', () => flyToFeature(item.feature)));
+      if (movable) {
+        const moveAction = makeEditorAction(
+          'Move',
+          featureLocked ? 'Feature is locked — unlock to move' : 'Move this feature (click here, then click the map)',
+          () => enterMoveMode(layerKey, item.id)
+        );
+        if (featureLocked) moveAction.disabled = true;
+        actions.append(moveAction);
+        actions.append(makeEditorAction(
+          featureLocked ? 'Unlock' : 'Lock',
+          featureLocked ? 'Unlock so this feature can be moved again' : 'Lock this feature so move becomes a no-op',
+          () => toggleFeatureLocked(layerKey, item.id)
+        ));
+      }
+      actions.append(makeEditorAction('Copy GeoJSON', 'Copy this feature as a drop-in GeoJSON Feature', () => copyFeatureAsDropIn(item.feature)));
+      // Duplicate + Delete are drawn-POI only. Served/curated layers are the
+      // on-disk source of truth: hide one with its visibility tick, or truly
+      // remove it by editing the GeoJSON the Copy buttons hand you.
+      if (layerKey === 'editorPois') {
+        actions.append(makeEditorAction('Duplicate', 'Duplicate this feature', () => duplicateEditorFeature(item.id)));
+        const delBtn = makeEditorAction('Delete', 'Delete this feature', () => deleteEditorFeature(item.id));
+        delBtn.classList.add('danger');
+        actions.append(delBtn);
+      }
       editor.append(actions);
 
       // Keep clicks inside the editor from arming the row's long-press
@@ -4121,51 +4400,23 @@
     })();
 
     function toggleFeatureEditor(layerKey, featureId) {
-      const runtime = featureListRuntime[layerKey];
-      if (!runtime) return;
-      const same = String(runtime.expandedFeatureId) === String(featureId);
-      runtime.expandedFeatureId = same ? null : featureId;
-      renderFeatureList(layerKey);
+      // Superseded by the unified dock: selecting a row drives the pinned
+      // #editDock instead of an inline accordion. Kept as the stable entry
+      // point that the row chevron + map-click reveal call.
+      selectFeatureForDock(layerKey, featureId);
     }
 
-    // Write helpers for the editor inputs. Each mutates the in-memory
-    // `editorPois` array entry by id, persists the array, then refreshes
-    // the map source + feature-list runtime. saveEditorPois + refreshEditorSource
-    // are the same pair every other editor write goes through.
-    function setEditorFeatureName(featureId, value) {
-      const target = editorPois.find((f) => f.properties && String(f.properties.id) === String(featureId));
-      if (!target) return;
-      target.properties.name = value;
-      saveEditorPois();
-      refreshEditorSource();
-    }
-
-    function setEditorFeatureCategory(featureId, value) {
-      const target = editorPois.find((f) => f.properties && String(f.properties.id) === String(featureId));
-      if (!target) return;
-      target.properties.category = value;
-      saveEditorPois();
-      refreshEditorSource();
-    }
-
-    function setEditorFeatureNotes(featureId, value) {
-      const target = editorPois.find((f) => f.properties && String(f.properties.id) === String(featureId));
-      if (!target) return;
-      const next = String(value || '').trim();
-      if (next) target.properties.notes = next;
-      else delete target.properties.notes;
-      saveEditorPois();
-      refreshEditorSource();
-    }
+    // Name/category/notes writes now flow through the generic
+    // setFeatureProperty (editorPois → array store; served layers → the
+    // positioned-features override store). The old editorPois-only helpers
+    // (setEditorFeatureName/Category/Notes) were retired with the v1 editor.
 
     function deleteEditorFeature(featureId) {
       editorPois = editorPois.filter((f) => !(f.properties && String(f.properties.id) === String(featureId)));
-      const runtime = featureListRuntime['editorPois'];
-      if (runtime && String(runtime.expandedFeatureId) === String(featureId)) {
-        runtime.expandedFeatureId = null;
-      }
+      if (dockSelectionMatches('editorPois', featureId)) dockSelection = null;
       saveEditorPois();
       refreshEditorSource();
+      renderEditDock();
     }
 
     function duplicateEditorFeature(featureId) {
@@ -4185,11 +4436,91 @@
       editorPois.push(clone);
       saveEditorPois();
       refreshEditorSource();
-      // Snap the editor onto the new feature so the user can rename it.
-      const runtime = featureListRuntime['editorPois'];
-      if (runtime) {
-        runtime.expandedFeatureId = clone.properties.id;
-        renderFeatureList('editorPois');
+      // Snap the dock onto the new feature so the user can rename it.
+      dockSelection = { layerKey: 'editorPois', featureId: clone.properties.id };
+      dockActiveTab = 'identify';
+      renderFeatureList('editorPois');
+      renderEditDock();
+    }
+
+    // ---- Generic per-layer editing + bulk GeoJSON copy (MVP v1) ----------
+    // Which property holds the editable display name for each layer — the same
+    // property its rowLabel reads, so a rename shows in the row, the map popup,
+    // and the GeoJSON copy at once.
+    const FEATURE_NAME_PROP = {
+      editorPois: 'name',
+      buildings: 'building_label',
+      cemeteries: 'name',
+      visitorContext: 'name',
+      brandLogos: 'name'
+    };
+
+    // Served layers whose live MapLibre source is re-fed after a property edit
+    // so the map popup reflects it immediately. (The feature-list row updates
+    // from the shared in-memory feature reference regardless.)
+    const SERVED_SOURCE = {
+      buildings: () => ['fema-buildings', buildingsData],
+      visitorContext: () => ['visitor-context', visitorContextData],
+      brandLogos: () => ['brand-logos', brandLogosData],
+      cemeteries: () => ['cemeteries', cemeteryData]
+    };
+
+    function refreshServedSource(layerKey) {
+      const resolve = SERVED_SOURCE[layerKey];
+      if (!resolve) return;
+      const [srcId, data] = resolve();
+      if (!data) return;
+      const src = map.getSource(srcId);
+      if (src) src.setData(data);
+      registerFeatureListLayer(layerKey, data);
+    }
+
+    // Layer-agnostic property write. editorPois persist through their array
+    // store; every served layer patches the unified positioned-features store.
+    // Both paths leave feature.properties mutated so the change is live.
+    function setFeatureProperty(layerKey, featureId, propKey, value) {
+      const item = findFeatureById(layerKey, featureId);
+      if (!item || !item.feature) return;
+      const props = item.feature.properties = item.feature.properties || {};
+      props[propKey] = value;
+      if (layerKey === 'editorPois') {
+        saveEditorPois();
+        refreshEditorSource();
+      } else {
+        savePositionedFeature(layerKey, item.feature, { properties: { [propKey]: value } });
+        refreshServedSource(layerKey);
+      }
+      renderFeatureList(layerKey);
+    }
+
+    // Copy a whole layer's features as a GeoJSON FeatureCollection — with all
+    // edits/overrides applied — to the clipboard. The single bulk export path
+    // (per-feature copy is the single-row path; there are no file downloads).
+    async function copyLayerAsGeoJSON(layerKey) {
+      const runtime = featureListRuntime[layerKey];
+      const label = (FEATURE_LIST_LAYERS[layerKey] && FEATURE_LIST_LAYERS[layerKey].label) || layerKey;
+      if (!runtime || !runtime.state) { presetStatus.textContent = 'Nothing to copy.'; return; }
+      const features = [];
+      for (const bucket of runtime.state.groups) {
+        for (const item of bucket.features) {
+          if (!item.feature) continue;
+          const drop = {
+            type: 'Feature',
+            properties: { ...(item.feature.properties || {}) },
+            geometry: JSON.parse(JSON.stringify(item.feature.geometry || null))
+          };
+          for (const k of Object.keys(drop.properties)) if (k.startsWith('_')) delete drop.properties[k];
+          features.push(drop);
+        }
+      }
+      const text = JSON.stringify({ type: 'FeatureCollection', features }, null, 2) + '\n';
+      try {
+        const ok = await copyText(text);
+        presetStatus.textContent = ok
+          ? `Copied ${features.length} ${label} feature${features.length === 1 ? '' : 's'} as GeoJSON.`
+          : 'Clipboard copy failed.';
+      } catch (err) {
+        presetStatus.textContent = `Copy failed: ${err.message}`;
       }
     }
 
@@ -4871,12 +5202,12 @@
       return wrap;
     }
 
-    function renderTuneControls(config) {
-      tuneControls.innerHTML = '';
+    function renderTuneControls(config, target = tuneControls) {
+      target.innerHTML = '';
       const counts = { opacity: 0, color: 0, width: 0, percent: 0 };
       for (const knob of configuredKnobs(config)) {
         if (knob.kind === 'zoomband') {
-          tuneControls.append(buildZoomBandRow(config, knob));
+          target.append(buildZoomBandRow(config, knob));
           continue;
         }
         const index = counts[knob.kind] || 0;
@@ -4909,7 +5240,7 @@
         }
 
         row.append(label, input, output);
-        tuneControls.append(row);
+        target.append(row);
       }
     }
 
@@ -4918,6 +5249,7 @@
       if (!expandedTuneKey) {
         if (sfwdaDrawerControls) sfwdaDrawerControls.hidden = true;
         if (featureListEl) { featureListEl.hidden = true; featureListEl.innerHTML = ''; }
+        if (copyLayerBtn) copyLayerBtn.hidden = true;
         layerEditor.hidden = true;
         return;
       }
@@ -4934,9 +5266,13 @@
       // their drawer shows only the paint sliders.
       if (FEATURE_LIST_LAYERS[expandedTuneKey] && !FEATURE_LIST_TARGETS[expandedTuneKey]) {
         renderFeatureList(expandedTuneKey);
-      } else if (featureListEl) {
-        featureListEl.hidden = true;
-        featureListEl.innerHTML = '';
+        if (copyLayerBtn) copyLayerBtn.hidden = false;
+      } else {
+        if (featureListEl) {
+          featureListEl.hidden = true;
+          featureListEl.innerHTML = '';
+        }
+        if (copyLayerBtn) copyLayerBtn.hidden = true;
       }
     }
 
@@ -5133,11 +5469,17 @@
     // overrides, and the drawn-POI store) appear here. Other layers in a
     // section have no runtime state — only toggles / paints.
     const SECTION_RUNTIME = {
-      'derived-layers': {},
+      'derived-layers': {
+        // Curated buildings moved here from source-layers (derived = the
+        // owner-curated set). They carry per-feature visibility, #tag bindings,
+        // and drag-to-adjust geometry overrides — so a derived-section Copy
+        // round-trips all three.
+        featureVisibilityLayers: ['buildings'],
+        featureTagLayers: ['buildings'],
+        positionedFeatureLayers: ['buildings']
+      },
       'source-layers': {
-        featureVisibilityLayers: ['cemeteries', 'buildings'],
-        // Buildings is the only taggable source-layer consumer today.
-        featureTagLayers: ['buildings']
+        featureVisibilityLayers: ['cemeteries']
       },
       'external-reference': {},
       // Editor section runtime: drawn POI array + per-feature visibility +
@@ -6726,15 +7068,21 @@
       }
     }
 
-    function exportEditorPois() {
-      const blob = new Blob([JSON.stringify(editorFeatureCollection(), null, 2) + '\n'],
-        { type: 'application/geo+json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'aop_editor_features.geojson';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    // Single export path is clipboard GeoJSON — no file downloads. Copies the
+    // whole drawn-POI set as a FeatureCollection ready to paste into
+    // website/data/aop_editor_seed_pois.geojson.
+    async function exportEditorPois() {
+      const fc = editorFeatureCollection();
+      const text = JSON.stringify(fc, null, 2) + '\n';
+      const n = fc.features.length;
+      try {
+        const ok = await copyText(text);
+        presetStatus.textContent = ok
+          ? `Copied ${n} drawn feature${n === 1 ? '' : 's'} as GeoJSON.`
+          : 'Clipboard copy failed.';
+      } catch (err) {
+        presetStatus.textContent = `Copy failed: ${err.message}`;
+      }
     }
 
     // mode is 'point' (POI), 'polygon' (footprint), 'linestring' (trace), or
@@ -7921,8 +8269,9 @@
       // the hole in the park polygon. Each cemetery is a parcel polygon plus a
       // centroid marker; both carry the same properties (geom_role tells them
       // apart). Default off — search turns the layer on when it jumps here.
-      const cemeteryData = await fetchJson('./data/aop_cemeteries.geojson', 'Cemetery layer missing');
+      cemeteryData = await fetchJson('./data/aop_cemeteries.geojson', 'Cemetery layer missing');
       if (cemeteryData) {
+        applyPositionedFeatures('cemeteries', cemeteryData);
         map.addSource('cemeteries', {
           type: 'geojson',
           data: cemeteryData,
@@ -8031,12 +8380,17 @@
         }
       }
 
-      // --- FEMA USA Structures building footprints -------------------------
-      // Polygon building footprints across the 9-patch. This is raw reference
-      // context, not a park-facilities claim; four footprint centroids currently
-      // fall inside the candidate AOP boundary and should be checked in imagery.
-      const buildingsData = await fetchJson('./data/aop_buildings.geojson', 'Building footprints missing');
+      // --- Curated AOP park buildings (derived) ----------------------------
+      // The derived/curated building set: 3 public facilities (Pavilion,
+      // Farmhouse, Front Office) + 2 private-structure presence boxes. Footprints
+      // come from FEMA USA Structures but the raw 9-patch context is dropped —
+      // see import_fema_buildings.py CURATED_ADDRESSES. Footprints are
+      // drag-adjustable (FEMA's polygons sit a little off); applyPositionedFeatures
+      // replays any baked/in-progress moves before the source is built so a
+      // reload shows the corrected position.
+      buildingsData = await fetchJson('./data/aop_buildings.geojson', 'Building footprints missing');
       if (buildingsData) {
+        applyPositionedFeatures('buildings', buildingsData);
         map.addSource('fema-buildings', {
           type: 'geojson',
           data: buildingsData,
@@ -8047,6 +8401,9 @@
           id: 'building-footprint-fill',
           type: 'fill',
           source: 'fema-buildings',
+          // Private structures render ONLY via the black-box presence layer
+          // below (no interactive fill/popup) — exclude them here.
+          filter: ['!=', ['get', 'aop_structure_box'], true],
           layout: { visibility: 'none' },
           paint: {
             'fill-color': ['match', ['get', 'occupancy_class'],
@@ -8063,6 +8420,7 @@
           id: 'building-footprint-outline',
           type: 'line',
           source: 'fema-buildings',
+          filter: ['!=', ['get', 'aop_structure_box'], true],
           layout: { visibility: 'none' },
           paint: {
             'line-color': ['case', ['==', ['get', 'inside_aop_boundary'], true], '#8e5f37', '#776f61'],
@@ -8074,7 +8432,9 @@
           id: 'building-footprint-aop-outline',
           type: 'line',
           source: 'fema-buildings',
-          filter: ['==', ['get', 'inside_aop_boundary'], true],
+          // Prominent highlight now marks the public PARK FACILITIES (Pavilion,
+          // Farmhouse, Front Office), not every geometrically-inside footprint.
+          filter: ['==', ['get', 'aop_facility'], true],
           layout: { visibility: 'none' },
           paint: {
             'line-color': '#7c4a2a',
@@ -8083,31 +8443,60 @@
           }
         });
 
+        // Private structures on AOP land (665, 889): a non-interactive black-box
+        // presence marker — visible so nobody treats the spot as empty/routable,
+        // but no popup, no search, no list entry. Always visible (own layer, no
+        // toggle), independent of the FEMA buildings layer, since the privacy
+        // posture is to always show that a home is there.
+        map.addLayer({
+          id: 'building-structure-box',
+          type: 'fill',
+          source: 'fema-buildings',
+          filter: ['==', ['get', 'aop_structure_box'], true],
+          paint: {
+            'fill-color': '#46423b',
+            'fill-opacity': 0.82,
+            'fill-outline-color': '#2e2a25'
+          }
+        });
+
         bindPopup(['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline'],
-          (props) => props.building_label || 'Building footprint',
+          (props) => props.facility_name || props.building_label || 'Building footprint',
           (props) => [
+            ['Facility', props.facility_role || ''],
             ['Occupancy', props.occupancy_class || 'unknown'],
             ['Primary use', props.primary_occupancy || ''],
             ['Address', props.address || ''],
             ['Area', props.area_sqft != null ? `${Number(props.area_sqft).toLocaleString()} sq ft` : ''],
             ['Height', props.height_m != null ? `${props.height_m} m` : ''],
-            ['Within AOP', isTrue(props.inside_aop_boundary) ? 'Centroid inside candidate boundary' : ''],
+            ['Within AOP', isTrue(props.aop_facility) ? 'AOP park facility' : ''],
             ['Image date', props.image_date || ''],
             ['Method', props.validation_method || ''],
             ['Source', props.footprint_source || '']
           ]);
         bindPanelReveal(['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline'], 'buildings', 'build_id');
 
-        // Per-feature visibility: 4 in-park buildings pre-ticked by group
-        // default, 198 others collapsed under a bulk-off row. Persists across
+        // Per-feature visibility: 3 public facilities pre-ticked by group
+        // default, the rest collapsed under a bulk-off row. Persists across
         // reload via `aop_feature_visibility_v1`. See FEATURE_LIST_LAYERS.
         registerFeatureListLayer('buildings', buildingsData);
 
+        // Search: only the public PARK FACILITIES are findable — region
+        // footprints and the private black boxes stay out of search. Facilities
+        // index by their authored name (Pavilion / Farmhouse / Front Office) with
+        // the street address + role as aliases so an address query still lands.
+        const facilityFeatures = buildingsData.features
+          .filter((f) => f.properties && f.properties.aop_facility === true)
+          .map((f) => ({
+            ...f,
+            properties: { ...f.properties, name: f.properties.facility_name || f.properties.name }
+          }));
         indexFeatures(
-          buildingsData,
-          'building',
+          { type: 'FeatureCollection', features: facilityFeatures },
+          'facility',
           buildingsToggle,
-          (props) => ({ featureListKey: 'buildings', featureId: props.build_id })
+          (props) => ({ featureListKey: 'buildings', featureId: props.build_id }),
+          (props) => [props.address, props.facility_role]
         );
       }
 
@@ -8636,9 +9025,9 @@
         if (editSfwdaToggle.checked) showAlignmentHandles();
       });
 
-      exportAlignmentBtn.addEventListener('click', () => {
+      exportAlignmentBtn.addEventListener('click', async () => {
         const payload = {
-          _comment: 'Exported by AOP viewer 3x3 alignment editor. Replace website/data/sfwda_raster_alignment.json with this content to persist.',
+          _comment: 'Copied by AOP viewer 3x3 alignment editor. Replace website/data/sfwda_raster_alignment.json with this content to persist.',
           source_image: alignmentData?.source_image || 'data/sfwda_aop_trail_map.webp',
           source_provenance: alignmentData?.source_provenance || 'SFWDA AOP trail map 2015-03-11. Internal/inspection only.',
           image_pixel_size: alignmentData?.image_pixel_size || [2500, 1817],
@@ -8652,13 +9041,15 @@
           },
           [`grid_${GRID_N}x${GRID_N}`]: sfwdaGrid
         };
-        const blob = new Blob([JSON.stringify(payload, null, 2) + '\n'], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'sfwda_raster_alignment.json';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        const text = JSON.stringify(payload, null, 2) + '\n';
+        try {
+          const ok = await copyText(text);
+          presetStatus.textContent = ok
+            ? 'Copied alignment JSON — paste into website/data/sfwda_raster_alignment.json.'
+            : 'Clipboard copy failed.';
+        } catch (err) {
+          presetStatus.textContent = `Copy failed: ${err.message}`;
+        }
       });
 
       resetAlignmentBtn.addEventListener('click', () => {
@@ -9079,10 +9470,8 @@
           if (!feature) return;
           const id = feature.properties && feature.properties.id;
           if (id == null) return;
-          const runtime = featureListRuntime['editorPois'];
-          if (runtime && String(runtime.expandedFeatureId) !== String(id)) {
-            runtime.expandedFeatureId = id;
-            renderFeatureList('editorPois');
+          if (!dockSelectionMatches('editorPois', id)) {
+            selectFeatureForDock('editorPois', id);
           }
           revealFeatureInPanel('editorPois', id);
         });
@@ -9623,6 +10012,11 @@
       setDrawMode(draw && draw.getMode() === 'linestring' ? 'static' : 'linestring');
     });
     exportPoiBtn.addEventListener('click', exportEditorPois);
+    // Drawer "Copy all" — copies the open feature-list layer (buildings,
+    // cemeteries, …) as a GeoJSON FeatureCollection with all edits applied.
+    if (copyLayerBtn) copyLayerBtn.addEventListener('click', () => {
+      if (expandedTuneKey) copyLayerAsGeoJSON(expandedTuneKey);
+    });
     clearPoiBtn.addEventListener('click', () => {
       if (!editorPois.length) return;
       if (!window.confirm(`Delete all ${editorPois.length} drawn feature(s)? This cannot be undone.`)) return;

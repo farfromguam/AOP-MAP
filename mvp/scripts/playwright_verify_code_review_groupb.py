@@ -212,8 +212,8 @@ def main():
                f"publish={m13.get('publishPrecached')} landcover9={m13.get('landcover9Precached')}")
         record("M13: /data/ still cache-first (dropped layers lazy-cache on first view)",
                m13.get("dataCacheFirst") is True)
-        record("M13: SW activates at v26 (bump took, no parse error)",
-               m13.get("active") == "activated" and ("aop-data-v26" in (m13.get("cacheNames") or [])),
+        record("M13: SW activates at v28 (bump took, no parse error)",
+               m13.get("active") == "activated" and ("aop-data-v28" in (m13.get("cacheNames") or [])),
                f"state={m13.get('active')} caches={m13.get('cacheNames')}")
 
         browser.close()

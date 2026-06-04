@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>AOP — right panel (rebuild)</title>
+  <link rel="stylesheet" href="./vendor/maplibre-gl.css" />
+  <style>
+    :root {
+      --paper: #efe7d5;
+      --panel-bg: #f7f2e6;
+      --ink: #2b2620;
+      --line: #d8cdb4;
+      --rust: #b4561f;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; font-family: -apple-system, Segoe UI, Roboto, sans-serif; color: var(--ink); }
+    #map { position: fixed; inset: 0; background: var(--paper); }
+
+    /* The new right panel. One column, rendered entirely by js/panel.js. */
+    .panel {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: 320px; max-width: 86vw;
+      background: var(--panel-bg);
+      border-left: 1px solid var(--line);
+      box-shadow: -2px 0 12px rgba(0,0,0,0.08);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-body { flex: 1; overflow-y: auto; padding: 14px 16px 20px; }
+
+    /* Left sidebar — the POI / user-highlights surface. Mirrors the right panel
+       but anchored left. Starred features (props.highlight) are listed here. */
+    .panel-left {
+      left: 0; right: auto; width: 280px;
+      border-left: 0; border-right: 1px solid var(--line);
+      box-shadow: 2px 0 12px rgba(0,0,0,0.08);
+    }
+    .poi-empty { color: #8a7d63; font-size: 13px; line-height: 1.45; margin: 0; }
+    .poi-group { margin-bottom: 14px; }
+    .poi-group-head {
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-bottom: 4px;
+    }
+    .poi-group-label {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px;
+      color: #8a7d63; font-weight: 700;
+    }
+    .poi-group-count { color: #b3a484; font-size: 12px; font-variant-numeric: tabular-nums; }
+    .poi-row {
+      display: block; width: 100%; text-align: left; background: none; border: 0;
+      padding: 7px 6px; font: inherit; font-size: 14px; color: var(--ink);
+      cursor: pointer; border-radius: 6px;
+    }
+    .poi-row:hover { background: rgba(180,86,31,0.08); }
+
+    .panel-title { margin: 0 0 12px; font-size: 16px; font-weight: 600; letter-spacing: 0.2px; }
+
+    .panel-section { margin-bottom: 16px; }
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; gap: 8px; cursor: pointer;
+      background: none; border: 0; padding: 0 0 4px; margin-bottom: 6px;
+      border-bottom: 1px solid var(--line); text-align: left; color: inherit;
+      font: inherit;
+    }
+    .section-label {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px;
+      color: #8a7d63; font-weight: 700;
+    }
+    .section-chevron {
+      color: #b3a484; font-size: 12px; line-height: 1;
+      transform: rotate(90deg); transition: transform 0.12s ease;
+    }
+    .panel-section.collapsed .section-chevron { transform: rotate(0deg); }
+    .section-body { display: flex; flex-direction: column; }
+    .panel-section.collapsed .section-body { display: none; }
+
+    .node {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 4px; font-size: 14px; cursor: pointer;
+      border-radius: 6px;
+    }
+    .node:hover { background: rgba(180,86,31,0.06); }
+    .node input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--rust); cursor: pointer; }
+    .node-label { line-height: 1.2; }
+    .node-unknown { color: #b00; }
+
+    /* A layer node, possibly carrying a collapsible items list. */
+    .node-group { display: flex; flex-direction: column; }
+
+    /* Select-to-edit button (label + count). No inline visibility checkbox —
+       visibility lives in the edit area now. */
+    .node-select {
+      flex: 1; display: flex; align-items: center; gap: 8px;
+      background: none; border: 0; padding: 7px 4px; margin: 0; cursor: pointer;
+      font: inherit; color: inherit; text-align: left; border-radius: 6px;
+    }
+    .node-select:hover { background: rgba(180,86,31,0.06); }
+    .node.selected > .node-select { background: rgba(180,86,31,0.12); font-weight: 600; }
+    .node-count {
+      color: #b3a484; font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+    .node-create {
+      background: none; border: 1px solid var(--line); color: var(--rust);
+      width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
+      font-size: 18px; line-height: 1; padding: 0; flex: none;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .node-create:hover { background: rgba(180,86,31,0.1); }
+    .node-create.active { background: var(--rust); color: #fff; border-color: var(--rust); }
+    .node-chevron-btn {
+      background: none; border: 0; padding: 6px 4px; cursor: pointer;
+      display: flex; align-items: center;
+    }
+    .node-chevron {
+      color: #b3a484; font-size: 11px; line-height: 1;
+      transform: rotate(0deg); transition: transform 0.12s ease;
+    }
+    .node-group.expanded .node-chevron { transform: rotate(90deg); }
+
+    /* Expandable content (own items + nested child groups), gated by expand. */
+    .node-content { display: none; margin-left: 14px; border-left: 1px solid var(--line); padding-left: 4px; }
+    .node-group.expanded > .node-content { display: block; }
+
+    .node-items { margin: 2px 0 6px 0; }
+    .item { display: flex; align-items: center; }
+    .item-select {
+      flex: 1; min-width: 0; text-align: left; background: none; border: 0;
+      padding: 4px 10px; font: inherit; font-size: 13px; color: #4a4438;
+      cursor: pointer; border-radius: 5px;
+    }
+    .item-select:hover { background: rgba(180,86,31,0.05); }
+    .item.selected > .item-select { background: rgba(180,86,31,0.12); font-weight: 600; }
+
+    /* Lock toggle — on every group row and every item row. */
+    .lock-btn {
+      flex: none; background: none; border: 0; padding: 2px 5px; cursor: pointer;
+      color: #b3a484; display: flex; align-items: center; border-radius: 5px;
+    }
+    .lock-btn:hover { background: rgba(180,86,31,0.1); }
+    .lock-btn.locked { color: var(--rust); }
+    .lock-glyph { display: flex; }
+
+    /* Inline edit area — appears under the selected group or item. */
+    .edit-area {
+      margin: 4px 0 8px 10px; padding: 10px 12px;
+      background: rgba(180,86,31,0.05);
+      border: 1px solid var(--line); border-radius: 8px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .node-items .edit-area { margin-left: 10px; }
+    .field { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    /* The group control row: eye · star · lock, all icon toggles. */
+    .field-controls { gap: 4px; }
+    .icon-toggle {
+      flex: none; background: none; border: 0; padding: 3px 5px; cursor: pointer;
+      color: #b3a484; display: flex; align-items: center; border-radius: 5px;
+    }
+    .icon-toggle:hover { background: rgba(180,86,31,0.1); }
+    .icon-toggle.on { color: var(--rust); }
+    .field-note, .field-text, .field-select, .field-static { flex-direction: column; align-items: stretch; gap: 4px; }
+    .field-label { color: #6e6450; font-weight: 600; }
+    .field-static .field-value { word-break: break-word; }
+    .field-input {
+      width: 100%; padding: 6px 8px; font: inherit; font-size: 13px;
+      border: 1px solid var(--line); border-radius: 6px; background: #fff;
+    }
+    .field-input:disabled { background: #efe9da; color: #6e6450; cursor: not-allowed; }
+    .field-static .field-value { color: #4a4438; }
+    .field-unknown { color: #b00; }
+
+    /* Action buttons (Fly / Copy / Move / Delete / Copy all) — one declarative
+       row rendered from the node's `actions`. */
+    .field-actions { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+    .edit-action {
+      background: #fff; border: 1px solid var(--line); color: var(--ink);
+      padding: 6px 10px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px;
+    }
+    .edit-action:hover { background: rgba(180,86,31,0.08); }
+    .edit-action.danger { color: #a3331a; border-color: #e3b3a6; }
+    .edit-action.danger:hover { background: rgba(163,51,26,0.08); }
+    .edit-action:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* Brief confirmation toast (e.g. after Copy GeoJSON). */
+    .panel-toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+      background: var(--ink); color: #fff; padding: 8px 14px; border-radius: 8px;
+      font-size: 13px; z-index: 10; box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    }
+    /* "Locked — unlock to edit", shown beside the lock toggle in the edit area. */
+    .edit-locked-hint-text { font-size: 12px; color: #8a7d63; }
+
+    /* Create / place-mode hint banner. */
+    .create-hint {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 12px; padding: 8px 12px;
+      background: var(--rust); color: #fff; border-radius: 8px; font-size: 13px;
+    }
+    /* Inline under the + button (create) and under the selected item (move). */
+    .node-group > .create-hint { margin: 4px 2px 8px; }
+    .node-items .create-hint { margin: 4px 0 8px; }
+    .create-hint-text { flex: 1; }
+    .create-hint-cancel {
+      background: rgba(255,255,255,0.2); color: #fff; border: 0;
+      padding: 4px 10px; border-radius: 6px; cursor: pointer; font: inherit;
+    }
+    .create-hint-cancel:hover { background: rgba(255,255,255,0.32); }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <aside class="panel panel-left">
+    <div class="panel-body" id="leftBody"></div>
+  </aside>
+  <aside class="panel">
+    <div class="panel-body" id="panelBody"></div>
+  </aside>
+
+  <script src="./vendor/maplibre-gl.js"></script>
+  <script src="./js/panel.js"></script>
+</body>
+</html>

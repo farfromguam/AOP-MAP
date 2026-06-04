@@ -7,45 +7,45 @@
   "trails": [
     {
       "number": 1, "name": "Launchpad", "name_status": "observed", "difficulty": "easy", "tr": 2, "length_mi": 1.2,
-      "description": "Packed dirt and a gentle climb to open. At Area 51 the tread breaks into loose rock and the ride turns choppy — still an easy line, just no longer smooth.",
+      "description": "Packed dirt and an easy climb to start. At Area 51 the tread turns to loose rock and the ride gets choppy. Still easy, just rougher.",
       "connects": [3, 18, 22, 50],
       "sources": ["onX:1-launchpad", "observed"], "status": "curated"
     },
     {
       "number": 2, "name": "Convergence", "name_status": "observed", "difficulty": "easy",
-      "description": "An easy spur off Launchpad, bending toward the buggy side of the park. Mountain runoff gathers here and drains into Battle Creek — that's the convergence it's named for.",
+      "description": "An easy spur off Launchpad, bending toward the buggy side of the park. Mountain runoff gathers here and drains into Battle Creek. That's the convergence it's named for.",
       "connects": [1],
       "sources": ["onX:2-convergence", "observed"], "status": "curated"
     },
     {
       "number": 3, "name": "Major Tom", "name_status": "observed", "difficulty": "easy",
-      "description": "Reads casual, and that's the catch. Accessible enough to wave through, but a starter rig or anything low on clearance can get caught out the moment attention drops.",
+      "description": "Looks easy, and that's the catch. A starter rig or anything low on clearance can get hung up the second you stop paying attention.",
       "sources": ["onX:3-major-tom", "observed"], "status": "curated"
     },
     {
       "number": 5, "name": "Lifeform", "name_status": "observed", "difficulty": "easy",
-      "description": "A quiet uphill connector. Small rock, exposed roots, a few bends, and it feeds you back out onto Trail 3.",
+      "description": "A quiet uphill connector. Small rock, some exposed roots, a few bends, then it feeds back out onto Trail 3.",
       "connects": [3],
       "sources": ["onX:5-lifeform", "observed"], "status": "curated"
     },
     {
       "number": 6, "name": "Descension", "name_status": "observed", "difficulty": "moderate", "tr": 6,
-      "description": "A mild descent that opens on a dirt flat and saves the work for the bottom: a deep, eroded rut with a tree root sitting square in the line.",
+      "description": "A mild descent onto a dirt flat. The work's at the bottom: a deep, eroded rut with a tree root sitting square in the line.",
       "sources": ["onX:6-descension", "observed"], "status": "curated"
     },
     {
       "number": 7, "name": "Ascension", "name_status": "observed", "difficulty": "moderate", "tr": 5,
-      "description": "A hill climb that lives and dies on traction. Dry, it's a good time for any rig. Wet, it goes greasy in a hurry.",
+      "description": "A hill climb. Dry, anything makes it. Wet, it gets greasy fast.",
       "sources": ["onX:7-ascension", "observed"], "status": "curated"
     },
     {
       "number": 9, "name": "Little Dipper", "name_status": "observed", "difficulty": "easy", "tr": 2,
-      "description": "A full loop back to its own start, with feeders branching off to harder trails. Flat and clean nearly the whole way, with next to nothing in the way of obstacles.",
+      "description": "A full loop back to its own start, with feeders off to harder trails. Flat and clean almost the whole way, barely an obstacle on it.",
       "sources": ["onX:9-little-dipper", "observed"], "status": "curated"
     },
     {
       "number": 11, "name": "Ground Control", "name_status": "observed", "difficulty": "easy", "tr": 3,
-      "description": "Up a bit, down a bit, over and over — a short, rolling run. Rock turns up in clusters, but none of it is hard to clear.",
+      "description": "Up and down, over and over. A short, rolling run. Rock shows up in clusters, but none of it's hard to clear.",
       "sources": ["onX:11-ground-control", "observed"], "status": "curated"
     },
     {

@@ -4,6 +4,7 @@ TL;DR:
 - Write like a smart person talking to another smart person. Not a textbook, not a rough draft.
 - Direct, terse, polished. Every sentence earns its line.
 - If a doc reads like AI wrote it, rewrite it.
+- User-facing app copy has its own register. See "The AOP product voice" below.
 - This guide was imported from the Soka brain. The full source corpus was not copied into this first AOP split.
 
 #voice #authoring #style
@@ -113,3 +114,29 @@ The target: direct, has personality, technically sound, unmistakably human.
 Two tests for a well-calibrated doc:
 1. Could you tell a person wrote this? Not by the typos -- by the thinking.
 2. Would a stranger understand it? Not by padding -- by the thought being complete.
+
+
+## The AOP product voice
+
+Everything above is about brain docs. The app's user-facing copy is a different register but the same standard, and it has its own failure modes. That copy lives as data in `website/data/` -- `aop_about.json`, `aop_trail_catalog.json`, `aop_poi_index.json`, `aop_ui_strings.json`, and the rest. `aop_copy_registry.json` is the master index of every copy-bearing surface.
+
+Two human voices ground it. Both live in `brain/prose/`.
+
+**Hilary** (`prose/hilary/examples.md`) is the host. Warm and plain. "come and play RC cars," "our tiny trucks," "come and hangout." She's the person who actually sends the invites, and the welcome should sound like her -- not like a brand.
+
+**Christopher** (`prose/christopher/`) is the wit. "were blazin / some trails / youre invited." Dry, lowercase, funny, occasionally profane. Captions and trail notes can borrow his deadpan. Not his profanity.
+
+Who's talking, where:
+
+- **Host voice** -- the About tab, the invite, anything that welcomes. Hilary's register: first-person plural, unhurried, sincere. The spec sheet inside it can stay precise ("1/10 electric scale"); the welcome around it should not read like a spec sheet.
+- **Trail-guide voice** -- trail descriptions and POI blurbs. Plain and useful: what it is and what'll bite you, in as few words as the fact needs. Dry humor is fine. Writerly is not.
+- **System voice** -- UI strings, caveats, source/confidence lines. Terse, neutral, honest about what we don't know. This one is already right. Leave it.
+
+Two tells show up in AOP copy on top of the general list above:
+
+- **The triad.** A line that resolves into three balanced parts -- "We build the rigs, walk the stages, throw the days." When the third item was invented to finish a rhythm, that's the machine writing, not you. Cut to two, or to one fragment.
+- **The em-dash joint.** When the em-dash is the default hinge between every pair of clauses, most of them wanted to be periods.
+
+And watch borrowed vocabulary. The event session names came straight from sister events (the `inspired_by` arrays in `aop_event_schedule.json`). A reference can tell you the shape of a schedule. It should not end up as the words on the page. See `ai_rules/references_are_not_analogies.md`.
+
+The test: read the line aloud. If it sounds like a brand wrote it, it's wrong. If it sounds like Hilary inviting a neighbor, or Christopher captioning a photo, it's right.

@@ -1,0 +1,238 @@
+{
+  "schema": "aop-cmfs-v1",
+  "updated_at": "2026-06-04",
+  "purpose": "Common Minimum Feature Schema — the one data contract the right-panel editor reads. See brain/research/common_feature_schema.md.",
+  "canonical_fields": {
+    "id": "stable feature id (machine; never blank where derivable)",
+    "name": "display name / title — the field the editor's Name input writes",
+    "description": "human blurb / notes",
+    "kind": "class of thing (trail, building, cemetery, poi, callout, road, water, contour, landcover, ...)",
+    "source": "where it came from (source-register)",
+    "confidence": "official / observed / inferred / derived / synthetic",
+    "permission": "license or permission to publish",
+    "status": "publish / review status",
+    "last_checked": "date or method last verified"
+  },
+  "crosswalk": {
+    "name": [
+      "name",
+      "building_label",
+      "facility_name",
+      "label",
+      "title",
+      "track_name"
+    ],
+    "description": [
+      "description",
+      "blurb",
+      "notes",
+      "note"
+    ],
+    "id": [
+      "id",
+      "uuid",
+      "build_id",
+      "parcel_id",
+      "permanent_identifier",
+      "osm_id",
+      "ID",
+      "edge_id",
+      "logo_id",
+      "source_id"
+    ],
+    "source": [
+      "source",
+      "source_name",
+      "footprint_source",
+      "source_type",
+      "parcel_source",
+      "burial_source",
+      "attribution"
+    ],
+    "confidence": [
+      "confidence",
+      "number_confidence"
+    ],
+    "permission": [
+      "permission",
+      "license_or_permission",
+      "license",
+      "burial_terms"
+    ],
+    "status": [
+      "status",
+      "publish_status",
+      "review_status"
+    ],
+    "last_checked": [
+      "last_checked",
+      "retrieved_on",
+      "validation_method",
+      "image_date",
+      "production_date",
+      "publication_date",
+      "generated_on"
+    ]
+  },
+  "rebake": {
+    "mode": "additive (canonical fields prepended; original keys preserved)",
+    "raw_archive": "website/data/raw/ (pristine pre-rebake originals)",
+    "machine_layers": "id + kind per feature only; provenance is layer-level (below)"
+  },
+  "layers": {
+    "publish.geojson": {
+      "features": 5,
+      "kind": "(per-feature)",
+      "machine": false
+    },
+    "aop_9_patch.geojson": {
+      "features": 9,
+      "kind": "acquisition_aoi_cell",
+      "machine": false
+    },
+    "aop_buildings.geojson": {
+      "features": 5,
+      "kind": "building",
+      "machine": false
+    },
+    "aop_cemeteries.geojson": {
+      "features": 8,
+      "kind": "cemetery",
+      "machine": false
+    },
+    "aop_trail_network.geojson": {
+      "features": 120,
+      "kind": "trail",
+      "machine": false
+    },
+    "aop_visitor_context_callouts.geojson": {
+      "features": 2,
+      "kind": "visitor_callout",
+      "machine": false
+    },
+    "aop_brand_logos.geojson": {
+      "features": 2,
+      "kind": "brand_logo",
+      "machine": false
+    },
+    "aop_editor_seed_pois.geojson": {
+      "features": 1,
+      "kind": "(per-feature)",
+      "machine": false
+    },
+    "aop_lidar_tiles.geojson": {
+      "features": 24,
+      "kind": "lidar_tile",
+      "machine": false
+    },
+    "aop_roads.geojson": {
+      "features": 114,
+      "kind": "road",
+      "machine": false
+    },
+    "aop_water.geojson": {
+      "features": 94,
+      "kind": "water",
+      "machine": false
+    },
+    "osm_aop_9patch.geojson": {
+      "features": 71,
+      "kind": "(per-feature)",
+      "machine": false
+    },
+    "osm_aop_named.geojson": {
+      "features": 5,
+      "kind": "(per-feature)",
+      "machine": false
+    },
+    "sfwda_traced_trails.geojson": {
+      "features": 382,
+      "kind": "trail",
+      "machine": false
+    },
+    "sfwda_traced_markers.geojson": {
+      "features": 124,
+      "kind": "trail_marker",
+      "machine": false
+    },
+    "sfwda_numbered_trails.geojson": {
+      "features": 67,
+      "kind": "trail",
+      "machine": false
+    },
+    "sfwda_trails_edited.geojson": {
+      "features": 120,
+      "kind": "trail",
+      "machine": false
+    },
+    "aop_landcover.geojson": {
+      "features": 154,
+      "kind": "landcover",
+      "machine": true,
+      "layer_provenance": {
+        "source": "USDA NAIP 2023 + USGS 3DEP canopy-height model",
+        "confidence": "derived",
+        "permission": "public domain",
+        "status": "raw context",
+        "last_checked": "2023 imagery / 2015 lidar"
+      }
+    },
+    "aop_landcover_9patch.geojson": {
+      "features": 3430,
+      "kind": "landcover",
+      "machine": true,
+      "layer_provenance": {
+        "source": "USDA NAIP 2023 + USGS 3DEP canopy-height model",
+        "confidence": "derived",
+        "permission": "public domain",
+        "status": "raw context",
+        "last_checked": "2023 imagery / 2015 lidar"
+      }
+    },
+    "aop_contours.geojson": {
+      "features": 2831,
+      "kind": "contour",
+      "machine": true,
+      "layer_provenance": {
+        "source": "USGS 3DEP 1m DEM (lidar-derived)",
+        "confidence": "derived",
+        "permission": "public domain (USGS)",
+        "status": "raw context",
+        "last_checked": "2015 (DEM)"
+      }
+    },
+    "aop_activity_hotspots.geojson": {
+      "features": 130,
+      "kind": "activity_hotspot",
+      "machine": true,
+      "layer_provenance": {
+        "source": "first-party Gaia GPX (dwell)",
+        "confidence": "raw activity evidence",
+        "permission": "internal",
+        "status": "hold"
+      }
+    },
+    "aop_synthetic_activity_hotspots.geojson": {
+      "features": 36,
+      "kind": "synthetic_activity_hotspot",
+      "machine": true,
+      "layer_provenance": {
+        "source": "simulation",
+        "confidence": "synthetic",
+        "permission": "internal",
+        "status": "test data"
+      }
+    },
+    "aop_synthetic_activity_tracks.geojson": {
+      "features": 72,
+      "kind": "synthetic_activity_track",
+      "machine": true,
+      "layer_provenance": {
+        "source": "simulation",
+        "confidence": "synthetic",
+        "permission": "internal",
+        "status": "test data"
+      }
+    }
+  }
+}

@@ -60,12 +60,17 @@ def building_data(page) -> dict:
             classes[cls] = (classes[cls] || 0) + 1;
           }
           const inside = features.filter((f) => f.properties.inside_aop_boundary);
+          const facilities = features.filter((f) => f.properties.aop_facility === true);
+          const boxes = features.filter((f) => f.properties.aop_structure_box === true);
           return {
             total: features.length,
             inside: inside.length,
             classes,
             selectedSource: (d._sources_checked || []).find((s) => s.selected)?.name || '',
-            insideLabels: inside.map((f) => f.properties.building_label).sort()
+            insideLabels: inside.map((f) => f.properties.building_label).sort(),
+            facilityNames: facilities.map((f) => f.properties.facility_name).sort(),
+            facilityAddrs: facilities.map((f) => f.properties.address).sort(),
+            boxAddrs: boxes.map((f) => f.properties.address).sort()
           };
         }"""
     )
@@ -118,19 +123,42 @@ def main() -> int:
         data = building_data(page)
         check("aop_buildings.geojson loaded", data is not None)
         if data:
-            check("202 FEMA footprints imported", data["total"] == 202, str(data["total"]))
+            # Curated/derived set only: the ~197 raw 9-patch context footprints
+            # are dropped on purpose (owner decision 2026-06-03). The served
+            # layer is the 5 owner-chosen AOP buildings (3 facilities + 2 private
+            # boxes), all Residential. See import_fema_buildings.py CURATED_ADDRESSES.
+            check("5 curated AOP buildings served (raw context dropped)",
+                  data["total"] == 5, str(data["total"]))
             check("4 footprints tagged inside the AOP boundary",
                   data["inside"] == 4, str(data["inside"]))
             check("selected source is FEMA USA Structures",
                   data["selectedSource"] == "FEMA USA Structures", data["selectedSource"])
-            check("expected class mix",
-                  data["classes"].get("Residential") == 166
-                  and data["classes"].get("Agriculture") == 24,
+            check("curated set is all Residential",
+                  data["classes"].get("Residential") == 5
+                  and len(data["classes"]) == 1,
                   str(data["classes"]))
             check("inside-AOP labels include Ellis Cove Road addresses",
                   all("Ellis Cove Road" in label for label in data["insideLabels"]),
                   str(data["insideLabels"]))
+            check("3 public facilities tagged (Pavilion / Farmhouse / Front Office)",
+                  data["facilityNames"] == ["Farmhouse", "Front Office", "Pavilion"],
+                  str(data["facilityNames"]))
+            check("facility addresses are 880 / 1010 / 1033 Ellis Cove",
+                  data["facilityAddrs"] == ["1010 Ellis Cove Road", "1033 Ellis Cove Road",
+                                            "880 Ellis Cove Road"],
+                  str(data["facilityAddrs"]))
+            check("2 private structure boxes tagged (665 / 889)",
+                  data["boxAddrs"] == ["665 Ellis Cove Road", "889 Ellis Cove Road"],
+                  str(data["boxAddrs"]))
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["initial"]))
+
+        print("\n== Private structure black-box layer ==")
+        check("building-structure-box layer is present and visible",
+              layer_visibility(page, "building-structure-box") == "visible",
+              layer_visibility(page, "building-structure-box"))
+        box_rendered = rendered_count(page, ["building-structure-box"])
+        check("private boxes render (presence markers)", box_rendered > 0,
+              f"{box_rendered} rendered")
 
         print("\n== Buildings ON ==")
         set_toggle(page, "showBuildings", True)
@@ -143,18 +171,41 @@ def main() -> int:
               f"{rendered} rendered")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["buildings_on"]))
 
-        print("\n== Search by building address ==")
+        print("\n== Search: public facilities only ==")
         set_toggle(page, "showBuildings", False)
-        labels = search_labels(page, "1010 ellis")
-        check("search finds the 1010 Ellis Cove Road footprint",
-              any("1010 Ellis Cove Road" in s for s in labels), str(labels))
+        check("search by name finds the Pavilion",
+              any("Pavilion" in s for s in search_labels(page, "pavilion")),
+              str(search_labels(page, "pavilion")))
+        check("search by name finds the Farmhouse",
+              any("Farmhouse" in s for s in search_labels(page, "farmhouse")),
+              str(search_labels(page, "farmhouse")))
+        check("search by name finds the Front Office",
+              any("Front Office" in s for s in search_labels(page, "front office")),
+              str(search_labels(page, "front office")))
+        check("facility is searchable by street address (alias)",
+              any("Pavilion" in s for s in search_labels(page, "1010 ellis")),
+              str(search_labels(page, "1010 ellis")))
+
+        print("\n== Search: private boxes + region excluded ==")
+        check("private box 665 Ellis is NOT searchable",
+              not any("665" in s for s in search_labels(page, "665 ellis")),
+              str(search_labels(page, "665 ellis")))
+        check("private box 889 Ellis is NOT searchable",
+              not any("889" in s for s in search_labels(page, "889 ellis")),
+              str(search_labels(page, "889 ellis")))
+        check("region building 383 Ellis is NOT searchable",
+              not any("383" in s for s in search_labels(page, "383 ellis")),
+              str(search_labels(page, "383 ellis")))
+
+        print("\n== Search jump (Pavilion) ==")
+        search_labels(page, "pavilion")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["search"]))
         page.locator("#searchInput").press("Enter")
         page.wait_for_timeout(1800)
         check("search jump re-enabled the buildings layer",
               page.locator("#showBuildings").is_checked())
         zoom = page.evaluate("() => window.map.getZoom()")
-        check("search jump zoomed in on the building", zoom > 15, f"zoom={zoom:.2f}")
+        check("search jump zoomed in on the facility", zoom > 15, f"zoom={zoom:.2f}")
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["address_jump"]))
 
         print("\n== Toggle OFF ==")

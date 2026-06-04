@@ -221,7 +221,7 @@
          foldVersionIntoInfoControl() RELOCATES it into the bottom-left info ⓘ
          so the corner reads "ⓘ v18" (pwa_qa_2 item 3). Keep this string in sync
          with VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v26</div>
+    <div class="util-version" id="appVersion" title="App build version">v31</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
@@ -243,7 +243,6 @@
         <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4l4 4L8 18.5l-4.5 1L4.5 15 14.5 4z"/></svg>
       </span>
       <h1>AOP edit panel</h1>
-      <button type="button" id="exportAll" class="panel-export" title="Copy a full snapshot — toggles, sliders, paints, geometry overrides, drawn POIs, per-feature visibility — to clipboard.">⧉</button>
       <button type="button" id="panelCollapse" class="panel-collapse" aria-expanded="false" aria-controls="panelBody" title="Expand panel">▸</button>
     </div>
     <div class="panel-body" id="panelBody">
@@ -333,7 +332,6 @@
       <section class="panel-section collapsed" data-section="source-layers">
         <div class="section-header">
           <span class="section-label">Source layers</span>
-          <button type="button" class="section-action" data-section-export="source-layers" title="Copy this section's settings to clipboard">⧉</button>
           <button type="button" class="section-toggle" aria-expanded="false">
             <span class="section-chevron">▸</span>
           </button>
@@ -343,7 +341,6 @@
           <label><input type="checkbox" id="showSatellite" /> Satellite imagery (TNMap 2022)</label>
           <label><input type="checkbox" id="showUsdaNaip" /> USDA NAIP imagery (TN 2023)</label>
           <label><input type="checkbox" id="showLidarTiles" /> Lidar tile index (USGS 3DEP)</label>
-          <label><input type="checkbox" id="showBuildings" checked /> Building footprints (FEMA USA Structures)</label>
           <label><input type="checkbox" id="showCemeteries" /> Cemeteries (TN Comptroller parcels)</label>
         </div>
       </section>
@@ -351,7 +348,6 @@
       <section class="panel-section collapsed" data-section="derived-layers">
         <div class="section-header">
           <span class="section-label">Derived layers</span>
-          <button type="button" class="section-action" data-section-export="derived-layers" title="Copy this section's settings to clipboard">⧉</button>
           <button type="button" class="section-toggle" aria-expanded="false">
             <span class="section-chevron">▸</span>
           </button>
@@ -361,6 +357,7 @@
           <div id="layerEditor" class="layer-editor" hidden>
             <div class="layer-editor-heading">
               <strong id="layerEditorTitle">Land cover</strong>
+              <button id="copyLayerBtn" type="button" class="copy-layer-btn" hidden title="Copy every feature in this layer as a GeoJSON FeatureCollection">⧉ Copy all</button>
               <label class="tune-visible"><input type="checkbox" id="tuneVisible" /> Visible</label>
             </div>
             <div id="featureList" class="feature-list" hidden></div>
@@ -375,7 +372,7 @@
                 <button id="rotateCw" type="button" disabled>↻ 90° CW</button>
               </div>
               <div class="editor-row">
-                <button id="exportAlignment" type="button" disabled>Export alignment</button>
+                <button id="exportAlignment" type="button" disabled>Copy alignment JSON</button>
                 <button id="resetAlignment" type="button" disabled>Reset</button>
               </div>
             </div>
@@ -385,6 +382,7 @@
           <label><input type="checkbox" id="showHillshade" /> Lidar hillshade (USGS 3DEP)</label>
           <label><input type="checkbox" id="showContours" /> Lidar contours (5 ft, 1m DEM)</label>
           <label><input type="checkbox" id="showBoundaries" checked /> Publishable boundaries</label>
+          <label><input type="checkbox" id="showBuildings" checked /> Park buildings (curated, drag to adjust)</label>
           <label><input type="checkbox" id="showAopTrailNetwork" checked /> AOP trail network (merged truth, colour by difficulty)</label>
           <label><input type="checkbox" id="showSyntheticActivity" /> Simulated Saturday activity</label>
         </div>
@@ -393,7 +391,6 @@
       <section class="panel-section collapsed" data-section="external-reference">
         <div class="section-header">
           <span class="section-label">External reference</span>
-          <button type="button" class="section-action" data-section-export="external-reference" title="Copy this section's settings to clipboard">⧉</button>
           <button type="button" class="section-toggle" aria-expanded="false">
             <span class="section-chevron">▸</span>
           </button>
@@ -414,7 +411,6 @@
       <section class="panel-section collapsed" data-section="editor">
         <div class="section-header">
           <span class="section-label">Map editor</span>
-          <button type="button" class="section-action" data-section-export="editor" title="Copy this section's settings to clipboard">⧉</button>
           <button type="button" class="section-toggle" aria-expanded="false">
             <span class="section-chevron">▸</span>
           </button>
@@ -423,10 +419,11 @@
           <!-- Bucket tree rendered by buildEditorTree(). Three geometry buckets
                (Point / Line / Polygon) plus a ★ Visitor list virtual group at
                the top. Each bucket head carries a + that opens an inline
-               create row inside the bucket. Source sub-groups (Drawn /
-               Trailheads / Brand / Visitor) live inside each bucket; Drawn is
-               open by default, references collapse. Card:
-               brain/tasks/04_event_app/editor_three_buckets_v3c.md. -->
+               create row inside the bucket. Source sub-groups (Drawn / Brand /
+               Visitor) live inside each bucket; Drawn is open by default,
+               references collapse. Every row's ▸ chevron opens the inline
+               accordion editor (rename / tag / notes / move / copy GeoJSON).
+               Card: brain/tasks/04_event_app/editor_three_buckets_v3c.md. -->
           <div id="editorTree" class="editor-tree"></div>
           <!-- Create footer — Export / Clear / status / help. The three draw
                buttons (Place POI / Draw footprint / Trace line) and the
@@ -434,11 +431,11 @@
                row (see #legacyLayerToggles below for the hidden originals). -->
           <div class="editor-create-footer">
             <div class="editor-row">
-              <button id="exportPoiBtn" type="button">Export GeoJSON</button>
+              <button id="exportPoiBtn" type="button">Copy all as GeoJSON</button>
               <button id="clearPoiBtn" type="button">Clear all</button>
             </div>
             <small id="poiStatus">0 POIs, 0 footprints, 0 traces.</small>
-            <small>Each bucket above has its own <b>+</b> button — click to choose a category and start placing / drawing / tracing. The new feature lands in <b>Drawn POIs</b> under the matching bucket. Click the <code>▸</code> chevron on any drawn row to rename, re-categorize, add notes, or delete. Map-click on a drawn feature jumps to its editor. ★ on any leaf surfaces it in the left-rail POI tab and the <b>Visitor list</b> group at the top. Edits save in this browser. A fresh viewer (or <b>Reset viewer</b>) seeds the editor from <code>website/data/aop_editor_seed_pois.geojson</code>. To bake your work into the seed: <b>Export GeoJSON</b> → replace that file with the download → commit.</small>
+            <small>Each bucket above has its own <b>+</b> button — click to choose a category and start placing / drawing / tracing. The new feature lands in <b>Drawn POIs</b> under the matching bucket. Click the <code>▸</code> chevron on any row — drawn or curated (buildings, cemeteries, callouts, logos) — to rename, edit, move, tag, add notes, or copy it as GeoJSON. Map-click on a feature jumps to its editor. ★ on any leaf surfaces it in the left-rail POI tab and the <b>Visitor list</b> group at the top. Edits save in this browser. A fresh viewer (or <b>Reset viewer</b>) seeds the editor from <code>website/data/aop_editor_seed_pois.geojson</code>. The only export is GeoJSON copy: <b>Copy all as GeoJSON</b> here (or <b>⧉ Copy GeoJSON</b> on a single feature) → paste into the matching <code>website/data/*.geojson</code> → commit.</small>
           </div>
           <!-- Hidden form block. These nodes used to drive the visible UI; in
                V3c the per-bucket sub-group bulk checkboxes mirror the 5 layer
@@ -476,7 +473,6 @@
       <section class="panel-section collapsed" data-section="user-submitted">
         <div class="section-header">
           <span class="section-label">User submitted</span>
-          <button type="button" class="section-action" data-section-export="user-submitted" title="Copy this section's settings to clipboard">⧉</button>
           <button type="button" class="section-toggle" aria-expanded="false">
             <span class="section-chevron">▸</span>
           </button>
@@ -505,11 +501,16 @@
           <small>Simulated Saturday activity: deterministic synthetic pavilion-start tracks, crawl attempts, dwell, and extracted hotspots for testing the hotspot pipeline. Not field evidence.</small>
           <small>Event schedule: proposed RC event sessions from <code>website/data/aop_event_schedule.json</code>. Schedule rows use location tags such as <code>#pavilion</code> and <code>#registration</code>; edit those tags once under <code>locations</code> instead of repeating coordinates.</small>
           <small>Visitor context callouts: support-town planning notes from AOP, RiderPlanet, and Marion County Tourism. Times are approximate; check live routing and hours.</small>
-          <small>SFWDA raster is &copy; Adventure Off Road Park (via SFWDA) — internal/inspection only. Drag the 4 corner handles in Edit mode to pixel-align against OSM tracks, then Export to save <code>website/data/sfwda_raster_alignment.json</code>.</small>
+          <small>SFWDA raster is &copy; Adventure Off Road Park (via SFWDA) — internal/inspection only. Drag the 4 corner handles in Edit mode to pixel-align against OSM tracks, then Copy alignment JSON and paste it into <code>website/data/sfwda_raster_alignment.json</code>.</small>
         </div>
       </section>
 
     </div>
+    <!-- Unified edit dock — pinned to the panel bottom; shown only when a
+         feature is selected (a row's ▸ chevron or a map-click). Replaces the
+         per-row accordion editor and folds in the layer-paint drawer. Rendered
+         by renderEditDock() / buildEditDock() in js/main.js. -->
+    <div id="editDock" class="edit-dock" hidden></div>
   </div>
   <div class="message" id="message">Loading publish layer...</div>
 

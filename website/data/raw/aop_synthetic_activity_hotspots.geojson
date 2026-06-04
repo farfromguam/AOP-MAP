@@ -1,0 +1,2841 @@
+{
+  "type": "FeatureCollection",
+  "name": "aop_synthetic_activity_hotspots",
+  "metadata": {
+    "schema": "aop-activity-hotspots-v1",
+    "generated_at": "2026-05-23T13:45:41.426974+00:00",
+    "source_type": "synthetic_activity_gpx",
+    "permission": "internal",
+    "publish_status": "hold",
+    "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+    "confidence": "synthetic_multi_user_model",
+    "source_files": [
+      "synthetic_saturday_activity.gpx"
+    ],
+    "cell_m": 15.0,
+    "sample_m": 5.0,
+    "sample_s": 20.0,
+    "max_gap_s": 600.0,
+    "min_cell_seconds": 90.0,
+    "min_stop_slow_seconds": 300.0,
+    "max_moving_fraction": 0.7,
+    "rank_by": "stop_slow",
+    "intensity_cap_seconds": 7200.0,
+    "label_rank_limit": 12,
+    "label_min_seconds": 1800.0,
+    "point_count": 13713,
+    "segment_count": 72,
+    "interval_count": 13634,
+    "skipped_interval_count": 7,
+    "capped_interval_count": 0,
+    "cell_feature_count": 18
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.748392,
+              35.0906168
+            ],
+            [
+              -85.7482274,
+              35.0906168
+            ],
+            [
+              -85.7482274,
+              35.0907525
+            ],
+            [
+              -85.748392,
+              35.0907525
+            ],
+            [
+              -85.748392,
+              35.0906168
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_1",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 001 - proving ground",
+          "Synthetic Saturday 002 - photo short",
+          "Synthetic Saturday 003 - osm spine runner",
+          "Synthetic Saturday 004 - checkpoint loop",
+          "Synthetic Saturday 005 - trailhead social",
+          "Synthetic Saturday 006 - osm south connector",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 008 - photo short",
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 010 - proving ground",
+          "Synthetic Saturday 011 - photo short",
+          "Synthetic Saturday 012 - osm spine runner",
+          "Synthetic Saturday 013 - osm spine runner",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 015 - osm spine runner",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 017 - osm spine runner",
+          "Synthetic Saturday 018 - osm south connector",
+          "Synthetic Saturday 019 - osm spine runner",
+          "Synthetic Saturday 020 - osm spine runner",
+          "Synthetic Saturday 021 - osm south connector",
+          "Synthetic Saturday 022 - osm spine runner",
+          "Synthetic Saturday 023 - photo short",
+          "Synthetic Saturday 024 - photo short",
+          "Synthetic Saturday 025 - osm spine runner",
+          "Synthetic Saturday 026 - photo short",
+          "Synthetic Saturday 027 - proving ground",
+          "Synthetic Saturday 028 - proving ground",
+          "Synthetic Saturday 029 - osm spine runner",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 031 - mixed sampler",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 034 - osm spine runner",
+          "Synthetic Saturday 035 - checkpoint loop",
+          "Synthetic Saturday 036 - proving ground",
+          "Synthetic Saturday 037 - checkpoint loop",
+          "Synthetic Saturday 038 - photo short",
+          "Synthetic Saturday 039 - osm spine runner",
+          "Synthetic Saturday 040 - photo short",
+          "Synthetic Saturday 041 - proving ground",
+          "Synthetic Saturday 042 - photo short",
+          "Synthetic Saturday 043 - osm spine runner",
+          "Synthetic Saturday 044 - trailhead social",
+          "Synthetic Saturday 045 - proving ground",
+          "Synthetic Saturday 046 - proving ground",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 048 - proving ground",
+          "Synthetic Saturday 049 - osm south connector",
+          "Synthetic Saturday 050 - mixed sampler",
+          "Synthetic Saturday 051 - osm spine runner",
+          "Synthetic Saturday 052 - osm south connector",
+          "Synthetic Saturday 053 - photo short",
+          "Synthetic Saturday 054 - osm spine runner",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 056 - osm spine runner",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 059 - checkpoint loop",
+          "Synthetic Saturday 060 - photo short",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 062 - osm spine runner",
+          "Synthetic Saturday 063 - osm spine runner",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social",
+          "Synthetic Saturday 071 - photo short",
+          "Synthetic Saturday 072 - osm spine runner"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 1,
+        "intensity_norm": 1.0,
+        "intensity_class": "peak",
+        "dwell_seconds": 56785.4,
+        "dwell_minutes": 946.42,
+        "interest_seconds": 55485.3,
+        "interest_minutes": 924.76,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 7200.0,
+        "stop_seconds": 53843.6,
+        "slow_seconds": 1641.7,
+        "moving_seconds": 1300.1,
+        "moving_fraction": 0.0229,
+        "distance_m": 3580.8,
+        "avg_speed_mps": 0.063,
+        "max_gap_seconds": 318.0,
+        "capped_seconds": 0.0,
+        "visit_count": 153,
+        "segment_count": 72,
+        "interval_count": 1316,
+        "sample_count": 3554,
+        "label": "924.8 min",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7482512,
+          35.090725
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_1",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 001 - proving ground",
+          "Synthetic Saturday 002 - photo short",
+          "Synthetic Saturday 003 - osm spine runner",
+          "Synthetic Saturday 004 - checkpoint loop",
+          "Synthetic Saturday 005 - trailhead social",
+          "Synthetic Saturday 006 - osm south connector",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 008 - photo short",
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 010 - proving ground",
+          "Synthetic Saturday 011 - photo short",
+          "Synthetic Saturday 012 - osm spine runner",
+          "Synthetic Saturday 013 - osm spine runner",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 015 - osm spine runner",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 017 - osm spine runner",
+          "Synthetic Saturday 018 - osm south connector",
+          "Synthetic Saturday 019 - osm spine runner",
+          "Synthetic Saturday 020 - osm spine runner",
+          "Synthetic Saturday 021 - osm south connector",
+          "Synthetic Saturday 022 - osm spine runner",
+          "Synthetic Saturday 023 - photo short",
+          "Synthetic Saturday 024 - photo short",
+          "Synthetic Saturday 025 - osm spine runner",
+          "Synthetic Saturday 026 - photo short",
+          "Synthetic Saturday 027 - proving ground",
+          "Synthetic Saturday 028 - proving ground",
+          "Synthetic Saturday 029 - osm spine runner",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 031 - mixed sampler",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 034 - osm spine runner",
+          "Synthetic Saturday 035 - checkpoint loop",
+          "Synthetic Saturday 036 - proving ground",
+          "Synthetic Saturday 037 - checkpoint loop",
+          "Synthetic Saturday 038 - photo short",
+          "Synthetic Saturday 039 - osm spine runner",
+          "Synthetic Saturday 040 - photo short",
+          "Synthetic Saturday 041 - proving ground",
+          "Synthetic Saturday 042 - photo short",
+          "Synthetic Saturday 043 - osm spine runner",
+          "Synthetic Saturday 044 - trailhead social",
+          "Synthetic Saturday 045 - proving ground",
+          "Synthetic Saturday 046 - proving ground",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 048 - proving ground",
+          "Synthetic Saturday 049 - osm south connector",
+          "Synthetic Saturday 050 - mixed sampler",
+          "Synthetic Saturday 051 - osm spine runner",
+          "Synthetic Saturday 052 - osm south connector",
+          "Synthetic Saturday 053 - photo short",
+          "Synthetic Saturday 054 - osm spine runner",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 056 - osm spine runner",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 059 - checkpoint loop",
+          "Synthetic Saturday 060 - photo short",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 062 - osm spine runner",
+          "Synthetic Saturday 063 - osm spine runner",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social",
+          "Synthetic Saturday 071 - photo short",
+          "Synthetic Saturday 072 - osm spine runner"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 1,
+        "intensity_norm": 1.0,
+        "intensity_class": "peak",
+        "dwell_seconds": 56785.4,
+        "dwell_minutes": 946.42,
+        "interest_seconds": 55485.3,
+        "interest_minutes": 924.76,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 7200.0,
+        "stop_seconds": 53843.6,
+        "slow_seconds": 1641.7,
+        "moving_seconds": 1300.1,
+        "moving_fraction": 0.0229,
+        "distance_m": 3580.8,
+        "avg_speed_mps": 0.063,
+        "max_gap_seconds": 318.0,
+        "capped_seconds": 0.0,
+        "visit_count": 153,
+        "segment_count": 72,
+        "interval_count": 1316,
+        "sample_count": 3554,
+        "label": "924.8 min",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7441103,
+              35.0979444
+            ],
+            [
+              -85.7439456,
+              35.0979444
+            ],
+            [
+              -85.7439456,
+              35.0980801
+            ],
+            [
+              -85.7441103,
+              35.0980801
+            ],
+            [
+              -85.7441103,
+              35.0979444
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_2",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 2,
+        "intensity_norm": 1.0,
+        "intensity_class": "peak",
+        "dwell_seconds": 11348.9,
+        "dwell_minutes": 189.15,
+        "interest_seconds": 9566.6,
+        "interest_minutes": 159.44,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 7200.0,
+        "stop_seconds": 7538.9,
+        "slow_seconds": 2027.8,
+        "moving_seconds": 1782.2,
+        "moving_fraction": 0.157,
+        "distance_m": 1847.1,
+        "avg_speed_mps": 0.163,
+        "max_gap_seconds": 96.0,
+        "capped_seconds": 0.0,
+        "visit_count": 126,
+        "segment_count": 18,
+        "interval_count": 446,
+        "sample_count": 885,
+        "label": "159.4 min",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7439994,
+          35.0979624
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_2",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 2,
+        "intensity_norm": 1.0,
+        "intensity_class": "peak",
+        "dwell_seconds": 11348.9,
+        "dwell_minutes": 189.15,
+        "interest_seconds": 9566.6,
+        "interest_minutes": 159.44,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 7200.0,
+        "stop_seconds": 7538.9,
+        "slow_seconds": 2027.8,
+        "moving_seconds": 1782.2,
+        "moving_fraction": 0.157,
+        "distance_m": 1847.1,
+        "avg_speed_mps": 0.163,
+        "max_gap_seconds": 96.0,
+        "capped_seconds": 0.0,
+        "visit_count": 126,
+        "segment_count": 18,
+        "interval_count": 446,
+        "sample_count": 885,
+        "label": "159.4 min",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7470746,
+              35.0922451
+            ],
+            [
+              -85.7469099,
+              35.0922451
+            ],
+            [
+              -85.7469099,
+              35.0923808
+            ],
+            [
+              -85.7470746,
+              35.0923808
+            ],
+            [
+              -85.7470746,
+              35.0922451
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_3",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 004 - checkpoint loop",
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 031 - mixed sampler",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 035 - checkpoint loop",
+          "Synthetic Saturday 037 - checkpoint loop",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 050 - mixed sampler",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 059 - checkpoint loop",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 3,
+        "intensity_norm": 1.0,
+        "intensity_class": "peak",
+        "dwell_seconds": 9878.2,
+        "dwell_minutes": 164.64,
+        "interest_seconds": 8524.0,
+        "interest_minutes": 142.07,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 7200.0,
+        "stop_seconds": 7098.0,
+        "slow_seconds": 1426.0,
+        "moving_seconds": 1354.2,
+        "moving_fraction": 0.1371,
+        "distance_m": 1401.4,
+        "avg_speed_mps": 0.142,
+        "max_gap_seconds": 93.0,
+        "capped_seconds": 0.0,
+        "visit_count": 23,
+        "segment_count": 22,
+        "interval_count": 358,
+        "sample_count": 771,
+        "label": "142.1 min",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7469906,
+          35.0923055
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_3",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 004 - checkpoint loop",
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 031 - mixed sampler",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 035 - checkpoint loop",
+          "Synthetic Saturday 037 - checkpoint loop",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 050 - mixed sampler",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 059 - checkpoint loop",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 3,
+        "intensity_norm": 1.0,
+        "intensity_class": "peak",
+        "dwell_seconds": 9878.2,
+        "dwell_minutes": 164.64,
+        "interest_seconds": 8524.0,
+        "interest_minutes": 142.07,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 7200.0,
+        "stop_seconds": 7098.0,
+        "slow_seconds": 1426.0,
+        "moving_seconds": 1354.2,
+        "moving_fraction": 0.1371,
+        "distance_m": 1401.4,
+        "avg_speed_mps": 0.142,
+        "max_gap_seconds": 93.0,
+        "capped_seconds": 0.0,
+        "visit_count": 23,
+        "segment_count": 22,
+        "interval_count": 358,
+        "sample_count": 771,
+        "label": "142.1 min",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7556381,
+              35.091838
+            ],
+            [
+              -85.7554734,
+              35.091838
+            ],
+            [
+              -85.7554734,
+              35.0919737
+            ],
+            [
+              -85.7556381,
+              35.0919737
+            ],
+            [
+              -85.7556381,
+              35.091838
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_4",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 003 - osm spine runner",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 012 - osm spine runner",
+          "Synthetic Saturday 013 - osm spine runner",
+          "Synthetic Saturday 015 - osm spine runner",
+          "Synthetic Saturday 017 - osm spine runner",
+          "Synthetic Saturday 019 - osm spine runner",
+          "Synthetic Saturday 020 - osm spine runner",
+          "Synthetic Saturday 022 - osm spine runner",
+          "Synthetic Saturday 025 - osm spine runner",
+          "Synthetic Saturday 029 - osm spine runner",
+          "Synthetic Saturday 034 - osm spine runner",
+          "Synthetic Saturday 039 - osm spine runner",
+          "Synthetic Saturday 043 - osm spine runner",
+          "Synthetic Saturday 051 - osm spine runner",
+          "Synthetic Saturday 054 - osm spine runner",
+          "Synthetic Saturday 056 - osm spine runner",
+          "Synthetic Saturday 062 - osm spine runner",
+          "Synthetic Saturday 063 - osm spine runner",
+          "Synthetic Saturday 072 - osm spine runner"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 4,
+        "intensity_norm": 0.9232,
+        "intensity_class": "peak",
+        "dwell_seconds": 7437.0,
+        "dwell_minutes": 123.95,
+        "interest_seconds": 6647.0,
+        "interest_minutes": 110.78,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 6647.0,
+        "stop_seconds": 5699.0,
+        "slow_seconds": 948.0,
+        "moving_seconds": 790.0,
+        "moving_fraction": 0.1062,
+        "distance_m": 881.2,
+        "avg_speed_mps": 0.118,
+        "max_gap_seconds": 94.0,
+        "capped_seconds": 0.0,
+        "visit_count": 20,
+        "segment_count": 20,
+        "interval_count": 231,
+        "sample_count": 545,
+        "label": "110.8 min",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7555817,
+          35.0919213
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_4",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 003 - osm spine runner",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 012 - osm spine runner",
+          "Synthetic Saturday 013 - osm spine runner",
+          "Synthetic Saturday 015 - osm spine runner",
+          "Synthetic Saturday 017 - osm spine runner",
+          "Synthetic Saturday 019 - osm spine runner",
+          "Synthetic Saturday 020 - osm spine runner",
+          "Synthetic Saturday 022 - osm spine runner",
+          "Synthetic Saturday 025 - osm spine runner",
+          "Synthetic Saturday 029 - osm spine runner",
+          "Synthetic Saturday 034 - osm spine runner",
+          "Synthetic Saturday 039 - osm spine runner",
+          "Synthetic Saturday 043 - osm spine runner",
+          "Synthetic Saturday 051 - osm spine runner",
+          "Synthetic Saturday 054 - osm spine runner",
+          "Synthetic Saturday 056 - osm spine runner",
+          "Synthetic Saturday 062 - osm spine runner",
+          "Synthetic Saturday 063 - osm spine runner",
+          "Synthetic Saturday 072 - osm spine runner"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 4,
+        "intensity_norm": 0.9232,
+        "intensity_class": "peak",
+        "dwell_seconds": 7437.0,
+        "dwell_minutes": 123.95,
+        "interest_seconds": 6647.0,
+        "interest_minutes": 110.78,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 6647.0,
+        "stop_seconds": 5699.0,
+        "slow_seconds": 948.0,
+        "moving_seconds": 790.0,
+        "moving_fraction": 0.1062,
+        "distance_m": 881.2,
+        "avg_speed_mps": 0.118,
+        "max_gap_seconds": 94.0,
+        "capped_seconds": 0.0,
+        "visit_count": 20,
+        "segment_count": 20,
+        "interval_count": 231,
+        "sample_count": 545,
+        "label": "110.8 min",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7548146,
+              35.0969945
+            ],
+            [
+              -85.75465,
+              35.0969945
+            ],
+            [
+              -85.75465,
+              35.0971302
+            ],
+            [
+              -85.7548146,
+              35.0971302
+            ],
+            [
+              -85.7548146,
+              35.0969945
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_5",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 003 - osm spine runner",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 015 - osm spine runner",
+          "Synthetic Saturday 017 - osm spine runner",
+          "Synthetic Saturday 019 - osm spine runner",
+          "Synthetic Saturday 020 - osm spine runner",
+          "Synthetic Saturday 022 - osm spine runner",
+          "Synthetic Saturday 025 - osm spine runner",
+          "Synthetic Saturday 029 - osm spine runner",
+          "Synthetic Saturday 039 - osm spine runner",
+          "Synthetic Saturday 051 - osm spine runner",
+          "Synthetic Saturday 056 - osm spine runner",
+          "Synthetic Saturday 063 - osm spine runner",
+          "Synthetic Saturday 072 - osm spine runner"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 5,
+        "intensity_norm": 0.892,
+        "intensity_class": "peak",
+        "dwell_seconds": 6879.5,
+        "dwell_minutes": 114.66,
+        "interest_seconds": 6422.6,
+        "interest_minutes": 107.04,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 6422.6,
+        "stop_seconds": 5336.0,
+        "slow_seconds": 1086.7,
+        "moving_seconds": 456.8,
+        "moving_fraction": 0.0664,
+        "distance_m": 708.4,
+        "avg_speed_mps": 0.103,
+        "max_gap_seconds": 96.0,
+        "capped_seconds": 0.0,
+        "visit_count": 32,
+        "segment_count": 14,
+        "interval_count": 222,
+        "sample_count": 485,
+        "label": "107.0 min",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7547729,
+          35.0971066
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_5",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 003 - osm spine runner",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 015 - osm spine runner",
+          "Synthetic Saturday 017 - osm spine runner",
+          "Synthetic Saturday 019 - osm spine runner",
+          "Synthetic Saturday 020 - osm spine runner",
+          "Synthetic Saturday 022 - osm spine runner",
+          "Synthetic Saturday 025 - osm spine runner",
+          "Synthetic Saturday 029 - osm spine runner",
+          "Synthetic Saturday 039 - osm spine runner",
+          "Synthetic Saturday 051 - osm spine runner",
+          "Synthetic Saturday 056 - osm spine runner",
+          "Synthetic Saturday 063 - osm spine runner",
+          "Synthetic Saturday 072 - osm spine runner"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 5,
+        "intensity_norm": 0.892,
+        "intensity_class": "peak",
+        "dwell_seconds": 6879.5,
+        "dwell_minutes": 114.66,
+        "interest_seconds": 6422.6,
+        "interest_minutes": 107.04,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 6422.6,
+        "stop_seconds": 5336.0,
+        "slow_seconds": 1086.7,
+        "moving_seconds": 456.8,
+        "moving_fraction": 0.0664,
+        "distance_m": 708.4,
+        "avg_speed_mps": 0.103,
+        "max_gap_seconds": 96.0,
+        "capped_seconds": 0.0,
+        "visit_count": 32,
+        "segment_count": 14,
+        "interval_count": 222,
+        "sample_count": 485,
+        "label": "107.0 min",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7488861,
+              35.0914309
+            ],
+            [
+              -85.7487214,
+              35.0914309
+            ],
+            [
+              -85.7487214,
+              35.0915666
+            ],
+            [
+              -85.7488861,
+              35.0915666
+            ],
+            [
+              -85.7488861,
+              35.0914309
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_6",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 002 - photo short",
+          "Synthetic Saturday 003 - osm spine runner",
+          "Synthetic Saturday 004 - checkpoint loop",
+          "Synthetic Saturday 006 - osm south connector",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 008 - photo short",
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 011 - photo short",
+          "Synthetic Saturday 012 - osm spine runner",
+          "Synthetic Saturday 013 - osm spine runner",
+          "Synthetic Saturday 015 - osm spine runner",
+          "Synthetic Saturday 017 - osm spine runner",
+          "Synthetic Saturday 018 - osm south connector",
+          "Synthetic Saturday 019 - osm spine runner",
+          "Synthetic Saturday 020 - osm spine runner",
+          "Synthetic Saturday 021 - osm south connector",
+          "Synthetic Saturday 022 - osm spine runner",
+          "Synthetic Saturday 023 - photo short",
+          "Synthetic Saturday 024 - photo short",
+          "Synthetic Saturday 025 - osm spine runner",
+          "Synthetic Saturday 026 - photo short",
+          "Synthetic Saturday 027 - proving ground",
+          "Synthetic Saturday 029 - osm spine runner",
+          "Synthetic Saturday 034 - osm spine runner",
+          "Synthetic Saturday 035 - checkpoint loop",
+          "Synthetic Saturday 037 - checkpoint loop",
+          "Synthetic Saturday 038 - photo short",
+          "Synthetic Saturday 039 - osm spine runner",
+          "Synthetic Saturday 040 - photo short",
+          "Synthetic Saturday 041 - proving ground",
+          "Synthetic Saturday 042 - photo short",
+          "Synthetic Saturday 043 - osm spine runner",
+          "Synthetic Saturday 049 - osm south connector",
+          "Synthetic Saturday 051 - osm spine runner",
+          "Synthetic Saturday 052 - osm south connector",
+          "Synthetic Saturday 053 - photo short",
+          "Synthetic Saturday 054 - osm spine runner",
+          "Synthetic Saturday 056 - osm spine runner",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 059 - checkpoint loop",
+          "Synthetic Saturday 060 - photo short",
+          "Synthetic Saturday 062 - osm spine runner",
+          "Synthetic Saturday 063 - osm spine runner",
+          "Synthetic Saturday 071 - photo short",
+          "Synthetic Saturday 072 - osm spine runner"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 6,
+        "intensity_norm": 0.8495,
+        "intensity_class": "peak",
+        "dwell_seconds": 8307.4,
+        "dwell_minutes": 138.46,
+        "interest_seconds": 6116.4,
+        "interest_minutes": 101.94,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 6116.4,
+        "stop_seconds": 5465.4,
+        "slow_seconds": 651.0,
+        "moving_seconds": 2190.9,
+        "moving_fraction": 0.2637,
+        "distance_m": 1927.7,
+        "avg_speed_mps": 0.232,
+        "max_gap_seconds": 277.0,
+        "capped_seconds": 0.0,
+        "visit_count": 94,
+        "segment_count": 46,
+        "interval_count": 278,
+        "sample_count": 749,
+        "label": "101.9 min",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.74877,
+          35.091542
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_6",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 002 - photo short",
+          "Synthetic Saturday 003 - osm spine runner",
+          "Synthetic Saturday 004 - checkpoint loop",
+          "Synthetic Saturday 006 - osm south connector",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 008 - photo short",
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 011 - photo short",
+          "Synthetic Saturday 012 - osm spine runner",
+          "Synthetic Saturday 013 - osm spine runner",
+          "Synthetic Saturday 015 - osm spine runner",
+          "Synthetic Saturday 017 - osm spine runner",
+          "Synthetic Saturday 018 - osm south connector",
+          "Synthetic Saturday 019 - osm spine runner",
+          "Synthetic Saturday 020 - osm spine runner",
+          "Synthetic Saturday 021 - osm south connector",
+          "Synthetic Saturday 022 - osm spine runner",
+          "Synthetic Saturday 023 - photo short",
+          "Synthetic Saturday 024 - photo short",
+          "Synthetic Saturday 025 - osm spine runner",
+          "Synthetic Saturday 026 - photo short",
+          "Synthetic Saturday 027 - proving ground",
+          "Synthetic Saturday 029 - osm spine runner",
+          "Synthetic Saturday 034 - osm spine runner",
+          "Synthetic Saturday 035 - checkpoint loop",
+          "Synthetic Saturday 037 - checkpoint loop",
+          "Synthetic Saturday 038 - photo short",
+          "Synthetic Saturday 039 - osm spine runner",
+          "Synthetic Saturday 040 - photo short",
+          "Synthetic Saturday 041 - proving ground",
+          "Synthetic Saturday 042 - photo short",
+          "Synthetic Saturday 043 - osm spine runner",
+          "Synthetic Saturday 049 - osm south connector",
+          "Synthetic Saturday 051 - osm spine runner",
+          "Synthetic Saturday 052 - osm south connector",
+          "Synthetic Saturday 053 - photo short",
+          "Synthetic Saturday 054 - osm spine runner",
+          "Synthetic Saturday 056 - osm spine runner",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 059 - checkpoint loop",
+          "Synthetic Saturday 060 - photo short",
+          "Synthetic Saturday 062 - osm spine runner",
+          "Synthetic Saturday 063 - osm spine runner",
+          "Synthetic Saturday 071 - photo short",
+          "Synthetic Saturday 072 - osm spine runner"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 6,
+        "intensity_norm": 0.8495,
+        "intensity_class": "peak",
+        "dwell_seconds": 8307.4,
+        "dwell_minutes": 138.46,
+        "interest_seconds": 6116.4,
+        "interest_minutes": 101.94,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 6116.4,
+        "stop_seconds": 5465.4,
+        "slow_seconds": 651.0,
+        "moving_seconds": 2190.9,
+        "moving_fraction": 0.2637,
+        "distance_m": 1927.7,
+        "avg_speed_mps": 0.232,
+        "max_gap_seconds": 277.0,
+        "capped_seconds": 0.0,
+        "visit_count": 94,
+        "segment_count": 46,
+        "interval_count": 278,
+        "sample_count": 749,
+        "label": "101.9 min",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7457571,
+              35.0870886
+            ],
+            [
+              -85.7455924,
+              35.0870886
+            ],
+            [
+              -85.7455924,
+              35.0872243
+            ],
+            [
+              -85.7457571,
+              35.0872243
+            ],
+            [
+              -85.7457571,
+              35.0870886
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_7",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 001 - proving ground",
+          "Synthetic Saturday 010 - proving ground",
+          "Synthetic Saturday 018 - osm south connector",
+          "Synthetic Saturday 027 - proving ground",
+          "Synthetic Saturday 028 - proving ground",
+          "Synthetic Saturday 031 - mixed sampler",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 036 - proving ground",
+          "Synthetic Saturday 041 - proving ground",
+          "Synthetic Saturday 045 - proving ground",
+          "Synthetic Saturday 046 - proving ground",
+          "Synthetic Saturday 048 - proving ground",
+          "Synthetic Saturday 049 - osm south connector",
+          "Synthetic Saturday 050 - mixed sampler"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 7,
+        "intensity_norm": 0.6857,
+        "intensity_class": "high",
+        "dwell_seconds": 5032.7,
+        "dwell_minutes": 83.88,
+        "interest_seconds": 4937.2,
+        "interest_minutes": 82.29,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 4937.2,
+        "stop_seconds": 3959.2,
+        "slow_seconds": 978.0,
+        "moving_seconds": 95.5,
+        "moving_fraction": 0.019,
+        "distance_m": 356.0,
+        "avg_speed_mps": 0.071,
+        "max_gap_seconds": 95.0,
+        "capped_seconds": 0.0,
+        "visit_count": 57,
+        "segment_count": 14,
+        "interval_count": 156,
+        "sample_count": 315,
+        "label": "82.3 min",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7456211,
+          35.0872142
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_7",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 001 - proving ground",
+          "Synthetic Saturday 010 - proving ground",
+          "Synthetic Saturday 018 - osm south connector",
+          "Synthetic Saturday 027 - proving ground",
+          "Synthetic Saturday 028 - proving ground",
+          "Synthetic Saturday 031 - mixed sampler",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 036 - proving ground",
+          "Synthetic Saturday 041 - proving ground",
+          "Synthetic Saturday 045 - proving ground",
+          "Synthetic Saturday 046 - proving ground",
+          "Synthetic Saturday 048 - proving ground",
+          "Synthetic Saturday 049 - osm south connector",
+          "Synthetic Saturday 050 - mixed sampler"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 7,
+        "intensity_norm": 0.6857,
+        "intensity_class": "high",
+        "dwell_seconds": 5032.7,
+        "dwell_minutes": 83.88,
+        "interest_seconds": 4937.2,
+        "interest_minutes": 82.29,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 4937.2,
+        "stop_seconds": 3959.2,
+        "slow_seconds": 978.0,
+        "moving_seconds": 95.5,
+        "moving_fraction": 0.019,
+        "distance_m": 356.0,
+        "avg_speed_mps": 0.071,
+        "max_gap_seconds": 95.0,
+        "capped_seconds": 0.0,
+        "visit_count": 57,
+        "segment_count": 14,
+        "interval_count": 156,
+        "sample_count": 315,
+        "label": "82.3 min",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.751521,
+              35.091838
+            ],
+            [
+              -85.7513563,
+              35.091838
+            ],
+            [
+              -85.7513563,
+              35.0919737
+            ],
+            [
+              -85.751521,
+              35.0919737
+            ],
+            [
+              -85.751521,
+              35.091838
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_8",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 003 - osm spine runner",
+          "Synthetic Saturday 005 - trailhead social",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 019 - osm spine runner",
+          "Synthetic Saturday 043 - osm spine runner",
+          "Synthetic Saturday 044 - trailhead social",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 070 - trailhead social"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 8,
+        "intensity_norm": 0.5996,
+        "intensity_class": "high",
+        "dwell_seconds": 4817.8,
+        "dwell_minutes": 80.3,
+        "interest_seconds": 4317.0,
+        "interest_minutes": 71.95,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 4317.0,
+        "stop_seconds": 4190.0,
+        "slow_seconds": 127.0,
+        "moving_seconds": 500.8,
+        "moving_fraction": 0.1039,
+        "distance_m": 568.3,
+        "avg_speed_mps": 0.118,
+        "max_gap_seconds": 71.0,
+        "capped_seconds": 0.0,
+        "visit_count": 20,
+        "segment_count": 13,
+        "interval_count": 140,
+        "sample_count": 351,
+        "label": "72.0 min",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7514778,
+          35.091932
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_8",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 003 - osm spine runner",
+          "Synthetic Saturday 005 - trailhead social",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 019 - osm spine runner",
+          "Synthetic Saturday 043 - osm spine runner",
+          "Synthetic Saturday 044 - trailhead social",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 070 - trailhead social"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 8,
+        "intensity_norm": 0.5996,
+        "intensity_class": "high",
+        "dwell_seconds": 4817.8,
+        "dwell_minutes": 80.3,
+        "interest_seconds": 4317.0,
+        "interest_minutes": 71.95,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 4317.0,
+        "stop_seconds": 4190.0,
+        "slow_seconds": 127.0,
+        "moving_seconds": 500.8,
+        "moving_fraction": 0.1039,
+        "distance_m": 568.3,
+        "avg_speed_mps": 0.118,
+        "max_gap_seconds": 71.0,
+        "capped_seconds": 0.0,
+        "visit_count": 20,
+        "segment_count": 13,
+        "interval_count": 140,
+        "sample_count": 351,
+        "label": "72.0 min",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7457571,
+              35.0872243
+            ],
+            [
+              -85.7455924,
+              35.0872243
+            ],
+            [
+              -85.7455924,
+              35.08736
+            ],
+            [
+              -85.7457571,
+              35.08736
+            ],
+            [
+              -85.7457571,
+              35.0872243
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_9",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 001 - proving ground",
+          "Synthetic Saturday 010 - proving ground",
+          "Synthetic Saturday 018 - osm south connector",
+          "Synthetic Saturday 027 - proving ground",
+          "Synthetic Saturday 028 - proving ground",
+          "Synthetic Saturday 031 - mixed sampler",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 036 - proving ground",
+          "Synthetic Saturday 041 - proving ground",
+          "Synthetic Saturday 045 - proving ground",
+          "Synthetic Saturday 046 - proving ground",
+          "Synthetic Saturday 048 - proving ground",
+          "Synthetic Saturday 049 - osm south connector",
+          "Synthetic Saturday 050 - mixed sampler"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 9,
+        "intensity_norm": 0.5303,
+        "intensity_class": "high",
+        "dwell_seconds": 4457.9,
+        "dwell_minutes": 74.3,
+        "interest_seconds": 3818.1,
+        "interest_minutes": 63.64,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 3818.1,
+        "stop_seconds": 3076.4,
+        "slow_seconds": 741.7,
+        "moving_seconds": 639.8,
+        "moving_fraction": 0.1435,
+        "distance_m": 675.4,
+        "avg_speed_mps": 0.152,
+        "max_gap_seconds": 470.0,
+        "capped_seconds": 0.0,
+        "visit_count": 76,
+        "segment_count": 14,
+        "interval_count": 159,
+        "sample_count": 319,
+        "label": "63.6 min",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.745623,
+          35.087241
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_9",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 001 - proving ground",
+          "Synthetic Saturday 010 - proving ground",
+          "Synthetic Saturday 018 - osm south connector",
+          "Synthetic Saturday 027 - proving ground",
+          "Synthetic Saturday 028 - proving ground",
+          "Synthetic Saturday 031 - mixed sampler",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 036 - proving ground",
+          "Synthetic Saturday 041 - proving ground",
+          "Synthetic Saturday 045 - proving ground",
+          "Synthetic Saturday 046 - proving ground",
+          "Synthetic Saturday 048 - proving ground",
+          "Synthetic Saturday 049 - osm south connector",
+          "Synthetic Saturday 050 - mixed sampler"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 9,
+        "intensity_norm": 0.5303,
+        "intensity_class": "high",
+        "dwell_seconds": 4457.9,
+        "dwell_minutes": 74.3,
+        "interest_seconds": 3818.1,
+        "interest_minutes": 63.64,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 3818.1,
+        "stop_seconds": 3076.4,
+        "slow_seconds": 741.7,
+        "moving_seconds": 639.8,
+        "moving_fraction": 0.1435,
+        "distance_m": 675.4,
+        "avg_speed_mps": 0.152,
+        "max_gap_seconds": 470.0,
+        "capped_seconds": 0.0,
+        "visit_count": 76,
+        "segment_count": 14,
+        "interval_count": 159,
+        "sample_count": 319,
+        "label": "63.6 min",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7441103,
+              35.0978087
+            ],
+            [
+              -85.7439456,
+              35.0978087
+            ],
+            [
+              -85.7439456,
+              35.0979444
+            ],
+            [
+              -85.7441103,
+              35.0979444
+            ],
+            [
+              -85.7441103,
+              35.0978087
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_10",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 10,
+        "intensity_norm": 0.4765,
+        "intensity_class": "high",
+        "dwell_seconds": 5401.3,
+        "dwell_minutes": 90.02,
+        "interest_seconds": 3430.5,
+        "interest_minutes": 57.17,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 3430.5,
+        "stop_seconds": 2451.7,
+        "slow_seconds": 978.8,
+        "moving_seconds": 1970.8,
+        "moving_fraction": 0.3649,
+        "distance_m": 1654.3,
+        "avg_speed_mps": 0.306,
+        "max_gap_seconds": 92.0,
+        "capped_seconds": 0.0,
+        "visit_count": 120,
+        "segment_count": 18,
+        "interval_count": 383,
+        "sample_count": 596,
+        "label": "57.2 min",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7440073,
+          35.0979214
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_10",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 10,
+        "intensity_norm": 0.4765,
+        "intensity_class": "high",
+        "dwell_seconds": 5401.3,
+        "dwell_minutes": 90.02,
+        "interest_seconds": 3430.5,
+        "interest_minutes": 57.17,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 3430.5,
+        "stop_seconds": 2451.7,
+        "slow_seconds": 978.8,
+        "moving_seconds": 1970.8,
+        "moving_fraction": 0.3649,
+        "distance_m": 1654.3,
+        "avg_speed_mps": 0.306,
+        "max_gap_seconds": 92.0,
+        "capped_seconds": 0.0,
+        "visit_count": 120,
+        "segment_count": 18,
+        "interval_count": 383,
+        "sample_count": 596,
+        "label": "57.2 min",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7441103,
+              35.0984872
+            ],
+            [
+              -85.7439456,
+              35.0984872
+            ],
+            [
+              -85.7439456,
+              35.0986229
+            ],
+            [
+              -85.7441103,
+              35.0986229
+            ],
+            [
+              -85.7441103,
+              35.0984872
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_11",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 11,
+        "intensity_norm": 0.2778,
+        "intensity_class": "medium",
+        "dwell_seconds": 2563.3,
+        "dwell_minutes": 42.72,
+        "interest_seconds": 2000.4,
+        "interest_minutes": 33.34,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 2000.4,
+        "stop_seconds": 1630.4,
+        "slow_seconds": 370.0,
+        "moving_seconds": 562.8,
+        "moving_fraction": 0.2196,
+        "distance_m": 507.7,
+        "avg_speed_mps": 0.198,
+        "max_gap_seconds": 96.0,
+        "capped_seconds": 0.0,
+        "visit_count": 40,
+        "segment_count": 17,
+        "interval_count": 142,
+        "sample_count": 228,
+        "label": "33.3 min",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7439585,
+          35.0985368
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_11",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 11,
+        "intensity_norm": 0.2778,
+        "intensity_class": "medium",
+        "dwell_seconds": 2563.3,
+        "dwell_minutes": 42.72,
+        "interest_seconds": 2000.4,
+        "interest_minutes": 33.34,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 2000.4,
+        "stop_seconds": 1630.4,
+        "slow_seconds": 370.0,
+        "moving_seconds": 562.8,
+        "moving_fraction": 0.2196,
+        "distance_m": 507.7,
+        "avg_speed_mps": 0.198,
+        "max_gap_seconds": 96.0,
+        "capped_seconds": 0.0,
+        "visit_count": 40,
+        "segment_count": 17,
+        "interval_count": 142,
+        "sample_count": 228,
+        "label": "33.3 min",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7505329,
+              35.0868172
+            ],
+            [
+              -85.7503682,
+              35.0868172
+            ],
+            [
+              -85.7503682,
+              35.0869529
+            ],
+            [
+              -85.7505329,
+              35.0869529
+            ],
+            [
+              -85.7505329,
+              35.0868172
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_12",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 006 - osm south connector",
+          "Synthetic Saturday 018 - osm south connector",
+          "Synthetic Saturday 021 - osm south connector",
+          "Synthetic Saturday 049 - osm south connector",
+          "Synthetic Saturday 052 - osm south connector"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 12,
+        "intensity_norm": 0.2237,
+        "intensity_class": "medium",
+        "dwell_seconds": 1688.4,
+        "dwell_minutes": 28.14,
+        "interest_seconds": 1610.7,
+        "interest_minutes": 26.85,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 1610.7,
+        "stop_seconds": 1343.7,
+        "slow_seconds": 267.0,
+        "moving_seconds": 77.7,
+        "moving_fraction": 0.046,
+        "distance_m": 119.3,
+        "avg_speed_mps": 0.071,
+        "max_gap_seconds": 96.0,
+        "capped_seconds": 0.0,
+        "visit_count": 29,
+        "segment_count": 5,
+        "interval_count": 62,
+        "sample_count": 108,
+        "label": "26.8 min",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7505134,
+          35.0869469
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_12",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 006 - osm south connector",
+          "Synthetic Saturday 018 - osm south connector",
+          "Synthetic Saturday 021 - osm south connector",
+          "Synthetic Saturday 049 - osm south connector",
+          "Synthetic Saturday 052 - osm south connector"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 12,
+        "intensity_norm": 0.2237,
+        "intensity_class": "medium",
+        "dwell_seconds": 1688.4,
+        "dwell_minutes": 28.14,
+        "interest_seconds": 1610.7,
+        "interest_minutes": 26.85,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 1610.7,
+        "stop_seconds": 1343.7,
+        "slow_seconds": 267.0,
+        "moving_seconds": 77.7,
+        "moving_fraction": 0.046,
+        "distance_m": 119.3,
+        "avg_speed_mps": 0.071,
+        "max_gap_seconds": 96.0,
+        "capped_seconds": 0.0,
+        "visit_count": 29,
+        "segment_count": 5,
+        "interval_count": 62,
+        "sample_count": 108,
+        "label": "26.8 min",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7488861,
+              35.0915666
+            ],
+            [
+              -85.7487214,
+              35.0915666
+            ],
+            [
+              -85.7487214,
+              35.0917023
+            ],
+            [
+              -85.7488861,
+              35.0917023
+            ],
+            [
+              -85.7488861,
+              35.0915666
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_13",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 002 - photo short",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 008 - photo short",
+          "Synthetic Saturday 011 - photo short",
+          "Synthetic Saturday 013 - osm spine runner",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 017 - osm spine runner",
+          "Synthetic Saturday 020 - osm spine runner",
+          "Synthetic Saturday 023 - photo short",
+          "Synthetic Saturday 024 - photo short",
+          "Synthetic Saturday 026 - photo short",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 035 - checkpoint loop",
+          "Synthetic Saturday 038 - photo short",
+          "Synthetic Saturday 042 - photo short",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 053 - photo short",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 060 - photo short",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social",
+          "Synthetic Saturday 071 - photo short"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 13,
+        "intensity_norm": 0.2148,
+        "intensity_class": "medium",
+        "dwell_seconds": 2053.6,
+        "dwell_minutes": 34.23,
+        "interest_seconds": 1546.6,
+        "interest_minutes": 25.78,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 1546.6,
+        "stop_seconds": 1349.6,
+        "slow_seconds": 197.0,
+        "moving_seconds": 507.0,
+        "moving_fraction": 0.2469,
+        "distance_m": 482.3,
+        "avg_speed_mps": 0.235,
+        "max_gap_seconds": 122.0,
+        "capped_seconds": 0.0,
+        "visit_count": 67,
+        "segment_count": 32,
+        "interval_count": 113,
+        "sample_count": 188,
+        "label": "",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7487686,
+          35.0915864
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_13",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 002 - photo short",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 008 - photo short",
+          "Synthetic Saturday 011 - photo short",
+          "Synthetic Saturday 013 - osm spine runner",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 017 - osm spine runner",
+          "Synthetic Saturday 020 - osm spine runner",
+          "Synthetic Saturday 023 - photo short",
+          "Synthetic Saturday 024 - photo short",
+          "Synthetic Saturday 026 - photo short",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 035 - checkpoint loop",
+          "Synthetic Saturday 038 - photo short",
+          "Synthetic Saturday 042 - photo short",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 053 - photo short",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 060 - photo short",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social",
+          "Synthetic Saturday 071 - photo short"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 13,
+        "intensity_norm": 0.2148,
+        "intensity_class": "medium",
+        "dwell_seconds": 2053.6,
+        "dwell_minutes": 34.23,
+        "interest_seconds": 1546.6,
+        "interest_minutes": 25.78,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 1546.6,
+        "stop_seconds": 1349.6,
+        "slow_seconds": 197.0,
+        "moving_seconds": 507.0,
+        "moving_fraction": 0.2469,
+        "distance_m": 482.3,
+        "avg_speed_mps": 0.235,
+        "max_gap_seconds": 122.0,
+        "capped_seconds": 0.0,
+        "visit_count": 67,
+        "segment_count": 32,
+        "interval_count": 113,
+        "sample_count": 188,
+        "label": "",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7439456,
+              35.0984872
+            ],
+            [
+              -85.7437809,
+              35.0984872
+            ],
+            [
+              -85.7437809,
+              35.0986229
+            ],
+            [
+              -85.7439456,
+              35.0986229
+            ],
+            [
+              -85.7439456,
+              35.0984872
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_14",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 14,
+        "intensity_norm": 0.2088,
+        "intensity_class": "medium",
+        "dwell_seconds": 1822.2,
+        "dwell_minutes": 30.37,
+        "interest_seconds": 1503.6,
+        "interest_minutes": 25.06,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 1503.6,
+        "stop_seconds": 1120.6,
+        "slow_seconds": 383.0,
+        "moving_seconds": 318.7,
+        "moving_fraction": 0.1749,
+        "distance_m": 322.5,
+        "avg_speed_mps": 0.177,
+        "max_gap_seconds": 93.0,
+        "capped_seconds": 0.0,
+        "visit_count": 43,
+        "segment_count": 17,
+        "interval_count": 99,
+        "sample_count": 145,
+        "label": "",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7439326,
+          35.0985332
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_14",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 14,
+        "intensity_norm": 0.2088,
+        "intensity_class": "medium",
+        "dwell_seconds": 1822.2,
+        "dwell_minutes": 30.37,
+        "interest_seconds": 1503.6,
+        "interest_minutes": 25.06,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 1503.6,
+        "stop_seconds": 1120.6,
+        "slow_seconds": 383.0,
+        "moving_seconds": 318.7,
+        "moving_fraction": 0.1749,
+        "distance_m": 322.5,
+        "avg_speed_mps": 0.177,
+        "max_gap_seconds": 93.0,
+        "capped_seconds": 0.0,
+        "visit_count": 43,
+        "segment_count": 17,
+        "interval_count": 99,
+        "sample_count": 145,
+        "label": "",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7505329,
+              35.0869529
+            ],
+            [
+              -85.7503682,
+              35.0869529
+            ],
+            [
+              -85.7503682,
+              35.0870886
+            ],
+            [
+              -85.7505329,
+              35.0870886
+            ],
+            [
+              -85.7505329,
+              35.0869529
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_15",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 006 - osm south connector",
+          "Synthetic Saturday 018 - osm south connector",
+          "Synthetic Saturday 021 - osm south connector",
+          "Synthetic Saturday 049 - osm south connector",
+          "Synthetic Saturday 052 - osm south connector"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 15,
+        "intensity_norm": 0.1862,
+        "intensity_class": "medium",
+        "dwell_seconds": 1363.6,
+        "dwell_minutes": 22.73,
+        "interest_seconds": 1340.7,
+        "interest_minutes": 22.35,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 1340.7,
+        "stop_seconds": 1183.4,
+        "slow_seconds": 157.3,
+        "moving_seconds": 22.8,
+        "moving_fraction": 0.0167,
+        "distance_m": 76.1,
+        "avg_speed_mps": 0.056,
+        "max_gap_seconds": 90.0,
+        "capped_seconds": 0.0,
+        "visit_count": 20,
+        "segment_count": 5,
+        "interval_count": 48,
+        "sample_count": 85,
+        "label": "",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7505093,
+          35.0869595
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_15",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 006 - osm south connector",
+          "Synthetic Saturday 018 - osm south connector",
+          "Synthetic Saturday 021 - osm south connector",
+          "Synthetic Saturday 049 - osm south connector",
+          "Synthetic Saturday 052 - osm south connector"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 15,
+        "intensity_norm": 0.1862,
+        "intensity_class": "medium",
+        "dwell_seconds": 1363.6,
+        "dwell_minutes": 22.73,
+        "interest_seconds": 1340.7,
+        "interest_minutes": 22.35,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 1340.7,
+        "stop_seconds": 1183.4,
+        "slow_seconds": 157.3,
+        "moving_seconds": 22.8,
+        "moving_fraction": 0.0167,
+        "distance_m": 76.1,
+        "avg_speed_mps": 0.056,
+        "max_gap_seconds": 90.0,
+        "capped_seconds": 0.0,
+        "visit_count": 20,
+        "segment_count": 5,
+        "interval_count": 48,
+        "sample_count": 85,
+        "label": "",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7449337,
+              35.0940092
+            ],
+            [
+              -85.744769,
+              35.0940092
+            ],
+            [
+              -85.744769,
+              35.0941449
+            ],
+            [
+              -85.7449337,
+              35.0941449
+            ],
+            [
+              -85.7449337,
+              35.0940092
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_16",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 16,
+        "intensity_norm": 0.0797,
+        "intensity_class": "low",
+        "dwell_seconds": 1058.8,
+        "dwell_minutes": 17.65,
+        "interest_seconds": 574.0,
+        "interest_minutes": 9.57,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 574.0,
+        "stop_seconds": 475.0,
+        "slow_seconds": 99.0,
+        "moving_seconds": 484.8,
+        "moving_fraction": 0.4579,
+        "distance_m": 385.0,
+        "avg_speed_mps": 0.364,
+        "max_gap_seconds": 199.0,
+        "capped_seconds": 0.0,
+        "visit_count": 33,
+        "segment_count": 18,
+        "interval_count": 87,
+        "sample_count": 143,
+        "label": "",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7448049,
+          35.0940675
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_16",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 16,
+        "intensity_norm": 0.0797,
+        "intensity_class": "low",
+        "dwell_seconds": 1058.8,
+        "dwell_minutes": 17.65,
+        "interest_seconds": 574.0,
+        "interest_minutes": 9.57,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 574.0,
+        "stop_seconds": 475.0,
+        "slow_seconds": 99.0,
+        "moving_seconds": 484.8,
+        "moving_fraction": 0.4579,
+        "distance_m": 385.0,
+        "avg_speed_mps": 0.364,
+        "max_gap_seconds": 199.0,
+        "capped_seconds": 0.0,
+        "visit_count": 33,
+        "segment_count": 18,
+        "interval_count": 87,
+        "sample_count": 143,
+        "label": "",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7548146,
+              35.0971302
+            ],
+            [
+              -85.75465,
+              35.0971302
+            ],
+            [
+              -85.75465,
+              35.0972659
+            ],
+            [
+              -85.7548146,
+              35.0972659
+            ],
+            [
+              -85.7548146,
+              35.0971302
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_17",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 003 - osm spine runner",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 017 - osm spine runner",
+          "Synthetic Saturday 019 - osm spine runner",
+          "Synthetic Saturday 020 - osm spine runner",
+          "Synthetic Saturday 025 - osm spine runner",
+          "Synthetic Saturday 039 - osm spine runner",
+          "Synthetic Saturday 072 - osm spine runner"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 17,
+        "intensity_norm": 0.0591,
+        "intensity_class": "low",
+        "dwell_seconds": 425.5,
+        "dwell_minutes": 7.09,
+        "interest_seconds": 425.5,
+        "interest_minutes": 7.09,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 425.5,
+        "stop_seconds": 210.5,
+        "slow_seconds": 215.0,
+        "moving_seconds": 0.0,
+        "moving_fraction": 0.0,
+        "distance_m": 44.7,
+        "avg_speed_mps": 0.105,
+        "max_gap_seconds": 78.0,
+        "capped_seconds": 0.0,
+        "visit_count": 14,
+        "segment_count": 8,
+        "interval_count": 23,
+        "sample_count": 27,
+        "label": "",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7547806,
+          35.0971359
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_17",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 003 - osm spine runner",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 017 - osm spine runner",
+          "Synthetic Saturday 019 - osm spine runner",
+          "Synthetic Saturday 020 - osm spine runner",
+          "Synthetic Saturday 025 - osm spine runner",
+          "Synthetic Saturday 039 - osm spine runner",
+          "Synthetic Saturday 072 - osm spine runner"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 17,
+        "intensity_norm": 0.0591,
+        "intensity_class": "low",
+        "dwell_seconds": 425.5,
+        "dwell_minutes": 7.09,
+        "interest_seconds": 425.5,
+        "interest_minutes": 7.09,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 425.5,
+        "stop_seconds": 210.5,
+        "slow_seconds": 215.0,
+        "moving_seconds": 0.0,
+        "moving_fraction": 0.0,
+        "distance_m": 44.7,
+        "avg_speed_mps": 0.105,
+        "max_gap_seconds": 78.0,
+        "capped_seconds": 0.0,
+        "visit_count": 14,
+        "segment_count": 8,
+        "interval_count": 23,
+        "sample_count": 27,
+        "label": "",
+        "geom_role": "centroid"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -85.7455924,
+              35.0872243
+            ],
+            [
+              -85.7454278,
+              35.0872243
+            ],
+            [
+              -85.7454278,
+              35.08736
+            ],
+            [
+              -85.7455924,
+              35.08736
+            ],
+            [
+              -85.7455924,
+              35.0872243
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_18",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 027 - proving ground",
+          "Synthetic Saturday 031 - mixed sampler",
+          "Synthetic Saturday 036 - proving ground",
+          "Synthetic Saturday 046 - proving ground",
+          "Synthetic Saturday 048 - proving ground",
+          "Synthetic Saturday 050 - mixed sampler"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 18,
+        "intensity_norm": 0.0581,
+        "intensity_class": "low",
+        "dwell_seconds": 449.6,
+        "dwell_minutes": 7.49,
+        "interest_seconds": 418.0,
+        "interest_minutes": 6.97,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 418.0,
+        "stop_seconds": 316.3,
+        "slow_seconds": 101.7,
+        "moving_seconds": 31.6,
+        "moving_fraction": 0.0703,
+        "distance_m": 68.2,
+        "avg_speed_mps": 0.152,
+        "max_gap_seconds": 311.0,
+        "capped_seconds": 0.0,
+        "visit_count": 10,
+        "segment_count": 6,
+        "interval_count": 19,
+        "sample_count": 30,
+        "label": "",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.7455766,
+          35.0872437
+        ]
+      },
+      "properties": {
+        "id": "activity_hotspot_18",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 027 - proving ground",
+          "Synthetic Saturday 031 - mixed sampler",
+          "Synthetic Saturday 036 - proving ground",
+          "Synthetic Saturday 046 - proving ground",
+          "Synthetic Saturday 048 - proving ground",
+          "Synthetic Saturday 050 - mixed sampler"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 18,
+        "intensity_norm": 0.0581,
+        "intensity_class": "low",
+        "dwell_seconds": 449.6,
+        "dwell_minutes": 7.49,
+        "interest_seconds": 418.0,
+        "interest_minutes": 6.97,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 418.0,
+        "stop_seconds": 316.3,
+        "slow_seconds": 101.7,
+        "moving_seconds": 31.6,
+        "moving_fraction": 0.0703,
+        "distance_m": 68.2,
+        "avg_speed_mps": 0.152,
+        "max_gap_seconds": 311.0,
+        "capped_seconds": 0.0,
+        "visit_count": 10,
+        "segment_count": 6,
+        "interval_count": 19,
+        "sample_count": 30,
+        "label": "",
+        "geom_role": "centroid"
+      }
+    }
+  ]
+}

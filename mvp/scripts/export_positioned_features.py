@@ -61,6 +61,16 @@ LAYERS = {
         "id_field": "name",
         "bake_icon_size": False,
     },
+    # Curated park buildings (derived layer). Footprints are drag-adjustable in
+    # the viewer because FEMA's polygons sit a little off; this bakes the moved
+    # geometry back, keyed by build_id. The file is written by
+    # import_fema_buildings.py with indent=1, so match that to keep diffs clean.
+    "buildings": {
+        "file": DATA_DIR / "aop_buildings.geojson",
+        "id_field": "build_id",
+        "bake_icon_size": False,
+        "indent": 1,
+    },
 }
 
 
@@ -152,7 +162,7 @@ def bake_layer(prefix: str, spec: dict, overrides: dict, dry_run: bool) -> dict:
         if isinstance(meta, dict):
             meta["generated"] = date.today().isoformat()
         with path.open("w") as fh:
-            json.dump(data, fh, indent=2, ensure_ascii=False)
+            json.dump(data, fh, indent=spec.get("indent", 2), ensure_ascii=False)
             fh.write("\n")
 
     return {

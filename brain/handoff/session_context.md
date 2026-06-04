@@ -4,6 +4,342 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+**2026-06-04 (COMMON SCHEMA RE-BAKE — SHIPPED, CODE + DATA, UNCOMMITTED).** User
+flagged data-source schema variability as the thing hampering design: *"each one
+has a different schema … I should be able to edit a trail description the same
+way I edit the pavilion text."* Audited every `website/data/*.geojson` by
+observation — the same concept used a different physical key in nearly every file
+(~10 keys for "name" alone; SFWDA trails only `trail_number`; the pavilion is
+`building_label`). Wrote the design (`brain/research/common_feature_schema.md`):
+a **Common Minimum Feature Schema** = the northstar's six product-test questions
+as fields. User directed a **full data re-bake** (not the adapter I first
+proposed): *"I would not have a half rebuild. re-bake the data entirely in our
+new format. keep the raw we can refer back. our re-bake should have our fields,"*
+vocabulary *"go with what is common"* → `name`·`description`·`kind` + provenance
+block (`source`·`confidence`·`permission`·`status`·`last_checked`).
+**Shipped & verified by observation (served :8077, 0 console errors):**
+(1) `mvp/scripts/rebake_canonical.py` — archives pristine originals to
+`website/data/raw/`, rewrites all 23 served feature collections canonical-first
+via a crosswalk + per-layer source-register provenance defaults. **Additive**
+(original keys preserved → map paint/`index.html` unbroken); `name` left blank on
+render-sensitive label layers (trail-network/roads/water); machine/coverage
+layers (landcover/contours/activity/synthetic) get id+kind per feature with
+layer-level provenance in the new `website/data/_schema.json` manifest. Files did
+not balloon (contours 14.3→13.2 MB). Idempotent (re-bakes from `raw/`; `--check`
+dry run). (2) `website/js/panel.js` — `itemFields()` collapsed to ONE frame for
+every feature (Name·Description·Kind·facet·provenance·actions), `PROVENANCE_KEYS`
+cut from a 14-entry alias list to the 5 canonical fields, dead
+`userFeatureFields`/`renderNoteField` removed. **Proof:** map renders all
+default-on layers post-re-bake; a trail and the pavilion now show the SAME editor
+frame with live Name + Description (differ only by facet — trail Difficulty,
+building Last-checked). Shots: `playwright_rebake_verify.png`. Throwaway
+verifiers: `/tmp/verify_rebake.py`, `/tmp/verify_canonical_editor.py`.
+**Owed (user's git gate):** commit; decide `data/raw/` (~20 MB) commit-vs-
+gitignore (originals also live in pre-re-bake git history); clean
+strip-legacy-keys pass deferred to the index→panel swap; persist in-editor
+Name/Description edits (rebuild's existing disk-persistence owed item).
+
+**2026-06-04 (RIGHT PANEL REBUILD — slice #11 SHIPPED: ALL live layers ported —
+the rebuild is now the index-page replacement, isolated, NEW files only,
+index.html/main.js UNTOUCHED, UNCOMMITTED).** User cut off the "next steps"
+discussion and set the direction hard: *"this page && editor is supposed to
+replace the one on the main index page. make sure it has all the layers."* So I
+brought the **entire ~29-layer index set** into `website/js/panel.js`,
+reorganized from the geometry-group layout into the **live page's exact
+provenance sections** (Source layers / Derived layers / External reference / Map
+editor / User submitted — matching `index.html`'s `data-section` blocks, and the
+northstar's provenance-is-the-product stance). Each layer is a node carrying its
+real `mapLayers` ids + a map source/paint **ported verbatim from `main.js`**
+(extracted by 3 parallel Explore agents over the 10k-line file, then constants
+like `LANDCOVER_FILL`/`POI_COLOR`/hotspot palettes resolved to literals).
+`MAP_DATA` now spans five source kinds (geojson `url`+optional `resolve`, inline
+`data`, `raster`, `rasterDem`, `image`, plus `images` for `addImage` brand
+icons); boot loader fetches all 27 GeoJSONs in **parallel** then adds in
+declared order. External-tile layers (TNMap/NAIP/AWS terrarium/SFWDA) get initial
+`visibility:'none'` so no network fetch fires pre-`applyAllVisibility`. `visible`
+defaults mirror the live **Fresh** preset. Renderer unchanged except lock +
+group-reassignment now gate to **editable** nodes (`isEditableNode` =
+items||create) so a raster toggle gets no padlock / isn't a drop target. The 3
+user **draw** groups (Points/Lines/Polygons) live under Map editor; reference
+vector layers moved OUT of geometry-nesting INTO their provenance section.
+**Verified by observation** (`/tmp/verify_panel_all_layers.py` + focused diags,
+served :8077): **32 panel rows / 5 sections, all map layers added, initial
+visibility matches the model, local-layer toggles flip MapLibre visibility,
+create still works (point placed+named+selected), 0 console errors** on load +
+toggles + create; pixels confirm the default-on set renders incl. **both brand
+logos** (`addImage` worked). Shot: `brain/output/playwright_panel_all_layers.png`.
+Card: `right_panel_rebuild.md` **slice 11** (full per-layer record + the
+faithful-but-simplified deltas: event-schedule resolves only coordinate-bearing
+anchors, SFWDA paper is a single 4-corner image not the 6×6 warp, brand
+icon-size is static not zoom-scaled, paint/contour-fade sliders still NOT
+brought — KISS). **Owed next** (the genuine forks, unchanged from slice #10):
+disk persistence (own `aop_panel_*_v1` key vs reuse live
+`aop_positioned_features_v1`), then the **swap into index.html** (retire the
+6-places/5-paths patchwork, migrate verifiers, bump VERSION — the user's git
+gate). Nothing to git-gate beyond the 2 isolated files.
+
+**2026-06-04 (RIGHT PANEL REBUILD — slice #9 SHIPPED: edit features ported from
+the live dock — isolated, NEW files only, index.html/main.js UNTOUCHED, UNCOMMITTED).**
+Picked back up "to make it more simple and maintainable… more of the edit
+features from the live view." User pushed back on approval-seeking: *"if you know
+what NEEDS to be done do it. get to a point where you actually need input."* So I
+built the whole cheap-and-correct batch in one pass and stopped at the real forks.
+**Shipped into `website/js/panel.js` + `right_panel.html` (served :8077):** (1) a
+new `actions` field-kind + one `ACTIONS` registry → **Fly-to / Copy-GeoJSON /
+Move / Delete** per feature (declared via `items.actions`; fly/copy never
+lock-gated, move/delete are; user features get all four, reference layers get
+fly+copy); (2) **Move** (point relocate / line+poly translate via
+`geometryCenter`, reusing the create click plumbing; vertex-edit still OUT); (3)
+**Source/provenance read-out** (`items.provenance:true` → read-only `static`
+fields from whatever `PROVENANCE_KEYS` the data ships — the northstar's six
+product-test questions, now answered on trails/buildings/boundary); (4) **Copy
+all as GeoJSON** per layer (group `copyAll` action); (5) **map-click Reveal**
+(`queryRenderedFeatures` → select + expand the chain). **One model, one renderer
+held** — every feature = a node descriptor + a renderer branch, ZERO
+`layerKey===` special-casing (that hardcoding IS the live dock's smell; not
+brought). **Verified by observation** (extended `/tmp/verify_panel.py`, **0
+console errors**) + looked at pixels (user-point 4-action grid; 665 Ellis Cove
+full provenance block, locked/read-only). Card: `right_panel_rebuild.md` slice
+#9 (full record) + slice #10 = the **genuine input points owed to the user**:
+**disk persistence** (all edits are in-memory, die on reload — fork: reuse the
+live `aop_positioned_features_v1` localStorage convention vs. an isolated
+`aop_panel_*_v1` key; recommend own key, reconcile at swap), **layer-paint
+sliders** (deliberately NOT brought — re-couples map-style; KISS), **★/#tag/
+category** (inert until visitor-list / event-schedule surfaces exist), and the
+**swap into index.html** (retire patchwork, migrate verifiers, bump VERSION —
+the user's git gate). Nothing to git-gate beyond the 2 still-isolated files.
+**Same-day follow-up — editor moved to a PINNED BOTTOM DOCK** (`#panelDock`,
+live-version style). User: *"when I add a polygon the editor should be under the
+button. I cannot see them if they are far away."* My first stab (inline
+`scrollIntoView`) was verified against a panel that didn't overflow → vacuous
+test → user: *"it did not move."* (Lesson: verify against the REAL failing
+condition.) Now the edit area renders ONLY in a fixed footer dock (panel = flex
+column; rows keep just the `.selected` highlight; `renderDock()` mounts the same
+`renderEditArea`/fields). Proven against a real **1967px** overflow (trails
+expanded, scrolled to top): the new polygon's editor is on-screen in the dock.
+Verifier rewritten to read `#panelDock` (`dock.dataset.sel` hook) — full suite
+PASS, 0 console errors.
+**Then the user reversed the dock → INLINE + added group reassignment**
+(follow-up #3 on the card). *"editor should exist in the space with the
+instructions… swap out not jump to the bottom… all editors inline… choose an
+item, hit edit, expands immediately below. in the editor set a group — add a
+bathroom to buildings group under polygons."* Dock removed; editor renders
+inline under the selected row again, `scrollIntoView` keeps it visible (proven
+under real overflow). NEW: user features carry an optional `__group` (node id);
+`deriveItems` merges user features into whichever group they're assigned to; a
+`group` field-kind (`renderGroupField`/`groupOptions`, path labels like
+"Polygons › Buildings") reassigns them; `itemFields` now derives a USER
+feature's editor from geometry so it stays fully editable even inside the locked
+reference Buildings group. Per-node `items.fields`/`actions` on the user groups
+deleted as redundant. Verified inline (`/tmp/verify_panel.py`): polygon → Group
+= Buildings → leaves Polygons (0), joins Buildings (5→6), editable; full suite
+PASS, 0 console errors. The bottom-dock entry just above is SUPERSEDED.
+**Pattern that emerged across these 3 follow-ups (worth holding):** transient
+surfaces (hint, editor) must appear inline where the action happens; and a
+user feature's editor is geometry-derived + group-portable, never inherited from
+the host node — that's what keeps "one model, one renderer" from sprouting
+`layerKey===`-style special cases.
+**Follow-up #4 — geometry-typed the Group selector.** User asked why a polygon
+could go in a Point group. Verified it was a real bug (filing a polygon under
+Points orphaned it from the panel + decoupled its visibility, while it still
+drew on the map). Surfaced vs. the locked `no_limiting_code_mvp` rule (that rule
+is about DATA rejection, not UI mis-filing); user chose to type it. Each node
+now has a geometry (`nodeGeom`: user via `create.geomType`, reference via a new
+`geom` field); `groupOptions(feature)` offers only compatible groups (polygon →
+Polygons/Buildings/Park boundary; line → Lines/Trail network/Streams; point →
+Points). Verified inline, 0 console errors. UI-affordance correctness only — the
+MVP no-limiting rule still governs data values/publishability.
+
+**2026-06-04 (RIGHT PANEL — CLEAN REBUILD started, isolated, slice 1 SHIPPED —
+NEW files, index.html/main.js UNTOUCHED).** User: the right panel is *"a bunch of
+hard coded, different implementations,"* not the *"singular Massive json object +
+singular renderer"* they want — *"come up with a NEW… completely new view… put the
+features back as I directed one at a time. KISS."* Confirmed the diagnosis in code
+(one layer is described in 6 places — static HTML + `LAYER_TOGGLES` + `PRESET_*` +
+`TUNABLE_LAYERS` + `FEATURE_LIST_LAYERS` + `SECTION_RUNTIME` + the hidden
+`#legacyLayerToggles` bridge — and rendered through 5 paths). The 2026-06-03 edit
+dock was bolted ONTO that, not a replacement. **Approach (user-chosen): build
+isolated & fresh, then swap.** New `website/right_panel.html` + `website/js/panel.js`
+= ONE `PANEL_MODEL` → ONE renderer (`renderPanel→renderSection→renderNode(kind)`).
+**Features re-added one at a time, all SHIPPED + verified headless (served :8077,
+0 console errors, pixels confirmed): #1 layer visibility toggle · #2 section
+collapse · #3 collapsible items list under a layer (general — Trail network 101,
+Buildings 5) · #4 select group-or-item → inline edit area, visibility relocated
+INTO the group edit area (rows lost their checkbox) · #5 user-entered features +
+create ability** (new `userFeatures` node, mutable in-memory collection, `+` →
+place-mode → map-click drops a Point → selected with editable Name + Notes;
+declarable per-layer `items.fields` + a `text` field kind) · **#6 Point/Line/
+Polygon groups (old layout), each with its own create geometry + editor set**
+(split into 3 nodes over one collection filtered by geometry; Point=1-click,
+Line/Polygon=multi-click+double-click draw with dashed draft; Lines get a
+`select` Difficulty field; new geometry auto-sorts into its group) · **#7
+reference layers nest under their geometry group via a `children` field +
+recursive `.node-content`** (Trail network⊂Lines, Buildings⊂Polygons, Park
+boundary = single item in its own group⊂Polygons; streams also moved under Lines)
+· **#8 lock (read-only gate) on every group + item** (open/closed padlock; locked
+→ edit area read-only/disabled inputs + hint; visibility never gated; group lock
+on `node.locked`, item lock on `props.__locked` w/ group fallback so group-lock
+cascades + per-item override; reference layers default LOCKED, user features
+UNLOCKED). One model (`PANEL_MODEL`) + one renderer throughout; each feature = a
+new field/branch, no new surface. Card: `tasks/04_event_app/right_panel_rebuild.md`
+(diagnosis + target architecture + per-slice record). Verifier (throwaway):
+`/tmp/verify_panel.py`. **Owed: user directs feature #9, one at a time.** Swap into the live app (retire
+the patchwork, migrate verifiers, bump VERSION, make the verifier durable) is
+deferred until the new view earns it feature by feature. `index.html`/`main.js`
+still UNTOUCHED; nothing to git-gate beyond the 2 new files
+(`website/right_panel.html`, `website/js/panel.js`).
+
+**2026-06-03 (UNIFIED EDIT DOCK shipped — one edit interface for the whole right
+panel — CODE, UNCOMMITTED, v30→v31).** User: *"all edits on the right should use
+this new singular edit interface… if a layer has specific settings it should also
+be in this edit panel… make some mockups that show the different types,"* then
+*"do it all. make me proud."* Mockup pass first (`website/editor_dock_types_compare.html`
++ `right_sidebar_compare.html`), contract confirmed via 2 questions (4 tabs
+Identify·Edit·Display·Source; layer paint folded into the Edit tab). Then wired it
+into the live app: new `buildEditDock`/`renderEditDock` render ONE 4-tab dock into
+a new `#editDock` pinned to the panel bottom (panel restructured to a flex column,
+`.panel-body` is the scroll region), replacing the per-row accordion
+(`buildInlineEditor` now dead). Single `dockSelection` across all layers driven by
+`selectFeatureForDock` (row ▸ chevron, map-click reveal, duplicate, delete); `✕`
+clears → dock hides (two-state). `renderTuneControls(config, target)` generalized
+so the Edit tab hosts the layer's real `TUNABLE_LAYERS` paint via the existing
+`handleTuneInput`. Fields/actions adapt off the existing spec flags (Category +
+Dup/Delete = editorPois; Tag = taggable; Size = brandLogos→Display; Move/Lock =
+onMove; ★ = highlightable). Group + building Public/Private are read-only for now
+(cross-layer migration / status-flip cascades = deferred). VERSION v30→**v31**
+(shell-asset). **Verified by observation** (served :8000, headless, **0 console
+errors**): drawn POI → 4 tabs, Edit = 5 actions + 10 "Layer paint · Drawn POIs"
+sliders, Display = Visible + ★; brand logo → Size + Move/Lock/Copy, no
+Category/Delete; visitor context (Polygon) → Move/Lock/Copy + 7 paint rows; ✕
+re-hides. Card: `tasks/04_event_app/editor_unified_dock.md` (full inventory +
+deferred list). Shots: `brain/output/playwright_app_dock_selected.png`,
+`…_edit_tab.png`, `…_identify_tab.png`, `playwright_editor_dock_types.png`.
+**Owed:** on-device feel; **commit + the v31 bump are the user's git gate.**
+Followups: delete dead `buildInlineEditor`; consider retiring `#layerEditor` paint
+drawer for feature layers; settable Group / building status; vertex editing.
+
+**2026-06-03 (EDITOR v1 — every curated layer editable + single GeoJSON-copy export —
+CODE, UNCOMMITTED, v29→v30).** User, right after the buildings-row crush fix: *"we need it
+all cleaned up and editable. this is mvp. we need v1… look for smells and make a ui that a
+human can use. only export path is geojson copy."* Ran a 4-axis read-only audit (editable
+layers / export paths / inline-editor persistence / right-panel smells), then built the v1:
+**(1) all curated layers editable** — `inlineEditor:true` on buildings, cemeteries,
+visitorContext, brandLogos; the accordion editor (`buildInlineEditor`) is now layer-agnostic
+(Name writes the per-layer name prop — `building_label` for buildings; Category drawn-POI
+only; Size brand-logo only; Tag taggable-only; Notes all; labeled Fly/Move/Lock/Copy GeoJSON;
+Duplicate/Delete drawn-POI only). **(2) persistence** — the `aop_positioned_features_v1`
+override store now carries a `properties` patch (replayed by `applyPositionedFeatures`), so a
+renamed building survives reload AND flows into Copy-GeoJSON; new generic
+`setFeatureProperty`/`SERVED_SOURCE`/`FEATURE_NAME_PROP`; `persistFeatureFlagChange`
+generalized to all served layers; `cemeteryData` hoisted + override-wired. **(3) clean row**
+— editable rows collapse to `[vis] [★] name [edit ▸]`; all actions/fields moved into the
+labeled accordion (kills the cryptic 🎯✋🔒⧉ cluster AND the buildings name-crush at the
+source — the row-level tag input + `has-tag` CSS removed). **(4) one export = GeoJSON copy**
+— removed the footer GeoJSON download (→ "Copy all as GeoJSON" clipboard), the `#exportAll`
+settings snapshot, the 5 section "copy settings" ⧉, and the SFWDA alignment download (→
+clipboard); added a drawer "⧉ Copy all" (`copyLayerAsGeoJSON`). Removed dead helpers + dead
+row CSS; fixed the stale Trailheads comment. **Verified by observation** (served :8042):
+buildings rows readable (name 0→229px), accordion edits a building, the `building_label`
+override persists + **survives reload**, 0 console errors; `poi_editor` PASS, `feature_list`
+PASS (verifiers updated: move/copy now open the accordion; removed-button assertions flipped
+to "removed"), `presets` only its documented pre-existing fails. Card:
+`tasks/04_event_app/editor_v1_editable_layers.md`. **Routed (not done):** panel hygiene
+beyond the editor (Comparisons dev-links, Layer-notes prose, orphan trailheads toggle,
+orphan activity paint specs) — owner/content calls in [[viewer_polish_followups]]. **Owed:**
+on-device confirm; commit + v30 are the user's git gate.
+
+**2026-06-03 (Park buildings rows fixed — name column was 0 px / "all edit on one line" —
+CODE, UNCOMMITTED, v28→v29).** User opened the right panel: *"Park buildings (curated, drag
+to adjust) all edit is o one line and I cannot read the names. this is broken."* (The "v3c
+plan" they referenced is `_done/editor_three_buckets_v3c.md` — already SHIPPED; the live
+editor implements it. The break was not in the editor section but in the **Derived layers →
+Buildings** feature list.) Reproduced by observation: the 3 facility rows wrapped their
+addresses **one char per line** while controls jammed on one line. Cause: `buildings` is the
+only layer rendering the `#tag` input **on the row** (`taggable && !inlineEditor`); that 84 px
+input + copy/fly/move/lock filled the 380 px row and collapsed the `minmax(0,1fr)` name column
+to 0 px. Fix: row gets a `has-tag` class (`main.js`) + a two-line CSS layout (`css/app.css`,
+after `.feature-row.move-target`) — name full-width on line 1, tag + icons on line 2 (name
+0 px→257 px, confirmed). `VERSION`/`#appVersion` **v28→v29** (shell-asset bump). Verified:
+`playwright_verify_buildings.py` PASS 0-err; `playwright_verify_feature_list.py` buildings +
+all-5-curated + cemetery/brand/visitor PASS, only the documented pre-existing
+`publishable: ↑ Export button present` FAIL, 0-err. Full record: `10_deferred/
+viewer_polish_followups.md` "Right Panel" (2026-06-03 entry). **Owed:** on-device read-confirm;
+commit + v29 are the user's git gate.
+
+**2026-06-03 (buildings → DERIVED + drag-editable, raw context dropped — CODE, UNCOMMITTED,
+v27→v28).** User asked to make the buildings a "derived" layer in the right editor group
+and to be able to edit the footprints (FEMA's sit a little off). Asked the one real fork →
+user chose **split + drop raw**: served `aop_buildings.geojson` filtered **202 → 5 curated**
+(3 facilities + 2 private boxes); the ~197 raw FEMA context footprints dropped on purpose.
+Durable in `import_fema_buildings.py` (new `CURATED_ADDRESSES` filter + `load_prior_geometry()`
+preserves hand-nudged geometry across re-imports). Viewer (`website/js/main.js` + `index.html`):
+`#showBuildings` moved Source→**Derived** section; `SECTION_RUNTIME` buildings → `derived-layers`
++ `positionedFeatureLayers`; buildings spec got an **`onMove`** drag-translate (→
+`savePositionedFeature('buildings', …)`), `buildingsData` hoisted to top-level `let`,
+`applyPositionedFeatures('buildings', …)` replays drags on reload; old "Other buildings" group →
+**"Private structures"**. `export_positioned_features.py` learned `buildings` (`build_id`,
+`indent=1` preserved). VERSION v27→**v28**. **Verified by observation:** `playwright_verify_buildings.py`
+PASS 0-err; `feature_list` building sections PASS (only the documented pre-existing publishable-export
+FAIL); `code_review_groupb` PASS @v28; a focused drag test PASS (footprint lands at click, override
+`buildings:3397585`, survives reload); `bake_layer` temp test PASS (5-dec round + indent kept).
+Verifiers updated (buildings, feature_list, groupb pin v26→v28). Card: `pwa_qa_data_bakes.md`
+Item 6 "EXTENDED 2026-06-03" block. **Owed:** on-device drag feel; commit + v28 bump are the
+user's git gate. (Same session, earlier: baked the Monteagle visitor-context polygon move into
+`aop_visitor_context_callouts.geojson` — visitor_context verifier PASS.)
+
+**2026-06-02 (Sprint 04 closeout pass — pwa_qa_data_bakes Items 4 & E investigated +
+Item 6 re-verified; doc-only, no code).** Picked up after a forced restart cut the
+prior session mid-verify (it was thrashing a bespoke zoomed `box_shade` screenshot —
+abandoned, as that session concluded). **Re-verified Item 6 the reliable way**
+(served `website/` on :8001): `playwright_verify_buildings.py` **PASS, 0 console
+errors** (3 facilities tagged + searchable by name/address; 2 private boxes render
+via the always-on `building-structure-box` layer; 665/889/383 NOT searchable; jump
+works); `playwright_verify_feature_list.py` building section all-PASS, only the
+**documented pre-existing publishable-export FAIL** remains, 0 console errors. Box
+paint confirmed in `main.js`: `#46423b` @0.82 (warm dark charcoal, not literal
+`#000` — pure black reads as a hole). **Then closed the two headless-actionable items
+on the card by investigation:** **Item 4 = DONE** — `aop_visitor_context_callouts.geojson`
+(13 KB) is already baked + loaded from `./data/` and renders; copy split into
+`aop_poi_index.json` (clean). **Item E = bake mechanically DONE** — Ellis ships the
+full burial roster + source + license terms on both its marker (Point) and polygon;
+the "doubling" is **intentional marker+polygon, NOT a dup** (all 4 cemeteries do it).
+**BUT Item E has a live owner publishability fork:** the research brief
+(`brain/research/aop_ellis_cemetery.md`) says treat the named roster as "community
+research, not a publishable layer, until permission/use is settled," yet the served
+geojson already ships it — USGenWeb's contributor-notice requirement IS met in-data,
+but whether AOP's use is acceptably non-commercial is the user's call (surfaced, not
+silently kept/stripped). **Net: of pwa_qa_data_bakes's 4 items, 4 & 6 are DONE, E is
+bake-done/publishability-owed, 17 needs imagery re-acquisition + a sizing decision.**
+Card updated (Item 4 DONE block, Item E FINDINGS block, Done-when + a Status-summary).
+**Then the Item E publishability fork was put to the owner and RESOLVED (2026-06-03):
+keep shipping the named Ellis roster as-is** — AOP is non-commercial hobby use, inside
+USGenWeb's free-non-commercial grant, and the contributor notice travels in-data. No
+code change (data already ships it); decision recorded in
+`brain/research/aop_ellis_cemetery.md` (Sources + Open questions, both updated) and the
+card (Item E now fully done). **Net: pwa_qa_data_bakes is DONE down to Item 17** — 4,
+6, E all done; only **Item 17** (extend 9-patch imagery = data re-acquisition + owner
+"how much bigger") remains, and it's not headless-actionable. **No app code changed
+this session; Item 6 stays UNCOMMITTED awaiting the user's git gate + v27 bump.**
+Remaining Sprint 04 gates are all owner/device: Item 17 AOI size · Item 6
+always-on-vs-toggle + on-device feel · trail Slice 4 landmark coords/license ·
+pwa_qa_2 items 6/9.
+
+**2026-06-01 (pwa_qa_data_bakes Item 6 — building public/private bake SHIPPED,
+UNCOMMITTED, v26→v27).** Tiered the in-bounds buildings by owner-confirmed truth:
+**public facilities** (searchable/clickable/listed) = 1010 Pavilion, 1033 Farmhouse
+(rentable), 880 Front Office; **private structures** (non-interactive black-box
+presence markers — no search/popup/list) = 665, 889. Authored `aop_facility`/
+`aop_structure_box` tags baked into `import_fema_buildings.py` (durable) + applied to
+`aop_buildings.geojson`; `website/js/main.js` adds a always-on `building-structure-box`
+black layer, gates search/POI-browser/feature-list to facilities, repoints the AOP
+highlight to facilities. Verified by observation (buildings PASS 0-err, feature_list
+building section rewritten+PASS, search/presets/event_schedule regression-clean — only
+documented pre-existing fails). Card: `04_event_app/pwa_qa_data_bakes.md` Item 6
+"SHIPPED" block. **Lesson:** the owner's axis is strictly **public→facility /
+private→black box**; don't infer "not-searchable" = "private". On-device look + the
+always-on-vs-toggle question for the boxes are owed. (Earlier this session's Sprint 04
+doc-review pass is now committed in `5d07763 pm`.)
+
 **2026-06-01 (Sprint 04 review pass — doc only, no code).** Reviewed every active
 Sprint 04 card against the real repo. **Key correction: the working tree is now
 CLEAN — everything is committed** (`d795f11 split apart index.html` is HEAD, v26).

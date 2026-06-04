@@ -105,6 +105,14 @@ New work opened after the triage above lives directly in this folder. The
 
 **Still active (this folder):**
 
+- `editor_v1_editable_layers.md` — **ACTIVE (v1 shipped, verified by observation,
+  UNCOMMITTED v29→v30).** Made every curated layer (buildings, cemeteries,
+  visitor-context, brand logos) fully editable via the layer-agnostic inline
+  accordion; collapsed the row to `[vis] [★] name [edit ▸]`; reduced all export
+  to GeoJSON copy (removed 2 downloads + 2 settings-clipboard copies). Verifiers
+  updated (poi_editor/feature_list/buildings PASS; presets + event_schedule
+  pre-existing-only, event_schedule proven against a git-HEAD baseline). **Owed:**
+  on-device confirm; commit + v30; the routed panel-hygiene follow-ups.
 - `trail_research_integration.md` — **ACTIVE (Slices 1–3 shipped + committed).**
   Trail catalog joined to the gold network at runtime: trail-click popup (new) +
   POI browser repointed to the gold network + search description preview (Slice 3),

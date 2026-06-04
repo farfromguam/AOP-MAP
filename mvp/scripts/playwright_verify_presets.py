@@ -449,24 +449,25 @@ def main() -> int:
         page.locator("#presetTopo").click()
         page.wait_for_timeout(500)
 
-        print("\n== Clipboard export (v2, replaces Export Settings) ==")
-        # Old #exportSettings button retired 2026-05-23 in favor of #exportAll
-        # at the bottom of the panel. Import UI was dropped the same day —
-        # user pastes JSON out-of-band to the assistant or directly into code.
+        print("\n== Settings export removed (single export path = GeoJSON copy) ==")
+        # v1 editor (2026-06-03): both the old #exportSettings and the v2
+        # #exportAll snapshot button were removed. The only export path is
+        # GeoJSON copy (per-feature ⧉ Copy GeoJSON + per-layer "Copy all").
+        # buildExportPayload still exists to back preset save/apply, so it is
+        # exercised here at the code level instead of via a button.
         check("exportSettings button removed",
               page.evaluate("() => !document.getElementById('exportSettings')"))
-        page.locator("#exportAll").click()
-        page.wait_for_timeout(500)
-        text = page.evaluate("navigator.clipboard.readText()")
-        payload = json.loads(text)
-        check("export copied v3 settings JSON",
+        check("exportAll settings-snapshot button removed",
+              page.evaluate("() => !document.getElementById('exportAll')"))
+        payload = page.evaluate("() => buildExportPayload()")
+        check("buildExportPayload still emits v3 settings JSON",
               payload.get("schema") == "aop-viewer-preset-settings-v3",
               str(payload.get("schema")))
-        check("export includes all four presets",
+        check("payload includes all four presets",
               set(payload.get("presets", {}).keys()) == {"park", "topo", "trace", "satellite"})
-        check("export includes current state",
+        check("payload includes current state",
               payload.get("current_state", {}).get("toggles") is not None)
-        check("export includes runtime_overrides bag",
+        check("payload includes runtime_overrides bag",
               "runtime_overrides" in payload,
               str(list(payload.keys())))
 
