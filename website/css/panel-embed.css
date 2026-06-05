@@ -1,0 +1,173 @@
+/* Right-panel swap (Stage 1, 2026-06-05) — styles for the embedded one-model
+ * panel (js/panel.js) when it renders inside index.html's #aopPanelMount.
+ *
+ * These are the proven right_panel.html panel styles, SCOPED under #aopPanelMount
+ * / #aopPanelFooter so they win over css/app.css's same-named classes (id+class
+ * specificity beats app.css's bare-class rules for the OLD panel) and never leak
+ * back onto it. The toast is body-level so it stays global. */
+
+#aopPanelMount, #aopPanelFooter {
+  --panel-bg: #f7f2e6;
+  --ink: #2b2620;
+  --line: #d8cdb4;
+  --rust: #b4561f;
+}
+
+/* The panel header already says "AOP edit panel"; the model's own title is redundant here. */
+#aopPanelMount .panel-title { display: none; }
+
+#aopPanelMount .panel-section { margin-bottom: 16px; }
+#aopPanelMount .section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; gap: 8px; cursor: pointer;
+  background: none; border: 0; padding: 0 0 4px; margin-bottom: 6px;
+  border-bottom: 1px solid var(--line); text-align: left; color: inherit; font: inherit;
+}
+#aopPanelMount .section-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px;
+  color: #8a7d63; font-weight: 700;
+}
+#aopPanelMount .section-chevron {
+  color: #b3a484; font-size: 12px; line-height: 1;
+  transform: rotate(90deg); transition: transform 0.12s ease;
+}
+#aopPanelMount .panel-section.collapsed .section-chevron { transform: rotate(0deg); }
+#aopPanelMount .section-body { display: flex; flex-direction: column; }
+#aopPanelMount .panel-section.collapsed .section-body { display: none; }
+
+#aopPanelMount .node {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 4px; font-size: 14px; cursor: pointer; border-radius: 6px;
+}
+#aopPanelMount .node:hover { background: rgba(180,86,31,0.06); }
+#aopPanelMount .node-label { line-height: 1.2; }
+#aopPanelMount .node-unknown { color: #b00; }
+#aopPanelMount .node-group { display: flex; flex-direction: column; }
+#aopPanelMount .node-select {
+  flex: 1; display: flex; align-items: center; gap: 8px;
+  background: none; border: 0; padding: 7px 4px; margin: 0; cursor: pointer;
+  font: inherit; color: inherit; text-align: left; border-radius: 6px;
+}
+#aopPanelMount .node-select:hover { background: rgba(180,86,31,0.06); }
+#aopPanelMount .node.selected > .node-select { background: rgba(180,86,31,0.12); font-weight: 600; }
+#aopPanelMount .node-count { color: #b3a484; font-size: 12px; font-variant-numeric: tabular-nums; }
+#aopPanelMount .node-create {
+  background: none; border: 1px solid var(--line); color: var(--rust);
+  width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
+  font-size: 18px; line-height: 1; padding: 0; flex: none;
+  display: flex; align-items: center; justify-content: center;
+}
+#aopPanelMount .node-create:hover { background: rgba(180,86,31,0.1); }
+#aopPanelMount .node-create.active { background: var(--rust); color: #fff; border-color: var(--rust); }
+#aopPanelMount .node-chevron-btn { background: none; border: 0; padding: 6px 4px; cursor: pointer; display: flex; align-items: center; }
+#aopPanelMount .node-chevron { color: #b3a484; font-size: 11px; line-height: 1; transform: rotate(0deg); transition: transform 0.12s ease; }
+#aopPanelMount .node-group.expanded .node-chevron { transform: rotate(90deg); }
+#aopPanelMount .node-content { display: none; margin-left: 14px; border-left: 1px solid var(--line); padding-left: 4px; }
+#aopPanelMount .node-group.expanded > .node-content { display: block; }
+
+#aopPanelMount .node-items { margin: 2px 0 6px 0; }
+#aopPanelMount .item { display: flex; align-items: center; }
+#aopPanelMount .item-select {
+  flex: 1; min-width: 0; text-align: left; background: none; border: 0;
+  padding: 4px 10px; font: inherit; font-size: 13px; color: #4a4438;
+  cursor: pointer; border-radius: 5px;
+}
+#aopPanelMount .item-select:hover { background: rgba(180,86,31,0.05); }
+#aopPanelMount .item.selected > .item-select { background: rgba(180,86,31,0.12); font-weight: 600; }
+
+#aopPanelMount .lock-btn {
+  flex: none; background: none; border: 0; padding: 2px 5px; cursor: pointer;
+  color: #b3a484; display: flex; align-items: center; border-radius: 5px;
+}
+#aopPanelMount .lock-btn:hover { background: rgba(180,86,31,0.1); }
+#aopPanelMount .lock-btn.locked { color: var(--rust); }
+#aopPanelMount .lock-glyph { display: flex; }
+
+#aopPanelMount .edit-area {
+  margin: 4px 0 8px 10px; padding: 10px 12px;
+  background: rgba(180,86,31,0.05);
+  border: 1px solid var(--line); border-radius: 8px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+#aopPanelMount .node-items .edit-area { margin-left: 10px; }
+#aopPanelMount .field { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+#aopPanelMount .field-controls { gap: 4px; }
+#aopPanelMount .icon-toggle {
+  flex: none; background: none; border: 0; padding: 3px 5px; cursor: pointer;
+  color: #b3a484; display: flex; align-items: center; border-radius: 5px;
+}
+#aopPanelMount .icon-toggle:hover { background: rgba(180,86,31,0.1); }
+#aopPanelMount .icon-toggle.on { color: var(--rust); }
+#aopPanelMount .field-note,
+#aopPanelMount .field-text,
+#aopPanelMount .field-select,
+#aopPanelMount .field-static { flex-direction: column; align-items: stretch; gap: 4px; }
+#aopPanelMount .field-label { color: #6e6450; font-weight: 600; }
+#aopPanelMount .field-static .field-value { word-break: break-word; color: #4a4438; }
+#aopPanelMount .field-input {
+  width: 100%; padding: 6px 8px; font: inherit; font-size: 13px;
+  border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink);
+}
+#aopPanelMount .field-input:disabled { background: #efe9da; color: #6e6450; cursor: not-allowed; }
+#aopPanelMount .field-unknown { color: #b00; }
+
+#aopPanelMount .field-actions { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+#aopPanelMount .edit-action {
+  background: #fff; border: 1px solid var(--line); color: var(--ink);
+  padding: 6px 10px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px;
+}
+#aopPanelMount .edit-action:hover { background: rgba(180,86,31,0.08); }
+#aopPanelMount .edit-action.danger { color: #a3331a; border-color: #e3b3a6; }
+#aopPanelMount .edit-action.danger:hover { background: rgba(163,51,26,0.08); }
+#aopPanelMount .edit-action:disabled { opacity: 0.45; cursor: not-allowed; }
+#aopPanelMount .edit-locked-hint-text { font-size: 12px; color: #8a7d63; }
+
+#aopPanelMount .create-hint {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 12px; padding: 8px 12px;
+  background: var(--rust); color: #fff; border-radius: 8px; font-size: 13px;
+}
+#aopPanelMount .node-group > .create-hint { margin: 4px 2px 8px; }
+#aopPanelMount .node-items .create-hint { margin: 4px 0 8px; }
+#aopPanelMount .create-hint-text { flex: 1; }
+#aopPanelMount .create-hint-cancel {
+  background: rgba(255,255,255,0.2); color: #fff; border: 0;
+  padding: 4px 10px; border-radius: 6px; cursor: pointer; font: inherit;
+}
+#aopPanelMount .create-hint-cancel:hover { background: rgba(255,255,255,0.32); }
+
+/* Save-path footer (Export edits / Clear / unsaved-count) at the panel bottom. */
+#aopPanelFooter {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 8px; padding: 10px 0 4px; border-top: 1px solid var(--line);
+}
+#aopPanelFooter .footer-btn {
+  background: var(--rust); color: #fff; border: 1px solid var(--rust);
+  padding: 7px 12px; border-radius: 7px; cursor: pointer; font: inherit; font-size: 13px;
+}
+#aopPanelFooter .footer-btn:hover { background: #9c4a18; }
+#aopPanelFooter .footer-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#aopPanelFooter .footer-btn-sub { background: #fff; color: var(--rust); }
+#aopPanelFooter .footer-btn-sub:hover { background: rgba(180,86,31,0.08); }
+#aopPanelFooter .edit-count { margin-left: auto; color: #8a7d63; font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* Hide the legacy layer/editor panel content — but ONLY once the new embedded
+ * panel has actually booted (js/panel.js adds body.aop-embed-ready in finishBoot).
+ * This is the fail-safe: if the embedded boot never runs (e.g. an old service
+ * worker serves a stale main.js with no window.AOP_HOST_MAP after a VERSION bump),
+ * the class is never added, so the legacy panel stays visible instead of leaving
+ * the user with NO layers at all (new panel empty + old panel hidden = blank).
+ * The #showXxx checkboxes stay in the DOM (display:none keeps them checkable, so
+ * presets still drive layer visibility through them). Session tools (.aop-keep)
+ * stay visible; the new panel's own sections live under #aopPanelMount, so they
+ * are NOT matched by the direct-child selector below. Only index.html loads this. */
+body.aop-embed-ready #panelBody > #presetStatus,
+body.aop-embed-ready #panelBody > .panel-section:not(.aop-keep) { display: none !important; }
+body.aop-embed-ready .panel > #editDock { display: none !important; }
+
+/* Toast is appended to <body>, so it must stay global (not scoped to the mount). */
+.panel-toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  background: #2b2620; color: #fff; padding: 8px 14px; border-radius: 8px;
+  font-size: 13px; z-index: 10; box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+}

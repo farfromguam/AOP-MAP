@@ -32,7 +32,7 @@
 //   3. reconcile DATA_ASSETS below with `ls website/data/`
 // Shell HTML + copy JSON self-heal (stale-while-revalidate), so a missed bump is
 // less dangerous than before — but bulky GeoJSON only refreshes on a bump.
-const VERSION = 'v31'; // keep in sync with #appVersion in index.html
+const VERSION = 'v34'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
@@ -53,6 +53,9 @@ const SHELL_ASSETS = [
   // self-heals like the HTML shell; precached here for offline-first load.
   './css/app.css',
   './js/main.js',
+  // Right-panel swap (Stage 1): the embedded one-model panel + its scoped styles.
+  './css/panel-embed.css',
+  './js/panel.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',

@@ -140,6 +140,11 @@
       attributionControl: false
     });
 
+    // Right-panel swap (2026-06-05): expose the host map for the embedded
+    // one-model panel (js/panel.js). `map` is a top-level lexical const, not a
+    // window property, so the panel can't reach it without this. Additive only.
+    window.AOP_HOST_MAP = map;
+
     // Log style/glyph/source errors. Registered at construction (not inside the
     // 'load' handler) so failures during the INITIAL style + glyph load are caught
     // too — a load-handler registration misses everything before 'load' fires (L12).
@@ -1801,6 +1806,10 @@
     // Derived from LAYER_TOGGLES so adding a row above propagates everywhere
     // the preset machinery reads from.
     const PRESET_TOGGLE_IDS = LAYER_TOGGLES.map(([, , presetId]) => presetId);
+    // Right-panel swap (2026-06-05): expose the toggle registry so the embedded
+    // panel (js/panel.js) can map each of its layer nodes to the host checkbox
+    // that backs it (and drive visibility through it, keeping presets in sync).
+    window.AOP_HOST_LAYER_TOGGLES = LAYER_TOGGLES;
     const PRESET_SLIDER_IDS = ['landcover9Opacity', 'sfwdaOpacity', 'sfwdaMultiply'];
 
     const TUNABLE_LAYERS = {
@@ -3267,6 +3276,37 @@
       else renderFeatureList(layerKey);
       renderPoiTabIfActive();
     }
+
+    // Embedded-panel bridge: SET (not toggle) a feature's highlight to a desired
+    // state, through the host's own persistence + POI-tab refresh. The new right
+    // panel (js/panel.js) owns the ★ gesture and knows the target on/off state; it
+    // passes the FEATURE_LIST_LAYERS key + the feature's properties, and we derive
+    // the id with the same idField the override store uses — so a panel ★ persists
+    // exactly like the legacy ★ and surfaces in THIS existing left-rail POI tab
+    // (a starred drawn POI is the visible case; other destination layers already
+    // list unconditionally). Returns false if the layer has no host runtime/id,
+    // so the panel can fall back to its own persistence.
+    function setFeatureHighlight(layerKey, props, on) {
+      if (!props) return false;
+      const id = positionedFeatureIdFor(layerKey, { properties: props });
+      if (id == null) return false;
+      const item = findFeatureById(layerKey, id);
+      if (!item || !item.feature) return false;
+      const fp = item.feature.properties = item.feature.properties || {};
+      const next = on === true;
+      if (fp.highlight !== next) {
+        fp.highlight = next;
+        persistFeatureFlagChange(layerKey, item.feature, { highlight: next });
+        if (layerKey === 'editorPois') refreshEditorSource();
+        else renderFeatureList(layerKey);
+      }
+      renderPoiTabIfActive();
+      return true;
+    }
+    window.AOP_HOST_SET_HIGHLIGHT = function (layerKey, props, on) {
+      try { return setFeatureHighlight(layerKey, props, on); }
+      catch (e) { console.error('AOP_HOST_SET_HIGHLIGHT failed', e); return false; }
+    };
 
     // Mirror of toggleFeatureHighlight for the lock flag. Locked features
     // stay rendered and stay starrable, but the row's ✋ move handle and

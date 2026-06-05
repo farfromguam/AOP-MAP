@@ -15,6 +15,81 @@ TL;DR:
   `PANEL_MODEL` object through ONE renderer. Prove it one feature at a time;
   swap into `index.html` once it earns it. Reversible; live app keeps working.
 - First feature (user-chosen): **layer visibility toggle.** SHIPPED + verified.
+
+- **2026-06-05 STAGE-2 FINISH PASS — store reconciliation + ★→POI bridge + SFWDA
+  toggle (CODE ONLY, UNCOMMITTED, v33→v34).** User, after weighing whether the
+  editor is worth maintaining, chose **finish the full editor**; for the POI
+  surface chose **option 1: wire ★ → the existing host POI tab, keep current
+  directory behavior** (not the deferred "starts-empty/starred-only" collapse).
+  Mapped `main.js` with 2 Explore agents + observation, then shipped three
+  finishes, each verified headless (served :8077, SW blocked, 0 real console
+  errors):
+  **(1) STORE RECONCILIATION (the real data-loss bug) — `panel.js`.** In embed
+  mode the panel backed its lists with its OWN fetch, so any `setData(LOADED[src])`
+  REPLACED a host-shared source and WIPED the host's persisted overrides
+  (`aop_positioned_features_v1` drag/highlight/lock/size on buildings·cemeteries·
+  visitor-context·brand-logos; every drawn POI in `aop_editor_pois_v1` →
+  editor-poi). Fix: `seedLoadedFromHost()` — for each host-shared *editable*
+  source the panel now seeds `LOADED[src]` from the host's CURRENT source data
+  (`getSource(id).serialize().data` / `_data`), so every existing setData path
+  (boot replay :210, delete, move, create) round-trips host overrides losslessly.
+  `whenHostReady` now also waits for the LAST-added shared sources (`editor-poi`,
+  `brand-logos`) so the seed reads complete host data. Verifier
+  `/tmp/verify_phase1_stores.py` **9/9**: seeded both host store types, proved
+  `LOADED` mirrors them, and proved a real panel create (editor-poi) + a real
+  panel delete (fema-buildings) PRESERVE the seeded host data (pre-fix both wiped).
+  **(2) ★ → EXISTING POI TAB (option 1) — `main.js` + `panel.js`.** `main.js` gains
+  ONE additive bridge `window.AOP_HOST_SET_HIGHLIGHT(layerKey, props, on)` =
+  `setFeatureHighlight` (sibling of `toggleFeatureHighlight`): derives the id via
+  the host's own `positionedFeatureIdFor`, sets `highlight`, persists through the
+  host store (`persistFeatureFlagChange`), and refreshes the POI tab
+  (`renderPoiTabIfActive`). `panel.js` `toggleItemStar` routes through it in embed
+  mode via `HOST_HIGHLIGHT_LAYER = {buildings,cemeteries,visitorContext,editorPois}`
+  (trails have NO host feature-list runtime; brand logos are off the ★ axis per
+  `star_driven_poi_list.md` #3; user features stay panel-side). The visible win:
+  the host POI tab gates **drawn POIs** on `highlight` (`main.js:1308`), so a panel
+  ★ on a drawn POI now surfaces it in the existing left-rail POI tab and persists
+  (survives reload). Verifier `/tmp/verify_phase2_poi.py` **9/9**: seeded an
+  un-starred drawn POI (absent from the tab) → panel ★ → appears in `#poiList` +
+  `highlight=true` in `aop_editor_pois_v1` (host store) → un-star → leaves again.
+  **Note (deferred, by user choice):** the host POI tab still lists facilities/
+  trails/cemeteries/events/visitor-support UNCONDITIONALLY — the locked
+  `star_driven_poi_list.md` design (★ = the one gate, tab = the starred set,
+  starts empty) is the bigger "collapse the scaffolding" work, still gated on its
+  author→DB / bake forks. Option 1 deliberately keeps current behavior.
+  **(3) SFWDA PAPER TOGGLE wired in embed mode — `panel.js`.** The host SFWDA
+  paper map is a 36-tile `sfwda-tile-*` grid warp driven specially inside
+  `updateLayerVisibility` off `#showSfwda` (its `LAYER_TOGGLES` entry has an EMPTY
+  layer set), so the panel's layer-intersection bridge couldn't find it and its
+  node pointed at a non-existent `sfwda-paper` layer → the toggle was dead.
+  Fix: `EXPLICIT_HOST_TOGGLE = {sfwda:'showSfwda'}` in `buildVisibilityBridge`
+  maps that node to the host checkbox directly. Verifier
+  `/tmp/verify_phase4_sfwda.py` **7/7**: panel eye flips `#showSfwda` → host shows
+  36/36 tiles → off → 0/36. (The panel's own single-image alignment editor stays
+  standalone-only; the host owns the real 6×6 warp.)
+  **NO REGRESSION:** `/tmp/verify_swap.py` still **12/12**. v33→**v34**
+  (`sw.js` + `#appVersion`). Files: `website/js/panel.js`, `website/js/main.js`
+  (+2 additive: the highlight bridge), `website/sw.js`, `website/index.html`.
+  **(4) DEAD-CODE CLEANUP — NOT done this pass; the card's Stage-2 delete list is
+  CORRECTED by observation.** The owed "delete `buildEditorTree`/`renderFeatureList`/
+  `renderEditDock` + `SECTION_RUNTIME`/`FEATURE_LIST_LAYERS`-as-panel" is partly
+  WRONG: `renderFeatureList` (22 callers), `FEATURE_LIST_LAYERS` (17 readers) and
+  `featureListRuntime` are **load-bearing for the LIVE POI tab + calendar +
+  search** (not just the hidden panel); `SECTION_RUNTIME` does not exist (it's
+  `featureListRuntime`); `buildEditorTree` (`main.js:583`, 1 caller :2884) REGISTERS
+  runtime targets the live subsystems read (see `main.js:1091`) → load-bearing,
+  do NOT delete. Genuinely DEAD: `buildInlineEditor` (`main.js:4221`, ZERO callers,
+  comment says "safe to delete") — but it is INTERLEAVED with sibling helpers
+  (`makeEditorLabel:4385`/`makeEditorAction:4391`/`describeGeometry:4405`) and LIVE
+  functions (`deleteEditorFeature:4454`/`duplicateEditorFeature:4466`, which call
+  `renderEditDock`/`renderFeatureList`), so it is not a clean single-block delete.
+  `renderEditDock` (`:3984`) has 4 active callers (3973/3981/4459/4483) rendering
+  into the hidden `#editDock`; `buildEditDock` (`:4048`) has 1 caller (`:3993`).
+  The dead code renders HARMLESSLY into hidden DOM. **Disposition:** the user
+  picked option 1 (POI), not the dead-code option; deleting interleaved dead/live
+  code in a 10k-line file is risk > reward for hygiene and was NOT done — it wants
+  its own carefully-verified pass with this ledger in hand.
+
 - **2026-06-04 update:** user confirmed this IS the replacement for the index
   panel ("make sure it has all the layers"). **Slice 11** ported the full
   ~29-layer index-page set into the live page's provenance sections. See below.
@@ -174,6 +249,84 @@ TL;DR:
   or a committed-override-layer decision if the served files ever become build
   outputs; commit is the user's git gate (incl. whether to track
   `aop_user_features.geojson`).
+
+- **2026-06-05 SWAP "NO LAYERS" BUG — diagnosed + fixed by graceful fallback
+  (UNCOMMITTED, v32→v33).** User: *"review our new edit panel integration… our
+  layers are visible. Currently I do not see any layers. figure this out before
+  deleting the old one fully."* **Diagnosed by observation, not theory.** The
+  Stage-1 files were correct (clean-served panel = 5 sections / 32 layer rows / 0
+  errors; `verify_swap.py` 12/12). The blank came from the **v31→v32 service-worker
+  transition**: `sw.js` serves `/js/` + `/css/` **stale-while-revalidate**, so on
+  the first reload after the bump the OLD v31 SW serves a **stale `main.js`** (no
+  `window.AOP_HOST_MAP`) while the **new `panel-embed.css` loads fresh and hides
+  the legacy panel**. The embedded panel polls for the host map, never finds it,
+  and `#aopPanelMount` stays EMPTY → **empty new panel + hidden old panel = zero
+  layers.** Reproduced exactly by serving a host-map-stripped `main.js` (`hostMap:
+  false`, `newPanelNodeGroups:0`, `legacyDisplay:none`, `legacyNodeRows:5`).
+  **Root flaw:** `panel-embed.css` hid the legacy panel *unconditionally*,
+  independent of whether the new panel actually mounted. **Fix (fail-safe
+  graceful degradation):** the legacy-hide rules are now gated on
+  `body.aop-embed-ready`, a class `panel.js` adds in `finishBoot()` **only on a
+  successful embedded boot**. If the boot never runs (stale `main.js`, JS error,
+  20s host-map timeout), the class is never added → the **old panel stays
+  visible**, so the user always has layers. Also: `whenHostReady` now logs a clear
+  console error on timeout (was silent), and `VERSION` v32→**v33** (`sw.js` +
+  `#appVersion`) so a stuck browser cleanly reinstalls a consistent asset set
+  (skipWaiting + clients.claim already present). **Verified by observation** (served
+  :8077): stale-`main.js` repro now `legacyDisplay:block` / **7 legacy sections +
+  30 layer toggles visible** (graceful); normal case `aop-embed-ready:true` / **32
+  new-panel rows / legacy hidden / 0 errors**; `verify_swap.py` still **12/12, 0
+  errors**; pixels confirm the new panel renders all sections + the live map.
+  Files: `website/js/panel.js`, `website/css/panel-embed.css`, `website/sw.js`,
+  `website/index.html`. Old panel deliberately KEPT (now the fallback) per the
+  user's "before deleting the old one fully" — Stage 2 cleanup still owed. Commit
+  is the user's git gate.
+
+- **2026-06-05 SWAP INTO index.html — Stage 1 SHIPPED + verified (UNCOMMITTED,
+  v31→v32).** User: *"do the swap into index.html."* The long-deferred swap. Put
+  the one real fork to the user → **keep everything** (the new panel drives the
+  EXISTING live map; retire the patchwork; don't lose search/calendar/presets/
+  PWA). Mapped the 10k-line `main.js` with 3 parallel Explore agents + observation.
+  **Two facts made it safe:** (a) **78 of the new panel's 85 layers already exist
+  in main.js with identical ids** (its paint was ported verbatim), so the new
+  panel can drive the live layers by id; (b) the host's `setLayerVisibility`/
+  `applyPreset`/`updateLayerVisibility` are reachable globals and presets work by
+  setting the static `#showXxx` checkboxes then calling `updateLayerVisibility`.
+  **Architecture (user's choice realized): main.js stays the host** — owns the
+  map, the base layers, search, calendar, presets, PWA, terra-draw — and
+  **`panel.js` gains an EMBEDDED mode** that attaches to it and is ONLY the right
+  panel. **Shipped:** `panel.js` dual-mode boot (`window.AOP_PANEL_EMBED` →
+  attach to `window.AOP_HOST_MAP`, add ONLY its own draw layers, fetch data for
+  lists, render into `#aopPanelMount`, poll for a host layer since main.js's load
+  is async); a **visibility bridge** (node → host checkbox via
+  `window.AOP_HOST_LAYER_TOGGLES`; eye-toggle sets the checkbox + dispatches its
+  change event so visibility flows through the host's machinery → **presets +
+  panel never desync**; preset buttons resync the panel); `main.js` +2 additive
+  export lines (`AOP_HOST_MAP`, `AOP_HOST_LAYER_TOGGLES`); `index.html` (load
+  panel.js after main.js, `#aopPanelMount` + Export/Clear footer, session-tools
+  tagged `.aop-keep`); **`css/panel-embed.css`** (NEW — the proven right_panel.html
+  styles SCOPED under `#aopPanelMount` so id-specificity beats app.css's old-panel
+  classes; + hides the legacy toggle/editor content while keeping its checkboxes
+  in the DOM for presets); v31→v32 (`#appVersion` + `sw.js`, panel assets
+  precached). **Verified by observation** (`/tmp/verify_swap.py`, SW blocked,
+  :8077): **12/12, 0 real console errors** — new panel mounted on the LIVE page;
+  eye-toggle flips the live layer + syncs `#showLandcover`; **Topo preset applies
+  + panel resyncs**; **search 4 results**; calendar opens; **CRUD-create a POI →
+  into the export/save payload**; legacy hidden, session-tools kept. Pixels:
+  `brain/output/swap_live_panel.png` (panel correct; left rail + event schedule +
+  countdown + map intact). **No regression to standalone** right_panel.html
+  (`verify_crud_full` 16/16, `verify_panel_save` 14/14). **Stage 2 (owed, deferred):**
+  the patchwork is HIDDEN, not deleted — a cleanup pass should remove
+  `buildEditorTree`/`renderFeatureList`/`renderEditDock` + the
+  `LAYER_TOGGLES`-render/`SECTION_RUNTIME`/`FEATURE_LIST_LAYERS`-as-panel/edit-dock
+  code (main.js still runs them into hidden DOM); the new POI-star left sidebar is
+  skipped in embed mode so index's own POI tab still owns highlights (two systems
+  to reconcile); panel `setData` on the shared sources overwrites the host's
+  `aop_positioned_features_v1` drag overrides + `aop_editor_pois_v1` POIs for an
+  edited layer (store reconciliation — the new panel should read host data, or the
+  old stores retire); the SFWDA-paper node (host uses a 6×6 tile warp, not the
+  panel's single image) + the paint-tuning sliders are not wired in embed mode.
+  Commit is the user's git gate.
 
 - **2026-06-04 CRUD FOR ALL BASE THINGS — SHIPPED + verified (UNCOMMITTED).**
   User (MVP push): *"this is CRUD for all our base things and the ability to

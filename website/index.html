@@ -37,6 +37,9 @@
   </script>
   <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
   <link href="./css/app.css" rel="stylesheet" />
+  <!-- Right-panel swap (Stage 1): scoped styles for the embedded one-model panel
+       (js/panel.js → #aopPanelMount) + hides the legacy toggle/editor content. -->
+  <link href="./css/panel-embed.css" rel="stylesheet" />
 </head>
 <body>
   <div id="map"></div>
@@ -221,7 +224,7 @@
          foldVersionIntoInfoControl() RELOCATES it into the bottom-left info ⓘ
          so the corner reads "ⓘ v18" (pwa_qa_2 item 3). Keep this string in sync
          with VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v31</div>
+    <div class="util-version" id="appVersion" title="App build version">v34</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
@@ -248,7 +251,7 @@
     <div class="panel-body" id="panelBody">
       <small id="presetStatus">Park preset active.</small>
 
-      <section class="panel-section collapsed" data-section="session-tools">
+      <section class="panel-section collapsed aop-keep" data-section="session-tools">
         <div class="section-header">
           <span class="section-label">Session tools</span>
           <button type="button" class="section-toggle" aria-expanded="false">
@@ -505,6 +508,17 @@
         </div>
       </section>
 
+      <!-- Right-panel swap (Stage 1, 2026-06-05): the one-model panel
+           (js/panel.js, embedded mode) renders into #aopPanelMount, replacing
+           the hidden legacy toggle/editor sections above. The footer is its
+           save path (Export edits → mvp/scripts/bake_panel_overrides.py). -->
+      <div id="aopPanelMount"></div>
+      <div class="panel-footer" id="aopPanelFooter">
+        <button type="button" id="exportEdits" class="footer-btn" disabled>⤓ Export edits</button>
+        <button type="button" id="clearEdits" class="footer-btn footer-btn-sub" disabled>Clear</button>
+        <span id="editCount" class="edit-count">no edits</span>
+      </div>
+
     </div>
     <!-- Unified edit dock — pinned to the panel bottom; shown only when a
          feature is selected (a row's ▸ chevron or a map-click). Replaces the
@@ -518,6 +532,12 @@
   <script src="./vendor/terra-draw.umd.js"></script>
   <script src="./vendor/terra-draw-maplibre-gl-adapter.umd.js"></script>
   <script src="./js/main.js"></script>
+
+  <!-- Right-panel swap (Stage 1): the one-model panel attaches to the live map
+       (window.AOP_HOST_MAP from main.js) and renders into #aopPanelMount. Config
+       is set BEFORE panel.js loads; panel.js waits for the host's layers. -->
+  <script>window.AOP_PANEL_EMBED = { mount: 'aopPanelMount' };</script>
+  <script src="./js/panel.js"></script>
 
   <!-- PWA: "Install app" button + iOS hint now live in the left rail (.left-controls,
        see the float-group block up top). Hidden by default; on Chromium it shows once

@@ -22,7 +22,21 @@
   // model about the panel and lets the same model swap into index.html later.
   const REGION_BOUNDS = [[-85.782935283, 35.067164188], [-85.717154097, 35.117928496]];
 
-  const map = new maplibregl.Map({
+  // Two modes, ONE model + renderer.
+  //   Standalone (right_panel.html): create our own map, add every layer, own
+  //     the whole page. (Unchanged — this is the proven isolated prototype.)
+  //   Embedded  (index.html sets window.AOP_PANEL_EMBED before loading us): the
+  //     live app (main.js) already owns the map, the ~78 shared layers, presets,
+  //     search and the calendar. We attach to window.AOP_HOST_MAP and act as
+  //     ONLY the right panel: drive the host's layers (through its own
+  //     setLayerVisibility/checkboxes so presets stay in sync), add just our own
+  //     draw layers, and render into the configured mount.
+  const EMBED = (typeof window !== 'undefined' && window.AOP_PANEL_EMBED) || null;
+  const EMBEDDED = !!EMBED;
+  const MOUNT_ID = (EMBED && EMBED.mount) || 'panelBody';
+  function panelHost() { return document.getElementById(MOUNT_ID); }
+
+  const map = EMBEDDED ? window.AOP_HOST_MAP : new maplibregl.Map({
     container: 'map',
     style: {
       version: 8,
@@ -732,9 +746,25 @@
       on ? 'Surfaced under POI (left) — click to remove' : 'Click to surface under POI (left)',
       starSvg(on), onToggle);
   }
+  // Panel node id -> host FEATURE_LIST_LAYERS key (embedded mode). Starring a
+  // feature in one of these routes the ★ through the host's own highlight store
+  // (window.AOP_HOST_SET_HIGHLIGHT) so it persists like the legacy ★ AND surfaces
+  // in the EXISTING left-rail POI tab the user keeps — a starred drawn POI is the
+  // visible case (the host's POI tab gates drawn POIs on highlight). Trails have
+  // no host feature-list runtime; brand logos are off the ★ axis (decision #3).
+  const HOST_HIGHLIGHT_LAYER = { buildings: 'buildings', cemeteries: 'cemeteries', visitorContext: 'visitorContext', editorPois: 'editorPois' };
+  function hostHighlight(node, item, on) {
+    if (!EMBEDDED || isUserFeature(item.props)) return false;     // user-drawn features stay panel-side
+    const lk = HOST_HIGHLIGHT_LAYER[node.id];
+    if (!lk || typeof window.AOP_HOST_SET_HIGHLIGHT !== 'function') return false;
+    return window.AOP_HOST_SET_HIGHLIGHT(lk, item.props, on) === true;
+  }
   function toggleItemStar(node, item) {
-    item.props.highlight = !(item.props.highlight === true);
-    commitChange(node, item);                       // highlight persists (view state; baker skips it)
+    const on = !(item.props.highlight === true);
+    item.props.highlight = on;
+    // Route through the host where supported (persists + drives the POI tab);
+    // otherwise persist panel-side (user features, standalone, unsupported layers).
+    if (!hostHighlight(node, item, on)) commitChange(node, item);
     rerender();
   }
 
@@ -771,7 +801,7 @@
   }
 
   function rerender() {
-    const host = document.getElementById('panelBody');
+    const host = panelHost();
     const scroll = host.scrollTop;
     renderPanel(PANEL_MODEL, host);
     host.scrollTop = scroll;                     // keep place across the re-render
@@ -1460,8 +1490,103 @@
   // --- Model -> map ----------------------------------------------------------
   function setLayerVisibility(node, on) {
     node.visible = on;
+    if (EMBEDDED) {
+      const cb = NODE_TOGGLE[node.id];
+      if (cb) {                                  // route through the host's own toggle (keeps presets in sync)
+        cb.checked = on;
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+    }
     for (const id of node.mapLayers) {
       if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');
+    }
+  }
+
+  // --- Embedded visibility bridge --------------------------------------------
+  // In embedded mode the host (main.js) owns layer visibility through its own
+  // checkboxes + setLayerVisibility/updateLayerVisibility, and presets toggle
+  // those checkboxes. A panel node drives visibility by flipping the matching
+  // host checkbox (found by intersecting the node's mapLayers with the host's
+  // window.LAYER_TOGGLES) and dispatching its change event — the host machinery
+  // does the rest, so panel + presets share one source of truth and never
+  // desync. Nodes the host doesn't toggle (our own draw layers) fall back to
+  // driving the map directly (the branch above).
+  const NODE_TOGGLE = {};   // nodeId -> host checkbox element (embedded only)
+  function eachLayerNode(fn) {
+    const walk = (node) => { if (node.kind === 'layer') fn(node); if (node.children) node.children.forEach(walk); };
+    for (const section of PANEL_MODEL.sections) section.nodes.forEach(walk);
+  }
+  // The host's LAYER_TOGGLES is a top-level lexical const (not a window prop), so
+  // main.js re-exposes it as window.AOP_HOST_LAYER_TOGGLES; fall back to the bare
+  // global if a future host exposes it differently.
+  function hostToggles() {
+    if (typeof window !== 'undefined' && window.AOP_HOST_LAYER_TOGGLES) return window.AOP_HOST_LAYER_TOGGLES;
+    try { return (typeof LAYER_TOGGLES !== 'undefined') ? LAYER_TOGGLES : []; } catch (e) { return []; }
+  }
+  // A few host toggles drive special rendering with NO shared layer set: the
+  // SFWDA paper map is a grid of `sfwda-tile-*` layers warped + shown inside the
+  // host's updateLayerVisibility off its checkbox (its LAYER_TOGGLES entry has an
+  // empty layer list). The layer-intersection match below can't see those, so map
+  // such nodes to the host checkbox by id — the eye toggle then drives the host's
+  // own machinery exactly like every other layer.
+  const EXPLICIT_HOST_TOGGLE = { sfwda: 'showSfwda' };
+  function buildVisibilityBridge() {
+    const toggles = hostToggles();
+    eachLayerNode((node) => {
+      const explicitId = EXPLICIT_HOST_TOGGLE[node.id];
+      if (explicitId) { const cb = document.getElementById(explicitId); if (cb) { NODE_TOGGLE[node.id] = cb; return; } }
+      if (!node.mapLayers || !node.mapLayers.length) return;
+      for (const entry of toggles) {
+        const checkbox = entry[0], layerIds = entry[1];
+        if (checkbox && layerIds && layerIds.some((id) => node.mapLayers.includes(id))) { NODE_TOGGLE[node.id] = checkbox; break; }
+      }
+    });
+  }
+  function hostLayerVisible(node) {
+    const id = (node.mapLayers || []).find((x) => map.getLayer(x));
+    return id ? map.getLayoutProperty(id, 'visibility') !== 'none' : !!node.visible;
+  }
+  // Pull the host's CURRENT visibility into the model (after attach + after a preset).
+  function initVisibilityFromHost() {
+    eachLayerNode((node) => {
+      const cb = NODE_TOGGLE[node.id];
+      node.visible = cb ? cb.checked : hostLayerVisible(node);
+    });
+  }
+  // After a preset runs, re-read the resulting visibility + repaint the panel.
+  function wirePresetResync() {
+    for (const id of ['presetPark', 'presetTopo', 'presetTrace', 'presetSatellite']) {
+      const btn = document.getElementById(id);
+      if (btn) btn.addEventListener('click', () => setTimeout(() => { initVisibilityFromHost(); rerender(); }, 0));
+    }
+  }
+
+  // --- Embedded store reconciliation -----------------------------------------
+  // In embedded mode the HOST (main.js) owns the shared GeoJSON sources and has
+  // already applied its OWN persisted overrides to them before addSource:
+  // drag positions / highlight / lock / icon-size from aop_positioned_features_v1
+  // (buildings · cemeteries · visitor-context · brand-logos) and every drawn POI
+  // from aop_editor_pois_v1 (editor-poi). The panel used to back its lists with
+  // its OWN fresh fetch of the same files; any panel setData(LOADED[src]) then
+  // REPLACED the live source and WIPED the host's overrides for every feature.
+  // Fix: for each host-shared *editable* source, seed the panel's working copy
+  // from the host's CURRENT source data instead of the fetch — so the panel
+  // lists what the host actually shows, and every panel setData round-trips the
+  // host's overrides losslessly. The panel's own draw source (userFeatures) is
+  // panel-owned and keeps its fetch.
+  function hostSourceData(src) {
+    const s = map.getSource(src);
+    if (!s) return null;
+    try { const ser = s.serialize(); if (ser && ser.data && typeof ser.data === 'object') return ser.data; } catch (_) { /* fall through */ }
+    return (s._data && typeof s._data === 'object') ? s._data : null;
+  }
+  function seedLoadedFromHost() {
+    const srcs = new Set();
+    eachLayerNode((n) => { if (n.items && n.items.source && n.items.source !== 'userFeatures') srcs.add(n.items.source); });
+    for (const src of srcs) {
+      const data = hostSourceData(src);
+      if (data && data.type === 'FeatureCollection') LOADED[src] = JSON.parse(JSON.stringify(data));
     }
   }
 
@@ -1592,19 +1717,35 @@
     });
   }
 
-  map.on('load', async () => {
-    // Fetch every GeoJSON source in PARALLEL first (27 files, one is ~14 MB),
-    // then add sources + layers in declared order so draw-order is preserved.
+  // Fetch every GeoJSON source's data into LOADED (the item lists + create/edit
+  // read it). Shared by both boot modes; one source is ~14 MB so fetch parallel.
+  async function fetchAllData() {
     await Promise.all(MAP_DATA.map(async (set) => {
       if (set.raster || set.rasterDem || set.image || !set.url) return;
       try {
         let data = await (await fetch(set.url)).json();
         if (set.resolve) data = set.resolve(data);
         set.__data = data;
+        LOADED[set.source] = data;
       } catch (err) {
         console.error('failed to fetch', set.source, err);
       }
     }));
+  }
+
+  // The draw-draft layer (dashed line + vertex dots) used while drawing.
+  function addDraftLayers() {
+    if (map.getSource('__draft')) return;
+    map.addSource('__draft', { type: 'geojson', data: emptyFC() });
+    map.addLayer({ id: '__draft-line', source: '__draft', type: 'line', filter: ['==', ['geometry-type'], 'LineString'],
+      paint: { 'line-color': '#b4561f', 'line-width': 2, 'line-dasharray': [2, 1] } });
+    map.addLayer({ id: '__draft-pts', source: '__draft', type: 'circle', filter: ['==', ['geometry-type'], 'Point'],
+      paint: { 'circle-radius': 4, 'circle-color': '#b4561f', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1 } });
+  }
+
+  // STANDALONE boot — we own the map: add every source + layer ourselves.
+  async function bootStandalone() {
+    await fetchAllData();
     for (const set of MAP_DATA) {
       try {
         if (set.images) await Promise.all(set.images.map(loadMapImage));
@@ -1617,7 +1758,6 @@
         } else {
           const data = set.__data !== undefined ? set.__data : set.data;
           if (data === undefined) continue;          // fetch failed above (already logged)
-          LOADED[set.source] = data;
           map.addSource(set.source, { type: 'geojson', data });
         }
         for (const layer of set.layers) map.addLayer(Object.assign({ source: set.source }, layer));
@@ -1625,22 +1765,78 @@
         console.error('failed to load', set.source, err);
       }
     }
-    // In-progress draw layer (dashed line + vertex dots while drawing).
-    map.addSource('__draft', { type: 'geojson', data: emptyFC() });
-    map.addLayer({ id: '__draft-line', source: '__draft', type: 'line', filter: ['==', ['geometry-type'], 'LineString'],
-      paint: { 'line-color': '#b4561f', 'line-width': 2, 'line-dasharray': [2, 1] } });
-    map.addLayer({ id: '__draft-pts', source: '__draft', type: 'circle', filter: ['==', ['geometry-type'], 'Point'],
-      paint: { 'circle-radius': 4, 'circle-color': '#b4561f', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1 } });
+    addDraftLayers();
     applyStoredOverrides();                      // replay saved edits before first paint
     applyAllVisibility();
-    renderPanel(PANEL_MODEL, document.getElementById('panelBody'));
-    renderLeftPanel();                           // POI / highlights sidebar (empty until the user stars)
-    wireExportControl();                         // the Export edits / Clear footer
+    finishBoot();
+  }
+
+  // EMBEDDED boot — the host (main.js) already added the ~78 shared layers. We
+  // only add our OWN draw surfaces (userFeatures + draft), bridge visibility to
+  // the host's toggles, and read the host's current visibility into the model.
+  async function bootEmbedded() {
+    await fetchAllData();
+    // Add only the userFeatures source + layers (the host has no such source).
+    const uf = MAP_DATA.find((s) => s.source === 'userFeatures');
+    if (uf && !map.getSource('userFeatures')) {
+      map.addSource('userFeatures', { type: 'geojson', data: uf.__data !== undefined ? uf.__data : emptyFC() });
+      for (const layer of uf.layers) { try { map.addLayer(Object.assign({ source: 'userFeatures' }, layer)); } catch (e) { /* ignore */ } }
+    }
+    addDraftLayers();
+    seedLoadedFromHost();                         // back lists with the host's live data (keeps host overrides)
+    buildVisibilityBridge();                     // node -> host checkbox
+    applyStoredOverrides();                      // replay saved edits onto the host's sources
+    initVisibilityFromHost();                    // model visibility = the host's current state
+    wirePresetResync();                          // re-read after a preset
+    finishBoot();
+  }
+
+  function finishBoot() {
+    renderPanel(PANEL_MODEL, panelHost());
+    renderLeftPanel();                           // POI / highlights sidebar (no-op if the page has no #leftBody)
+    wireExportControl();                         // the Export edits / Clear footer (no-op if absent)
+    // Embedded only: signal a SUCCESSFUL mount. css/panel-embed.css gates hiding
+    // the legacy panel on body.aop-embed-ready, so the old panel is hidden ONLY
+    // once the new one is actually up. If the embedded boot never runs (e.g. a
+    // stale main.js with no window.AOP_HOST_MAP served by an old service worker
+    // after a VERSION bump), this class is never added → the legacy panel stays
+    // visible instead of leaving the user with NO layers at all. Fail safe.
+    if (EMBEDDED && document.body) document.body.classList.add('aop-embed-ready');
     window.__panelReady = true;                  // end-of-boot signal for verifiers
-  });
+  }
+
+  // Wait until the host map has its layers added (its 'load' handler is async, so
+  // we can't just listen for 'load' — poll for a known shared layer instead).
+  function whenHostReady(cb) {
+    // Wait for a known shared LAYER (host 'load' handler finished) AND for the
+    // LAST-added shared sources (editor-poi, brand-logos) to exist — seedLoadedFromHost
+    // reads host source data, so every shared source the panel lists must be up.
+    const ready = () => map && map.getLayer && map.getLayer('aop-trail-network')
+      && map.getSource && map.getSource('editor-poi') && map.getSource('brand-logos');
+    if (ready()) return cb();
+    const t = setInterval(() => { if (ready()) { clearInterval(t); cb(); } }, 120);
+    setTimeout(() => {                            // give up after 20s (host failed to load)
+      clearInterval(t);
+      if (!window.__panelReady) {
+        // Host map never came up — almost always a stale main.js (no
+        // window.AOP_HOST_MAP) served by an old service worker after a VERSION
+        // bump. The legacy panel is still visible (we never added
+        // 'aop-embed-ready'), so this is not a blank screen — just say why.
+        console.error('AOP panel (embedded): host map not ready after 20s — ' +
+          'window.AOP_HOST_MAP is missing (likely a stale service-worker cache ' +
+          'of main.js). The legacy panel is kept visible; hard-reload to update.');
+      }
+    }, 20000);
+  }
+
+  if (EMBEDDED) {
+    whenHostReady(bootEmbedded);
+  } else {
+    map.on('load', bootStandalone);
+    window.map = map;                            // standalone exposes its own map for verifiers
+  }
 
   // Expose for verifiers / console inspection (bare globals, harness-friendly).
-  window.map = map;
   window.PANEL_MODEL = PANEL_MODEL;
   window.LOADED = LOADED;
 })();
