@@ -241,6 +241,60 @@ five canonical fields. Dead `userFeatureFields` / `renderNoteField` removed.
 - In-editor edits to Name/Description are in-memory (persistence is the rebuild's
   separate owed item).
 
+## Save path (edit → diff → export → re-bake) — SHIPPED 2026-06-04
+
+The canonical schema unlocked the save path: because every served feature now
+carries a canonical `id`, the browser editor and a Python baker can name the same
+feature without sharing code. There is no DB in prod — values are served from
+JSON — so "save" is a re-bake of the served files, not a write to a database.
+
+The loop (user chose **diffs**, not full-file replace, so git diffs stay small
+and raw→core→publish survives):
+
+1. **Edit → localStorage diff.** `website/js/panel.js` saves to
+   `aop_panel_overrides_v1`: a served edit is a `{properties, geometry}` patch
+   keyed `"<source>:<canonical id>"`; a drawn feature is kept whole in
+   `created[]`; a delete in `deleted[]`. Replayed onto the fetched collections at
+   boot (`applyStoredOverrides`). `highlight` (the star) is VIEW state — saved
+   for convenience, **never baked**.
+2. **Export.** The panel footer's **⤓ Export edits** downloads the diff JSON
+   (schema `aop-panel-overrides-v1`, carrying a `sources` map = MapLibre source
+   id → filename so the baker knows which file to touch).
+3. **Re-bake.** `mvp/scripts/bake_panel_overrides.py <export.json>` merges the
+   diffs into `website/data/*.geojson`: identity/facet props + moved geometry
+   onto the matched feature (stamping `last_checked`, the source-register honest
+   minimum for an edit), drawn features appended to **their home layer's file**
+   (source-aware — see below) with editor provenance, deletes removed.
+   Idempotent; `--dry-run` / `--no-stamp`.
+4. **Commit, then Clear.** Review the git diff, commit (the user's gate), then
+   **Clear** drops the now-redundant local diffs.
+
+**Source-aware created (2026-06-04, full CRUD).** A drawn feature is no longer
+confined to `aop_user_features.geojson`. Every editable single-geometry base
+layer exposes a `+`, so you can author a building straight into the buildings
+layer; that feature carries `_src` (its home source). On bake the baker groups
+`created[]` by `_src` → that source's file (a building → `aop_buildings.geojson`,
+a plain draw → `aop_user_features.geojson` as the default). So a created feature
+bakes back to the SAME file the rest of its layer lives in, paints as that layer,
+and round-trips. Move + Delete are likewise available on every feature (lock-gated
+for existing reference data). `_id`/`_src`/`__locked`/`__group` are panel-internal
+and stripped on bake.
+
+**Write the canonical format (minified).** `rebake_canonical.py` writes every
+feature collection minified (`json.dump(..., separators=(",", ":"))`, one line).
+`bake_panel_overrides.py` now writes the SAME way (`write_fc`), so a bake touches
+only the changed bytes instead of reformatting a minified file into pretty-printed
+lines — a one-feature edit is a 1-line git diff (review with
+`git diff --word-diff`), not a 400+-line reformat. (The earlier `detect_indent`
+heuristic couldn't read a single-line file and fell back to indent=2; removed.)
+
+**Pipeline order with the canonical re-bake:** `rebake_canonical.py` re-bakes
+FROM `data/raw/` (pristine upstream), so it must run BEFORE
+`bake_panel_overrides.py` — canonical machine refresh first, human curation on
+top. Drawn features live in their own file, which the canonical re-bake never
+touches, so a draw is always safe. Full record:
+`tasks/04_event_app/right_panel_rebuild.md` ("SAVE PATH SHIPPED").
+
 ## Pointers
 
 - Renderer + current field logic: `website/js/panel.js`

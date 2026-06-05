@@ -4,6 +4,75 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+**2026-06-04 (CRUD FOR ALL BASE THINGS — SHIPPED + verified, CODE ONLY,
+UNCOMMITTED).** User MVP push: *"this is CRUD for all our base things and the
+ability to re-bake… the best you can do is 60% of any real task."* Found the real
+gap by RUNNING the app (`/tmp/observe_crud.py`): base/reference layers were
+**read + update-only** — Create lived only on the 3 generic draw groups, and
+Move/Delete only on user-drawn features. Closed it in `website/js/panel.js` +
+`mvp/scripts/bake_panel_overrides.py`, one-model/one-renderer held:
+**(C)** `nodeCreateSpec` synthesizes a create spec for every editable
+single-geometry base layer → the `+` is now on **10 layers** (was 3:
++buildings/aopTrails/cemeteries/boundaries/editorPois/visitorContext/pubTrails;
+brandLogos opted out, needs an icon picker). A draw writes INTO that layer's own
+source with the Common Minimum Schema, carrying `_id`(local)+`_src`(home
+source)+`__locked:false` (a just-drawn feature is editable even in a locked
+reference layer — the lock protects EXISTING data, not your new one).
+**(D+move)** `itemFields` gives EVERY editable item fly/copy/**move**/**delete**,
+move+delete lock-gated. **(re-bake source-aware)** `syncCreated` snapshots every
+`_id`-bearing feature across ALL sources; `applyStoredOverrides` replays each into
+its `_src` source (per-source dedup); the baker groups `created[]` by `_src`→file
+(drawn building → `aop_buildings.geojson`, plain draw → `aop_user_features.geojson`).
+**Diff-cleanliness fix (important):** the served files are MINIFIED
+(`rebake_canonical.py` writes `separators=(",",":")`); the old baker
+pretty-printed (`detect_indent` can't read a 1-line file → indent=2 fallback) so a
+1-feature edit produced a **438-line reformat**. Rewrote `write_fc` to match the
+canonical minified format + dropped `detect_indent` → a bake is now **1 minified
+line changed** (review via `git diff --word-diff`). **Verified by observation**
+(served :8077): `verify_crud_full.py` **16/16** (create into LOCKED buildings via
+`+`; unlocked+editable; `_src`+schema; not leaked to userFeatures; Move+Delete
+present; existing building lock→unlock→edit; export shape; **survives reload**),
+`verify_crud_dm.py` **4/4** (Delete records `source:id` in `deleted[]`, Move
+records a geometry diff), baker round-trip (bakes to the right file, schema +
+`last_checked` stamped, panel-keys stripped, **1-line minified diff**, **idempotent
+2nd run**, data tree restored), `verify_panel_save.py` **14/14 (no regression)**,
+model renders **5 sections/32 rows/85 map layers/0 real console errors**. One
+pre-existing flake (NOT this work, unchanged from HEAD): default-OFF `sfwda-paper`
+image layer sometimes logs `Failed to fetch (0) …webp` in headless though it serves
+200. Card: `right_panel_rebuild.md` ("CRUD FOR ALL BASE THINGS" entry).
+**Owed:** `__group` reassignment is now superseded by direct-create for filing
+into a base layer; the index.html swap; commit is the user's git gate.
+
+**2026-06-04 (RIGHT-PANEL SAVE PATH — SHIPPED, CODE + 1 NEW DATA FILE,
+UNCOMMITTED).** User: *"need a save path so that when we make updates we can
+export those and re-bake them. we dont have a db in prod all values are served
+from json."* Built the loop on the existing pattern (the live app already does
+this for drag-positioned layers via `aop_positioned_features_v1` +
+`export_positioned_features.py`; the new `panel.js` just wasn't wired to it).
+**Fork put to the user → DIFFS** (not full-file replace). **edit → localStorage
+diff → ⤓ Export edits → `mvp/scripts/bake_panel_overrides.py` → served GeoJSON →
+commit → Clear.** 4 files: `website/js/panel.js` (persistence block
+`aop_panel_overrides_v1`, keyed `"<source>:<canonical id>"` — the canonical `id`
+from the re-bake is the JS↔Python match key; `commitChange`/`syncCreated`/
+`persistDelete` + boot `applyStoredOverrides`; `highlight` saved but never baked),
+`right_panel.html` (pinned footer: Export edits / Clear / unsaved-count),
+`mvp/scripts/bake_panel_overrides.py` (NEW — merges the `aop-panel-overrides-v1`
+export into `website/data/*`; props+geometry+stamps `last_checked`, appends drawn
+features to their own file with editor provenance, idempotent, `--dry-run`),
+`website/data/aop_user_features.geojson` (NEW — drawn-feature home; its own file
+so `rebake_canonical.py` never clobbers a draw; `userFeatures` repointed
+url→here). **Order: `rebake_canonical.py` (from raw) FIRST, then
+`bake_panel_overrides.py` (curation on top).** Verified by observation
+(`/tmp/verify_panel_save.py`, served :8077): **14/14, 0 console errors** —
+create/rename/served-edit persist + **survive reload**, export shape correct,
+baker dry-run + real write correct, **2nd run idempotent no-op**; data tree
+restored after the write test. Card: `right_panel_rebuild.md` ("SAVE PATH
+SHIPPED" + slice #10 disk-persistence now ✅); design also in
+`research/common_feature_schema.md` ("Save path"). **Owed:** commit is the git
+gate (incl. whether to track `aop_user_features.geojson`); the
+`aop_panel_*_v1` vs live `aop_positioned_features_v1` reconcile is a swap-time
+item.
+
 **2026-06-04 (COMMON SCHEMA RE-BAKE — SHIPPED, CODE + DATA, UNCOMMITTED).** User
 flagged data-source schema variability as the thing hampering design: *"each one
 has a different schema … I should be able to edit a trail description the same

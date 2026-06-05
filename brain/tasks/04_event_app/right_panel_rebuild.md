@@ -128,7 +128,108 @@ TL;DR:
   `verify_panel_move.py` now fails — it asserted the star ON the item row (the
   superseded layout); replaced by `verify_generic_editor.py`. Not a regression.
 
-#aop #04_event_app #right_panel #rebuild #mvp #kiss
+- **2026-06-04 SAVE PATH SHIPPED — disk persistence + export + re-bake
+  (UNCOMMITTED).** User: *"need a save path so that when we make updates we can
+  export those and re-bake them. we dont have a db in prod all values are served
+  from json."* This is slice #10's "Disk persistence" fork, now built. **Fork
+  put to the user and ANSWERED: overrides = DIFFS** (not full-file replace) — the
+  store keeps only what changed so git diffs stay reviewable and raw→core→publish
+  survives. The loop (no DB; all JSON):
+  **edit → localStorage diff → "Export edits" → `mvp/scripts/bake_panel_overrides.py`
+  merges into `website/data/*.geojson` → review diff, commit → "Clear".**
+  Shipped (4 files): **(1)** `website/js/panel.js` — a persistence block
+  (`aop_panel_overrides_v1`): served edits store a `{properties,geometry}` diff
+  keyed `"<source>:<canonical id>"` (every feature now carries a canonical `id`
+  post-re-bake — that's the JS↔Python match key); drawn features are kept WHOLE
+  in `created[]`; deletes in `deleted[]`. `commitChange`/`persistDelete`/
+  `syncCreated` wired into the text/select/group/star/move/delete/create paths;
+  `applyStoredOverrides()` replays diffs onto the fetched collections at boot
+  (dedupes a baked draw by `_id`|`id` so no double-show). `highlight` is VIEW
+  state — saved for convenience but the baker never bakes it. **(2)**
+  `right_panel.html` — a pinned footer: **⤓ Export edits** (downloads the diff
+  JSON; `window.__overridesExport` hook) · **Clear** · an unsaved-count badge.
+  **(3)** `mvp/scripts/bake_panel_overrides.py` — consumes the export
+  (`aop-panel-overrides-v1`): applies identity/facet props + moved geometry to
+  the matched feature (stamps `last_checked`=today, the source-register honest
+  minimum), appends drawn features to their OWN file with editor provenance
+  (`source=AOP editor (drawn)`·`confidence=observed`·`permission=AOP
+  first-party`·`status=core`), removes deletes; idempotent (`--dry-run`,
+  `--no-stamp`). **(4)** `website/data/aop_user_features.geojson` — new served
+  destination for drawn features (its own file so `rebake_canonical.py`, which
+  re-bakes FROM `data/raw/`, never clobbers a draw). `userFeatures` source
+  repointed url→this file. **Pipeline order matters** (documented in the script):
+  `rebake_canonical.py` (machine refresh from raw) FIRST, then
+  `bake_panel_overrides.py` (human curation on top) — else the canonical re-bake
+  discards panel edits. **Verified by observation** (`/tmp/verify_panel_save.py`,
+  served :8077): **14/14, 0 console errors** — create→localStorage(1); rename
+  created + (unlocked) building both persist keyed correctly; export payload
+  carries schema+sources+created+edits; **both survive a reload** (replayed from
+  the store); baker dry-run reports the building edit + the drawn add. Real-write
+  test: building renamed + `last_checked` stamped, drawn feature lands
+  canonical-first with no panel-internal keys, **2nd run is a true no-op**
+  (idempotent); data tree restored after. **Owed/next:** persist is its own
+  `aop_panel_*_v1` key (not yet reconciled with the live app's
+  `aop_positioned_features_v1` — that's the swap-time merge); the
+  `rebake_canonical.py`→`bake_panel_overrides.py` ordering wants a wrapper script
+  or a committed-override-layer decision if the served files ever become build
+  outputs; commit is the user's git gate (incl. whether to track
+  `aop_user_features.geojson`).
+
+- **2026-06-04 CRUD FOR ALL BASE THINGS — SHIPPED + verified (UNCOMMITTED).**
+  User (MVP push): *"this is CRUD for all our base things and the ability to
+  re-bake… the best you can do is 60% of any real task."* Observed the real gap
+  by running the app (`/tmp/observe_crud.py`): the base/reference layers were
+  **read + update-only** — Create lived ONLY on the 3 generic draw groups
+  (Points/Lines/Polygons), and Move/Delete were handed ONLY to user-drawn
+  features (`itemFields` gave reference items just fly+copy). So you could not
+  add a building/trail/POI/callout, nor delete/move one. Closed it inside the one
+  model/one renderer:
+  **(C)** every editable single-geometry base layer now synthesizes a `create`
+  spec (`nodeCreateSpec` — geom from `nodeGeom`, cemeteries→Point marker,
+  `brandLogos` opted out via `CREATE_BLOCK` since a logo needs an icon picker), so
+  the `+` now appears on **10 layers** (was 3): +cemeteries/boundaries/buildings/
+  aopTrails/editorPois/visitorContext/pubTrails. A draw writes a new feature
+  straight INTO that layer's own source carrying the Common Minimum Schema
+  (`canonicalDefaults`), so it paints as that layer and bakes back to that
+  layer's file. Created features carry `_id` (local) + `_src` (home source) +
+  `__locked:false` (a feature you just drew is editable even inside a locked
+  reference layer — the lock protects EXISTING curated data, not your new one).
+  **(D + move)** `itemFields` now gives EVERY editable item fly/copy/**move**/
+  **delete**; move+delete are lock-gated, so reference data is protected until you
+  unlock it, while drawn/created features get them immediately.
+  **(re-bake, source-aware)** `syncCreated` now snapshots every `_id`-bearing
+  feature across ALL loaded sources (not just userFeatures); `applyStoredOverrides`
+  replays each into its `_src` source with per-source dedup; `bake_panel_overrides.py`
+  groups `created[]` by `_src`→file (a drawn building → `aop_buildings.geojson`,
+  a plain draw → `aop_user_features.geojson`). **Diff-cleanliness fix:** the served
+  files are **minified** (rebake_canonical.py writes `separators=(",",":")`,
+  single line). The old baker pretty-printed (`detect_indent` can't read a
+  single-line file → fell back to indent=2) → a 1-feature edit produced a
+  **438-line reformat**. Rewrote `write_fc` to match the canonical minified
+  format + dropped `detect_indent`; a bake is now **1 line changed** (the minified
+  line, reviewable via `git diff --word-diff`). Dead config removed (`refItems`
+  no longer carries `actions`/`provenance`; itemFields always renders the full set
+  + provenance). **Verified by observation** (served :8077): `verify_crud_full.py`
+  **16/16** (create a building into the LOCKED buildings layer via its +; it's
+  unlocked+editable; carries `_src`+canonical schema; NOT leaked to userFeatures;
+  has Move+Delete; existing building locked→unlock→edit; export carries the draw
+  +the edit+sources; **survives reload** replayed into fema-buildings);
+  `verify_crud_dm.py` **4/4** (unlock→Delete removes + records `source:id` in
+  `deleted[]`; unlock→Move records a geometry diff); baker round-trip: drawn
+  building bakes to `aop_buildings.geojson` (`id:u1`, schema, `last_checked`
+  stamped, `_src`/`_id` stripped), edit applied, **1-line minified diff**, **2nd
+  run idempotent no-op**, data tree restored; `verify_panel_save.py` **14/14
+  (no regression)**; full model still renders **5 sections / 32 rows / 85 map
+  layers / 0 real console errors**. (One pre-existing console flake unrelated to
+  this work: the default-OFF `sfwda-paper` image layer occasionally logs
+  `Failed to fetch (0) …webp` in headless though the file serves 200 — unchanged
+  from HEAD.) **Owed/next (unchanged forks):** `__group` reassignment is still
+  view-only (stripped on bake) — direct-create now supersedes it for filing into
+  a base layer; whether `+` on a locked layer should require unlock first (chose
+  always-show, new feature unlocked); the swap into `index.html`; commit is the
+  user's git gate.
+
+#aop #04_event_app #right_panel #rebuild #mvp #kiss #save_path #crud
 
 -----
 
@@ -422,13 +523,11 @@ editor frame with live Name + Description. Full record + owed items in
    stands for data values/publishability; this typing is UI-only.
 10. ⬜ next — **the genuine input points** (each needs a call only the user can
     make; everything cheap-and-correct is now done):
-    - **Disk persistence** — created features, renames, notes, moves, deletes
-      are all in-memory and die on reload. The live view persists per-browser to
-      `localStorage` (`aop_positioned_features_v1`, property + geometry patches,
-      replayed on load). FORK: reuse that exact convention (and key — risks
-      colliding with the live app's store while both run) or give the isolated
-      rebuild its own `aop_panel_*_v1` key until swap. Recommend: own key now,
-      reconcile at swap.
+    - ✅ **Disk persistence — SHIPPED 2026-06-04** (see the "SAVE PATH SHIPPED"
+      dated bullet at the top of this card). Diffs in `aop_panel_overrides_v1`,
+      replayed at boot; Export → `bake_panel_overrides.py` → served GeoJSON.
+      Chose its OWN key now; the live app's `aop_positioned_features_v1` is
+      reconciled at swap.
     - **Layer paint sliders** (`TUNABLE_LAYERS`) — the one live edit-tab feature
       deliberately NOT brought; it re-couples map-style into the panel. KISS says
       leave out unless the user wants per-layer paint tuning here.

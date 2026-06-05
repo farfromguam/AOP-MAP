@@ -41,6 +41,215 @@
   // from the same data the map draws (no second fetch, one source of truth).
   const LOADED = {};
 
+  // --- Persistence: save edits as DIFFS, replay on load, export for re-bake ---
+  // There is no DB in prod — every value is served from JSON. So the save path is
+  //   edit -> localStorage diff (this block) -> Export edits -> the Python baker
+  //   mvp/scripts/bake_panel_overrides.py merges the diffs into website/data/*.
+  // DIFFS, not full-file replace (user-chosen 2026-06-04): the store keeps only
+  // what changed, keyed "<source>:<canonical id>", so git diffs stay reviewable
+  // and the raw->core->publish zones survive. Created features are kept WHOLE
+  // (they are new authored data, not a diff). `highlight` is VIEW state — saved
+  // for the user's convenience, but the baker drops it (a star is not a fact
+  // about the trail). See brain/research/common_feature_schema.md (save path).
+  const OVERRIDES_KEY = 'aop_panel_overrides_v1';
+  // Identity/facet props the editor writes back for a SERVED feature. Canonical
+  // `id` + the read-only provenance block are NOT here (never user-set). The
+  // baker bakes name/description/difficulty/notes/category; it skips `highlight`.
+  const EDITABLE_SERVED_KEYS = ['name', 'description', 'difficulty', 'notes', 'category', 'highlight'];
+  // Where drawn (user-created) features bake to. Its own file so the canonical
+  // re-bake (which reads data/raw/) never touches it and never clobbers a draw.
+  const USER_FEATURES_FILE = 'aop_user_features.geojson';
+
+  function blankStore() { return { schema: 'aop-panel-overrides-v1', edits: {}, created: [], deleted: [] }; }
+  let OVERRIDES = blankStore();
+
+  function loadOverrides() {
+    try {
+      const raw = localStorage.getItem(OVERRIDES_KEY);
+      if (!raw) return blankStore();
+      return Object.assign(blankStore(), JSON.parse(raw));
+    } catch (_) { return blankStore(); }
+  }
+  function saveOverrides() {
+    try { localStorage.setItem(OVERRIDES_KEY, JSON.stringify(OVERRIDES)); }
+    catch (_) { /* storage off — keep the in-memory copy so the session still works */ }
+    updateExportControl();
+  }
+
+  // MapLibre source id -> the data file it was fetched from (the baker needs it).
+  function sourceFileMap() {
+    const m = {};
+    for (const set of MAP_DATA) if (set.url) m[set.source] = set.url.replace(/^\.\/data\//, '');
+    return m;
+  }
+  function pickEditable(props) {
+    const out = {};
+    for (const k of EDITABLE_SERVED_KEYS) if (props[k] !== undefined) out[k] = props[k];
+    return out;
+  }
+  // Created features are authored whole. A draw can now land in ANY editable
+  // layer's source (not just userFeatures) — a created building lives in the
+  // fema-buildings collection so it paints as a building and bakes back to
+  // aop_buildings.geojson. Every locally-created feature carries `_id` (local,
+  // pre-bake) and `_src` (its target source), so the snapshot is just "every
+  // feature in any loaded collection that still carries an `_id`."
+  function syncCreated() {
+    const out = [];
+    for (const src of Object.keys(LOADED)) {
+      const fc = LOADED[src];
+      if (!fc || !fc.features) continue;
+      for (const f of fc.features) {
+        if (f.properties && f.properties._id != null) {
+          const copy = JSON.parse(JSON.stringify(f));
+          if (copy.properties._src == null) copy.properties._src = src;   // backfill home source
+          out.push(copy);
+        }
+      }
+    }
+    OVERRIDES.created = out;
+  }
+  // Persist one change. User features ride in `created`; a served feature stores
+  // a small properties (+ optional geometry) diff keyed source:id.
+  function commitChange(node, item, opts) {
+    opts = opts || {};
+    if (isUserFeature(item.props)) { syncCreated(); saveOverrides(); return; }
+    const src = node.items && node.items.source;
+    const id = item.props.id;                            // canonical id (present post-re-bake)
+    if (!src || id == null) { console.warn('panel: cannot persist — no source/id for', item.label); return; }
+    const k = src + ':' + id;
+    const entry = OVERRIDES.edits[k] || { source: src, id: String(id) };
+    entry.properties = pickEditable(item.props);         // overwrite-on-bake snapshot
+    if (opts.geometry) entry.geometry = item.feature.geometry;
+    entry.updated = new Date().toISOString();
+    OVERRIDES.edits[k] = entry;
+    saveOverrides();
+  }
+  function persistDelete(node, item) {
+    if (isUserFeature(item.props)) { syncCreated(); saveOverrides(); return; }
+    const src = node.items && node.items.source;
+    const id = item.props.id;
+    if (!src || id == null) return;
+    const k = src + ':' + id;
+    delete OVERRIDES.edits[k];
+    if (!OVERRIDES.deleted.includes(k)) OVERRIDES.deleted.push(k);
+    saveOverrides();
+  }
+
+  // Replay stored diffs onto the freshly-fetched collections (mutates LOADED in
+  // place, then re-sets the affected sources). Runs once at boot.
+  function applyStoredOverrides() {
+    OVERRIDES = loadOverrides();
+    const touched = new Set();
+    // 1) created features — replay each into its OWN source (`_src`; legacy
+    //    drawn features without one default to userFeatures). Skip any whose id
+    //    is already in the loaded file (it was baked, so the file is now the
+    //    source of truth: no double-show). A baked draw drops `_id` and carries
+    //    the same value as canonical `id`, so dedupe on EITHER — the replay
+    //    stays correct whether or not the user has Cleared the local store.
+    const haveBySource = {};
+    const haveSet = (src) => {
+      if (haveBySource[src]) return haveBySource[src];
+      const set = new Set();
+      const fc = LOADED[src];
+      if (fc && fc.features) for (const f of fc.features) {
+        const p = f.properties || {}; if (p._id) set.add(p._id); if (p.id != null) set.add(String(p.id));
+      }
+      return (haveBySource[src] = set);
+    };
+    let maxSeq = 0;
+    for (const feat of OVERRIDES.created) {
+      const props = feat.properties || {};
+      const src = props._src || 'userFeatures';
+      const fc = LOADED[src];
+      if (!fc || !fc.features) continue;                 // target layer not loaded — drop
+      const fid = props._id;
+      const m = /^u(\d+)$/.exec(fid || '');
+      if (m) maxSeq = Math.max(maxSeq, Number(m[1]));
+      const have = haveSet(src);
+      if (fid && (have.has(fid) || have.has(String(fid)))) continue;
+      fc.features.push(JSON.parse(JSON.stringify(feat)));
+      have.add(fid);
+      touched.add(src);
+    }
+    createSeq = Math.max(createSeq, maxSeq);             // new draws continue past restored ids
+    // 2) deletions of served features
+    for (const k of OVERRIDES.deleted) {
+      const cut = k.indexOf(':');
+      const src = k.slice(0, cut), id = k.slice(cut + 1);
+      const fc = LOADED[src];
+      if (!fc || !fc.features) continue;
+      const before = fc.features.length;
+      fc.features = fc.features.filter((f) => String((f.properties || {}).id) !== id);
+      if (fc.features.length !== before) touched.add(src);
+    }
+    // 3) property + geometry edits
+    for (const k of Object.keys(OVERRIDES.edits)) {
+      const entry = OVERRIDES.edits[k];
+      const fc = LOADED[entry.source];
+      if (!fc || !fc.features) continue;
+      const feat = fc.features.find((f) => String((f.properties || {}).id) === String(entry.id));
+      if (!feat) continue;
+      if (entry.geometry) feat.geometry = JSON.parse(JSON.stringify(entry.geometry));
+      if (entry.properties) { feat.properties = feat.properties || {}; Object.assign(feat.properties, entry.properties); }
+      touched.add(entry.source);
+    }
+    for (const src of touched) { const s = map.getSource(src); if (s) s.setData(LOADED[src]); }
+  }
+
+  // --- Export the saved diffs for the Python baker ---------------------------
+  function overridesCount() {
+    return Object.keys(OVERRIDES.edits).length + OVERRIDES.created.length + OVERRIDES.deleted.length;
+  }
+  function buildExportPayload() {
+    return {
+      schema: 'aop-panel-overrides-v1',
+      generated: new Date().toISOString(),
+      sources: sourceFileMap(),               // source id -> data filename
+      created_target: USER_FEATURES_FILE,     // where drawn features bake to
+      edits: OVERRIDES.edits,
+      created: OVERRIDES.created,
+      deleted: OVERRIDES.deleted
+    };
+  }
+  function exportOverrides() {
+    const text = JSON.stringify(buildExportPayload(), null, 2);
+    window.__overridesExport = text;          // observable hook for verifiers
+    let downloaded = false;
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'aop_panel_overrides.json';
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      downloaded = true;
+    } catch (_) { /* headless / no blob — fall back to clipboard */ }
+    if (!downloaded) clipboardWrite(text);
+    showToast(`Exported ${overridesCount()} edit(s)`);
+  }
+  function clearOverrides() {
+    OVERRIDES = blankStore();
+    try { localStorage.removeItem(OVERRIDES_KEY); } catch (_) { /* ignore */ }
+    updateExportControl();
+    showToast('Cleared saved edits — reload to see baked data');
+  }
+  function updateExportControl() {
+    const n = overridesCount();
+    const count = document.getElementById('editCount');
+    if (count) count.textContent = n ? `${n} unsaved` : 'no edits';
+    const ex = document.getElementById('exportEdits');
+    if (ex) ex.disabled = n === 0;
+    const cl = document.getElementById('clearEdits');
+    if (cl) cl.disabled = n === 0;
+  }
+  function wireExportControl() {
+    const ex = document.getElementById('exportEdits');
+    if (ex) ex.addEventListener('click', exportOverrides);
+    const cl = document.getElementById('clearEdits');
+    if (cl) cl.addEventListener('click', clearOverrides);
+    updateExportControl();
+  }
+
   // --- Paint constants (ported verbatim from main.js) ------------------------
   const LANDCOVER_FILL = ['match', ['get', 'class'],
     'forest_deciduous', '#b8c1a1', 'forest_evergreen', '#a8b18f',
@@ -298,9 +507,10 @@
       ]
     },
     {
-      // User-entered features. No URL — starts empty and grows as the user
-      // creates features (inline `data` instead of a fetch).
-      source: 'userFeatures', data: { type: 'FeatureCollection', features: [] },
+      // User-entered features. Loads from its own served file (empty until the
+      // first draw is baked); grows in-session as the user creates features, and
+      // baked draws come back from disk here on reload.
+      source: 'userFeatures', url: './data/aop_user_features.geojson',
       layers: [
         { id: 'user-feature-polys', type: 'fill', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': '#b4561f', 'fill-opacity': 0.25 } },
         { id: 'user-feature-polys-outline', type: 'line', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'line-color': '#b4561f', 'line-width': 1.5 } },
@@ -319,7 +529,10 @@
   // LOCKED (read-only edit area); user-editable ones default unlocked.
   //
   // `visible` defaults mirror the live viewer's fresh-load state.
-  const refItems = (source, opts) => Object.assign({ source, provenance: true, actions: ['fly', 'copy'] }, opts);
+  // Reference items: every feature now gets the same generic editor (provenance
+  // block + full fly/copy/move/delete, the last two lock-gated), so a reference
+  // layer just names its source + key/label/filter — no per-layer actions list.
+  const refItems = (source, opts) => Object.assign({ source }, opts);
 
   const PANEL_MODEL = {
     title: 'AOP edit panel',
@@ -332,7 +545,7 @@
           { id: 'usdaNaip', kind: 'layer', label: 'USDA NAIP imagery (TN 2023)', visible: false, mapLayers: ['usda-naip-satellite'] },
           { id: 'lidarTiles', kind: 'layer', label: 'Lidar tile index (USGS 3DEP)', visible: false, mapLayers: ['lidar-tiles-fill', 'lidar-tiles-outline', 'lidar-tiles-labels'] },
           {
-            id: 'cemeteries', kind: 'layer', label: 'Cemeteries (TN Comptroller)', visible: false, locked: true, expanded: false, geom: 'Polygon',
+            id: 'cemeteries', kind: 'layer', label: 'Cemeteries (TN Comptroller)', visible: false, locked: true, expanded: false, geom: 'Polygon', createNoun: 'cemetery',
             mapLayers: ['cemetery-fill', 'cemetery-outline', 'cemetery-marker', 'cemetery-label'],
             items: refItems('cemeteries', {
               filter: (f) => (f.properties || {}).geom_role === 'marker',
@@ -350,7 +563,7 @@
           { id: 'hillshade', kind: 'layer', label: 'Lidar hillshade (USGS 3DEP)', visible: false, mapLayers: ['lidar-hillshade'] },
           { id: 'contours', kind: 'layer', label: 'Lidar contours (5 ft, 1m DEM)', visible: false, mapLayers: ['contours-minor', 'contours-index', 'contours-labels'] },
           {
-            id: 'boundaries', kind: 'layer', label: 'Publishable boundaries', visible: true, locked: true, expanded: false, geom: 'Polygon',
+            id: 'boundaries', kind: 'layer', label: 'Publishable boundaries', visible: true, locked: true, expanded: false, geom: 'Polygon', createNoun: 'boundary',
             mapLayers: ['publish-boundary-fill', 'publish-boundaries'],
             items: refItems('publish-data', {
               filter: (f) => (f.properties || {}).layer === 'park_boundaries',
@@ -359,7 +572,7 @@
             })
           },
           {
-            id: 'buildings', kind: 'layer', label: 'Park buildings (curated)', visible: true, locked: true, expanded: false, geom: 'Polygon',
+            id: 'buildings', kind: 'layer', label: 'Park buildings (curated)', visible: true, locked: true, expanded: false, geom: 'Polygon', createNoun: 'building',
             mapLayers: ['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline'],
             items: refItems('fema-buildings', {
               key: (p) => p.build_id, label: (p) => p.building_label || p.address || `Building ${p.build_id}`,
@@ -367,7 +580,7 @@
             })
           },
           {
-            id: 'aopTrails', kind: 'layer', label: 'AOP trail network (merged truth)', visible: true, locked: true, expanded: false, geom: 'LineString',
+            id: 'aopTrails', kind: 'layer', label: 'AOP trail network (merged truth)', visible: true, locked: true, expanded: false, geom: 'LineString', createNoun: 'trail',
             mapLayers: ['aop-trail-network', 'aop-trail-network-labels'],
             items: refItems('aop-trail-network', {
               key: (p) => p.name, label: (p) => `Trail ${p.name || '—'}${p.difficulty ? ' · ' + p.difficulty : ''}`,
@@ -414,21 +627,21 @@
             create: { source: 'userFeatures', geomType: 'Polygon', defaultProps: (seq) => ({ name: 'Area ' + seq }) }
           },
           {
-            id: 'editorPois', kind: 'layer', label: 'Drawn POIs', visible: true, expanded: false,
+            id: 'editorPois', kind: 'layer', label: 'Drawn POIs', visible: true, expanded: false, geom: 'Point', createNoun: 'POI',
             mapLayers: ['editor-poi-fill', 'editor-poi-outline', 'editor-poi-lines', 'editor-poi-circles', 'editor-poi-labels', 'editor-poi-fill-labels', 'editor-poi-line-labels'],
-            items: { source: 'editor-poi', key: (p) => p.id || p.name, label: (p) => p.name || p.category || 'POI', detail: (p) => p.category || '', actions: ['fly', 'copy'] }
+            items: { source: 'editor-poi', key: (p) => p.id || p.name, label: (p) => p.name || p.category || 'POI', detail: (p) => p.category || '' }
           },
           { id: 'eventSchedule', kind: 'layer', label: 'Event schedule POIs', visible: false, mapLayers: ['event-session-routes', 'event-route-labels', 'event-anchor-points', 'event-anchor-labels'] },
           { id: 'trailheads', kind: 'layer', label: 'Publishable trailheads', visible: true, mapLayers: ['publish-trailheads'] },
           {
-            id: 'visitorContext', kind: 'layer', label: 'Visitor context callouts', visible: true, locked: true, expanded: false, geom: 'Polygon',
+            id: 'visitorContext', kind: 'layer', label: 'Visitor context callouts', visible: true, locked: true, expanded: false, geom: 'Polygon', createNoun: 'callout',
             mapLayers: ['visitor-context-fill', 'visitor-context-outline', 'visitor-context-labels'],
             items: refItems('visitor-context', { key: (p) => p.name || p.label, label: (p) => p.name || p.label || 'Callout' })
           },
           {
             id: 'brandLogos', kind: 'layer', label: 'Brand logos (AOP & Rock Warblers)', visible: true, expanded: false, geom: 'Point',
             mapLayers: ['brand-logos-icons'],
-            items: { source: 'brand-logos', key: (p) => p.name, label: (p) => p.name || 'Logo', actions: ['fly', 'copy'] }
+            items: { source: 'brand-logos', key: (p) => p.name, label: (p) => p.name || 'Logo' }
           }
         ]
       },
@@ -436,7 +649,7 @@
         id: 'user-submitted', label: 'User submitted', collapsed: false,
         nodes: [
           {
-            id: 'pubTrails', kind: 'layer', label: 'Submitted trails', visible: true, locked: true, expanded: false, geom: 'LineString',
+            id: 'pubTrails', kind: 'layer', label: 'Submitted trails', visible: true, locked: true, expanded: false, geom: 'LineString', createNoun: 'trail',
             mapLayers: ['publish-trails'],
             items: refItems('publish-data', {
               filter: (f) => (f.properties || {}).layer === 'trail_centerlines',
@@ -519,8 +732,9 @@
       on ? 'Surfaced under POI (left) — click to remove' : 'Click to surface under POI (left)',
       starSvg(on), onToggle);
   }
-  function toggleItemStar(item) {
+  function toggleItemStar(node, item) {
     item.props.highlight = !(item.props.highlight === true);
+    commitChange(node, item);                       // highlight persists (view state; baker skips it)
     rerender();
   }
 
@@ -670,7 +884,7 @@
     // Visible check (see renderVisibilityField). The row keeps just the label,
     // the optional create (+), the item count, and the collapse chevron.
 
-    if (node.create) {
+    if (nodeCreateSpec(node)) {
       const add = el('button', 'node-create', '+');
       add.type = 'button';
       add.title = 'Add a feature (then click the map)';
@@ -765,12 +979,16 @@
       out.push({ key, label, props, feature });
     };
 
-    // 1) the node's own served source (a user feature reassigned elsewhere drops out here)
+    // 1) the node's own served source. Group reassignment is a userFeatures-only
+    //    affordance (the generic draw groups), so the "reassigned elsewhere →
+    //    drop out here" skip ONLY applies to that source. A feature CREATED into
+    //    a reference layer (e.g. a building in fema-buildings) carries an `_id`
+    //    too, but it belongs to its own layer and must never be bumped out.
     const fc = LOADED[spec.source];
     if (fc && fc.features) {
       for (const feature of fc.features) {
         if (spec.filter && !spec.filter(feature)) continue;
-        if (isUserFeature(feature.properties) && effectiveGroup(feature) !== node.id) continue;
+        if (spec.source === 'userFeatures' && isUserFeature(feature.properties) && effectiveGroup(feature) !== node.id) continue;
         add(feature);
       }
     }
@@ -791,6 +1009,39 @@
   // layers declare it as `geom`. Null = unconstrained.
   function nodeGeom(node) {
     return node.geom || (node.create && node.create.geomType) || null;
+  }
+
+  // --- Create-spec resolution (CRUD: the C for every base layer) -------------
+  // The 3 generic draw groups carry an explicit `create`. EVERY other editable,
+  // single-geometry layer gets a synthesized one so the user can author straight
+  // into it (a building into fema-buildings, a trail into aop-trail-network…),
+  // and the draw bakes back to THAT layer's file. Layers needing a richer picker
+  // (brand logos need an icon) opt out.
+  const CREATE_BLOCK = new Set(['brandLogos']);
+  function kindForGeom(g) { return g === 'Point' ? 'poi' : g === 'LineString' ? 'trail' : 'area'; }
+  function canonicalDefaults(node, seq, geomType) {
+    const props = {
+      name: 'New ' + (node.createNoun || 'feature') + ' ' + seq,
+      description: '',
+      kind: kindForGeom(geomType),
+      source: 'AOP editor (drawn)',
+      confidence: 'observed',
+      permission: 'AOP first-party',
+      status: 'core'
+    };
+    if (geomType === 'LineString') props.difficulty = 'easy';
+    if (node.id === 'cemeteries') props.geom_role = 'marker';     // shows in the marker list + paints
+    return props;
+  }
+  function nodeCreateSpec(node) {
+    if (node.create) return node.create;                          // explicit (the draw groups)
+    if (!node.items || CREATE_BLOCK.has(node.id)) return null;
+    const src = node.items.source;
+    if (!src || !LOADED[src]) return null;                        // unknown / unloaded source
+    // Cemetery markers are points though the parcel polygons share the layer.
+    const geomType = node.id === 'cemeteries' ? 'Point' : nodeGeom(node);
+    if (!geomType) return null;                                   // no single geometry → no plain draw
+    return { source: src, geomType, defaultProps: (seq) => canonicalDefaults(node, seq, geomType) };
   }
 
   // Assignable groups for a feature, labeled by path. GEOMETRY-TYPED and limited
@@ -834,9 +1085,12 @@
   // actions slot in underneath. The lock governs whether the fields are editable.
   function itemFields(node, item) {
     const props = item.props;
-    const isUser = isUserFeature(props);
     const geom = item.feature && item.feature.geometry;
     const isLine = geom && geom.type === 'LineString';
+    // Cross-group reassignment is the generic draw groups' affordance only — a
+    // feature living in the shared userFeatures collection. Reference features
+    // (including ones created straight into a base layer) belong to their layer.
+    const reassignable = node.items.source === 'userFeatures' && isUserFeature(props);
 
     const fields = [{ kind: 'controls', toggles: ['star', 'lock'] }];
     fields.push({ kind: 'text', label: 'Name', prop: 'name' });            // canonical
@@ -845,14 +1099,17 @@
     // Optional per-node detail summary (e.g. cemetery parcel · acres) stays a facet.
     const detail = node.items.detail ? node.items.detail(props) : '';
     if (detail) fields.push({ kind: 'static', label: 'Details', value: detail });
-    // Difficulty facet: where the feature carries one, or a user-drawn line.
-    if (props.difficulty != null || (isUser && isLine))
+    // Difficulty facet: where the feature carries one, or a drawn line.
+    if (props.difficulty != null || isLine)
       fields.push({ kind: 'select', label: 'Difficulty', prop: 'difficulty', options: ['easy', 'moderate', 'difficult'] });
     // Provenance block — read straight from the canonical fields (auto-hides any blank).
     fields.push(...provenanceFields(props));
-    if (isUser) fields.push({ kind: 'group' });                            // reassignable
-    const actions = isUser ? ['fly', 'copy', 'move', 'delete'] : (node.items.actions || ['fly', 'copy']);
-    fields.push({ kind: 'actions', actions });
+    if (reassignable) fields.push({ kind: 'group' });
+    // Full CRUD on every feature: fly/copy are always live; Move + Delete are
+    // gated by the lock (ACTIONS marks them `gated`), so reference data is
+    // protected until you unlock it, while drawn/created features (unlocked) get
+    // them immediately.
+    fields.push({ kind: 'actions', actions: ['fly', 'copy', 'move', 'delete'] });
     return fields;
   }
 
@@ -865,8 +1122,8 @@
   function renderField(field, ctx, locked) {
     switch (field.kind) {
       case 'controls':   return renderControlsField(field, ctx, locked);  // declared toggles
-      case 'text':       return renderTextField(field, ctx.item, locked);
-      case 'select':     return renderSelectField(field, ctx.item, locked);
+      case 'text':       return renderTextField(field, ctx, locked);
+      case 'select':     return renderSelectField(field, ctx, locked);
       case 'static':     return renderStaticField(field);
       case 'actions':    return renderActionsField(field, ctx, locked);
       case 'group':      return renderGroupField(ctx, locked);
@@ -896,6 +1153,7 @@
       item.props.__locked = false;                  // a feature the user placed stays editable
       const target = findNodeById(sel.value);
       if (target) expandTo(target);
+      commitChange(target || ctx.node, item);       // user feature → snapshot into `created`
       selection = { kind: 'item', nodeId: sel.value, key: item.key };  // follow it to its new home
       rerender();
     });
@@ -903,7 +1161,8 @@
     return wrap;
   }
 
-  function renderSelectField(field, item, locked) {
+  function renderSelectField(field, ctx, locked) {
+    const item = ctx.item;
     const wrap = el('div', 'field field-select');
     wrap.append(el('span', 'field-label', field.label));
     const sel = document.createElement('select');
@@ -918,12 +1177,13 @@
       if (current === opt) o.selected = true;
       sel.append(o);
     }
-    sel.addEventListener('change', () => { item.props[field.prop] = sel.value; rerender(); });
+    sel.addEventListener('change', () => { item.props[field.prop] = sel.value; commitChange(ctx.node, item); rerender(); });
     wrap.append(sel);
     return wrap;
   }
 
-  function renderTextField(field, item, locked) {
+  function renderTextField(field, ctx, locked) {
+    const item = ctx.item;
     const wrap = el('div', 'field field-text');
     wrap.append(el('span', 'field-label', field.label));
     const input = document.createElement('input');
@@ -933,7 +1193,7 @@
     input.dataset.field = field.prop;
     input.disabled = !!locked;
     input.addEventListener('input', () => { item.props[field.prop] = input.value; });
-    input.addEventListener('change', () => rerender());
+    input.addEventListener('change', () => { commitChange(ctx.node, item); rerender(); });
     wrap.append(input);
     return wrap;
   }
@@ -945,7 +1205,7 @@
   // module — there is no per-row special-casing left.
   const TOGGLES = {
     visibility: (ctx) => eyeToggle(ctx.node),                       // layer on/off (group)
-    star:       (ctx) => starButton(ctx.item.props.highlight === true, () => toggleItemStar(ctx.item)),
+    star:       (ctx) => starButton(ctx.item.props.highlight === true, () => toggleItemStar(ctx.node, ctx.item)),
     lock:       (ctx) => ctx.item
       ? lockButton(effectiveItemLock(ctx.node, ctx.item), () => toggleItemLock(ctx.node, ctx.item))
       : lockButton(!!ctx.node.locked, () => toggleGroupLock(ctx.node))
@@ -1038,7 +1298,7 @@
 
   function cleanFeature(feature) {
     const props = { ...(feature.properties || {}) };
-    delete props._id; delete props.__locked;          // strip panel-internal keys
+    delete props._id; delete props._src; delete props.__locked; delete props.__group;  // strip panel-internal keys
     return { type: 'Feature', geometry: feature.geometry, properties: props };
   }
   async function clipboardWrite(text) {
@@ -1069,6 +1329,7 @@
     if (i >= 0) fc.features.splice(i, 1);
     const source = map.getSource(node.items.source);
     if (source) source.setData(fc);
+    persistDelete(node, item);
     if (isSelected({ kind: 'item', nodeId: node.id, key: item.key })) selection = null;
     rerender();
   }
@@ -1096,6 +1357,7 @@
     }
     const source = map.getSource(node.items.source);
     if (source) source.setData(LOADED[node.items.source]);
+    commitChange(node, item, { geometry: true });   // persist the moved geometry
     endMove();
     selection = { kind: 'item', nodeId: node.id, key: item.key };
     rerender();
@@ -1218,8 +1480,10 @@
   let createSeq = 0;      // monotonic id source — no Date.now/random needed
 
   function startCreate(node) {
+    const spec = nodeCreateSpec(node);
+    if (!spec) return;
     moving = null;                              // creating and moving are mutually exclusive
-    placing = { node, geomType: node.create.geomType };
+    placing = { node, spec, geomType: spec.geomType };
     draftVertices = [];
     node.expanded = true;                       // so the new item is visible
     map.getCanvas().style.cursor = 'crosshair';
@@ -1263,16 +1527,22 @@
 
   function commitFeature(geometry) {
     const node = placing.node;
-    const src = node.create.source;
+    const spec = placing.spec;
+    const src = spec.source;
     createSeq += 1;
     const id = 'u' + createSeq;
+    // `_src` = the home source (so the baker writes it back to the right file);
+    // `__locked: false` = a feature you just drew is editable even inside a
+    // locked reference layer (the lock protects EXISTING curated data, not your
+    // new one). Both are panel-internal and stripped on bake.
     const feature = {
       type: 'Feature', geometry,
-      properties: { _id: id, ...node.create.defaultProps(createSeq) }
+      properties: { _id: id, _src: src, __locked: false, ...spec.defaultProps(createSeq) }
     };
     LOADED[src].features.push(feature);
     const source = map.getSource(src);
     if (source) source.setData(LOADED[src]);
+    syncCreated(); saveOverrides();                          // persist the new draw
     endDraw();
     selection = { kind: 'item', nodeId: node.id, key: id };   // select → edit it
     rerender();
@@ -1361,9 +1631,11 @@
       paint: { 'line-color': '#b4561f', 'line-width': 2, 'line-dasharray': [2, 1] } });
     map.addLayer({ id: '__draft-pts', source: '__draft', type: 'circle', filter: ['==', ['geometry-type'], 'Point'],
       paint: { 'circle-radius': 4, 'circle-color': '#b4561f', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1 } });
+    applyStoredOverrides();                      // replay saved edits before first paint
     applyAllVisibility();
     renderPanel(PANEL_MODEL, document.getElementById('panelBody'));
     renderLeftPanel();                           // POI / highlights sidebar (empty until the user stars)
+    wireExportControl();                         // the Export edits / Clear footer
     window.__panelReady = true;                  // end-of-boot signal for verifiers
   });
 

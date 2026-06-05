@@ -29,6 +29,21 @@
     }
     .panel-body { flex: 1; overflow-y: auto; padding: 14px 16px 20px; }
 
+    /* Save-path footer — pinned below the scrolling body on the right panel. */
+    .panel-footer {
+      flex: none; display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px; border-top: 1px solid var(--line); background: var(--panel-bg);
+    }
+    .footer-btn {
+      background: var(--rust); color: #fff; border: 1px solid var(--rust);
+      padding: 7px 12px; border-radius: 7px; cursor: pointer; font: inherit; font-size: 13px;
+    }
+    .footer-btn:hover { background: #9c4a18; }
+    .footer-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .footer-btn-sub { background: #fff; color: var(--rust); }
+    .footer-btn-sub:hover { background: rgba(180,86,31,0.08); }
+    .edit-count { margin-left: auto; color: #8a7d63; font-size: 12px; font-variant-numeric: tabular-nums; }
+
     /* Left sidebar — the POI / user-highlights surface. Mirrors the right panel
        but anchored left. Starred features (props.highlight) are listed here. */
     .panel-left {
@@ -216,6 +231,14 @@
   </aside>
   <aside class="panel">
     <div class="panel-body" id="panelBody"></div>
+    <!-- Save path: edits persist to localStorage live; Export edits downloads the
+         diff JSON for mvp/scripts/bake_panel_overrides.py to re-bake into the
+         served GeoJSON. Clear drops the local diffs (use after a bake). -->
+    <div class="panel-footer">
+      <button type="button" id="exportEdits" class="footer-btn" disabled>⤓ Export edits</button>
+      <button type="button" id="clearEdits" class="footer-btn footer-btn-sub" disabled>Clear</button>
+      <span id="editCount" class="edit-count">no edits</span>
+    </div>
   </aside>
 
   <script src="./vendor/maplibre-gl.js"></script>
