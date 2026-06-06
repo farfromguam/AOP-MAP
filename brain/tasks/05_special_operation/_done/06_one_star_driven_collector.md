@@ -40,12 +40,18 @@ tile-independent): POI tab renders baked `pubpoi:1`/`pubpoi:2` through the real
 no console errors. Non-editorPois both-ends convergence proven headlessly via
 `poi_rows_surfaces.js`: starred `building:u1` lands on BOTH the LEFT POI tab and
 the RIGHT ★ list, and the starred brand logo regression is restored while the
-unstarred one is gated off. **BLOCKED for human verify:** the in-page DOM
-star-seed of a building (live editor click → both lists) needs the
-closure-private `featureListRuntime` + full map-load init, which the blocked
-headless tiles prevent — convergence is proven by the Node `poi_rows_surfaces`
-path instead, not a live in-browser star click. **Owed:** the single sprint
-VERSION bump at sprint code-complete; commit is the user's git gate.
+unstarred one is gated off. **✅ VALIDATED 2026-06-06 (main-thread review).**
+Re-ran by observation: `poi_rows_dump.js` output **MATCHES the committed
+baseline `poi_rows_baseline.json` exactly** (10 rows, 7 groups); `poi_rows_surfaces.js`
+all PASS (starred building on BOTH surfaces; brand-logo right-list regression
+restored + ★-gated); and the team's DOM verifier
+`mvp/scripts/playwright_verify_star_collector.py` **PASSES on :8001** (POI tab
+renders `pubpoi:1`/`pubpoi:2` through the real `buildPoiGroups →
+collectStarredDestinations` path, `#editorVisitorList` exists, 0 console errors).
+The only residual is the in-page live star-CLICK of a building (needs full
+map-load init; tiles blocked) — its convergence is fully proven by the Node
+`poi_rows_surfaces` path. **Owed:** the single sprint VERSION bump at sprint
+code-complete; commit is the user's git gate.
 
 ## Goal
 

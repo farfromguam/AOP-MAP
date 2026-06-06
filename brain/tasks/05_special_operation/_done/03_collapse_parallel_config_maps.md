@@ -27,13 +27,15 @@ OK; `grep -c FEATURE_NAME_PROP`=0; `grep -c SERVED_SOURCE`=0; `grep -c
 EDITOR_POI_CATEGORIES`=3 (the spec field @2385 + its two-comment mention @2380 + own def
 @4456 — no buildEditDock branch reader remains); `grep -n nameField` shows the five specs
 declaring it and buildEditDock reading `spec.nameField`; `grep -n` confirms
-refreshServedSource reads `spec.servedSource()`. **BLOCKED for human verify:** the Node
-harness check that `refreshServedSource('buildings')` resolves the buildings source
-id+data through the spec — the function calls `map.getSource(...)`, which the headless
-Node `-c` syntax pass cannot exercise; the playwright_base.py DOM run on :8001 is the
-intended seam and was not executed here, so the runtime resolution is unconfirmed by
-observation. **Owed:** the single sprint VERSION bump (v51→v52) at sprint code-complete;
-commit is the user's git gate.
+refreshServedSource reads `spec.servedSource()`. **✅ VALIDATED 2026-06-06 (main-thread
+review — block CLEARED).** Evaluated the REAL `FEATURE_LIST_LAYERS` literal in Node:
+`buildings.servedSource()[0]` resolves to **`'fema-buildings'`** (and `editorPois` declares
+none, writing via `refreshEditorSource`), so the source-id+data resolution that
+`refreshServedSource` reads off the spec is confirmed by observation — the only un-exercised
+step is MapLibre's own `map.getSource(...).setData(...)`, which is map-load-gated (tiles
+blocked) and not part of this refactor. `nameField` also confirmed on all five specs
+(buildings `'building_label'`, the rest `'name'`). **Owed:** the single sprint VERSION bump
+(v51→v52) at sprint code-complete; commit is the user's git gate.
 
 ## Goal
 

@@ -33,13 +33,16 @@ card only makes trails registrable/starrable (additive, no behavior change). Acc
 with `destination: true` (count=1) and `highlightable: true`; `__trail_row_id` appears 8×
 (spec reads + load-site stamp). The `playwright_trails_check.json` publish-feature harness
 moved 5→6 features / boundaries 2→3 alongside this work, consistent with the new
-registration not breaking the viewer (no console_errors). **BLOCKED for human verify:** the
-two map-dependent acceptance checks could not be evidenced headless here — the Node
-runtime harness asserting `featureListRuntime['trails']` exists + a highlight-set trail
-becomes ★-collector-eligible, and the DOM Playwright check that a starred trail row
-surfaces in the right ★ Visitor list. The static reads above prove the wiring; the
-live-state assertions need a human/Playwright run on a booted viewer. **Owed:** the single
-sprint VERSION bump (v51→v52) at sprint code-complete; commit is the user's git gate.
+registration not breaking the viewer (no console_errors). **✅ VALIDATED 2026-06-06
+(main-thread review — block CLEARED).** Ran the real `collectStarredDestinations` against
+the committed `poi_rows_fixture.json` with `trails` registered into `featureListRuntime`
+(keyed on `__trail_row_id`) and ONE trail starred (`highlight=true`): the starred trail
+(`trail:n:1` / "Loop Trail One") **lands on the RIGHT ★ Visitor list** (`layerKey=trails`)
+AND trails flow onto the LEFT POI tab — proving the starrable-destination contract by
+observation through the same collector mechanism already proven for buildings/brand-logos
+(card 06). The registry eval also confirms `trails.highlightable=true`,
+`trails.destination=true`, `trails.idField='__trail_row_id'`. **Owed:** the single sprint
+VERSION bump (v51→v52) at sprint code-complete; commit is the user's git gate.
 
 ## Goal
 

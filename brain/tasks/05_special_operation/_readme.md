@@ -42,21 +42,42 @@ Playwright via `mvp/scripts/playwright_base.py`).
 
 ## Sprint 05 status (2026-06-06)
 
-Overnight `special_operation` run complete. **Cards 01–08: DONE + verified by
-independent observation (UNCOMMITTED — the commit is the user's git gate).**
+Overnight `special_operation` run complete, then **main-thread validation review
+2026-06-06 — all 8 cards re-checked by observation and MOVED to `_done/`.** Still
+UNCOMMITTED: the commit + the v52 bump are the user's git gate.
 
-- **01** delete dead `buildInlineEditor` — DONE (pre-run).
-- **02** spec fields/actions/persist axis; no `layerKey` at call sites — DONE, verified.
-- **03** collapse parallel config maps (`FEATURE_NAME_PROP`/`SERVED_SOURCE` onto specs) — DONE, verified.
-- **04** dedup hotspot spec twins into `makeHotspotSpec(label, layerPrefix)` — DONE, verified.
-- **05** register `trails` as a starrable destination layer — DONE, verified.
-- **06** one `collectStarredDestinations()`; both renderers consume it — DONE, verified (structural convergence only).
-- **07** panel create-defaults + host-bridge via spec strategies — DONE, verified.
-- **08** dedup fly-to button into one `makeFlyButton()` helper — DONE, verified.
+**Validation review (re-run, not trusted from the cards):**
 
-**Final structural gate (real output):** C1 region command = **0** non-comment
-`layerKey === '...'` branches in main.js; `node -c website/js/main.js` OK;
-`node -c website/js/panel.js` OK. **VERSION v51→v52** (`sw.js` + `#appVersion`).
+- **Structural gate (re-run live):** C1 region command = **0** non-comment
+  `layerKey === '...'` branches in main.js; `node -c` clean on BOTH `main.js` and
+  `panel.js`; every per-card grep count re-confirmed; **VERSION v52** in `sw.js` AND
+  `#appVersion`.
+- **Registry truth (real eval):** evaluated the actual `FEATURE_LIST_LAYERS` literal —
+  editorPois carries category-`select`(options=EDITOR_POI_CATEGORIES)+duplicate/delete
+  actions+persistProperty+groupContext; buildings carries read-only `status`, NO actions,
+  `servedSource()`→`fema-buildings`, `nameField='building_label'`; trails
+  `highlightable+destination+idField='__trail_row_id'`. (Cards 02/03/05 cores.)
+- **Card 06 (riskiest):** `poi_rows_dump.js` MATCHES `poi_rows_baseline.json` exactly;
+  `poi_rows_surfaces.js` all PASS; `playwright_verify_star_collector.py` PASS on :8001.
+- **Card 02 dock (block cleared):** new `playwright_verify_dock_spec_axis.py` — live
+  editorPois dock renders Category select(11 opts)+Duplicate+Delete via spec dispatch, 0
+  errors.
+- **Card 05 trail (block cleared):** a STARRED trail surfaces on the RIGHT ★ list via the
+  unified collector (Node harness).
+- **Card 08 fly (block cleared):** new `playwright_verify_fly_button.py` — `.feature-fly`
+  + dock `.dock-ico` each fire the map camera, 0 errors.
+
+New durable verifiers added: `mvp/scripts/playwright_verify_dock_spec_axis.py`,
+`mvp/scripts/playwright_verify_fly_button.py`.
+
+**What still needs a human (few — all map-load/on-device, not logic):**
+
+1. **On-device iOS-PWA feel** — standing item; headless proves logic+DOM, not real touch.
+2. **The git gate** — commit + the v52 bump are the user's to make (work is uncommitted).
+3. **Card 02 buildings dock live pixels** (~5 s on-device): open a building → read-only
+   Status, no Duplicate/Delete. The buildings layer registers into `featureListRuntime`
+   only at map-load (basemap tiles blocked headless), so its row never surfaced in the
+   sandbox; the dispatch mechanism is identical to the editorPois dock proven live.
 
 **Deferred (noted, not done this sprint):** the card-06 **"POI tab starts empty"
 flip** stays DEFERRED pending the user's decision on `10_deferred/star_driven_poi_list.md`

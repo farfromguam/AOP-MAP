@@ -33,12 +33,19 @@ literal layer-key comparison survives the branch-count grep. Net main.js: 200 in
 lines) lists **0 lines** — even the self-guard is gone; `grep -n` confirms
 `fields:`/`actions:`/`persistProperty:`/`groupContext:` declared inside the buildings
 (2270) and editorPois (2361/2369/2378/2382) spec blocks specifically.
-**BLOCKED for human verify:** the two DOM-level Playwright checks (editorPois dock →
-Category select from EDITOR_POI_CATEGORIES + Duplicate/Delete; buildings dock →
-read-only Status, no Duplicate/Delete) and the Node spy check (drawn-POI name edit →
-saveEditorPois+refreshEditorSource; buildings name edit → savePositionedFeature+
-refreshServedSource) were not run headless here — flag for human verify before marking
-the behavior proven. **Owed:** the single sprint VERSION bump (v51→v52) at sprint
+**✅ VALIDATED 2026-06-06 (main-thread review — block CLEARED).** The DOM-level dock
+check ran live via the new durable verifier `mvp/scripts/playwright_verify_dock_spec_axis.py`
+(viewer :8001, tile-independent): clicking a drawn-POI's `.feature-row-expand` chevron
+drives the real `toggleFeatureEditor → selectFeatureForDock → buildEditDock` path and the
+**editorPois dock renders a Category `<select>` populated with all 11 EDITOR_POI_CATEGORIES
+(Pavilion…Other) plus `⎘ Duplicate` + `🗑 Delete`** — 0 console errors, all from spec
+dispatch (C1 = 0 `layerKey` branches). The **buildings** dock shape (read-only Status, no
+Duplicate/Delete) was proven by evaluating the REAL `FEATURE_LIST_LAYERS.buildings` spec
+(`fields:[{status, readonly}]`, no `actions`) + `buildEditDock` looping only
+`spec.fields`/`spec.actions`; the buildings layer registers into `featureListRuntime` at
+map-load, so no buildings row surfaces headless (tiles blocked) — same mechanism the
+editorPois dock just proved live, leaving only the buildings dock's live pixels as a
+~5-second on-device confirm. **Owed:** the single sprint VERSION bump (v51→v52) at sprint
 code-complete; commit is the user's git gate.
 
 ## Goal

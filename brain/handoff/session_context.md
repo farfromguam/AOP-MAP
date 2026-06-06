@@ -4,6 +4,27 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+**2026-06-06 (SPRINT 05 VALIDATION REVIEW — all 8 cards re-checked by observation in
+the main thread + MOVED to `_done/`; UNCOMMITTED).** Re-ran the structural gate live
+(C1 = 0 `layerKey` branches; `node -c` clean on main.js + panel.js; v52 in `sw.js` +
+`#appVersion`) and did NOT trust the cards' DONE claims. Cleared the four "BLOCKED for
+human verify" flags the overnight run left, by observation: **(02)** new
+`mvp/scripts/playwright_verify_dock_spec_axis.py` — the live editorPois dock renders a
+Category `<select>` (11 opts) + Duplicate + Delete via pure spec dispatch, 0 console
+errors; **(03)** real-registry eval shows `buildings.servedSource()`→`fema-buildings`
++ `nameField` on all 5 specs; **(05)** Node collector harness — a STARRED trail lands on
+the RIGHT ★ list (`trail:n:1`); **(06)** `poi_rows_dump.js` MATCHES the committed
+baseline exactly + `playwright_verify_star_collector.py` PASS on :8001; **(08)** new
+`mvp/scripts/playwright_verify_fly_button.py` — `.feature-fly` + dock `.dock-ico` each
+fire the map camera, 0 errors. All 8 cards now live in
+`brain/tasks/05_special_operation/_done/`. **What still needs the human (few):**
+(1) on-device iOS-PWA feel; (2) the git gate — commit + the v52 bump are the user's;
+(3) the buildings dock's LIVE pixels (~5 s on-device: read-only Status, no Dup/Delete) —
+the only check map-load-gated headless (buildings registers into `featureListRuntime`
+at map-load; tiles blocked), mechanism identical to the editorPois dock proven live.
+Two new durable verifiers added under `mvp/scripts/`. Full record: the sprint
+`_readme.md` "Sprint 05 status" block + each card's "✅ VALIDATED" note.
+
 **2026-06-06 (SPRINT 05 SPECIAL_OPERATION OVERNIGHT RUN — universal feature-layer
 refactor, CODE ONLY, UNCOMMITTED, v51→v52).** The overnight run executed cards 02–08
 of `brain/tasks/05_special_operation/` (card 01 was done before the run); all eight
