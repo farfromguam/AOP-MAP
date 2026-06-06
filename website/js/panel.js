@@ -604,6 +604,7 @@
           },
           {
             id: 'buildings', kind: 'layer', label: 'Park buildings (curated)', maturity: 'silver', visible: true, locked: true, expanded: false, geom: 'Polygon', createNoun: 'building',
+            hostKey: 'buildings',
             mapLayers: ['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline'],
             items: refItems('fema-buildings', {
               key: (p) => p.build_id, label: (p) => p.building_label || p.address || `Building ${p.build_id}`,
@@ -612,6 +613,7 @@
           },
           {
             id: 'visitorContext', kind: 'layer', label: 'Visitor context callouts', maturity: 'silver', visible: true, locked: true, expanded: false, geom: 'Polygon', createNoun: 'callout',
+            hostKey: 'visitorContext',
             mapLayers: ['visitor-context-fill', 'visitor-context-outline', 'visitor-context-labels'],
             items: refItems('visitor-context', { key: (p) => p.name || p.label, label: (p) => p.name || p.label || 'Callout' })
           },
@@ -666,6 +668,9 @@
           // Ellis). Moved into External reference 2026-06-05 (was Source layers).
           {
             id: 'cemeteries', kind: 'layer', label: 'Cemeteries (TN Comptroller)', visible: false, locked: true, expanded: false, geom: 'Polygon', createNoun: 'cemetery',
+            hostKey: 'cemeteries',
+            // Cemetery markers are points; only stamp the marker role on a point draw.
+            createDefaults: (geomType) => geomType === 'Point' ? { geom_role: 'marker' } : null,
             mapLayers: ['cemetery-fill', 'cemetery-outline', 'cemetery-marker', 'cemetery-label'],
             items: refItems('cemeteries', {
               filter: (f) => (f.properties || {}).geom_role === 'marker',
@@ -805,29 +810,30 @@
       on ? 'Surfaced under POI (left) — click to remove' : 'Click to surface under POI (left)',
       starSvg(on), onToggle);
   }
-  // Panel node id -> host FEATURE_LIST_LAYERS key (embedded mode). Starring a
-  // feature in one of these routes the ★ through the host's own highlight store
-  // (window.AOP_HOST_SET_HIGHLIGHT) so it persists like the legacy ★ AND surfaces
-  // in the EXISTING left-rail POI tab the user keeps — a starred drawn POI is the
-  // visible case (the host's POI tab gates drawn POIs on highlight). Trails have
-  // no host feature-list runtime; brand logos are off the ★ axis (decision #3).
-  const HOST_HIGHLIGHT_LAYER = { buildings: 'buildings', cemeteries: 'cemeteries', visitorContext: 'visitorContext', editorPois: 'editorPois' };
+  // A node that bridges to the host declares its host FEATURE_LIST_LAYERS key on
+  // spec.hostKey (embedded mode). Starring a feature in one of these routes the ★
+  // through the host's own highlight store (window.AOP_HOST_SET_HIGHLIGHT) so it
+  // persists like the legacy ★ AND surfaces in the EXISTING left-rail POI tab the
+  // user keeps — a starred drawn POI is the visible case (the host's POI tab gates
+  // drawn POIs on highlight). Nodes with no hostKey (trails, brand logos — off the
+  // ★ axis per decision #3, pure-visibility layers) just don't bridge; the value
+  // still bakes panel-side. The key equals the node id by construction.
   function hostHighlight(node, item, on) {
     if (!EMBEDDED || isUserFeature(item.props)) return false;     // user-drawn features stay panel-side
-    const lk = HOST_HIGHLIGHT_LAYER[node.id];
+    const lk = node.hostKey;
     if (!lk || typeof window.AOP_HOST_SET_HIGHLIGHT !== 'function') return false;
     return window.AOP_HOST_SET_HIGHLIGHT(lk, item.props, on) === true;
   }
   // Push a feature's `tag` into the host so the live event-schedule resolver binds
   // it (e.g. #pavilion → this building). The tag itself is the feature's own
   // `props.tag` (baked into the served GeoJSON); this just keeps the host's live
-  // resolver + its localStorage tag store in sync on every commit. Same node→host
-  // layer map as the ★ bridge. No-op standalone / for unmapped layers — the tag
-  // still bakes; it just won't drive the schedule until then. See main.js
-  // AOP_HOST_SET_TAG + rebuildTagLookup (which also reads props.tag on load).
+  // resolver + its localStorage tag store in sync on every commit. Same node host
+  // key as the ★ bridge (spec.hostKey). No-op standalone / for nodes with no
+  // hostKey — the tag still bakes; it just won't drive the schedule until then.
+  // See main.js AOP_HOST_SET_TAG + rebuildTagLookup (reads props.tag on load too).
   function pushTagToHost(node, item) {
     if (!EMBEDDED) return;
-    const lk = HOST_HIGHLIGHT_LAYER[node.id];
+    const lk = node.hostKey;
     if (!lk || typeof window.AOP_HOST_SET_TAG !== 'function') return;
     try { window.AOP_HOST_SET_TAG(lk, item.props, item.props.tag || ''); } catch (e) { /* host not ready */ }
   }
@@ -1230,8 +1236,10 @@
       status: 'core'
     };
     if (geomType === 'LineString') props.difficulty = 'easy';
-    // Cemetery markers are points; only stamp the marker role on a point draw.
-    if (node.id === 'cemeteries' && geomType === 'Point') props.geom_role = 'marker';
+    // Per-node create-defaults hook: merge any extra props the node declares for
+    // this geometry (e.g. cemeteries stamps geom_role='marker' on a Point draw).
+    // Safe default — no hook just means no extras; never throws on absence.
+    if (typeof node.createDefaults === 'function') Object.assign(props, node.createDefaults(geomType) || {});
     return props;
   }
   // The source a node draws INTO: the 3 draw groups carry an explicit one

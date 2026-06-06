@@ -80,7 +80,10 @@
       "Bash(python3 -c \"import numpy; print\\('numpy', numpy.__version__\\)\")",
       "Read(//Users/christopherfryman/Documents/code/aop-copy-review/brain/output/**)",
       "Read(//Users/christopherfryman/Documents/code/aop-copy-review/brain/tasks/04_event_app/**)",
-      "Bash(WEBSITE_URL=\"http://127.0.0.1:8002/\" python3 playwright_verify_pwa_qa2.py)"
+      "Bash(WEBSITE_URL=\"http://127.0.0.1:8002/\" python3 playwright_verify_pwa_qa2.py)",
+      "Edit",
+      "Write",
+      "MultiEdit"
     ],
     "deny": [
       "Bash(sudo *)",

@@ -8,6 +8,30 @@
 
 -----
 
+## ✅ DONE 2026-06-06 — verified by observation (UNCOMMITTED; no VERSION bump yet)
+
+Added one `makeFlyButton(feature, className)` helper (main.js:3591-3603) that creates the
+`type='button'` 🎯 button and wires `click → preventDefault + stopPropagation →
+flyToFeature(feature)`, with a comment block (3585-3590) naming the three surfaces it folds
+in. Replaced the three discrete child fly-button blocks with `makeFlyButton(...)` calls:
+renderVisitorListGroup → `makeFlyButton(row.feature, 'vrow-fly')` (1080),
+renderFeatureListInto → `makeFlyButton(item.feature, 'feature-fly')` (4287), and
+buildEditDock head → `makeFlyButton(item.feature, 'dock-ico')` (4542). The card's planned
+"four" included renderPoiTab, but its row is a whole-`button` calling `gotoPoi(row)` (which
+calls flyToFeature internally) — it never had a discrete child fly button matching the
+gesture, so it was correctly excluded (confirmed against HEAD: gotoPoi at HEAD:1421, not a
+poi-fly child button). The surviving inline `flyToFeature` calls (1091 row-click, 1417
+gotoPoi, 4286 name-click) are whole-row/name affordances, not the fly-button gesture, so
+they stay inline. Acceptance (all pass): `grep -c 'function makeFlyButton'`=1; three
+makeFlyButton call sites at 1080/4287/4542; `node -c website/js/main.js` clean;
+`grep -c 'flyToFeature'`=7 (1 def + 6 callers, with the three button gestures now centralized
+through the helper). **BLOCKED for human verify:** the DOM-level Playwright check (each
+surface's fly button still triggers flyToFeature with the correct feature) — the harness
+`mvp/scripts/playwright_base.py` is present and tile-independent, but the click→flyToFeature
+behavior was not exercised headless this pass; flagged for human verify per the card's "if a
+check cannot be run headless, STOP and flag" rule. **Owed:** the single sprint VERSION bump
+(v51→v52) at sprint code-complete; commit is the user's git gate.
+
 ## Goal
 
 Centralize the 'fly-to button' DOM gesture duplicated across renderVisitorListGroup (1064-1085), renderPoiTab (1373-1415), renderFeatureListInto (3891-3922), and buildEditDock (4126-4128) into one makeFlyButton(feature, className) helper. Lowest-priority cleanup that rides on the unified row shape from card 06.

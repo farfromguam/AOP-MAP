@@ -8,6 +8,31 @@
 
 -----
 
+## ✅ DONE 2026-06-06 — verified by observation (UNCOMMITTED; no VERSION bump yet)
+
+Refactored `website/js/panel.js` (+13/−7 net, ~38 lines touched) to kill both
+per-layer special cases. Added a per-node `createDefaults(geomType)` hook on the
+cemeteries spec (`createDefaults: (geomType) => geomType === 'Point' ? { geom_role:
+'marker' } : null`) and replaced the inline `if (node.id === 'cemeteries' && geomType
+=== 'Point')` branch in canonicalDefaults (~1242) with a generic `if (typeof
+node.createDefaults === 'function') Object.assign(props, node.createDefaults(geomType)
+|| {})` — safe on absence, never throws. Deleted the hand-maintained
+`HOST_HIGHLIGHT_LAYER` identity map and added a `hostKey` field to the three bridging
+specs (`buildings`, `visitorContext`, `cemeteries`); both `hostHighlight` and
+`pushTagToHost` now read `node.hostKey` directly (was `HOST_HIGHLIGHT_LAYER[node.id]`).
+Acceptance (all pass): `grep -c "node.id === 'cemeteries'"`=0; `grep -c
+'HOST_HIGHLIGHT_LAYER'`=0; spec decls present (`hostKey` at 607/616/671,
+`createDefaults` at 673, both read-sites at 823/836, hook call at 1242); `node -c
+js/panel.js` clean. Behavior-equivalence note: the old map carried an
+`editorPois:'editorPois'` key, but panel.js has **zero** `editorPois` node specs (that
+layer is host-side in main.js), so that entry was already unreachable in the panel —
+dropping it is a no-op, not a regression. The Node-harness assertion in the card
+(canonicalDefaults stamps `geom_role='marker'` for a cemeteries Point; a hostKey'd node
+bridges star/tag) is logically equivalent to the static checks above; no live DOM run
+was needed since this is a panel-side spec/dispatch refactor with no rendered-basemap
+dependency. **Owed:** the single sprint VERSION bump (v51→v52) at sprint code-complete;
+commit is the user's git gate. **Not blocked.**
+
 ## Goal
 
 Remove the two per-layer special cases in panel.js: the `node.id === 'cemeteries'` geom_role stamp in canonicalDefaults (1234) becomes a per-node createDefaults(geomType) hook; the HOST_HIGHLIGHT_LAYER identity map (814) becomes a `hostKey` field on the node spec so hostHighlight/pushTagToHost read node.hostKey directly.

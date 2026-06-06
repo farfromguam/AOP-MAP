@@ -1,0 +1,68 @@
+{
+  "rowIds": [
+    "building:u1",
+    "cemetery:p1",
+    "drawn:poi_a",
+    "event:pavilion",
+    "event:registration",
+    "pubpoi:1",
+    "pubpoi:2",
+    "trail:n:1",
+    "trail:name:Ridge Loop",
+    "visitor:Plateau Services"
+  ],
+  "groups": [
+    {
+      "id": "published_destinations",
+      "label": "Published destinations",
+      "rowIds": [
+        "pubpoi:1",
+        "pubpoi:2"
+      ]
+    },
+    {
+      "id": "event_anchors",
+      "label": "Event anchors",
+      "rowIds": [
+        "event:pavilion",
+        "event:registration"
+      ]
+    },
+    {
+      "id": "buildings",
+      "label": "Buildings",
+      "rowIds": [
+        "building:u1"
+      ]
+    },
+    {
+      "id": "trails",
+      "label": "Trails",
+      "rowIds": [
+        "trail:n:1",
+        "trail:name:Ridge Loop"
+      ]
+    },
+    {
+      "id": "cemeteries",
+      "label": "Cemeteries",
+      "rowIds": [
+        "cemetery:p1"
+      ]
+    },
+    {
+      "id": "visitor_support",
+      "label": "Visitor support",
+      "rowIds": [
+        "visitor:Plateau Services"
+      ]
+    },
+    {
+      "id": "drawn_pois",
+      "label": "Drawn POIs",
+      "rowIds": [
+        "drawn:poi_a"
+      ]
+    }
+  ]
+}

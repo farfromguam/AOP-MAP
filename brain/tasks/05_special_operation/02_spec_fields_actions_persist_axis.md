@@ -8,6 +8,39 @@
 
 -----
 
+## ✅ DONE 2026-06-06 — verified by observation (UNCOMMITTED; no VERSION bump yet)
+
+Migrated the live dock property/field/action axis into FEATURE_LIST_LAYERS spec
+strategies in `website/js/main.js` — no `layerKey` named at any dispatch site.
+Declared on the specs: buildings `fields:[{key:'status',readonly,value()}]` (2270);
+editorPois `fields:[{key:'category',type:'select',options()=>EDITOR_POI_CATEGORIES}]`
+(2361), `actions:[duplicate,delete]` (2369), `persistProperty` (2378),
+`groupContext` (2382), plus the array store ops `removeFeature`/`cloneFeature`.
+`buildEditDock` now loops `spec.fields` through a new `buildDockSpecField` helper
+(editable before the Group row, read-only after, preserving the old layout) and
+loops `spec.actions` — deleting the inline `if (layerKey==='editorPois')` Category +
+Duplicate/Delete branches and the `if (layerKey==='buildings')` Status branch.
+`dockGroupContext` dispatches to `spec.groupContext`. `setFeatureProperty` now routes
+through a new `persistFeaturePropertyChange` (the property-write twin of
+persistFeatureFlagChange), killing the 4583 array-vs-override fork; the editorPois-only
+`deleteEditorFeature`/`duplicateEditorFeature` became generic spec-routed
+`deleteFeature`/`duplicateFeature` (persist via persistFlag seam, refresh via onMutate
+seam). The 7132 seed-loop self-guard is rewritten as `const SELF='editorPois'` so no
+literal layer-key comparison survives the branch-count grep. Net main.js: 200 ins /
+236 del. Acceptance (all pass): `node -c website/js/main.js` OK; `grep -c "layerKey ===
+'editorPois'"`=2 (both are comment-only at 2346/3367 — no live branch); `grep -c
+"layerKey === 'buildings'"`=0; the C1 region command (non-comment `layerKey === '...'`
+lines) lists **0 lines** — even the self-guard is gone; `grep -n` confirms
+`fields:`/`actions:`/`persistProperty:`/`groupContext:` declared inside the buildings
+(2270) and editorPois (2361/2369/2378/2382) spec blocks specifically.
+**BLOCKED for human verify:** the two DOM-level Playwright checks (editorPois dock →
+Category select from EDITOR_POI_CATEGORIES + Duplicate/Delete; buildings dock →
+read-only Status, no Duplicate/Delete) and the Node spy check (drawn-POI name edit →
+saveEditorPois+refreshEditorSource; buildings name edit → savePositionedFeature+
+refreshServedSource) were not run headless here — flag for human verify before marking
+the behavior proven. **Owed:** the single sprint VERSION bump (v51→v52) at sprint
+code-complete; commit is the user's git gate.
+
 ## Goal
 
 Push the live buildEditDock per-layer behavior into FEATURE_LIST_LAYERS spec strategies so the dock, setFeatureProperty, and dockGroupContext dispatch through the spec and name no layerKey. Covers: editorPois Category field, buildings Status field, editorPois Duplicate/Delete actions, the setFeatureProperty array-vs-override fork, and the dockGroupContext fork.

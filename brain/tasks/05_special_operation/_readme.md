@@ -40,4 +40,28 @@ Playwright via `mvp/scripts/playwright_base.py`).
   column + bake) stays **deferred** in `10_deferred/star_driven_poi_list.md` pending
   the author→DB fork. Do not reconcile those files in this sprint.
 
+## Sprint 05 status (2026-06-06)
+
+Overnight `special_operation` run complete. **Cards 01–08: DONE + verified by
+independent observation (UNCOMMITTED — the commit is the user's git gate).**
+
+- **01** delete dead `buildInlineEditor` — DONE (pre-run).
+- **02** spec fields/actions/persist axis; no `layerKey` at call sites — DONE, verified.
+- **03** collapse parallel config maps (`FEATURE_NAME_PROP`/`SERVED_SOURCE` onto specs) — DONE, verified.
+- **04** dedup hotspot spec twins into `makeHotspotSpec(label, layerPrefix)` — DONE, verified.
+- **05** register `trails` as a starrable destination layer — DONE, verified.
+- **06** one `collectStarredDestinations()`; both renderers consume it — DONE, verified (structural convergence only).
+- **07** panel create-defaults + host-bridge via spec strategies — DONE, verified.
+- **08** dedup fly-to button into one `makeFlyButton()` helper — DONE, verified.
+
+**Final structural gate (real output):** C1 region command = **0** non-comment
+`layerKey === '...'` branches in main.js; `node -c website/js/main.js` OK;
+`node -c website/js/panel.js` OK. **VERSION v51→v52** (`sw.js` + `#appVersion`).
+
+**Deferred (noted, not done this sprint):** the card-06 **"POI tab starts empty"
+flip** stays DEFERRED pending the user's decision on `10_deferred/star_driven_poi_list.md`
+#1/#2/#4 (engines converged STRUCTURALLY only, behavior preserved — wholesale layers kept
+`listMode:'wholesale'`). The out-of-scope **panel-swap cleanup** (`aop_panel_overrides_v1`
+second store / third list engine) and the **parallel mini-DB collapse** remain deferred.
+
 #aop #sprint #05_special_operation #editor #refactor #universal #slop

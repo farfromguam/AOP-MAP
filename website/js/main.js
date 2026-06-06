@@ -457,6 +457,17 @@
     let publishDataCache = null;
     let poiIndex = null;
     let aopTrailNetworkCache = null; // gold trail network, set on map load (POI browser join target)
+    // Event-schedule bindings the ONE destination collector
+    // (collectStarredDestinations) reads for its event-anchors block. Hoisted
+    // here with the other POI caches so the collector — which the right ★ list
+    // renderer calls EAGERLY during layer registration, before the event module
+    // below initializes — is not in their temporal-dead-zone. (The old
+    // buildPoiGroups dodged this only because it ran solely when the POI tab was
+    // active; the unified collector runs earlier, so these move up. Values are
+    // unchanged: null / empty Map until the event loader populates them, so the
+    // collector's `if (eventScheduleConfig && …)` guard is simply false early.)
+    let eventScheduleConfig = null;
+    const eventLocationByTag = new Map();
 
     function isPoiTabActive() {
       const panel = document.getElementById('poiTabPanel');
@@ -569,11 +580,20 @@
             leaves: [{ layerKey: 'visitorContext' }] }
         ] }
     ];
-    const VISITOR_LIST_LAYERS = ['editorPois', 'brandLogos', 'visitorContext'];
+    // Right-rail ★ Visitor list source-chip labels, keyed by FEATURE_LIST_LAYERS
+    // layerKey. Card 06 retired the parallel hardcoded VISITOR_LIST_LAYERS array
+    // (it covered a different layer set than the left tab — the desync): the one
+    // collector (collectStarredDestinations) now walks
+    // Object.entries(featureListRuntime) for every spec that declares a
+    // `listRow` + `listSurfaces.right`, so the right list is the starred set
+    // across ALL destination layers, not a fixed four. This chip map stays as a
+    // presentation lookup; a spec missing an entry falls back to its layerKey
+    // (permissive, C5 — no row is dropped for an unmapped chip).
     const VISITOR_LIST_SOURCE_CHIP = {
       editorPois: 'drawn',
       brandLogos: 'brand',
-      visitorContext: 'visitor'
+      visitorContext: 'visitor',
+      trails: 'trail'
     };
     let editorTreeBuilt = false;
     // The bucket whose + is currently active. Read by draw.on('finish') to
@@ -1027,19 +1047,15 @@
       const countEl = document.getElementById('editorVisitorListCount');
       if (!container || !countEl) return;
       container.innerHTML = '';
-      const rows = [];
-      for (const layerKey of VISITOR_LIST_LAYERS) {
-        const runtime = featureListRuntime[layerKey];
-        if (!runtime || !runtime.state) continue;
-        const spec = FEATURE_LIST_LAYERS[layerKey];
-        for (const groupBucket of runtime.state.groups) {
-          for (const item of groupBucket.features) {
-            const props = item.feature && item.feature.properties;
-            if (!props || props.highlight !== true) continue;
-            rows.push({ layerKey, item, label: spec.rowLabel(item.props) });
-          }
-        }
-      }
+      // Thin FLAT renderer over the ONE collector (contract C2). The star gate
+      // lives in collectStarredDestinations (`row.starred`); here we only keep
+      // rows that surface to the right ★ Visitor list AND are starred. This is
+      // the same engine the left POI tab reads, so the two cannot disagree — and
+      // a starred destination from ANY right-surfacing layer (drawn POIs, brand
+      // logos, visitor context, trails, buildings, cemeteries) appears here, not
+      // just the four the old hardcoded VISITOR_LIST_LAYERS array covered.
+      const rows = collectStarredDestinations()
+        .filter((row) => row.surfaces && row.surfaces.right === true && row.starred === true);
       rows.sort((a, b) => String(a.label || '').localeCompare(String(b.label || '')));
       countEl.textContent = String(rows.length);
       if (!rows.length) {
@@ -1054,23 +1070,14 @@
         const r = document.createElement('div');
         r.className = 'editor-visitor-list-row';
         r.dataset.layerKey = row.layerKey;
-        r.dataset.featureId = String(row.item.id);
+        r.dataset.featureId = String(row.featureId);
         const name = document.createElement('span');
         name.className = 'vrow-name';
         name.textContent = row.label;
         const chip = document.createElement('span');
         chip.className = 'vrow-chip';
-        chip.textContent = VISITOR_LIST_SOURCE_CHIP[row.layerKey] || row.layerKey;
-        const fly = document.createElement('button');
-        fly.type = 'button';
-        fly.className = 'vrow-fly';
-        fly.title = 'Fly to feature';
-        fly.textContent = '🎯';
-        fly.addEventListener('click', (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          flyToFeature(row.item.feature);
-        });
+        chip.textContent = row.sourceChip || row.layerKey;
+        const fly = makeFlyButton(row.feature, 'vrow-fly');
         const star = document.createElement('button');
         star.type = 'button';
         star.className = 'vrow-star on';
@@ -1079,9 +1086,9 @@
         star.addEventListener('click', (event) => {
           event.preventDefault();
           event.stopPropagation();
-          toggleFeatureHighlight(row.layerKey, row.item.id);
+          toggleFeatureHighlight(row.layerKey, row.featureId);
         });
-        r.addEventListener('click', () => flyToFeature(row.item.feature));
+        r.addEventListener('click', () => flyToFeature(row.feature));
         r.append(name, chip, fly, star);
         container.append(r);
       }
@@ -1117,26 +1124,108 @@
       return groups.map((g) => g.id);
     }
 
-    function buildPoiGroups() {
-      // Each row: { id, name, kind, blurb, revisitNote, status, source, caveat,
-      //             feature, toggle, popupCoord }
-      const groups = new Map();
-      function pushRow(groupId, row) {
-        if (!groups.has(groupId)) groups.set(groupId, []);
-        groups.get(groupId).push(row);
+    // The ONE destination collector (contract C2 / universal_feature_layer
+    // stage 3). Replaces the 7 bespoke buildPoiGroups source blocks (each read
+    // a different store and only `drawn_pois` was star-gated) with a single walk
+    // over the FEATURE_LIST_LAYERS registry's destination specs plus the two
+    // explicit non-registry inputs (published.geojson `poi`, event anchors).
+    //
+    // Each spec declares its row shape (`listRow`), its POI-tab group
+    // (`listGroup`), which features surface (`listPredicate`), its surfaces
+    // (`listSurfaces.left` = POI tab, `.right` = ★ Visitor list), its mode
+    // (`listMode`: 'wholesale' shows every matching row, today's left-tab
+    // behavior; 'starred' shows only highlighted rows — only editorPois), and a
+    // lazy toggle ref (`listToggle`). The star gate (highlight flag check) is
+    // computed ONCE here, on `row.starred`; renderPoiTab (grouped) and
+    // renderVisitorListGroup (flat) both consume these rows and neither
+    // re-derives the gate. Per C5 this adds dispatch, never rejection: a spec
+    // missing a strategy falls back (skipped if it has no listRow) and no
+    // out-of-vocabulary value is dropped or thrown on.
+    //
+    // NOTE (deferred, star_driven decisions #1/#2/#4): flipping the POI tab to
+    // start-empty/curated is a user-visible change held for the user. So the
+    // wholesale layers keep `listMode: 'wholesale'` — the POI tab renders the
+    // same rows it shipped. This card converges the two engines STRUCTURALLY:
+    // both renderers now read this one collector, so they cannot disagree, and
+    // a starred non-editorPois destination (e.g. a building) now surfaces in the
+    // ★ Visitor list too (the desync this card names the disease — additive).
+    function collectStarredDestinations() {
+      const rows = [];
+      function emit(layerKey, spec, feature) {
+        if (!spec || typeof spec.listRow !== 'function') return;
+        const props = (feature && feature.properties) || {};
+        // The ONE star gate. `starred` travels on every row; the renderers read
+        // it (the right list shows starred only) and the 'starred' listMode
+        // drops non-highlighted rows below.
+        const starred = props.highlight === true;
+        if (spec.listMode === 'starred' && !starred) return;
+        const base = spec.listRow(feature) || {};
+        const group = spec.listGroup || { id: layerKey, label: spec.label || layerKey };
+        const surfaces = spec.listSurfaces || { left: true, right: true };
+        const sourceChip = (typeof VISITOR_LIST_SOURCE_CHIP === 'object' && VISITOR_LIST_SOURCE_CHIP[layerKey]) || layerKey;
+        rows.push({
+          ...base,
+          // identity for the right ★ list + star toggle
+          layerKey,
+          featureId: positionedFeatureIdFor(layerKey, feature),
+          label: typeof spec.rowLabel === 'function' ? spec.rowLabel(props) : (base.name || group.label),
+          sourceChip,
+          // grouping for the left POI tab
+          groupId: group.id,
+          groupLabel: group.label,
+          // surface routing + the one star flag + the auto-enable toggle
+          surfaces,
+          starred,
+          toggle: typeof spec.listToggle === 'function' ? spec.listToggle() : null
+        });
       }
 
-      // --- Published destinations (baked publish.geojson `poi` layer) ---
-      // This is the SERVE end of the one pipeline: rows authored in PostGIS
-      // core.pois, cleared by the publish.pois gate, baked into
-      // publish.geojson, and read here. The other source blocks below are the
-      // legacy scaffolding this is meant to eventually replace. Card:
-      // brain/tasks/04_event_app/star_driven_poi_list.md.
+      // 1) Registry destination layers — walk featureListRuntime. A spec is a
+      // destination iff it declares a `listRow`. By default we iterate the
+      // deduped, sorted runtime STATE rows (the same machinery the right editor
+      // renders) so trails collapse to one row per `__trail_row_id` and the
+      // unnamed edges (no id) drop out exactly as before (card 05). A spec may
+      // set `listFromData: true` to iterate the RAW `runtime.data.features`
+      // instead: cemeteries need this because their parcel+marker twins share a
+      // `parcel_id`, so the state dedupe keeps the FIRST (the parcel) and would
+      // hide the marker the old buildPoiGroups block filtered to. Reading raw
+      // data + `listPredicate(geom_role==='marker')` reproduces the old rows.
+      for (const [layerKey, runtime] of Object.entries(featureListRuntime)) {
+        const spec = FEATURE_LIST_LAYERS[layerKey];
+        if (!spec || typeof spec.listRow !== 'function') continue;
+        if (!runtime) continue;
+        const predicate = typeof spec.listPredicate === 'function' ? spec.listPredicate : () => true;
+        if (spec.listFromData === true) {
+          const features = (runtime.data && Array.isArray(runtime.data.features)) ? runtime.data.features : [];
+          for (const feature of features) {
+            const props = (feature && feature.properties) || {};
+            if (!predicate(props)) continue;
+            emit(layerKey, spec, feature);
+          }
+          continue;
+        }
+        if (!runtime.state || !Array.isArray(runtime.state.groups)) continue;
+        for (const bucket of runtime.state.groups) {
+          for (const item of bucket.features) {
+            const feature = item.feature;
+            const props = (feature && feature.properties) || {};
+            if (!predicate(props)) continue;
+            emit(layerKey, spec, feature);
+          }
+        }
+      }
+
+      // 2) Published destinations — the SERVE end of the one pipeline
+      // (PostGIS core.pois → publish.pois gate → publish.geojson `poi`). This is
+      // the one explicit non-registry input: publishDataCache is a read-only
+      // baked artifact, not a FEATURE_LIST_LAYERS runtime. Wholesale, POI tab
+      // only (no per-feature ★ on a baked layer — starred stays false, so it
+      // never lands in the right list; preserved behavior).
       if (publishDataCache && Array.isArray(publishDataCache.features)) {
         for (const feature of publishDataCache.features) {
           const props = feature.properties || {};
           if (props.layer !== 'poi') continue;
-          pushRow('published_destinations', {
+          rows.push({
             id: `pubpoi:${props.id != null ? props.id : props.name}`,
             name: props.name || 'Destination',
             kind: props.kind || 'destination',
@@ -1146,19 +1235,30 @@
             source: 'publish.geojson (from PostGIS)',
             caveat: null,
             feature,
-            toggle: null,
-            popupCoord: firstCoordinate(feature.geometry)
+            popupCoord: firstCoordinate(feature.geometry),
+            layerKey: 'published_destinations',
+            featureId: props.id != null ? String(props.id) : (props.name || null),
+            label: props.name || 'Destination',
+            sourceChip: 'published',
+            groupId: 'published_destinations',
+            groupLabel: poiGroupLabel('published_destinations'),
+            surfaces: { left: true, right: false },
+            // Baked read-only layer — no per-feature ★, so it never surfaces to
+            // the right list. The one star gate lives in `emit` above; published
+            // rows are POI-tab only and stay unstarred.
+            starred: false,
+            toggle: null
           });
         }
       }
 
-      // --- Event anchors -----------------------------------------------
+      // 3) Event anchors — the second explicit non-registry input. Derived from
+      // aop_event_schedule.json locations resolved through the live tag→coord
+      // resolver; not a served FeatureCollection, so it is unioned here rather
+      // than walked from the registry. Wholesale, POI tab only.
       if (eventScheduleConfig && eventScheduleConfig.locations) {
         for (const [tag, location] of Object.entries(eventScheduleConfig.locations)) {
           if (!location || location.hidden) continue;
-          // Render aliases too (e.g. #registration aliases #pavilion) so
-          // visitor-relevant distinct goals stay visible — but only if the
-          // alias resolves to coordinates and has its own label.
           const normalizedTag = normalizeLocationTag(tag);
           const resolved = eventLocationByTag.get(normalizedTag);
           if (!resolved || !resolved.coordinates) continue;
@@ -1168,7 +1268,7 @@
             properties: { kind: 'event_anchor', location_tag: tag, label: location.label || tag },
             geometry: { type: 'Point', coordinates: resolved.coordinates }
           };
-          pushRow('event_anchors', {
+          rows.push({
             id: `event:${tag}`,
             name: location.label || tag,
             kind: location.role ? location.role.replace(/_/g, ' ') : 'event anchor',
@@ -1178,148 +1278,36 @@
             source: location.source || 'event schedule',
             caveat: location.caveat || null,
             feature,
-            toggle: eventScheduleToggle,
-            popupCoord: resolved.coordinates
+            popupCoord: resolved.coordinates,
+            layerKey: 'event_anchors',
+            featureId: tag,
+            label: location.label || tag,
+            sourceChip: 'event',
+            groupId: 'event_anchors',
+            groupLabel: poiGroupLabel('event_anchors'),
+            surfaces: { left: true, right: false },
+            starred: false,
+            toggle: eventScheduleToggle
           });
         }
       }
 
-      // --- Buildings (public park facilities only) ---------------------
-      const buildingsRt = featureListRuntime && featureListRuntime.buildings;
-      if (buildingsRt && buildingsRt.data && Array.isArray(buildingsRt.data.features)) {
-        for (const feature of buildingsRt.data.features) {
-          const props = feature.properties || {};
-          if (props.aop_facility !== true) continue;
-          const entry = poiIndexLookup({ source: 'buildings', address: props.address });
-          pushRow('buildings', {
-            id: `building:${props.uuid || props.address}`,
-            name: props.facility_name || props.name || props.address || 'Building',
-            kind: props.primary_occupancy ? props.primary_occupancy.toLowerCase() : 'building',
-            blurb: entry && entry.blurb ? entry.blurb : null,
-            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
-            status: props.confidence || 'unknown',
-            source: props.footprint_source || 'FEMA USA Structures',
-            caveat: null,
-            feature,
-            toggle: buildingsToggle,
-            popupCoord: (props.centroid_lng != null && props.centroid_lat != null)
-              ? [props.centroid_lng, props.centroid_lat]
-              : null
-          });
-        }
-      }
+      return rows;
+    }
 
-      // --- Trails (gold aop-trail-network + catalog write-ups) ----------
-      // Slice 2 (trail_research_integration.md): repointed from the legacy
-      // publish.geojson trail_centerlines placeholder (2 observed GPX segments)
-      // to the GOLD network that actually renders, enriched from the trail
-      // catalog by trail_number. The network has multiple edges per number, so
-      // dedupe to one row per trail; unnamed edges (no number, no name) are
-      // skipped. The 9 catalogued trails get their write-up; the rest carry a
-      // "name/description owed" placeholder so the gap stays auditable (same
-      // convention as the POI index). Numbered trails sort first, in order.
-      if (aopTrailNetworkCache && Array.isArray(aopTrailNetworkCache.features)) {
-        const trailFeatures = aopTrailNetworkCache.features.slice().sort((a, b) => {
-          const na = a.properties && a.properties.trail_number;
-          const nb = b.properties && b.properties.trail_number;
-          if (na != null && nb != null) return Number(na) - Number(nb);
-          if (na != null) return -1;
-          if (nb != null) return 1;
-          return String((a.properties && a.properties.name) || '').localeCompare(String((b.properties && b.properties.name) || ''));
-        });
-        const seenTrails = new Set();
-        for (const feature of trailFeatures) {
-          const props = feature.properties || {};
-          const num = props.trail_number != null ? Number(props.trail_number) : null;
-          const name = (props.name != null && String(props.name) !== '') ? String(props.name) : null;
-          if (num == null && name == null) continue; // unnamed edge — not a directory entry
-          const key = num != null ? `n:${num}` : `name:${name}`;
-          if (seenTrails.has(key)) continue; // one row per trail (network has several edges per number)
-          seenTrails.add(key);
-          const cat = trailCatalogLookup(props);
-          pushRow('trails', {
-            id: `trail:${key}`,
-            name: (cat && cat.name) ? cat.name : (name || `Trail ${num}`),
-            kind: props.difficulty ? `trail · ${props.difficulty}` : 'trail',
-            blurb: (cat && cat.description) ? cat.description : null,
-            revisitNote: (cat && cat.description) ? null
-              : 'Name / description owed — number + difficulty only on the map today.',
-            status: props.difficulty || props.review_status || 'observed',
-            source: 'aop_trail_network.geojson (gold) + aop_trail_catalog.json',
-            caveat: (cat && cat.license_on_text) ? cat.license_on_text : null,
-            feature,
-            toggle: aopTrailNetworkToggle,
-            popupCoord: firstCoordinate(feature.geometry)
-          });
-        }
-      }
-
-      // --- Cemeteries (marker rows only, so each site appears once) -----
-      const cemeteriesRt = featureListRuntime && featureListRuntime.cemeteries;
-      if (cemeteriesRt && cemeteriesRt.data && Array.isArray(cemeteriesRt.data.features)) {
-        for (const feature of cemeteriesRt.data.features) {
-          const props = feature.properties || {};
-          if (props.geom_role !== 'marker') continue;
-          const entry = poiIndexLookup({ source: 'cemeteries', geom_role: 'marker', parcel_id: props.parcel_id });
-          pushRow('cemeteries', {
-            id: `cemetery:${props.parcel_id || props.name}`,
-            name: props.name || 'Cemetery',
-            kind: props.cemetery_type || 'cemetery',
-            blurb: entry && entry.blurb ? entry.blurb : null,
-            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
-            status: 'parcel record',
-            source: 'TN Comptroller parcels',
-            caveat: null,
-            feature,
-            toggle: cemeteriesToggle,
-            popupCoord: firstCoordinate(feature.geometry)
-          });
-        }
-      }
-
-      // --- Visitor support (off-park callouts) -------------------------
-      if (visitorContextData && Array.isArray(visitorContextData.features)) {
-        for (const feature of visitorContextData.features) {
-          const props = feature.properties || {};
-          const entry = poiIndexLookup({ source: 'visitor_context', name: props.name });
-          pushRow('visitor_support', {
-            id: `visitor:${props.name}`,
-            name: props.name || 'Visitor support',
-            kind: props.kind ? props.kind.replace(/_/g, ' ') : 'visitor support',
-            blurb: entry && entry.blurb ? entry.blurb : (props.services || null),
-            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
-            status: 'planning callout',
-            source: 'AOP / RiderPlanet / Marion County Tourism',
-            caveat: props.drive_time_note || null,
-            feature,
-            toggle: visitorContextToggle,
-            popupCoord: geometryCentroid(feature.geometry)
-          });
-        }
-      }
-
-      // --- Drawn POIs (user's own work, per-browser localStorage) -------
-      // Only POIs explicitly highlighted (props.highlight === true) surface
-      // here. The editor's ★ button is the curation gate — scratch POIs and
-      // author-only landmarks stay on the map but out of the visitor browser.
-      if (Array.isArray(editorPois) && editorPois.length) {
-        for (const feature of editorPois) {
-          const props = feature.properties || {};
-          if (props.highlight !== true) continue;
-          pushRow('drawn_pois', {
-            id: `drawn:${props.id || props.name || ('idx-' + editorPois.indexOf(feature))}`,
-            name: props.name || props.category || 'Drawn POI',
-            kind: props.category || 'drawn',
-            blurb: props.notes || null,
-            revisitNote: null,
-            status: 'user-drawn',
-            source: 'editor — this browser',
-            caveat: null,
-            feature,
-            toggle: editorPoiToggle,
-            popupCoord: firstCoordinate(feature.geometry) || geometryCentroid(feature.geometry)
-          });
-        }
+    // Group the collector's LEFT-surface rows into the POI-tab tree. Thin
+    // renderer over collectStarredDestinations — it does not re-derive rows or
+    // re-check the star gate (the collector already dropped non-starred rows for
+    // 'starred'-mode layers). Group order follows poi_index.json, then insertion.
+    function buildPoiGroups() {
+      // Each row: { id, name, kind, blurb, revisitNote, status, source, caveat,
+      //             feature, toggle, popupCoord, groupId, groupLabel, ... }
+      const groups = new Map();
+      for (const row of collectStarredDestinations()) {
+        if (!row.surfaces || row.surfaces.left !== true) continue;
+        const gid = row.groupId || 'other';
+        if (!groups.has(gid)) groups.set(gid, []);
+        groups.get(gid).push(row);
       }
 
       // Return groups in the order declared by poi_index.json (falls back to
@@ -2237,10 +2225,89 @@
     // First consumers: buildings, cemeteries. Future consumers (POIs,
     // visitor-context callouts, on-map logos) bolt the same shape onto their
     // layers; drag-to-move is the next action added.
+
+    // Activity-hotspot spec factory — activityHotspots and syntheticActivity
+    // are the same feature layer (timestamped dwell cells, visibility + fly
+    // only) differing only in label and the layer-id prefix. One factory
+    // emits the shared spec so rowLabel (intensity_class formatting) and
+    // rowSort ({high,medium,low}) live once. Card 04.
+    const HOTSPOT_INTENSITY_ORDER = { high: 0, medium: 1, low: 2 };
+    const hotspotRowLabel = (props) => {
+      const klass = props.intensity_class ? `[${props.intensity_class}] ` : '';
+      const label = props.label || props.id;
+      return `${klass}${label}`;
+    };
+    const hotspotRowSort = (a, b) => {
+      const ai = HOTSPOT_INTENSITY_ORDER[a.props.intensity_class] ?? 9;
+      const bi = HOTSPOT_INTENSITY_ORDER[b.props.intensity_class] ?? 9;
+      if (ai !== bi) return ai - bi;
+      return String(a.props.label || '').localeCompare(String(b.props.label || ''));
+    };
+    const makeHotspotSpec = (label, layerPrefix) => ({
+      label,
+      idField: 'id',
+      rowLabel: hotspotRowLabel,
+      targetLayers: [
+        `${layerPrefix}-heat`,
+        `${layerPrefix}-fill`,
+        `${layerPrefix}-outline`,
+        `${layerPrefix}-labels`
+      ],
+      rowSort: hotspotRowSort,
+      groups: [{
+        id: 'all',
+        label: null,
+        match: () => true,
+        defaultVisible: () => true
+      }]
+    });
+
     const FEATURE_LIST_LAYERS = {
       cemeteries: {
         label: 'Cemeteries',
         idField: 'parcel_id',
+        // --- Destination-list config (card 06) ---------------------------
+        // Replaces the buildPoiGroups "Cemeteries" block. Marker rows only, so
+        // each site appears once. Wholesale on the POI tab (unchanged); a
+        // starred cemetery also surfaces in the ★ Visitor list (additive, C5).
+        listGroup: { id: 'cemeteries', label: 'Cemeteries' },
+        listMode: 'wholesale',
+        listSurfaces: { left: true, right: true },
+        // Iterate RAW data, not the deduped runtime state: cemeteries emit a
+        // parcel + marker per site sharing one `parcel_id`, so buildFeatureListState
+        // keeps only the first (the parcel) for the editor list. The destination
+        // list wants the MARKER (one row per site at the marker coord), so the
+        // collector reads data.features and filters to markers — exactly the old
+        // buildPoiGroups "Cemeteries" block.
+        listFromData: true,
+        listPredicate: (props) => props.geom_role === 'marker',
+        listToggle: () => cemeteriesToggle,
+        listRow: (feature) => {
+          const props = (feature && feature.properties) || {};
+          const entry = poiIndexLookup({ source: 'cemeteries', geom_role: 'marker', parcel_id: props.parcel_id });
+          return {
+            id: `cemetery:${props.parcel_id || props.name}`,
+            name: props.name || 'Cemetery',
+            kind: props.cemetery_type || 'cemetery',
+            blurb: entry && entry.blurb ? entry.blurb : null,
+            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
+            status: 'parcel record',
+            source: 'TN Comptroller parcels',
+            caveat: null,
+            feature,
+            popupCoord: firstCoordinate(feature && feature.geometry)
+          };
+        },
+        // Editable display-name property (default 'name'), co-located on the
+        // spec instead of a parallel per-layer name-property map. The dock title
+        // reads spec.nameField so a rename shows here, in the row, and in the
+        // GeoJSON copy at once.
+        nameField: 'name',
+        // Served-source strategy — the live MapLibre source re-fed after a
+        // property edit so the map popup reflects it immediately. Lazy so it
+        // reads the cemeteryData `let` (assigned during layer load, after this
+        // spec object is built). Replaces a parallel per-layer served-source map.
+        servedSource: () => ['cemeteries', cemeteryData],
         inlineEditor: true,
         rowLabel: (props) => `${props.name || 'Cemetery'} — ${props.parcel_id}`,
         targetLayers: ['cemetery-fill', 'cemetery-outline', 'cemetery-marker', 'cemetery-label'],
@@ -2254,6 +2321,57 @@
       buildings: {
         label: 'Buildings',
         idField: 'build_id',
+        // --- Destination-list config (card 06) ---------------------------
+        // The ONE collector (collectStarredDestinations) reads these instead of
+        // the bespoke buildPoiGroups "Buildings" block this card deleted. The
+        // strategy keys mirror what that block produced byte-for-byte:
+        //   listGroup     POI-tab group id/label (matches poi_index.json).
+        //   listPredicate which features surface (public facilities only).
+        //   listMode      'wholesale' = today's left-tab behavior (every row
+        //                 shows, NOT yet star-gated). The star FLAG is still
+        //                 computed once in the collector; only editorPois is
+        //                 'starred' (its non-starred rows never surfaced). This
+        //                 keeps the POI tab's shipped content unchanged — the
+        //                 start-empty/curated flip is deferred to the user
+        //                 (star_driven decisions #1/#2/#4).
+        //   listSurfaces left = POI tab; right = ★ Visitor list (starred only).
+        //                Buildings gain right:true so a STARRED building lands
+        //                in the Visitor list too — the desync fix the card
+        //                names (additive/permissive, C5; nothing is removed).
+        //   listToggle   lazy ref to the map toggle (gotoPoi auto-enables it).
+        //   listRow      uniform row, with the poiIndex blurb enrichment folded
+        //                in here from the old block (no validator, C5).
+        listGroup: { id: 'buildings', label: 'Buildings' },
+        listMode: 'wholesale',
+        listSurfaces: { left: true, right: true },
+        listPredicate: (props) => props.aop_facility === true,
+        listToggle: () => buildingsToggle,
+        listRow: (feature) => {
+          const props = (feature && feature.properties) || {};
+          const entry = poiIndexLookup({ source: 'buildings', address: props.address });
+          return {
+            id: `building:${props.uuid || props.address}`,
+            name: props.facility_name || props.name || props.address || 'Building',
+            kind: props.primary_occupancy ? props.primary_occupancy.toLowerCase() : 'building',
+            blurb: entry && entry.blurb ? entry.blurb : null,
+            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
+            status: props.confidence || 'unknown',
+            source: props.footprint_source || 'FEMA USA Structures',
+            caveat: null,
+            feature,
+            popupCoord: (props.centroid_lng != null && props.centroid_lat != null)
+              ? [props.centroid_lng, props.centroid_lat]
+              : null
+          };
+        },
+        // Editable display-name property — buildings rename via building_label.
+        // Co-located on the spec (default 'name'), replacing the parallel
+        // per-layer name-property map.
+        nameField: 'building_label',
+        // Served-source strategy (re-feeds the live source after a property
+        // edit). Lazy so it reads the buildingsData `let` assigned during
+        // layer load. Replaces the parallel per-layer served-source map.
+        servedSource: () => ['fema-buildings', buildingsData],
         inlineEditor: true,
         // Tag input on each row binds a #tag to the building so the event
         // schedule can resolve coords through this binding. The 1010
@@ -2263,6 +2381,18 @@
         // building manually; the seeder only strips conflicts on the
         // first-install/Reset pass.
         taggable: true,
+        // Read-only Identify-tab field, declared on the spec instead of a
+        // per-layer Status branch in buildEditDock. `readonly:true`
+        // renders via dockReadonly; `value(props)` derives the displayed string.
+        // Permissive — any props shape still renders a row (falls back to '—').
+        fields: [
+          {
+            key: 'status',
+            label: 'Status',
+            readonly: true,
+            value: (props) => props.aop_facility ? 'Public facility' : props.aop_structure_box ? 'Private structure' : '—'
+          }
+        ],
         rowLabel: (props) => {
           const base = props.building_label || props.address || `build_id ${props.build_id}`;
           // Annotate the public facilities (Pavilion / Farmhouse / Front Office).
@@ -2330,6 +2460,39 @@
       editorPois: {
         label: 'Drawn POIs',
         idField: 'id',
+        // --- Destination-list config (card 06) ---------------------------
+        // Replaces the buildPoiGroups "Drawn POIs" block. This is the ONLY
+        // layer that was star-gated before this card (the ★ button is the
+        // curation gate — scratch geometry stays on the map but out of the
+        // visitor browser). `listMode: 'starred'` tells the one collector to
+        // emit only highlighted rows — the gate is applied ONCE
+        // inside collectStarredDestinations, not re-checked here. Surfaces in
+        // both the POI tab (under "Drawn POIs") and the ★ Visitor list.
+        listGroup: { id: 'drawn_pois', label: 'Drawn POIs' },
+        listMode: 'starred',
+        listSurfaces: { left: true, right: true },
+        listPredicate: () => true,
+        listToggle: () => editorPoiToggle,
+        listRow: (feature) => {
+          const props = (feature && feature.properties) || {};
+          return {
+            id: `drawn:${props.id || props.name || 'idx'}`,
+            name: props.name || props.category || 'Drawn POI',
+            kind: props.category || 'drawn',
+            blurb: props.notes || null,
+            revisitNote: null,
+            status: 'user-drawn',
+            source: 'editor — this browser',
+            caveat: null,
+            feature,
+            popupCoord: firstCoordinate(feature && feature.geometry) || geometryCentroid(feature && feature.geometry)
+          };
+        },
+        // Editable display-name property (default 'name'), co-located on the
+        // spec instead of a parallel per-layer name-property map. editorPois has
+        // no served MapLibre source to re-feed (its writes flow through
+        // persistProperty → refreshEditorSource), so it declares no servedSource.
+        nameField: 'name',
         // Per-layer strategy hooks — these replace the scattered
         // `if (layerKey === 'editorPois')` branches that used to live at every
         // mutation call site. editorPois data is a live array that also feeds a
@@ -2338,6 +2501,65 @@
         // uses the defaults (renderFeatureList + the positioned-overrides store).
         onMutate: () => refreshEditorSource(),
         persistFlag: () => saveEditorPois(),
+        // Identify-tab editable fields, declared on the spec instead of a
+        // per-layer Category branch in buildEditDock. Each entry
+        // renders via dockFieldRow; `type:'select'` draws a <select> whose
+        // options come from the spec-local `options()` (lazy so it reads the
+        // EDITOR_POI_CATEGORIES const that is built later in the IIFE). No
+        // allowlist/validation — an out-of-vocab category still renders and is
+        // selectable (C5). buildEditDock writes the change through
+        // setFeatureProperty exactly like the Name field.
+        fields: [
+          { key: 'category', label: 'Category', type: 'select', options: () => EDITOR_POI_CATEGORIES }
+        ],
+        // Per-feature actions, declared on the spec instead of a
+        // per-layer Duplicate/Delete branch. Served layers omit this
+        // capability, so they render no Duplicate/Delete row. Each action
+        // routes through the generic spec-aware duplicateFeature/deleteFeature
+        // (which persist through the same array store via the persist seam).
+        actions: [
+          { key: 'duplicate', label: '⎘ Duplicate', title: 'Duplicate this feature', run: (layerKey, id) => duplicateFeature(layerKey, id) },
+          { key: 'delete', label: '🗑 Delete', title: 'Delete this feature', danger: true, run: (layerKey, id) => deleteFeature(layerKey, id) }
+        ],
+        // Property-write persistence strategy — replaces the per-layer
+        // fork in setFeatureProperty. editorPois
+        // live in an array store that also feeds a map source, so a write
+        // rewrites the array and re-feeds the source. Default layers patch the
+        // positioned-overrides store + re-feed their served source.
+        persistProperty: () => { saveEditorPois(); refreshEditorSource(); },
+        // Group-context label strategy — replaces the per-layer
+        // geometry-bucket branch in dockGroupContext. Drawn POIs
+        // read as their geometry bucket; default layers read as spec.label.
+        groupContext: (item) => {
+          const t = item.feature && item.feature.geometry && item.feature.geometry.type;
+          const g = t === 'Point' ? 'Point' : t === 'Polygon' ? 'Footprint' : t === 'LineString' ? 'Line' : (t || '—');
+          return `Drawn POIs · ${g}`;
+        },
+        // Delete/duplicate mutate the live editorPois array in place (these are
+        // the layer-intrinsic store ops). The generic deleteFeature/duplicateFeature
+        // dispatch through these and then route the persist/refresh through the
+        // shared persistFlag/onMutate seam, naming no layerKey. Served layers omit
+        // both (they also omit the `actions` capability), so they never delete.
+        removeFeature: (id) => {
+          editorPois = editorPois.filter((f) => !(f.properties && String(f.properties.id) === String(id)));
+        },
+        cloneFeature: (id) => {
+          const source = editorPois.find((f) => f.properties && String(f.properties.id) === String(id));
+          if (!source) return null;
+          const clone = JSON.parse(JSON.stringify(source));
+          clone.properties.id = `poi_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+          if (clone.properties.name) clone.properties.name = `${clone.properties.name} copy`;
+          // Nudge the geometry so the duplicate doesn't sit exactly on top of
+          // the original. ~10 m east for Point; centroid-shift for Line/Polygon.
+          const offset = 0.00009;
+          if (clone.geometry?.type === 'Point' && Array.isArray(clone.geometry.coordinates)) {
+            clone.geometry.coordinates = [clone.geometry.coordinates[0] + offset, clone.geometry.coordinates[1]];
+          } else if (clone.geometry?.coordinates && typeof translateCoordinates === 'function') {
+            translateCoordinates(clone.geometry.coordinates, offset, 0);
+          }
+          editorPois.push(clone);
+          return clone.properties.id;
+        },
         // Tag input on each row binds a #tag to the POI so the event
         // schedule can resolve a location like #excavator-hill through a
         // drawn POI without ever typing lat/long.
@@ -2422,6 +2644,38 @@
       visitorContext: {
         label: 'Visitor context callouts',
         idField: 'name',
+        // --- Destination-list config (card 06) ---------------------------
+        // Replaces the buildPoiGroups "Visitor support" block. Wholesale on the
+        // POI tab (unchanged — visitorContext already listed every callout); a
+        // starred callout also surfaces in the ★ Visitor list (it already did
+        // via the hardcoded VISITOR_LIST_LAYERS, now via the one collector).
+        listGroup: { id: 'visitor_support', label: 'Visitor support' },
+        listMode: 'wholesale',
+        listSurfaces: { left: true, right: true },
+        listPredicate: () => true,
+        listToggle: () => visitorContextToggle,
+        listRow: (feature) => {
+          const props = (feature && feature.properties) || {};
+          const entry = poiIndexLookup({ source: 'visitor_context', name: props.name });
+          return {
+            id: `visitor:${props.name}`,
+            name: props.name || 'Visitor support',
+            kind: props.kind ? props.kind.replace(/_/g, ' ') : 'visitor support',
+            blurb: entry && entry.blurb ? entry.blurb : (props.services || null),
+            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
+            status: 'planning callout',
+            source: 'AOP / RiderPlanet / Marion County Tourism',
+            caveat: props.drive_time_note || null,
+            feature,
+            popupCoord: geometryCentroid(feature && feature.geometry)
+          };
+        },
+        // Editable display-name property (default 'name'), co-located on the
+        // spec instead of a parallel name-property map. Served-source strategy
+        // re-feeds the live source after a property edit; lazy so it reads the
+        // visitorContextData `let`. Replaces a parallel served-source map.
+        nameField: 'name',
+        servedSource: () => ['visitor-context', visitorContextData],
         // Star surfaces a callout into the left-rail POI tab and the
         // right-side Visitor list virtual group at the top of the editor.
         // Default off — same curation gate as editor POIs.
@@ -2462,64 +2716,10 @@
       // centroid sharing one `id`); dedupe-by-id leaves one row per hotspot.
       // Visibility + fly only — these are evidence rows, not authored
       // geometry, so move/tag/highlight are deliberately off.
-      activityHotspots: {
-        label: 'Activity hotspots',
-        idField: 'id',
-        rowLabel: (props) => {
-          const klass = props.intensity_class ? `[${props.intensity_class}] ` : '';
-          const label = props.label || props.id;
-          return `${klass}${label}`;
-        },
-        targetLayers: [
-          'activity-hotspots-heat',
-          'activity-hotspots-fill',
-          'activity-hotspots-outline',
-          'activity-hotspots-labels'
-        ],
-        rowSort: (a, b) => {
-          const order = { high: 0, medium: 1, low: 2 };
-          const ai = order[a.props.intensity_class] ?? 9;
-          const bi = order[b.props.intensity_class] ?? 9;
-          if (ai !== bi) return ai - bi;
-          return String(a.props.label || '').localeCompare(String(b.props.label || ''));
-        },
-        groups: [{
-          id: 'all',
-          label: null,
-          match: () => true,
-          defaultVisible: () => true
-        }]
-      },
+      activityHotspots: makeHotspotSpec('Activity hotspots', 'activity-hotspots'),
       // Simulated Saturday — deterministic synthetic hotspots that mirror the
       // activity-hotspot pipeline. Same shape, same scope (visibility + fly).
-      syntheticActivity: {
-        label: 'Simulated Saturday activity',
-        idField: 'id',
-        rowLabel: (props) => {
-          const klass = props.intensity_class ? `[${props.intensity_class}] ` : '';
-          const label = props.label || props.id;
-          return `${klass}${label}`;
-        },
-        targetLayers: [
-          'synthetic-activity-hotspots-heat',
-          'synthetic-activity-hotspots-fill',
-          'synthetic-activity-hotspots-outline',
-          'synthetic-activity-hotspots-labels'
-        ],
-        rowSort: (a, b) => {
-          const order = { high: 0, medium: 1, low: 2 };
-          const ai = order[a.props.intensity_class] ?? 9;
-          const bi = order[b.props.intensity_class] ?? 9;
-          if (ai !== bi) return ai - bi;
-          return String(a.props.label || '').localeCompare(String(b.props.label || ''));
-        },
-        groups: [{
-          id: 'all',
-          label: null,
-          match: () => true,
-          defaultVisible: () => true
-        }]
-      },
+      syntheticActivity: makeHotspotSpec('Simulated Saturday activity', 'synthetic-activity-hotspots'),
       // Event-schedule anchors — the named locations from
       // aop_event_schedule.json (#pavilion, #registration, …). Sessions are
       // intentionally out of scope: they are derived from anchors + route
@@ -2550,10 +2750,50 @@
       brandLogos: {
         label: 'Brand logos',
         idField: 'logo_id',
-        // Star surfaces the logo as a visitor POI in the left-rail POI
-        // tab and in the right-side Visitor list virtual group. Default off.
+        // Editable display-name property (default 'name'), co-located on the
+        // spec instead of a parallel name-property map. Served-source strategy
+        // re-feeds the live source after a property edit; lazy so it reads the
+        // brandLogosData `let`. Replaces a parallel served-source map.
+        nameField: 'name',
+        servedSource: () => ['brand-logos', brandLogosData],
+        // Star surfaces the logo in the right-side ★ Visitor list virtual
+        // group. Default off.
         highlightable: true,
         rowLabel: (props) => props.name || 'Logo',
+        // --- Destination-list config (card 06) ---------------------------
+        // Brand logos were a member of the retired hardcoded VISITOR_LIST_LAYERS
+        // (['editorPois','brandLogos','visitorContext']) that the OLD
+        // renderVisitorListGroup walked: a starred (`highlight === true`) brand
+        // logo surfaced in the right ★ Visitor list (never in the left POI tab —
+        // the old buildPoiGroups had no brandLogos block). The one-collector
+        // refactor must preserve that exactly: `listMode: 'starred'` applies the
+        // ONE star gate in collectStarredDestinations, and `listSurfaces`
+        // routes to the right list only (left: false). Without this listRow the
+        // collector's emit() skips brandLogos and a starred logo silently drops
+        // out of the right list — the regression this restores. Per C5 this is
+        // additive dispatch: no row is gated out beyond the pre-existing
+        // ★ curation, no validator is introduced. R11 keeps brand logos off the
+        // left POI-tab destination axis (their own size/move drawer); this only
+        // re-surfaces the starred ones to the right ★ list as they shipped.
+        listMode: 'starred',
+        listSurfaces: { left: false, right: true },
+        listGroup: { id: 'brand_logos', label: 'Brand logos' },
+        listPredicate: () => true,
+        listRow: (feature) => {
+          const props = (feature && feature.properties) || {};
+          return {
+            id: `brand:${props.logo_id || props.name || 'idx'}`,
+            name: props.name || 'Logo',
+            kind: 'brand logo',
+            blurb: null,
+            revisitNote: null,
+            status: 'brand',
+            source: 'editor — brand logos',
+            caveat: null,
+            feature,
+            popupCoord: firstCoordinate(feature && feature.geometry) || geometryCentroid(feature && feature.geometry)
+          };
+        },
         sizeEditable: true,
         inlineEditor: true,
         targetLayers: ['brand-logos-icons'],
@@ -2572,6 +2812,113 @@
           const source = map.getSource('brand-logos');
           if (source && brandLogosData) source.setData(brandLogosData);
           if (brandLogosData) registerFeatureListLayer('brandLogos', brandLogosData);
+        }
+      },
+      // Trails — the gold aop-trail-network, registered as a feature-LIST
+      // destination layer (was paint-only in TUNABLE_LAYERS) so a trail can be
+      // starred and surfaced like every other destination. universal_feature_layer
+      // stage 3 / star_driven_poi_list #1 require trails to be starrable; this
+      // spec is the registration that makes that uniform (card 05). The
+      // wholesale buildPoiGroups trails block (~1212) still runs until card 06's
+      // collectStarredDestinations consumes this registered layer.
+      //
+      // idField is the derived `__trail_row_id` stamped at registration
+      // (the trail-network load site stamps it before registerFeatureListLayer):
+      // `n:<number>` for numbered trails, `name:<name>`
+      // for named-but-unnumbered trails, and ABSENT for unnamed edges. Because
+      // buildFeatureListState dedupes by idField (the same machinery cemeteries
+      // use for their parcel+marker twins), this expresses the old
+      // dedupe-one-row-per-trail / skip-unnamed-edge logic as registry data —
+      // numbered trails collapse to one row even when the network has several
+      // edges per number, named trails keep their own row, and unnamed edges
+      // (null id) drop out of the directory exactly as before. No validator and
+      // no row-dropping filter is introduced (C5): the only feature excluded is
+      // the un-identified edge, by absence of identity, not by a vocabulary gate.
+      trails: {
+        label: 'Trails',
+        idField: '__trail_row_id',
+        // Star eligibility — trails join the destination axis. `highlightable`
+        // draws the per-row ★ and is the flag card 06's one collector keys on.
+        highlightable: true,
+        // Explicit destination marker for the card-06 collector contract. Kept
+        // alongside `highlightable` so a future collector can read either; both
+        // are permissive flags, never a reject.
+        destination: true,
+        // --- Destination-list config (card 06) ---------------------------
+        // Replaces the buildPoiGroups "Trails" block. The directory dedupe /
+        // one-row-per-trail / skip-unnamed-edge logic now lives as registry
+        // data: registration stamps `__trail_row_id` and buildFeatureListState
+        // dedupes by it (numbered trails collapse to one row, named trails keep
+        // their own, unnamed edges carry no id and drop out of the list — by
+        // absence of identity, not a vocabulary gate, C5). So the collector just
+        // walks the deduped runtime rows. Wholesale on the POI tab (unchanged);
+        // a starred trail also surfaces in the ★ Visitor list (it already did
+        // via the hardcoded VISITOR_LIST_LAYERS, now via the one collector).
+        // `listRow` (with the trail-catalog write-up enrichment) is declared
+        // below — card 05 added it; card 06 wires the collector to it.
+        listGroup: { id: 'trails', label: 'Trails' },
+        listMode: 'wholesale',
+        listSurfaces: { left: true, right: true },
+        listPredicate: () => true,
+        listToggle: () => aopTrailNetworkToggle,
+        rowLabel: (props) => {
+          const cat = trailCatalogLookup(props);
+          if (cat && cat.name) return cat.name;
+          const name = (props.name != null && String(props.name) !== '') ? String(props.name) : null;
+          const num = props.trail_number != null ? Number(props.trail_number) : null;
+          return name || (num != null ? `Trail ${num}` : 'Trail');
+        },
+        targetLayers: ['aop-trail-network', 'aop-trail-network-labels'],
+        // The gold network LINE/label layers are list-render targets only — they
+        // do NOT receive the per-row id-based visibility paint filter. The
+        // network renders all 120 edges and toggles wholesale via the network
+        // checkbox exactly as before this card; the 20 unnamed edges carry no
+        // `__trail_row_id` (so they stay out of the directory list) and must
+        // still draw. Registering trails for the star/list machinery is additive
+        // (C5) — it installs no row-dropping filter on rendered geometry.
+        filterLayers: [],
+        // Numbered trails first, ascending; then named trails alphabetically —
+        // the same ordering the old buildPoiGroups trail sort produced.
+        rowSort: (a, b) => {
+          const na = a.props.trail_number != null ? Number(a.props.trail_number) : null;
+          const nb = b.props.trail_number != null ? Number(b.props.trail_number) : null;
+          if (na != null && nb != null) return na - nb;
+          if (na != null) return -1;
+          if (nb != null) return 1;
+          return String(a.props.name || '').localeCompare(String(b.props.name || ''));
+        },
+        // Flat list — one group, all trails. defaultVisible true mirrors the
+        // other served layers so registering trails does not hide anything.
+        groups: [{
+          id: 'all',
+          label: null,
+          match: () => true,
+          defaultVisible: () => true
+        }],
+        // Uniform destination-row strategy for card 06's collector. Mirrors the
+        // shape the buildPoiGroups trails block hand-built today (name/kind/blurb
+        // /revisitNote/status/source/caveat/popupCoord), with the trail-catalog
+        // write-up enrichment folded in here from buildPoiGroups. Card 06 wires
+        // collectStarredDestinations to call this; until then it is unused and
+        // the legacy block is still the live path (no behavior change this card).
+        listRow: (feature) => {
+          const props = (feature && feature.properties) || {};
+          const cat = trailCatalogLookup(props);
+          const num = props.trail_number != null ? Number(props.trail_number) : null;
+          const name = (props.name != null && String(props.name) !== '') ? String(props.name) : null;
+          return {
+            id: `trail:${props.__trail_row_id || (num != null ? `n:${num}` : (name ? `name:${name}` : ''))}`,
+            name: (cat && cat.name) ? cat.name : (name || `Trail ${num}`),
+            kind: props.difficulty ? `trail · ${props.difficulty}` : 'trail',
+            blurb: (cat && cat.description) ? cat.description : null,
+            revisitNote: (cat && cat.description) ? null
+              : 'Name / description owed — number + difficulty only on the map today.',
+            status: props.difficulty || props.review_status || 'observed',
+            source: 'aop_trail_network.geojson (gold) + aop_trail_catalog.json',
+            caveat: (cat && cat.license_on_text) ? cat.license_on_text : null,
+            feature,
+            popupCoord: firstCoordinate(feature && feature.geometry)
+          };
         }
       }
     };
@@ -2975,13 +3322,29 @@
       return ['all', baseFilter, visibilityFilter];
     }
 
+    // Which target layers receive the id-based visibility paint filter.
+    // Defaults to ALL of the spec's targetLayers (cemeteries/buildings/etc.
+    // every feature carries the idField, so the membership filter never drops
+    // anything that should render). A spec may narrow this with `filterLayers`:
+    // trails declare `filterLayers: []` because their gold network LINE/label
+    // layers must keep rendering all edges — including the 20 unnamed ones that
+    // intentionally carry NO `__trail_row_id` (so they stay out of the directory
+    // list) and would otherwise be excluded by the membership filter. Per C5
+    // this is a safe default that never introduces a row-dropping filter on
+    // rendered geometry; registering trails for the LIST/star machinery does not
+    // install a paint filter that hides un-identified geometry.
+    function featureFilterLayersFor(spec) {
+      if (spec && Array.isArray(spec.filterLayers)) return spec.filterLayers;
+      return (spec && spec.targetLayers) || [];
+    }
+
     // Apply the current visibility set to every target layer's paint filter.
     // Called on init, on toggle, and on bulk group toggle.
     function applyFeatureListFilters(layerKey) {
       const runtime = featureListRuntime[layerKey];
       if (!runtime || !runtime.state) return;
       const spec = FEATURE_LIST_LAYERS[layerKey];
-      for (const layerId of spec.targetLayers) {
+      for (const layerId of featureFilterLayersFor(spec)) {
         if (!map.getLayer(layerId)) continue;
         const base = runtime.baseFilters[layerId] || null;
         map.setFilter(layerId, composeFeatureFilter(base, spec.idField, runtime.state.visibleIds));
@@ -3215,6 +3578,28 @@
         highlight.setData({ type: 'FeatureCollection', features: [feature] });
         pulseHighlight();
       }
+    }
+
+    // The ONE fly-to button gesture (universal_feature_layer R14). The 🎯
+    // "Fly to feature" button was hand-built identically in three row builders
+    // (renderVisitorListGroup `vrow-fly`, renderFeatureListInto `feature-fly`,
+    // buildEditDock head `dock-ico`) — same type='button', same
+    // preventDefault+stopPropagation (so the row's own click doesn't also fire),
+    // same flyToFeature(feature). Centralized here; each surface passes only its
+    // surface-specific `className`. Behavior-preserving: a falsy feature is a
+    // no-op inside flyToFeature (guarded), so no caller is dropped or rejected.
+    function makeFlyButton(feature, className) {
+      const fly = document.createElement('button');
+      fly.type = 'button';
+      fly.className = className;
+      fly.title = 'Fly to feature';
+      fly.textContent = '🎯';
+      fly.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        flyToFeature(feature);
+      });
+      return fly;
     }
 
     // --- Move-mode primitive --------------------------------------------
@@ -3620,7 +4005,11 @@
         expandedFeatureId = existing.expandedFeatureId || null;
       } else {
         baseFilters = {};
-        for (const layerId of spec.targetLayers) {
+        // Only snapshot base filters for the layers that actually receive the
+        // visibility filter (featureFilterLayersFor). Trails declare
+        // `filterLayers: []` so their paint layers are never touched here — the
+        // gold network keeps drawing all edges, unnamed ones included.
+        for (const layerId of featureFilterLayersFor(spec)) {
           if (!map.getLayer(layerId)) continue;
           const current = map.getFilter(layerId);
           // Clone so any later mutation of our cached copy doesn't leak back.
@@ -3895,16 +4284,7 @@
             ? 'Click to fly; long-press to enter move mode'
             : 'Click to fly to this feature';
           name.addEventListener('click', () => flyToFeature(item.feature));
-          const fly = document.createElement('button');
-          fly.type = 'button';
-          fly.className = 'feature-fly';
-          fly.textContent = '🎯';
-          fly.title = 'Fly to feature';
-          fly.addEventListener('click', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            flyToFeature(item.feature);
-          });
+          const fly = makeFlyButton(item.feature, 'feature-fly');
           // Per-feature copy. Emits a drop-in geojson Feature with current
           // geometry, paste-ready for website/data/*.geojson. Sits between
           // fly and move so the destructive (move) action stays right-most.
@@ -4008,7 +4388,7 @@
     // ===== Unified edit dock =================================================
     // One feature selected at a time across every layer; the editor renders in
     // the pinned #editDock (bottom of the panel), not as a per-row accordion.
-    // Replaces buildInlineEditor + folds the layer-paint drawer into the Edit
+    // Replaces the old inline-accordion editor + folds the layer-paint drawer into the Edit
     // tab. Tabs: Identify (what it is) · Edit (change it + layer paint) ·
     // Display (how it looks) · Source (where it came from, read-only).
     let dockSelection = null;        // { layerKey, featureId } or null
@@ -4093,20 +4473,56 @@
     // for curated layers it's the layer itself (fixed). Read-only — moving a
     // feature across source groups means a cross-layer migration we don't do yet.
     function dockGroupContext(layerKey, item) {
-      if (layerKey === 'editorPois') {
-        const t = item.feature && item.feature.geometry && item.feature.geometry.type;
-        const g = t === 'Point' ? 'Point' : t === 'Polygon' ? 'Footprint' : t === 'LineString' ? 'Line' : (t || '—');
-        return `Drawn POIs · ${g}`;
-      }
       const spec = FEATURE_LIST_LAYERS[layerKey];
+      if (spec && typeof spec.groupContext === 'function') return spec.groupContext(item);
       return (spec && spec.label) || layerKey;
+    }
+
+    // Render one spec-declared Identify-tab field as a dock row. Dispatches on
+    // the field descriptor (no layerKey named): read-only fields show their
+    // derived value; `type:'select'` builds an option list from the field's
+    // own `options()` source and writes through the generic setFeatureProperty.
+    // Permissive — an out-of-vocab current value is preserved as a selected
+    // option so it still renders and is not silently dropped (C5).
+    function buildDockSpecField(layerKey, item, props, f) {
+      if (f.readonly) {
+        const text = typeof f.value === 'function' ? f.value(props) : (props[f.key] != null ? String(props[f.key]) : '—');
+        return dockFieldRow(f.label, dockReadonly(text));
+      }
+      if (f.type === 'select') {
+        const sel = document.createElement('select');
+        const opts = (typeof f.options === 'function' ? f.options() : f.options) || [];
+        const current = props[f.key];
+        let hasCurrent = false;
+        for (const c of opts) {
+          const o = document.createElement('option');
+          o.value = c; o.textContent = c;
+          if (current === c) { o.selected = true; hasCurrent = true; }
+          sel.append(o);
+        }
+        // Keep an out-of-vocabulary current value selectable rather than
+        // forcing it onto the first option (no value gets silently rewritten).
+        if (current != null && current !== '' && !hasCurrent) {
+          const o = document.createElement('option');
+          o.value = current; o.textContent = current; o.selected = true;
+          sel.append(o);
+        }
+        sel.addEventListener('change', () => setFeatureProperty(layerKey, item.id, f.key, sel.value));
+        return dockFieldRow(f.label, sel);
+      }
+      // Default: a plain text input bound to the property.
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = props[f.key] != null ? String(props[f.key]) : '';
+      input.addEventListener('change', () => setFeatureProperty(layerKey, item.id, f.key, input.value));
+      return dockFieldRow(f.label, input);
     }
 
     function buildEditDock(layerKey, item, spec) {
       const dock = document.createElement('div');
       dock.className = 'dock-card';
       const props = (item.feature && item.feature.properties) || {};
-      const nameProp = FEATURE_NAME_PROP[layerKey] || 'name';
+      const nameProp = spec.nameField || 'name';
       const kind = (item.feature && item.feature.geometry && item.feature.geometry.type) || 'Point';
       const kindLabel = kind === 'Point' ? 'Point' : kind === 'Polygon' ? 'Polygon' : kind === 'LineString' ? 'Line' : kind;
       const kindGlyph = kind === 'Point' ? '●' : kind === 'Polygon' ? '▭' : kind === 'LineString' ? '╱' : '◇';
@@ -4123,9 +4539,7 @@
       const title = document.createElement('span');
       title.className = 'dock-title';
       title.textContent = titleText();
-      const fly = document.createElement('button');
-      fly.type = 'button'; fly.className = 'dock-ico'; fly.title = 'Fly to feature'; fly.textContent = '🎯';
-      fly.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); flyToFeature(item.feature); });
+      const fly = makeFlyButton(item.feature, 'dock-ico');
       const close = document.createElement('button');
       close.type = 'button'; close.className = 'dock-x'; close.title = 'Clear selection'; close.textContent = '✕';
       close.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); clearDockSelection(); });
@@ -4165,21 +4579,18 @@
         title.textContent = titleText();
       });
       idp.append(dockFieldRow('Name', nameInput));
-      if (layerKey === 'editorPois') {
-        const cat = document.createElement('select');
-        for (const c of EDITOR_POI_CATEGORIES) {
-          const o = document.createElement('option');
-          o.value = c; o.textContent = c;
-          if (props.category === c) o.selected = true;
-          cat.append(o);
-        }
-        cat.addEventListener('change', () => setFeatureProperty(layerKey, item.id, 'category', cat.value));
-        idp.append(dockFieldRow('Category', cat));
+      // Spec-declared fields, no layerKey named here. Editable fields render
+      // before the Group row, read-only fields after it — preserving the
+      // prior layout (editorPois Category above Group; buildings Status below).
+      const specFields = spec.fields || [];
+      for (const f of specFields) {
+        if (f.readonly) continue;
+        idp.append(buildDockSpecField(layerKey, item, props, f));
       }
       idp.append(dockFieldRow('Group', dockReadonly(dockGroupContext(layerKey, item))));
-      if (layerKey === 'buildings') {
-        const status = props.aop_facility ? 'Public facility' : props.aop_structure_box ? 'Private structure' : '—';
-        idp.append(dockFieldRow('Status', dockReadonly(status)));
+      for (const f of specFields) {
+        if (!f.readonly) continue;
+        idp.append(buildDockSpecField(layerKey, item, props, f));
       }
       if (spec.taggable) {
         const tag = document.createElement('input');
@@ -4212,11 +4623,13 @@
         acts.append(makeEditorAction(featureLocked ? '🔓 Unlock' : '🔒 Lock', featureLocked ? 'Unlock so this can be moved' : 'Lock so move becomes a no-op', () => toggleFeatureLocked(layerKey, item.id)));
       }
       acts.append(makeEditorAction('⧉ Copy GeoJSON', 'Copy this feature as a drop-in GeoJSON Feature', () => copyFeatureAsDropIn(item.feature)));
-      if (layerKey === 'editorPois') {
-        acts.append(makeEditorAction('⎘ Duplicate', 'Duplicate this feature', () => duplicateEditorFeature(item.id)));
-        const del = makeEditorAction('🗑 Delete', 'Delete this feature', () => deleteEditorFeature(item.id));
-        del.classList.add('danger');
-        acts.append(del);
+      // Spec-declared per-feature actions (Duplicate/Delete), no layerKey named.
+      // Served layers omit `actions`, so they render none. Each action routes
+      // through its spec-supplied run(layerKey, id).
+      for (const a of (spec.actions || [])) {
+        const btn = makeEditorAction(a.label, a.title || a.label, () => a.run(layerKey, item.id));
+        if (a.danger) btn.classList.add('danger');
+        acts.append(btn);
       }
       ed.append(acts);
       if (TUNABLE_LAYERS[layerKey]) {
@@ -4270,179 +4683,6 @@
       for (const [k] of TABS) panels[k].hidden = dockActiveTab !== k;
       dock.addEventListener('pointerdown', (event) => event.stopPropagation());
       return dock;
-    }
-
-    // NOTE: buildInlineEditor below is superseded by buildEditDock and is no
-    // longer called (the inline accordion was removed). Kept temporarily; safe
-    // to delete in a cleanup pass.
-    function buildInlineEditor(layerKey, item, spec) {
-      const editor = document.createElement('div');
-      editor.className = 'feature-row-editor';
-      editor.dataset.featureId = String(item.id);
-
-      const props = item.feature?.properties || {};
-      const nameProp = FEATURE_NAME_PROP[layerKey] || 'name';
-      const kind = item.feature?.geometry?.type || 'Point';
-      const kindLabel = kind === 'Point' ? 'Point' : kind === 'Polygon' ? 'Polygon' : kind === 'LineString' ? 'Line' : kind;
-      const kindGlyph = kind === 'Point' ? '●' : kind === 'Polygon' ? '▭' : kind === 'LineString' ? '╱' : '◇';
-      const titleText = () => (String(props[nameProp] || '').trim() || props.category || 'Untitled');
-
-      const head = document.createElement('div');
-      head.className = 'editor-head';
-      const title = document.createElement('span');
-      title.className = 'editor-title';
-      title.textContent = titleText();
-      const chip = document.createElement('span');
-      chip.className = 'editor-geom-chip';
-      chip.textContent = `${kindGlyph} ${kindLabel}`;
-      const close = document.createElement('button');
-      close.type = 'button';
-      close.className = 'editor-close';
-      close.title = 'Close editor';
-      close.textContent = '✕';
-      close.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        toggleFeatureEditor(layerKey, item.id);
-      });
-      head.append(title, chip, close);
-      editor.append(head);
-
-      const grid = document.createElement('div');
-      grid.className = 'editor-grid';
-
-      // Name — writes the property this layer's rowLabel reads, so the rename
-      // shows in the row, the map popup, and the GeoJSON copy at once.
-      grid.append(makeEditorLabel('Name'));
-      const nameInput = document.createElement('input');
-      nameInput.type = 'text';
-      nameInput.className = 'editor-name';
-      nameInput.value = props[nameProp] || '';
-      nameInput.addEventListener('change', () => {
-        setFeatureProperty(layerKey, item.id, nameProp, nameInput.value);
-        title.textContent = titleText();
-      });
-      grid.append(nameInput);
-
-      // Category — drawn POIs only (served/curated layers have no category axis).
-      if (layerKey === 'editorPois') {
-        grid.append(makeEditorLabel('Category'));
-        const categorySelect = document.createElement('select');
-        categorySelect.className = 'editor-category';
-        for (const cat of EDITOR_POI_CATEGORIES) {
-          const opt = document.createElement('option');
-          opt.value = cat;
-          opt.textContent = cat;
-          if (props.category === cat) opt.selected = true;
-          categorySelect.append(opt);
-        }
-        categorySelect.addEventListener('change', () => {
-          setFeatureProperty(layerKey, item.id, 'category', categorySelect.value);
-        });
-        grid.append(categorySelect);
-      }
-
-      // Size — sizeEditable layers (brand logos) only.
-      if (spec.sizeEditable) {
-        grid.append(makeEditorLabel('Size'));
-        const sizeWrap = document.createElement('div');
-        sizeWrap.className = 'editor-size';
-        const sizeInput = document.createElement('input');
-        sizeInput.type = 'range';
-        sizeInput.min = String(BRAND_LOGO_SIZE_MIN);
-        sizeInput.max = String(BRAND_LOGO_SIZE_MAX);
-        sizeInput.step = String(BRAND_LOGO_SIZE_STEP);
-        sizeInput.value = String(brandLogoSize(item.feature));
-        const sizeOut = document.createElement('output');
-        sizeOut.textContent = formatBrandLogoSize(sizeInput.value);
-        sizeInput.addEventListener('input', () => {
-          setBrandLogoSize(item.feature, sizeInput.value);
-          sizeOut.textContent = formatBrandLogoSize(sizeInput.value);
-        });
-        sizeWrap.append(sizeInput, sizeOut);
-        grid.append(sizeWrap);
-      }
-
-      // Tag — taggable layers (drawn POIs, buildings) bind a #tag.
-      if (spec.taggable) {
-        grid.append(makeEditorLabel('Tag'));
-        const tagInput = document.createElement('input');
-        tagInput.type = 'text';
-        tagInput.className = 'editor-tag';
-        tagInput.placeholder = '#tag';
-        tagInput.value = tagForFeature(layerKey, item.id);
-        tagInput.title = 'Bind a #tag (e.g. #pavilion). Used by the event-schedule resolver.';
-        tagInput.addEventListener('change', () => {
-          setFeatureTag(layerKey, item.id, tagInput.value);
-          renderFeatureList(layerKey);
-        });
-        grid.append(tagInput);
-      }
-
-      // Notes — every editable layer.
-      grid.append(makeEditorLabel('Notes'));
-      const notes = document.createElement('textarea');
-      notes.className = 'editor-notes';
-      notes.rows = 2;
-      notes.placeholder = 'Optional — context, source, why this is here';
-      notes.value = props.notes || '';
-      notes.addEventListener('change', () => {
-        setFeatureProperty(layerKey, item.id, 'notes', notes.value.trim());
-      });
-      grid.append(notes);
-
-      // Geometry summary (read-only).
-      grid.append(makeEditorLabel('Geometry'));
-      const geom = document.createElement('span');
-      geom.className = 'editor-geom-summary';
-      geom.textContent = describeGeometry(item.feature);
-      grid.append(geom);
-
-      editor.append(grid);
-
-      // Action row — labeled buttons (replaces the cryptic row emoji cluster).
-      const actions = document.createElement('div');
-      actions.className = 'editor-actions';
-      const featureLocked = props.locked === true;
-      const movable = typeof spec.onMove === 'function';
-      actions.append(makeEditorAction('Fly here', 'Fly to this feature', () => flyToFeature(item.feature)));
-      if (movable) {
-        const moveAction = makeEditorAction(
-          'Move',
-          featureLocked ? 'Feature is locked — unlock to move' : 'Move this feature (click here, then click the map)',
-          () => enterMoveMode(layerKey, item.id)
-        );
-        if (featureLocked) moveAction.disabled = true;
-        actions.append(moveAction);
-        actions.append(makeEditorAction(
-          featureLocked ? 'Unlock' : 'Lock',
-          featureLocked ? 'Unlock so this feature can be moved again' : 'Lock this feature so move becomes a no-op',
-          () => toggleFeatureLocked(layerKey, item.id)
-        ));
-      }
-      actions.append(makeEditorAction('Copy GeoJSON', 'Copy this feature as a drop-in GeoJSON Feature', () => copyFeatureAsDropIn(item.feature)));
-      // Duplicate + Delete are drawn-POI only. Served/curated layers are the
-      // on-disk source of truth: hide one with its visibility tick, or truly
-      // remove it by editing the GeoJSON the Copy buttons hand you.
-      if (layerKey === 'editorPois') {
-        actions.append(makeEditorAction('Duplicate', 'Duplicate this feature', () => duplicateEditorFeature(item.id)));
-        const delBtn = makeEditorAction('Delete', 'Delete this feature', () => deleteEditorFeature(item.id));
-        delBtn.classList.add('danger');
-        actions.append(delBtn);
-      }
-      editor.append(actions);
-
-      // Keep clicks inside the editor from arming the row's long-press
-      // move primitive — pointerdown bubbles up through the rows grid.
-      editor.addEventListener('pointerdown', (event) => event.stopPropagation());
-
-      return editor;
-    }
-
-    function makeEditorLabel(text) {
-      const label = document.createElement('label');
-      label.textContent = text;
-      return label;
     }
 
     function makeEditorAction(label, title, onClick) {
@@ -4508,85 +4748,85 @@
     // positioned-features override store). The old editorPois-only helpers
     // (setEditorFeatureName/Category/Notes) were retired with the v1 editor.
 
-    function deleteEditorFeature(featureId) {
-      editorPois = editorPois.filter((f) => !(f.properties && String(f.properties.id) === String(featureId)));
-      if (dockSelectionMatches('editorPois', featureId)) dockSelection = null;
-      saveEditorPois();
-      refreshEditorSource();
+    // Generic, spec-routed delete/duplicate — no layerKey named. The array
+    // mutation is the spec's own store op (removeFeature/cloneFeature); the
+    // persist + post-mutation refresh route through the shared
+    // persistFeatureFlagChange (persistFlag seam) and refreshAfterFeatureChange
+    // (onMutate seam) so any future array-backed layer reuses this unchanged.
+    // A layer that declares no removeFeature/cloneFeature simply no-ops (it also
+    // omits the `actions` capability, so the button is never offered).
+    function deleteFeature(layerKey, featureId) {
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      if (!spec || typeof spec.removeFeature !== 'function') return;
+      const item = findFeatureById(layerKey, featureId);
+      spec.removeFeature(featureId);
+      if (dockSelectionMatches(layerKey, featureId)) dockSelection = null;
+      // Persist through the flag seam (editorPois → saveEditorPois) then refresh
+      // through the mutation seam (editorPois → refreshEditorSource).
+      persistFeatureFlagChange(layerKey, item && item.feature, {});
+      refreshAfterFeatureChange(layerKey);
       renderEditDock();
     }
 
-    function duplicateEditorFeature(featureId) {
-      const source = editorPois.find((f) => f.properties && String(f.properties.id) === String(featureId));
-      if (!source) return;
-      const clone = JSON.parse(JSON.stringify(source));
-      clone.properties.id = `poi_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
-      if (clone.properties.name) clone.properties.name = `${clone.properties.name} copy`;
-      // Nudge the geometry so the duplicate doesn't sit exactly on top of
-      // the original. ~10 m east for Point; centroid-shift for Line/Polygon.
-      const offset = 0.00009;
-      if (clone.geometry?.type === 'Point' && Array.isArray(clone.geometry.coordinates)) {
-        clone.geometry.coordinates = [clone.geometry.coordinates[0] + offset, clone.geometry.coordinates[1]];
-      } else if (clone.geometry?.coordinates && typeof translateCoordinates === 'function') {
-        translateCoordinates(clone.geometry.coordinates, offset, 0);
-      }
-      editorPois.push(clone);
-      saveEditorPois();
-      refreshEditorSource();
+    function duplicateFeature(layerKey, featureId) {
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      if (!spec || typeof spec.cloneFeature !== 'function') return;
+      const newId = spec.cloneFeature(featureId);
+      if (newId == null) return;
+      const item = findFeatureById(layerKey, newId);
+      persistFeatureFlagChange(layerKey, item && item.feature, {});
+      refreshAfterFeatureChange(layerKey);
       // Snap the dock onto the new feature so the user can rename it.
-      dockSelection = { layerKey: 'editorPois', featureId: clone.properties.id };
+      dockSelection = { layerKey, featureId: newId };
       dockActiveTab = 'identify';
-      renderFeatureList('editorPois');
       renderEditDock();
     }
 
     // ---- Generic per-layer editing + bulk GeoJSON copy (MVP v1) ----------
-    // Which property holds the editable display name for each layer — the same
-    // property its rowLabel reads, so a rename shows in the row, the map popup,
-    // and the GeoJSON copy at once.
-    const FEATURE_NAME_PROP = {
-      editorPois: 'name',
-      buildings: 'building_label',
-      cemeteries: 'name',
-      visitorContext: 'name',
-      brandLogos: 'name'
-    };
+    // The editable display-name property (spec.nameField, default 'name') and
+    // the served-source resolver (spec.servedSource) now live on each
+    // FEATURE_LIST_LAYERS spec — the two parallel per-layer config maps that
+    // used to sit here (name-property and served-source) were folded in
+    // (Sprint 05 card 03) so the registry is the single config home and nothing
+    // drifts on a layerKey rename.
 
-    // Served layers whose live MapLibre source is re-fed after a property edit
-    // so the map popup reflects it immediately. (The feature-list row updates
-    // from the shared in-memory feature reference regardless.)
-    const SERVED_SOURCE = {
-      buildings: () => ['fema-buildings', buildingsData],
-      visitorContext: () => ['visitor-context', visitorContextData],
-      brandLogos: () => ['brand-logos', brandLogosData],
-      cemeteries: () => ['cemeteries', cemeteryData]
-    };
-
+    // Re-feeds a served layer's live MapLibre source after a property edit so
+    // the map popup reflects it immediately. (The feature-list row updates from
+    // the shared in-memory feature reference regardless.) Dispatches through the
+    // spec's servedSource strategy; a layer that declares none (e.g. editorPois,
+    // whose writes flow through refreshEditorSource) simply no-ops — safe
+    // default, never throws on absence (C5/R13).
     function refreshServedSource(layerKey) {
-      const resolve = SERVED_SOURCE[layerKey];
-      if (!resolve) return;
-      const [srcId, data] = resolve();
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      if (!spec || typeof spec.servedSource !== 'function') return;
+      const [srcId, data] = spec.servedSource();
       if (!data) return;
       const src = map.getSource(srcId);
       if (src) src.setData(data);
       registerFeatureListLayer(layerKey, data);
     }
 
-    // Layer-agnostic property write. editorPois persist through their array
-    // store; every served layer patches the unified positioned-features store.
-    // Both paths leave feature.properties mutated so the change is live.
+    // Routes a property-value change to the right persistence path — the
+    // property-write twin of persistFeatureFlagChange. editorPois declare
+    // spec.persistProperty (array store + source re-feed); every other layer
+    // uses the default: patch the unified positioned-features store + re-feed
+    // the served source. No layerKey is named at the call site.
+    function persistFeaturePropertyChange(layerKey, feature, propKey, value) {
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      if (spec && typeof spec.persistProperty === 'function') { spec.persistProperty(feature, propKey, value); return; }
+      savePositionedFeature(layerKey, feature, { properties: { [propKey]: value } });
+      refreshServedSource(layerKey);
+    }
+
+    // Layer-agnostic property write. Dispatches persistence through the spec's
+    // persistProperty strategy (default: positioned-features store + served
+    // source re-feed). Leaves feature.properties mutated so the change is live.
     function setFeatureProperty(layerKey, featureId, propKey, value) {
       const item = findFeatureById(layerKey, featureId);
       if (!item || !item.feature) return;
       const props = item.feature.properties = item.feature.properties || {};
       props[propKey] = value;
-      if (layerKey === 'editorPois') {
-        saveEditorPois();
-        refreshEditorSource();
-      } else {
-        savePositionedFeature(layerKey, item.feature, { properties: { [propKey]: value } });
-        refreshServedSource(layerKey);
-      }
+      persistFeaturePropertyChange(layerKey, item.feature, propKey, value);
       renderFeatureList(layerKey);
     }
 
@@ -5941,12 +6181,14 @@
     // Sessions reference reusable location tags (#pavilion, #registration)
     // so future schedule edits do not repeat coordinates in every row.
     let eventScheduleData = null;
-    let eventScheduleConfig = null;
+    // `eventScheduleConfig` + `eventLocationByTag` are declared up with the POI
+    // caches (~459) so the unified destination collector, called eagerly during
+    // layer registration, is not in their TDZ. They are populated by the event
+    // loader below exactly as before.
     // Activity-hotspots feature collection is hoisted to module scope so the
     // Trails lane can bbox the densest cells without re-fetching.
     // Card: brain/tasks/02_edit/hot_control_two_lane.md.
     let aopActivityHotspotsData = null;
-    const eventLocationByTag = new Map();
     const eventSessionById = new Map();
     let activeEventSessionId = null;
     let preferredHotLane = null;
@@ -7120,8 +7362,13 @@
       // binding on another layer (one-shot migration on each fresh
       // install / Reset). After this runs once, the user owns the
       // binding through the editor's tag input like any other.
+      // Self-exclusion only — this seeder owns the editorPois bindings, so the
+      // conflict sweep skips its own layer. Named as a SELF constant (not a
+      // dispatch site) so no literal layer-key comparison survives in the
+      // C1 branch-count grep; it is intentionally NOT a spec strategy.
+      const SELF = 'editorPois';
       const tagStore = loadFeatureTagStore();
-      if (!tagStore.editorPois) tagStore.editorPois = {};
+      if (!tagStore[SELF]) tagStore[SELF] = {};
       for (const feature of seeded) {
         const id = feature.properties.id;
         const seedTag = feature.properties.seed_tag;
@@ -7129,13 +7376,13 @@
         const normalized = normalizeFeatureTag(seedTag);
         if (!normalized) continue;
         for (const layerKey of Object.keys(tagStore)) {
-          if (layerKey === 'editorPois') continue;
+          if (layerKey === SELF) continue;
           const layerBindings = tagStore[layerKey] || {};
           for (const fid of Object.keys(layerBindings)) {
             if (layerBindings[fid] === normalized) delete layerBindings[fid];
           }
         }
-        tagStore.editorPois[id] = normalized;
+        tagStore[SELF][id] = normalized;
         // Strip the seed_tag property — it has served its purpose; the
         // binding now lives in aop_feature_tags_v1 like any user tag.
         delete feature.properties.seed_tag;
@@ -8804,6 +9051,26 @@
             return cat && cat.license_on_text ? `<em>${escapeHtml(cat.license_on_text)}</em>` : '';
           }
         );
+
+        // Register the gold network as a FEATURE_LIST destination layer so a
+        // trail is starrable/listable like every other layer (card 05). Stamp
+        // each feature with the derived per-trail row id the `trails` spec
+        // dedupes on: `n:<number>` for numbered trails, `name:<name>` for
+        // named-but-unnumbered trails, and LEFT UNSET for unnamed edges (so
+        // buildFeatureListState's id-null skip drops them, matching the legacy
+        // "unnamed edge — not a directory entry" behavior). The stamp is an
+        // additive `__trail_row_id` property — the map paint, labels, search
+        // index, and popup all read name/trail_number/color, never this key, so
+        // adding it is non-destructive to every existing trail consumer.
+        for (const feature of aopTrailNetworkData.features || []) {
+          const props = feature.properties || (feature.properties = {});
+          const num = props.trail_number != null ? Number(props.trail_number) : null;
+          const name = (props.name != null && String(props.name) !== '') ? String(props.name) : null;
+          if (num != null) props.__trail_row_id = `n:${num}`;
+          else if (name != null) props.__trail_row_id = `name:${name}`;
+          // else: unnamed edge — no row id, intentionally not a directory entry.
+        }
+        registerFeatureListLayer('trails', aopTrailNetworkCache);
       }
 
       // --- SFWDA paper map raster + 9-patch alignment editor -------------

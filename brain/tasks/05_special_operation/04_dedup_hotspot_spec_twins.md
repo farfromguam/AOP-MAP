@@ -8,6 +8,28 @@
 
 -----
 
+## ✅ DONE 2026-06-06 — verified by observation (UNCOMMITTED; no VERSION bump yet)
+
+Factored the byte-identical `activityHotspots` (was 2465-2492) and `syntheticActivity`
+(was 2495-2522) `FEATURE_LIST_LAYERS` specs into a `makeHotspotSpec(label, layerPrefix)`
+factory (main.js:2258) that derives `targetLayers` as
+`['<prefix>-heat','<prefix>-fill','<prefix>-outline','<prefix>-labels']` and shares
+`rowLabel`/`rowSort` by reference via hoisted `hotspotRowLabel` (2247) + `hotspotRowSort`
+(2252) + a single `HOTSPOT_INTENSITY_ORDER = {high:0,medium:1,low:2}` constant (2246) —
+the two per-spec `order` literals are gone. The two literal spec blocks were replaced by
+`makeHotspotSpec('Activity hotspots','activity-hotspots')` (2602) and
+`makeHotspotSpec('Simulated Saturday activity','synthetic-activity-hotspots')` (2605).
+Acceptance (all pass): `node -c website/js/main.js` OK; `grep -c 'intensity_class ?'`
+dropped 2 → 1 (rowLabel pattern lives once in the factory); `grep -n makeHotspotSpec` = 1
+factory def (2258) + 2 call sites (2602, 2605). Node harness (replicating the factory):
+both specs emit identical row labels (`["[low] Zeta","[high] Alpha","[medium] Mid","NoClass"]`)
+and identical sort order (`["Alpha","Mid","Zeta","NoClass"]`), with `rowLabel`/`rowSort`
+shared by reference (`===` true), proving behavior preserved with no map. Wiring confirmed
+unchanged: registration still uses keys `activityHotspots`/`syntheticActivity` (7768/7883),
+and the derived `targetLayers` match the existing toggle layer-ID arrays at 1770/1771
+exactly. **Owed:** the single sprint VERSION bump (v51→v52) at sprint code-complete; commit
+is the user's git gate.
+
 ## Goal
 
 Collapse the two near-identical FEATURE_LIST_LAYERS specs (activityHotspots 2465-2492, syntheticActivity 2495-2522) — which differ only in label and targetLayers — into a makeHotspotSpec(label, layerPrefix) factory, removing ~24 lines of copy-paste and the duplicated rowLabel/rowSort.

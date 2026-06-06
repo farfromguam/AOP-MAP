@@ -1,0 +1,67 @@
+{
+  "_note": "Card 06 row-parity fixture. Drives buildPoiGroups (pre-refactor) and collectStarredDestinations (post-refactor) with one known input set so the POI-tab row-id set can be diffed for parity. Covers all 7 legacy source blocks. A starred building + a starred editorPOI are included so the convergence (starred → both lists) is observable. A starred brand logo + an unstarred one are included so the RIGHT-only ★ Visitor list surfacing (the regression card 06 had to restore) is observable: a starred brand logo must land in the right list and NOT in the left POI tab.",
+  "publishDataCache": {
+    "type": "FeatureCollection",
+    "features": [
+      { "type": "Feature", "properties": { "layer": "poi", "id": 1, "name": "AOP Pavilion", "kind": "facility", "blurb": "Main gathering point.", "status": "published" }, "geometry": { "type": "Point", "coordinates": [-85.6, 35.4] } },
+      { "type": "Feature", "properties": { "layer": "poi", "id": 2, "name": "Ellis Cemetery", "kind": "cemetery", "blurb": "Historic parcel.", "status": "published" }, "geometry": { "type": "Point", "coordinates": [-85.61, 35.41] } },
+      { "type": "Feature", "properties": { "layer": "park_boundaries", "name": "boundary (ignored)" }, "geometry": { "type": "Polygon", "coordinates": [[[-85.7,35.3],[-85.5,35.3],[-85.5,35.5],[-85.7,35.5],[-85.7,35.3]]] } }
+    ]
+  },
+  "eventScheduleConfig": {
+    "locations": {
+      "pavilion": { "label": "Pavilion", "role": "main_stage", "confidence": "high", "source": "event schedule" },
+      "registration": { "label": "Registration", "role": "check_in", "confidence": "high", "source": "event schedule" },
+      "hidden_one": { "label": "Hidden", "hidden": true }
+    }
+  },
+  "eventLocations": {
+    "pavilion": [-85.6, 35.4],
+    "registration": [-85.62, 35.42]
+  },
+  "buildings": {
+    "type": "FeatureCollection",
+    "features": [
+      { "type": "Feature", "properties": { "build_id": "b1", "uuid": "u1", "aop_facility": true, "facility_name": "Front Office", "building_label": "Front Office", "address": "1 Park Rd", "primary_occupancy": "OFFICE", "confidence": "high", "centroid_lng": -85.6, "centroid_lat": 35.4 }, "geometry": { "type": "Polygon", "coordinates": [[[-85.601,35.399],[-85.599,35.399],[-85.599,35.401],[-85.601,35.401],[-85.601,35.399]]] } },
+      { "type": "Feature", "properties": { "build_id": "b2", "uuid": "u2", "aop_facility": false, "aop_structure_box": true, "address": "665 Private", "building_label": "Private 665" }, "geometry": { "type": "Polygon", "coordinates": [[[-85.701,35.299],[-85.699,35.299],[-85.699,35.301],[-85.701,35.301],[-85.701,35.299]]] } }
+    ]
+  },
+  "trailNetwork": {
+    "type": "FeatureCollection",
+    "features": [
+      { "type": "Feature", "properties": { "trail_number": 1, "__trail_row_id": "n:1", "difficulty": "easy" }, "geometry": { "type": "LineString", "coordinates": [[-85.6,35.4],[-85.61,35.41]] } },
+      { "type": "Feature", "properties": { "trail_number": 1, "__trail_row_id": "n:1", "difficulty": "easy" }, "geometry": { "type": "LineString", "coordinates": [[-85.61,35.41],[-85.62,35.42]] } },
+      { "type": "Feature", "properties": { "name": "Ridge Loop", "__trail_row_id": "name:Ridge Loop" }, "geometry": { "type": "LineString", "coordinates": [[-85.63,35.43],[-85.64,35.44]] } },
+      { "type": "Feature", "properties": {}, "geometry": { "type": "LineString", "coordinates": [[-85.65,35.45],[-85.66,35.46]] } }
+    ]
+  },
+  "cemeteries": {
+    "_note": "parcel listed BEFORE marker, matching website/data/aop_cemeteries.geojson — this is the order that made the runtime state dedupe (keeps first = parcel) hide the marker, which is why the collector reads raw data for cemeteries (listFromData).",
+    "type": "FeatureCollection",
+    "features": [
+      { "type": "Feature", "properties": { "parcel_id": "p1", "geom_role": "parcel", "name": "Ellis Cemetery" }, "geometry": { "type": "Polygon", "coordinates": [[[-85.611,35.409],[-85.609,35.409],[-85.609,35.411],[-85.611,35.411],[-85.611,35.409]]] } },
+      { "type": "Feature", "properties": { "parcel_id": "p1", "geom_role": "marker", "name": "Ellis Cemetery", "cemetery_type": "family" }, "geometry": { "type": "Point", "coordinates": [-85.61, 35.41] } }
+    ]
+  },
+  "visitorContext": {
+    "type": "FeatureCollection",
+    "features": [
+      { "type": "Feature", "properties": { "name": "Plateau Services", "kind": "supply_run", "services": "fuel, food" }, "geometry": { "type": "Polygon", "coordinates": [[[-85.8,35.2],[-85.78,35.2],[-85.78,35.22],[-85.8,35.22],[-85.8,35.2]]] } }
+    ]
+  },
+  "editorPois": [
+    { "type": "Feature", "properties": { "id": "poi_a", "name": "My Camp", "category": "Camp", "highlight": true, "notes": "starred drawn poi" }, "geometry": { "type": "Point", "coordinates": [-85.6, 35.4] } },
+    { "type": "Feature", "properties": { "id": "poi_b", "name": "Scratch", "category": "Scratch", "highlight": false }, "geometry": { "type": "Point", "coordinates": [-85.61, 35.41] } }
+  ],
+  "brandLogos": {
+    "_note": "Brand logos were in the retired VISITOR_LIST_LAYERS; a starred one surfaced ONLY in the right ★ Visitor list (never the left POI tab). The collector must re-emit starred brand logos to the right list. logo_aop is starred, logo_rw is not.",
+    "type": "FeatureCollection",
+    "features": [
+      { "type": "Feature", "properties": { "logo_id": "logo_aop", "name": "AOP Badge", "highlight": true }, "geometry": { "type": "Point", "coordinates": [-85.6, 35.4] } },
+      { "type": "Feature", "properties": { "logo_id": "logo_rw", "name": "Rock Warblers", "highlight": false }, "geometry": { "type": "Point", "coordinates": [-85.61, 35.41] } }
+    ]
+  },
+  "trailCatalog": {
+    "1": { "name": "Loop Trail One", "description": "A nice easy loop." }
+  }
+}

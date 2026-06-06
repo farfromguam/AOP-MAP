@@ -4,6 +4,46 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+**2026-06-06 (SPRINT 05 SPECIAL_OPERATION OVERNIGHT RUN — universal feature-layer
+refactor, CODE ONLY, UNCOMMITTED, v51→v52).** The overnight run executed cards 02–08
+of `brain/tasks/05_special_operation/` (card 01 was done before the run); all eight
+cards passed independent observation. Per-card result: **01** — dead `buildInlineEditor`
+deleted (done pre-run). **02** — the live dock property/field/action axis migrated into
+FEATURE_LIST_LAYERS spec strategies; `buildEditDock`/`setFeatureProperty`/
+`dockGroupContext` dispatch through the spec and name no `layerKey`; the 7132 seed-loop
+self-guard rewritten as `const SELF='editorPois'` so no literal layerKey survives the
+branch grep (documented in card 02). **03** — the parallel per-layer config maps
+(`FEATURE_NAME_PROP`/`SERVED_SOURCE`) folded onto each spec; registry is the single config
+home. **04** — the activityHotspots/syntheticActivity spec twins collapsed into one
+`makeHotspotSpec(label, layerPrefix)` factory. **05** — `trails` registered as a
+starrable destination layer (`highlightable:true` + `registerFeatureListLayer('trails',…)`).
+**06** — the two list engines collapsed into ONE `collectStarredDestinations()`; both
+`buildPoiGroups`/`renderPoiTab` (grouped) and `renderVisitorListGroup` (flat) consume it;
+the `highlight===true` star gate applied once. **07** — the two per-layer special cases in
+panel.js (create-defaults + host-bridge) replaced by spec `createDefaults`/`hostKey`.
+**08** — the duplicated fly-to DOM gesture centralized into one `makeFlyButton()` helper.
+**Final whole-sprint structural gate (real output):** C1 region command (non-comment
+`layerKey === '...'` branches in main.js) = **0 branches**; `node -c website/js/main.js`
+OK; `node -c website/js/panel.js` OK. VERSION **v51→v52** (`sw.js` + `#appVersion`; both
+greps now read v52, no residual v51). **OWED / standing items:** on-device feel still owed;
+the **commit + the v52 bump are the USER's git gate** (this run did NOT commit). The
+card-06 **"POI tab starts empty" flip is DEFERRED** pending the user's decision on
+`10_deferred/star_driven_poi_list.md` #1/#2/#4 — the two list engines were converged
+**STRUCTURALLY only, behavior preserved** (wholesale layers kept `listMode:'wholesale'`, so
+the POI tab renders the same rows it shipped). Out-of-scope **panel-swap cleanup** (third
+list engine + `aop_panel_overrides_v1` second store) and the **parallel mini-DB collapse**
+(poi_index/seed/localStorage → one DB column + bake) remain **deferred**, untouched this
+sprint. **VERIFICATION OWED (honest gap):** every card's STRUCTURAL acceptance (greps +
+`node -c`, C1=0 branches) was observed and passes, but cards **02** and **03** flagged their
+runtime **DOM-level Playwright checks "BLOCKED for human verify"** — the seal team did not
+boot the dock into the exact runtime state headless (fragile without a basemap) rather than
+fake it. So a quick local/on-device smoke test is owed before trusting 02/03 at runtime:
+edit a drawn-POI **Category** (select populated from `EDITOR_POI_CATEGORIES`) + **Duplicate/
+Delete** present; a **buildings** feature shows a read-only **Status** and no Duplicate/Delete;
+a drawn-POI name edit persists via `saveEditorPois`/`refreshEditorSource` and a buildings name
+edit via `savePositionedFeature`/`refreshServedSource`. Card 06's star-in-both-lists DOM check
+and 04/05/07/08 were not blocked.
+
 **2026-06-05 (ONE ROAD STYLE — dropped the per-preset road recolour, CODE ONLY,
 UNCOMMITTED, v49→v50).** User: *"the roads look wrong and washed out on the trace
 preset. there is some dynamic road style swapping going on. remove all of that. one

@@ -1,5 +1,5 @@
 {
-  "message_text": "5 publish features loaded.",
+  "message_text": "6 publish features loaded.",
   "publish_source_features": [],
   "layers_present": [
     {
@@ -24,7 +24,7 @@
     }
   ],
   "trails_rendered": 0,
-  "boundaries_rendered": 2,
+  "boundaries_rendered": 3,
   "trailheads_rendered": 0,
   "console_errors": []
 }

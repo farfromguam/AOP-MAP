@@ -8,6 +8,45 @@
 
 -----
 
+## ✅ DONE 2026-06-06 — verified by observation (UNCOMMITTED; no VERSION bump yet)
+
+Collapsed the two list engines into ONE `collectStarredDestinations()`
+(`website/js/main.js:1161`); `buildPoiGroups` (now a thin grouped renderer,
+`:1311`) and `renderVisitorListGroup` (flat, `:1044`) both consume it, so they
+cannot disagree. Deleted all 7 bespoke `pushRow('...)` source blocks and the
+hardcoded `VISITOR_LIST_LAYERS` walk; added per-spec strategies
+(`listRow`/`listGroup`/`listPredicate`/`listSurfaces`/`listMode`/`listToggle`,
+plus `listFromData` so cemetery parcel+marker twins reproduce the old marker
+rows). The collector walks `Object.entries(featureListRuntime)` for destination
+specs (`:1202`) and unions the two explicit non-registry inputs
+(publish.geojson `poi`, event anchors); the star gate (`props.highlight ===
+true`) is computed ONCE at `:1169` as `row.starred`. Per the deferred
+star_driven decisions #1/#2/#4, wholesale layers kept `listMode: 'wholesale'`
+(POI tab renders the same rows it shipped) — this card converges the engines
+STRUCTURALLY, not the user-visible start-empty flip. Acceptance (all pass):
+`node -c js/main.js` OK; `grep -c "pushRow('"`=0 (was 7); `grep -c 'function
+collectStarredDestinations'`=1; both `renderPoiTab`/`buildPoiGroups` and
+`renderVisitorListGroup` reference the collector; collector walks
+`Object.entries(featureListRuntime)`, not a hardcoded key array; one live star
+gate in the list-render region (`highlight === true` at `:1169`; `highlight
+!== true`=0 file-wide — stale inline gate gone; the other 9 `=== true` hits are
+outside the region: counts/styling/persistence/edit-dock, and `:2775`/`:2865`
+etc. are comments noting the retired array). Row-parity: `poi_rows_dump.js`
+output = 10 rows MATCHES the committed baseline `mvp/scripts/fixtures/
+poi_rows_baseline.json` exactly (incl. a `pubpoi:*` published_destinations row +
+non-editorPois `building:u1`/`cemetery:p1`/`trail:*`). DOM (harness on :8001,
+tile-independent): POI tab renders baked `pubpoi:1`/`pubpoi:2` through the real
+`buildPoiGroups → collectStarredDestinations` path, `#editorVisitorList` exists,
+no console errors. Non-editorPois both-ends convergence proven headlessly via
+`poi_rows_surfaces.js`: starred `building:u1` lands on BOTH the LEFT POI tab and
+the RIGHT ★ list, and the starred brand logo regression is restored while the
+unstarred one is gated off. **BLOCKED for human verify:** the in-page DOM
+star-seed of a building (live editor click → both lists) needs the
+closure-private `featureListRuntime` + full map-load init, which the blocked
+headless tiles prevent — convergence is proven by the Node `poi_rows_surfaces`
+path instead, not a live in-browser star click. **Owed:** the single sprint
+VERSION bump at sprint code-complete; commit is the user's git gate.
+
 ## Goal
 
 Replace buildPoiGroups' 7 bespoke source blocks with a single collectStarredDestinations() that walks FEATURE_LIST_LAYERS destination layers from featureListRuntime, applies the `highlight === true` gate ONCE, and returns uniform rows via a spec.listRow strategy. renderPoiTab (left, grouped) and renderVisitorListGroup (right, flat) both consume the one collector, so they cannot disagree. NOTE: flipping the POI tab to start-empty/curated changes shipped behavior — surface as a recommendation and confirm the star_driven decisions #1/#2/#4 with the user before shipping that flip.

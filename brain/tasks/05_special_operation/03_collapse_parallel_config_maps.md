@@ -8,6 +8,33 @@
 
 -----
 
+## ✅ DONE 2026-06-06 — verified by observation (UNCOMMITTED; no VERSION bump yet)
+
+Collapsed all three parallel config maps in `website/js/main.js` onto the
+`FEATURE_LIST_LAYERS` specs. Added `nameField` to each spec (editorPois/cemeteries/
+visitorContext/brandLogos `'name'`, buildings `'building_label'`) and replaced both
+`FEATURE_NAME_PROP[layerKey] || 'name'` readers with `spec.nameField || 'name'`
+(buildEditDock @4251; the dead buildInlineEditor reader is gone with card 01). Added a
+lazy `servedSource` strategy to the four served specs (`() => ['fema-buildings',
+buildingsData]`, `['visitor-context', …]`, `['brand-logos', …]`, `['cemeteries',
+cemeteryData]` — lazy so each reads its `let` assigned during layer load); editorPois
+declares none (its writes flow through refreshEditorSource). `refreshServedSource` now
+reads `spec.servedSource` and no-ops on absence. Deleted both standalone maps. Folded
+EDITOR_POI_CATEGORIES into the editorPois spec's `category` select field's lazy
+`options: () => EDITOR_POI_CATEGORIES`; it now has no external reader — only the spec
+field plus its own const def survive. Acceptance (all pass): `node -c website/js/main.js`
+OK; `grep -c FEATURE_NAME_PROP`=0; `grep -c SERVED_SOURCE`=0; `grep -c
+EDITOR_POI_CATEGORIES`=3 (the spec field @2385 + its two-comment mention @2380 + own def
+@4456 — no buildEditDock branch reader remains); `grep -n nameField` shows the five specs
+declaring it and buildEditDock reading `spec.nameField`; `grep -n` confirms
+refreshServedSource reads `spec.servedSource()`. **BLOCKED for human verify:** the Node
+harness check that `refreshServedSource('buildings')` resolves the buildings source
+id+data through the spec — the function calls `map.getSource(...)`, which the headless
+Node `-c` syntax pass cannot exercise; the playwright_base.py DOM run on :8001 is the
+intended seam and was not executed here, so the runtime resolution is unconfirmed by
+observation. **Owed:** the single sprint VERSION bump (v51→v52) at sprint code-complete;
+commit is the user's git gate.
+
 ## Goal
 
 Remove the standalone per-layer lookup tables that live next to FEATURE_LIST_LAYERS and fold their data onto each spec, so the registry is the single config home. FEATURE_NAME_PROP -> spec.nameField; EDITOR_POI_CATEGORIES -> the editorPois category field's options source (co-located with card 02's field); SERVED_SOURCE -> a spec.servedSource (or persistProperty default) reader.
