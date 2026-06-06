@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Bake positioned brand-logo and visitor-context overrides into the seed GeoJSON.
 
-Brand logos (`website/data/aop_brand_logos.geojson`) and visitor-context
-callouts (`website/data/aop_visitor_context_callouts.geojson`) are file-based
-layers the static viewer loads directly -- they are NOT in PostGIS, so
-`export_publish_geojson.sh` never touches them.
+Brand logos and visitor-context callouts both live in
+`website/data/aop_visitor_context_callouts.geojson` (the brand logos were merged
+in 2026-06-05 as kind=brand_logo point features) -- a file-based layer the static
+viewer loads directly. It is NOT in PostGIS, so `export_publish_geojson.sh` never
+touches it. Both override prefixes (brandLogos:<logo_id>, visitorContext:<name>)
+bake into that one file, which is written minified to match its on-disk format.
 
 When an editor drags or resizes one of these in the viewer, the new position is
 written only to localStorage (`aop_positioned_features_v1`). A data reset /
@@ -51,15 +53,21 @@ COORD_DECIMALS = 5
 
 # layer override-key prefix -> (seed file, idField, bake icon_size?)
 LAYERS = {
+    # Brand logos + visitor-context callouts share one minified file (logos were
+    # merged in 2026-06-05 as kind=brand_logo points). Both specs target it;
+    # bake_layer reloads from disk per layer, so the two sequential writes don't
+    # clobber each other. Written minified to match the served file's format.
     "brandLogos": {
-        "file": DATA_DIR / "aop_brand_logos.geojson",
+        "file": DATA_DIR / "aop_visitor_context_callouts.geojson",
         "id_field": "logo_id",
         "bake_icon_size": True,
+        "minify": True,
     },
     "visitorContext": {
         "file": DATA_DIR / "aop_visitor_context_callouts.geojson",
         "id_field": "name",
         "bake_icon_size": False,
+        "minify": True,
     },
     # Curated park buildings (derived layer). Footprints are drag-adjustable in
     # the viewer because FEMA's polygons sit a little off; this bakes the moved
@@ -162,8 +170,11 @@ def bake_layer(prefix: str, spec: dict, overrides: dict, dry_run: bool) -> dict:
         if isinstance(meta, dict):
             meta["generated"] = date.today().isoformat()
         with path.open("w") as fh:
-            json.dump(data, fh, indent=spec.get("indent", 2), ensure_ascii=False)
-            fh.write("\n")
+            if spec.get("minify"):
+                json.dump(data, fh, ensure_ascii=False, separators=(",", ":"))
+            else:
+                json.dump(data, fh, indent=spec.get("indent", 2), ensure_ascii=False)
+                fh.write("\n")
 
     return {
         "file": path.name,

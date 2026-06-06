@@ -66,7 +66,9 @@ DEFAULT_CREATED_TARGET = "aop_user_features.geojson"
 # tag a created feature carries so this baker can route it to the right file.
 VIEW_STATE_KEYS = {"highlight", "__locked", "__group", "_id", "_src"}
 # Identity/facet keys the editor is allowed to write back onto a served feature.
-EDITABLE_KEYS = ["name", "description", "difficulty", "notes", "category"]
+# (apply_file_edits writes any non-VIEW_STATE patch key; the panel's pickEditable
+# is the actual allowlist, so this stays in sync with EDITABLE_SERVED_KEYS there.)
+EDITABLE_KEYS = ["name", "description", "difficulty", "notes", "category", "tag"]
 
 
 def load_json(path: Path) -> dict:

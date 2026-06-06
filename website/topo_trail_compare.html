@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Topo + trails — fade back / pop, real-data compare</title>
+  <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --brown-ink: #2e2418;
+      --brown-soft: #5a4828;
+      --moss-dark: #384833;
+      --cream-surface: #faf6eb;
+      --cream-border: #d8cdb4;
+      --control-bg: #fffdf5;
+      --rust: #a85020;
+      --shadow: 0 8px 24px rgba(46, 36, 24, 0.11);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background: #efe7d7;
+      color: var(--brown-ink);
+      font: 15px/1.45 Inter, system-ui, sans-serif;
+    }
+    .page-head {
+      padding: 26px 30px 18px;
+      border-bottom: 1px solid var(--cream-border);
+      background: var(--control-bg);
+    }
+    .page-head h1 { margin: 0 0 6px; color: var(--moss-dark); font-size: 1.45rem; }
+    .page-head p { margin: 0 0 6px; max-width: 96ch; color: var(--brown-soft); font-size: 0.93rem; }
+    .page-head code { background: #f1e8d3; padding: 1px 5px; border-radius: 4px; font-size: 0.85em; }
+    .page-head b { color: var(--brown-ink); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 20px;
+      padding: 24px 30px 16px;
+    }
+    .card {
+      background: var(--cream-surface);
+      border: 1px solid var(--cream-border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+    }
+    .card.pick { border-color: var(--rust); box-shadow: 0 0 0 2px rgba(168,80,32,0.25), var(--shadow); }
+    .card h2 { margin: 0; padding: 12px 14px 4px; font-size: 1.04rem; color: var(--moss-dark); display: flex; align-items: baseline; gap: 8px; }
+    .card h2 .tag { color: var(--rust); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+    .card .map { width: 100%; height: 360px; background: #e7ddc4; position: relative; }
+    .swatches { display: flex; gap: 0; padding: 8px 14px 2px; }
+    .swatch { flex: 1; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.45); border-right: 1px solid rgba(255,255,255,.25); }
+    .swatch:last-child { border-right: 0; }
+    .swatch.dark { color: #fff; }
+    .meta { padding: 6px 14px 14px; font-size: 0.79rem; color: var(--brown-soft); }
+    .meta .hexline { font-family: ui-monospace, Menlo, monospace; font-size: 0.72rem; color: var(--brown-ink); margin-bottom: 4px; }
+    table { border-collapse: collapse; width: calc(100% - 60px); margin: 8px 30px 40px; font-size: 0.8rem; background: var(--cream-surface); }
+    th, td { border: 1px solid var(--cream-border); padding: 6px 9px; text-align: left; vertical-align: top; }
+    th { background: #f1e8d3; color: var(--moss-dark); }
+    td .chip { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; border: 1px solid rgba(0,0,0,.15); }
+    .hex { font-family: ui-monospace, Menlo, monospace; font-size: 0.74rem; }
+    .note { padding: 0 30px 40px; max-width: 96ch; color: var(--brown-soft); font-size: 0.86rem; }
+    .note b { color: var(--brown-ink); }
+  </style>
+</head>
+<body>
+  <div class="page-head">
+    <h1>Topo + trails — fade the topo back, pop the trails</h1>
+    <p>The brown <b>contour topo</b> and the orange <b>trail network</b> compete for
+      attention in the live <b>Topo preset</b>. Each card below renders the
+      <b>real park-core data</b> (contours, trails, water, roads, buildings, forest,
+      hillshade) locked to the same camera, so the colours are judged in context —
+      not on a swatch. The first card is the current shipped look; the rest fade the
+      contours back and lift the trail with brightness + a casing.</p>
+    <p><b>Constant in every card:</b> same camera, same data, same base (hillshade /
+      forest / water / roads / buildings). <b>Varied:</b> only the contour
+      colour/opacity/width (index + fine), whether the fine 5 ft lines show at all,
+      and the trail colour/width + casing. Contour fade-by-zoom is preserved in the
+      app; here all schemes show a constant contour density so the colour and weight
+      choices compare directly. Pick a card (or mix attributes) and I'll wire it into
+      the Topo preset paints in <code>js/main.js</code>.</p>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <table id="attrs">
+    <thead>
+      <tr><th>Scheme</th><th>Index (25/50 ft)</th><th>Fine (5 ft)</th><th>Trail</th><th>Casing</th><th>Strategy</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="note">
+    <p><b>How each card pops the trail:</b> the orange is pushed brighter/more
+      saturated than the flat <span class="hex">#f25e0d</span> and given a casing
+      (a wider line drawn underneath) so it separates from the warm browns. <b>How
+      each fades the topo:</b> lower opacity, lighter/neutral hue, thinner lines, or
+      dropping the fine 5 ft tier entirely.</p>
+    <p>Data clipped to the trail core by
+      <code>mvp/scripts/build_topo_trail_compare_data.py</code> →
+      <code>website/compare_data/</code>. Hillshade: AWS Terrain Tiles. Text labels
+      (elevation / trail number) are omitted here — they are not the variable.</p>
+  </div>
+
+  <script src="./vendor/maplibre-gl.js"></script>
+  <script>
+    // ---- Faithful Topo-preset base colours (from js/main.js) -----------------
+    const LANDCOVER_RELIEF_FILL = ['match', ['get', 'class'],
+      'forest_deciduous', '#c0c6ad', 'forest_evergreen', '#b1b89b',
+      'open_grass', '#e5dcbc', 'open_meadow', '#ddd2ae', 'open_bare', '#d1c5a0',
+      '#c0c6ad'];
+    const LANDCOVER_RELIEF_OUTLINE = ['match', ['get', 'class'],
+      'forest_deciduous', '#aeb499', 'forest_evergreen', '#9fa687',
+      'open_grass', '#d3caa8', 'open_meadow', '#cbc09b', 'open_bare', '#bfb28c',
+      '#aeb499'];
+
+    const CAMERA = { center: [-85.7533, 35.0908], zoom: 15.4, bearing: 0, pitch: 0 };
+
+    // ---- Schemes: baseline (current) + variations ----------------------------
+    // index/minor: {color, opacity, width}; minor:null hides the fine 5 ft tier.
+    // trail: {color, width, opacity}; casing:{color,width} or null.
+    const SCHEMES = [
+      { id: 'Baseline', name: 'Current Topo', pick: false, shipped: true,
+        index: { color: '#946638', opacity: 0.95, width: 2.6 },
+        minor: { color: '#b08a5e', opacity: 0.70, width: 1.3 },
+        label: '#7a5530',
+        trail: { color: '#f25e0d', width: 3.4, opacity: 0.95 }, casing: null,
+        strategy: 'Live Topo preset — flat orange, no casing, both contour tiers at full warmth. Shown for reference; the topo crowds the trail.' },
+
+      { id: 'V1', name: 'Faded sienna + cream casing', pick: true,
+        index: { color: '#a8855b', opacity: 0.50, width: 2.4 },
+        minor: { color: '#c6ad84', opacity: 0.28, width: 1.1 },
+        label: '#8a6a42',
+        trail: { color: '#ff6a1f', width: 3.6, opacity: 1.0 }, casing: { color: '#fbf3e0', width: 6.2 },
+        strategy: 'Same sienna family, opacity dialed back so the topo recedes; a cream casing lifts a brighter orange off the relief. Smallest change from today.' },
+
+      { id: 'V2', name: 'Ghost contours + dark-cased trail', pick: false,
+        index: { color: '#b3a489', opacity: 0.42, width: 1.6 },
+        minor: { color: '#ccc1ab', opacity: 0.22, width: 1.0 },
+        label: '#9a8a6e',
+        trail: { color: '#f2530a', width: 3.4, opacity: 1.0 }, casing: { color: '#4a1e00', width: 5.6 },
+        strategy: 'Contours desaturated to a quiet warm-grey ghost — lowest clutter. A dark casing reads the orange as the clear top layer.' },
+
+      { id: 'V3', name: 'Index-only (drop the 5 ft lines)', pick: false,
+        index: { color: '#9c7a4e', opacity: 0.62, width: 2.2 },
+        minor: null,
+        label: '#7a5530',
+        trail: { color: '#ff6a1f', width: 3.8, opacity: 1.0 }, casing: { color: '#fbf3e0', width: 6.6 },
+        strategy: 'Biggest clutter cut: drop the fine 5 ft tier entirely, keep the 25/50 ft index. Topo still reads as landform with far fewer lines.' },
+
+      { id: 'V4', name: 'Neutral relief + hot orange', pick: false,
+        index: { color: '#9a9180', opacity: 0.50, width: 2.2 },
+        minor: { color: '#bcb3a2', opacity: 0.26, width: 1.1 },
+        label: '#6f6656',
+        trail: { color: '#ee5200', width: 3.6, opacity: 1.0 }, casing: { color: '#fbf3e0', width: 6.0 },
+        strategy: 'Contours go neutral warm-grey so they read purely as background; the orange then owns the only saturated hue on the map.' }
+    ];
+
+    const FILES = {
+      contours: 'aop_contours.geojson',
+      trails: 'aop_trail_network.geojson',
+      water: 'aop_water.geojson',
+      roads: 'aop_roads.geojson',
+      landcover: 'aop_landcover.geojson',
+      buildings: 'aop_buildings.geojson'
+    };
+
+    async function loadData() {
+      const out = {};
+      await Promise.all(Object.entries(FILES).map(async ([k, fn]) => {
+        const r = await fetch('./compare_data/' + fn);
+        out[k] = await r.json();
+      }));
+      return out;
+    }
+
+    function buildMap(container, scheme, data) {
+      const map = new maplibregl.Map({
+        container,
+        style: {
+          version: 8,
+          sources: {
+            'dem': {
+              type: 'raster-dem',
+              tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+              tileSize: 256, encoding: 'terrarium', minzoom: 0, maxzoom: 15
+            }
+          },
+          layers: [
+            { id: 'bg', type: 'background', paint: { 'background-color': '#e7ddc4' } },
+            { id: 'hillshade', type: 'hillshade', source: 'dem', paint: {
+              'hillshade-exaggeration': 0.78,
+              'hillshade-shadow-color': '#2f2a21',
+              'hillshade-highlight-color': '#fff4d9',
+              'hillshade-accent-color': '#6f604c'
+            } }
+          ]
+        },
+        center: CAMERA.center, zoom: CAMERA.zoom, bearing: CAMERA.bearing, pitch: CAMERA.pitch,
+        interactive: false, attributionControl: false
+      });
+      map.on('error', (e) => console.error(container, e.error || e));
+      map.on('load', () => {
+        map.addSource('landcover', { type: 'geojson', data: data.landcover });
+        map.addSource('water', { type: 'geojson', data: data.water });
+        map.addSource('roads', { type: 'geojson', data: data.roads });
+        map.addSource('buildings', { type: 'geojson', data: data.buildings });
+        map.addSource('contours', { type: 'geojson', data: data.contours });
+        map.addSource('trails', { type: 'geojson', data: data.trails });
+
+        // forest / open ground
+        map.addLayer({ id: 'lc-fill', type: 'fill', source: 'landcover',
+          paint: { 'fill-color': LANDCOVER_RELIEF_FILL, 'fill-opacity': 0.62 } });
+        map.addLayer({ id: 'lc-out', type: 'line', source: 'landcover',
+          paint: { 'line-color': LANDCOVER_RELIEF_OUTLINE, 'line-width': 0.7, 'line-opacity': 0.35 } });
+
+        // water (polygons + streams)
+        map.addLayer({ id: 'water-fill', type: 'fill', source: 'water',
+          filter: ['==', ['geometry-type'], 'Polygon'],
+          paint: { 'fill-color': '#83aeb6', 'fill-opacity': 0.58 } });
+        map.addLayer({ id: 'water-out', type: 'line', source: 'water',
+          filter: ['==', ['geometry-type'], 'Polygon'],
+          paint: { 'line-color': '#44747d', 'line-width': 1.4 } });
+        map.addLayer({ id: 'streams', type: 'line', source: 'water',
+          filter: ['==', ['geometry-type'], 'LineString'],
+          paint: { 'line-color': '#4d8792', 'line-width': 1.4, 'line-opacity': 0.92 } });
+
+        // roads (casing + line)
+        map.addLayer({ id: 'roads-casing', type: 'line', source: 'roads',
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: { 'line-color': '#f3ecda', 'line-width': 4.5, 'line-opacity': 0.9 } });
+        map.addLayer({ id: 'roads-line', type: 'line', source: 'roads',
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: { 'line-color': '#b9905b', 'line-width': 2.0, 'line-opacity': 0.9 } });
+
+        // buildings
+        map.addLayer({ id: 'bldg-fill', type: 'fill', source: 'buildings',
+          paint: { 'fill-color': '#e7c98a', 'fill-opacity': 0.4 } });
+        map.addLayer({ id: 'bldg-out', type: 'line', source: 'buildings',
+          paint: { 'line-color': '#8a6a40', 'line-width': 1.1 } });
+
+        // contours — fine (idx 0) then index (idx 1)
+        if (scheme.minor) {
+          map.addLayer({ id: 'contour-minor', type: 'line', source: 'contours',
+            filter: ['==', ['get', 'idx'], 0], layout: { 'line-join': 'round' },
+            paint: { 'line-color': scheme.minor.color, 'line-width': scheme.minor.width, 'line-opacity': scheme.minor.opacity } });
+        }
+        map.addLayer({ id: 'contour-index', type: 'line', source: 'contours',
+          filter: ['==', ['get', 'idx'], 1], layout: { 'line-join': 'round' },
+          paint: { 'line-color': scheme.index.color, 'line-width': scheme.index.width, 'line-opacity': scheme.index.opacity } });
+
+        // trail casing (under) + trail
+        if (scheme.casing) {
+          map.addLayer({ id: 'trail-casing', type: 'line', source: 'trails',
+            layout: { 'line-cap': 'round', 'line-join': 'round' },
+            paint: { 'line-color': scheme.casing.color, 'line-width': scheme.casing.width, 'line-opacity': 0.95 } });
+        }
+        map.addLayer({ id: 'trail', type: 'line', source: 'trails',
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: { 'line-color': scheme.trail.color, 'line-width': scheme.trail.width, 'line-opacity': scheme.trail.opacity } });
+      });
+      return map;
+    }
+
+    (async function () {
+      const data = await loadData();
+      const grid = document.getElementById('grid');
+      SCHEMES.forEach((s, i) => {
+        const card = document.createElement('div');
+        card.className = 'card' + (s.pick ? ' pick' : '');
+        const tag = s.shipped ? '<span class="tag">shipped</span>'
+          : (s.pick ? '<span class="tag">suggested</span>' : '');
+        const mapId = 'map-' + s.id.toLowerCase();
+        const casingSw = s.casing
+          ? `<div class="swatch dark" style="background:${s.casing.color}">casing</div>` : '';
+        const minorHex = s.minor ? s.minor.color : '— hidden';
+        const minorSw = s.minor
+          ? `<div class="swatch" style="background:${s.minor.color}">fine</div>`
+          : `<div class="swatch" style="background:#cfc3ad;color:#7a6a4e">no fine</div>`;
+        card.innerHTML = `
+          <h2>${s.id} — ${s.name} ${tag}</h2>
+          <div class="map" id="${mapId}"></div>
+          <div class="swatches">
+            <div class="swatch" style="background:${s.index.color}">index</div>
+            ${minorSw}
+            <div class="swatch" style="background:${s.trail.color}">trail</div>
+            ${casingSw}
+          </div>
+          <div class="meta">
+            <div class="hexline">index ${s.index.color} @${s.index.opacity} · fine ${minorHex}${s.minor ? ' @' + s.minor.opacity : ''} · trail ${s.trail.color}${s.casing ? ' · casing ' + s.casing.color : ' · no casing'}</div>
+            <div>${s.strategy}</div>
+          </div>`;
+        grid.appendChild(card);
+        buildMap(mapId, s, data);
+      });
+
+      const tb = document.querySelector('#attrs tbody');
+      const cell = (hex) => hex ? `<span class="chip" style="background:${hex}"></span><span class="hex">${hex}</span>` : '<span class="hex">—</span>';
+      SCHEMES.forEach((s) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><b>${s.id}</b> ${s.name}${s.shipped ? ' (shipped)' : ''}</td>
+          <td>${cell(s.index.color)}<br><span class="hex">@${s.index.opacity} · ${s.index.width}px</span></td>
+          <td>${s.minor ? cell(s.minor.color) + '<br><span class="hex">@' + s.minor.opacity + ' · ' + s.minor.width + 'px</span>' : '<span class="hex">hidden</span>'}</td>
+          <td>${cell(s.trail.color)}<br><span class="hex">${s.trail.width}px @${s.trail.opacity}</span></td>
+          <td>${s.casing ? cell(s.casing.color) + '<br><span class="hex">' + s.casing.width + 'px</span>' : '<span class="hex">none</span>'}</td>
+          <td>${s.strategy}</td>`;
+        tb.appendChild(tr);
+      });
+    })();
+  </script>
+</body>
+</html>

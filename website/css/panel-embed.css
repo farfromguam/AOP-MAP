@@ -51,6 +51,18 @@
 #aopPanelMount .node-select:hover { background: rgba(180,86,31,0.06); }
 #aopPanelMount .node.selected > .node-select { background: rgba(180,86,31,0.12); font-weight: 600; }
 #aopPanelMount .node-count { color: #b3a484; font-size: 12px; font-variant-numeric: tabular-nums; }
+/* Data-maturity tier chip on a group row (gold / silver / editor / …). */
+#aopPanelMount .maturity-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
+  padding: 1px 6px; border-radius: 999px; line-height: 1.5; flex: none;
+  border: 1px solid transparent;
+}
+#aopPanelMount .maturity-badge.gold { background: #f3e0b0; color: #7a5a16; border-color: #e0c074; }
+#aopPanelMount .maturity-badge.silver { background: #e2e0d8; color: #5f5b50; border-color: #cbc7ba; }
+#aopPanelMount .maturity-badge.editor { background: #efe2d6; color: #8a5a36; border-color: #e0cab4; }
+#aopPanelMount .maturity-badge.derived,
+#aopPanelMount .maturity-badge.reference { background: transparent; color: #b3a484; border-color: var(--line); }
+#aopPanelMount .maturity-badge.delete { background: #f0d9d2; color: #8a3b2a; border-color: #dcae9f; }
 #aopPanelMount .node-create {
   background: none; border: 1px solid var(--line); color: var(--rust);
   width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
@@ -98,6 +110,19 @@
 }
 #aopPanelMount .icon-toggle:hover { background: rgba(180,86,31,0.1); }
 #aopPanelMount .icon-toggle.on { color: var(--rust); }
+/* Add-any-type icons (+ POI / + Line / + Polygon), beside the eye + lock. */
+#aopPanelMount .add-divider { width: 1px; align-self: stretch; background: var(--line); margin: 1px 3px; }
+#aopPanelMount .add-type {
+  position: relative; flex: none; background: none; border: 1px solid transparent;
+  padding: 3px 5px; cursor: pointer; color: #b3a484; display: flex; align-items: center; border-radius: 5px;
+}
+#aopPanelMount .add-type:hover { background: rgba(180,86,31,0.1); color: var(--rust); border-color: var(--line); }
+#aopPanelMount .add-type.active { background: var(--rust); color: #fff; border-color: var(--rust); }
+#aopPanelMount .add-type::after {
+  content: "+"; position: absolute; top: -2px; right: -1px;
+  font-size: 11px; font-weight: 800; line-height: 1; color: var(--rust);
+}
+#aopPanelMount .add-type.active::after { color: inherit; }
 #aopPanelMount .field-note,
 #aopPanelMount .field-text,
 #aopPanelMount .field-select,
@@ -109,6 +134,7 @@
   border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink);
 }
 #aopPanelMount .field-input:disabled { background: #efe9da; color: #6e6450; cursor: not-allowed; }
+#aopPanelMount textarea.field-input { resize: vertical; min-height: 64px; line-height: 1.4; }
 #aopPanelMount .field-unknown { color: #b00; }
 
 #aopPanelMount .field-actions { flex-direction: row; flex-wrap: wrap; gap: 6px; }
@@ -135,6 +161,77 @@
   padding: 4px 10px; border-radius: 6px; cursor: pointer; font: inherit;
 }
 #aopPanelMount .create-hint-cancel:hover { background: rgba(255,255,255,0.32); }
+
+/* Width-when-scrolling fix: reserve the scrollbar gutter on the embedded panel's
+ * scroll region so the tree never reflows/clips when the scrollbar toggles. The
+ * feature takeover renders into #aopPanelMount inside this same region. */
+body.aop-embed-ready #panelBody { scrollbar-gutter: stable; }
+
+/* ---- The one global tabbed edit panel — full-panel takeover (V2) ----
+ * A selected feature replaces the tree with this editor; ‹ Layers returns.
+ * Reuses the #aopPanelMount .field / .edit-action / .icon-toggle styles per pane.
+ * The editor renders IN FLOW and drives the panel height (a compact card sized to
+ * its tallest tab). While a feature is open (js/panel.js adds .aop-feature-editing)
+ * the surrounding chrome — panel header, the kept Session-tools/Review sections,
+ * and the save footer — is hidden so the editor IS the whole panel; its own
+ * ‹ Layers back bar returns to the tree. (#aopPanelMount itself is a bare div, not
+ * a .panel-section, so the section-hide rule below never touches the editor.) */
+.panel.aop-feature-editing .panel-header,
+.panel.aop-feature-editing #panelBody > #presetStatus,
+.panel.aop-feature-editing #panelBody > .panel-section,
+.panel.aop-feature-editing #aopPanelFooter { display: none !important; }
+
+#aopPanelMount .feature-editor { display: flex; flex-direction: column; background: var(--panel-bg); }
+/* Back/head/tabs pin to the top of the scroll region (sticky) so they stay put
+ * when the body has to scroll on a short viewport (e.g. the 420px mobile card). */
+#aopPanelMount .fe-top {
+  position: sticky; top: 0; z-index: 5; flex: none;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 14px 0; background: var(--panel-bg);
+}
+#aopPanelMount .fe-back {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: 0; padding: 4px 6px; margin: 0; cursor: pointer;
+  color: #8a7d63; font: inherit; font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em; border-radius: 6px;
+}
+#aopPanelMount .fe-back:hover { color: var(--ink); background: rgba(180,86,31,0.06); }
+#aopPanelMount .fe-back-glyph { font-size: 17px; line-height: 1; }
+#aopPanelMount .fe-head { display: flex; align-items: center; gap: 8px; }
+#aopPanelMount .fe-pill {
+  flex: none; background: #fff; border: 1px solid var(--line); border-radius: 999px;
+  padding: 1px 9px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; color: #4a4438;
+}
+#aopPanelMount .fe-title { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#aopPanelMount .fe-icon { flex: none; background: #fff; border: 1px solid var(--line); border-radius: 6px; width: 28px; height: 28px; cursor: pointer; font-size: 14px; line-height: 1; }
+#aopPanelMount .fe-icon:hover { background: rgba(180,86,31,0.08); }
+#aopPanelMount .fe-tabs { display: flex; border-bottom: 1px solid var(--line); }
+#aopPanelMount .fe-tab {
+  flex: 1; background: none; border: 0; padding: 8px 4px; font: inherit; font-size: 11px;
+  font-weight: 700; color: #8a7d63; cursor: pointer; text-transform: uppercase;
+  letter-spacing: 0.03em; border-bottom: 2px solid transparent;
+}
+#aopPanelMount .fe-tab.on { color: var(--ink); border-bottom-color: var(--rust); }
+/* Equal-height tabs: every pane is stacked in the SAME grid cell, so the body
+ * sizes to the TALLEST tab and switching tabs never changes the overall height —
+ * no reflow on the bottom-anchored panel. Inactive panes stay in layout
+ * (visibility:hidden, NOT display:none) so they keep contributing that height. */
+#aopPanelMount .fe-body { display: grid; padding: 14px 14px 18px; }
+#aopPanelMount .fe-pane {
+  grid-area: 1 / 1; display: flex; flex-direction: column; gap: 10px;
+  visibility: hidden;
+}
+#aopPanelMount .fe-pane.on { visibility: visible; }
+#aopPanelMount .field-raw { display: flex; flex-direction: column; gap: 6px; }
+#aopPanelMount .raw-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#aopPanelMount .raw-json {
+  width: 100%; height: 260px; resize: vertical;
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  border: 1px solid var(--line); border-radius: 8px; background: #fbf8f0;
+  color: var(--ink); padding: 8px 10px; white-space: pre; overflow: auto;
+}
+#aopPanelMount .raw-note { margin: 0; font-size: 11px; color: #8a7d63; }
 
 /* Save-path footer (Export edits / Clear / unsaved-count) at the panel bottom. */
 #aopPanelFooter {

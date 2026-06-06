@@ -49,8 +49,12 @@ cluster, SFWDA paper map, and the raw SFWDA traced-trail/marker prototypes the
 merged network was curated from).
 `Map editor` holds first-party items curated in the editor and baked into the
 export (event schedule POIs, publishable trailheads, visitor context callouts,
-brand logos, drawn POIs). `User submitted` holds contributor-shaped layers
-(submitted trails, activity hotspots).
+brand logos, drawn POIs). The brand logos (AOP badge + Rock Warblers) no longer
+have their own file: they were merged into
+`aop_visitor_context_callouts.geojson` as `kind=brand_logo` point features
+(2026-06-05) and the viewer/panel split that one file back into a callout-polygon
+source and a brand-logo icon source by `kind`. `User submitted` holds
+contributor-shaped layers (submitted trails, activity hotspots).
 
 | Toggle label | Data / source | Default | Detail |
 | --- | --- | --- | --- |
@@ -197,6 +201,15 @@ inspectable inputs and reference overlays: TNMap and USDA imagery, the
 indexes, USGS/FEMA/TN Comptroller context layers, OSM, and the SFWDA paper map.
 The inline layer editor works in either group.
 
+**Data-maturity tiers (2026-06-05).** The reworked one-model panel
+(`website/js/panel.js`) additionally groups the tree by **maturity**: `Gold data`
+and `Silver — pending review` sections sit above the provenance sections, each
+editable group row carries a maturity chip, and a feature's Source tab shows its
+served File + Tier. The tier lives in each served file's `_meta`
+(`maturity`/`group`/`locked`), stamped by `mvp/scripts/stamp_maturity.py` and
+recorded per layer in `website/data/_schema.json`. Full contract:
+`research/data_maturity_tiers.md`.
+
 The right panel is **collapsible**. Its `AOP edit panel` heading is a clickable
 header bar (`.panel-header`) with a chevron button (`#panelCollapse`). Clicking
 the header or the chevron retracts the panel body upward into the header,
@@ -335,16 +348,33 @@ tagged `layer=editor_trace`, `confidence=draft`, and
 
 The three publishable layers -- trails, boundaries, trailheads -- come from
 `website/data/publish.geojson`, exported from the PostGIS `publish` views by
-`mvp/scripts/export_publish_geojson.sh`. Today the file holds one publishable
-feature: the parcel-derived AOP working envelope. How features earn their way
-into `publish` is the source-register contract -- see
-`northstar/source_register.md`, `northstar/validation_loop.md`, and the build
-card.
+`mvp/scripts/export_publish_geojson.sh`. The boundaries (`layer:park_boundaries`)
+now hold two features: the parcel-derived AOP working envelope and the **Ellis
+Cemetery inholding parcel** (id 5), copied from `aop_cemeteries.geojson`
+(2026-06-05) so the carved-out inholding is itself a publishable boundary. The
+copy carries the county-parcel provenance and `permission:publish`; the
+USGenWeb-restricted burial roster is deliberately left out of the publish zone
+(non-commercial only -- see `research/aop_ellis_cemetery.md`). Note this is now a
+hand-curated feature in an otherwise PostGIS-exported file, so a future
+`export_publish_geojson.sh` run would need the inholding added to the publish view
+to keep it. How features earn their way into `publish` is the source-register
+contract -- see `northstar/source_register.md`, `northstar/validation_loop.md`,
+and the build card.
 
 ### Visitor Context Callouts
 
 Recorded on 2026-05-21:
 
+- **Shared file note (2026-06-05):** this file also carries the two brand-logo
+  POINT features (`kind=brand_logo`: AOP badge, Rock Warblers), merged here when
+  `aop_brand_logos.geojson` was retired. Both the host viewer (`main.js`) and the
+  panel (`panel.js`) split the file by `kind` at load -- the callout
+  fill/outline/label layers, search, and feature list take only the
+  `visitor_callout` polygons; a separate `brand-logos` source + `brand-logos-icons`
+  layer take only the logo points (all the drag/resize/cap/override/bake
+  machinery is unchanged, just sourced from this file). `rebake_canonical.py`
+  discriminates the two by `logo_id` presence so the logos keep their own
+  `brand owner`/`decorative` provenance through a re-bake.
 - `website/data/aop_visitor_context_callouts.geojson` is a small cartographic
   annotation layer with two support-town circles:
   `South Pittsburg / Kimball supply run` and `Monteagle plateau services`.

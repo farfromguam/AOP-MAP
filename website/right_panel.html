@@ -27,7 +27,67 @@
       display: flex; flex-direction: column;
       overflow: hidden;
     }
-    .panel-body { flex: 1; overflow-y: auto; padding: 14px 16px 20px; }
+    /* scrollbar-gutter:stable reserves the scrollbar gutter at all times, so the
+       tree never reflows or clips when the scrollbar appears/disappears (the
+       width-when-scrolling issue). The feature takeover renders into this same
+       region. */
+    .panel-body { flex: 1; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; padding: 14px 16px 20px; }
+
+    /* ---- The one global tabbed edit panel — full-panel takeover (V2) ----
+       A selected feature replaces the tree with this editor; ‹ Layers returns.
+       Reuses the .field / .edit-action / .icon-toggle styles inside each pane.
+       The editor renders IN FLOW; the save footer is hidden while editing
+       (js/panel.js adds .aop-feature-editing) so the editor owns the panel. The
+       back/head/tabs pin to the top via sticky; the body grid-stacks the panes so
+       every tab is the same height (no reflow). */
+    .panel.aop-feature-editing .panel-footer { display: none; }
+    .feature-editor { display: flex; flex-direction: column; background: var(--panel-bg); }
+    .fe-top {
+      position: sticky; top: 0; z-index: 5; flex: none;
+      display: flex; flex-direction: column; gap: 8px;
+      padding: 12px 16px 0; background: var(--panel-bg);
+    }
+    .fe-back {
+      align-self: flex-start; display: inline-flex; align-items: center; gap: 4px;
+      background: none; border: 0; padding: 4px 6px; margin: 0; cursor: pointer;
+      color: #8a7d63; font: inherit; font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.04em; border-radius: 6px;
+    }
+    .fe-back:hover { color: var(--ink); background: rgba(180,86,31,0.06); }
+    .fe-back-glyph { font-size: 17px; line-height: 1; }
+    .fe-head { display: flex; align-items: center; gap: 8px; }
+    .fe-pill {
+      flex: none; background: #fff; border: 1px solid var(--line); border-radius: 999px;
+      padding: 1px 9px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.04em; color: #4a4438;
+    }
+    .fe-title { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fe-icon { flex: none; background: #fff; border: 1px solid var(--line); border-radius: 6px; width: 28px; height: 28px; cursor: pointer; font-size: 14px; line-height: 1; }
+    .fe-icon:hover { background: rgba(180,86,31,0.08); }
+    .fe-tabs { display: flex; border-bottom: 1px solid var(--line); }
+    .fe-tab {
+      flex: 1; background: none; border: 0; padding: 8px 4px; font: inherit; font-size: 11px;
+      font-weight: 700; color: #8a7d63; cursor: pointer; text-transform: uppercase;
+      letter-spacing: 0.03em; border-bottom: 2px solid transparent;
+    }
+    .fe-tab.on { color: var(--ink); border-bottom-color: var(--rust); }
+    /* Equal-height tabs: panes stacked in one grid cell → body = tallest tab, so
+       switching tabs never changes the overall height. Inactive panes stay in
+       layout (visibility:hidden) so they keep contributing that height. */
+    .fe-body { display: grid; padding: 14px 16px 18px; }
+    .fe-pane { grid-area: 1 / 1; display: flex; flex-direction: column; gap: 10px; visibility: hidden; }
+    .fe-pane.on { visibility: visible; }
+
+    /* Raw tab — full feature JSON, read-only, internally scrolling. */
+    .field-raw { display: flex; flex-direction: column; gap: 6px; }
+    .raw-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .raw-json {
+      width: 100%; height: 260px; resize: vertical;
+      font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+      border: 1px solid var(--line); border-radius: 8px; background: #fbf8f0;
+      color: var(--ink); padding: 8px 10px; white-space: pre; overflow: auto;
+    }
+    .raw-note { margin: 0; font-size: 11px; color: #8a7d63; }
 
     /* Save-path footer — pinned below the scrolling body on the right panel. */
     .panel-footer {
@@ -117,6 +177,19 @@
       color: #b3a484; font-size: 12px;
       font-variant-numeric: tabular-nums;
     }
+    /* Data-maturity tier chip on a group row (gold / silver / editor / …). */
+    .maturity-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
+      padding: 1px 6px; border-radius: 999px; line-height: 1.5; flex: none;
+      border: 1px solid transparent;
+    }
+    .maturity-badge.gold { background: #f3e0b0; color: #7a5a16; border-color: #e0c074; }
+    .maturity-badge.silver { background: #e2e0d8; color: #5f5b50; border-color: #cbc7ba; }
+    .maturity-badge.editor { background: #efe2d6; color: #8a5a36; border-color: #e0cab4; }
+    .maturity-badge.derived, .maturity-badge.reference {
+      background: transparent; color: #b3a484; border-color: var(--line);
+    }
+    .maturity-badge.delete { background: #f0d9d2; color: #8a3b2a; border-color: #dcae9f; }
     .node-create {
       background: none; border: 1px solid var(--line); color: var(--rust);
       width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
@@ -175,6 +248,20 @@
     }
     .icon-toggle:hover { background: rgba(180,86,31,0.1); }
     .icon-toggle.on { color: var(--rust); }
+    /* Add-any-type icons (+ POI / + Line / + Polygon) — icon + a small "+" badge,
+       sitting right of the eye + lock in the group control row. */
+    .add-divider { width: 1px; align-self: stretch; background: var(--line); margin: 1px 3px; }
+    .add-type {
+      position: relative; flex: none; background: none; border: 1px solid transparent;
+      padding: 3px 5px; cursor: pointer; color: #b3a484; display: flex; align-items: center; border-radius: 5px;
+    }
+    .add-type:hover { background: rgba(180,86,31,0.1); color: var(--rust); border-color: var(--line); }
+    .add-type.active { background: var(--rust); color: #fff; border-color: var(--rust); }
+    .add-type::after {
+      content: "+"; position: absolute; top: -2px; right: -1px;
+      font-size: 11px; font-weight: 800; line-height: 1; color: var(--rust);
+    }
+    .add-type.active::after { color: inherit; }
     .field-note, .field-text, .field-select, .field-static { flex-direction: column; align-items: stretch; gap: 4px; }
     .field-label { color: #6e6450; font-weight: 600; }
     .field-static .field-value { word-break: break-word; }
@@ -183,6 +270,7 @@
       border: 1px solid var(--line); border-radius: 6px; background: #fff;
     }
     .field-input:disabled { background: #efe9da; color: #6e6450; cursor: not-allowed; }
+    textarea.field-input { resize: vertical; min-height: 64px; line-height: 1.4; }
     .field-static .field-value { color: #4a4438; }
     .field-unknown { color: #b00; }
 

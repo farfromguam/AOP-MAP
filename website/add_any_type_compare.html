@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add any type to any layer — + POI / + Line / + Polygon, next to eye &amp; lock · 4 takes</title>
+  <style>
+    :root{
+      --paper:#efe7d5; --panel-bg:#f7f2e6; --ink:#2b2620; --line:#d8cdb4; --rust:#b4561f;
+      --muted:#8a7d63; --moss:#5f7157; --moss-dark:#384833; --moss-soft:#e3ebdc;
+      --cream-hover:#efe2c6; --cream-surface:#faf6eb; --control-bg:#fffdf5;
+    }
+    *{box-sizing:border-box;}
+    body,html{margin:0;padding:0;background:var(--cream-surface);
+      font:15px/1.5 Inter,system-ui,sans-serif;color:var(--ink);}
+    header.page{padding:26px 32px 18px;border-bottom:1px solid var(--line);background:var(--control-bg);}
+    header.page h1{margin:0 0 8px;color:var(--moss-dark);font-size:1.4rem;}
+    header.page .sub{color:var(--muted);font-size:0.92rem;max-width:104ch;line-height:1.55;}
+    header.page .sub strong{color:var(--ink);}
+    header.page .sub code{background:var(--moss-soft);padding:1px 5px;border-radius:3px;font-size:0.85em;}
+    main{display:grid;gap:22px;padding:24px 28px;
+      grid-template-columns:repeat(auto-fit,minmax(460px,1fr));max-width:1500px;margin:0 auto;}
+    section.variant{background:#fff;border:1px solid var(--line);border-radius:12px;
+      overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,0.05);display:flex;flex-direction:column;}
+    section.variant header.v{padding:14px 18px;background:var(--moss-soft);border-bottom:1px solid var(--line);}
+    section.variant header.v h2{margin:0;color:var(--moss-dark);font-size:1.05rem;display:flex;align-items:center;gap:10px;}
+    section.variant header.v .num{display:inline-grid;place-items:center;width:30px;height:30px;
+      background:var(--moss);color:#f7f1e2;border-radius:50%;font:800 0.78rem Inter,system-ui,sans-serif;letter-spacing:0.02em;}
+    section.variant header.v .angle{color:var(--muted);font-size:0.86rem;font-style:italic;margin:6px 0 0 40px;line-height:1.4;}
+    section.variant .frame{position:relative;width:100%;height:620px;background:#9aa07e;}
+    section.variant iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+    section.variant .links{display:flex;gap:10px;padding:10px 18px 14px;border-top:1px solid var(--line);}
+    section.variant .links a{color:var(--ink);text-decoration:none;padding:5px 10px;
+      border:1px solid var(--line);border-radius:6px;font-size:0.82rem;background:var(--control-bg);}
+    section.variant .links a:hover{background:var(--cream-hover);}
+    .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:0.72rem;font-weight:800;
+      text-transform:uppercase;letter-spacing:0.04em;margin-right:6px;vertical-align:middle;}
+    .tag.quiet{background:rgba(95,113,87,0.22);color:var(--moss-dark);}
+    .tag.bold{background:rgba(180,86,31,0.16);color:var(--rust);}
+    .tag.scope{background:rgba(107,90,62,0.16);color:var(--ink);}
+    .footnote{margin:14px 28px 28px;padding:16px 20px;background:var(--control-bg);
+      border:1px solid var(--line);border-radius:10px;max-width:1444px;}
+    .footnote h2{margin:0 0 6px;color:var(--ink);font-size:0.96rem;text-transform:uppercase;letter-spacing:0.05em;}
+    .footnote ul{margin:0;padding-left:18px;color:var(--muted);font-size:0.88rem;line-height:1.65;}
+    .footnote b{color:var(--ink);}
+    .footnote table{border-collapse:collapse;margin:10px 0 4px;font-size:0.82rem;width:100%;max-width:820px;}
+    .footnote th,.footnote td{border:1px solid var(--line);padding:5px 9px;text-align:left;color:var(--ink);}
+    .footnote th{background:var(--moss-soft);color:var(--moss-dark);font-weight:700;}
+    .footnote td:first-child{font-weight:700;}
+  </style>
+</head>
+<body>
+  <header class="page">
+    <h1>Add any type to any layer — where the <code>+</code> lives</h1>
+    <div class="sub">
+      <strong>One change, four placements.</strong> Today a lone <code>+</code> sits on the layer
+      <em>row</em> and only adds that layer's native geometry. The change: move it into the
+      <strong>inline edit area</strong> that opens under a selected layer, <strong>right of the eye and
+      lock</strong>, and split it into <strong>+ POI · + Line · + Polygon</strong> so any geometry can be
+      added to <em>any</em> layer. Each take shows the same selected layer — <strong>Park buildings</strong>,
+      a <em>Polygon</em> layer — whose edit area now also offers a point and a line. Base is the current
+      panel (<code>right_panel.html</code> / <code>js/panel.js</code>): maturity-led tree, real provenance
+      sections, rust-on-cream palette. The takes differ only in <strong>how compact vs. explicit</strong>
+      the three add buttons are.
+    </div>
+  </header>
+
+  <main>
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V1</span>Inline pills</h2>
+        <div class="angle"><span class="tag quiet">Balanced</span>Eye · lock · a divider · three labelled pills <code>+ POI</code> <code>+ Line</code> <code>+ Polygon</code>, all on one control row. Everything visible, no extra clicks.</div>
+      </header>
+      <div class="frame"><iframe src="add_any_type_v1_pills.html" loading="lazy" title="V1 inline pills"></iframe></div>
+      <div class="links"><a href="add_any_type_v1_pills.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V2</span>Geometry icons</h2>
+        <div class="angle"><span class="tag bold">Tightest</span>Three icon-only buttons — pin, line, polygon — each with a small <code>+</code> badge, matching the eye/lock icon language. The geometry is the label; tooltips name each.</div>
+      </header>
+      <div class="frame"><iframe src="add_any_type_v2_icons.html" loading="lazy" title="V2 geometry icons"></iframe></div>
+      <div class="links"><a href="add_any_type_v2_icons.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V3</span>One + → picker</h2>
+        <div class="angle"><span class="tag scope">Quietest row</span>A single <code>+</code> next to eye · lock (the literal "+ by the eye and lock"). Click it and a small picker drops down with the three types. Compact until you need it.</div>
+      </header>
+      <div class="frame"><iframe src="add_any_type_v3_picker.html" loading="lazy" title="V3 picker"></iframe></div>
+      <div class="links"><a href="add_any_type_v3_picker.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V4</span>Labelled add row</h2>
+        <div class="angle"><span class="tag bold">Most explicit</span>Eye · lock stay on their row; a dedicated <code>Add</code> row sits below with three full-width glyph buttons. Most discoverable, one row taller.</div>
+      </header>
+      <div class="frame"><iframe src="add_any_type_v4_addrow.html" loading="lazy" title="V4 labelled add row"></iframe></div>
+      <div class="links"><a href="add_any_type_v4_addrow.html" target="_blank">Open full window</a></div>
+    </section>
+  </main>
+
+  <div class="footnote">
+    <h2>What's the same in all four</h2>
+    <ul>
+      <li><b>The move</b> — the <code>+</code> is gone from the layer row; it now lives in the inline edit area beside the eye and lock, exactly where the per-layer controls already are.</li>
+      <li><b>Any type, any layer</b> — every editable layer offers <b>+ POI / + Line / + Polygon</b>, not just its native geometry. The demo selects a <em>Polygon</em> layer (Park buildings) to make that land: you can drop a point or a line into it.</li>
+      <li><b>Add isn't blocked by the lock</b> — the lock protects <em>existing</em> features; a brand-new draw is always editable, so the add buttons stay live even on a locked/curated layer (matches today's create behaviour).</li>
+      <li><b>Flow after click</b> — pressing a type enters place-mode (the existing rust "click the map to place" hint), same as the old single <code>+</code>.</li>
+    </ul>
+    <h2 style="margin-top:14px;">Pick by how compact vs. explicit you want it</h2>
+    <table>
+      <tr><th>Attribute</th><th>V1 pills</th><th>V2 icons</th><th>V3 picker</th><th>V4 add row</th></tr>
+      <tr><td>Control row</td><td>eye·lock + 3 pills</td><td>eye·lock + 3 icons</td><td>eye·lock + one +</td><td>eye·lock only</td></tr>
+      <tr><td>Types visible</td><td>always</td><td>always</td><td>on click</td><td>always (own row)</td></tr>
+      <tr><td>Footprint</td><td>medium</td><td>smallest</td><td>smallest (collapsed)</td><td>tallest</td></tr>
+      <tr><td>Labels</td><td>text</td><td>icon + tooltip</td><td>icon + text</td><td>icon + text</td></tr>
+      <tr><td>Discoverability</td><td>high</td><td>medium</td><td>medium</td><td>highest</td></tr>
+    </table>
+    <p style="margin:8px 0 0;color:var(--muted);font-size:0.85rem;">Mix freely — e.g. V2's icons on V4's own row. Tell me which to wire into <b>js/panel.js</b> (move the <code>node-create</code> off <code>renderLayerNode</code> into <code>groupFields</code>'s controls field, and have <code>nodeCreateSpec</code> emit a point/line/polygon spec per layer) and I'll build + verify it and bump the shell <b>VERSION</b>.</p>
+  </div>
+</body>
+</html>

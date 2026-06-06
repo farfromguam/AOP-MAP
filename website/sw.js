@@ -32,7 +32,7 @@
 //   3. reconcile DATA_ASSETS below with `ls website/data/`
 // Shell HTML + copy JSON self-heal (stale-while-revalidate), so a missed bump is
 // less dangerous than before — but bulky GeoJSON only refreshes on a bump.
-const VERSION = 'v34'; // keep in sync with #appVersion in index.html
+const VERSION = 'v50'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
@@ -88,7 +88,7 @@ const DATA_ASSETS = [
   // weak field signal, for layers most installs never turn on. The cache-first
   // `/data/` fetch handler still caches each the first time it IS viewed online,
   // so "offline-after-once" holds for whoever actually enables them.
-  './data/aop_brand_logos.geojson',
+  // (brand logos merged into aop_visitor_context_callouts.geojson, 2026-06-05)
   './data/aop_editor_seed_pois.geojson',
   './data/aop_event_schedule.json',
   './data/aop_about.json',

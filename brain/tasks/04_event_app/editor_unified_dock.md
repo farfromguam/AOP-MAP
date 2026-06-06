@@ -84,6 +84,109 @@ Mockups: `website/editor_dock_types_compare.html` (7 types) and the state/patter
 reference `website/right_sidebar_compare.html`. Shots:
 `brain/output/playwright_editor_dock_types.png`, `playwright_dock_cell_*.png`.
 
+> **Add-controls mockups 2026-06-05:** `website/add_any_type_compare.html` + 4 takes
+> (`add_any_type_v{1_pills,2_icons,3_picker,4_addrow}.html`) for moving the layer-row
+> `+` INTO the inline group edit area beside the eye + lock, and splitting it into
+> **+ POI · + Line · + Polygon** (add any geometry to any layer). On the current panel
+> base; every take selects a Polygon layer (Park buildings) to show point/line add.
+> Verified headless (0 console errors); shots `brain/output/playwright_add_any_type_*.png`.
+>
+> **WIRED 2026-06-05 (v42→v43): user picked V2 ("go with v2, we don't need the ADD") →
+> shipped into `js/panel.js`.** The `+` is off the row; the group control row now shows
+> eye + lock + a divider + three icon buttons (pin/line/polygon, each a small `+` badge,
+> no "ADD" caption). `nodeCreateSpec` → `nodeCanCreate`/`makeCreateSpec(node, geomType)` so
+> any geometry drops into the node's OWN source; `startCreate(node, geomType)`; rendered via
+> a `add` flag on `groupFields`'s controls field. Add is never lock-gated (fresh draw is
+> editable). CSS `.add-type`/`.add-divider` in `right_panel.html` + `panel-embed.css`.
+> Verified by observation (`/tmp/verify_add_wiring.py`, 17/17, 0 errors): +POI placed a
+> POINT and +Line a LINESTRING into the buildings *polygon* layer; pure-visibility layers
+> show no icons. Shots `brain/output/playwright_add_wiring_{editarea,buildings}.png`. See the
+> 2026-06-05 ADD-ANY-TYPE WIRED entry in `handoff/session_context.md`. Owed: commit + v43 are
+> the user's git gate; promote the verifier to `mvp/scripts/` at commit.
+
+> **Refresh 2026-06-05:** `right_sidebar_compare.html` was rebuilt on the CURRENT
+> reworked panel (`right_panel.html`/`panel-embed.css`) as base — an iframe grid of
+> **4 placement variations** of this one tabbed panel: V1 bottom dock
+> (`right_sidebar_v1_dock.html`), V2 full takeover (`_v2_takeover.html`), V3 fixed
+> split (`_v3_split.html`), V4 floating sheet (`_v4_sheet.html`, 3-tab — Display
+> folded into Edit). All fix the "width when scroll is present" issue with
+> `scrollbar-gutter:stable` + edit-panel-outside-the-scroll-region.
+>
+> **CHOSEN + WIRED 2026-06-05 (v35→v36):** user picked **V2 (full-panel takeover)**
+> and added a **Raw** tab + a "what file does this come from?" requirement. Wired
+> into the LIVE `js/panel.js` (one renderer for standalone + embed): a selected
+> FEATURE opens the takeover (`renderFeatureEditor`, `‹ Layers` back bar) with **5
+> tabs** — Identify · Edit · Display · Source · **Raw**; a selected LAYER keeps its
+> inline controls (no empty-tab takeover). **Source tab shows the served File**
+> (`SOURCE_FILE`/`fileForItem` off `MAP_DATA` urls + feature `_src`), kept distinct
+> from the provenance `Source` register. **Raw tab** = read-only full-feature JSON
+> (`cleanFeature`) + Copy; re-upload deferred. Fields route to tabs via a `tab` tag
+> on each `itemFields` entry. Verified headless (standalone + embed, 0 console
+> errors). Owed: on-device feel; commit + v36 are the user's git gate. See the
+> 2026-06-05 V2-takeover entry in `handoff/session_context.md`.
+>
+> **STYLING/TABS FIXED 2026-06-05 (v36→v37):** the v36 wiring emitted the DOM but the
+> demo's takeover LAYOUT was never ported — `.feature-editor` was a bare in-flow
+> `display:flex` block with no `.fe-body` scroll rule, so in embed it rendered buried
+> below the kept sections (cramped ~169px card, tabs low/dead on a small screen). The
+> old "tabs don't toggle" report was a layout/reachability problem, NOT `#map`
+> occlusion (`elementFromPoint` returns the tab itself). **Final shape (after the
+> user's "make the tabs the same overall height" follow-up):** the takeover is an
+> **in-flow, compact** editor that drives the panel height and, via
+> `.aop-feature-editing` (added by `js/panel.js`), **hides the surrounding chrome**
+> (panel header, kept Session-tools/Review sections, save footer) while a feature is
+> open so it owns the whole panel. `.fe-top` (back/head/tabs) is `position:sticky`;
+> the body **grid-stacks the panes** (`display:grid`, every `.fe-pane` in
+> `grid-area:1/1`, inactive `visibility:hidden`) so the body sizes to the TALLEST tab
+> and **every tab is the same height — no reflow** on the bottom-anchored embed card.
+> (An interim absolute-overlay + full-height pin was tried first but superseded: it
+> kept height constant only by going full-height, which left big empty space and
+> still jumped when not pinned.) Re-verified with **real pointer clicks**
+> (`/tmp/verify_takeover_v37.py` — standalone + embed desktop + embed mobile, 21/21
+> ×3, 0 console errors; panel height identical on all 5 tabs). Files: `panel-embed.css`
+> · `right_panel.html` · `js/panel.js` · `sw.js` · `index.html`.
+>
+> **IDENTIFY FIELDS 2026-06-05 (v37→v38):** added a **Tag** field to the Identify tab
+> (`itemFields`: `{kind:'text', prop:'tag'}`, after Description) and made **Description a
+> textarea** (`multiline:true` → `renderTextField` emits `<textarea rows=3>`; textarea CSS
+> `resize:vertical; min-height:64px`). `tag` persists/bakes as a normal feature prop.
+> Verified (`/tmp/verify_tag_desc.py`): embed + standalone, fields present + editable +
+> persist, equal-height tabs intact, 0 console errors.
+>
+> **EVENT-SCHEDULE TAG BRIDGE WIRED 2026-06-05 (v39→v40):** the Tag field now drives the
+> live event-schedule resolver. `main.js` exposes `AOP_HOST_SET_TAG(layerKey,props,tag)`
+> (mirrors `AOP_HOST_SET_HIGHLIGHT`): resolves the feature by idField, mirrors `props.tag`
+> onto the host feature, routes through the existing `setFeatureTag` (store +
+> `rebuildTagLookup` + `rebuildEventScheduleData`). `rebuildTagLookup` now ALSO reads each
+> feature's own `props.tag` so a BAKED tag resolves on load (the localStorage store still
+> overrides). Panel `commitChange` → `pushTagToHost` (reuses the ★ node→host map).
+> Verified by observation (`/tmp/verify_tag_bridge3.py`): tagging building 665 Ellis Cove
+> Road `#pavilion` via the panel **moves the live anchor to that building's centroid**;
+> clearing unbinds; #pavilion still seeds on fresh load (no regression); 0 console errors.
+> Gotcha: `#registration`/`#pavillion` are `alias_of:#pavilion` — bind the BASE tag. Closes
+> the event-schedule tag-bridge follow-up.
+>
+> **DATA-MATURITY TIERS (gold/silver) WIRED 2026-06-05 (v41→v42):** the panel now
+> groups the tree by **maturity**, not only provenance. New **Gold data** +
+> **Silver — pending review** sections sit at the top (above Source/Derived/External
+> reference/Map editor/User submitted); each editable group row shows a **maturity
+> chip** and the feature **Source tab** shows the served **File + Tier · locked**.
+> Gold = `aop_trail_network.geojson` (the only gold today); silver = visitor
+> callouts (pending text review), park buildings, and `publish.geojson`. The tier
+> lives in each served file's `_meta` (`maturity`/`group`/`locked`), stamped by new
+> **`mvp/scripts/stamp_maturity.py`** (runs LAST; `rebake_canonical.py` now carries
+> `_meta` forward so a re-bake won't drop it). Lock/unlock + add-new-into-the-file
+> already existed (`nodeCreateSpec` synthesizes a draw spec for any single-geometry
+> listable layer; the lock gates *existing* features, never new draws), so "gold is
+> locked, unlock to edit, but you can always add items" worked out of the box. Full
+> contract: `brain/research/data_maturity_tiers.md`. Files: `js/panel.js` ·
+> `css/panel-embed.css` · `right_panel.html` · `website/data/*` (re-stamped) ·
+> `_schema.json` · `sw.js`/`index.html` (v42). Verified by observation
+> (`/tmp/verify_maturity.py`, 23/23 ×2 surfaces, 0 console errors; shots
+> `brain/output/playwright_maturity_{tree,standalone,embed}.png`). **Deferred:**
+> the legacy-key strip (gated on the index→panel swap); physical file renames.
+> Owed: on-device feel; commit + the v42 bump are the user's git gate.
+
 ## Application plan (NOT yet done — code is the next pass)
 
 In `website/`:

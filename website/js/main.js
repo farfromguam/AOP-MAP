@@ -2692,7 +2692,8 @@
 
     // --- Brand-logos override store --------------------------------------
     // Mirrors the visitor-context pattern: the seed geometry ships in
-    // website/data/aop_brand_logos.geojson, and each drag commits a new
+    // website/data/aop_visitor_context_callouts.geojson (the logos were merged
+    // there as kind=brand_logo points, 2026-06-05), and each drag commits a new
     // Point to localStorage so the user's placement survives reload. Keyed
     // by `logo_id` (aop_badge, rock_warblers) — the on-disk file can be
     // re-edited and any orphaned override key is simply ignored on load.
@@ -3060,6 +3061,23 @@
     // a derived index.
     function rebuildTagLookup() {
       tagToFeature.clear();
+      // 0) Data-led bindings: a feature's OWN `tag` property (baked into the
+      //    served GeoJSON by the right-panel editor) binds it. Scanned first so a
+      //    baked #pavilion resolves on load with no localStorage; the explicit
+      //    store (below) overrides, so a live edit / moved binding still wins.
+      for (const [layerKey, runtime] of Object.entries(featureListRuntime)) {
+        if (!runtime || !runtime.state) continue;
+        for (const bucket of runtime.state.groups) {
+          for (const item of bucket.features) {
+            const normalized = normalizeFeatureTag(
+              (item.feature && item.feature.properties && item.feature.properties.tag) || '');
+            if (!normalized) continue;
+            const coords = geometryCentroid(item.feature.geometry);
+            if (!coords) continue;
+            tagToFeature.set(normalized, { layerKey, featureId: item.id, coordinates: [coords[0], coords[1]] });
+          }
+        }
+      }
       const store = loadFeatureTagStore();
       for (const [layerKey, layerTags] of Object.entries(store)) {
         if (!layerTags || typeof layerTags !== 'object') continue;
@@ -3306,6 +3324,31 @@
     window.AOP_HOST_SET_HIGHLIGHT = function (layerKey, props, on) {
       try { return setFeatureHighlight(layerKey, props, on); }
       catch (e) { console.error('AOP_HOST_SET_HIGHLIGHT failed', e); return false; }
+    };
+
+    // Bridge for the right-panel editor (js/panel.js): bind a feature's #tag into
+    // the live event-schedule resolver. The tag is the feature's own `props.tag`
+    // (baked into the served GeoJSON); this resolves the feature by its idField,
+    // mirrors the value onto the host's own feature copy (so rebuildTagLookup's
+    // props.tag scan stays in sync), and routes through setFeatureTag — which
+    // persists the binding (FEATURE_TAG_KEY, survives reload before a bake),
+    // rebuilds the lookup, and re-resolves the schedule/anchors live.
+    function setFeatureTagByProps(layerKey, props, rawTag) {
+      if (!props) return false;
+      const id = positionedFeatureIdFor(layerKey, { properties: props });
+      if (id == null) return false;
+      const item = findFeatureById(layerKey, id);
+      if (item && item.feature) {
+        const fp = item.feature.properties = item.feature.properties || {};
+        const normalized = normalizeFeatureTag(rawTag);
+        if (normalized) fp.tag = normalized; else delete fp.tag;
+      }
+      setFeatureTag(layerKey, id, rawTag);
+      return true;
+    }
+    window.AOP_HOST_SET_TAG = function (layerKey, props, rawTag) {
+      try { return setFeatureTagByProps(layerKey, props, rawTag); }
+      catch (e) { console.error('AOP_HOST_SET_TAG failed', e); return false; }
     };
 
     // Mirror of toggleFeatureHighlight for the lock flag. Locked features
@@ -4727,20 +4770,30 @@
           'landcover-forest-outline': { 'line-color': LANDCOVER_RELIEF_OUTLINE, 'line-width': 0.7, 'line-opacity': 0.35 },
           'landcover-9patch-forest': { 'fill-color': LANDCOVER_RELIEF_FILL, 'fill-opacity': 0.38 },
           'landcover-9patch-forest-outline': { 'line-color': LANDCOVER_RELIEF_OUTLINE, 'line-width': 0.5, 'line-opacity': 0.25 },
+          // Softened so the relief stays a SUBTLE backdrop and the faded contour
+          // lines read on top of it (user: hillshade was "brutal" around trail 41,
+          // washing the topo lines out in steep shadow zones). It's a topo view —
+          // keep the relief, but the high-contrast near-black shadow (#2f2a21) at
+          // 0.78 exaggeration overpowered the now-faded contours. Halved the
+          // exaggeration and lifted the shadow to a warm mid-tone so there are no
+          // black zones for the light sienna lines to disappear into. (Set
+          // visibility:'none' here instead if a flat pure-contour topo is wanted.)
           'lidar-hillshade': {
-            'hillshade-exaggeration': 0.78,
-            'hillshade-shadow-color': '#2f2a21',
-            'hillshade-highlight-color': '#fff4d9',
-            'hillshade-accent-color': '#6f604c'
+            'hillshade-exaggeration': 0.45,
+            'hillshade-shadow-color': '#7a6a52',
+            'hillshade-highlight-color': '#f7eed8',
+            'hillshade-accent-color': '#8a7860'
           },
-          // pwa_qa item 13a: the Topo contour lines read too dark (index was
-          // #5f4934 near-black-brown). Lightened to a warm sienna so the relief
-          // + trails stay legible. Compare options in topo_color_compare.html
-          // (linked from the right-rail Comparisons section); this is the
-          // "Warm sienna" default — swap if the user picks another column.
-          'contours-minor': { 'line-color': '#b08a5e', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0, 17.5, 0.8], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.65, 16, 1.55] },
-          'contours-index': { 'line-color': '#946638', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 0.98, 0], 16, 0.98], 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.25, 16, 3.1] },
-          'contours-labels': { 'text-color': '#7a5530', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 1, 0], 16, 1] },
+          // Contour topo "faded back" so the orange trail pops (user pick, real-
+          // data compare in topo_trail_compare.html + topo_trail_orange_compare.html,
+          // linked from the right-rail Review section). Background = V1 faded sienna:
+          // the warm-sienna hue is kept but the ON-opacity is dialed back (index
+          // 0.98->0.5, fine 0.8->0.28) and the colours lightened so the relief reads
+          // as a quiet ground. The zoom-fade structure is preserved (50 ft index
+          // lines show below z16; fine 5 ft lines still fade in 16.5->17.5).
+          'contours-minor': { 'line-color': '#c6ad84', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0, 17.5, 0.28], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.65, 16, 1.55] },
+          'contours-index': { 'line-color': '#a8855b', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 0.5, 0], 16, 0.5], 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.25, 16, 3.1] },
+          'contours-labels': { 'text-color': '#8a6a42', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 1, 0], 16, 1] },
           'activity-hotspots-heat': { 'heatmap-opacity': 0.62 },
           'activity-hotspots-fill': { 'fill-opacity': ACTIVITY_HOTSPOT_OPACITY },
           'activity-hotspots-outline': { 'line-color': '#6e2a22', 'line-width': 1.25, 'line-opacity': 0.62 },
@@ -4753,16 +4806,17 @@
           'publish-boundary-fill': { 'fill-color': '#e7c982', 'fill-opacity': 0.08 },
           'publish-boundaries': { 'line-color': '#4d3928', 'line-width': 3, 'line-opacity': 1 },
           'publish-trails': { 'line-color': '#7d4328', 'line-width': 3.8, 'line-opacity': 1 },
-          // pwa_qa item 13d: on the Topo view the gold trail network reads as a
-          // single ORANGE line (overrides the per-difficulty blue/green/black)
-          // so trails pop against the brown contour + hillshade relief.
-          'aop-trail-network': { 'line-color': '#f25e0d', 'line-width': 3.4, 'line-opacity': 0.95 },
+          // On the Topo view the gold trail network reads as a single ORANGE line
+          // (overrides the per-difficulty blue/green/black) so trails pop against
+          // the faded contour + hillshade relief. User pick O6 (pure, no casing) —
+          // a brighter, slightly wider, full-opacity orange that stands alone now
+          // that the topo is dialed back. See topo_trail_orange_compare.html.
+          'aop-trail-network': { 'line-color': '#ff5a14', 'line-width': 3.8, 'line-opacity': 1 },
           'publish-trailheads': { 'circle-color': '#546f4b', 'circle-radius': 6.5, 'circle-opacity': 1 },
-          'roads-local': { 'line-color': '#908773', 'line-opacity': 0.82 },
-          'roads-connecting': { 'line-color': '#b9905b', 'line-opacity': 0.9 },
-          'roads-secondary': { 'line-color': '#c09060', 'line-opacity': 0.92 },
-          'roads-ramp': { 'line-color': '#c99a5c', 'line-opacity': 0.88 },
-          'roads-controlled': { 'line-color': '#c99a5c', 'line-opacity': 0.94 },
+          // Roads: ONE road style. No per-preset recolour — roads keep the single
+          // base style set once at layer creation (cream casing + taupe/tan asphalt
+          // by class). The previous per-preset swap is removed per the user request
+          // ("remove all the dynamic road style swapping. one road style.").
           'visitor-context-fill': { 'fill-color': '#d2a95f', 'fill-opacity': 0.14 },
           'visitor-context-outline': { 'line-color': '#6f4e2e', 'line-width': 2.4, 'line-opacity': 0.86 },
           'visitor-context-labels': { 'text-color': '#3f3122', 'text-opacity': 1, 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 },
@@ -4853,11 +4907,12 @@
           'editor-poi-line-labels': { 'text-color': '#fff0b8', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
           'cemetery-label': { 'text-color': '#fff0b8', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
           'nine-patch-labels': { 'text-color': '#fff4cf', 'text-halo-color': '#15110d', 'text-halo-width': 2 },
-          'roads-local': { 'line-color': '#fff4cf', 'line-width': 2.4, 'line-opacity': 0.86 },
-          'roads-connecting': { 'line-color': '#ffe08a', 'line-width': 3, 'line-opacity': 0.9 },
-          'roads-secondary': { 'line-color': '#ffd072', 'line-width': 3.5, 'line-opacity': 0.92 },
-          'roads-ramp': { 'line-color': '#f7bb5f', 'line-width': 2.6, 'line-opacity': 0.88 },
-          'roads-controlled': { 'line-color': '#f7bb5f', 'line-width': 4.2, 'line-opacity': 0.95 },
+          // Roads: ONE road style. The washed-out cream/yellow per-class recolour
+          // that made Trace roads "look wrong and washed out" is removed — roads now
+          // keep the single base style (cream casing + taupe/tan asphalt) on every
+          // preset, no dynamic swapping. The road LABEL override below stays: it's a
+          // text-legibility concern (cream text + near-black halo so names read over
+          // the dark SFWDA paper backdrop), separate from the road line style.
           'roads-labels': { 'text-color': '#fff4cf', 'text-opacity': 1, 'text-halo-color': '#15110d', 'text-halo-width': 2.2 },
           'activity-hotspots-heat': { 'heatmap-opacity': 0.82 },
           'activity-hotspots-fill': { 'fill-opacity': ['interpolate', ['linear'], ['get', 'intensity_norm'], 0, 0.16, 1, 0.62] },
@@ -7376,7 +7431,6 @@
         './data/sfwda_traced_trails.geojson',
         './data/aop_trail_network.geojson',
         './data/sfwda_raster_alignment.json',
-        './data/aop_brand_logos.geojson',
       ].forEach((url) => { fetchJson(url, url); });
 
       // Land-cover palette. The classifier emits five classes; each gets a
@@ -8236,7 +8290,16 @@
       // Two cartographic support-town annotations: one for the immediate
       // South Pittsburg/Kimball supply run and one for the Monteagle plateau
       // services option. These are planning circles, not service-area claims.
-      visitorContextData = await fetchJson('./data/aop_visitor_context_callouts.geojson', 'Visitor context callouts missing');
+      // The same file also carries the AOP + Rock Warblers brand-logo POINTS
+      // (kind=brand_logo, merged 2026-06-05); take only the callout polygons
+      // here so the fill/outline/label layers, search, and feature list never
+      // see the logos. The brand block below renders the logos as icons.
+      const calloutsBundle = await fetchJson('./data/aop_visitor_context_callouts.geojson', 'Visitor context callouts missing');
+      visitorContextData = calloutsBundle
+        ? Object.assign({}, calloutsBundle, {
+            features: calloutsBundle.features.filter((f) => (f.properties || {}).kind !== 'brand_logo')
+          })
+        : null;
       if (visitorContextData) {
         // Replay any user-staged geometry overrides before the source data
         // ever reaches MapLibre, so a moved callout draws in its new spot
@@ -9286,7 +9349,17 @@
       // and persist in the unified positioned-features store. Editing the
       // seed file just moves the first-load coords; overrides win on next
       // load. Card: brain/tasks/02_edit/branding.md.
-      brandLogosData = await fetchJson('./data/aop_brand_logos.geojson', 'Brand logos missing');
+      //
+      // Source: the logos were merged into aop_visitor_context_callouts.geojson
+      // (2026-06-05) as kind=brand_logo points. Pull just those out here; the
+      // dedicated brand-logos source + icon layer (and all the drag/resize/cap
+      // machinery) are unchanged below.
+      const brandBundle = await fetchJson('./data/aop_visitor_context_callouts.geojson', 'Brand logos missing');
+      brandLogosData = brandBundle
+        ? Object.assign({}, brandBundle, {
+            features: brandBundle.features.filter((f) => (f.properties || {}).kind === 'brand_logo')
+          })
+        : null;
       if (brandLogosData) {
         applyPositionedFeatures('brandLogos', brandLogosData);
 

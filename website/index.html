@@ -224,7 +224,7 @@
          foldVersionIntoInfoControl() RELOCATES it into the bottom-left info ⓘ
          so the corner reads "ⓘ v18" (pwa_qa_2 item 3). Keep this string in sync
          with VERSION in sw.js — both name the same build. -->
-    <div class="util-version" id="appVersion" title="App build version">v34</div>
+    <div class="util-version" id="appVersion" title="App build version">v50</div>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on
          iOS, where there is no programmatic install prompt). Flows under it. -->
@@ -279,7 +279,7 @@
         </div>
       </section>
 
-      <section class="panel-section collapsed" data-section="comparisons">
+      <section class="panel-section collapsed aop-keep" data-section="comparisons">
         <div class="section-header">
           <span class="section-label">Review</span>
           <button type="button" class="section-toggle" aria-expanded="false">
@@ -327,6 +327,14 @@
             <a href="topo_color_compare.html" target="_blank" rel="noopener">
               <span class="cmp-label">Topo contour colours (A–F)</span>
               <span class="cmp-status cmp-applied" title="Applied — option A Warm sienna is the live contour paint (#b08a5e / #946638)">✓ A · sienna</span>
+            </a>
+            <a href="topo_trail_compare.html" target="_blank" rel="noopener">
+              <span class="cmp-label">Topo + trails — fade back / pop (real data)</span>
+              <span class="cmp-status cmp-applied" title="Applied — V1 faded-sienna contours (index #a8855b @0.50 / fine #c6ad84 @0.28) are the live Topo preset topo">✓ V1 bg</span>
+            </a>
+            <a href="topo_trail_orange_compare.html" target="_blank" rel="noopener">
+              <span class="cmp-label">Trail orange — variations on V1 bg (real data)</span>
+              <span class="cmp-status cmp-applied" title="Applied — O6 pure orange (#ff5a14, 3.8px, no casing) is the live Topo preset trail colour">✓ O6</span>
             </a>
           </div>
         </div>
@@ -502,7 +510,7 @@
           <small>Buildings: FEMA USA Structures footprints over the 9-patch. Raw reference context; verify against imagery before treating as park facilities.</small>
           <small>Activity hotspots: time-weighted from first-party timestamped GPX. Longer dwell in one cell draws hotter; raw evidence only.</small>
           <small>Simulated Saturday activity: deterministic synthetic pavilion-start tracks, crawl attempts, dwell, and extracted hotspots for testing the hotspot pipeline. Not field evidence.</small>
-          <small>Event schedule: proposed RC event sessions from <code>website/data/aop_event_schedule.json</code>. Schedule rows use location tags such as <code>#pavilion</code> and <code>#registration</code>; edit those tags once under <code>locations</code> instead of repeating coordinates.</small>
+          <small>Event schedule: proposed RC event sessions from <code>website/data/aop_event_schedule.json</code>. Schedule rows use location tags such as <code>#pavilion</code>; tag a real feature with that tag in the edit panel (or set coordinates once under <code>locations</code>) instead of repeating coordinates.</small>
           <small>Visitor context callouts: support-town planning notes from AOP, RiderPlanet, and Marion County Tourism. Times are approximate; check live routing and hours.</small>
           <small>SFWDA raster is &copy; Adventure Off Road Park (via SFWDA) — internal/inspection only. Drag the 4 corner handles in Edit mode to pixel-align against OSM tracks, then Copy alignment JSON and paste it into <code>website/data/sfwda_raster_alignment.json</code>.</small>
         </div>

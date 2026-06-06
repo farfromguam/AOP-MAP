@@ -102,14 +102,20 @@ CONFIG = {
         prov=dict(source="SFWDA paper map (traced + merged)",
                   confidence="merged truth (traced)",
                   permission="SFWDA paper map — permission TBD", status="raw context")),
-    "aop_visitor_context_callouts.geojson": dict(kind="visitor_callout", name=None,
+    # Mixed-kind file: callout polygons (normalized to kind=visitor_callout)
+    # plus the AOP + Rock Warblers brand-logo points (kind=brand_logo) merged in
+    # here. Discriminate on logo_id presence — brand logos carry it, callouts do
+    # not — so callout polygons still normalize their raw kind to visitor_callout.
+    # The brand features are stored canonically (carrying their own source/
+    # confidence/permission/status), so the callout `prov` defaults below only
+    # ever fill the callout polygons — the logos keep "brand owner"/"decorative".
+    "aop_visitor_context_callouts.geojson": dict(
+        kind=lambda p: "brand_logo" if p.get("logo_id") else "visitor_callout",
+        name=None,
         desc=lambda p: compose(p, ["direction", "services", "examples"]),
         prov=dict(source="AOP pages + Marion County tourism refs",
                   confidence="compiled", permission="context annotation",
                   status="context")),
-    "aop_brand_logos.geojson": dict(kind="brand_logo", name=None,
-        prov=dict(source="brand asset", confidence="n/a",
-                  permission="brand owner", status="decorative")),
     "aop_editor_seed_pois.geojson": dict(kind=lambda p: p.get("category") or "poi", name=None,
         prov=dict(source="editor (first-party)", confidence="draft",
                   permission="first-party", status="draft")),
@@ -231,6 +237,18 @@ def rebake_file(fname, cfg, check=False):
     stem = fname.replace(".geojson", "")
     for i, ft in enumerate(feats):
         ft["properties"] = canonical_props(cfg, ft.get("properties") or {}, stem, i)
+    # Carry a curated top-level `_meta` forward from the LIVE file: the maturity
+    # stamp (stamp_maturity.py) and the trail gold block (export_gold_trail_network.py)
+    # live there, but raw/ is pristine and has none — so without this a re-bake would
+    # silently wipe them. We only author features here; `_meta` is theirs to keep.
+    if "_meta" not in doc and os.path.exists(live_path):
+        try:
+            with open(live_path) as lf:
+                live_meta = json.load(lf).get("_meta")
+            if isinstance(live_meta, dict):
+                doc["_meta"] = live_meta
+        except (OSError, ValueError):
+            pass
     if not check:
         with open(live_path, "w") as fh:
             json.dump(doc, fh, ensure_ascii=False, separators=(",", ":"))

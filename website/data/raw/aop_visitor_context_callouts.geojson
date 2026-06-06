@@ -482,6 +482,58 @@
           ]
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "aop_badge",
+        "name": "AOP badge",
+        "description": null,
+        "kind": "brand_logo",
+        "source": "Adventure Off Road Park",
+        "confidence": "n/a",
+        "permission": "brand owner",
+        "status": "decorative",
+        "last_checked": null,
+        "logo_id": "aop_badge",
+        "icon_image": "brand-aop-badge",
+        "icon_size": 0.2,
+        "attribution": "Adventure Off Road Park",
+        "source_url": "https://adventureoffroadpark.com/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.74157,
+          35.08698
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "rock_warblers",
+        "name": "Rock Warblers",
+        "description": null,
+        "kind": "brand_logo",
+        "source": "Team Rock Warblers RC Rock Crawling",
+        "confidence": "n/a",
+        "permission": "brand owner",
+        "status": "decorative",
+        "last_checked": null,
+        "logo_id": "rock_warblers",
+        "icon_image": "brand-rock-warblers",
+        "icon_size": 0.19,
+        "attribution": "Team Rock Warblers RC Rock Crawling",
+        "source_url": "https://www.facebook.com/events/adventure-offroad-park-nature-center/rock-warblers-trail-blazing-invitational/4541595172728436/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.74188,
+          35.09385
+        ]
+      }
     }
   ]
 }

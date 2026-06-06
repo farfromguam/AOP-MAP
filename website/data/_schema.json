@@ -83,87 +83,98 @@
     "publish.geojson": {
       "features": 5,
       "kind": "(per-feature)",
-      "machine": false
+      "machine": false,
+      "maturity": "silver"
     },
     "aop_9_patch.geojson": {
       "features": 9,
       "kind": "acquisition_aoi_cell",
-      "machine": false
+      "machine": false,
+      "maturity": "reference"
     },
     "aop_buildings.geojson": {
       "features": 5,
       "kind": "building",
-      "machine": false
+      "machine": false,
+      "maturity": "silver"
     },
     "aop_cemeteries.geojson": {
       "features": 8,
       "kind": "cemetery",
-      "machine": false
+      "machine": false,
+      "maturity": "reference"
     },
     "aop_trail_network.geojson": {
       "features": 120,
       "kind": "trail",
-      "machine": false
+      "machine": false,
+      "maturity": "gold"
     },
     "aop_visitor_context_callouts.geojson": {
-      "features": 2,
-      "kind": "visitor_callout",
-      "machine": false
-    },
-    "aop_brand_logos.geojson": {
-      "features": 2,
-      "kind": "brand_logo",
-      "machine": false
+      "features": 4,
+      "kind": "(per-feature)",
+      "machine": false,
+      "maturity": "silver"
     },
     "aop_editor_seed_pois.geojson": {
       "features": 1,
       "kind": "(per-feature)",
-      "machine": false
+      "machine": false,
+      "maturity": "editor"
     },
     "aop_lidar_tiles.geojson": {
       "features": 24,
       "kind": "lidar_tile",
-      "machine": false
+      "machine": false,
+      "maturity": "reference"
     },
     "aop_roads.geojson": {
       "features": 114,
       "kind": "road",
-      "machine": false
+      "machine": false,
+      "maturity": "reference"
     },
     "aop_water.geojson": {
       "features": 94,
       "kind": "water",
-      "machine": false
+      "machine": false,
+      "maturity": "reference"
     },
     "osm_aop_9patch.geojson": {
       "features": 71,
       "kind": "(per-feature)",
-      "machine": false
+      "machine": false,
+      "maturity": "reference"
     },
     "osm_aop_named.geojson": {
       "features": 5,
       "kind": "(per-feature)",
-      "machine": false
+      "machine": false,
+      "maturity": "reference"
     },
     "sfwda_traced_trails.geojson": {
       "features": 382,
       "kind": "trail",
-      "machine": false
+      "machine": false,
+      "maturity": "delete"
     },
     "sfwda_traced_markers.geojson": {
       "features": 124,
       "kind": "trail_marker",
-      "machine": false
+      "machine": false,
+      "maturity": "reference"
     },
     "sfwda_numbered_trails.geojson": {
       "features": 67,
       "kind": "trail",
-      "machine": false
+      "machine": false,
+      "maturity": "reference"
     },
     "sfwda_trails_edited.geojson": {
       "features": 120,
       "kind": "trail",
-      "machine": false
+      "machine": false,
+      "maturity": "reference"
     },
     "aop_landcover.geojson": {
       "features": 154,
@@ -175,7 +186,8 @@
         "permission": "public domain",
         "status": "raw context",
         "last_checked": "2023 imagery / 2015 lidar"
-      }
+      },
+      "maturity": "derived"
     },
     "aop_landcover_9patch.geojson": {
       "features": 3430,
@@ -187,7 +199,8 @@
         "permission": "public domain",
         "status": "raw context",
         "last_checked": "2023 imagery / 2015 lidar"
-      }
+      },
+      "maturity": "derived"
     },
     "aop_contours.geojson": {
       "features": 2831,
@@ -199,7 +212,8 @@
         "permission": "public domain (USGS)",
         "status": "raw context",
         "last_checked": "2015 (DEM)"
-      }
+      },
+      "maturity": "derived"
     },
     "aop_activity_hotspots.geojson": {
       "features": 130,
@@ -210,7 +224,8 @@
         "confidence": "raw activity evidence",
         "permission": "internal",
         "status": "hold"
-      }
+      },
+      "maturity": "derived"
     },
     "aop_synthetic_activity_hotspots.geojson": {
       "features": 36,
@@ -221,7 +236,8 @@
         "confidence": "synthetic",
         "permission": "internal",
         "status": "test data"
-      }
+      },
+      "maturity": "delete"
     },
     "aop_synthetic_activity_tracks.geojson": {
       "features": 72,
@@ -232,7 +248,16 @@
         "confidence": "synthetic",
         "permission": "internal",
         "status": "test data"
-      }
+      },
+      "maturity": "delete"
     }
+  },
+  "maturity_tiers": {
+    "gold": "Curated, reviewed, first-party, final. Locked — unlock to edit.",
+    "silver": "Curated first-party, pending review (text / confirmation / placeholder-real). Locked.",
+    "editor": "First-party editor scratch (drawn / seed). Unlocked.",
+    "derived": "Machine-computed reference (not hand-edited). Unlocked.",
+    "reference": "External raw context we trace against but don't own. Unlocked.",
+    "delete": "Staged for removal — sits in the Delete group until the actual delete is approved. Unlocked."
   }
 }

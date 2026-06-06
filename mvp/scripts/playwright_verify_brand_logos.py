@@ -2,7 +2,8 @@
 """Playwright verification for the on-map brand logos in the AOP viewer.
 
 Covers Sprint 02 Bucket F: the AOP badge + Rock Warblers logo render as
-MapLibre icons sourced from `website/data/aop_brand_logos.geojson`, sit in
+MapLibre icons sourced from `website/data/aop_visitor_context_callouts.geojson`
+(kind=brand_logo points, merged there 2026-06-05), sit in
 the Publishable section under `showBrandLogos`, and consume the shared
 drag-to-move primitive from `poi_editor_v2.md` (commit + persist across
 reload via the unified `aop_positioned_features_v1` store).
@@ -120,16 +121,19 @@ def main() -> int:
         vis = layer_visibility(page, LOGO_LAYER)
         check(f"{LOGO_LAYER} visible at load (default-on policy)", vis == "visible", f"visibility={vis}")
 
+        # Brand logos live in the visitor-context callouts file now (merged
+        # 2026-06-05 as kind=brand_logo points); filter to those here.
         data = page.evaluate(
             """async () => {
-              const r = await fetch('./data/aop_brand_logos.geojson');
+              const r = await fetch('./data/aop_visitor_context_callouts.geojson');
               if (!r.ok) return null;
               const d = await r.json();
+              const logos = (d.features || []).filter((f) => (f.properties || {}).kind === 'brand_logo');
               return {
-                total: (d.features || []).length,
-                ids: (d.features || []).map((f) => f.properties.logo_id),
-                names: (d.features || []).map((f) => f.properties.name),
-                icons: (d.features || []).map((f) => f.properties.icon_image)
+                total: logos.length,
+                ids: logos.map((f) => f.properties.logo_id),
+                names: logos.map((f) => f.properties.name),
+                icons: logos.map((f) => f.properties.icon_image)
               };
             }"""
         )

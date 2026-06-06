@@ -20,20 +20,6 @@
       "confidence": "medium",
       "caveat": "FEMA footprint remains raw context; facility use should be confirmed by AOP."
     },
-    "#pavillion": {
-      "alias_of": "#pavilion",
-      "hidden": true,
-      "note": "Misspelling alias accepted so schedule rows do not break."
-    },
-    "#registration": {
-      "label": "Registration Desk",
-      "map_label": "Registration",
-      "role": "event_registration",
-      "alias_of": "#pavilion",
-      "source": "Proposed event POI colocated with AOP Pavilion / G-Central.",
-      "confidence": "proposed",
-      "caveat": "Create as event POI only after AOP confirms registration placement."
-    },
     "#observed-trailhead": {
       "label": "Observed Trailhead — segment 2",
       "map_label": "Trailhead",
@@ -97,7 +83,7 @@
       "start_local": "17:00",
       "time_label": "Evening",
       "title": "Registration + wristband check",
-      "location_tag": "#registration",
+      "location_tag": "#pavilion",
       "status": "proposed",
       "inspired_by": ["Pro-Line By The Fire check-in", "RG6 driver check-in / registration", "AxialFest Base Camp registration"]
     },
@@ -131,7 +117,7 @@
       "start_local": "08:00",
       "time_label": "Morning",
       "title": "Late registration + tech check",
-      "location_tag": "#registration",
+      "location_tag": "#pavilion",
       "status": "proposed",
       "inspired_by": ["RG6 Saturday check-in", "AxialFest registration / tech"]
     },
@@ -233,7 +219,7 @@
       "start_local": "17:00",
       "time_label": "Late afternoon",
       "title": "Final check-out",
-      "location_tag": "#registration",
+      "location_tag": "#pavilion",
       "status": "proposed",
       "inspired_by": ["Pro-Line By The Fire Sunday departure", "AxialFest Sunday travel-home block"]
     }

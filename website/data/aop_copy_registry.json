@@ -79,13 +79,13 @@
       "label": "Brand logos",
       "what": "On-map AOP and Rock Warblers logo names, attributions, and permission notes.",
       "surfaces": ["Map brand-logo layer", "map attribution"],
-      "root_files": ["website/data/aop_brand_logos.geojson"],
+      "root_files": ["website/data/aop_visitor_context_callouts.geojson"],
       "renderer": "brand_logos",
       "status": "live",
       "extraction": "data",
       "gaps_field": null,
       "review_priority": "low",
-      "note": "AOP badge is reference-only until AOP confirms reuse; Rock Warblers logo cleared by the user."
+      "note": "Merged 2026-06-05 into aop_visitor_context_callouts.geojson as kind=brand_logo point features. AOP badge is reference-only until AOP confirms reuse; Rock Warblers logo cleared by the user."
     },
     {
       "id": "ui_strings",

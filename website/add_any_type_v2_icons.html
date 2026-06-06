@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Add any type — V2 geometry icons</title>
+  <!--
+    Same base + same change as V1 (the "+" moves off the row, into the edit area
+    beside eye + lock, and becomes point / line / polygon).
+    V2 = ICON-ONLY geometry buttons that match the icon language of eye + lock:
+    a map-pin, a line, a polygon outline, each with a small "+" badge. Tightest
+    control row; the geometry itself is the label (tooltips name each one).
+  -->
+  <style>
+    :root{
+      --paper:#efe7d5;--panel-bg:#f7f2e6;--ink:#2b2620;--line:#d8cdb4;--rust:#b4561f;
+      --muted:#8a7d63;--faint:#b3a484;--sub:#4a4438;--label:#6e6450;
+      --soft:rgba(180,86,31,.06);--soft2:rgba(180,86,31,.12);--soft3:rgba(180,86,31,.05);
+    }
+    *{box-sizing:border-box;}
+    html,body{margin:0;height:100%;font:14px/1.45 -apple-system,Segoe UI,Roboto,Inter,sans-serif;color:var(--ink);}
+    body{overflow:hidden;}
+    #map{position:fixed;inset:0;background:
+      radial-gradient(circle at 28% 26%,#cdd7b8,transparent 58%),
+      radial-gradient(circle at 72% 68%,#bcc6a2,transparent 55%),
+      linear-gradient(135deg,#a6b187,#8b9770);}
+    #map::after{content:"";position:absolute;inset:0;background-image:
+      linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);background-size:64px 64px;}
+
+    .panel{position:fixed;top:0;right:0;bottom:0;width:340px;max-width:92vw;
+      background:var(--panel-bg);border-left:1px solid var(--line);
+      box-shadow:-2px 0 12px rgba(0,0,0,.10);display:flex;flex-direction:column;overflow:hidden;}
+    .panel-head{flex:none;display:flex;align-items:center;gap:8px;padding:12px 16px 8px;border-bottom:1px solid var(--line);}
+    .panel-head h1{margin:0;font-size:14px;font-weight:600;flex:1;letter-spacing:.2px;}
+    .panel-head .preset{font-size:11px;color:var(--muted);}
+    .panel-body{flex:1 1 auto;min-height:0;overflow-y:auto;scrollbar-gutter:stable;padding:14px 16px 20px;}
+
+    .panel-section{margin-bottom:16px;}
+    .section-header{display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;cursor:pointer;background:none;border:0;padding:0 0 4px;margin-bottom:6px;border-bottom:1px solid var(--line);text-align:left;color:inherit;font:inherit;}
+    .section-label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;}
+    .section-chevron{color:var(--faint);font-size:12px;line-height:1;transform:rotate(90deg);transition:transform .12s;}
+    .panel-section.collapsed .section-chevron{transform:rotate(0);}
+    .section-body{display:flex;flex-direction:column;}
+    .panel-section.collapsed .section-body{display:none;}
+
+    .node-group{display:flex;flex-direction:column;}
+    .node{display:flex;align-items:center;gap:6px;border-radius:6px;}
+    .node-chevron-btn{background:none;border:0;padding:6px 2px;cursor:pointer;display:flex;align-items:center;}
+    .node-chevron{color:var(--faint);font-size:11px;line-height:1;transform:rotate(0);transition:transform .12s;}
+    .node-group.expanded>.node .node-chevron{transform:rotate(90deg);}
+    .node-select{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:none;border:0;padding:7px 4px;cursor:pointer;font:inherit;color:inherit;text-align:left;border-radius:6px;}
+    .node-select:hover{background:var(--soft);}
+    .node-group.selected>.node>.node-select{background:var(--soft2);font-weight:600;}
+    .node-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .node-count{color:var(--faint);font-size:12px;font-variant-numeric:tabular-nums;flex:none;}
+    .maturity-badge{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:1px 6px;border-radius:999px;line-height:1.5;flex:none;border:1px solid transparent;}
+    .maturity-badge.gold{background:#f3e0b0;color:#7a5a16;border-color:#e0c074;}
+    .maturity-badge.silver{background:#e2e0d8;color:#5f5b50;border-color:#cbc7ba;}
+
+    .node-content{margin-left:14px;border-left:1px solid var(--line);padding-left:4px;display:none;}
+    .node-group.expanded>.node-content{display:block;}
+    .node-items{margin:2px 0 6px;}
+    .item{display:flex;align-items:center;}
+    .item-select{flex:1;min-width:0;text-align:left;background:none;border:0;padding:5px 10px;font:inherit;font-size:13px;color:var(--sub);cursor:pointer;border-radius:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .item-select:hover{background:rgba(180,86,31,.05);}
+
+    .edit-area{margin:4px 0 10px 10px;padding:10px 12px;background:var(--soft3);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;gap:10px;}
+    .field{display:flex;align-items:center;gap:8px;font-size:13px;}
+    .field-controls{gap:4px;flex-wrap:wrap;}
+    .icon-toggle{flex:none;background:none;border:0;padding:3px 5px;cursor:pointer;color:var(--faint);display:flex;align-items:center;border-radius:5px;}
+    .icon-toggle:hover{background:rgba(180,86,31,.1);}
+    .icon-toggle.on{color:var(--rust);}
+    .lock-btn{flex:none;background:none;border:0;padding:3px 5px;cursor:pointer;color:var(--faint);display:flex;align-items:center;border-radius:5px;}
+    .lock-btn:hover{background:rgba(180,86,31,.1);}
+    .lock-btn.locked{color:var(--rust);}
+    .ctrl-divider{width:1px;align-self:stretch;background:var(--line);margin:1px 3px;}
+    .ctrl-caption{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+    .field-actions{flex-direction:row;flex-wrap:wrap;gap:6px;}
+    .edit-action{background:#fff;border:1px solid var(--line);color:var(--ink);padding:6px 10px;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;}
+    .edit-action:hover{background:var(--soft);}
+
+    /* V2 — icon-only geometry buttons with a small "+" badge */
+    .add-controls{display:flex;align-items:center;gap:2px;}
+    .add-icon{position:relative;flex:none;background:none;border:1px solid transparent;padding:3px 5px;cursor:pointer;color:var(--faint);display:flex;align-items:center;border-radius:5px;}
+    .add-icon:hover{background:rgba(180,86,31,.1);color:var(--rust);border-color:var(--line);}
+    .add-icon::after{content:"+";position:absolute;top:-2px;right:-1px;font-size:11px;font-weight:800;color:var(--rust);line-height:1;}
+
+    .panel-footer{flex:none;display:flex;align-items:center;gap:8px;padding:10px 16px;border-top:1px solid var(--line);background:var(--panel-bg);}
+    .footer-btn{background:var(--rust);color:#fff;border:1px solid var(--rust);padding:7px 12px;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;}
+    .footer-btn.sub{background:#fff;color:var(--rust);}
+    .edit-count{margin-left:auto;color:var(--muted);font-size:12px;}
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <aside class="panel">
+    <div class="panel-head"><h1>AOP edit panel</h1><span class="preset">Park preset</span></div>
+    <div class="panel-body">
+
+      <div class="panel-section collapsed"><button class="section-header"><span class="section-label">Gold data</span><span class="section-chevron">›</span></button><div class="section-body"></div></div>
+
+      <div class="panel-section">
+        <button class="section-header"><span class="section-label">Silver — pending review</span><span class="section-chevron">›</span></button>
+        <div class="section-body">
+          <div class="node-group"><div class="node"><button class="node-chevron-btn"><span class="node-chevron">▸</span></button><button class="node-select"><span class="node-label">Publishable boundaries</span><span class="maturity-badge silver">Silver</span><span class="node-count">2</span></button></div></div>
+
+          <div class="node-group selected">
+            <div class="node">
+              <button class="node-chevron-btn"><span class="node-chevron">▸</span></button>
+              <button class="node-select"><span class="node-label">Park buildings (curated)</span><span class="maturity-badge silver">Silver</span><span class="node-count">14</span></button>
+            </div>
+            <div class="edit-area">
+              <div class="field field-controls">
+                <button class="icon-toggle eye on" title="Visible — click to hide"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="lock-btn" title="Unlocked — click to lock"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-1.5"/></svg></button>
+                <span class="ctrl-divider"></span>
+                <div class="add-controls">
+                  <button class="add-icon" title="Add POI (point)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s6-5.7 6-11a6 6 0 1 0-12 0c0 5.3 6 11 6 11z"/><circle cx="12" cy="10" r="2.2"/></svg></button>
+                  <button class="add-icon" title="Add line"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="18" x2="19" y2="6"/><circle cx="5" cy="18" r="2.1" fill="currentColor" stroke="none"/><circle cx="19" cy="6" r="2.1" fill="currentColor" stroke="none"/></svg></button>
+                  <button class="add-icon" title="Add polygon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 4 20 9.5 17 19 7 19 4 9.5"/></svg></button>
+                </div>
+              </div>
+              <div class="field field-actions"><button class="edit-action">⧉ Copy all as GeoJSON</button></div>
+            </div>
+          </div>
+
+          <div class="node-group"><div class="node"><button class="node-chevron-btn"><span class="node-chevron">▸</span></button><button class="node-select"><span class="node-label">Visitor context callouts</span><span class="maturity-badge silver">Silver</span><span class="node-count">3</span></button></div></div>
+          <div class="node-group"><div class="node"><button class="node-select"><span class="node-label">Publishable trailheads</span><span class="maturity-badge silver">Silver</span></button></div></div>
+        </div>
+      </div>
+
+      <div class="panel-section collapsed"><button class="section-header"><span class="section-label">Source layers</span><span class="section-chevron">›</span></button><div class="section-body"></div></div>
+      <div class="panel-section collapsed"><button class="section-header"><span class="section-label">Derived layers</span><span class="section-chevron">›</span></button><div class="section-body"></div></div>
+      <div class="panel-section collapsed"><button class="section-header"><span class="section-label">External reference</span><span class="section-chevron">›</span></button><div class="section-body"></div></div>
+
+      <div class="panel-section">
+        <button class="section-header"><span class="section-label">Map editor</span><span class="section-chevron">›</span></button>
+        <div class="section-body">
+          <div class="node-group"><div class="node"><button class="node-chevron-btn"><span class="node-chevron">▸</span></button><button class="node-select"><span class="node-label">Drawn POIs</span><span class="node-count">5</span></button></div></div>
+          <div class="node-group"><div class="node"><button class="node-chevron-btn"><span class="node-chevron">▸</span></button><button class="node-select"><span class="node-label">Points (draw)</span><span class="node-count">3</span></button></div></div>
+          <div class="node-group"><div class="node"><button class="node-chevron-btn"><span class="node-chevron">▸</span></button><button class="node-select"><span class="node-label">Brand logos (AOP &amp; Rock Warblers)</span><span class="node-count">2</span></button></div></div>
+        </div>
+      </div>
+
+      <div class="panel-section collapsed"><button class="section-header"><span class="section-label">User submitted</span><span class="section-chevron">›</span></button><div class="section-body"></div></div>
+    </div>
+
+    <div class="panel-footer">
+      <button class="footer-btn">⤓ Export edits</button>
+      <button class="footer-btn sub">Clear</button>
+      <span class="edit-count">no edits</span>
+    </div>
+  </aside>
+
+  <script>
+    document.addEventListener('click',function(e){
+      var sh=e.target.closest('.section-header');if(sh){sh.parentElement.classList.toggle('collapsed');return;}
+      var nc=e.target.closest('.node-chevron-btn');if(nc){nc.closest('.node-group').classList.toggle('expanded');return;}
+    });
+  </script>
+</body>
+</html>

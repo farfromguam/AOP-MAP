@@ -48,12 +48,15 @@ def callout_data(page) -> dict:
           const r = await fetch('./data/aop_visitor_context_callouts.geojson');
           if (!r.ok) return null;
           const d = await r.json();
+          // The file also carries kind=brand_logo points (merged 2026-06-05);
+          // the callout layer only renders the visitor_callout polygons.
+          const c = (d.features || []).filter((f) => (f.properties || {}).kind !== 'brand_logo');
           return {
-            total: (d.features || []).length,
-            names: (d.features || []).map((f) => f.properties.name),
-            labels: (d.features || []).map((f) => f.properties.label),
-            foodUrls: (d.features || []).map((f) => f.properties.food_url),
-            lodgingUrls: (d.features || []).map((f) => f.properties.lodging_url),
+            total: c.length,
+            names: c.map((f) => f.properties.name),
+            labels: c.map((f) => f.properties.label),
+            foodUrls: c.map((f) => f.properties.food_url),
+            lodgingUrls: c.map((f) => f.properties.lodging_url),
             sources: d._sources_checked || []
           };
         }"""

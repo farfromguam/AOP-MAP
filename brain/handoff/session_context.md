@@ -4,6 +4,666 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+**2026-06-05 (ONE ROAD STYLE — dropped the per-preset road recolour, CODE ONLY,
+UNCOMMITTED, v49→v50).** User: *"the roads look wrong and washed out on the trace
+preset. there is some dynamic road style swapping going on. remove all of that. one
+road style."* Traced by observation: roads are 5 classes (local / local_connecting /
+secondary / ramp / controlled_access), each a casing + line, defined ONCE at layer
+creation (`js/main.js` ~L8177-8256) in the base style — **cream casing `#f3ecda` +
+taupe/tan asphalt** (`#b0a68c`/`#cdb079`/`#c09060`/`#d8b173`), zoom-interpolated widths.
+The "dynamic swapping" was the per-preset paint override: **Topo** recoloured the 5 road
+lines to muted browns (`#908773` …) and **Trace** to washed-out **creams/yellows**
+(`#fff4cf`/`#ffe08a`/`#ffd072`/`#f7bb5f`) at reduced opacity — that pale set on Trace's
+dark hillshade + SFWDA-paper backdrop is exactly the "washed out" the user saw. Park
+declared NO road-line override, so Park already showed the good base style. Fix: **removed
+the road-line overrides from BOTH the Topo and Trace preset `paints`** in
+`BUILT_IN_PRESETS` (`js/main.js`), replaced with a one-line note in each. Because
+`applyPreset`→`applyPaintState` only ever SETS the paints a preset declares (never resets
+undeclared ones — L5028/5062), and now NO preset declares road line paint, the base style
+set at `addLayer` is never overwritten → **one road style on every preset.** This also
+quietly fixes a latent carry-over (Trace→Park used to leave Trace's cream roads on Park).
+**Kept** the Trace `roads-labels` override (cream text + near-black halo) — that's road
+LABEL legibility over the dark paper backdrop, a separate concern from the road LINE style
+the user flagged. VERSION **v49→v50** (`sw.js` + `#appVersion`; main.js is a shell asset).
+**Verified by observation** (`/tmp/verify_one_road_style.py`, served :8055, SW blocked):
+clicked the real Park→Topo→Trace preset buttons and read live `getPaintProperty` — all
+three presets return the **identical** base road colours (local `#b0a68c`, connecting
+`#cdb079`, secondary `#c09060`, ramp/controlled `#d8b173`) with opacity back to the base
+default (Trace had forced 0.86), the banned cream/muted-brown swap colours never appear,
+**0 console errors**; the Trace render at the park core
+(`brain/output/playwright_one_road_style_trace.png`) shows the roads as the consistent
+taupe+cream-casing style, no washed-out cream. **Owed:** on-device feel; promote
+`/tmp/verify_one_road_style.py` → `mvp/scripts/` at commit; commit + the v50 bump are the
+user's git gate. If the user later wants roads to POP more on the dark Trace backdrop, the
+move is to make the single BASE style read on both light and dark grounds (it already has
+a cream casing for that), not to re-introduce a per-preset swap.
+
+**2026-06-05 (TOPO HILLSHADE SOFTENED — relief was "brutal" around trail 41, CODE,
+UNCOMMITTED, v48→v49).** User: *"the hillshade is brutal around trail 41 we cannot see
+the topo lines… tune down or turn off? it is a topo view after all."* Diagnosed by
+observation at trail 41 (`[-85.75552, 35.09293]`, a steep "difficult" trail): after the
+contour fade (index @0.5), the **high-contrast hillshade** (`exaggeration 0.78` +
+near-black shadow `#2f2a21`) threw dark bands in steep zones that the light sienna lines
+disappeared into. Tested 4 states live (runtime `setPaintProperty`, shots
+`brain/output/hs2_{A_current,B_soft,D_off,E_soft_plus_contours}.png`): current = washed
+out; **soft = contours read everywhere + relief kept**; off = clean but flat (loses the
+3D terrain read); soft+contour-bump = strongest topo but busier. **Recommendation: tune
+DOWN, not off** — it's a shaded-relief topo, the relief is worth keeping; the culprit was
+contrast, not the layer. Applied **B** to `BUILT_IN_PRESETS.topo.paints['lidar-hillshade']`
+in `js/main.js`: `exaggeration 0.78→0.45`, `shadow #2f2a21→#7a6a52` (warm mid-tone, no
+black zones), `highlight #fff4d9→#f7eed8`, `accent #6f604c→#8a7860`. Comment notes the
+one-line switch to `visibility:'none'` if a flat pure-contour topo is ever wanted.
+VERSION **v48→v49** (`sw.js` + `#appVersion`). **Verified by observation**
+(`/tmp/verify_hillshade_live.py`, served :8001, SW blocked): live `getPaintProperty`
+returns ex 0.45 / shadow `#7a6a52` / visible, **0 console errors**, and the rendered shot
+(`brain/output/playwright_topo_hillshade_soft_live.png`) shows the contours legible across
+the trail-41 area with gentle relief + the orange still popping. Only the Topo preset
+hillshade changed (Park/Trace untouched). **Owed:** on-device feel; commit + v49 are the
+user's git gate.
+
+**2026-06-05 (TOPO PRESET WIRED — V1 faded sienna + O6 pure orange now LIVE,
+CODE, UNCOMMITTED, v47→v48).** User: *"lets go with 6."* Wired the chosen scheme into
+the live **Topo preset** (`js/main.js` `BUILT_IN_PRESETS.topo.paints`): contours
+**faded back** to the V1 family — `contours-index` `#946638`→**`#a8855b`** with ON-opacity
+**0.98→0.5**, `contours-minor` `#b08a5e`→**`#c6ad84`** ON-opacity **0.8→0.28**,
+`contours-labels` text `#7a5530`→**`#8a6a42`** (zoom-fade structure preserved: 50 ft
+index below z16, fine 5 ft fade in 16.5→17.5); trail **popped** to O6 —
+`aop-trail-network` `#f25e0d`/3.4/0.95 → **`#ff5a14` / 3.8px / opacity 1, no casing**
+(O6 was the "pure, stands alone now the topo is dialed back" variant, so no extra casing
+layer needed). Only the `topo` preset block changed; Park/Trace presets + the base layer
+defs untouched (Park keeps per-difficulty trail colours). Comments updated to point at
+the two compare pages instead of the old `topo_color_compare.html`. VERSION **v47→v48**
+(`sw.js` + `#appVersion`; main.js is a shell asset). Both Review badges flipped to
+**`✓ V1 bg`** / **`✓ O6`**. **Verified by observation** (`/tmp/verify_topo_wire.py`,
+served :8001, SW blocked): clicked the real **Topo** preset button → live
+`getPaintProperty` returns idx `#a8855b`, min `#c6ad84`, lbl `#8a6a42`, trail `#ff5a14`
+w3.8 op1, both layers visible, **0 console errors**; flew to the park core and the shot
+(`brain/output/playwright_topo_preset_o6_live.png`) shows the faint sienna contours
+receding while the bright-orange trail web pops, no casing. **Owed:** on-device feel;
+commit + v48 are the user's git gate. The two compare pages + `compare_data/` +
+`mvp/scripts/build_topo_trail_compare_data.py` + the durable
+`playwright_verify_topo_trail_compare.py` are kept as the decision record. **Note:** the
+Park preset still uses the older heavier contour colours (`#a8906a`/`#c7b48f`) — only
+Topo was the ask; flag if Park should match.
+
+**2026-06-05 (TRAIL-ORANGE ROUND 2 — V1 background chosen, 8 orange variations,
+CODE + 1 link, UNCOMMITTED, v46→v47).** User: *"go with v1 background. give me some
+more variations on the orange. with that background."* So the **V1 faded-sienna
+background is now the chosen topo** (index `#a8855b` @0.50, fine `#c6ad84` @0.28).
+Built **`website/topo_trail_orange_compare.html`** — same real-data MapLibre
+small-multiples engine + clipped `compare_data/`, same camera, **background locked to
+V1**, varying ONLY the orange trail across **8 cards**: O1 V1 reference (`#ff6a1f` +
+cream casing, the carried-over anchor), O2 classic blaze `#f25e0d`, O3 hot vermilion
+`#ff3d00`, O4 amber `#ff8c00`, O5 bright + **dark** casing `#3a1600`, O6 pure no-casing
+`#ff5a14`, O7 **glow** (cream casing + blurred orange under-glow), O8 **double halo**
+(cream outer + thin dark inner + bright core). `buildMap` generalized to stack
+glow→casing→trail; supports `line-blur`. Attribute table + intent notes.
+**Review:** prior `topo_trail_compare.html` row badge flipped `◌`→**`✓ V1 bg`** (bg
+chosen), new row added for the orange page (`◌ Pick owed`). VERSION **v46→v47**
+(`sw.js` + `#appVersion`). **Verified by observation** (durable verifier now covers
+BOTH pages: `mvp/scripts/playwright_verify_topo_trail_compare.py`, served :8001):
+both **PASS** — orange page **8 cards / 8 real canvases / 8 rows, 0 console errors**;
+per-card crops were inspected during the run (O5 dark-cased + O3 vermilion + O8 engraved
+all render fully with the V1 ground faded behind); full-page record is
+`brain/output/playwright_topo_trail_orange_compare.png`.
+**Same progressive-render gotcha, worse with 8 heavy maps:** the verifier now scrolls
+each map into view + waits; even so the *full-page record shot*
+(`playwright_topo_trail_orange_compare.png`) can catch a couple mid-render — the
+per-card crops are the real evidence, structural checks pass, live browser is fine.
+**OWED (the pick):** user chooses an O# → wire V1 contours + that orange (+ a trail
+casing layer, and `line-blur`/glow if O7/O8) into the Topo preset `aop-trail-network`
++ `contours-*` paints in `js/main.js`, bump shell VERSION, flip both Review badges to
+`✓`. Commit + v47 are the user's git gate.
+
+**2026-06-05 (TOPO+TRAIL COLOUR COMPARE — real-data "fade topo / pop trails"
+review page, CODE + DATA + 1 link, UNCOMMITTED, v45→v46).** User: *"review the topo
+layer and our orange trails. the colors need tweaking. take the brown topo and the
+orange trails and make a handful of variations so that I can see the data but less
+visual clutter. topo to fade back, trails to pop. put the comparison page in our
+review area. you can start with topo contour. but it needs more map elements."*
+Context traced by observation: the "brown topo + orange trails" is the **Topo
+preset** (`js/main.js` ~L4732-4817) — brown contours (index `#946638`, fine
+`#b08a5e`, label `#7a5530`) + the gold trail network **flat-recoloured orange
+`#f25e0d`** (overrides its baked per-difficulty green/blue/black) over relief
+landcover + AWS-DEM hillshade + brown roads + teal water. The pre-existing
+`topo_color_compare.html` was a stale hand-drawn **SVG mockup with only contour
+lines** — that's the "needs more map elements" gap.
+**Built `website/topo_trail_compare.html`** — a **real-data MapLibre small-multiples**
+page (NOT a mockup): 5 cards, each a live `maplibregl.Map` locked to the same
+park-core camera (`center [-85.7533,35.0908] z15.4`), rendering the REAL clipped data
+(contours + trail network + water + roads + buildings + forest + hillshade) so colours
+are judged in context. Schemes: **Baseline (current Topo)** + **V1 Faded sienna +
+cream casing** (suggested pick) + **V2 Ghost contours + dark-cased trail** + **V3
+Index-only (drop the fine 5 ft lines)** + **V4 Neutral relief + hot orange**. Each
+fades the topo (lower opacity / lighter-or-neutral hue / thinner / fewer lines) and
+pops the trail (brighter+saturated orange + a casing line underneath). Constant across
+cards: camera, data, base layers; varied: contour colour/opacity/width, fine-tier
+on/off, trail colour/width/casing. Text labels omitted (not the variable; also dodges
+the glyphs dep). Attribute table + strategy notes included.
+**Data prep:** `mvp/scripts/build_topo_trail_compare_data.py` clips the heavy viewer
+data to the trail-core bbox → `website/compare_data/` (contours **13 MB → 3.2 MB** via
+coordinate-level line clipping; trails/water/roads/landcover/buildings too). Re-run if
+source data changes; reproducible.
+**Wired into Review:** added a row to the `index.html` comparisons-list (`◌ Pick owed`),
+kept the old `topo_color_compare.html` row (records the applied sienna decision).
+VERSION **v45→v46** (`sw.js` + `#appVersion`; index.html is a shell asset — compare
+pages are NOT precached, like the others). **Verified by observation**
+(`mvp/scripts/playwright_verify_topo_trail_compare.py`, served :8001): **5 cards / 5
+real map canvases / 5 table rows, 0 console errors**; pixels inspected
+(`brain/output/playwright_topo_trail_compare.png` + per-card crops) — baseline shows
+the clutter, V1/V3/V4 clearly fade the brown back and lift the orange. **Gotcha
+(test-only):** the small maps render progressively (AWS DEM tiles + geojson per map);
+an early screenshot caught the baseline mid-render (orange only in a corner) — a longer
+wait (8-10 s) shows it fully. Not a product bug. **OWED (the fork, user's pick):** pick
+a scheme (or mix attributes) → wire the contour `contours-index/minor/labels` +
+`aop-trail-network` (add a trail casing layer) into the Topo preset paints in
+`js/main.js`, bump shell VERSION (that wiring IS a shell-asset change), flip the Review
+badge to `✓`. Commit + v46 are the user's git gate. The `/tmp/verify_*` scratch shots
+can be pruned.
+
+**2026-06-05 (DATA-GROUP REORGANIZATION — user reorganized the right-panel
+maturity groups, DATA + CODE + DOCS, UNCOMMITTED, v44→v45).** User did the
+"organization stage": retire Map editor, add a Delete staging group, and move
+nine layers into their right homes. Every move shipped + verified by observation
+(standalone `right_panel.html` **28/28, 0 console errors**; embed `index.html`
+**7 sections incl Delete, Map editor gone, 0 JS console errors**). The list:
+- **Map editor group RETIRED** — dropped the 3 draw groups (Points/Lines/Polygons)
+  + Drawn POIs nodes. The `userFeatures` (empty) + `editor-poi` (1 seed POI)
+  SOURCES still live in `MAP_DATA` (host map owns them); they just have no panel
+  node. The "+POI/+Line/+Polygon" add controls still work on every remaining
+  editable layer (they author into the layer's own source — never needed the draw
+  groups). editor-tier files kept at `editor` _meta (user said "retiring," not
+  "delete"; nothing of value to stage).
+- **Brand logos → Silver** (was Map editor); node `maturity` flipped `editor`→
+  `silver` so the chip matches the file it lives in (the silver callout file).
+- **SFWDA paper trail map → Silver** (was External reference); node-tagged silver
+  (raster overlay, no geojson `_meta`).
+- **Cemeteries → External reference** (was Source layers; 4 markers: Tate/Gilliam/
+  Bible/Ellis).
+- **Activity hotspots (real GPX dwell) → Derived** (was User submitted).
+- **NEW Delete group "Delete — staged for removal"** (a review pen, NOT auto-delete)
+  with: SFWDA traced trails, Springs & gages, Simulated Saturday activity, OSM park
+  polygon — each node-tagged `maturity:'delete'` (new tier + reddish chip).
+- **Data side:** new `delete` tier in `stamp_maturity.py` (TIERS/NOTES/MATURITY);
+  the 3 WHOLE-FILE delete members (`sfwda_traced_trails`, both
+  `aop_synthetic_activity_*`) stamped `delete` in their `_meta` + `_schema.json`
+  (ran the script: gold=1, silver=3, editor=2, derived=4, reference=10, delete=3).
+  **Springs & OSM park polygon are sub-layers of shared files** (`aop_water`,
+  `osm_aop_9patch`) whose other layers stay → panel-only moves; files keep
+  `reference` tier until split (noted in the Delete-group comment + the doc).
+Files: `website/js/panel.js` (PANEL_MODEL sections + MATURITY_LABEL),
+`css/panel-embed.css` + `right_panel.html` (`.maturity-badge.delete`),
+`mvp/scripts/stamp_maturity.py`, all served `data/*.geojson` + `_schema.json`
+(re-stamped), `sw.js` + `index.html` (v44→**v45**), `research/data_maturity_tiers.md`.
+Durable verifiers promoted: `mvp/scripts/playwright_verify_data_groups.py`
+(standalone) + `..._embed.py` (index.html). **Owed:** commit + v45 are the user's
+git gate; the actual deletion of the Delete-group members (and splitting springs/
+OSM park out of their shared files) is a follow-up once the user approves; on-device
+feel. Doc: `brain/research/data_maturity_tiers.md` (Current sort + Delete group).
+
+> ## ✅ RESOLVED 2026-06-05 — takeover tabs toggle, styling ported, tabs equal-height
+> The "KNOWN BUG: takeover tabs don't toggle" is FIXED (see the dated entry below +
+> its "REFINED" follow-up for the final shape). **Root cause was NOT the `#map`
+> canvas occluding the tabs** (that lead was wrong — `elementFromPoint` at a tab
+> center returns the `.fe-tab` itself in every mode). It was styling: the demo's
+> takeover layout was never ported, so in embed the editor rendered buried below the
+> kept sections (cramped, tabs low/dead on a small screen). **Final shape:** the
+> takeover is an **in-flow, compact** editor that hides the surrounding chrome
+> (header/kept sections/footer) while a feature is open, with **sticky** back/head/tabs
+> and a **grid-stacked body so every tab is the same height** (no reflow on the
+> bottom-anchored panel). Verified with **real pointer clicks** (not JS `.click()`):
+> `/tmp/verify_takeover_v37.py` — standalone + embed desktop + embed mobile **21/21
+> ×3, 0 console errors**, panel height identical on all 5 tabs. **Promote the verifier
+> to `mvp/scripts/` at commit.**
+
+**2026-06-05 (DATA CONSOLIDATION — Ellis→publish boundaries + brand logos merged
+into visitor-context callouts, DATA + CODE + DOCS, UNCOMMITTED, v43→v44).** User:
+*"review the right panel and data sources. take the ellis cemetery data and copy that
+into publishable boundaries file. then move brand logos aop and rock warblers into
+visitor context callouts."* Two moves:
+**(A) Ellis → publish boundaries (additive copy).** Added the Ellis Cemetery parcel
+POLYGON to `publish.geojson` as a 2nd `park_boundaries` feature (id 5, "Ellis Cemetery
+(inholding parcel)"), mapped to the publish 13-key flat schema, true county-parcel
+source, `permission:publish`, `confidence:high`. **Burial roster deliberately
+EXCLUDED** (USGenWeb non-commercial — must not enter the publish zone, per
+`source_register.md` + `aop_ellis_cemetery.md`). The existing Ellis POI point stays;
+this is the boundary polygon. 1-line minified diff. (Caveat noted in viewer.md: it's
+now a hand-curated feature in a PostGIS-exported file.)
+**(B) brand logos → visitor-context callouts (FULL MERGE, user-chosen via AskUserQuestion:
+"Full merge, keep icons / most work, nothing breaks").** The 2 logo features (AOP badge,
+Rock Warblers) were merged into `aop_visitor_context_callouts.geojson` as `kind=brand_logo`
+POINTS (in BOTH served + `raw/`, stored canonically); `aop_brand_logos.geojson` deleted
+(served + raw). Both viewers split the one file back by `kind`: callout polygons →
+`visitor-context` source; logo points → `brand-logos` source + `brand-logos-icons` layer
+(all drag/resize/cap/override/bake machinery UNCHANGED, just resourced). Touched ~13 files:
+`main.js` (2 load-site splits + dropped preload + comment), `panel.js` (new `transform`
+hook on both MAP_DATA entries + brandLogos node tagged `maturity:'editor'`),
+`rebake_canonical.py` (callouts `kind`→callable keyed on `logo_id` so callouts still
+normalize AND logos keep brand_logo + their own provenance; dropped brand CONFIG entry —
+**verified idempotent**: a future rebake reproduces the served callouts byte-for-byte and
+preserves `brand owner`/`decorative`), `stamp_maturity.py` (dropped brand line),
+`export_positioned_features.py` (brandLogos→callouts file, both specs write minified),
+`sw.js` (dropped precache + v44), `index.html` (#appVersion v44), `_schema.json` (callouts
+features 2→4, kind "(per-feature)"; brand entry removed), `aop_copy_registry.json`
+(root_files repointed), both `playwright_verify_{brand_logos,visitor_context}.py` (fetch the
+callouts file + filter by kind), and docs (`viewer.md`, `data_maturity_tiers.md`).
+**Verified by observation** (served :8137, SW blocked): host index.html AND standalone
+right_panel.html each show **brand source = exactly 2 brand_logo, visitor source = exactly
+2 visitor_callout, 2 icons rendered, 0 console errors**; `publish-data` park_boundaries =
+2 incl Ellis (renders); `playwright_verify_visitor_context.py` **RESULT: PASS**;
+rebake-idempotency check **True**. **Known pre-existing FAIL (NOT this change):**
+`playwright_verify_brand_logos.py` feature-list section returns `[]` — confirmed by
+observation the legacy `#featureList` is present-but-HIDDEN with `aop-embed-ready` set, i.e.
+the v32 panel-swap retired that legacy surface; reproduces on master, unrelated to the data
+merge. **Owed:** commit + v44 are the user's git gate; on-device feel; the brand-logos
+verifier's feature-list section wants migrating to the new panel (Stage-2 swap cleanup, not
+this task). Verifiers `/tmp/obs_merge*.py` are scratch.
+
+**2026-06-05 (ADD-ANY-TYPE WIRED — V2 chosen + shipped into the live panel, CODE ONLY,
+UNCOMMITTED, v42→v43).** User: *"go with v2 we don't need the ADD. the + on the icon is
+enough."* Wired the V2 icon take into `js/panel.js` (one renderer → standalone +
+embed): **(1)** removed the lone `+` from the layer row (`renderLayerNode` no longer
+appends `node-create`); **(2)** the group edit area's control row now renders, right of
+the eye + lock (own `.add-divider`), **three icon buttons** — pin / line / polygon, each
+with a small rust `+` badge (`addTypeButton` + `ADD_GLYPH`/`ADD_TITLE`/`ADD_GEOMS`); **no
+"ADD" caption** per the user. **(3)** Add ANY geometry to ANY layer: replaced
+single-geom `nodeCreateSpec` with `nodeCanCreate`/`nodeCreateSource` + `makeCreateSpec(node,
+geomType)` (targets the node's OWN source; a draw group keeps its explicit spec when the
+chosen geom is its native one, else synthesizes Common-Minimum defaults); `startCreate(node,
+geomType)` takes the chosen geom. Wired into the declarative controls field via a `add:
+nodeCanCreate(node)` flag on `groupFields` → `renderControlsField` appends the icons. Add is
+**never lock-gated** (a fresh draw is `__locked:false`, editable even in a locked layer);
+pure-visibility layers (no items/create) get no icons. `canonicalDefaults` now only stamps the
+cemetery `geom_role:marker` on a Point. CSS `.add-type`/`.add-divider` added to BOTH
+`right_panel.html` and `css/panel-embed.css` (scoped `#aopPanelMount`). VERSION v42→**v43**
+(`sw.js` + `#appVersion`; panel.js/CSS are shell assets). **Verified by observation**
+(`/tmp/verify_add_wiring.py`, served :8137, real `js/panel.js`): **17/17, 0 console errors** —
+no `+` on any row; buildings (a Silver/locked **Polygon** layer) edit area = eye + lock + 3
+add icons + divider; **+POI placed a POINT into `fema-buildings`** (`_src` set, `__locked
+false`, selected → takeover), **+Line drew a LINESTRING into the same polygon layer**, and a
+pure-visibility layer (Land cover) shows **no** add icons. Pixels confirm
+(`brain/output/playwright_add_wiring_editarea.png`: eye·lock·│·pin⁺·line⁺·polygon⁺, no ADD
+caption). **Gotcha (test-only, not a product bug):** `page.evaluate` has NO default timeout, so
+firing `map.fire('click')` inline hangs forever if you don't schedule it async — the verifier
+now `setTimeout`-schedules the fire and polls with a bounded `wait_for_function`. **Owed:**
+on-device feel; promote `/tmp/verify_add_wiring.py` → `mvp/scripts/` at commit; commit + v43 are
+the user's git gate. The 4 mockup files (below) can stay or be pruned at commit. Card:
+`editor_unified_dock.md`.
+
+**2026-06-05 (ADD-CONTROLS MOCKUPS — "+ POI / + Line / + Polygon" beside the eye +
+lock, 4 takes + a compare page, CODE ONLY — isolated mockup files, no VERSION bump).**
+User: *"we added a + to the row. it needs to go next to the eye and lock under the row
+edit. second to that we need a + poi button + line button + polygon button so that we
+can add any type to any layer. make some mockups in the standard format."* Two moves:
+**(1)** take the lone `+` OFF the layer row and put it INTO the inline edit area that
+opens under a selected layer, right of the eye + lock (today: `renderLayerNode` appends
+the `node-create` `+` to the row, while eye/lock live in `groupFields`'s controls field —
+`js/panel.js`); **(2)** split that one `+` into THREE — **+ POI · + Line · + Polygon** —
+so any geometry can be added to ANY layer (not just the layer's native geom). Built in the
+repo's iframe-grid convention (matches `right_sidebar_compare.html`): **4 standalone
+variants + a compare page**, all on the CURRENT panel base (maturity-led tree: Gold /
+Silver — pending review / Source / Derived / External / Map editor / User submitted; real
+provenance sections; rust-on-cream). Every variant selects a **Polygon** layer (**Park
+buildings**, Silver) so the "any type" point lands — its edit area offers a point + a line
+too. Variants vary only how compact↔explicit the three buttons are:
+**V1 `add_any_type_v1_pills.html`** — inline labelled pills on the control row;
+**V2 `_v2_icons.html`** — icon-only pin/line/polygon w/ a `+` badge (tightest, matches the
+eye/lock icon language); **V3 `_v3_picker.html`** — a single `+` next to eye/lock that
+drops a geometry picker (the literal "+ by the eye and lock", compact until needed; the +
+toggles the tray); **V4 `_v4_addrow.html`** — eye/lock stay put, a dedicated **ADD** row of
+full-width thirds below (most explicit). Compare: **`add_any_type_compare.html`** (2×2 grid +
+"what's the same in all four" + a compact↔explicit attribute table + the wiring note). Noted
+in all takes: the add buttons stay live even on a **locked** curated layer (the lock gates
+EXISTING features; a fresh draw is always editable — matches today's `nodeCreateSpec`).
+**Verified by observation** (`/tmp/verify_add_any_type.py`, served :8123): **5/5 pages, 0
+console errors**; per-variant assertions (no `+` on any row; eye + lock + 3 add controls in
+the edit area; V3 toggle hides the tray) all pass; shots
+`brain/output/playwright_add_any_type_{v1_pills,v2_icons,v3_picker,v4_addrow,compare}.png`.
+**Caught + fixed by looking at the pixels:** V4's full-width thirds clipped "Polygon" at the
+320px panel edge with the glyph in — dropped the geometry glyph from V4's buttons (V2 owns the
+glyph story) so the text thirds fit. **OWED (the fork, user's call):** pick a variant +
+attributes → wire into `js/panel.js` (move `node-create` off `renderLayerNode` into
+`groupFields`'s controls field; have `nodeCreateSpec` emit a point/line/polygon spec per layer
+regardless of native geom), migrate the verifier, bump the shell VERSION (that wiring IS a
+shell-asset change). Nothing to git-gate beyond the 5 isolated mockup files. Pointer added to
+`editor_unified_dock.md` (Mockups section).
+
+**2026-06-05 (DATA-MATURITY TIERS — gold/silver across data + editor, UNCOMMITTED,
+v41→v42).** User: *"review our right edit panel… we have different data types: raw,
+baked, source, gold. only trails is gold; region callouts are silver pending text
+review. gold data is locked not un-editable — unlock first. gold should share a
+common schema that powers the editor; the group should map to the file it lives in."*
+→ *"do it all."* Shipped end-to-end:
+(1) **Data** — new `mvp/scripts/stamp_maturity.py` stamps each served file's
+`_meta` with `maturity`/`group`/`locked` (gold=1 `aop_trail_network`; silver=3
+callouts/buildings/`publish`; editor=3; derived=6; reference=11) + writes the tier
+per layer + a legend into `_schema.json`. Additive/idempotent, **runs LAST**;
+`rebake_canonical.py` hardened to **carry a live `_meta` forward** so a re-bake no
+longer drops the stamp. Trail gold block preserved.
+(2) **Editor** (`js/panel.js`) — tree now leads with **Gold data** + **Silver —
+pending review** sections (above Source/Derived/External/Map editor/User submitted);
+every editable group row shows a **maturity chip** (`nodeMaturity` ← node tag,
+falls back to the file's `_meta` captured in `META`); feature **Source tab** gains
+**File + Tier · locked/unlocked**. Lock/unlock + add-new-into-the-file already
+worked (`nodeCreateSpec` synthesizes a draw spec per single-geom listable layer;
+lock gates *existing* features, never new draws). Badge CSS in `panel-embed.css` +
+`right_panel.html`. v42 bump (`sw.js` + `index.html`).
+(3) **Docs** — new `research/data_maturity_tiers.md` (the tier contract: maturity is
+a THIRD axis, orthogonal to provenance + the raw/core/publish zones); pointers in
+`viewer.md`, `search_map.md`, and the `editor_unified_dock.md` card.
+Verified by observation: `/tmp/verify_maturity.py` **23/23, standalone + embed, 0
+console errors**; shots `brain/output/playwright_maturity_{tree,standalone,embed}.png`.
+**Deferred** (told the user up front): the legacy-key strip (gated on the index→panel
+swap — `index.html` still paints on raw keys) and physical file renames. Owed:
+on-device feel; commit + v42 are the user's git gate. **Promote `/tmp/verify_maturity.py`
+to `mvp/scripts/` at commit.**
+
+**2026-06-05 (SCHEDULE TAG CLEANUP — dropped the two placeholder alias tags, DATA +
+1 doc line, UNCOMMITTED, v40→v41).** User (after the bridge gotcha): *"we can get rid
+of those tags or re-point them at something real that's fine."* The two coordinate-less
+ALIAS tags in `aop_event_schedule.json` both just resolved to `#pavilion`: `#pavillion`
+(a hidden, **unreferenced** misspelling alias — pure cruft) and `#registration`
+(`alias_of:#pavilion`, referenced by 3 sessions; its own caveat said placement was
+unconfirmed, and the alias rendered a **duplicate "Registration" pin stacked on the
+pavilion**). For a single-pavilion event registration happens AT the pavilion, so chose
+the honest model: **removed both location entries** and **re-pointed the 3 registration
+sessions** (`fri-registration`, `sat-late-registration`, `sun-checkout`)
+`location_tag` → `#pavilion`. Their titles ("Registration + wristband check", etc.)
+carry the function; no separate pin. Updated the one illustrative `index.html` Layer-notes
+line that cited `#registration` (now points to tagging a real feature in the edit panel).
+**Refs checked before deleting:** `#pavillion` appears nowhere else; `#registration`
+only in OLD `editor_unified_v*.html` mockups (dead dev pages) + `main.js` COMMENTS (the
+alias-handling code is generic + dynamic, so it still works with zero aliases — left as
+defensive). VERSION v40→**v41** (index.html is a shell asset; the schedule JSON itself is
+served stale-while-revalidate so it'd refresh without a bump). **Verified by observation**
+(`/tmp/verify_schedule_clean.py`, served :8011): event anchors are now `#pavilion` + the 6
+coordinate-bearing tags — **no `#registration`/`#pavillion`**; `#pavilion` still resolves;
+all **13 sessions** still render; JSON valid, 0 dangling tag refs, 0 console errors. Files:
+`website/data/aop_event_schedule.json` · `index.html` · `sw.js`. **Owed:** commit + v41 are
+the user's git gate. If a distinct registration station is ever placed, add a POI, tag it
+`#registration` in the panel (the bridge resolves it), and re-add the location entry.
+
+**2026-06-05 (EVENT-SCHEDULE TAG BRIDGE WIRED — panel #tag now drives the live
+resolver, CODE ONLY, UNCOMMITTED, v39→v40).** User: *"wire the event-schedule tag
+bridge."* The panel's Tag field wrote `props.tag` (bakes into data) but didn't touch
+the host's live event-schedule resolver (which reads `tagToFeature`, built from the
+`FEATURE_TAG_KEY` store). Wired it data-led, mirroring the ★ bridge:
+**(1) host `main.js`** — new `window.AOP_HOST_SET_TAG(layerKey, props, rawTag)` →
+`setFeatureTagByProps`: resolves the feature via `positionedFeatureIdFor` (idField:
+buildings=`build_id`, editorPois=`id`), mirrors the value onto the host feature's own
+`properties.tag`, then routes through the existing `setFeatureTag` (persists to
+`FEATURE_TAG_KEY`, `rebuildTagLookup()`, `rebuildEventScheduleData()` → re-renders
+anchors live). **(2) host `rebuildTagLookup`** now ALSO scans every
+`featureListRuntime` feature for its own `properties.tag` FIRST (so a BAKED tag in the
+served GeoJSON resolves on load with no localStorage), then the explicit store
+overrides (live edits / the seeded #pavilion still win). **(3) panel `js/panel.js`** —
+new `pushTagToHost(node,item)` (reuses the `HOST_HIGHLIGHT_LAYER` node→host map:
+buildings/cemeteries/visitorContext/editorPois) called from `commitChange` (both
+branches) so every commit syncs `props.tag` to the host; no-op standalone / unmapped
+layers (tag still bakes, just won't drive the schedule). VERSION v39→**v40**.
+**Verified by observation** (`/tmp/verify_tag_bridge3.py`, served :8011, SW blocked):
+tagging building **665 Ellis Cove Road** with **#pavilion** via the panel UI **moved
+the #pavilion event anchor to that building's exact centroid** (read from the live
+`event-schedule` source via `getData()`; anchors carry `feature_kind:'event_anchor'`),
+and **clearing the tag unbound it**; `#pavilion` still resolves to its seeded location
+on a fresh load (**no regression**); takeover 21/21×3 + tag/textarea verifiers still
+green; 0 console errors. **Gotchas learned:** the schedule's only coordinate-less
+*base* tag is `#pavilion` — `#registration`/`#pavillion` are `alias_of:#pavilion` (so
+binding THEM does nothing; bind the base). The host building source is `fema-buildings`
+(not `buildings`); the panel layerKey `buildings` is the feature-LIST key, separate.
+Files: `website/js/main.js` · `js/panel.js` · `sw.js` · `index.html`. **Owed:** commit +
+v40 are the user's git gate; clearing a tag unbinds rather than restoring the prior
+holder (expected one-to-one model); on-device feel.
+
+**2026-06-05 (TAG DURABILITY — "are tags stored in the raw data?" answered + a
+persistence gap fixed, CODE ONLY, UNCOMMITTED, v38→v39).** User asked whether the
+new Tag field is stored in the data. Traced it by observation; honest answer:
+**(1)** tags are NEVER written to `website/data/raw/` (the pristine archive +
+re-bake source — the editor never touches it). Correct by design.
+**(2)** tags DO bake into the SERVED `website/data/*.geojson` — but only via the
+normal loop (edit → `aop_panel_overrides_v1` localStorage diff → **Export edits →
+`bake_panel_overrides.py` → commit**), not live; same as name/description (no DB).
+**Verified with a REAL bake**: crafted an override for cemetery `093 001.02` with
+`tag:"#tate-test"`, ran the baker → `aop_cemeteries.geojson` got
+`"tag":"#tate-test"`; restored the file via `git show HEAD:… > file` (the
+`block-unsolicited-git` hook blocks `git checkout`, so use read-only `git show`
+redirect to restore tracked files).
+**(3) Gap found + fixed:** `pickEditable` only snapshotted
+`EDITABLE_SERVED_KEYS = [name,description,difficulty,notes,category,highlight]` —
+**`tag` was missing**, so for SERVED/reference features the tag was silently dropped
+before it even reached the override store (only DRAWN features kept it via
+`syncCreated`+`cleanFeature`). My prior-turn "persisted" check had only exercised a
+drawn POI — a misleading partial verification (owned). Fix: added `tag` to
+`EDITABLE_SERVED_KEYS` (`js/panel.js`) and to the baker's documented `EDITABLE_KEYS`
+(`bake_panel_overrides.py`; note `apply_file_edits` already writes any non-VIEW_STATE
+key, so the panel allowlist is the real gate). **Re-verified on a single-feature
+building** (`/tmp/verify_building_reload.py`): set tag `#shop` → reload → same
+building still shows `#shop`. Persistence (localStorage replay via
+`applyStoredOverrides`) works for reference features now.
+**(4) Pre-existing finding (NOT tags, not fixed):** the cemeteries layer ships TWO
+features per cemetery — a `parcel` polygon + a `marker` point sharing the SAME
+`name` AND `id`. `deriveItems` dedups the tree by `name`, and edits persist/match by
+`id` (first match = the parcel). So editing a cemetery's NAME breaks the dedup
+(a phantom duplicate marker row appears) and the edit lands on the parcel. This made
+an early reload test look like "name doesn't persist" — it was a test artifact, not a
+persistence bug (confirmed: `applyStoredOverrides` logs `matchById true`). Worth a
+follow-up for cemeteries specifically (dedup/match by id, or collapse parcel+marker).
+VERSION v38→**v39**. Files: `website/js/panel.js` · `mvp/scripts/bake_panel_overrides.py`
+· `sw.js` · `index.html`. **Owed:** commit + v39 are the user's git gate; the
+cemetery parcel/marker dedup follow-up; the event-schedule `#tag` bridge (still open).
+
+**2026-06-05 (IDENTIFY TAB — Tag field + Description as a textarea, CODE ONLY,
+UNCOMMITTED, v37→v38).** User: *"now we need a tag in the identify group. and the
+description to be a text area."* In `js/panel.js` `itemFields`: added a **Tag** field
+(`{kind:'text', label:'Tag', prop:'tag', tab:'identify'}`) right after Description, and
+marked Description **multiline** (`multiline:true`). `renderTextField` now creates a
+`<textarea>` (rows=3) when `field.multiline` is set, else the single-line input — same
+input/commit/persist path either way. `tag` is a plain feature prop, so it persists via
+the existing override/bake path and survives `cleanFeature` (only `_id/_src/__locked/
+__group` are stripped). **NOT wired to the live event-schedule resolver** — that uses
+`main.js`'s separate per-feature `#tag` store (`FEATURE_TAG_KEY`) behind no host bridge;
+binding the panel tag into it (a new `AOP_HOST_SET_TAG`, like the ★→`AOP_HOST_SET_HIGHLIGHT`
+bridge) is a noted follow-up. Textarea CSS (`resize:vertical; min-height:64px; line-height:1.4`)
+added to both `panel-embed.css` (`#aopPanelMount textarea.field-input`) and
+`right_panel.html`. VERSION v37→**v38** (`sw.js`+`#appVersion`). **Verified by observation**
+(`/tmp/verify_tag_desc.py`, served :8011, real fills on an UNLOCKED Drawn POI): embed +
+standalone — Description renders as a textarea, Tag present in Identify
+(order `name·description·tag·Kind·Details`), typing a tag/description commits + the value
+**survives the re-render**, multi-line `\n` preserved, **equal-height tabs still hold**
+(519/519×5 embed, 820 standalone), 0 console errors. Shot: `/tmp/identify_tag_desc.png`.
+Files: `website/js/panel.js` · `css/panel-embed.css` · `right_panel.html` · `sw.js` ·
+`index.html`. **Owed:** the event-schedule tag bridge (above); on-device feel; commit +
+the v38 bump are the user's git gate.
+
+**2026-06-05 (TAKEOVER STYLING + TABS FIXED — the demo finally made it across,
+CODE ONLY, UNCOMMITTED, v36→v37).** User: *"review our cwc and the edit panel. it
+needs work. the styling and tabs did not make it across from the demo pages."*
+Reproduced by observation with **real pointer clicks** (the prior v36 "verified" pass
+used JS-dispatched `.click()`, which bypasses hit-testing — the documented gap). The
+v36 takeover (`renderFeatureEditor`) emitted the right DOM (`.feature-editor`/`.fe-*`)
+and CSS for `.fe-*` existed, BUT the takeover was a plain in-flow `display:flex` block
+inside the scroll region instead of the demo's **`position:absolute; inset:0`
+full-panel overlay**, and there was **no `.fe-body` scroll rule**. Net effect in embed
+(`index.html`): the editor rendered *below* the kept Session-tools/Review sections as a
+short, cramped card (measured ~169px tall; tabs mid/low, body unscrollable) — that is
+both "styling didn't make it across" and why the tabs felt dead on a real/small screen.
+`elementFromPoint` at a tab center returned the `.fe-tab` itself in every case, so the
+**`#map`-occlusion lead in the old bug note was wrong.**
+**Fix (3 files):** (1) `css/panel-embed.css` + `right_panel.html` — `.feature-editor`
+becomes `position:absolute; inset:0; z-index:5; background:var(--panel-bg)` (it overlays
+the whole `.panel`, which is `position:fixed; overflow:hidden` with a `position:static`
+panel-body/mount, so `inset:0` resolves to `.panel` — same as the V2 demo); `.fe-top`
+pins (`flex:none`) with the back/head/tabs; **new `.fe-body { flex:1; min-height:0;
+overflow-y:auto; scrollbar-gutter:stable }`** so only the body scrolls and the tabs stay
+put. (2) `js/panel.js` — new `panelRoot()` (= `panelHost().closest('.panel')`) +
+`renderPanel` toggles **`.aop-feature-editing`** on the panel while a feature is open;
+embed CSS pins the floating card to full height while that class is set
+(`.panel.aop-feature-editing:not(.collapsed){ height: calc(100vh - 24px - safe-areas) }`)
+so the overlay editor isn't starved by the (now-covered) kept sections. On mobile the
+existing `@media(max-width:760px)` `max-height:420px` clamp still wins, so the takeover
+fills the app's locked 420px bottom-card allowance (NOT fought). (3) VERSION v36→**v37**
+(`sw.js` + `#appVersion`; panel.js/CSS are shell assets).
+**Verified by observation — REAL pointer clicks** (`/tmp/verify_takeover_v37.py`, served
+:8011, SW blocked): standalone + embed-desktop + embed-mobile each **20/20, 0 console
+errors** — overlay is `position:absolute`, tabs pinned, editor fills the panel, every tab
+(Identify·Edit·Display·Source·Raw) toggles on a real `mouse.click` and its pane populates
+(Identify fields, Edit actions, Display toggles, Source `.geojson` File, Raw JSON), and a
+real-click Back removes `.aop-feature-editing` + returns the tree. Shots:
+`/tmp/fix_EMBED_desktop.png` (full-height right card), `/tmp/fix_EMBED_mobile.png` (420px
+bottom card), `/tmp/fix_STANDALONE_mobile.png` (right-panel-only overlay; left POI sidebar
+untouched). Files: `website/css/panel-embed.css` · `right_panel.html` · `js/panel.js` ·
+`sw.js` · `index.html`. **Owed:** on-device (iOS PWA) tap confirm — headless proves the
+layout/real-click path but not iOS touch; promote `/tmp/verify_takeover_v37.py` →
+`mvp/scripts/` at commit; commit + the v37 bump are the user's git gate. Card:
+`editor_unified_dock.md` (V2-takeover section).
+**REFINED same session (still v37, uncommitted) — equal-height tabs, compact in-flow
+takeover (SUPERSEDES the absolute-overlay + full-height-pin above).** User: *"make it
+so that the tabs each have the same overall height. as we change tabs the content
+re-flows because we are anchored to the bottom."* The overlay+pin made the panel a
+CONSTANT height, but full-height → a sea of empty space on short tabs (Display = 2
+toggles), and the embed `.panel` is bottom-anchored so any per-tab resize jumps the tab
+bar. Switched the takeover from an absolute overlay to an **in-flow** editor that drives
+the panel height (compact, sized to its tallest tab), and made the panes **equal height**
+so switching never reflows: `.fe-body { display:grid }` with every `.fe-pane` in
+`grid-area:1/1` and inactive panes `visibility:hidden` (NOT `display:none`, so they stay
+in layout and the grid row = the tallest pane). `.fe-top` is now `position:sticky; top:0`
+(tabs pin when the body must scroll on the 420px mobile card). While editing,
+`.aop-feature-editing` now HIDES the surrounding chrome (panel header, kept
+Session-tools/Review sections, save footer in embed; the save footer in standalone)
+instead of pinning full height — so the in-flow editor is the whole panel. Removed the
+`height: calc(100vh …)` pin. **Verified by observation** (`/tmp/verify_takeover_v37.py`
+updated: drops the now-false `position:absolute` assertion, adds "panel height constant
+across all 5 tabs"): standalone + embed desktop + embed mobile **21/21 ×3, 0 console
+errors**; measured panel height identical on Identify/Edit/Display/Source/Raw (embed
+desktop 519px, mobile 420px capped+scroll, standalone 820px). Shots: `/tmp/shot_Identify.png`,
+`/tmp/shot_Display.png` (same height, tab bar fixed). Same files as above.
+
+**2026-06-05 (V2 FEATURE TAKEOVER WIRED INTO THE LIVE PANEL — `js/panel.js`, one
+global tabbed edit panel + a Raw JSON tab + "what file does this come from?",
+CODE ONLY, UNCOMMITTED, v35→v36).** User picked **V2** from the refreshed compare
+page (*"go with v2 looks good"*) and added two requirements: *"a raw tab that shows
+the whole json value for copy or manual interaction (probably not re-upload at this
+time), and I need to know what file it comes from."* Wired the V2 full-panel
+takeover into the live `js/panel.js` (drives BOTH standalone `right_panel.html` and
+the embedded panel in `index.html` — one renderer):
+**(1) Feature selection → takeover.** `renderPanel` now branches: a selected ITEM
+renders `renderFeatureEditor` (replaces the tree; `‹ Layers` back bar returns), a
+selected LAYER keeps its existing lightweight INLINE controls in the tree (layers
+have no per-feature attributes, so tabs would be empty — deliberate, not a regression;
+visibility-toggle ergonomics stay quick). The old inline item edit-area
+(`renderItemsList`) is removed; `renderEditArea` is still used for group/layer
+selection.
+**(2) 5 tabs** = the confirmed 4-tab contract (`editor_unified_dock.md`: Identify ·
+Edit · Display · Source) + **Raw**. `itemFields` now tags each field with a `tab`;
+`renderFeatureEditor` groups them. Identify = Name/Description/Kind/facets/Group;
+Edit = lock gate + Fly/Copy/Move/Delete (Move+Delete lock-gated); Display = ★ surface;
+Source = **File** + Coordinates + provenance; Raw = full JSON. Tab switching swaps
+panes in place (no full re-render, so the Raw textarea survives); a field edit commits
++ re-renders and the tab is preserved (only a DIFFERENT feature resets to Identify).
+**(3) "What file" (Source tab).** New `SOURCE_FILE` map (built from `MAP_DATA` urls)
++ `fileForItem` resolve a feature to its served file via `_src` (home source stamped
+at create) → node `items.source`; e.g. a cemetery shows **`data/aop_cemeteries.geojson`**,
+a drawn POI **`data/aop_editor_seed_pois.geojson`**. Kept DISTINCT from the provenance
+`Source` register (e.g. "TN Comptroller") — different question, both shown.
+**(4) Raw tab.** `renderRawField` = read-only monospace textarea of
+`cleanFeature(feature)` (same shape Copy GeoJSON / a bake produces) + a ⧉ Copy JSON
+button (reuses `copyFeature`) + note "Edits here are not saved back yet" — re-upload
+deliberately deferred per the user.
+**(5) Width fix shipped for real** — `scrollbar-gutter:stable` added to the live
+scroll region (`right_panel.html .panel-body` + `body.aop-embed-ready #panelBody` in
+`panel-embed.css`). Takeover CSS (`.feature-editor`/`.fe-*`/`.raw-*`) added to BOTH
+`right_panel.html` and `panel-embed.css` (scoped `#aopPanelMount`). VERSION v35→**v36**
+(`sw.js` + `#appVersion`) — panel.js/CSS are shell assets.
+**Verified by observation** (served :8001, headless, SW blocked for embed):
+**standalone** — locked cemetery (5 tabs, inputs disabled, Move/Delete gated, File +
+provenance, Raw JSON + Copy), unlocked Drawn POI "AOP Pavilion" (Name editable,
+Move/Delete enabled, File=editor seed, **name edit commits → title updates → takeover
+persists**), layer click → inline controls (NO takeover); **embed `index.html`** —
+takeover renders in `#aopPanelMount`, 5 tabs, Source File=`data/aop_cemeteries.geojson`,
+Raw JSON, Back returns to tree; **0 console errors** in every run. **CAVEAT (see the
+KNOWN BUG note at the top): tab switching was only exercised with JS-dispatched
+`.click()`, which fires the listener directly — real pointer clicks on the tabs do
+NOT toggle (user-observed). Treat "5 tabs / panes switch" as logic-only, NOT
+real-interaction verified.** Shots:
+`/tmp/to_ref_{identify,source,raw,edit}.png`, `/tmp/to_embed.png`. Files:
+`website/js/panel.js` · `right_panel.html` · `css/panel-embed.css` · `sw.js` ·
+`index.html`. **Owed:** on-device feel; commit + the v36 bump are the user's git gate;
+durable verifier (`/tmp/verify_takeover.py`+`verify_embed.py`) → `mvp/scripts/` at
+commit. **Observations for the user (not acted on):** layer visibility now still lives
+in the inline layer control (feature takeover doesn't change it); the new panel has no
+layer-paint sliders yet (the rebuild deliberately omitted them — the contract folds
+paint into Edit when they land); in embed the kept Session-tools/Review sections sit
+above the takeover (they're `.aop-keep`, by design). Card: `right_panel_rebuild.md`.
+
+**2026-06-05 (RIGHT-SIDEBAR EDIT-PANEL MOCKUPS REFRESHED — `right_sidebar_compare.html`
+rebuilt on the CURRENT reworked panel as base, 4 placement variations of ONE global
+tabbed edit panel, width-when-scrolling fixed, CODE ONLY — isolated mockup files,
+index.html/main.js/panel.js UNTOUCHED, no VERSION bump (not shell assets)).** User:
+*"review …/right_sidebar_compare.html, make an update with the current sidebar as base
+(it's been re-worked to work better with the base data), there are width issues when
+scroll is present — account for that, we want one global tabbed edit panel, make a few
+variations so I can pick attributes from different versions."* The old compare page was
+a static 2-cell mockup in a stale brown palette showing one "C" dock pattern. Rebuilt it
+to the repo's iframe-grid convention (matches `floatgroup_compare.html`/`bottombar_compare.html`):
+**4 standalone variation files** + a compare grid that loads them, each built on the
+**current reworked sidebar** (`right_panel.html`/`panel-embed.css` palette + the real
+`Source · Derived · External · Map editor · User submitted` provenance sections + node/item
+tree, real layer labels, Drawn POIs→Pavilion selected), each carrying **one global tabbed
+edit panel** on the **confirmed 4-tab contract** (Identify · Edit · Display · Source from
+`editor_unified_dock.md`; Edit = This-feature actions + Layer-paint sliders). The variations
+differ only in WHERE that one panel lives:
+**V1 `right_sidebar_v1_dock.html`** — bottom dock, two-state (vanishes when nothing selected),
+underline tabs (closest to the confirmed dock contract).
+**V2 `right_sidebar_v2_takeover.html`** — full-panel takeover w/ `‹ Layers` back bar; editor
+owns full height (deep edits / small screens).
+**V3 `right_sidebar_v3_split.html`** — fixed split (~45/55), editor always present w/
+segmented-pill tabs + idle placeholder (layout never shifts).
+**V4 `right_sidebar_v4_sheet.html`** — floating bottom-sheet (drag handle + scrim, PWA-native),
+**3 tabs** (Display's two toggles folded into Edit → shorter common path).
+**WIDTH-WHEN-SCROLLING FIX (the called-out issue), in all four:** `scrollbar-gutter:stable`
+on every scroll region so the gutter is reserved and the tree never reflows/clips when the
+scrollbar toggles, the edit panel sits OUTSIDE the scroll region so it's always full-width,
+and long labels ellipsis (min-width:0 + text-overflow) instead of widening the panel.
+**Verified by observation** (served :8001, headless): 0 console errors across all 4 +
+the grid; pixels confirm each placement, tabs switch, Edit tab shows the 5 actions +
+Opacity/Color/Radius sliders; **width fix measured** — `.panel-body` clientWidth is **324px
+whether overflowing OR collapsed** (no-fix would jump to 339, the 15px classic-scrollbar
+width). Compare-page footnote carries an attribute-axes table (placement / idle / tab chrome /
+tab set / tree-visible) so the user can mix-and-match. **OWED (the real fork, user's call):**
+pick a placement + attributes → wire the ONE chosen panel into `js/panel.js` (replacing the
+current inline `renderEditArea` edit areas), migrate verifiers, bump shell VERSION (that wiring
+IS a shell-asset change). Nothing to git-gate beyond the 5 isolated mockup files. Stale
+1-line ref in `editor_unified_dock.md` (Mockups section) updated to note the refresh.
+
+**2026-06-05 (COMPARISONS / "REVIEW" LINK GROUP RESTORED — 1-attr markup fix +
+VERSION bump, CODE ONLY, UNCOMMITTED, v34→v35).** User: *"there used to be a
+comparisons group of links on the right sidebar. find it. restore it."* The
+group was never deleted — it still lives in `index.html`
+(`<section data-section="comparisons">`, label **"Review"** since the user's own
+2026-05-31 rename commit `39c7ca4` Comparisons→Review; the `.comparisons-list`
+of 9 dev/review links: copy_review, icon_master, bottombar/leftrail/editorV3/
+right_sidebar/floatgroup compares, park_bounds_icon, topo_color). What hid it was
+the **2026-06-05 right-panel swap**: `css/panel-embed.css` (~L164) blanket-hides
+every legacy `#panelBody > .panel-section:not(.aop-keep)` once the embedded panel
+boots (`body.aop-embed-ready`). Session tools survived via `.aop-keep`; the
+Comparisons/Review section was NOT tagged, and the new embedded panel has no
+equivalent, so it vanished. **Fix = mirror Session tools: add `aop-keep` to that
+one section** (`website/index.html`), so the hide rule spares it. Bumped
+`sw.js VERSION` + `#appVersion` v34→**v35** (shell-asset discipline; nav is
+network-first so online users get it next load regardless). **Verified by
+observation** (served :8001, `/tmp/verify_comparisons_restored.py` **7/7**, 0
+console errors): with `aop-embed-ready` live, the Comparisons section is
+display:block + all 9 links render, while a CONTROL legacy layer section
+(source-layers) stays hidden — proving the hide rule is active and `.aop-keep`
+is what spares it (not a vacuous pass). Pixels confirm
+(`/tmp/comparisons_panel_open.png`): the link group sits atop the embedded layer
+tree, where it lived before. **LABEL KEPT as "Review"** (the user's own rename
+commit — not reverted unasked; trivially flippable to "Comparisons" if wanted).
+Files: `website/index.html` · `website/sw.js`. Commit is the user's git gate.
+Adjacent (not done, owner/content call): the older "Comparisons dev-links" panel-
+hygiene question in `10_deferred/viewer_polish_followups.md` (whether dev links
+belong in the shipped panel at all) is untouched.
+
 **2026-06-05 (RIGHT-PANEL STAGE-2 FINISH — store reconciliation + ★→POI bridge +
 SFWDA toggle, CODE ONLY, UNCOMMITTED, v33→v34).** User, two days into the editor
 and questioning whether it's worth maintaining, weighed scope and chose **finish

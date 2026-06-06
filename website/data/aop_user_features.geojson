@@ -1,13 +1,1 @@
-{
-  "type": "FeatureCollection",
-  "metadata": {
-    "name": "AOP user-drawn features",
-    "description": "First-party features drawn in the right-panel editor. Empty until the first draw is baked here by mvp/scripts/bake_panel_overrides.py.",
-    "source": "AOP editor (drawn)",
-    "confidence": "observed",
-    "permission": "AOP first-party",
-    "status": "core",
-    "generated": "2026-06-04"
-  },
-  "features": []
-}
+{"type":"FeatureCollection","metadata":{"name":"AOP user-drawn features","description":"First-party features drawn in the right-panel editor. Empty until the first draw is baked here by mvp/scripts/bake_panel_overrides.py.","source":"AOP editor (drawn)","confidence":"observed","permission":"AOP first-party","status":"core","generated":"2026-06-04"},"features":[],"_meta":{"maturity":"editor","group":"Drawn features — retired panel group","locked":false,"maturity_note":"editor scratch — first-party, unlocked"}}
