@@ -2330,6 +2330,14 @@
       editorPois: {
         label: 'Drawn POIs',
         idField: 'id',
+        // Per-layer strategy hooks — these replace the scattered
+        // `if (layerKey === 'editorPois')` branches that used to live at every
+        // mutation call site. editorPois data is a live array that also feeds a
+        // map source, so a mutation rebuilds both via refreshEditorSource, and a
+        // flag change persists by rewriting the whole array. Every other layer
+        // uses the defaults (renderFeatureList + the positioned-overrides store).
+        onMutate: () => refreshEditorSource(),
+        persistFlag: () => saveEditorPois(),
         // Tag input on each row binds a #tag to the POI so the event
         // schedule can resolve a location like #excavator-hill through a
         // drawn POI without ever typing lat/long.
@@ -3284,14 +3292,24 @@
     // Visitor list group can read it off the live feature. Persistence
     // routes by spec.persistKind: editorPois → array store (saveEditorPois);
     // visitorContext + brandLogos → unified positioned-features store.
+    // One refresh path after any single-feature mutation (highlight, lock).
+    // Replaces the scattered `if (layerKey === 'editorPois') refreshEditorSource();
+    // else renderFeatureList(layerKey)` branches: a layer declares its own
+    // post-mutation strategy in its spec; everything else re-renders its
+    // registered list. No layer is named at the call site.
+    function refreshAfterFeatureChange(layerKey) {
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      if (spec && typeof spec.onMutate === 'function') spec.onMutate();
+      else renderFeatureList(layerKey);
+    }
+
     function toggleFeatureHighlight(layerKey, featureId) {
       const item = findFeatureById(layerKey, featureId);
       if (!item || !item.feature) return;
       const props = item.feature.properties = item.feature.properties || {};
       props.highlight = !props.highlight;
       persistFeatureFlagChange(layerKey, item.feature, { highlight: props.highlight === true });
-      if (layerKey === 'editorPois') refreshEditorSource();
-      else renderFeatureList(layerKey);
+      refreshAfterFeatureChange(layerKey);
       renderPoiTabIfActive();
     }
 
@@ -3315,8 +3333,7 @@
       if (fp.highlight !== next) {
         fp.highlight = next;
         persistFeatureFlagChange(layerKey, item.feature, { highlight: next });
-        if (layerKey === 'editorPois') refreshEditorSource();
-        else renderFeatureList(layerKey);
+        refreshAfterFeatureChange(layerKey);
       }
       renderPoiTabIfActive();
       return true;
@@ -3361,8 +3378,7 @@
       const props = item.feature.properties = item.feature.properties || {};
       props.locked = !props.locked;
       persistFeatureFlagChange(layerKey, item.feature, { locked: props.locked === true });
-      if (layerKey === 'editorPois') refreshEditorSource();
-      else renderFeatureList(layerKey);
+      refreshAfterFeatureChange(layerKey);
     }
 
     // Routes a feature-property change to the right persistence path.
@@ -3371,11 +3387,9 @@
     // visitorContext + brandLogos persist their overrides in the unified
     // positioned-features store, patched key-by-key.
     function persistFeatureFlagChange(layerKey, feature, patch) {
-      if (layerKey === 'editorPois') {
-        saveEditorPois();
-        return;
-      }
-      // Every other editable layer (buildings, cemeteries, visitorContext,
+      const spec = FEATURE_LIST_LAYERS[layerKey];
+      if (spec && typeof spec.persistFlag === 'function') { spec.persistFlag(feature, patch); return; }
+      // Default: every editable layer (buildings, cemeteries, visitorContext,
       // brandLogos) persists its overrides in the unified positioned-features
       // store, keyed by layerKey + idField — so highlight/lock/geometry and the
       // editable name/notes all survive reload without baking the on-disk seed.
@@ -7157,7 +7171,18 @@
       // every refresh re-registers the runtime so the panel stays accurate.
       // The runtime preserves the user's per-id visibility ticks across
       // re-register because they live in localStorage, not in featureListRuntime.
-      if (typeof registerFeatureListLayer === 'function' && map.getLayer('editor-poi-circles')) {
+      //
+      // Single source of truth: editorPois (the localStorage array) is canonical.
+      // The left POI tab reads it directly; the right editor tree + ★ Visitor
+      // list read featureListRuntime['editorPois'], a faithful projection built
+      // here from editorFeatureCollection(). This MUST run on every mutation,
+      // independent of whether the map layer exists yet — registerFeatureListLayer
+      // and applyFeatureListFilters both guard every map.getLayer() access, so
+      // registering before/without 'editor-poi-circles' is safe. Gating this on
+      // the map layer (the old behavior) let the right side go stale during a
+      // basemap/preset style swap or an early-boot race while the left stayed
+      // current — that was the "drawn POI shows on the left but not the right" bug.
+      if (typeof registerFeatureListLayer === 'function') {
         registerFeatureListLayer('editorPois', editorFeatureCollection());
         renderFeatureList('editorPois');
       }

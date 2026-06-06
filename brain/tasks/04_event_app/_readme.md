@@ -236,3 +236,10 @@ left to the user per `ai_rules/no_commits.md`.
 
 Keep the northstar constraint visible: app work captures evidence and event
 operations. It does not let public submissions overwrite trusted map truth.
+
+
+-----
+
+## Sprint closed — 2026-06-06
+
+All cards triaged to `_done/` (shipped) or `10_deferred/` (pwa_qa_data_bakes — Item 17 offline data re-acquisition). The root-cause refactor spine `universal_feature_layer.md` moved to **`../05_special_operation/`**, which executes its remaining stages. See `../05_special_operation/_readme.md`.

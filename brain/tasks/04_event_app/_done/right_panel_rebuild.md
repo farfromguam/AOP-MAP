@@ -777,3 +777,21 @@ To look: `python3 -m http.server 8077` in `website/`, open
   retire the old patchwork paths, migrate verifiers, bump `VERSION`. NOT yet —
   the new view earns the swap feature by feature first.
 - Throwaway `/tmp/verify_panel.py` becomes a durable verifier at swap time.
+
+
+-----
+
+## Swap-cleanup disposition (recorded 2026-06-06, Sprint 05 triage)
+
+The rebuild SHIPPED and the live editor is now `panel.js` → `#aopPanelMount`
+(`#editDock` hidden, `index.html`). **Owed debt, carried out of Sprint 05 scope
+but tracked:** the swap left a *third* list engine (`panel.js`
+`PANEL_MODEL`/`deriveItems`/`renderLeftPanel`) and a *second* highlight store
+(`aop_panel_overrides_v1`, `highlight` in `EDITABLE_SERVED_KEYS`) running
+concurrently with `main.js`. Two stores must not both write `highlight`.
+Decision still owed: **(A)** finish the swap — retire the `main.js` list engines,
+panel becomes the sole surface; or **(B)** route all panel stars through
+`AOP_HOST_SET_HIGHLIGHT` so `main.js` stays the single store of record. See
+`05_special_operation/_limiting_code_register.md` (the "third list engine /
+second store" row) — flagged so it is not silently absorbed into the
+universal-layer work.

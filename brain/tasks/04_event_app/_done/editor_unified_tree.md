@@ -200,6 +200,35 @@ The first form is what `playwright_verify_poi_editor.py` already does for editor
 - Per-bucket export — bucket-scoped `⧉` chip. The section-level `⧉ Export all` already covers the editor. Land if requested.
 - `S3 review 2026-05-27 — Reset viewer re-runs maybeSeedEditorPois` from `poi_editor_followups.md`. Not in scope here; documented in `spinup/viewer_storage_migration.md` separately.
 
+## Follow-up fix — 2026-06-06: left/right drawn-POI desync (single source of truth)
+
+Symptom (user report): a drawn POI showed in the left-rail `POI` tab but not on
+the right (★ Visitor list / Point–Line–Polygon buckets). Root cause: the two
+surfaces read different stores through different triggers. The left tab reads the
+canonical `editorPois` array (localStorage `aop_editor_pois_v1`) directly; the
+right reads `featureListRuntime['editorPois']`, a derived projection rebuilt in
+exactly one place — `refreshEditorSource()` in `website/js/main.js` — and that
+rebuild was **gated** on `map.getLayer('editor-poi-circles')`. During a
+basemap/preset style swap (custom layers dropped + re-added) or an early-boot
+race, the layer is briefly absent, so the right side kept a stale/empty runtime
+while the left, reading the array, stayed current → "left but not right."
+
+Fix: removed the `&& map.getLayer('editor-poi-circles')` condition so the right
+runtime is **always** re-registered from `editorFeatureCollection()` on every
+mutation. Safe because `registerFeatureListLayer` and `applyFeatureListFilters`
+already guard every `map.getLayer()` access (skip the missing layer's filter,
+build state + render from data regardless). `editorPois` is now the single source
+of truth; the left tab, the ★ Visitor list, and the geometry buckets are all live
+projections of it. Verified by observation (Playwright, DOM-level): with
+`editor-poi-circles` absent the entire load, a starred + unstarred POI rendered
+correctly across all three surfaces and stayed in lockstep through a real ★ row
+click (left + Visitor list both gained the newly-starred POI), zero editor
+errors. Shipped as build `v51` (bumped `VERSION` in `sw.js` + `#appVersion` in
+`index.html`, since `js/main.js` is a cache-first shell asset). Note: the
+map-dependent verifiers (`playwright_verify_poi_editor.py` etc.) can't run to
+completion in a no-external-tile sandbox — the MapLibre `load` event never fires
+— so the changed path was verified directly rather than through those suites.
+
 ## Related work
 
 - `../03_event_app/_done/poi_editor_tree_inline_accordion.md` — predecessor (the tree shape this card hoists).
