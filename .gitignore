@@ -19,3 +19,7 @@ __pycache__/
 # Temporary files
 *.swp
 *~
+
+# Council completion-gate runtime markers (local diff-hash state, not durable)
+.claude/.council-nudged
+.claude/.council-cleared

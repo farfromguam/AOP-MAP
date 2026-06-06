@@ -70,14 +70,18 @@ UNCOMMITTED: the commit + the v52 bump are the user's git gate.
 New durable verifiers added: `mvp/scripts/playwright_verify_dock_spec_axis.py`,
 `mvp/scripts/playwright_verify_fly_button.py`.
 
-**What still needs a human (few — all map-load/on-device, not logic):**
+**What still needs a human (few — all map-load/on-device, not logic).** Carded in
+`10_deferred/` (2026-06-06) so they aren't lost:
 
 1. **On-device iOS-PWA feel** — standing item; headless proves logic+DOM, not real touch.
+   → `10_deferred/sprint05_on_device_smoke.md`.
 2. **The git gate** — commit + the v52 bump are the user's to make (work is uncommitted).
-3. **Card 02 buildings dock live pixels** (~5 s on-device): open a building → read-only
+   Folded into both cards as their precondition (not its own card — `no_commits.md`).
+3. **Card 02 buildings dock live pixels** (~30 s on-device): open a building → read-only
    Status, no Duplicate/Delete. The buildings layer registers into `featureListRuntime`
    only at map-load (basemap tiles blocked headless), so its row never surfaced in the
    sandbox; the dispatch mechanism is identical to the editorPois dock proven live.
+   → `10_deferred/sprint05_buildings_dock_on_device.md`.
 
 **Deferred (noted, not done this sprint):** the card-06 **"POI tab starts empty"
 flip** stays DEFERRED pending the user's decision on `10_deferred/star_driven_poi_list.md`

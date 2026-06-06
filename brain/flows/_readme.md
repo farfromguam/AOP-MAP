@@ -17,6 +17,7 @@ Active flows:
 - `research_flow.md` -- produce a focused research brief.
 - `plan_task.md` -- turn a request into a card that can be executed.
 - `work_task.md` -- execute a prepared card and record what happened.
+- `council_review.md` -- convene the review council over finished work before declaring it done.
 - `cwc.md` -- continue MVP work with current handoff and validation loop context.
 
 These flows are also exposed to Claude Code as thin skill pointers in `.claude/skills/<flow>/SKILL.md`. Those files hold no content of their own — they only point back to the flow doc here, which stays the single source of truth for every agent.

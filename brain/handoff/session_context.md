@@ -4,6 +4,41 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+**2026-06-06 (THE COUNCIL INSTALLED — standing reviewer seats + a completion-gate Stop
+hook, BRAIN + HARNESS, UNCOMMITTED).** User: *"the seal team got us past sprint 5. the council
+will get us through the future… come up with a set of personas and a set of hooks that are called
+when a main agent thinks its done… profile based guardrails to resist the slop… one that knows the
+product that will keep the others focused."* Did deep web research first (independent adversarial
+critics beat self-review — models are blind to their own errors, Huang ICLR'24; gate on artifacts
+not narrated verification; small non-overlapping council, duplicate roles are a named failure mode
+MAST; objective checks first, DORA/jidoka; orchestrator holds goal+scope+termination, Anthropic
+multi-agent). **Recon finding:** the "seal team"/Sprint 05 was *sequential single-agent* execution
+against prepared cards, NOT a real swarm — clean slate. **Shipped — the durable council lives in
+`brain/council/`** (source of truth): `_readme.md` (charter + evidence base + seat→rule map),
+six seats = **the `ai_rules` given faces, partitioned non-overlapping** — `steward.md` (chair /
+product keeper / orchestrator), `warden.md` (scope + git gate), `witness.md` (verify-by-observation,
+adversarial, pulls andon), `quartermaster.md` (reuse / no-dupes / C1·C2·C6), `mason.md` (clean +
+no-limiting-code C5), `scribe.md` (durable record + voice); plus `completion_gate.md` (the
+Definition of Done + verdict-receipt schema + Stop-hook contract + dials) and `triage.md` (council
+picks backlog cards for the swarm). **Harness adapters are THIN pointers** (`harness_adapters_are_thin`):
+`.claude/agents/council-{steward,warden,witness,quartermaster,mason,scribe}.md` (read-only subagents),
+`.claude/commands/council.md` (`/council`), and `.claude/hooks/council-gate.sh` wired as a **`Stop`
+hook** in `settings.local.json`. The gate: loop-guard (`stop_hook_active`) + materiality (silent unless
+`website/`|`mvp/` changed) + hard-block on `node --check` failure + advisory C1-grep/version-bump +
+**nudge-once-per-distinct-diff** to convene `/council`; **fails OPEN**; `AOP_COUNCIL_BLOCKING=0`
+downgrades to advisory; clearance keyed to diff-hash markers (`.claude/.council-{nudged,cleared}`,
+gitignored). **Verified by observation** (real repo, transient untracked test file, read-only git):
+loop-guard silent, clean-tree silent (no false fire), valid-JS change → exit2 nudge + version advisory,
+same-diff → silent, `BLOCKING=0` → advisory, syntax-error → exit2 `SyntaxError`. **Pointers updated:**
+`brain_map.md` (council branch + authority note + product-persona disambiguation), `flows/_readme.md` +
+new `flows/council_review.md`, `.gitignore`. **Owed / forks for the user:** (1) the council is
+self-served (agent reviews own work, reports results — NOT approval-seeking to you, per THE BAR);
+(2) **dials to confirm** — keep the Stop hook blocking (default) vs advisory, and core-three vs
+full-six default; (3) **sprint 06 setup is yours to trigger** — run `/council triage` to get a ranked
+slate from the 7 backlog + 16 deferred cards, then stand up `tasks/06_*/`, then swarm; (4) commit is
+the user's git gate (this run did NOT commit). NOTE: this council-building turn touched only
+`brain/` + `.claude/` (not `website/`/`mvp/`), so the new gate did not self-trigger.
+
 **2026-06-06 (SPRINT 05 VALIDATION REVIEW — all 8 cards re-checked by observation in
 the main thread + MOVED to `_done/`; UNCOMMITTED).** Re-ran the structural gate live
 (C1 = 0 `layerKey` branches; `node -c` clean on main.js + panel.js; v52 in `sw.js` +

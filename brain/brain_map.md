@@ -26,6 +26,7 @@ brain/
 ├── spinup/         local startup, runbooks, and troubleshooting
 ├── voice/          how docs should read and be shaped
 ├── ai_rules/       how the assistant collaborates here
+├── council/        reviewer seats + the completion gate (fires when an agent thinks it's done)
 ├── handoff/        session-specific handoff and onboarding notes
 └── output/         future scratch artifacts
 ```
@@ -61,6 +62,14 @@ triage block in the `04_event_app/_readme.md` and the deferred `_readme.md`).
 `tasks/01_mvp/_done/aop_south_pittsburg_map_build_card.md`
 is the closed Sprint 01 build card, kept as the historical promise. Cards are
 direction, not gospel; update them as the map learns.
+
+`council/_readme.md` is the standing review layer that fires **when an agent thinks it's done**: six
+non-overlapping reviewer seats (the `ai_rules` given faces, chaired by a product-keeping Steward) plus a
+completion gate. `council/completion_gate.md` is the Definition of Done and the Stop-hook contract;
+`council/triage.md` is how the council picks backlog cards for a swarm. The harness adapters
+(`.claude/agents/council-*.md`, `.claude/commands/council.md`, `.claude/hooks/council-gate.sh`) are thin
+pointers into these files — edit the seat in the brain, not the adapter. **Not** the product personas:
+those (`northstar/personas.md`) are map *users*; the council are *reviewers* of agent work.
 
 `voice/voice_guide.md` and `voice/style_guide.md` govern docs.
 

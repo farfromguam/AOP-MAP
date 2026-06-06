@@ -56,6 +56,20 @@ its own "Deferred because" header. Reasons in brief:
 - `viewer_polish_followups.md` — standing polish + verifier-residue backlog;
   pull items into an active sprint as they earn priority.
 
+### From Sprint 05 validation review (2026-06-06)
+
+The `05_special_operation` cards are all DONE + validated by observation and moved to
+`05_special_operation/_done/`. The only residue needing a human is on-device/git-gate
+work — carded here so it isn't lost:
+
+- `sprint05_buildings_dock_on_device.md` — the ONE card-02 behavior not observable
+  headless (buildings dock registers at map-`load`; tiles blocked). ~30-second live
+  pixel confirm: read-only Status, no Duplicate/Delete. Logic identical to the
+  editorPois dock already proven live.
+- `sprint05_on_device_smoke.md` — the perennial on-device iOS-PWA feel, made concrete
+  for the v52 editor refactor (dock, ★ lists, trails star, fly buttons). Both cards
+  carry the **git gate** (commit + v52 bump) as their precondition.
+
 ## Promoted out
 
 - `poi_editor_v2.md` → `../02_edit/poi_editor_v2.md` (2026-05-23). Scoped by user: POI list on the right, select to find, drag to move; shared positioning primitive reused by region callouts and (later) logos.
