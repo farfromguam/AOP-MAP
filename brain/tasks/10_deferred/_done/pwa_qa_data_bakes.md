@@ -1,5 +1,20 @@
 # PWA QA — data bakes & coverage (split out of pwa_qa.md)
 
+> **CLOSED — council triage 2026-06-06.** Three of four items (4 region-callout
+> bake, 6 building tiering, E Ellis-cemetery derived bake) are DONE and
+> **re-confirmed by observation on the current working tree** this triage:
+> `aop_buildings.geojson` = 5 curated (3 facilities Front Office/Pavilion/Farmhouse
+> + 2 structure boxes); `aop_cemeteries.geojson` Ellis Point+Polygon both carry
+> `burial_count:12` + the named roster + `burial_source`; `aop_visitor_context_callouts.geojson`
+> ships baked geometry served from `./data/` (4 features after the 2026-06-05
+> brand-logo merge — the bake claim holds, only the count drifted). The one open
+> item — **Item 17, extend the 9-patch imagery** — is a distinct data-acquisition
+> task gated on an owner decision, **split out to `../extend_9patch_imagery.md`**.
+> **Owed but not blocking (do not reopen this card for them):** commit + the
+> v27→v29 bump are the user's git gate (`no_commits.md`); the on-device look at the
+> black boxes and the always-on-vs-toggle box call are refinements carried by the
+> on-device smoke card.
+
 TL;DR:
 - Three items from `pwa_qa.md` were too big for the front-end QA swarm because
   they are **data-pipeline / acquisition** work, not viewer chrome. They need

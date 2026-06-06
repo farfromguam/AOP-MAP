@@ -239,6 +239,33 @@ User's steer at end of the 2026-05-29 session: the two anchors to push first
 are **(a) authoring surface — who writes the DB** and **(b) the bake — DB →
 file → remote.** Everything else hangs off those.
 
+### Council consult 2026-06-06 — "too many schemas; does a DB / type system fix it?"
+
+User asked whether forcing data into the DB solves the per-source schema
+fragmentation (DB requires one schema), and whether a **type system** could be
+enforced on top. The council (Steward chair; Quartermaster·Mason·Witness·Warden)
+resolved it, and it de-risks the authoring fork above:
+
+- **The fragmentation is real** (Witness verified: across the 23 served
+  `website/data/*.geojson`, the only keys universal to *all* files are `id` + `kind`).
+- **The DB helps narrowly:** it declares the **shared spine** once (the ~9
+  provenance/curation fields now hand-retyped per file) instead of per-file. It does
+  **not** — and must not — flatten the per-domain attributes (a trail's `difficulty`,
+  a cemetery's `burial_count`); those are real shape, not slop. And prod reads the
+  **files**, not the DB, so the **bake** is what unifies the served shape, not the DB.
+- **A type system is possible — and half-exists already:** the **Common Minimum
+  Feature Schema** (`website/data/_schema.json` `aop-cmfs-v1` +
+  `research/common_feature_schema.md`) is the one-shape contract, observably holding
+  on the 18 curated layers (the 6 `machine:true` layers are deliberately exempt).
+- **Shape, not vocabulary (Mason / C5):** enforce that the canonical fields *exist*;
+  **never** reject an unknown value (no CHECK/enum/`NOT NULL`-on-values/row-dropping —
+  that silently drops the freshest field data, worse than an honest candidate line).
+- **The move is a receipt, not a new contract (Quartermaster):** a read-only audit
+  that proves conformance — carded at `../06_going_gold/schema_conformance_audit.md`.
+- **Whichever authoring surface you pick** (the (a) fork) writes into the **same** CMFS
+  shape, and the audit guards it — so the schema question does **not** block the
+  authoring decision; it makes it safer.
+
 ## What this is NOT (out of scope / guardrails)
 
 - Not a request to start coding. This is the pipeline-shape conversation.

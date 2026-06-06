@@ -70,6 +70,26 @@ work — carded here so it isn't lost:
   for the v52 editor refactor (dock, ★ lists, trails star, fly buttons). Both cards
   carry the **git gate** (commit + v52 bump) as their precondition.
 
+### From council triage (2026-06-06)
+
+First council triage (`../../council/triage.md`) over these 16 cards. Outcome:
+
+- **Closed to `_done/`:** `pwa_qa_data_bakes.md` — items 4 (region-callout bake),
+  6 (building tiering), E (Ellis-cemetery derived bake) DONE and **re-confirmed by
+  observation** on the working tree. Its one open item, **Item 17 (extend 9-patch
+  imagery)**, was **split out to `extend_9patch_imagery.md`** (a distinct
+  data-acquisition task gated on an owner decision).
+- **Pulled into Sprint 06** (`../06_going_gold/_readme.md`) as bounded,
+  observable slices: verifier-coverage debt + the stale-verifier reconciliation
+  (from `viewer_polish_followups.md`), code-health cleanups (from
+  `viewer_polish_followups.md` + `poi_editor_followups.md`), and a trail-review
+  surfacing slice (from `paper_map_trail_extraction.md`). The parent cards stay
+  here — only the pulled slices are scoped into the sprint.
+- **Held (gated):** everything else. The forks that unblock them are listed in the
+  Sprint 06 `_readme.md` "HOLD" section. The two `sprint05_*_on_device` cards and
+  `extend_9patch_imagery.md` are **human-checked owed items, not swarm cards**
+  (not headless-observable).
+
 ## Promoted out
 
 - `poi_editor_v2.md` → `../02_edit/poi_editor_v2.md` (2026-05-23). Scoped by user: POI list on the right, select to find, drag to move; shared positioning primitive reused by region callouts and (later) logos.

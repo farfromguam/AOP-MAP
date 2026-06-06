@@ -4,6 +4,127 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+**2026-06-06 (COUNCIL CLEARED THE GOLD PLAN — full six seats, 4 rounds; BRAIN ONLY,
+UNCOMMITTED).** User: *"have the council review your plan. stop when everyone is happy. we will
+pause commit then ralph loop at that point."* Ran the completion-gate done-review over
+`06_going_gold/gold_migration.md` at **full-six tier** (high risk: a sprint-spine architectural
+migration an autonomous ralph loop will execute). Chaired as Steward; spawned the five worker seats
+as fresh adversarial `council-*` subagents each round, prompted to refute. **Round 1: all six
+pulled andon** — every one grounded in a real file/line (NOT nitpicks): Witness (the cited
+`playwright_verify_baked_pois.py` is NOT headless — `queryRenderedFeatures`+`networkidle`; "SERVE
+proven" overstated), Scribe (match-key ambiguous — `core.pois.id` serial vs export `<source>:<id>`;
+no run-commands; no record step), Quartermaster (parser would be duplicated; two-table retirement
+unverified), Mason (no archive column + parent hard-deletes; apply could throw/skip), Warden (slice
+6 unbounded; slices 3–5 unsplit; a VERSION-bump line collided with the git gate). **Rewrote the plan
+across rounds 2–4:** added an Observable-acceptance standard (browserless baked-file assertion + a
+star_collector-pattern `playwright_verify_baked_<layer>_author.py`; **no** render/`networkidle`/
+`publishDataCache`-closure reads); a `--target core` extraction (one `panel_overrides.py` parser,
+two sinks) with the file-baker's drop branches explicitly stripped from the core sink; `source_key
+UNIQUE` + `archived_at` DDL with an exact **upsert** rule for `edits[]`/`created[]` (bare UPDATE
+banned — a zero-row UPDATE is a silent lost edit) and archive-not-delete for `deleted[]`; literal
+run-commands + DB bring-up; per-slice Record-on-green; split per-layer slices with a named
+source+verifier table; an explicit Retirement step; slice 6 demoted to HELD; the VERSION bump
+reworded as owed-to-user. **Clears:** Warden+Scribe R2, Quartermaster+Witness R3, Mason R4, Steward
+chairs → **FULL CLEAR.** Receipts: `brain/output/council/gold_migration_review_20260606.md`.
+**Standing conditions the loop inherits:** (Witness) the apply script + 5 author verifiers don't
+exist yet — the loop writes them; re-witness on the FIRST slice's REAL verifier output before
+trusting "green"; (Mason) confirm the count==input acceptance runs against a live apply. **NEXT
+(user's):** the commit pause, then the ralph loop on slice 1. The review touched only `brain/`
+(no `website/`/`mvp/`), so the Stop-hook gate did not self-fire; nothing committed.
+
+**2026-06-06 (GOING GOLD — user committed to the DB-as-store-of-record migration; plan
+carded, Sprint 06 reframed; BRAIN ONLY, UNCOMMITTED).** User, after the schema consult:
+*"we are going gold. going to the db. and baking the output for production. still these
+things may need tweaks from now to day of. so I have been trying to preserve edit paths…
+give me your thoughts."* (Frustrated that this has been backed-away-from / only partially
+implemented before — explicitly wanted **direction + action, not status quo.**) **Recon
+(observation) found the root cause:** the served `website/data/*.geojson` have **three
+writers** with a fragile ordering dep — `rebake_canonical.py` (from `raw/`),
+`bake_panel_overrides.py` (browser edits), `export_publish_geojson.sh` (DB) — and they
+clobber each other (the panel-bake docstring warns about exactly this). **Direction set
+(decisive):** make `core` (PostGIS) the ONE upstream; the **bake is the only writer to the
+served files**; prod stays static read-only (northstar V1). **The edit path is preserved by
+REDIRECTING it, not removing it** — the web editor's existing `aop-panel-overrides-v1` export
+gets applied to **`core`** instead of to files (new `apply_panel_overrides_to_core.py`,
+sibling to `bake_panel_overrides.py`). localStorage → working buffer only (C3). Day-of loop:
+`edit → Export → apply-to-core → export_publish_geojson.sh → deploy`. **Why finally tractable:**
+no prod write-service / auth / moderation (the V2 scary stuff stays deferred); per-layer thin
+slices, each green before the next. **Schema call:** converge destination layers onto ONE
+`core.features` (CMFS columns + JSONB `attrs` for domain extras) — the gold answer to "too many
+schemas" — but prove the AUTHOR loop on the EXISTING `core.pois` first (slice 1), converge
+schema as layers come in. **Plan carded:** `tasks/06_going_gold/gold_migration.md` (the spine,
+sequenced slices 1–6); Sprint 06 renamed `06_verify_and_polish` → **`06_going_gold`** and
+reframed so the migration is the spine and the verifier/polish/schema-audit items are its
+guardrails. **NEXT ACTION = slice 1** (POI author path: build `apply_panel_overrides_to_core.py`,
+prove edit→core→bake→serve→reload by observation, extend `playwright_verify_baked_pois.py`).
+**Env note:** the sandbox temp fs (`/private/tmp/claude-501/.../tasks`) filled up mid-turn
+(ENOSPC on stdout capture); workaround is redirecting Bash output to a real-fs file and Reading
+it — clear it (or set `CLAUDE_CODE_TMPDIR`) before the slice-1 DB/verifier run. No code written
+yet; nothing committed.
+
+**2026-06-06 (COUNCIL CONSULT — "too many schemas; does a DB / type system fix it?",
+BRAIN ONLY, UNCOMMITTED).** User asked, mid-triage, whether forcing data into the DB
+solves the per-source schema fragmentation (DB requires one schema) and whether a **type
+system** could be enforced on top — explicitly *"consult the council."* Convened four
+seats as **independent subagents** (Quartermaster·Mason·Witness·Warden) over the question
++ the C-contracts + source_register + init_db.sql; chaired/synthesized as Steward. They
+**converged**, and the Witness surfaced a finding I didn't have: **the one-shape contract
+already ships** — the Common Minimum Feature Schema (`website/data/_schema.json`
+`aop-cmfs-v1`, backed by `research/common_feature_schema.md`), observably holding on the
+18 curated layers (6 `machine:true` layers deliberately exempt). Synthesis: (1)
+fragmentation is **real** (across 23 served files only `id`+`kind` are universal); (2) the
+DB helps **narrowly** — declares the shared spine once, but must NOT flatten per-domain
+attributes, and **prod reads files not the DB so the BAKE is what unifies**, not the DB;
+(3) a type system is possible and **half-exists** (CMFS); (4) **shape not vocabulary**
+(Mason/C5 — never reject an unknown value; PostGIS already does this right: zero
+CHECK/enum); (5) the move is a **receipt, not a new contract** (Quartermaster — read-only
+audit reading the existing `_schema.json`, no second surface). **Inter-seat conflict
+resolved:** Warden floated CHECK/enum on `core.pois`; Mason pulled andon (C5 locked);
+Steward sided with Mason — the probe **reports**, never **rejects**; a value-gate is a
+user re-confirm. **Durable outcomes:** new Sprint-06 card
+`06_going_gold/schema_conformance_audit.md` (read-only `audit_canonical_schema.py
+--check`; already-found drift: `aop_user_features.geojson` on disk but missing from the
+manifest), added to the Sprint-06 slate as item 5 (parallel-safe); consult decision noted
+in `star_driven_poi_list.md` (hung off its open forks — it de-risks the authoring-surface
+pick: any authoring path writes the SAME CMFS shape, audit guards it). The four council
+subagents are resumable (ids in this turn's tool results) if deeper schema work is pulled.
+
+**2026-06-06 (FIRST COUNCIL TRIAGE — deferred bucket re-sorted, Sprint 06 stood up,
+BRAIN ONLY, UNCOMMITTED).** User: *"time to test the council. review the deferred cards.
+have any of them been done… move done to _done in deferred… move to sprint 6 if they need
+to get done soon. access each of them come up with a plan and a checklist."* Ran
+`council/triage.md` as Steward over all 16 `tasks/10_deferred/` cards (six seats as
+selection lenses). **Done-state verdict (by observation, not card-trust):** NONE of the
+16 is 100% complete as a unit; the only closeable one was **`pwa_qa_data_bakes.md`** —
+re-confirmed items 4/6/E DONE on the working tree (`aop_buildings.geojson`=5 curated
+[Front Office/Pavilion/Farmhouse + 2 boxes]; Ellis Point+Polygon both carry burial_count
+12 + roster + source; visitor-context callouts baked, 4 features post brand-merge). Its
+one open item — **Item 17 extend-9-patch-imagery** — **split out to a new
+`extend_9patch_imagery.md`**, then moved the card to **new `tasks/10_deferred/_done/`**.
+**Stood up `tasks/06_going_gold/`** (sprints 01–05 existed; 06 is next). Honest
+finding: the big deferred cards (event CRUD, star-driven authoring, real-trail promotion)
+are **all gated** on a user decision / external truth / on-device or data-acquisition step
+— none swarm-able as-is. So **Sprint 06 = the pullable debt:** (1) three missing verifiers
+[parallel-safe], (2) stale `publishable`/`presets` verifier reconciliation [sequential],
+(3) code-health cleanups [L1 whitespace, `setEditorFeatureNotes` trim-rename, L2
+shared-helper extractions — sequential, hot files], (4) a trail-review surfacing slice
+[surface `review_flags`/dangling/grey/blue-1 so the user can do the promotion pass].
+**Quartermaster caught a dup trap:** the old "wire `sfwda_numbered_trails.geojson`" item is
+**superseded** by the served `aop_trail_network.geojson` — left unwired. **HELD** (with
+unblock conditions in the Sprint-06 `_readme.md`): event_crud, star_driven (authoring-surface
+pick), dev_db_reseed, data_integrity, brand_assets (permission posture), calendar/park-bounds
+picks, rock_warblers (external), offline_pwa, the two `sprint05_*_on_device` smokes +
+`extend_9patch_imagery` (human/device/acquisition — not swarm cards). **The council did NOT
+spawn fresh seat-subagents** — triage is Steward-chaired lens application per the doc, and
+there is no diff to review; the seat reasoning is written into the Sprint-06 `_readme.md`.
+**Owed / forks:** the user owns the cheap unblock picks (calendar variant, PB icon,
+brand-permission posture, authoring surface) and the scoping conversation for event CRUD;
+those promote held cards. The swarm trigger + the git gate (commit; the v52 bump still owed
+from Sprint 05) are the user's. This turn touched only `brain/` (no `website/`/`mvp/`), so
+the Stop-hook gate does not self-fire. Files: `tasks/10_deferred/_done/pwa_qa_data_bakes.md`,
+`tasks/10_deferred/extend_9patch_imagery.md`, `tasks/06_going_gold/_readme.md`,
+`tasks/10_deferred/_readme.md` (triage block), this handoff.
+
 **2026-06-06 (THE COUNCIL INSTALLED — standing reviewer seats + a completion-gate Stop
 hook, BRAIN + HARNESS, UNCOMMITTED).** User: *"the seal team got us past sprint 5. the council
 will get us through the future… come up with a set of personas and a set of hooks that are called
