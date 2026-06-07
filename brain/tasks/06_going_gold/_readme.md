@@ -18,6 +18,23 @@ TL;DR:
 
 -----
 
+## Spine status — gold migration COMPLETE (2026-06-07)
+
+`gold_migration.md` (the spine) is fully landed. Slices 1–5 + the Retirement step closed and
+council-cleared (committed `ce920bd`, `737fc26`); on **2026-06-07** the user pulled the last item the
+ralph loop held back for a human — the deprecated `core.pois` table + `publish.pois` view were
+**drop-tested (rename-and-reverify) and dropped** from both the live DB and `mvp/init_db.sql`, with
+fresh-volume reproducibility re-proven. `core.features` (141 rows) is now the sole POI/feature table; the
+bake serves POIs from `publish.features WHERE layer='poi'`. NO shell asset touched → no version bump owed.
+See the **DROP COMPLETE** block in `gold_migration.md`.
+
+**Still open (this did NOT close them):** Slice 6 (HELD — demote the `aop-*` localStorage stores to working
+buffers), the per-layer **legacy-writer retirement** (OWED), and the **entire guardrail slate (items 1–5
+below) is unstarted**. So the sprint's *spine* is done; the *slate* is not — Sprint 06 stays open for the
+guardrails and the held forks.
+
+-----
+
 ## How the guardrail slate was chosen (council triage, 2026-06-06)
 
 Steward chaired; each seat scored its lens over the 16 deferred cards (see

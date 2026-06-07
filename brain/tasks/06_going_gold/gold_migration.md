@@ -528,9 +528,37 @@ Collapse `core.pois` into `core.features` and prove it, so the transitional two-
 > name+blurb as `pubpoi:139` [the core.features serial, proving the new source] and Ellis absent, 0
 > console errors). Then core POIs re-migrated to faithful state + served files restored byte-identical to
 > HEAD. **NO shell asset touched → NO bump owed.** `core.features` now holds **141 features** (buildings
-> 5 + cemeteries 8 + visitor 4 + trails 120 + poi 4). **OWED (human, NOT the loop):** DROP the deprecated
-> `core.pois` table + `publish.pois` view once confirmed unused (destructive — the user's call); retire
-> the dormant per-layer legacy writers (slices 2–5 OWED). **The loop STOPS here — slice 6 is HELD.**
+> 5 + cemeteries 8 + visitor 4 + trails 120 + poi 4). **OWED (human, NOT the loop):** ~~DROP the deprecated
+> `core.pois` table + `publish.pois` view once confirmed unused (destructive — the user's call)~~ → **DONE
+> 2026-06-07** (drop-tested, then dropped from the DB + `init_db.sql`; see the DROP COMPLETE block below);
+> retire the dormant per-layer legacy writers (slices 2–5 OWED). **The loop STOPS here — slice 6 is HELD.**
+
+> **DEPRECATED POI OBJECTS DROPPED — 2026-06-07 (human pulled the retirement's OWED item; DB +
+> `mvp/init_db.sql`, UNCOMMITTED, NO bump owed; verified by observation throughout).** The user pulled the
+> one destructive item the loop held back. Proven safe FIRST, then dropped, then re-proven for fresh volumes:
+> - **Drop-safety (observed before touching anything):** every `core.pois` row mirrored into `core.features`
+>   (`unmirrored = 0`); served-set parity identical (old `publish.pois` gate = **2**, new `publish.features
+>   WHERE layer='poi'` gate = **2**, symmetric diff **0**); **no FK** points at `core.pois`; only `publish.pois`
+>   depended on it (no other view). **One latent gate delta logged:** `publish.features` dropped the
+>   `is_destination = true` clause that `publish.pois` carried — **0 rows differ today** (all 4 POIs are
+>   destinations), but a future `is_destination=false` *published* POI would serve under the new gate where the
+>   old one excluded it. Not a blocker; recorded so it isn't a surprise.
+> - **Rename-and-reverify drop test (reversible proof nothing reads them by name):** `ALTER ... RENAME` both
+>   objects out of the way → ran the bake (exit 0, **no** missing-object error) → `publish.geojson` still
+>   carried both POIs (browserless assert) → `playwright_verify_baked_pois_author.py` **PASS, 0 console
+>   errors**, viewer rendered `pubpoi:139/140` (the `core.features` serials — proves the serve reads
+>   `core.features`, not `core.pois`). Served files then restored **byte-identical to HEAD**.
+> - **The drop:** `DROP VIEW publish.pois; DROP TABLE core.pois;` on the live volume (the renamed objects);
+>   `core.features` intact (141 rows, 4 poi). `mvp/init_db.sql` edited to remove the `core.pois` table, the
+>   `publish.pois` view, the `pois_geom_gix` index, the trigger-loop array entry, and the now-stale
+>   `core.features` comment. **Fresh-volume reproducibility proven:** ran the edited `init_db.sql` against a
+>   throwaway DB → exit 0, `core.pois`/`publish.pois` absent, `core.features`/`publish.features` present.
+> **NO shell asset touched (only `mvp/init_db.sql`) → NO `sw.js`/`#appVersion` bump owed.**
+> **Cosmetic doc-debt left (historical comments only, not in any code path):** provenance comments in
+> `website/js/main.js:1219,9536`, `website/data/aop_poi_index.json`, and the verifier/seed docstrings still
+> name `core.pois → publish.pois` as the POI origin — accurate as *history*, harmless, deliberately not
+> edited to avoid forcing a shell-asset version bump for a comment. **OWED (still human):** retire the
+> dormant per-layer legacy writers (slices 2–5). **The commit is the user's git gate.**
 
 -----
 

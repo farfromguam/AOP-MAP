@@ -4,7 +4,13 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
-## ▶ ACTIVE — the Going-Gold ralph loop (committed 2026-06-06; START A CLEAN SESSION)
+## ✅ DONE — the Going-Gold ralph loop (all slices + Retirement + the human-owed DROP closed, 2026-06-07)
+
+> **SUPERSEDED 2026-06-07:** the loop ran to completion (slices 1–5 + Retirement, committed `ce920bd` /
+> `737fc26`), and the user has now pulled the final human-owed item — the deprecated `core.pois` /
+> `publish.pois` objects are **DROPPED** (see the 2026-06-07 entry below + the DROP COMPLETE block in
+> `tasks/06_going_gold/gold_migration.md`). Nothing is left to run here. The instructions below are kept
+> only as the historical loop record.
 
 The gold-migration plan is council-cleared (full six, 4 rounds) **and committed**. Run it in a
 **fresh session** — this one is context-heavy, and the plan is built to be re-read fresh each
@@ -26,6 +32,32 @@ not self-verify).
 
 Plan + sign-off: `brain/tasks/06_going_gold/gold_migration.md`. Review receipts:
 `brain/output/council/gold_migration_review_20260606.md`. DB: `docker compose -f mvp/docker-compose.yml up -d db`.
+
+-----
+
+**2026-06-07 (GOLD SPINE CLOSED OUT — deprecated POI objects DROPPED after a rename-and-reverify test;
+DB + `mvp/init_db.sql`, UNCOMMITTED, NO bump owed).** The user pulled the one item the ralph loop held
+back for a human: dropping the deprecated `core.pois` table + `publish.pois` view. **Verified safe by
+observation FIRST:** every `core.pois` row mirrored into `core.features` (`unmirrored = 0`); served-set
+parity identical (old `publish.pois` gate = 2, new `publish.features WHERE layer='poi'` gate = 2, symmetric
+diff 0); **no FK** at `core.pois`, only `publish.pois` depended on it. **Rename-and-reverify drop test**
+(the reversible proof nothing reads them by name): `ALTER ... RENAME` both away → bake exit 0, no
+missing-object error → `publish.geojson` still carried both POIs (browserless) →
+`playwright_verify_baked_pois_author.py` **PASS, 0 console errors**, viewer rendered `pubpoi:139/140` (the
+`core.features` serials — proves the serve reads `core.features`). Restored served files byte-identical to
+HEAD, then **dropped for real** (`DROP VIEW publish.pois; DROP TABLE core.pois;`); `core.features` intact
+(141 rows). Edited `mvp/init_db.sql` to remove the table / view / `pois_geom_gix` index / trigger-loop
+entry / stale comment, and **proved fresh-volume reproducibility** (edited `init_db.sql` on a throwaway DB
+→ exit 0, the two objects absent, `core.features`/`publish.features` present). **One latent gate delta
+logged in the card:** `publish.features` dropped the `is_destination = true` clause `publish.pois` had — 0
+rows differ today. **NO shell asset touched → NO `sw.js`/`#appVersion` bump owed.** Cosmetic doc-debt left
+(historical provenance comments in `main.js:1219,9536`, `aop_poi_index.json`, verifier/seed docstrings —
+accurate as history; not edited to avoid a shell bump for a comment). **Gold migration SPINE is now
+COMPLETE** (slices 1–5 + Retirement + the human-owed DROP). **Still open (NOT closed by this):** Slice 6
+(HELD — `aop-*` localStorage → working buffers), the per-layer legacy-writer retirement (OWED), and the
+entire Sprint-06 guardrail slate (items 1–5 in the sprint `_readme`). **The commit is the user's git
+gate.** Records: `gold_migration.md` (DROP COMPLETE block), `06_going_gold/_readme.md` (Spine status),
+this entry.
 
 -----
 
