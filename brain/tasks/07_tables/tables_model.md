@@ -249,3 +249,149 @@ direction so it's ready to pull the moment gold lands.
 - No default-place field on activities — the place is per-occurrence (user's call).
 - `core.activities` reuses the CMFS shape; it is not a second vocabulary.
 - File `breif.md` keeps the user's spelling; flag only.
+
+-----
+
+# Execution plan — slices (ready to pull)
+
+> Added 2026-06-07 when the **dependency landed**. The design above is council-cleared
+> (full six, 2 rounds). This section turns it into an executable, ralph-loopable spine —
+> the gold-migration form: sequenced slices, **tile-independent acceptance**, a Loop
+> contract, run commands. It inherits the gold council's standing conditions. **Still
+> design/plan — no code or DB written yet.** Per the gold precedent, the next step is the
+> user's: council-review this plan → commit pause → ralph loop.
+
+## Dependency: SATISFIED (verified by observation, 2026-06-07)
+
+Sprint 06 gold migration is COMPLETE, so Sprint 7 is now pullable. Confirmed against the
+live DB (`mvp/docker-compose.yml`, db `aop_map` on `:55432`), not the card's word:
+- `core.features` exists — full CMFS spine + `source_key text UNIQUE` + `attrs jsonb` +
+  `archived_at` + `geom geometry(Geometry,4326)`. **141 rows** (buildings 5, cemeteries 8,
+  poi 4 [3 active + 1 archived test], trails 120, visitor 4).
+- `publish.features` view live; `core.pois` / `publish.pois` **dropped** (the 2026-06-07
+  human-owed DROP). `core.features` is the sole feature/POI table.
+- `#pavilion` resolves to the seeded editor POI `editorPois:aop-pavilion`
+  (`core.features`, `layer='poi'`) — the binding the schedule resolver uses.
+- Viewer resolver intact: `resolveEventLocation` (`main.js:6202`), `eventScheduleToGeojson`
+  (`:6280`, drops geom-less at `:6287`), `rebuildEventScheduleData` (`:6360`),
+  `collectStarredDestinations` (`:1152`, anchor-drop `:1261`). The schedule is loaded at
+  `main.js:8181` (`fetchJson('./data/aop_event_schedule.json')`); 13 sessions, schema
+  `aop-event-schedule-v1`.
+
+## Review deltas found (flag-only — not edited; editing them owes a shell bump)
+
+Following the gold loop's precedent of not triggering a `sw.js`/`#appVersion` bump for a
+comment, these are recorded, not fixed:
+1. **Stale `#pavilion` prose.** `main.js:6224` comment still says `#pavilion` "picks up the
+   1010 building's representative point"; the binding moved to `editorPois:aop-pavilion` on
+   2026-05-26 (`main.js:37`, `:2378`). The schedule JSON's `locations["#pavilion"].source`
+   prose likewise still names "1010 building." Accurate as history; both are stale as fact.
+2. **The tag→place wrinkle the design glossed.** Of the 7 location tags, **only `#pavilion`
+   is feature-backed**; the other 6 (`#observed-trailhead`, `#observed-finish`,
+   `#proving-grounds`, `#north-technical`, `#night-checkpoint`, `#photo-waypoint`) carry
+   **inline `coordinates`** and have **no `core.features` row**. The card's "`place_key` →
+   `core.features.source_key`" only holds for `#pavilion` as written. **Resolution
+   (recommended, council to confirm): migrate the 6 anchors into `core.features`**
+   (`layer='event'`, `kind` = their `role`, non-publish permission per their 'proposed'/
+   observed confidence) so `place_key` resolves **uniformly** through `core.features.source_key`
+   — reuses the gold spine, **adds no third table**, keeps the two-table model. The
+   alternative (a `core.event_locations` tag registry) is viable but is a new surface; the
+   anchor-migration is the reuse-first answer. Either way **no row is dropped** — the
+   resolver already supports "explicit coords win, else bound feature."
+
+## Slices
+
+### Slice 1 — `core.events` + the 13 sessions; bake the schedule from the DB
+The hole: the WHEN junction. Stand it up and prove the schedule JSON becomes **bake output**,
+not hand-curated source — so it survives the gold one-writer bake.
+- Migrate the 6 coordinate anchors → `core.features` (`layer='event'`; non-publish), so all
+  7 tags resolve through `core.features.source_key`. (Per delta #2; council confirms.)
+- DDL (additive, `init_db.sql` fresh-volume + applied by hand to the live volume, the gold
+  pattern): `core.events` — `id`, `source_key text UNIQUE` (= session `id`, e.g.
+  `fri-registration`), `event_id text`, `session_id text`, `sort_order int`, `title text`,
+  `starts_at` / `start_local` / `time_label` / `date_label`, `status text`,
+  **`place_key text`** (soft-ref `core.features.source_key`, = today's `location_tag`),
+  `attrs jsonb` (`inspired_by`, `route_tags`, etc.), `archived_at`, `source_id`. **No
+  CHECK/enum, no FK constraint** on `place_key` (`23503`-reject is the banned throw-on-
+  unmatched — `no_limiting_code_mvp`, gold council Mason). Soft join at bake/render.
+- New importer (sibling to `import_layer_to_core_features.py`, which is geometry-bearing →
+  `core.features`; `core.events` is the geometry-less junction so it needs its own thin
+  loader): upsert the 13 sessions `ON CONFLICT (source_key)`, **assert count==input**, never
+  drop/skip/throw (gold Mason's standing condition — confirm against a live apply).
+- Extend the **one bake** (`export_publish_geojson.sh`) with a **new schedule emit arm in
+  the same one-writer script, sibling to the `REFERENCE_LAYERS` loop** (`:55`/`:73`) — NOT a
+  new `REFERENCE_LAYERS` entry: the schedule is a `{schema, event, locations{}, sessions[]}`
+  document, not a GeoJSON FeatureCollection, so the loop body can't emit it (Quartermaster).
+  Emit `website/data/aop_event_schedule.json` (same filename, same `aop-event-schedule-v1`
+  schema the viewer reads at `main.js:8181`) from `core.events`, resolving `place_key`
+  against `core.features`. One writer, one bake script — not a parallel pipeline. **Same
+  filename → no `main.js` change → no shell bump owed** (gold pattern).
+- **Acceptance (tile-independent):**
+  - (a) **Browserless**: baked `aop_event_schedule.json` is field-equivalent to committed
+    HEAD's hand-curated file (13 sessions, location tags, labels, sort order, schema) — the
+    gold "prop-equivalent to HEAD" check.
+  - (b) **Observable, no tiles**: viewer loads, `getSource('event-schedule').serialize()
+    .data.features` carries the 13 session features and the `#pavilion` session row resolves
+    to the `editorPois:aop-pavilion` point. Add this as a **NEW tile-independent assertion**
+    inside the existing `mvp/scripts/playwright_verify_event_schedule.py` (do **not** add a
+    parallel verifier; Quartermaster) — but do **not** inherit that file's render-dependent
+    pattern: it currently uses `queryRenderedFeatures` (`rendered_count`) and
+    `wait_until="load"` (Witness). The proven tile-independent technique to copy is
+    `getSource(...).serialize()` as used in `mvp/scripts/playwright_verify_baked_reference_author.py`
+    (no `networkidle`, no render read). **Re-witness the REAL verifier output** before
+    trusting green.
+  - (c) `publish.features` carries no `event` rows (the anchors are reference/non-publish —
+    gate holds).
+- **Restore** served files byte-identical to HEAD after proving (production untouched);
+  report what's owed. Record on green.
+
+### Slice 2 — `core.activities` + `activity_key` on `core.events`
+The reusable WHAT. The schedule JSON already duplicates activity content inline
+(`fri-night-crawl` / `sat-night-crawl` are two copies of "Night Crawl" — Quartermaster
+corroboration); this de-duplicates exactly that.
+- DDL: `core.activities` — `id`, `activity_key text UNIQUE` (e.g. `hill_climb`), `name`,
+  `kind`, `description`, `attrs jsonb` (grade, length, gate list, class rules), provenance,
+  `archived_at`. **No geometry, no place column** (place binds on the occurrence — user's
+  resolution). Same CMFS shape minus geometry — one vocabulary.
+- Add `core.events.activity_key text` (soft-ref `core.activities.activity_key`; same no-FK
+  posture). Backfill activity rows from the sessions' distinct activities; point each
+  occurrence at its activity.
+- Extend the bake so the session feature carries the activity's detail (resolved, not
+  copied per row).
+- **Acceptance (tile-independent):** browserless — one `core.activities` row drives N
+  occurrences (edit the activity once → every citing session's baked detail changes);
+  `count==input` on the import; the schedule still bakes field-equivalent for the
+  session-level fields. Observable viewer check that the activity detail surfaces on the
+  session. Record on green.
+
+### Slice 3 — place-attached abouts (NOT a migration slice; folds into normal editing)
+Per the design: rock warblers / to-town / about AOP are **feature bodies**, not a new
+table — richer `description` + `attrs.detail` on the existing `aop_visitor_context_callouts`
+features (`rock_warblers`, `aop_badge`, the two `visitor_callout` points). A place-less
+"About AOP" gets a **representative anchor point** (park centroid / G-Central), `kind='about'`
+— **never `geom NULL`** (the one list engine is geometry-required at every node;
+`main.js:6287`/`:1261` — gold/Quartermaster). This is content authoring through the existing
+editor→`core` path, not a schema slice; listed for completeness, do not build it as DDL.
+
+## Loop contract (if the user runs this as a ralph loop)
+- Do the **next incomplete slice** (start at Slice 1), verify by its **tile-independent
+  acceptance**, **Record on green**, then **stop**. One slice per iteration; fresh executor.
+- **Do NOT commit**, and do **not** bump `sw.js` / `#appVersion` — report what's owed. The
+  bake reuses existing served filenames, so no shell asset should change; if one does, the
+  bump is **owed to the user**, never performed (`no_commits.md`).
+- Restore served files byte-identical to HEAD after each proof (production stays untouched
+  until the user's git gate).
+- Inherited gold conditions: **Witness** — re-witness the FIRST slice's REAL verifier output
+  before trusting "green" (the schedule verifier exists but the bake-from-`core.events` path
+  and the anchor migration are new). **Mason** — confirm the `count==input` acceptance runs
+  against a live apply before Slice 1 closes; no CHECK/enum/FK introduced.
+
+## Run commands
+- DB up: `docker compose -f mvp/docker-compose.yml up -d db` (db `aop_map`, `:55432`).
+- Bake: `mvp/scripts/export_publish_geojson.sh` (extended with the schedule arm).
+- Verify: `python3 mvp/scripts/playwright_verify_event_schedule.py` against a clean serve on
+  `:8001` (`cd website && python3 -m http.server 8001`); 0 console errors required.
+
+## Sequencing note
+Slices 1–2 are sequential (both stand up tables, slice 2 references slice 1's `core.events`).
+Slice 3 is not a migration slice. No collision with any active loop — the gold loop is done.

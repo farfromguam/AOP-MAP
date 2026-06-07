@@ -35,6 +35,44 @@ Plan + sign-off: `brain/tasks/06_going_gold/gold_migration.md`. Review receipts:
 
 -----
 
+**2026-06-07 (SPRINT 07 REVIEWED + PREPPED — dependency verified landed, executable slice plan
+written; BRAIN ONLY, UNCOMMITTED, no code/DB written).** User: *"review 07 and prepare to work on it."*
+Reviewed `tasks/07_tables/tables_model.md` (council-cleared design, full six / 2 rounds) and **verified
+its dependency landed by observation**, not by the card's word: live DB `aop_map` shows `core.features`
+(141 rows, `source_key UNIQUE` + `attrs` + `archived_at`), `core.pois`/`publish.pois` dropped, the
+schedule resolver intact (`resolveEventLocation` `main.js:6202`, `eventScheduleToGeojson` `:6280`,
+loaded `:8181`; 13 sessions). So Sprint 7 is **now pullable** — the gate that held it (gold) is lifted.
+**Two review deltas flagged (not edited — would owe a shell bump for a comment, per the gold
+precedent):** (1) stale `#pavilion` prose at `main.js:6224` + the schedule JSON `source` field still say
+"1010 building" though the binding moved to `editorPois:aop-pavilion` on 2026-05-26; (2) **the design
+glossed a real wrinkle** — of 7 location tags **only `#pavilion` is feature-backed**; the other 6 carry
+inline coords with no `core.features` row, so the card's "`place_key`→`core.features.source_key`" only
+holds for one tag as written. **Resolution (recommended, council to confirm): migrate the 6 anchors into
+`core.features` (`layer='event'`, non-publish)** so `place_key` resolves uniformly — reuses the gold
+spine, adds NO third table, keeps the two-table model. **Prep artifact:** appended an
+**"# Execution plan — slices (ready to pull)"** section to `tables_model.md` (kept it ONE card to avoid a
+parallel-card dup) — Slice 1 (`core.events` + 13 sessions, bake the schedule JSON from the DB), Slice 2
+(`core.activities` + `activity_key`), Slice 3 (place-attached abouts = feature bodies, not DDL), each with
+**tile-independent acceptance**, a Loop contract, run commands, and the gold council's inherited standing
+conditions (Witness re-witness, Mason count==input). Reuses the existing
+`playwright_verify_event_schedule.py` + the bake's one-writer script (a new schedule emit arm sibling to
+the `REFERENCE_LAYERS` loop — the schedule is a document, not a FeatureCollection). **THEN the user said
+"convene the council on the plan" → COUNCIL FULL CLEAR (Steward-chaired, full six, 1 round, no andons).**
+All five worker seats `clear`, each grounding its verdict in live re-verification (Witness re-confirmed
+the DB + the 1-of-7-feature-backed-tags finding; Warden confirmed the 6-anchor migration is *required* by
+the card's own `place_key`→`source_key` mechanism, not scope creep; Mason confirmed no FK/CHECK/drop;
+Quartermaster confirmed one card + reuse-true; Scribe confirmed executor-runnable + voice). Two
+non-blocking precision notes folded into the plan before clearing: (Quartermaster) the schedule bake arm
+is a *sibling emit block*, NOT a `REFERENCE_LAYERS` entry; (Witness) acceptance (b) must add a NEW
+tile-independent `getSource(...).serialize()` assertion, not inherit
+`playwright_verify_event_schedule.py`'s render-dependent pattern (copy `playwright_verify_baked_reference_author.py`).
+Receipt: `brain/output/council/sprint07_tables_execution_plan_review_20260607.md`; clearance hash in
+`.claude/.council-cleared`. **NEXT (user's, per the gold precedent):** commit pause → ralph loop on Slice
+1. This turn touched only `brain/` + `.claude/.council-cleared` (no `website/`/`mvp/`), so the Stop-hook
+gate did not self-fire; nothing committed.
+
+-----
+
 **2026-06-07 (GOLD SPINE CLOSED OUT — deprecated POI objects DROPPED after a rename-and-reverify test;
 DB + `mvp/init_db.sql`, UNCOMMITTED, NO bump owed).** The user pulled the one item the ralph loop held
 back for a human: dropping the deprecated `core.pois` table + `publish.pois` view. **Verified safe by
