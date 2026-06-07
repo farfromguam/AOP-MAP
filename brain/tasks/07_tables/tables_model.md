@@ -302,6 +302,33 @@ comment, these are recorded, not fixed:
 ## Slices
 
 ### Slice 1 — `core.events` + the 13 sessions; bake the schedule from the DB
+> **✅ DONE 2026-06-07 (CODE+DB, UNCOMMITTED, NO shell bump owed).** All acceptance green by
+> observation: (a) baked `aop_event_schedule.json` field-equivalent to HEAD — 13/13 sessions
+> identical, locations identical modulo the **one intended delta** (`#pavilion` now carries
+> baked `coordinates` `[-85.7482512,35.0907264]`; HEAD resolved it via a runtime tag binding —
+> the gold win, the join is now baked); (b) tile-independent `--baked` verifier PASS — the
+> `event-schedule` source loads (20 features), 13 sessions present, the `#pavilion` session
+> resolves to the baked pavilion point, 0 console errors; (c) `publish.features WHERE
+> layer='event'` = 0 (gate holds); `count==input` on import (13/13 sessions, 7/7 locations);
+> **fresh-volume reproducibility proven** (full `init_db.sql` into a throwaway DB exit 0,
+> `core.events` + trigger + 4 indexes present); served files **restored byte-identical to HEAD**.
+> Shipped: `core.events` DDL (`init_db.sql` live volume + fresh); new
+> `mvp/scripts/import_event_schedule_to_core.py` (reuses the gold importer's SQL helpers; sessions
+> → `core.events`, locations → `core.features`); schedule emit arm in `export_publish_geojson.sh`
+> (sibling to the `REFERENCE_LAYERS` loop, same served filename → no `main.js` change); `--baked`
+> tile-independent mode in `playwright_verify_event_schedule.py`.
+> **Model refinement (faithful to the card, recorded):** `place_key` stores the **`#location`
+> tag** verbatim (the user's model: the schedule cites a `#tag`), and the place is found by the
+> tag carried in `core.features.attrs->'event_location'->>'tag'`. The card's "soft-references
+> `core.features.source_key`" is honored in spirit — a stable soft key, **no FK, no CHECK** — but
+> the resolution key is the `#tag`, not the `source_key`, because the tag is what survives a place
+> moving and is the no-limiting store-and-resolve-later reference (an occurrence whose tag isn't
+> yet bound bakes a "Missing #tag" session, never dropped — today's viewer behavior).
+> **OWED (flagged, not slice 1):** the umbrella `event`/`schema`/`status`/`updated_at` wrapper is
+> bake-config in `export_publish_geojson.sh`, not yet a DB row — it gets a `core` home with event
+> CRUD (deferred V2). The editor's separate `#tag` binding (localStorage/`props.tag`) and the new
+> DB `attrs.event_location` tag should converge (rides gold slice 6, HELD).
+
 The hole: the WHEN junction. Stand it up and prove the schedule JSON becomes **bake output**,
 not hand-curated source — so it survives the gold one-writer bake.
 - Migrate the 6 coordinate anchors → `core.features` (`layer='event'`; non-publish), so all
@@ -346,6 +373,37 @@ not hand-curated source — so it survives the gold one-writer bake.
   report what's owed. Record on green.
 
 ### Slice 2 — `core.activities` + `activity_key` on `core.events`
+> **✅ DONE 2026-06-07 (CODE+DB, UNCOMMITTED, NO shell bump owed).** All acceptance green by
+> observation: **de-dup proof** — edited the `night_crawl` activity's description ONCE in
+> `core.activities`, re-baked, **both** occurrences (`fri-night-crawl` + `sat-night-crawl`) carried
+> the new detail while a 1:1 control (`driver_meeting`) stayed untouched (one row drives N
+> occurrences, no copies); `count==input` (13 sessions, **12 activities**, all 13 occurrences linked);
+> session-level baked fields **field-equivalent to HEAD** (the `activity` object is additive); every
+> baked session carries an `activity` object resolved from `core.activities`; tile-independent
+> `--baked` verifier still PASS (20 features, 13 sessions, pavilion resolves, 0 console errors — the
+> additive `activity` field doesn't break the viewer); **fresh-volume repro proven** (`init_db.sql`
+> exit 0, `core.activities` + `events.activity_key` + trigger present, **no FK** on `activity_key`);
+> served files **restored byte-identical to HEAD**.
+> Shipped: `core.activities` DDL + `core.events.activity_key` (`init_db.sql` live + fresh);
+> `import_event_schedule_to_core.py` extended (a curated `SESSION_ACTIVITY`/`ACTIVITIES` backfill +
+> `core.activities` upsert + `activity_key` on the session upsert); the bake's session arm extended
+> to carry the resolved `activity` (LEFT JOIN, an unmatched key keeps its `key` and is never dropped).
+> **De-dup scope (recorded, evidence-tight):** only the card-cited genuine recurrence collapses —
+> **Night Crawl** runs Fri+Sat → ONE activity, two occurrences. The other 11 sessions are one-offs
+> today, each a **first-class reusable record** (the reusable identity the user attaches grade/length/
+> gate-list to, and future occurrences cite). I did **not** invent content merges the user hasn't
+> sanctioned (e.g. did NOT merge the two registration sessions — their content differs).
+> **OWED (flagged, NOT slice 2):** the viewer does not yet RENDER activity detail — `activity` rides
+> in the baked file + `core.activities` but `eventScheduleToGeojson` doesn't carry it into the map
+> feature props (that's a UI slice + a `main.js` change + a shell bump, deferred); the activities'
+> "specific data" (grade/length/gate list) is the user's content to author into `core.activities`
+> (`description`/`attrs` start empty).
+> **Verification note:** the de-dup proof + the `--baked` check **transiently re-bake then restore** the
+> served files; the durable resting state is byte-identical to HEAD (confirmed by `cksum`). Run the
+> Witness (which re-bakes) **alone**, not concurrently with seats that assert on working-tree
+> cleanliness — a concurrent Slice-2 review false-alarmed by sampling the tree mid-re-bake.
+> **Council: FULL CLEAR (full six)** — receipt `brain/output/council/sprint07_tables_slice2_review_20260607.md`.
+
 The reusable WHAT. The schedule JSON already duplicates activity content inline
 (`fri-night-crawl` / `sat-night-crawl` are two copies of "Night Crawl" — Quartermaster
 corroboration); this de-duplicates exactly that.

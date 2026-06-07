@@ -195,6 +195,57 @@ CREATE TABLE IF NOT EXISTS core.features (
   updated_at timestamptz DEFAULT now()
 );
 
+-- The WHEN junction (going gold, sprint 07 slice 1). One row per occurrence/
+-- session of an event. place_key is the schedule #location tag, a SOFT reference
+-- resolved at bake against core.features.attrs->'event_location'->>'tag' -- plain
+-- text, NO FK, NO CHECK: an occurrence pointing at a not-yet-present place is
+-- stored and resolved later, never rejected (C5/no_limiting_code_mvp). event_id is
+-- the umbrella event (soft). attrs holds inspired_by/route_tags and any other
+-- session field with no allowlist. The bake (export_publish_geojson.sh) rebuilds
+-- aop_event_schedule.json from this table + the event-place rows in core.features.
+-- Card: brain/tasks/07_tables/tables_model.md.
+CREATE TABLE IF NOT EXISTS core.events (
+  id serial PRIMARY KEY,
+  event_id text,
+  source_key text UNIQUE,
+  sort_order integer,
+  title text,
+  date_label text,
+  start_local text,
+  time_label text,
+  status text,
+  place_key text,
+  activity_key text,
+  attrs jsonb,
+  archived_at timestamptz,
+  source_id integer REFERENCES source_register.sources(id),
+  notes text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- The reusable, place-agnostic WHAT (going gold, sprint 07 slice 2). One row per
+-- reusable activity (Night Crawl, hill climb, RC rally...). core.events.activity_key
+-- SOFT-references activity_key -- plain text, NO FK, NO CHECK: an occurrence citing
+-- a not-yet-defined activity is stored and resolved later, never rejected
+-- (C5/no_limiting_code_mvp). NO geometry, NO place column -- the place binds on the
+-- OCCURRENCE (core.events), never on the activity (it can move places). Same CMFS
+-- shape as core.features MINUS geometry -- one vocabulary. attrs holds the activity's
+-- "specific data" (grade, length, gate list) with no allowlist. Card: 07_tables.
+CREATE TABLE IF NOT EXISTS core.activities (
+  id serial PRIMARY KEY,
+  activity_key text UNIQUE,
+  name text,
+  kind text,
+  description text,
+  attrs jsonb,
+  source_id integer REFERENCES source_register.sources(id),
+  archived_at timestamptz,
+  notes text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS raw.gpx_captures (
   id serial PRIMARY KEY,
   source_id integer REFERENCES source_register.sources(id),
@@ -274,6 +325,9 @@ CREATE INDEX IF NOT EXISTS hazards_geom_gix           ON core.hazards           
 CREATE INDEX IF NOT EXISTS trailheads_geom_gix        ON core.trailheads        USING GIST (geom);
 CREATE INDEX IF NOT EXISTS features_geom_gix           ON core.features          USING GIST (geom);
 CREATE INDEX IF NOT EXISTS features_layer_idx          ON core.features          (layer);
+CREATE INDEX IF NOT EXISTS events_sort_idx             ON core.events            (sort_order);
+CREATE INDEX IF NOT EXISTS events_place_key_idx        ON core.events            (place_key);
+CREATE INDEX IF NOT EXISTS events_activity_key_idx     ON core.events            (activity_key);
 CREATE INDEX IF NOT EXISTS print_annotations_geom_gix ON core.print_annotations USING GIST (geom);
 CREATE INDEX IF NOT EXISTS field_tracks_geom_gix      ON core.field_tracks      USING GIST (geom);
 
@@ -306,6 +360,8 @@ BEGIN
     'core.hazards',
     'core.trailheads',
     'core.features',
+    'core.events',
+    'core.activities',
     'core.print_annotations',
     'core.field_tracks'
   ]

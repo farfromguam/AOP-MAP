@@ -35,8 +35,94 @@ Plan + sign-off: `brain/tasks/06_going_gold/gold_migration.md`. Review receipts:
 
 -----
 
+**2026-06-07 (COUNCIL CONSULT — "how do we have so many tables, I am at a loss"; BRAIN ONLY,
+UNCOMMITTED).** User saw the full 21-object diagram and felt lost. Convened Witness·Quartermaster·Mason
+(Steward-chaired) over the live DB. **Answer: not duplication, layering + old furniture.** Of 21: 6 are
+`publish.*` VIEWS (gates, not storage), 2 provenance (`source_register`), 2 capture (`raw`); the live
+product runs on ~**5 tables** — `core.features` (147 rows), `core.events` (13), `core.activities` (12),
+`source_register.sources`/`feature_sources`. The **8 legacy per-layer `core.*` tables**
+(`trail_centerlines` 4 demo rows, `trailheads` 1, `park_boundaries` 2, `parcels` 2, `hazards` 0,
+`observations` 1, `field_tracks` 2, `print_annotations` 0) are the OLD rigid one-table-per-geometry-type
+MVP schema the gold migration **already replaced** with the single flexible `core.features` — they hold
+stale/demo data, not the live data (120 real trails live in `core.features`, not `trail_centerlines`).
+**Witness corrected two of my stated premises:** `core.features` is **147** rows not 141; the legacy
+tables are NOT drained-empty (only `hazards`+`print_annotations` are) — they hold stale MVP scaffolding
+and were never the gold source (gold imported from served `.geojson`). The trend is **shrinking**, not
+growing (gold collapsed 5 layers + POIs into features and dropped `core.pois`). **Recorded:** new
+deferred card `tasks/10_deferred/retire_legacy_geo_tables.md` (retire the 8 legacy tables one-at-a-time
+via the proven `core.pois` rename-and-reverify drop — gating `park_boundaries`/`parcels` on a
+content-migrated check); a "Why it looks like a lot" annotation added to `tasks/07_tables/tables_diagram.md`.
+Dropping the 8 + their views takes the visible count 21 → ~13 without touching the live product.
+
+-----
+
+**2026-06-07 (SPRINT 07 RALPH LOOP — SLICE 2 CLOSED: `core.activities` + `activity_key`, the reusable
+WHAT de-duplicated; CODE+DB, UNCOMMITTED, NO shell bump owed).** User: *"continue into Slice 2."* Did
+Slice 2 of the `07_tables/tables_model.md` plan. **Shipped:** `core.activities` (place-agnostic reusable
+WHAT — `activity_key UNIQUE`, name/kind/description/attrs, **no geom, no place column, no FK/CHECK**) +
+`core.events.activity_key` (soft ref) in `init_db.sql` (live + fresh-volume proven);
+`import_event_schedule_to_core.py` extended with a curated `SESSION_ACTIVITY`/`ACTIVITIES` backfill (12
+activities for 13 sessions — only the card-cited **Night Crawl** collapses Fri+Sat into one activity; the
+rest stay one-offs, I did NOT invent content merges) + `core.activities` upsert + `activity_key` on the
+session upsert; the bake's session arm extended to carry the resolved `activity` object (LEFT JOIN — an
+unmatched key keeps its `key`, never dropped). **Verified by observation (all green):** **de-dup proof**
+— edited `night_crawl` description ONCE → re-bake → **both** `fri-night-crawl`+`sat-night-crawl` carried
+it, 1:1 control untouched (one row drives N occurrences); `count==input` (13 sessions, 12 activities, all
+13 linked); session-level fields **field-equivalent to HEAD** (`activity` is additive); `--baked`
+tile-independent verifier still PASS (20 features, 13 sessions, pavilion resolves, 0 errors — additive
+field doesn't break the viewer); **fresh-volume repro proven** (exit 0, `core.activities` +
+`events.activity_key` + trigger, no FK on `activity_key`); served files **restored byte-identical to
+HEAD**. **OWED (flagged, NOT slice 2):** the viewer doesn't yet RENDER activity detail
+(`eventScheduleToGeojson` doesn't carry `activity` into props — a UI slice + `main.js` + a shell bump,
+deferred); the activities' "specific data" (grade/length/gate list) is the user's to author into
+`core.activities`. **Council: FULL CLEAR (full six).** Witness/Mason/Quartermaster cleared R1 (Witness
+re-ran the de-dup proof itself: one edit → both occurrences, control untouched); Warden+Scribe andon'd R1
+on a **concurrency race** — the Witness re-bakes the served files for its proof and restores at its end,
+and the read-only Warden/Scribe (spawned concurrently) sampled `git status` mid-re-bake and saw the served
+files dirty. Re-reviewed with no mutation running → both CLEAR (Warden confirmed `cksum` byte-identical to
+HEAD). **Process lesson (recorded in the receipt + card):** run the Witness (which mutates/re-bakes)
+**alone**, not concurrently with seats that assert on working-tree cleanliness. Receipt:
+`brain/output/council/sprint07_tables_slice2_review_20260607.md`. **The commit is the user's git gate.**
+**Sprint 07 migration SPINE (Slices 1+2) is COMPLETE.** Slice 3 is NOT a DDL slice (place-attached abouts
+= feature bodies, authored through the existing editor→core path). Only the flagged follow-ups remain:
+viewer RENDERING of activity detail (a UI slice + `main.js` + a shell bump), and the activities' specific
+data (grade/length/gate list) for the user to author.
+
+-----
+
+**2026-06-07 (SPRINT 07 RALPH LOOP — SLICE 1 CLOSED: `core.events` stood up, schedule baked from the
+DB; CODE+DB, UNCOMMITTED, NO shell bump owed).** User: *"begin the looping on the slices"* (after
+committing the plan, `7543790 "table plan"` — the commit pause). Did Slice 1 of the
+`07_tables/tables_model.md` execution plan end-to-end, one slice per the Loop contract. **Shipped:**
+`core.events` table (the WHEN junction; `source_key UNIQUE`, soft `place_key`=`#location` tag, `attrs`
+jsonb, **no FK/CHECK**) in `init_db.sql` (live volume + fresh-volume proven); new
+`mvp/scripts/import_event_schedule_to_core.py` (reuses the gold importer's SQL helpers — sessions →
+`core.events` [13], the 7 locations → `core.features`: 6 new `layer='event'` non-publish anchors + the
+`#pavilion` POI annotated with `attrs.event_location`); a schedule emit arm in
+`export_publish_geojson.sh` (sibling to the `REFERENCE_LAYERS` loop — the schedule is a document, not a
+FeatureCollection — same served filename `aop_event_schedule.json` → **no `main.js` change, no
+`sw.js`/`#appVersion` bump owed**); a `--baked` tile-independent mode in
+`playwright_verify_event_schedule.py` (reuses `wait_loaded` + `getSource('event-schedule').serialize()`,
+NO `queryRenderedFeatures`/`networkidle` — the Witness condition). **Verified by observation (all
+green):** (a) baked schedule field-equivalent to HEAD — 13/13 sessions identical, locations identical
+modulo the **one intended delta** (`#pavilion` now carries baked `coordinates`, HEAD used a runtime
+binding — the join is now baked from `core`); (b) `--baked` verifier PASS (event-schedule source loads
+20 features, 13 sessions, `#pavilion` session resolves to the pavilion point, 0 console errors); (c)
+`publish.features WHERE layer='event'` = 0 (gate holds); `count==input` (13/13, 7/7); **fresh-volume
+repro proven** (`init_db.sql` into a throwaway DB exit 0, `core.events`+trigger+4 indexes present);
+served files **restored byte-identical to HEAD** (production untouched — the DB migration is the durable
+change). **Model refinement (recorded in the card):** `place_key` = the `#tag` (user's model), place
+found via `core.features.attrs->'event_location'->>'tag'`; the card's "soft-ref `source_key`" honored in
+spirit (soft key, no FK) but keyed on the tag, the no-limiting store-and-resolve-later reference.
+**OWED (flagged, NOT slice 1):** umbrella event metadata is bake-config until it gets a `core` home
+(event CRUD, V2); the editor's localStorage `#tag` binding and the DB `attrs.event_location` tag should
+converge (rides gold slice 6, HELD). **The commit is the user's git gate.** **NEXT (loop):** convene the
+council done-review on Slice 1 (this turn), then Slice 2 — `core.activities` + `activity_key`.
+
+-----
+
 **2026-06-07 (SPRINT 07 REVIEWED + PREPPED — dependency verified landed, executable slice plan
-written; BRAIN ONLY, UNCOMMITTED, no code/DB written).** User: *"review 07 and prepare to work on it."*
+written; BRAIN ONLY, then COMMITTED by the user as `7543790`).** User: *"review 07 and prepare to work on it."*
 Reviewed `tasks/07_tables/tables_model.md` (council-cleared design, full six / 2 rounds) and **verified
 its dependency landed by observation**, not by the card's word: live DB `aop_map` shows `core.features`
 (141 rows, `source_key UNIQUE` + `attrs` + `archived_at`), `core.pois`/`publish.pois` dropped, the

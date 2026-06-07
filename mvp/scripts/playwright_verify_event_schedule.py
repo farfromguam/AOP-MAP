@@ -13,9 +13,16 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 from playwright_base import viewer_url, set_toggle, layer_visibility, rendered_count
+# Reuse the proven headless-safe load gate (set inside map.on('load'), which DOES
+# fire headless) -- the same gate the gold reference verifier uses.
+from playwright_verify_star_collector import wait_loaded
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# The #pavilion place point the baked schedule must resolve the registration
+# session to (core.features editorPois:aop-pavilion geom). Going-gold sprint 07.
+PAVILION_COORDS = [-85.7482512, 35.0907264]
 OUTPUT_DIR = REPO_ROOT / "brain" / "output"
 
 EVENT_LAYERS = [
@@ -118,7 +125,73 @@ def pavilion_building_coords(page) -> list[float] | None:
     )
 
 
+def verify_baked_tile_independent() -> int:
+    """Sprint 07 slice 1 acceptance (b): the schedule baked from core (sessions ->
+    core.events, locations -> core.features) loads in the viewer and the #pavilion
+    occurrence resolves to the pavilion place -- read tile-INDEPENDENTLY from the
+    map source data, never from rendered paint. Reuses `wait_loaded` + the
+    `getSource(...).serialize().data` technique proven in
+    playwright_verify_baked_reference_author.py. NO networkidle, NO
+    queryRenderedFeatures (this is why it does not reuse this file's render path).
+    Run after the bake, with the viewer served on :8001."""
+    console_errors: list[str] = []
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--enable-unsafe-swiftshader"])
+        page = browser.new_page()
+        page.on("console", lambda m: console_errors.append(m.text) if m.type == "error" else None)
+        print(f"Opening {viewer_url()} (tile-independent --baked check)")
+        page.goto(viewer_url())
+        wait_loaded(page)
+
+        feats = page.evaluate(
+            """() => {
+              const m = window.AOP_HOST_MAP;
+              const s = m && m.getSource('event-schedule');
+              if (!s) return null;
+              const data = s.serialize().data;
+              return ((data && data.features) || []).map((f) => ({
+                props: f.properties || {},
+                geom: f.geometry || null,
+              }));
+            }"""
+        )
+        check("viewer loaded the 'event-schedule' source tile-independently", bool(feats),
+              f"features={None if feats is None else len(feats)}")
+        feats = feats or []
+        sessions = [f for f in feats if f["props"].get("feature_kind") == "event_session"]
+        check("13 baked sessions present in the loaded source", len(sessions) == 13,
+              f"got {len(sessions)}")
+
+        # The occurrence->place join: a #pavilion session must resolve to the
+        # pavilion point (baked from core.features, not a runtime tag binding).
+        pav = next((f for f in sessions
+                    if f["props"].get("location_tag") == "#pavilion"), None)
+        coords = (pav or {}).get("geom", {}) or {}
+        coords = coords.get("coordinates") if coords.get("type") == "Point" else None
+        near = bool(coords) and abs(coords[0] - PAVILION_COORDS[0]) < 1e-6 and abs(coords[1] - PAVILION_COORDS[1]) < 1e-6
+        check("a #pavilion session resolves to the baked pavilion place point", near,
+              f"session '{(pav or {}).get('props',{}).get('title')}' coords={coords}")
+
+        # Place names survive the bake (the locations block rebuilt from core.features).
+        anchors = {f["props"].get("name") for f in feats if f["props"].get("feature_kind") == "event_anchor"}
+        check("baked event-place anchors carry their names",
+              "AOP Pavilion / G-Central" in anchors and "Observed Trailhead — segment 2" in anchors,
+              f"anchors={sorted(a for a in anchors if a)}")
+
+        check("no console errors during baked schedule load", not console_errors,
+              "; ".join(console_errors[:3]))
+        browser.close()
+
+    if check.failed:  # type: ignore[attr-defined]
+        print("baked event-schedule (tile-independent) verification: FAIL")
+        return 1
+    print("baked event-schedule (tile-independent) verification: PASS")
+    return 0
+
+
 def main() -> int:
+    if "--baked" in sys.argv:
+        return verify_baked_tile_independent()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     console_errors: list[str] = []
 
