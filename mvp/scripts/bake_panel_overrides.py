@@ -50,49 +50,24 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from datetime import date
 from pathlib import Path
 
+# One parser, two sinks: the schema/normalize contract lives in panel_overrides;
+# this file is the FILE sink, apply_panel_overrides_to_core.py is the DB sink.
+from panel_overrides import (
+    DEFAULT_CREATED_TARGET,
+    VIEW_STATE_KEYS,
+    load_json,
+    read_payload,
+    round_coords,
+    dumps_geom,
+    feature_by_id,
+    build_created_feature,
+)
+
 REPO = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO / "website" / "data"
-
-SCHEMA = "aop-panel-overrides-v1"
-COORD_DECIMALS = 5                      # match the served files (~1.1 m)
-DEFAULT_CREATED_TARGET = "aop_user_features.geojson"
-
-# Property keys the editor persists that are VIEW state or panel-internal, not
-# authored data -- never written into the served files. `_src` is the home-source
-# tag a created feature carries so this baker can route it to the right file.
-VIEW_STATE_KEYS = {"highlight", "__locked", "__group", "_id", "_src"}
-# Identity/facet keys the editor is allowed to write back onto a served feature.
-# (apply_file_edits writes any non-VIEW_STATE patch key; the panel's pickEditable
-# is the actual allowlist, so this stays in sync with EDITABLE_SERVED_KEYS there.)
-EDITABLE_KEYS = ["name", "description", "difficulty", "notes", "category", "tag"]
-
-
-def load_json(path: Path) -> dict:
-    with path.open() as fh:
-        return json.load(fh)
-
-
-def read_payload(arg: str) -> dict:
-    raw = json.load(sys.stdin) if arg == "-" else load_json(Path(arg))
-    if not isinstance(raw, dict):
-        raise SystemExit("Export payload must be a JSON object")
-    if raw.get("schema") != SCHEMA:
-        raise SystemExit(f"Unexpected schema {raw.get('schema')!r} (want {SCHEMA!r})")
-    return raw
-
-
-def round_coords(coords):
-    if isinstance(coords, (int, float)):
-        return round(coords, COORD_DECIMALS)
-    return [round_coords(c) for c in coords]
-
-
-def dumps_geom(g) -> str:
-    return json.dumps(g, sort_keys=True)
 
 
 def write_fc(path: Path, data: dict) -> None:
@@ -105,13 +80,6 @@ def write_fc(path: Path, data: dict) -> None:
         meta["generated"] = date.today().isoformat()
     with path.open("w") as fh:
         json.dump(data, fh, ensure_ascii=False, separators=(",", ":"))
-
-
-def feature_by_id(features: list, fid: str):
-    for feat in features:
-        if str((feat.get("properties") or {}).get("id")) == str(fid):
-            return feat
-    return None
 
 
 def bake_edits(payload: dict, stamp: bool, today: str):
@@ -164,40 +132,6 @@ def apply_file_edits(path: Path, entries: list, stamp: bool, today: str, dry: bo
     if (changed_props or changed_geom) and not dry:
         write_fc(path, data)
     return {"file": path.name, "edited": changed_props, "moved": changed_geom, "missing": missing}
-
-
-def geom_kind(geometry: dict) -> str:
-    t = (geometry or {}).get("type")
-    return {"Point": "poi", "LineString": "trail", "Polygon": "area"}.get(t, "poi")
-
-
-def build_created_feature(raw: dict, today: str):
-    """A drawn feature -> a canonical-first served feature (or None if no id)."""
-    props_in = dict(raw.get("properties") or {})
-    canonical_id = props_in.get("_id") or props_in.get("id")
-    if canonical_id is None:
-        return None
-    clean = {k: v for k, v in props_in.items() if k not in VIEW_STATE_KEYS}
-    # canonical-first, editor provenance defaults (don't overwrite explicit values)
-    out_props = {
-        "id": str(canonical_id),
-        "name": clean.get("name") or "Untitled",
-        "description": clean.get("description", ""),
-        "kind": clean.get("kind") or geom_kind(raw.get("geometry")),
-        "source": clean.get("source") or "AOP editor (drawn)",
-        "confidence": clean.get("confidence") or "observed",
-        "permission": clean.get("permission") or "AOP first-party",
-        "status": clean.get("status") or "core",
-        "last_checked": clean.get("last_checked") or today,
-    }
-    for k, v in clean.items():            # carry any extra facet props (difficulty, notes…)
-        out_props.setdefault(k, v)
-    out_props.pop("id", None)             # avoid dup from the loop above
-    return {
-        "type": "Feature",
-        "geometry": {"type": raw["geometry"]["type"], "coordinates": round_coords(raw["geometry"]["coordinates"])},
-        "properties": {"id": str(canonical_id), **out_props},
-    }
 
 
 def created_target_file(props: dict, sources: dict, default_file: str) -> str:

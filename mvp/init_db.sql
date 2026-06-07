@@ -178,6 +178,14 @@ CREATE TABLE IF NOT EXISTS core.pois (
   confidence text,
   permission text,
   publish_status text,
+  -- The stable external identity = the panel export's "<source>:<canonical id>"
+  -- string. The author path (apply_panel_overrides_to_core.py) upserts
+  -- ON CONFLICT (source_key), so matching is deterministic and idempotent
+  -- regardless of the serial id. Card: 06_going_gold/gold_migration.md (slice 1).
+  source_key text UNIQUE,
+  -- Soft-delete. A panel delete[] ARCHIVES (sets archived_at); it never
+  -- hard-deletes. publish.pois excludes archived rows.
+  archived_at timestamptz,
   source_id integer REFERENCES source_register.sources(id),
   geom geometry(Point,4326),
   notes text,
@@ -251,7 +259,8 @@ CREATE OR REPLACE VIEW publish.pois AS
   FROM core.pois
   WHERE is_destination = true
     AND permission = 'publish'
-    AND publish_status = 'publish';
+    AND publish_status = 'publish'
+    AND archived_at IS NULL;
 
 -- Indexes -----------------------------------------------------------------
 

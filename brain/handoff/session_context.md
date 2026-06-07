@@ -4,6 +4,107 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+## ▶ ACTIVE — the Going-Gold ralph loop (committed 2026-06-06; START A CLEAN SESSION)
+
+The gold-migration plan is council-cleared (full six, 4 rounds) **and committed**. Run it in a
+**fresh session** — this one is context-heavy, and the plan is built to be re-read fresh each
+iteration; a fresh executor + fresh verification is the council's own principle (the producer must
+not self-verify).
+
+**Loop prompt** (feed verbatim each iteration):
+> Read `brain/tasks/06_going_gold/gold_migration.md`. Obey its **Loop contract**. Do the **next
+> incomplete slice** (start at Slice 1), verify it by its tile-independent acceptance, **Record on
+> green**, then stop. Stop at the **Retirement step** (Slice 6 is HELD). Do **NOT** commit or bump
+> `sw.js`/`#appVersion` — report what's owed.
+
+**Conditions the loop inherits (from the council, non-negotiable):**
+- **Witness** — the apply script + the five `playwright_verify_baked_*_author.py` don't exist yet;
+  the loop writes them to the `playwright_verify_star_collector.py` pattern. **Re-witness Slice 1's
+  REAL verifier output before trusting any "green"** — "the script printed PASS" ≠ observation.
+- **Mason** — confirm the `count == input` (no silent zero-row write) acceptance actually runs
+  against a live apply before Slice 1 closes.
+
+Plan + sign-off: `brain/tasks/06_going_gold/gold_migration.md`. Review receipts:
+`brain/output/council/gold_migration_review_20260606.md`. DB: `docker compose -f mvp/docker-compose.yml up -d db`.
+
+-----
+
+**2026-06-06 (SPRINT 07 TABLES — design carded + COUNCIL CLEARED, full six, 2 rounds;
+BRAIN ONLY, UNCOMMITTED).** User: *"give me your thought on sprint 7 and present it to
+the council."* Sprint 7's stub `breif.md` asks how to connect the three models the user
+cares about — **where** (POI), **when** (calendar), **what** ("abouts": an about for AOP,
+rock warblers, to-town) — so the schedule can say "1:30pm hill climb at #hillclimb, the
+hillclimb has this specific data, re-used across event times." **My read, written to
+`tasks/07_tables/tables_model.md`:** the pattern is relational normalization; it resolves
+to **ONE new table.** WHERE = the gold `core.features` (+ JSONB `attrs` for a place's own
+data — the hillclimb's spec IS its feature attrs). WHEN = promote `aop_event_schedule.json`
+(13 sessions, already keyed by `location_tag`) into **`core.events`**, which **soft-references**
+`core.features.source_key` and becomes the **bake output** of the *existing* viewer resolver
+(`eventScheduleToGeojson`/`resolveEventLocation`, `main.js:6280-6357`) — extend it, don't
+rebuild. WHAT = **not a new model**: place-attached abouts are feature `description`/`attrs`
+bodies (rock warblers + AOP badge are already `brand_logo` points; to-town are
+`visitor_callout` points), and a place-less "About AOP" gets a **representative anchor point**,
+not `geom NULL`. **The one genuine fork left to the user:** does an activity (hill climb, RC
+rally) recur across *different* places (→ add a thin `core.activities` ref table) or bind to
+one place (→ no catalog; recommended start)? **Sequencing:** design-only — depends on
+`core.features` (gold slice 2+), so it doesn't collide with the active gold loop.
+**Council (Steward-chaired, full six):** R1 three andons — Witness (`#pavilion` resolves to
+seeded POI `aop_seed_pavilion`, not the 1010 building, rebound 2026-05-26), Quartermaster
+(the "list renders geom-less features" premise is false — the one list engine drops geom-less
+rows at `main.js:6287`/`:1264`; and `core.events` must be framed as extending the existing
+resolver), Mason (pin `place_key` as a plain-`text` soft reference, NOT an enforced Postgres
+`FOREIGN KEY` — that would reject unmatched rows, the C5 ban). All fixed; R2 all three
+re-cleared; Warden + Scribe clear R1 → **FULL CLEAR.** Receipt:
+`brain/output/council/sprint07_tables_review_20260606.md`. Touched only `brain/` (no
+`website/`/`mvp/`), so the Stop-hook gate did not self-fire; nothing committed.
+
+-----
+
+**2026-06-06 (RALPH LOOP — SLICE 1 CLOSED: POI author path proven end-to-end; CODE+DB,
+UNCOMMITTED, NO bump owed).** Did slice 1 of `06_going_gold/gold_migration.md` per the Loop
+contract. Built the AUTHOR→STORE link on `core.pois` and proved `edit → core → bake → serve →
+reload` by observation. **Shipped:** extracted the one parser into new
+`mvp/scripts/panel_overrides.py` (`SCHEMA`/`VIEW_STATE_KEYS`/`split_key`/`round_coords`/
+`feature_by_id`/`geom_kind`/`build_created_feature`/`read_payload(strict=…)`), refactored
+`bake_panel_overrides.py` to a thin importer (**byte-identical fixture diff, matching sha256** —
+behavior preserved, the diff IS the check since there's no baker unit test); new
+`mvp/scripts/apply_panel_overrides_to_core.py` (DB sink — upserts `edits[]`/`created[]` into
+`core.pois` `ON CONFLICT (source_key)`, archives `deleted[]`, **never** drops/skips/throws,
+**no `DELETE FROM core`**, asserts upserted-count==input via an `_applied` temp table); new
+headless-safe `mvp/scripts/playwright_verify_baked_pois_author.py` (reuses star_collector's
+`wait_loaded`/`open_poi_tab`; reads `published_destinations` DOM rows). **DDL (additive):**
+`core.pois` +`source_key text UNIQUE` +`archived_at timestamptz`; `publish.pois` +`archived_at
+IS NULL` — in `mvp/init_db.sql` (fresh volumes) AND applied by hand to the existing volume; the
+3 seed rows keyed in `seed_core_pois.sql` (`editorPois:aop-pavilion` etc.). **Verified by
+observation:** apply run1 = edits 1/1·created 1/1·deleted 1/1; run2 idempotent (4 rows, ids
+`1,2,3,5` unchanged); baked `publish.geojson` carried the edited Pavilion name+blurb on `layer=
+'poi'`, archived Ellis absent, non-publishable created POI absent (gate works); the author
+verifier **PASS, 0 console errors** (re-witnessed on the REAL DOM rows, the Witness condition);
+no CHECK/enum introduced; `source_register` editor row id 7 created. **Restored:** DB reverted
+(Pavilion text restored, Ellis un-archived); `website/data/publish.geojson` **byte-identical to
+committed HEAD** (production untouched). **OWED:** **nothing for the git gate beyond the
+commit** — NO shell asset (`index.html`/`js`/`css`/`sw.js`) was touched, so **no `#appVersion`/
+`sw.js` bump owed.** Commit is the user's git gate (untracked: `panel_overrides.py`,
+`apply_panel_overrides_to_core.py`, `playwright_verify_baked_pois_author.py`; modified:
+`bake_panel_overrides.py`, `seed_core_pois.sql`, `init_db.sql`). **⚠ FINDING for the next
+slices (not slice-1 scope):** `export_publish_geojson.sh` **drops** the hand-curated
+`park_boundaries` feature "Ellis Cemetery (inholding parcel)" (served id 5) — it lives only in
+`publish.geojson`, not in `core.park_boundaries`, so the DB bake erases it. The bake can't be the
+sole writer for boundaries until that polygon is migrated into `core`; same risk for any layer
+with served-only hand-curated rows. **Residue:** one archived, non-publishable test row left in
+`core.pois` (id 5 "Author Test Overlook") — archived not hard-deleted per the no-`DELETE FROM
+core` rule. **Council: FULL CLEAR (full six).** Warden/Quartermaster/Mason/Scribe cleared first
+pass; Witness pulled one andon — the STATE B viewer proof rested on producer narration and the
+verifier could silently degrade to baseline-PASS. Resolved: hardened
+`playwright_verify_baked_pois_author.py` with a `--require-author` mode (FAILs if the edit is
+absent; default no-flag run stays baseline-green for the durable suite), and a fresh Witness
+re-witnessed the author round-trip on its own apply→bake→verify run, then confirmed
+`publish.geojson` byte-identical to HEAD. Receipts:
+`brain/output/council/gold_migration_slice1_review_20260606.md`; clearance written to
+`.claude/.council-cleared`. **NEXT (loop):** slice 2 — `core.features` + buildings.
+
+-----
+
 **2026-06-06 (COUNCIL CLEARED THE GOLD PLAN — full six seats, 4 rounds; BRAIN ONLY,
 UNCOMMITTED).** User: *"have the council review your plan. stop when everyone is happy. we will
 pause commit then ralph loop at that point."* Ran the completion-gate done-review over

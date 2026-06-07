@@ -208,18 +208,43 @@ python3 mvp/scripts/playwright_verify_baked_pois_author.py   # the new headless-
 ```
 
 **Observable acceptance (tile-independent — per the Observable acceptance standard above):**
-- [ ] `panel_overrides.py` extracted; `bake_panel_overrides.py` imports it; the fixture-export diff (pre vs post refactor) is byte-identical (behavior preserved — there is no baker unit test, the diff IS the check).
-- [ ] `apply_panel_overrides_to_core.py` upserts `edits[]`/`created[]`/`deleted[]` into `core.pois` `ON CONFLICT (source_key)`; idempotent (re-run = no new rows).
-- [ ] `deleted[]` sets `archived_at`; `publish.pois` excludes archived; **no `DELETE` statement** in the apply script (grep clean).
-- [ ] Core sink drops nothing: grep the apply path for `raise`/`continue`/`return None` row-drops → none (unknown→text, missing→default, unparseable→`notes` flag).
-- [ ] No silent zero-row writes: `edits[]`/`created[]` UPSERT (`ON CONFLICT (source_key)`), never a bare `UPDATE`; assert matched-or-inserted count == input count (the grep can't see a zero-row UPDATE, so count it).
-- [ ] **Baked-file assertion:** after apply→bake, `website/data/publish.geojson` carries the applied edit's **new value** (changed `name`/`blurb`) on the right `layer='poi'` feature; an archived row is absent. (Browserless Python check.)
-- [ ] **Viewer assertion:** new `playwright_verify_baked_pois_author.py` (star_collector pattern — gates on the "publish feature(s) loaded" message; no `networkidle`/`queryRenderedFeatures`/`publishDataCache`) shows the edited value in the `published_destinations` DOM rows after reload. **PASS, 0 console errors.**
-- [ ] No CHECK/enum/JSONB-allowlist introduced (Mason re-grep); a `source_register.sources` row exists for editor-authored rows.
+- [x] `panel_overrides.py` extracted; `bake_panel_overrides.py` imports it; the fixture-export diff (pre vs post refactor) is byte-identical (behavior preserved — there is no baker unit test, the diff IS the check). — *observed 2026-06-06: same fixture (`/tmp/aop_fixture_export.json`) baked before vs after the extraction → identical sha256 `8702a446…78301d`.*
+- [x] `apply_panel_overrides_to_core.py` upserts `edits[]`/`created[]`/`deleted[]` into `core.pois` `ON CONFLICT (source_key)`; idempotent (re-run = no new rows). — *observed: run 1 then run 2 of the same export → `core.pois` stayed 4 rows, ids `1,2,3,5` unchanged.*
+- [x] `deleted[]` sets `archived_at`; `publish.pois` excludes archived; **no `DELETE` statement** in the apply script (grep clean). — *observed: Ellis (`editorPois:ellis-cemetery`) archived → dropped from `publish.pois`/`publish.geojson`; `grep -E "DELETE[[:space:]]+FROM"` on the apply script = 0.*
+- [x] Core sink drops nothing: grep the apply path for `raise`/`continue`/`return None` row-drops → none (unknown→text, missing→default, unparseable→`notes` flag). — *observed: `grep -E '\b(raise|continue)\b|return None'` on `apply_panel_overrides_to_core.py` = 0.*
+- [x] No silent zero-row writes: `edits[]`/`created[]` UPSERT (`ON CONFLICT (source_key)`), never a bare `UPDATE`; assert matched-or-inserted count == input count (the grep can't see a zero-row UPDATE, so count it). — *observed (live apply, `_applied` temp-table count): edits 1/1, created 1/1 both runs; script gates on `count==input`.*
+- [x] **Baked-file assertion:** after apply→bake, `website/data/publish.geojson` carries the applied edit's **new value** (changed `name`/`blurb`) on the right `layer='poi'` feature; an archived row is absent. (Browserless Python check.) — *observed: `poi` id 1 = `"AOP Pavilion (author-test)"` + blurb `AUTHORPATH-OK…`; Ellis (archived) + the non-publishable created POI both absent (gate works).*
+- [x] **Viewer assertion:** new `playwright_verify_baked_pois_author.py` (star_collector pattern — gates on the "publish feature(s) loaded" message; no `networkidle`/`queryRenderedFeatures`/`publishDataCache`) shows the edited value in the `published_destinations` DOM rows after reload. **PASS, 0 console errors.** — *observed: `published_destinations` row `pubpoi:1` name+subtitle carry the edited values; Ellis absent; 0 console errors → PASS. Re-witnessed by a fresh council Witness on its own apply→bake→verify run. Verifier hardened with a `--require-author` mode (FAILs if the edit is absent, so it can't silently degrade to baseline-PASS); default no-flag run stays baseline-green for the durable suite.*
+- [x] No CHECK/enum/JSONB-allowlist introduced (Mason re-grep); a `source_register.sources` row exists for editor-authored rows. — *observed: `core.pois` constraints = PK + `pois_source_key_key` UNIQUE + FK only (no CHECK); `source_register.sources` id 7 `'AOP web editor (apply)'`.*
 
 **Record on green:** tick the boxes above with the verifier output named; append a
 `handoff/session_context.md` line ("slice 1 closed: POI author path; owed: v-bump for any shell
 asset touched"). Report the owed version bump; do not perform it.
+
+> **SLICE 1 CLOSED — 2026-06-06.** All eight boxes green by observation (artifacts named inline).
+> Files: new `mvp/scripts/{panel_overrides.py, apply_panel_overrides_to_core.py,
+> playwright_verify_baked_pois_author.py}`; edited `mvp/scripts/bake_panel_overrides.py` (thin
+> importer), `mvp/scripts/seed_core_pois.sql` (+`source_key`), `mvp/init_db.sql`
+> (`core.pois` +`source_key UNIQUE`/`archived_at`; `publish.pois` +`archived_at IS NULL`). DB
+> (existing volume) carries the same DDL applied by hand + the 3 seed rows keyed.
+> **No shell asset touched → NO `sw.js`/`#appVersion` bump owed.** `website/data/publish.geojson`
+> restored byte-identical to committed HEAD (production untouched).
+> **⚠ Blocking finding for the bake-is-sole-writer goal (NOT slice-1 scope):** re-running
+> `export_publish_geojson.sh` **drops** the hand-curated `park_boundaries` feature
+> "Ellis Cemetery (inholding parcel)" (served id 5) because it exists ONLY in `publish.geojson`,
+> not in `core.park_boundaries`. The DB bake cannot yet be the sole writer for boundaries until
+> that polygon is migrated into `core` — fold into the slices that converge `core.features`
+> (the same "served-only feature" risk applies to any layer with hand-curated served rows).
+> **Residue:** one archived, non-publishable test row remains in `core.pois`
+> (id 5 `editorPois:u-authortest-1` "Author Test Overlook") — left archived, not hard-deleted,
+> per the no-`DELETE FROM core` rule; a human can purge it if desired.
+>
+> **Council: FULL CLEAR (full six, 2026-06-06).** Witness pulled one andon (the STATE B viewer
+> proof rested on producer narration + the verifier could silently degrade to baseline-PASS);
+> resolved by hardening the verifier with `--require-author` and a fresh Witness re-witnessing the
+> author round-trip on its own apply→bake→verify run, then confirming production byte-identical to
+> HEAD. Warden/Quartermaster/Mason/Scribe cleared first pass. Receipts:
+> `../../output/council/gold_migration_slice1_review_20260606.md`.
 
 -----
 
