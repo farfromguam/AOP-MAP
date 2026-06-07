@@ -1,18 +1,22 @@
 -- Bake-first slice seed: load a small, honest set of destination POIs into
--- core.pois so the DB -> publish.pois -> export -> publish.geojson -> viewer
--- pipeline has real input to prove end-to-end.
+-- core.features (layer='poi') so the DB -> publish.features -> export ->
+-- publish.geojson -> viewer pipeline has real input to prove end-to-end.
+--
+-- (Retirement step, 2026-06-06: core.pois was folded into the converged
+-- core.features; this seed now targets core.features layer='poi'. The filename
+-- is kept for its references; the table is core.features.)
 --
 -- These rows are derived (one-time) from existing website/data files:
 --   - AOP Pavilion        : aop_editor_seed_pois.geojson  (confirmed pavilion)
 --   - Ellis Cemetery       : aop_cemeteries.geojson         (parcel 110 008.04)
 --   - Proving Grounds cand.: aop_buildings.geojson          (665 Ellis Cove)
 --
--- Idempotent: rows are owned by the named seed source and deleted by that
--- source_id before re-insert, so re-running this script is safe.
+-- Idempotent via ON CONFLICT (source_key) -- re-running upserts, never
+-- duplicates, and never DELETEs from core (loop contract #4).
 --
 -- The Proving Grounds candidate is intentionally NOT publishable
 -- (permission='unknown', publish_status='candidate'): it must be EXCLUDED by
--- publish.pois, proving the gate works. Card:
+-- publish.features, proving the gate works. Card:
 -- brain/tasks/04_event_app/star_driven_poi_list.md.
 
 \set ON_ERROR_STOP on
@@ -33,20 +37,14 @@ WHERE NOT EXISTS (
   SELECT 1 FROM source_register.sources WHERE name = 'AOP bake-first POI seed'
 );
 
--- Clear any prior seed rows so this is a clean re-load.
-DELETE FROM core.pois
-WHERE source_id = (
-  SELECT id FROM source_register.sources WHERE name = 'AOP bake-first POI seed'
-);
-
 -- source_key = the stable external identity (the panel export's
 -- "<source>:<canonical id>"). The author path upserts ON CONFLICT (source_key),
 -- so an editor edit to one of these seeded destinations matches deterministically
--- regardless of the serial id. Card: 06_going_gold/gold_migration.md (slice 1).
-INSERT INTO core.pois
-  (name, kind, blurb, is_destination, status, confidence, permission,
+-- regardless of the serial id. Card: 06_going_gold/gold_migration.md.
+INSERT INTO core.features
+  (layer, name, kind, blurb, is_destination, status, confidence, permission,
    publish_status, source_key, source_id, geom, notes, last_verified)
-SELECT v.name, v.kind, v.blurb, v.is_destination, v.status, v.confidence,
+SELECT 'poi', v.name, v.kind, v.blurb, v.is_destination, v.status, v.confidence,
        v.permission, v.publish_status, v.source_key, s.id,
        ST_SetSRID(ST_MakePoint(v.lng, v.lat), 4326), v.notes, now()
 FROM source_register.sources s,
@@ -65,13 +63,21 @@ FROM source_register.sources s,
    NULL,
    true, 'candidate', 'low', 'unknown', 'candidate', 'editorPois:proving-grounds-candidate',
    -85.7456022, 35.0872181,
-   'Unconfirmed. 665 Ellis Cove building tagged Proving Grounds candidate from a hotspot read; must be excluded by publish.pois until AOP confirms.')
+   'Unconfirmed. 665 Ellis Cove building tagged Proving Grounds candidate from a hotspot read; must be excluded by publish.features until AOP confirms.')
 ) AS v(name, kind, blurb, is_destination, status, confidence, permission,
        publish_status, source_key, lng, lat, notes)
-WHERE s.name = 'AOP bake-first POI seed';
+WHERE s.name = 'AOP bake-first POI seed'
+ON CONFLICT (source_key) DO UPDATE SET
+  layer = EXCLUDED.layer, name = EXCLUDED.name, kind = EXCLUDED.kind,
+  blurb = EXCLUDED.blurb, is_destination = EXCLUDED.is_destination,
+  status = EXCLUDED.status, confidence = EXCLUDED.confidence,
+  permission = EXCLUDED.permission, publish_status = EXCLUDED.publish_status,
+  geom = EXCLUDED.geom, notes = EXCLUDED.notes, last_verified = now();
 
 COMMIT;
 
 -- Report what landed and what the publish gate lets through.
-SELECT name, publish_status, permission, is_destination FROM core.pois ORDER BY id;
-SELECT 'publish.pois ->' AS gate, name FROM publish.pois ORDER BY name;
+SELECT name, publish_status, permission, is_destination
+  FROM core.features WHERE layer = 'poi' ORDER BY name;
+SELECT 'publish.features(poi) ->' AS gate, name
+  FROM publish.features WHERE layer = 'poi' ORDER BY name;

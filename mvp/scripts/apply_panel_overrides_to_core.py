@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Apply right-panel editor edits into PostGIS core.pois (the DB SINK).
+"""Apply right-panel editor edits into PostGIS core.features (layer='poi'), the DB SINK.
+
+Retirement step (2026-06-06): core.pois was folded into the converged core.features
+(layer='poi'); this sink now upserts core.features and the bake reads publish.features.
+The match key (source_key) and all the no-limiting-code guarantees below are unchanged.
 
 This is the AUTHOR->STORE link for "going gold": the web editor's export
 (schema `aop-panel-overrides-v1`) is applied to `core` instead of baked into the
@@ -31,8 +35,8 @@ is this sink writes the DB, and it is PERMISSIVE where the file baker rejected:
     hard-delete of any core row anywhere here -- archive only. Archiving an
     absent key is a harmless no-op (logged, not an error).
 
-Slice 1 scope: the single door is core.pois (layer = 'poi'). Slices 2+ add the
-core.features doors (buildings, cemeteries, ...) to this same script.
+Scope: the POI door of core.features (layer = 'poi'). The buildings/cemeteries/...
+doors (other layers) are a future increment on this same script + module.
 
 Usage:
   apply_panel_overrides_to_core.py aop_panel_overrides.json
@@ -59,7 +63,7 @@ COMPOSE_FILE = REPO / "mvp" / "docker-compose.yml"
 # Provenance source for editor-authored / stub rows (mirrors seed_core_pois.sql).
 APPLY_SOURCE_NAME = "AOP web editor (apply)"
 
-# Editor editable key -> core.pois column. Keys NOT here (and not view state)
+# Editor editable key -> core.features column. Keys NOT here (and not view state)
 # are folded into `notes` so nothing is dropped (C5). `highlight` is view state
 # (VIEW_STATE_KEYS) -- never applied (a star is not a fact about the feature).
 # `notes` is handled specially (it is both an editable key and the catch-all
@@ -129,9 +133,10 @@ def edit_block(key: str, entry: dict, idx: int) -> str:
     if marker:
         insert_notes = f"{insert_notes} {marker}".strip()
 
-    # INSERT column/value lists (the absent-key path).
-    cols = ["source_key"]
-    vals = [sql_str(key)]
+    # INSERT column/value lists (the absent-key path). layer='poi' -- the POI door
+    # of the converged core.features (the Retirement step folded core.pois in).
+    cols = ["layer", "source_key"]
+    vals = ["'poi'", sql_str(key)]
     for col, val in mapped.items():
         cols.append(col)
         vals.append(sql_str(val))
@@ -157,14 +162,14 @@ def edit_block(key: str, entry: dict, idx: int) -> str:
     elif marker:
         # preserve any existing note, refresh the attrs marker idempotently
         sets.append(
-            "notes = NULLIF(trim(regexp_replace(COALESCE(core.pois.notes, ''), "
+            "notes = NULLIF(trim(regexp_replace(COALESCE(core.features.notes, ''), "
             f"'\\s*\\[attrs:[^\\]]*\\]', '', 'g')) || ' ' || {sql_str(marker)}, '')"
         )
     sets.append("last_verified = now()")
 
     return (
         f"WITH up AS (\n"
-        f"  INSERT INTO core.pois ({', '.join(cols)})\n"
+        f"  INSERT INTO core.features ({', '.join(cols)})\n"
         f"  VALUES ({', '.join(vals)})\n"
         f"  ON CONFLICT (source_key) DO UPDATE SET {', '.join(sets)}\n"
         f"  RETURNING source_key, (xmax = 0) AS inserted\n"
@@ -218,11 +223,11 @@ def created_block(raw: dict, idx: int) -> str:
     notes_parts = [p for p in (base_notes, note_flag or None, attrs_marker(extras) or None) if p]
     notes_val = " ".join(str(p) for p in notes_parts) if notes_parts else None
 
-    cols = ["source_key", "name", "blurb", "kind", "is_destination", "status",
+    cols = ["layer", "source_key", "name", "blurb", "kind", "is_destination", "status",
             "confidence", "permission", "publish_status", "geom", "notes",
             "source_id", "last_verified"]
     vals = [
-        sql_str(source_key), sql_str(name), sql_str(blurb), sql_str(kind),
+        "'poi'", sql_str(source_key), sql_str(name), sql_str(blurb), sql_str(kind),
         is_destination, sql_str(status), sql_str(confidence), sql_str(permission),
         sql_str(publish_status), geom_sql, sql_str(notes_val),
         f"(SELECT id FROM source_register.sources WHERE name = {sql_str(APPLY_SOURCE_NAME)})",
@@ -233,12 +238,12 @@ def created_block(raw: dict, idx: int) -> str:
         "is_destination = EXCLUDED.is_destination", "status = EXCLUDED.status",
         "confidence = EXCLUDED.confidence", "permission = EXCLUDED.permission",
         "publish_status = EXCLUDED.publish_status",
-        "geom = COALESCE(EXCLUDED.geom, core.pois.geom)",
+        "geom = COALESCE(EXCLUDED.geom, core.features.geom)",
         "notes = EXCLUDED.notes", "last_verified = now()",
     ]
     return (
         f"WITH up AS (\n"
-        f"  INSERT INTO core.pois ({', '.join(cols)})\n"
+        f"  INSERT INTO core.features ({', '.join(cols)})\n"
         f"  VALUES ({', '.join(vals)})\n"
         f"  ON CONFLICT (source_key) DO UPDATE SET {', '.join(sets)}\n"
         f"  RETURNING source_key, (xmax = 0) AS inserted\n"
@@ -252,8 +257,8 @@ def delete_block(key: str) -> str:
     key matches zero rows and is a harmless no-op."""
     return (
         f"WITH del AS (\n"
-        f"  UPDATE core.pois SET archived_at = now()\n"
-        f"  WHERE source_key = {sql_str(key)} AND archived_at IS NULL\n"
+        f"  UPDATE core.features SET archived_at = now()\n"
+        f"  WHERE source_key = {sql_str(key)} AND layer = 'poi' AND archived_at IS NULL\n"
         f"  RETURNING source_key\n"
         f")\n"
         f"INSERT INTO _applied SELECT 'delete', source_key, NULL FROM del;"
@@ -276,7 +281,7 @@ def build_sql(payload: dict) -> tuple[str, int, int, int]:
         "  'mvp/scripts/apply_panel_overrides_to_core.py',\n"
         "  'internal -- authored via the web editor, applied to core',\n"
         "  'publish', 'mixed',\n"
-        "  'Rows authored in the web editor and applied to core.pois (going gold).'\n"
+        "  'Rows authored in the web editor and applied to core.features layer=poi (going gold).'\n"
         "WHERE NOT EXISTS (\n"
         f"  SELECT 1 FROM source_register.sources WHERE name = {sql_str(APPLY_SOURCE_NAME)}\n"
         ");"
@@ -294,8 +299,8 @@ def build_sql(payload: dict) -> tuple[str, int, int, int]:
     parts.append("SELECT 'EDITS_UPSERTED=' || count(*) FROM _applied WHERE kind = 'edit';")
     parts.append("SELECT 'CREATED_UPSERTED=' || count(*) FROM _applied WHERE kind = 'created';")
     parts.append("SELECT 'DELETED_ARCHIVED=' || count(*) FROM _applied WHERE kind = 'delete';")
-    parts.append("SELECT 'POIS_TOTAL=' || count(*) FROM core.pois;")
-    parts.append("SELECT 'POIS_ACTIVE=' || count(*) FROM core.pois WHERE archived_at IS NULL;")
+    parts.append("SELECT 'POIS_TOTAL=' || count(*) FROM core.features WHERE layer = 'poi';")
+    parts.append("SELECT 'POIS_ACTIVE=' || count(*) FROM core.features WHERE layer = 'poi' AND archived_at IS NULL;")
     parts.append("COMMIT;")
     return "\n".join(parts), len(edits), len(created), len(deleted)
 
@@ -345,11 +350,11 @@ def main() -> int:
     total = parse_count(out, "POIS_TOTAL")
     active = parse_count(out, "POIS_ACTIVE")
 
-    print("== applied panel overrides to core.pois ==")
+    print("== applied panel overrides to core.features (layer='poi') ==")
     print(f"  edits     upserted: {e} / {n_edits} input")
     print(f"  created   upserted: {c} / {n_created} input")
     print(f"  deleted  archived : {d} / {n_deleted} input (absent keys are no-ops)")
-    print(f"  core.pois total: {total}  active(not archived): {active}")
+    print(f"  core.features(poi) total: {total}  active(not archived): {active}")
 
     # No silent zero-row write: every edit/created upsert must touch exactly one
     # row (ON CONFLICT guarantees insert-or-update). If the counts fall short,

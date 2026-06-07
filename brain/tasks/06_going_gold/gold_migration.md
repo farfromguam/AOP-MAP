@@ -43,8 +43,21 @@ TL;DR:
    (or `core.features.archived_at`); the publish view excludes archived rows. Never
    `DELETE FROM core.*`. Never repurpose `is_destination`/`publish_status` to mean "deleted."
 5. **Observe, don't narrate (C4).** A slice closes only on a **tile-independent** verifier
-   (DOM/cache read or `node -c`/grep) — never on a `queryRenderedFeatures`/map-render check
-   (external tiles are blocked headless, so `map.on('load')` never fires).
+   (DOM/cache read, `map.getSource(...).serialize().data` read, or `node -c`/grep) — never on a
+   `queryRenderedFeatures`/paint/map-render check.
+   > **CORRECTED 2026-06-06 (council Witness andon, slice 2, observed on :8001):** the original
+   > parenthetical "external tiles are blocked headless, so `map.on('load')` never fires" is **FALSE**.
+   > `map.on('load')` DOES fire headless — the "publish feature(s) loaded" message is set INSIDE that
+   > block (`main.js:9937`), and `window.AOP_HOST_MAP` is a global. What tiles block is **paint /
+   > `queryRenderedFeatures` / `map.loaded()`**, NOT the `load` event or `addSource`/`addLayer`. So a
+   > map-source's loaded data IS readable tile-independently via
+   > `window.AOP_HOST_MAP.getSource('<id>').serialize().data.features` (observed: returns the 5 baked
+   > buildings, `loaded:false`, 0 console errors). Use `serialize().data.features` — NOT
+   > `querySourceFeatures` (it split a feature → 6) and NOT `queryRenderedFeatures` (paint-bound → 3).
+   > This correction propagates to the Observable acceptance standard below and slices 3–5. (The
+   > slice-1 "what's already built" caveat is accurate as written — it is about
+   > `queryRenderedFeatures`/`networkidle` being paint-bound + blocked headless, NOT the `load` event —
+   > so it needs no change.)
 6. **Record on green** (every slice — see each slice's "Record on green" line). Tick the
    slice's boxes here with the observed artifact named, and append a one-line
    `brain/handoff/session_context.md` entry: which slice closed, what's owed (incl. the bump).
@@ -128,10 +141,16 @@ and NEVER a map-render or closure read:
    edited value is present and archived rows are absent. No browser, no tiles, no map at all.
 2. **Viewer-consumes-it assertion (star_collector pattern):** a NEW
    `playwright_verify_baked_<layer>_author.py` that gates on the tile-independent
-   "publish feature(s) loaded" message (it fires independently of `map.on('load')`) and reads the
-   `published_destinations` DOM rows (`.poi-list-group[data-group-id="published_destinations"]`).
-   **NO** `wait_until="networkidle"`, **NO** `queryRenderedFeatures`, **NO** `publishDataCache`
-   (it is a module-local `let` at `main.js:457`, not a global — `page.evaluate` cannot reach it).
+   "publish feature(s) loaded" message (it is set inside `map.on('load')`, which **does** fire headless
+   — see the correction in Loop contract #5). Then read the loaded data **tile-independently** by ONE of:
+   - **Destination layers** (POIs and anything that surfaces in the ★ list): the
+     `published_destinations` DOM rows (`.poi-list-group[data-group-id="published_destinations"]`).
+   - **Reference / map-source layers** (buildings, cemeteries footprints, trail lines — they render as
+     MapLibre sources, not ★ rows): `window.AOP_HOST_MAP.getSource('<source-id>').serialize().data.features`
+     (observed working: 5 baked buildings, `loaded:false`, 0 errors). This reads the exact feature set the
+     viewer fetched and fed to the source — no paint, no tiles.
+   **NO** `wait_until="networkidle"`, **NO** `queryRenderedFeatures`/`querySourceFeatures` (paint-bound /
+   feature-splitting), **NO** `publishDataCache` (module-local `let` at `main.js:457`, not a global).
 
 **Do NOT reuse the existing render-bound verifiers** for a slice's green-stop —
 `playwright_verify_{buildings,cemeteries,visitor_context,trails,sfwda_trace}.py` all use
@@ -250,20 +269,96 @@ asset touched"). Report the owed version bump; do not perform it.
 
 ## Slice 2 — `core.features` + buildings as the first migrated layer
 
-- Create `core.features` (CMFS columns + JSONB `attrs` + `source_key UNIQUE` + `archived_at`) +
+> **AMENDED 2026-06-06 (council design consult, full six; Witness/Quartermaster/Mason andon).** The
+> original slice-2 text — its directives summarized here; the verbatim pre-amendment version is in git
+> history (commit `bf41eb5`) — said the bake should emit `publish.features` so that **`publish.geojson`**
+> carries the 5 buildings, and to teach `apply_panel_overrides_to_core.py` the buildings door. That
+> **drifted from the data + the northstar** and is corrected here. WHY
+> (all observed): the 5 buildings carry `permission='FEMA public data layer; no warranty; raw
+> reference context'` (3 facilities) / `'Private structure … not published as a destination'` (2
+> private), `publish_status='facility'`/`'presence_only'`, `_meta.maturity='silver'` — **NONE has
+> `permission='publish'`**, so the publish gate (correctly) yields **zero** buildings. Forcing them
+> into `publish.geojson` would inject FEMA "no warranty" / "not a destination" data into the publish
+> zone — a direct northstar violation (`map_northstar.md`: "every line carries whether it can be
+> published"). Buildings are a **reference layer** the viewer already reads from its **own** served
+> file (`main.js:8766` → `fetchJson('./data/aop_buildings.geojson')` → `map.addSource('fema-buildings')`).
+> The same holds for ALL of slices 3–5 (see the note after slice 5) — see also the corrected
+> per-layer note below. The original text was a 4-round council FULL CLEAR; the council that wrote it
+> reviewed plan structure, not the per-feature permission values, so the data conflict was missed.
+
+**Corrected plan:**
+- Create `core.features` (CMFS columns + JSONB `attrs` + `source_key UNIQUE` + `archived_at` +
+  mixed `geometry(Geometry,4326)` like `core.observations`/`core.print_annotations`) +
   `publish.features` view (CMFS gate `permission='publish' AND publish_status='publish' AND
-  archived_at IS NULL`). One-time import the 5 curated buildings from
-  `website/data/aop_buildings.geojson` → `core.features` with `source_register` rows; per-domain
-  keys (`facility_role`, `build_id`, …) go into `attrs`.
-- Extend `export_publish_geojson.sh` (the one bake — do not add a parallel bake) to emit
-  `publish.features`; the viewer reads the baked output for buildings; teach
-  `apply_panel_overrides_to_core.py` the buildings door (same module, `layer='buildings'`).
-- **Observable acceptance (per the standard — buildings register at map-load, so a render check
-  CANNOT pass headless; the existing `playwright_verify_buildings.py` reads the pre-bake source
-  file, so it does NOT prove the bake):**
-  - [ ] **Baked-file assertion:** `website/data/publish.geojson` carries the 5 curated buildings under `layer='buildings'` with their `attrs` (`facility_role`, `build_id`, …). (Browserless.)
-  - [ ] **Viewer assertion:** NEW `playwright_verify_baked_buildings_author.py` (star_collector pattern) confirms the viewer renders the baked buildings via the tile-independent surface. PASS, 0 console errors.
-- **Record on green** (as slice 1).
+  archived_at IS NULL`, **and it MUST `SELECT attrs` explicitly** — the existing publish views emit
+  fixed column lists and would drop `attrs` by omission, Mason). One-time import the 5 curated
+  buildings from `website/data/aop_buildings.geojson` → `core.features` with a **reference-tier**
+  `source_register.sources` row (license = the FEMA no-warranty string, publish_status non-publish —
+  none exists today). Keep each building's **TRUE** permission/publish_status (never coerce to
+  'publish'). Store the **full original `properties`** in `attrs` (so nothing is dropped); also
+  populate the spine columns for query/gate. Reusable generic importer
+  `import_layer_to_core_features.py` (serves slices 3–5 too).
+- Extend `export_publish_geojson.sh` (the **one** bake — do not add a parallel script) to ALSO emit
+  the **reference served file the viewer already reads** — `website/data/aop_buildings.geojson` —
+  from `core.features WHERE layer='buildings' AND archived_at IS NULL`. **No publish gate** on a
+  reference layer (the gate is publish-zone-only); the served file keeps its `_meta` wrapper so the
+  editor still badges it `silver` (run `stamp_maturity.py` after, per the existing pipeline).
+  Reconstruct properties = `attrs` overlaid with the editable spine columns under their original key
+  names (so future edits win; with zero edits the output is prop-faithful). Because the bake writes
+  the **same filename the viewer already reads**, there is **no `main.js` change → no `sw.js`/
+  `#appVersion` bump owed** for slice 2.
+- **Quartermaster condition (owed-note, NOT in this slice's diff):** `aop_buildings.geojson` already
+  has 3 dormant legacy writers (`import_fema_buildings.py`, the `rebake_canonical.py` CONFIG entry,
+  the `export_positioned_features.py` buildings branch). None runs in the day-of loop, so the bake is
+  the sole writer **in the loop** — but they must be **retired** so a hand-run can't clobber. The
+  `export_positioned_features.py` buildings branch is a working drag-edit path; it can only be retired
+  AFTER the buildings apply-door exists (`apply_panel_overrides_to_core.py` `layer='buildings'` with a
+  **layer-aware geom builder** — slice-1's `point_geom_sql` NULLs polygons, Mason). Carry the
+  apply-door + the 3-writer retirement as the next increment; slice 2 proves the **serve** path.
+- **Observable acceptance (per the corrected standard — `map.on('load')` DOES fire headless; tiles
+  block only paint/`queryRenderedFeatures`):**
+  - [x] **Baked-file assertion (browserless):** the regenerated `website/data/aop_buildings.geojson`
+    carries the 5 buildings (`kind='building'`), prop-by-prop equivalent to the committed file
+    (modulo provenance), AND a specific `attrs` **value** survives the round-trip (e.g. a facility's
+    `facility_role`, an `occupancy_class`) — not just feature count (Mason). — *observed 2026-06-06:
+    baked vs `git show HEAD:` → 5/5 features, id sets equal, **PROP+GEOM EQUIVALENCE PASS** (key sets +
+    values identical; geom maxdelta < 1e-6 at 9-decimal precision), `1010`'s `facility_role` =
+    "Pavilion / G-Central…" survived.*
+  - [x] **Viewer assertion:** `playwright_verify_baked_reference_author.py --layer buildings`
+    (star_collector pattern; generic across reference layers — generalized in slice 3 from the
+    original `playwright_verify_baked_buildings_author.py`) reads
+    `window.AOP_HOST_MAP.getSource('fema-buildings').serialize().data.features` and
+    asserts the 5 baked buildings + a distinguishing `attrs` value are present, 0 console errors. —
+    *observed: baseline PASS (5 buildings + facility_role, 0 errors); `--require-baked` marker
+    round-trip PASS — a `_slice2_marker=BAKED-OK` authored into `core.features` then baked appeared in
+    the viewer's loaded source on `1010`, proving edit→core→bake→serve→viewer (re-witnessed on the REAL
+    verifier output, the standing Witness condition). Marker removed + served files restored to HEAD.*
+  - [x] **Gate works:** `publish.features` returns **zero** buildings (they are reference, not
+    publish) — `publish.geojson` is unchanged by this slice. (Browserless SQL/file check.) — *observed:
+    `SELECT count(*) FROM publish.features WHERE layer='buildings'` = 0; `website/data/publish.geojson`
+    restored byte-identical to HEAD (`git status` clean for `website/`).*
+- **Record on green** (as slice 1). Re-witness on the REAL verifier output before trusting green
+  (standing Witness condition). **Done 2026-06-06** — see the SLICE 2 CLOSED block below.
+
+> **SLICE 2 CLOSED — 2026-06-06.** `core.features` + `publish.features` stood up; the 5 curated
+> buildings migrated into `core.features` (true reference permission; full original `properties` in
+> `attrs` so nothing dropped; `source_register` row id 9, reference tier); the bake regenerates the
+> served `aop_buildings.geojson` from `core.features` (sole writer the viewer reads — same filename, so
+> **NO `main.js` change → NO `sw.js`/`#appVersion` bump owed**). All three boxes green by observation
+> (artifacts inline). Slice-1 POI verifier unregressed (PASS). Files: new
+> `mvp/scripts/{import_layer_to_core_features.py, playwright_verify_baked_reference_author.py}` (the
+> verifier was generic from slice 3 on; in slice 2 it shipped as `playwright_verify_baked_buildings_author.py`); edited
+> `mvp/init_db.sql` (`core.features` table + `publish.features` view selecting `attrs` + index + trigger),
+> `mvp/scripts/export_publish_geojson.sh` (reference-layer bake loop). DB (existing volume) carries the
+> same DDL + the 5 building rows + source row 9. Served files restored byte-identical to HEAD (production
+> untouched — the user's git gate decides whether to adopt the baked `aop_buildings.geojson`).
+> **OWED (Quartermaster, next increment — NOT this slice):** 3 dormant legacy writers of
+> `aop_buildings.geojson` (`import_fema_buildings.py`, the `rebake_canonical.py` CONFIG entry, the
+> `export_positioned_features.py` buildings branch) must be retired so a hand-run can't clobber; the
+> `export_positioned_features.py` branch is a working drag-edit path, so it can only go once the
+> buildings apply-door exists (`apply_panel_overrides_to_core.py` `layer='buildings'` + a layer-aware
+> geom builder — slice-1's `point_geom_sql` NULLs polygons). None runs in the day-of loop, so the bake
+> is the sole writer in the loop today.
 
 -----
 
@@ -273,18 +368,133 @@ Same recipe as slice 2, **one layer per iteration**, each with its own named sou
 NEW headless-safe author verifier (per the Observable acceptance standard — **not** the existing
 render-bound verifier in the last column, which is listed only to show what NOT to reuse):
 
-| Slice | Layer | Source file | NEW author verifier (write this) | Existing render-bound verifier — do NOT reuse for the green-stop |
-|------|-------|-------------|----------------------------------|------------------------------------------------------------------|
-| 3 | cemeteries | `website/data/aop_cemeteries.geojson` | `playwright_verify_baked_cemeteries_author.py` | `playwright_verify_cemeteries.py` (`wait_until="load"`+`queryRenderedFeatures`) |
-| 4 | visitor callouts | `website/data/aop_visitor_context_callouts.geojson` | `playwright_verify_baked_visitor_author.py` | `playwright_verify_visitor_context.py` |
-| 5 | trails | `website/data/aop_trail_network.geojson` | `playwright_verify_baked_trails_author.py` | `playwright_verify_trails.py` / `playwright_verify_sfwda_trace.py` |
+> **Verifier (slice 3+): ONE generic `playwright_verify_baked_reference_author.py --layer <name>`** —
+> add a `LAYERS` config row (source id, expected count, distinct names, a distinguishing `attrs` value),
+> NOT a new per-layer file. (Slice 3 generalized the slice-2 buildings verifier into it.)
 
-Per slice: import the current file data → `core.features` (+ `source_register` rows; domain
-keys → `attrs`) → extend `export_publish_geojson.sh` to bake that layer from `publish.features` →
-green-stop on the TWO standard observations: **(a)** baked-file assertion (`publish.geojson`
-carries the layer's features + `attrs`, browserless) and **(b)** the NEW author verifier
-(star_collector pattern). **Record on green.** Do NOT fold the `core.pois` retire into these — it
-is its own step below.
+| Slice | Layer | Source file | Generic verifier invocation | Existing render-bound verifier — do NOT reuse for the green-stop |
+|------|-------|-------------|----------------------------------|------------------------------------------------------------------|
+| 3 | cemeteries | `website/data/aop_cemeteries.geojson` | `…reference_author.py --layer cemeteries` | `playwright_verify_cemeteries.py` (`wait_until="load"`+`queryRenderedFeatures`) |
+| 4 | visitor callouts | `website/data/aop_visitor_context_callouts.geojson` | `…reference_author.py --layer visitor` | `playwright_verify_visitor_context.py` |
+| 5 | trails | `website/data/aop_trail_network.geojson` | `…reference_author.py --layer trails` | `playwright_verify_trails.py` / `playwright_verify_sfwda_trace.py` |
+
+> **AMENDED 2026-06-06 (same council consult as slice 2).** Like buildings, **none** of these layers
+> pass the publish gate (observed): cemeteries `permission='parcel: public; burial roster: USGenWeb
+> non-commercial'` (+ the burial roster is **non-commercial-licensed — it must NEVER enter the publish
+> zone**), visitor callouts `'context annotation'`/`'brand owner'`, trail network `'SFWDA paper map —
+> permission TBD'` ×120 (`TBD` = non-publishable per the northstar). So each bakes to its **own served
+> file** (`aop_cemeteries.geojson`, `aop_visitor_context_callouts.geojson`, `aop_trail_network.geojson`
+> — the files the viewer already reads), NOT `publish.geojson`. `publish.features` keeps the gate and
+> stays buildings/reference-free.
+
+Per slice: import the current file data → `core.features` (+ a `source_register` row; **full original
+`properties` → `attrs`** so nothing drops) → extend `export_publish_geojson.sh` to bake that layer
+**from `core.features WHERE layer='<layer>'` to its own served file** (reference layers have no publish
+gate; carry the `_meta` wrapper) → green-stop on the TWO standard observations: **(a)** baked-file
+assertion (the layer's **own served file** carries its features + a specific `attrs` value, browserless)
+and **(b)** the NEW author verifier (star_collector pattern, reading the layer's map source via
+`getSource(...).serialize().data.features`, or the ★ rows for destination layers). **Record on green.**
+Do NOT fold the `core.pois` retire into these — it is its own step below. The cemetery slice MUST keep
+the non-commercial burial roster out of any publish-gated output.
+
+**Green-stop hygiene (Witness, slice 3):** the bake rewrites the served files in place, so the slice's
+LAST action MUST restore production to HEAD and ASSERT clean — `git show HEAD:<path> > <path>` for every
+served file the bake touched (`publish.geojson` + each reference file) and confirm `git status --short
+website/` is empty. The marker round-trip mutates `core.features` + `attrs` — remove the marker too. The
+slice is not green until production is byte-identical to HEAD (the user's git gate decides adoption).
+**The producer does the authoritative restore AFTER the council** — parallel review seats that re-bake
+can leave transient working-tree dirt; judge production state by `git show HEAD:` content, not raw
+`git status` mtime, and trust the producer's final restore+assert.
+
+> **⚠ PRODUCTION ADOPTION — two things the user/loop MUST know before adopting any baked output:**
+> 1. **`publish.geojson` is NOT yet bake-safe.** A full `export_publish_geojson.sh` regenerates
+>    `publish.geojson` from `core`, which **drops the hand-curated `park_boundaries` "Ellis Cemetery
+>    (inholding parcel)"** (served id 5) — it lives only in the served file, not in
+>    `core.park_boundaries` (the slice-1 finding, now triggered by every bake). Until that polygon is
+>    migrated into `core`, `publish.geojson` MUST be restored to HEAD after a bake; do **not** commit the
+>    bake's leaner `publish.geojson`. (This is why each slice restores it.) The reference layers
+>    (buildings/cemeteries/visitor) have no such gap — their core data is complete.
+> 2. **The reference files re-serialize.** The bake emits a **minified** `{type, features, _meta}` that
+>    is **semantically equal but byte-different** from the hand-curated HEAD files (different
+>    whitespace/key order; the top-level `_source`/`_sources_checked` import-provenance blocks are not
+>    re-emitted — per-feature provenance lives in `attrs` + `source_register`). "Restored byte-identical
+>    to HEAD" in each slice means the slice LEFT production at HEAD (proven, not adopted); ADOPTING the
+>    baked serialization is the user's git-gate choice and will change those files' bytes (not their
+>    meaning).
+
+### Slices 3–5 progress
+
+- [x] **Slice 3 — cemeteries.** Done 2026-06-06; council CLEAR. See the SLICE 3 CLOSED block below.
+- [x] **Slice 4 — visitor callouts.** Done 2026-06-06; council CLEAR. See the SLICE 4 CLOSED block below.
+- [x] **Slice 5 — trails.** Done 2026-06-06; council CLEAR. See the SLICE 5 CLOSED block below.
+
+> **SLICE 3 CLOSED — 2026-06-06.** 8 cemetery features (4 cemeteries × parcel-polygon + marker-point)
+> migrated into `core.features` (`layer='cemeteries'`, true reference permission; full original
+> `properties` → `attrs` incl. the burial roster fields; `source_register` row id 10, reference tier).
+> The cemetery feature keys are NOT unique on `parcel_id` (2 rows share each), so the generic importer
+> gained a **composite `--id-field` (`parcel_id,geom_role`)** → 8 distinct `source_key`s. The bake
+> regenerates the served `aop_cemeteries.geojson` from `core.features` (added to the `REFERENCE_LAYERS`
+> loop). **Verifier consolidated (Quartermaster):** the slice-2 `playwright_verify_baked_buildings_author.py`
+> was generalized into ONE `playwright_verify_baked_reference_author.py --layer <buildings|cemeteries>`
+> (LAYERS config) so slices 4–5 add config, not copies; the buildings-specific file was retired and its
+> slice-2 references updated. **Observed:** baked `aop_cemeteries.geojson` prop+geom equivalent to HEAD
+> (8/8, key sets+values identical, geom maxdelta<1e-6), `_meta` `reference` carried; Ellis
+> `burial_count=12`/`named_burial_count=9` survived in `attrs`. Viewer: `--layer cemeteries` baseline
+> PASS + `--require-baked` marker round-trip PASS (a `_baked_marker` authored into core→baked→appeared on
+> Ellis in the viewer's loaded source), 0 console errors. **Roster stays out of publish (the northstar
+> condition):** `publish.features WHERE layer='cemeteries'` = 0; the non-commercial roster lives only in
+> the reference served file (status quo — the bake is a faithful round-trip, adds/removes nothing) +
+> `core.features.attrs`, never the publish zone. Slices 1+2 verifiers unregressed. Served files restored
+> byte-identical to HEAD (production untouched). **NO shell asset touched → NO `sw.js`/`#appVersion` bump
+> owed.** Files: edited `mvp/scripts/import_layer_to_core_features.py` (composite key),
+> `mvp/scripts/export_publish_geojson.sh` (+cemeteries), new
+> `mvp/scripts/playwright_verify_baked_reference_author.py` (generic; replaces the buildings-specific one),
+> `brain/research/data_maturity_tiers.md` already noted the bake `_meta`-carry. DB carries the 8 rows +
+> source row 10. **OWED:** same as slice 2 (legacy-writer retirement is per-layer; cemeteries' served
+> file also has the `rebake_canonical.py`/`export_positioned_features.py` writers — dormant, out of the
+> day-of loop). The commit is the user's git gate. **NEXT (loop):** slice 4 — visitor callouts.
+
+> **SLICE 4 CLOSED — 2026-06-06.** 4 visitor-context features (2 `visitor_callout` polygons + 2
+> `brand_logo` points) migrated into `core.features` (`layer='visitor'`, true reference permission
+> 'context annotation'/'brand owner'; full `properties` → `attrs`; `source_register` row id 11). The
+> served file's `id` is unique across both kinds, so a single `--id-field id` keyed all 4. The viewer
+> splits the ONE served file by `kind` into TWO map sources (`visitor-context` + `brand-logos`), so the
+> generic verifier's `LAYERS['visitor'].source` is a **list** — `getSource(...).serialize()` summed
+> across both = 4 features (verifier extended to accept multiple sources per layer). **Real bug found +
+> fixed (the baked-file assertion earned its keep):** a callout `label` carries embedded newlines; the
+> reference bake's `COPY … TO STDOUT` applied TEXT-format backslash escaping, turning the JSON `\n` into
+> a literal `\\n` (newline corrupted). Fixed by switching the reference-layer bake from `COPY … TO
+> STDOUT` to a plain `SELECT` with `-At` (psql prints the json raw, no escaping). Buildings + cemeteries
+> re-verified prop-faithful after the change. **The pre-existing `publish.geojson` `COPY` has the same
+> latent risk** — noted in the bake script; no published feature carries a newline today (a finding, not
+> slice-4 scope). **Observed:** baked `aop_visitor_context_callouts.geojson` prop+geom equivalent to HEAD
+> (4/4, newline preserved), `_meta` `silver` carried; viewer `--layer visitor` baseline PASS +
+> `--require-baked` round-trip PASS (marker authored into core→baked→appeared on the AOP-badge logo in
+> the viewer's loaded source), 0 console errors; `publish.features WHERE layer='visitor'` = 0; slices
+> 1–3 unregressed. Served files restored byte-identical to HEAD. **NO shell asset touched → NO bump
+> owed.** Files: edited `mvp/scripts/export_publish_geojson.sh` (+visitor; `COPY`→`SELECT` newline fix),
+> `mvp/scripts/playwright_verify_baked_reference_author.py` (multi-source `visitor` config). DB carries
+> 4 rows + source row 11. **OWED:** per-layer legacy-writer retirement (same as slice 2/3). The commit
+> is the user's git gate. **NEXT (loop):** slice 5 — trails (120 features, `permission TBD`).
+
+> **SLICE 5 CLOSED — 2026-06-06.** All 120 trail-network LineStrings migrated into `core.features`
+> (`layer='trails'`, true reference permission `'SFWDA paper map — permission TBD'`; full `properties` →
+> `attrs` incl. each trail's load-bearing `color`/`difficulty`/`trail_number`; `source_register` row id
+> 12). Unique `id` (`sfwda-N`) → single `--id-field id`, 120 distinct keys. The bake regenerates the
+> served `aop_trail_network.geojson` from `core.features` (added to `REFERENCE_LAYERS`), carrying the
+> rich **gold** `_meta` (the `about`/`color_legend`/`difficulty_band` block) forward. **Observed:** baked
+> file prop+geom equivalent to HEAD (**120/120**, key sets+values identical, **max geom delta 0**),
+> `_meta` gold + `about` carried; viewer `--layer trails` baseline PASS (`getSource('aop-trail-network')
+> .serialize()` = 120, all trail names present, `sfwda-0` `color='#1f9d3a'` survived) + `--require-baked`
+> round-trip PASS (marker authored into core→baked→appeared on trail '15' in the viewer's loaded source),
+> 0 console errors; `publish.features WHERE layer='trails'` = 0; slices 1–4 unregressed. Served files
+> restored byte-identical to HEAD (authoritative producer restore after the council; see the PRODUCTION
+> ADOPTION warning). **NO shell asset touched → NO bump owed.** Files: edited
+> `mvp/scripts/export_publish_geojson.sh` (+trails), `mvp/scripts/playwright_verify_baked_reference_author.py`
+> (trails config). DB carries 120 rows + source row 12. `core.features` now holds all four reference
+> layers (buildings 5 + cemeteries 8 + visitor 4 + trails 120 = 137). **OWED:** per-layer legacy-writer
+> retirement (same as slices 2–4). The commit is the user's git gate. **NEXT (loop):** the Retirement
+> step — collapse `core.pois` into `core.features`, then STOP (slice 6 HELD).
 
 -----
 
@@ -298,6 +508,29 @@ Collapse `core.pois` into `core.features` and prove it, so the transitional two-
   `core.features`**, (b) `publish.pois` no longer appears in `export_publish_geojson.sh`, (c) the
   slice-1 author verifier passes **reading POIs from `publish.features`**. PASS.
 - **Record on green**, then **STOP** — slice 6 is held for a human.
+
+> **RETIREMENT CLOSED — 2026-06-06.** `core.pois` collapsed into `core.features` (`layer='poi'`).
+> **Critical correctness point handled:** dropping `publish.pois` from the bake while leaving the apply
+> path writing `core.pois` would have BROKEN the POI edit path (edits landing where the bake no longer
+> reads). So the collapse also **rewired the apply path + the seed** to `core.features`, not just the
+> bake. **Shipped:** (1) mirrored the 4 `core.pois` rows → `core.features` (`layer='poi'`, ON CONFLICT
+> (source_key), **no DELETE** per loop contract #4 — the `core.pois` rows STAY, deprecated); (2) rewired
+> `apply_panel_overrides_to_core.py` to upsert `core.features` (`layer='poi'`; delete scoped `AND
+> layer='poi'`); (3) `export_publish_geojson.sh` POI arm `FROM publish.pois` → `FROM publish.features
+> WHERE layer='poi'`; (4) rewrote `seed_core_pois.sql` to seed `core.features` via `ON CONFLICT` (no
+> `DELETE FROM core`, fresh-volume reproducible); (5) deprecation comments on `core.pois` + `publish.pois`
+> in `init_db.sql` (kept, not dropped — a DROP is a destructive op left to the user).
+> **Observable acceptance — all green:** (a) **zero `core.pois` rows unmirrored** in `core.features`
+> (observed: `count = 0`); (b) `publish.pois` **no longer in** `export_publish_geojson.sh` (grep: only
+> `publish.features WHERE layer='poi'`); (c) the slice-1 author verifier **PASS reading POIs from
+> `publish.features`** — baseline PASS AND `--require-author` PASS (an edit to Pavilion + a delete of
+> Ellis applied via the rewired apply → bake → the viewer's `published_destinations` showed the edited
+> name+blurb as `pubpoi:139` [the core.features serial, proving the new source] and Ellis absent, 0
+> console errors). Then core POIs re-migrated to faithful state + served files restored byte-identical to
+> HEAD. **NO shell asset touched → NO bump owed.** `core.features` now holds **141 features** (buildings
+> 5 + cemeteries 8 + visitor 4 + trails 120 + poi 4). **OWED (human, NOT the loop):** DROP the deprecated
+> `core.pois` table + `publish.pois` view once confirmed unused (destructive — the user's call); retire
+> the dormant per-layer legacy writers (slices 2–5 OWED). **The loop STOPS here — slice 6 is HELD.**
 
 -----
 

@@ -119,12 +119,24 @@ in the pipeline:
 rebake_canonical.py            # machine refresh from data/raw/ (wipes _meta)
 bake_panel_overrides.py        # human curation on top
 export_gold_trail_network.py   # trail gold block
+export_publish_geojson.sh      # ← going-gold bake from PostGIS core (slice 2+)
 stamp_maturity.py              # ← maturity stamp, last
 ```
 
 `rebake_canonical.py` now **carries a live `_meta` forward** (raw/ is pristine and
 has none), so a re-bake no longer silently drops the stamp; re-running
 `stamp_maturity.py` after any step is still the guaranteed-clean way to restore it.
+
+**Going gold (slice 2+):** `export_publish_geojson.sh` is now the sole writer of a
+reference layer's served file from PostGIS `core.features` (e.g. it rebuilds
+`aop_buildings.geojson` from `core.features WHERE layer='buildings'`). Like
+`rebake_canonical.py`, it **carries the live file's `_meta` forward** so the baked
+output still badges its tier (buildings stay `silver`) — the editor reads
+`_meta.maturity`, so the bake must never emit a tier-less file. Re-running
+`stamp_maturity.py` after the bake remains the guaranteed-clean restore. (The
+bake does NOT re-emit the original import provenance headers `_source`/
+`_sources_checked`/`_derived`; per-feature provenance lives in `core.features.attrs`
++ `source_register`, which is the gold provenance home.)
 
 **Editor** (`website/js/panel.js`) — the model groups the tree by maturity:
 `Gold data` and `Silver — pending review` sit at the top, above the

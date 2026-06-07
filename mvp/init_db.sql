@@ -168,6 +168,13 @@ CREATE TABLE IF NOT EXISTS core.field_tracks (
 -- axis; `blurb` is the visitor-facing copy that used to live in
 -- website/data/aop_poi_index.json. Card:
 -- brain/tasks/04_event_app/star_driven_poi_list.md.
+--
+-- DEPRECATED (Retirement step, 2026-06-06): POIs were folded into the converged
+-- core.features (layer='poi'). The author path (apply_panel_overrides_to_core.py),
+-- the seed (seed_core_pois.sql), and the bake all use core.features now; this
+-- table + the publish.pois view are kept (empty on fresh volumes; carrying the
+-- mirrored rows on the existing volume) but are no longer in the POI pipeline.
+-- A human may DROP them once confirmed unused (a destructive op left to the user).
 CREATE TABLE IF NOT EXISTS core.pois (
   id serial PRIMARY KEY,
   name text,
@@ -188,6 +195,39 @@ CREATE TABLE IF NOT EXISTS core.pois (
   archived_at timestamptz,
   source_id integer REFERENCES source_register.sources(id),
   geom geometry(Point,4326),
+  notes text,
+  last_verified timestamptz,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- The converged destination/feature table (going gold, slice 2+). ONE row shape
+-- for every migrated layer: the CMFS spine columns + a free-form JSONB `attrs`
+-- for per-domain extras (a building's facility_role, a trail's difficulty, a
+-- cemetery's burial_count). `attrs` has NO key allowlist and NO CHECK -- unknown
+-- domain keys are stored, never rejected (C5; mirrors core.parcels.metadata).
+-- `layer` names the source layer ('buildings', 'cemeteries', 'trails', 'poi'...).
+-- geom is mixed (Geometry) like core.observations/core.print_annotations because
+-- buildings are polygons, POIs points, trails lines. source_key + archived_at
+-- mirror core.pois (deterministic upsert identity + soft delete). The publish
+-- view is the ONLY gate; reference layers (buildings, etc.) bake to their own
+-- served file WITHOUT the publish gate. Card: 06_going_gold/gold_migration.md.
+CREATE TABLE IF NOT EXISTS core.features (
+  id serial PRIMARY KEY,
+  layer text,
+  name text,
+  kind text,
+  blurb text,
+  is_destination boolean DEFAULT false,
+  status text,
+  confidence text,
+  permission text,
+  publish_status text,
+  source_key text UNIQUE,
+  archived_at timestamptz,
+  source_id integer REFERENCES source_register.sources(id),
+  geom geometry(Geometry,4326),
+  attrs jsonb,
   notes text,
   last_verified timestamptz,
   created_at timestamptz DEFAULT now(),
@@ -249,16 +289,30 @@ CREATE OR REPLACE VIEW publish.hazards AS
   WHERE permission = 'publish'
     AND publish_status = 'publish';
 
--- The ★ POI list = destinations cleared for publish. The card states the gate
--- as `publish_status='publish' AND is_destination`; permission is added here
--- to match the sibling views and the northstar publish rule ("unknown
--- permission does not publish"). The baked publish.geojson is the only POI
--- source the static viewer should ultimately read.
+-- DEPRECATED (Retirement step, 2026-06-06): superseded by publish.features
+-- (layer='poi'), which the bake now reads. Kept for reference / the existing
+-- volume's mirrored rows; not in the POI pipeline. (Original note: the ★ POI
+-- list = destinations cleared for publish; permission added to match the sibling
+-- views + the northstar "unknown permission does not publish" rule.)
 CREATE OR REPLACE VIEW publish.pois AS
   SELECT id, name, kind, blurb, status, confidence, permission, geom
   FROM core.pois
   WHERE is_destination = true
     AND permission = 'publish'
+    AND publish_status = 'publish'
+    AND archived_at IS NULL;
+
+-- The converged publish view (going gold). Same publish gate as the sibling
+-- views, but it MUST select `attrs` explicitly -- the other publish views emit
+-- fixed column lists and would drop the JSONB by omission (the limiting-by-
+-- omission Mason caught). Reference layers (buildings/cemeteries/...) carry
+-- non-'publish' permission and so are CORRECTLY absent here; they bake to their
+-- own served files without this gate. Card: 06_going_gold/gold_migration.md.
+CREATE OR REPLACE VIEW publish.features AS
+  SELECT id, layer, name, kind, blurb, is_destination,
+         status, confidence, permission, publish_status, attrs, geom
+  FROM core.features
+  WHERE permission = 'publish'
     AND publish_status = 'publish'
     AND archived_at IS NULL;
 
@@ -271,6 +325,8 @@ CREATE INDEX IF NOT EXISTS observations_geom_gix      ON core.observations      
 CREATE INDEX IF NOT EXISTS hazards_geom_gix           ON core.hazards           USING GIST (geom);
 CREATE INDEX IF NOT EXISTS trailheads_geom_gix        ON core.trailheads        USING GIST (geom);
 CREATE INDEX IF NOT EXISTS pois_geom_gix               ON core.pois              USING GIST (geom);
+CREATE INDEX IF NOT EXISTS features_geom_gix           ON core.features          USING GIST (geom);
+CREATE INDEX IF NOT EXISTS features_layer_idx          ON core.features          (layer);
 CREATE INDEX IF NOT EXISTS print_annotations_geom_gix ON core.print_annotations USING GIST (geom);
 CREATE INDEX IF NOT EXISTS field_tracks_geom_gix      ON core.field_tracks      USING GIST (geom);
 
@@ -303,6 +359,7 @@ BEGIN
     'core.hazards',
     'core.trailheads',
     'core.pois',
+    'core.features',
     'core.print_annotations',
     'core.field_tracks'
   ]

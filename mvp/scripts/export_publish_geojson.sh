@@ -36,12 +36,23 @@ COPY (
       FROM publish.hazards
       UNION ALL
       SELECT id, name, NULL::text AS difficulty, NULL::text AS hazard_type, NULL::text AS severity, kind, blurb, status, confidence, permission, 'poi' AS layer, geom
-      FROM publish.pois
+      FROM publish.features WHERE layer = 'poi'
     ) t
   ) foo
 ) TO STDOUT;
 EOF
 )
+
+# Reference layers (going gold, slice 2+) bake to their OWN served file -- NOT
+# publish.geojson -- because they carry non-'publish' permission (buildings are
+# FEMA reference / private presence; the publish gate correctly excludes them).
+# Each is `{type, features (properties = attrs verbatim), _meta}` -- the canonical
+# served shape (rebake_canonical.py:240-254), with _meta carried forward from the
+# live file. The bake is the sole writer the viewer reads. ST_AsGeoJSON at 9
+# decimals (~0.1 mm) -- the source's 13 decimals are spurious FEMA precision.
+# Card: brain/tasks/06_going_gold/gold_migration.md (slice 2).
+#   layer-in-core | served file (relative to website/data)
+REFERENCE_LAYERS="buildings|aop_buildings.geojson cemeteries|aop_cemeteries.geojson visitor|aop_visitor_context_callouts.geojson trails|aop_trail_network.geojson"
 
 mkdir -p "$(dirname "$OUTPUT_FILE")"
 OUTPUT_TMP="$(mktemp "${OUTPUT_FILE}.tmp.XXXXXX")"
@@ -57,3 +68,49 @@ chmod 644 "$OUTPUT_FILE"
 trap - EXIT
 
 echo "Export complete: $OUTPUT_FILE"
+
+# --- Reference / map-source layers (own served file, no publish gate) ---------
+for pair in $REFERENCE_LAYERS; do
+  layer="${pair%%|*}"
+  fname="${pair##*|}"
+  out="$ROOT_DIR/website/data/$fname"
+  feat_tmp="$(mktemp "${out}.feats.XXXXXX")"
+  # Plain SELECT with -At (NOT `COPY ... TO STDOUT`): COPY's TEXT format escapes
+  # backslashes, so a JSON string's `\n` (a newline inside an attr like a callout
+  # `label`) becomes a literal `\\n` and the newline is corrupted. -At prints the
+  # json value raw, preserving the escape. (The publish.geojson COPY above has the
+  # same latent risk if a published feature ever carries a newline -- none does today.)
+  layer_sql="SELECT coalesce(json_agg(json_build_object(
+      'type', 'Feature',
+      'geometry', ST_AsGeoJSON(geom, 9)::json,
+      'properties', attrs
+    )), '[]'::json)
+    FROM core.features
+    WHERE layer = '$layer' AND archived_at IS NULL;"
+  echo "Exporting core.features layer '$layer' -> $out"
+  docker compose exec -T db psql -v ON_ERROR_STOP=1 -U aop -d aop_map -At -c "$layer_sql" > "$feat_tmp"
+  # Wrap as {type, features, _meta} minified; carry _meta forward from the live
+  # file (rebake_canonical.py pattern) so the editor still badges the layer.
+  FEATS="$feat_tmp" OUT="$out" python3 - <<'PY'
+import json, os
+feats = json.load(open(os.environ["FEATS"]))
+out_path = os.environ["OUT"]
+doc = {"type": "FeatureCollection", "features": feats}
+try:
+    with open(out_path) as fh:
+        meta = json.load(fh).get("_meta")
+    if isinstance(meta, dict):
+        doc["_meta"] = meta
+except (FileNotFoundError, ValueError):
+    pass
+tmp = out_path + ".tmp"
+with open(tmp, "w") as fh:
+    json.dump(doc, fh, ensure_ascii=False, separators=(",", ":"))
+os.replace(tmp, out_path)
+os.chmod(out_path, 0o644)
+print(f"  wrote {len(feats)} features to {out_path}")
+PY
+  rm -f "$feat_tmp"
+done
+
+echo "Reference-layer export complete."

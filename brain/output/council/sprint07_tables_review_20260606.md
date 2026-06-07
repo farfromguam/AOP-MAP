@@ -58,3 +58,31 @@ decision): does an activity (hill climb, RC rally) recur across *different* plac
 is each bound to one place? Bound-to-one-place → two tables, one new (recommended
 start). Recurs-across-places → add a thin `core.activities` reference table. This is
 the user's domain call; the card recommends starting bound-to-one-place.
+
+-----
+
+## Revision + re-review — 2026-06-06 (the user resolved the fork)
+
+**User directive:** *"the events usually are at the same place sometimes they are
+different. they are only tied to the place when the schedule says so for that occurance
+and at the #location tagged."*
+
+This resolves the fork toward **recurs-across-places**, with a sharpening: the place
+binds on the **occurrence** (the schedule row), via the `#location` tag — never on the
+activity. The card was revised to a **two-new-table** model:
+- `core.activities` — the reusable, **place-agnostic** WHAT (CMFS shape minus geometry).
+- `core.events` — the WHEN **junction**, one row per occurrence, soft-referencing both
+  `activity_key` and `place_key` (the place per-occurrence). No default-place field.
+- Place-attached "abouts" (rock warblers, to-town, about AOP) stay feature bodies.
+
+**Re-review (Steward-chaired) of the delta** — the three seats whose lenses the change
+touches; Witness's prior facts unchanged, Scribe's record/voice held by the chair:
+
+| Seat | Verdict | Note |
+|------|---------|------|
+| Quartermaster | **clear** | `core.activities` is a reuse-safe sibling of `core.features` (CMFS minus geometry, one vocabulary); no second registry/list-builder/bake; resolving a 2nd ref in `eventScheduleToGeojson` is an extension. **Corroboration:** the schedule JSON already duplicates activity content inline (`fri-night-crawl` / `sat-night-crawl` are two copies of "Night Crawl") — `core.activities` de-duplicates exactly that. C1/C2/C6 at target. |
+| Mason | **clear** | No-FK line held for *both* keys; two tables earned (can't store moving data on a fixed place); rejects a default-place field + a third content store; `activity_key UNIQUE` matches the cleared `source_key UNIQUE` precedent; no enum/CHECK on value columns. |
+| Warden | **clear** | The promotion of `core.activities` from deferred to in-scope is the user's directive, not invented scope; the activities/abouts split matches the brief's own two clusters; stays design-only, off the git gate; event-CRUD §2–4 stay deferred. |
+
+**Steward clears the revised model.** Two new tables, council-clean. Still design-only;
+depends on gold `core.features` (slices 2–5). Nothing committed.

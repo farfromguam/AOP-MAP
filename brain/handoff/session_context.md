@@ -57,6 +57,138 @@ resolver), Mason (pin `place_key` as a plain-`text` soft reference, NOT an enfor
 re-cleared; Warden + Scribe clear R1 → **FULL CLEAR.** Receipt:
 `brain/output/council/sprint07_tables_review_20260606.md`. Touched only `brain/` (no
 `website/`/`mvp/`), so the Stop-hook gate did not self-fire; nothing committed.
+**THEN the user RESOLVED the fork (same turn):** *"the events usually are at the same place
+sometimes they are different. they are only tied to the place when the schedule says so for
+that occurance and at the #location tagged."* → **two-new-table** model, re-carded: the place
+binds on the **occurrence** (the schedule row) via the `#location` tag, never on the activity.
+`core.activities` (place-agnostic reusable WHAT — hill climb, RC rally, rock-hard tour; CMFS
+shape minus geometry) **is now in scope**; `core.events` is the WHEN **junction** (one row per
+occurrence) soft-referencing both `activity_key` + `place_key` (place per-occurrence, no
+default-place field); place-attached abouts (rock warblers/to-town/about AOP) stay feature
+bodies. The split test: *does the schedule cite it (→ activities) or does a place own it
+(→ feature body)?* **Re-review of the delta (Steward-chaired): Quartermaster + Mason + Warden
+all clear** (Witness facts unchanged, Scribe held by chair) → revised model **FULL CLEAR**.
+Quartermaster corroboration: the schedule JSON already duplicates activity content inline
+(`fri-night-crawl`/`sat-night-crawl` = two copies of "Night Crawl") — `core.activities`
+de-duplicates exactly that. **First slice when gold lands:** stand up `core.events` against the
+13 existing sessions, prove occurrence→place bakes, then add `core.activities` + `activity_key`.
+
+-----
+
+**2026-06-06 (RALPH LOOP — RETIREMENT STEP CLOSED: `core.pois` collapsed into `core.features`; the loop
+STOPS here, slice 6 HELD; CODE+DB, UNCOMMITTED, NO bump owed; council CLEAR).** Did the Retirement step
+of `06_going_gold/gold_migration.md`. **Key correctness move:** dropping `publish.pois` from the bake
+while leaving the apply path on `core.pois` would BREAK the POI edit path — so the collapse rewired the
+apply path + seed too, not just the bake. **Shipped:** (1) mirrored the 4 `core.pois` rows →
+`core.features` (`layer='poi'`, ON CONFLICT, **no DELETE** — rows stay deprecated); (2)
+`apply_panel_overrides_to_core.py` now upserts `core.features` (`layer='poi'`); (3) bake POI arm `FROM
+publish.pois` → `FROM publish.features WHERE layer='poi'`; (4) `seed_core_pois.sql` rewritten to seed
+`core.features` via ON CONFLICT (no `DELETE FROM core`); (5) `init_db.sql` deprecation comments on
+`core.pois`/`publish.pois` (kept, not dropped). **Acceptance all green:** (a) zero `core.pois` unmirrored
+(=0); (b) `publish.pois` gone from the bake; (c) slice-1 author verifier PASS — baseline + `--require-author`
+(edit Pavilion + delete Ellis → bake → viewer's `published_destinations` showed the edited name/blurb as
+`pubpoi:139` [core.features serial, proving the new source], Ellis absent, 0 errors). Core POIs
+re-migrated to faithful + served files restored byte-identical to HEAD. `core.features` now holds **141
+features** (buildings 5 + cemeteries 8 + visitor 4 + trails 120 + poi 4). **OWED (human, NOT the loop):**
+DROP the deprecated `core.pois`/`publish.pois` once confirmed unused (destructive — user's call); retire
+the dormant per-layer legacy writers (slices 2–5). **The commit is the user's git gate.** **LOOP DONE —
+all migration slices + the retirement are closed; slice 6 is HELD for a human (see its section).**
+
+-----
+
+**2026-06-06 (RALPH LOOP — SLICE 5 CLOSED: trail network migrated; CODE+DB, UNCOMMITTED, NO bump owed;
+council CLEAR).** Did slice 5 of `06_going_gold/gold_migration.md` — the LAST migration slice. All 120
+trail-network LineStrings → `core.features` (`layer='trails'`, true reference permission 'SFWDA paper
+map — permission TBD'; full `properties`→`attrs` incl. each trail's load-bearing `color`/`difficulty`;
+`source_register` row id 12). Unique `id` (`sfwda-N`) → `--id-field id`, 120 distinct keys. Bake
+regenerates `aop_trail_network.geojson` from core, carrying the rich **gold** `_meta` forward.
+**Verified:** baked file prop+geom equivalent to HEAD (120/120, max geom delta 0), gold `_meta` carried;
+viewer baseline PASS (`getSource('aop-trail-network')` = 120, color survived) + `--require-baked`
+round-trip PASS (marker on trail '15'), 0 console errors; `publish.features` trails = 0; slices 1–4
+unregressed; served files restored byte-identical to HEAD. **`core.features` now holds all four reference
+layers (buildings 5 + cemeteries 8 + visitor 4 + trails 120 = 137).** **The commit is the user's git
+gate.** **NEXT (loop):** the Retirement step — collapse `core.pois` into `core.features`, prove, then
+STOP (slice 6 is HELD for a human).
+
+-----
+
+**2026-06-06 (RALPH LOOP — SLICE 4 CLOSED: visitor callouts migrated; CODE+DB, UNCOMMITTED, NO bump
+owed; council CLEAR).** Did slice 4 of `06_going_gold/gold_migration.md`. 4 visitor-context features
+(2 `visitor_callout` polygons + 2 `brand_logo` points) → `core.features` (`layer='visitor'`, true
+reference permission; `source_register` row id 11). Unique `id` across both kinds → single `--id-field
+id`. The viewer splits the ONE served file by `kind` into TWO map sources (`visitor-context` +
+`brand-logos`), so the generic verifier now accepts a **list** of sources per layer. **Real bug found +
+fixed:** a callout `label` has embedded newlines; the reference bake's `COPY … TO STDOUT` backslash-
+escaped them (`\n` → literal `\\n`). Fixed by switching the reference-layer bake to a plain `SELECT`
+with `-At` (no COPY escaping); buildings + cemeteries re-verified prop-faithful. The pre-existing
+`publish.geojson` `COPY` has the same latent risk (noted in the script; no published feature has a
+newline today). **Verified:** baked file prop+geom equivalent to HEAD (4/4, newline preserved), `_meta`
+silver carried; viewer baseline PASS + `--require-baked` round-trip PASS (marker on the AOP-badge logo),
+0 console errors; `publish.features` visitor = 0; slices 1–3 unregressed; served files restored
+byte-identical to HEAD. **The commit is the user's git gate.** **NEXT (loop):** slice 5 — trails (120
+features, `permission TBD` = non-publishable).
+
+-----
+
+**2026-06-06 (RALPH LOOP — SLICE 3 CLOSED: cemeteries migrated; CODE+DB, UNCOMMITTED, NO bump owed;
+council CLEAR).** Did slice 3 of `06_going_gold/gold_migration.md`. 8 cemetery features (4 cemeteries,
+each a parcel polygon + a marker point) → `core.features` (`layer='cemeteries'`, true reference
+permission; full `properties`→`attrs` incl. burial roster fields; `source_register` row id 10).
+**New code:** cemetery feature keys aren't unique on `parcel_id` (2 rows each), so
+`import_layer_to_core_features.py` gained a **composite `--id-field` (`parcel_id,geom_role`)** → 8
+distinct `source_key`s; `export_publish_geojson.sh` `REFERENCE_LAYERS` += cemeteries. **Verifier
+consolidated (Quartermaster/DRY):** the slice-2 buildings verifier was generalized into ONE
+`playwright_verify_baked_reference_author.py --layer <name>` (LAYERS config; covers buildings +
+cemeteries, extensible to visitor/trails) and the buildings-specific file retired (slice-2 refs
+updated). **Verified by observation:** baked `aop_cemeteries.geojson` prop+geom equivalent to HEAD
+(8/8, key sets+values identical, geom maxdelta<1e-6), `_meta` `reference` carried; viewer baseline PASS
++ `--require-baked` marker round-trip PASS (marker authored into core→baked→appeared on Ellis in the
+viewer's loaded source), 0 console errors; **roster stays out of publish** (`publish.features` cemeteries
+= 0 — the non-commercial burial roster lives only in the reference served file + `attrs`, never the
+publish zone); slices 1+2 verifiers unregressed. Served files restored byte-identical to HEAD. **The
+commit is the user's git gate.** **NEXT (loop):** slice 4 — visitor callouts (silver; includes
+`brand_logo` points).
+
+-----
+
+**2026-06-06 (RALPH LOOP — SLICE 2 CLOSED: `core.features` + buildings migrated; CODE+DB,
+UNCOMMITTED, NO bump owed; council full-six CLEAR).** Did slice 2 of `06_going_gold/gold_migration.md`.
+**A design fork surfaced + was council-cleared FIRST:** the card said bake the 5 buildings into
+`publish.geojson`, but observation shows ALL slice-2–5 source layers are reference/silver/permission-TBD
+— **none passes `permission='publish'`** (buildings: FEMA "no warranty" / private "presence only";
+cemeteries: non-commercial burial roster; visitor: 'context annotation'; trails ×120: 'SFWDA paper map
+— permission TBD'). Forcing them into the publish zone violates the northstar. **Corrected (card amended
++ annotated, original in git `bf41eb5`):** reference layers bake to their OWN served file (the file the
+viewer already reads), `publish.features` keeps the gate and stays reference-free. The council design
+consult also **falsified the card's premise** that `map.on('load')` never fires headless — it DOES
+(observed); tiles block only paint/`queryRenderedFeatures`, so a map source's loaded data IS readable
+via `getSource(...).serialize().data.features` (this correction is now in the Observable standard, for
+slices 3–5 too). **Shipped:** `core.features` (CMFS spine + mixed `geometry(Geometry,4326)` +
+`source_key UNIQUE` + `archived_at` + free-form JSONB `attrs`; no CHECK/enum) + `publish.features` view
+(selects `attrs` explicitly so it isn't dropped by omission) in `init_db.sql` (live volume + fresh);
+new generic `mvp/scripts/import_layer_to_core_features.py` (reusable for slices 3–5; full original
+`properties`→`attrs` so nothing drops; `ST_GeomFromGeoJSON` any-geom; upsert `ON CONFLICT (source_key)`;
+count==input asserted; reference-tier `source_register` row id 9); `export_publish_geojson.sh` extended
+with a `REFERENCE_LAYERS` loop that rebuilds `aop_buildings.geojson` from `core.features WHERE
+layer='buildings'` (properties=`attrs`, `_meta` carried forward, minified) — **same filename the viewer
+reads, so NO `main.js` change → NO `sw.js`/`#appVersion` bump owed**; new headless-safe
+`mvp/scripts/playwright_verify_baked_reference_author.py` (`getSource(...).serialize()`;
+`--require-baked` marker round-trip so it can't degrade to baseline-PASS). **Verified by observation:**
+baked `aop_buildings.geojson` prop+geom equivalent to HEAD (5/5, key sets+values identical, geom
+maxdelta<1e-6), `facility_role` survived; viewer baseline PASS + `--require-baked` PASS (a marker
+authored into core→baked→appeared in the viewer's loaded source); `publish.features WHERE layer='buildings'`
+= 0 (gate works); slice-1 POI verifier unregressed. **Served files restored byte-identical to HEAD**
+(production untouched; `git status website/` clean). **Council:** design consult (full six) cleared the
+fork with conditions; done-review (full six) — Witness/Quartermaster/Mason/Warden CLEAR (each re-ran the
+verifier/round-trip/gate independently), Scribe andon on 5 record gaps, ALL FIXED (served files restored,
+`data_maturity_tiers.md` `_meta`-carry note added, card annotation wording corrected, Loop-#5 slice-1
+caveat claim corrected, this handoff entry). **OWED (next increment, NOT slice 2):** retire the 3 dormant
+legacy writers of `aop_buildings.geojson` (`import_fema_buildings.py`, `rebake_canonical.py` CONFIG, the
+`export_positioned_features.py` buildings branch) once the buildings apply-door exists
+(`apply_panel_overrides_to_core.py` `layer='buildings'` + a layer-aware geom builder; slice-1's
+`point_geom_sql` NULLs polygons). None runs in the day-of loop, so the bake is the sole in-loop writer
+today. **The commit is the user's git gate.** **NEXT (loop):** slice 3 — cemeteries (keep the
+non-commercial burial roster out of any publish-gated output).
 
 -----
 
