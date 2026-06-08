@@ -139,6 +139,18 @@
   function commitChange(node, item, opts) {
     opts = opts || {};
     if (isUserFeature(item.props)) { syncCreated(); saveOverrides(); pushTagToHost(node, item); return; }
+    // Host-owned editable source (editorPois): persist through the host's ONE
+    // store of record via the bridge, NOT the panel OVERRIDES — one store, no
+    // twin-store desync (Sprint 09 Slice 1b). The panel still mutated item.props
+    // in place, so the list/map stay live; this lands the same edit in the host.
+    if (node.hostEdit && typeof window.AOP_HOST_SET_FEATURE_PROPS === 'function') {
+      window.AOP_HOST_SET_FEATURE_PROPS(node.hostKey, item.props, pickEditable(item.props));
+      if (opts.geometry && typeof window.AOP_HOST_SET_FEATURE_GEOM === 'function') {
+        window.AOP_HOST_SET_FEATURE_GEOM(node.hostKey, item.props, item.feature.geometry);
+      }
+      pushTagToHost(node, item);
+      return;
+    }
     const src = node.items && node.items.source;
     const id = item.props.id;                            // canonical id (present post-re-bake)
     if (!src || id == null) { console.warn('panel: cannot persist — no source/id for', item.label); return; }
@@ -153,6 +165,12 @@
   }
   function persistDelete(node, item) {
     if (isUserFeature(item.props)) { syncCreated(); saveOverrides(); return; }
+    // Host-owned editable source (editorPois): delete through the host's ONE
+    // store via the bridge (Sprint 09 Slice 1b), not the panel OVERRIDES.
+    if (node.hostEdit && typeof window.AOP_HOST_DELETE_FEATURE === 'function') {
+      window.AOP_HOST_DELETE_FEATURE(node.hostKey, item.props);
+      return;
+    }
     const src = node.items && node.items.source;
     const id = item.props.id;
     if (!src || id == null) return;
@@ -687,14 +705,27 @@
           }
         ]
       },
-      // MAP EDITOR — RETIRED 2026-06-05. The user dropped the whole group: the
-      // three generic draw groups (Points / Lines / Polygons) and Drawn POIs are
-      // no longer needed. Brand logos (the one keeper) moved up to Silver. The
-      // userFeatures + editor-poi SOURCES still live in MAP_DATA (the host map
-      // owns them; userFeatures is empty, editor-poi has 1 seed POI) — they just
-      // have no panel node anymore. The "+ POI / + Line / + Polygon" add controls
-      // still work on every remaining editable layer (they author into that
-      // layer's own source, never needed the draw groups).
+      // MAP EDITOR — retired 2026-06-05 (`7cd51fa`), then **drawn-POI editing
+      // RESTORED 2026-06-08 per the user** (Sprint 09 editor-maturity; the
+      // retirement reversed — `cards_not_gospel`). The user did not know why it
+      // was dropped and needs the surface. Only the **Drawn POIs** node returns;
+      // the three generic draw groups (Points/Lines/Polygons) stay retired (Fork
+      // #1 — their `userFeatures` source is empty in embedded mode). The node is
+      // host-bridged: `hostEdit: true` + `hostKey: 'editorPois'` routes its
+      // property/geometry/delete/★ edits through the host's ONE store of record
+      // (`aop_editor_pois_v1`) via `window.AOP_HOST_*`, NOT the panel OVERRIDES —
+      // so there is one editor and one store (no twin-store desync, audit F6).
+      {
+        id: 'editor', label: 'Map editor', collapsed: false,
+        nodes: [
+          {
+            id: 'editorPois', kind: 'layer', label: 'Drawn POIs', visible: true, expanded: false,
+            geom: 'Point', createNoun: 'POI', hostKey: 'editorPois', hostEdit: true,
+            mapLayers: ['editor-poi-fill', 'editor-poi-outline', 'editor-poi-lines', 'editor-poi-circles', 'editor-poi-labels', 'editor-poi-fill-labels', 'editor-poi-line-labels'],
+            items: { source: 'editor-poi', key: (p) => p.id || p.name, label: (p) => p.name || p.category || 'POI', detail: (p) => p.category || '' }
+          }
+        ]
+      },
       {
         id: 'user-submitted', label: 'User submitted', collapsed: false,
         nodes: [

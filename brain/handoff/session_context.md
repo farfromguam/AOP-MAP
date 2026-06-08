@@ -6,6 +6,67 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-08 (SPRINT 09 SLICE 1 — drawn-POI editor RESTORED as ONE engine + ONE store; CODE,
+UNCOMMITTED, v57→v58 bump PERFORMED, commit OWED).** Executed Slice 1 of
+`tasks/09_editor_maturity/editor_completeness.md` (user accepted the council-cleared plan + Fork #0 =
+panel inline frame survives, then directed execute-now). **Shipped:** (`main.js`) 3 bridge hooks
+`AOP_HOST_SET_FEATURE_PROPS`/`_GEOM`/`AOP_HOST_DELETE_FEATURE` — pure delegation to the existing
+spec-routed host writers (`setFeatureProperty`/`deleteFeature` → editorPois `persistProperty`/
+`removeFeature` → `saveEditorPois`), fail-safe. (`panel.js`) restored the **Drawn POIs** (`editorPois`)
+node with `hostKey:'editorPois'`+`hostEdit:true`; `commitChange`/`persistDelete` route to the bridge for
+`hostEdit` nodes (before the OVERRIDES path, returns — no twin write); the ★ already routed via the
+existing `hostHighlight`. Retirement comment annotated (restored, not deleted). Generic draw stays
+retired (Fork #1). Bumped `sw.js`+`#appVersion` **v57→v58**. **Verified by observation (new
+`mvp/scripts/playwright_verify_drawn_poi_editor.py`):** the panel has a Drawn POIs node; editing the name
+THROUGH THE PANEL UI lands in `aop_editor_pois_v1`; **NO twin-store leak** (`aop_panel_overrides_v1` has
+no `editor-poi:` entry); survives reload; UI 🗑 Delete removes it; only the panel editor opens (host
+`buildEditDock` stays CSS-hidden in embedded — still the standalone editor, correct scoping); 0 errors.
+**Council done-review: Mason CLEAR** (one store — branch returns before OVERRIDES; bridge is pure
+delegation; consolidation complete; C5/R13 fail-safe; C1/C6 clean). **Witness ANDON → folded → re-review:**
+(1) `playwright_verify_data_groups_embed.py` was RED (it asserted the OLD retirement) → updated to the new
+contract (8 sections incl Map editor, Drawn POIs present, generic draw gone) → PASS; (2) the durable
+verifier now asserts no-twin-store (reads `aop_panel_overrides_v1`) + drives delete via the UI; (3) this
+record. `playwright_verify_starred_poi_flip.py` still PASS. Card: Slice-1 DONE block on
+`tasks/09_editor_maturity/editor_completeness.md`. **NEXT:** Slice 2 (reconcile the half-retirement —
+surface the create affordance over the one store), Slice 3 (trailheads), Slice 5 (DB doors — gold slice 6).
+**OWED (user's git gate):** the commit (`main.js`+`panel.js`+`sw.js`+`index.html` + the new/updated
+verifiers + brain) with the v58 bump.
+
+-----
+
+**2026-06-08 (SPRINT 09 EDITOR-MATURITY PLAN — carded + FULL-SIX COUNCIL CLEAR; BRAIN ONLY, UNCOMMITTED).**
+Follow-on to the "Launchpad" question (a drawn POI showed in the left list + on the map + the right ★
+Visitor list, but had no editable node in the right panel — the "Drawn POIs" editor was retired
+`7cd51fa "v50 styles"` 2026-06-05; `panel.js` claims "the user dropped the whole group" but the user says
+they don't know why). User: *"this is a needed surface. put it in. make sure everything is visible on the
+right side and editable. consult the council for a full robust plan. No shortcuts. we are trying to mature
+the project and not maintain shortcuts or mvp code."* Created **`tasks/09_editor_maturity/`** (`_readme.md`
++ spine card `editor_completeness.md`): restore drawn-POI editing, spec-complete the curated-but-
+visibility-only layers (trailheads F7), reconcile the half-retirement (live `#placePoiBtn` + stale
+`index.html:450` help text vs the deleted node), each editable surface persisting **DB-first** —
+coordinating gold slice 6's F1/F2 DB doors, NOT duplicating them; reference/imagery layers stay
+visibility-only by design. **FULL-SIX COUNCIL PLAN-REVIEW → CLEAR (1 round + 1 Mason re-review).** The
+load-bearing catch was **Mason's andon**: my first-pass grounding wrongly treated the host editor as
+retired — it is actually LIVE but `display:none` in embedded mode (`panel-embed.css:271-273`), so there are
+**TWO live editor engines** (host `buildEditDock` + panel inline frame). A naive "re-add the node" would
+ship a SECOND editor for one feature class + a twin-store desync (panel `OVERRIDES` vs host
+`aop_editor_pois_v1` — the F6 bug class). Folded: corrected grounding; Slice 1 rewritten to **consolidate
+to ONE engine + ONE store of record** (1a retire the redundant engine; 1b add the missing write-back
+bridge — new `AOP_HOST_*` property/geometry/delete hooks mirroring `AOP_HOST_SET_HIGHLIGHT` — so panel
+edits land in the host array, not just `seedLoadedFromHost` read); Fork #0 (which editor survives) added;
+generic-draw restore marked DOA (empty `userFeatures` in embedded). Witness folded 2 fact fixes
+(`git show 7cd51fa --` shows empty → use `7cd51fa^:`; `#placePoi`→`#placePoiBtn`); Warden folded 2
+execution notes (annotate the retirement comment, don't delete; the `sw.js` bump is owed to the user);
+Quartermaster (reuse/no-dup of gold slice 6) + Scribe clear. Receipt:
+`output/council/editor_completeness_plan_review_20260608.md`; card banner = COUNCIL-CLEARED. **NEXT
+(user's gates):** decide the forks — esp. **Fork #0** (rec: the panel inline frame survives, host
+`buildEditDock` drawn-POI path retired, host `aop_editor_pois_v1` the single store), Fork #1 (generic
+draw — rec retire cleanly), Fork #2 (event anchors — rec keep schedule-owned), Fork #3 (sprint home),
+Fork #4 (DB-first interleave) — then commit-pause the plan, then ralph-loop in a fresh session. Touched
+only `brain/` (no `website/`/`mvp/`), so the Tier-0 gate did not self-fire; nothing committed.
+
+-----
+
 **2026-06-08 (LEFT POI LIST → STAR-ONLY; Sprint 08 Slice D; CODE+DATA, UNCOMMITTED, v56→v57 bump
 PERFORMED, commit OWED).** Follow-on to the "left POI list" consult below — and a concrete cut of the
 spike-code the DB-FIRST AUDIT entry catalogs (it removed the static, non-DB event-anchor feed). User:

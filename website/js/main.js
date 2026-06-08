@@ -3761,6 +3761,49 @@
       catch (e) { console.error('AOP_HOST_SET_TAG failed', e); return false; }
     };
 
+    // Bridge for the right-panel editor (js/panel.js) to edit a HOST-OWNED feature
+    // through the host's SINGLE store of record — Sprint 09, Slice 1b. For a node
+    // whose source the host owns and rewrites (editorPois → the `editorPois` array
+    // → `aop_editor_pois_v1`, re-fed to the `editor-poi` map source by
+    // refreshEditorSource), the panel must NOT persist through its own OVERRIDES
+    // store — that would be a second store writing the one source (the twin-store
+    // desync, audit F6). Instead the panel calls these, which reuse the existing
+    // layer-agnostic, spec-routed host writers (setFeatureProperty/deleteFeature
+    // → the editorPois spec's persistProperty/removeFeature → saveEditorPois). One
+    // store, one editor. The panel resolves the feature; the host resolves its id
+    // via the spec's idField (positionedFeatureIdFor) and mutates its own copy.
+    window.AOP_HOST_SET_FEATURE_PROPS = function (layerKey, props, patch) {
+      try {
+        const id = positionedFeatureIdFor(layerKey, { properties: props });
+        if (id == null) return false;
+        for (const [k, v] of Object.entries(patch || {})) {
+          if (k.startsWith('_')) continue;          // internal panel fields never persist
+          setFeatureProperty(layerKey, id, k, v);
+        }
+        return true;
+      } catch (e) { console.error('AOP_HOST_SET_FEATURE_PROPS failed', e); return false; }
+    };
+    window.AOP_HOST_SET_FEATURE_GEOM = function (layerKey, props, geometry) {
+      try {
+        const id = positionedFeatureIdFor(layerKey, { properties: props });
+        if (id == null || !geometry) return false;
+        const item = findFeatureById(layerKey, id);
+        if (!item || !item.feature) return false;
+        item.feature.geometry = JSON.parse(JSON.stringify(geometry));
+        persistFeatureFlagChange(layerKey, item.feature, {});   // editorPois → saveEditorPois
+        refreshAfterFeatureChange(layerKey);                    // → refreshEditorSource
+        return true;
+      } catch (e) { console.error('AOP_HOST_SET_FEATURE_GEOM failed', e); return false; }
+    };
+    window.AOP_HOST_DELETE_FEATURE = function (layerKey, props) {
+      try {
+        const id = positionedFeatureIdFor(layerKey, { properties: props });
+        if (id == null) return false;
+        deleteFeature(layerKey, id);
+        return true;
+      } catch (e) { console.error('AOP_HOST_DELETE_FEATURE failed', e); return false; }
+    };
+
     // Mirror of toggleFeatureHighlight for the lock flag. Locked features
     // stay rendered and stay starrable, but the row's ✋ move handle and
     // long-press path become no-ops. Used when a feature has reached its

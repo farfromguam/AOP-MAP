@@ -46,13 +46,17 @@ try:
     all_labels = [n for s in tree for n in s["nodes"]]
     print("\nEmbed sections:", sections, "\n")
 
-    check("embed renders 7 sections incl Delete",
+    # Sprint 09 (2026-06-08): the Map editor section + the Drawn POIs node were
+    # RESTORED (the 2026-06-05 retirement reversed per the user); the three generic
+    # draw groups stay retired. So 8 sections incl Map editor, and Drawn POIs present.
+    check("embed renders 8 sections incl Map editor + Delete",
           sections == ["Gold data", "Silver — pending review", "Source layers",
-                       "Derived layers", "External reference", "User submitted",
-                       "Delete — staged for removal"], str(sections))
-    check("embed: Map editor GONE", "Map editor" not in sections)
-    for gone in ["Points (draw)", "Lines (draw)", "Polygons (draw)", "Drawn POIs"]:
-        check(f"embed: '{gone}' gone", gone not in all_labels)
+                       "Derived layers", "External reference", "Map editor",
+                       "User submitted", "Delete — staged for removal"], str(sections))
+    check("embed: Map editor section RESTORED", "Map editor" in sections)
+    check("embed: Drawn POIs node present (in Map editor)", "Drawn POIs" in all_labels)
+    for gone in ["Points (draw)", "Lines (draw)", "Polygons (draw)"]:
+        check(f"embed: generic-draw '{gone}' stays retired", gone not in all_labels)
     check("embed: Brand logos present (in Silver)",
           any(l.startswith("Brand logos") for l in [n for s in tree if s["section"].startswith("Silver") for n in s["nodes"]]))
     js_errors = [e for e in errors if not NOISE.search(e)]
