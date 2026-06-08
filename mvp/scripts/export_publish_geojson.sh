@@ -23,20 +23,23 @@ COPY (
       'properties', to_jsonb(t) - 'geom'
     ) AS feature
     FROM (
-      SELECT id, name, difficulty, NULL::text AS hazard_type, NULL::text AS severity, NULL::text AS kind, NULL::text AS blurb, status, confidence, permission, 'trail_centerlines' AS layer, geom
-      FROM publish.trail_centerlines
-      UNION ALL
-      SELECT id, name, NULL::text AS difficulty, NULL::text AS hazard_type, NULL::text AS severity, NULL::text AS kind, NULL::text AS blurb, status, confidence, permission, 'park_boundaries' AS layer, geom
-      FROM publish.park_boundaries
-      UNION ALL
-      SELECT id, name, NULL::text AS difficulty, NULL::text AS hazard_type, NULL::text AS severity, NULL::text AS kind, NULL::text AS blurb, status, confidence, permission, 'trailheads' AS layer, geom
-      FROM publish.trailheads
-      UNION ALL
-      SELECT id, NULL::text AS name, NULL::text AS difficulty, hazard_type, severity, NULL::text AS kind, NULL::text AS blurb, status, confidence, permission, 'hazards' AS layer, geom
-      FROM publish.hazards
-      UNION ALL
-      SELECT id, name, NULL::text AS difficulty, NULL::text AS hazard_type, NULL::text AS severity, kind, blurb, status, confidence, permission, 'poi' AS layer, geom
-      FROM publish.features WHERE layer = 'poi'
+      -- All published map layers now live in the ONE converged core.features /
+      -- publish.features gate -- the 2026-06-07 table cleanup folded the per-layer
+      -- core.* tables (trail_centerlines, park_boundaries, trailheads, hazards,
+      -- poi) into it. Domain columns read from attrs; kind/blurb come straight
+      -- from core.features (poi carries them, the geo layers leave them NULL --
+      -- the same property shape the per-view UNION emitted).
+      SELECT id, name,
+             attrs->>'difficulty'  AS difficulty,
+             attrs->>'hazard_type' AS hazard_type,
+             attrs->>'severity'    AS severity,
+             kind, blurb, status, confidence, permission, layer, geom
+      FROM publish.features
+      WHERE layer IN ('trail_centerlines','park_boundaries','trailheads','hazards','poi')
+      ORDER BY CASE layer
+                 WHEN 'trail_centerlines' THEN 1 WHEN 'park_boundaries' THEN 2
+                 WHEN 'trailheads' THEN 3 WHEN 'hazards' THEN 4 WHEN 'poi' THEN 5
+               END, id
     ) t
   ) foo
 ) TO STDOUT;

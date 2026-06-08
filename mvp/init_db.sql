@@ -38,141 +38,20 @@ CREATE TABLE IF NOT EXISTS source_register.feature_sources (
 
 SET search_path = core, public;
 
-CREATE TABLE IF NOT EXISTS core.park_boundaries (
-  id serial PRIMARY KEY,
-  name text,
-  status text,
-  confidence text,
-  permission text,
-  publish_status text,
-  source_id integer REFERENCES source_register.sources(id),
-  geom geometry(MultiPolygon,4326),
-  notes text,
-  last_verified timestamptz,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS core.parcels (
-  id serial PRIMARY KEY,
-  parcel_id text,
-  owner text,
-  land_area numeric,
-  status text,
-  confidence text,
-  permission text,
-  publish_status text,
-  source_id integer REFERENCES source_register.sources(id),
-  geom geometry(Polygon,4326),
-  metadata jsonb,
-  notes text,
-  last_verified timestamptz,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS core.trail_centerlines (
-  id serial PRIMARY KEY,
-  name text,
-  difficulty text,
-  status text,
-  confidence text,
-  permission text,
-  publish_status text,
-  source_id integer REFERENCES source_register.sources(id),
-  geom geometry(LineString,4326),
-  notes text,
-  last_verified timestamptz,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS core.observations (
-  id serial PRIMARY KEY,
-  observation_type text,
-  source_id integer REFERENCES source_register.sources(id),
-  status text,
-  confidence text,
-  review_status text,
-  measured_at timestamptz,
-  notes text,
-  geom geometry(Geometry,4326),
-  metadata jsonb,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS core.hazards (
-  id serial PRIMARY KEY,
-  hazard_type text,
-  severity text,
-  status text,
-  confidence text,
-  permission text,
-  publish_status text,
-  source_id integer REFERENCES source_register.sources(id),
-  notes text,
-  geom geometry(Point,4326),
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS core.trailheads (
-  id serial PRIMARY KEY,
-  name text,
-  status text,
-  confidence text,
-  permission text,
-  publish_status text,
-  source_id integer REFERENCES source_register.sources(id),
-  notes text,
-  geom geometry(Point,4326),
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS core.print_annotations (
-  id serial PRIMARY KEY,
-  annotation_type text,
-  status text,
-  source_id integer REFERENCES source_register.sources(id),
-  notes text,
-  geom geometry(Geometry,4326),
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS core.field_tracks (
-  id serial PRIMARY KEY,
-  track_name text,
-  segment_index integer,
-  point_count integer,
-  recorded_start timestamptz,
-  recorded_end timestamptz,
-  status text,
-  confidence text,
-  permission text,
-  publish_status text,
-  source_id integer REFERENCES source_register.sources(id),
-  geom geometry(LineString,4326),
-  metadata jsonb,
-  notes text,
-  last_verified timestamptz,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
--- The converged destination/feature table (going gold, slice 2+). ONE row shape
--- for every migrated layer: the CMFS spine columns + a free-form JSONB `attrs`
--- for per-domain extras (a building's facility_role, a trail's difficulty, a
--- cemetery's burial_count). `attrs` has NO key allowlist and NO CHECK -- unknown
--- domain keys are stored, never rejected (C5; mirrors core.parcels.metadata).
--- `layer` names the source layer ('buildings', 'cemeteries', 'trails', 'poi'...).
--- geom is mixed (Geometry) like core.observations/core.print_annotations because
--- buildings are polygons, POIs points, trails lines. source_key + archived_at
--- give a deterministic upsert identity + soft delete. The publish
--- view is the ONLY gate; reference layers (buildings, etc.) bake to their own
--- served file WITHOUT the publish gate. Card: 06_going_gold/gold_migration.md.
+-- The ONE converged geo table (going gold, slice 2+; the 2026-06-07 table
+-- cleanup folded the eight per-layer core.* tables into it). One row shape for
+-- every layer: the CMFS spine columns + a free-form JSONB `attrs` for per-domain
+-- extras (a building's facility_role, a trail's difficulty, a parcel's owner +
+-- assessment metadata, a field track's segment_index, an observation's
+-- review_status). `attrs` has NO key allowlist and NO CHECK -- unknown domain
+-- keys are stored, never rejected (C5/no_limiting_code_mvp). `layer` names the
+-- source layer ('buildings', 'cemeteries', 'trails', 'poi', 'trail_centerlines',
+-- 'park_boundaries', 'trailheads', 'parcels', 'observations', 'field_tracks',
+-- ...). geom is mixed (Geometry) because the layers span points, lines, and
+-- polygons. source_key + archived_at give a deterministic upsert identity + soft
+-- delete. The publish view is the ONLY gate; reference layers (buildings, etc.)
+-- bake to their own served file WITHOUT the publish gate.
+-- Card: 06_going_gold/gold_migration.md, 07_tables/tables_diagram.md.
 CREATE TABLE IF NOT EXISTS core.features (
   id serial PRIMARY KEY,
   layer text,
@@ -258,7 +137,10 @@ CREATE TABLE IF NOT EXISTS raw.gpx_captures (
   raw_xml text NOT NULL,
   captured_at timestamptz DEFAULT now(),
   notes text,
-  UNIQUE (file_name, recorded_at)
+  -- Named so import_gpx_track.sql's ON CONFLICT ON CONSTRAINT resolves on a
+  -- fresh volume (the live DB carries this name; the prior unnamed UNIQUE
+  -- auto-named differently -- a pre-existing drift caught by fresh-volume repro).
+  CONSTRAINT gpx_captures_file_recorded_uniq UNIQUE (file_name, recorded_at)
 );
 
 CREATE TABLE IF NOT EXISTS raw.arcgis_feature_captures (
@@ -271,40 +153,12 @@ CREATE TABLE IF NOT EXISTS raw.arcgis_feature_captures (
   notes text
 );
 
-CREATE OR REPLACE VIEW publish.trail_centerlines AS
-  SELECT id, name, difficulty, status, confidence, permission, geom
-  FROM core.trail_centerlines
-  WHERE permission = 'publish'
-    AND publish_status = 'publish';
-
-CREATE OR REPLACE VIEW publish.park_boundaries AS
-  SELECT id, name, status, confidence, permission, geom
-  FROM core.park_boundaries
-  WHERE permission = 'publish'
-    AND publish_status = 'publish';
-
-CREATE OR REPLACE VIEW publish.parcels AS
-  SELECT id, parcel_id, status, confidence, permission, land_area, geom
-  FROM core.parcels
-  WHERE permission = 'publish'
-    AND publish_status = 'publish';
-
-CREATE OR REPLACE VIEW publish.trailheads AS
-  SELECT id, name, status, confidence, permission, geom
-  FROM core.trailheads
-  WHERE permission = 'publish'
-    AND publish_status = 'publish';
-
-CREATE OR REPLACE VIEW publish.hazards AS
-  SELECT id, hazard_type, severity, status, confidence, permission, geom
-  FROM core.hazards
-  WHERE permission = 'publish'
-    AND publish_status = 'publish';
-
--- The converged publish view (going gold). Same publish gate as the sibling
--- views, but it MUST select `attrs` explicitly -- the other publish views emit
--- fixed column lists and would drop the JSONB by omission (the limiting-by-
--- omission Mason caught). Reference layers (buildings/cemeteries/...) carry
+-- The converged publish view (going gold; the 2026-06-07 cleanup retired the
+-- five per-layer publish.* views in favour of this one). Same publish gate as
+-- those did, and it MUST select `attrs` explicitly so the JSONB isn't dropped by
+-- omission (the limiting-by-omission Mason caught). The bake reads published map
+-- layers (poi, trail_centerlines, park_boundaries, trailheads, hazards) from
+-- here, filtered by `layer`. Reference layers (buildings/cemeteries/...) carry
 -- non-'publish' permission and so are CORRECTLY absent here; they bake to their
 -- own served files without this gate. Card: 06_going_gold/gold_migration.md.
 CREATE OR REPLACE VIEW publish.features AS
@@ -317,19 +171,11 @@ CREATE OR REPLACE VIEW publish.features AS
 
 -- Indexes -----------------------------------------------------------------
 
-CREATE INDEX IF NOT EXISTS park_boundaries_geom_gix   ON core.park_boundaries   USING GIST (geom);
-CREATE INDEX IF NOT EXISTS parcels_geom_gix           ON core.parcels           USING GIST (geom);
-CREATE INDEX IF NOT EXISTS trail_centerlines_geom_gix ON core.trail_centerlines USING GIST (geom);
-CREATE INDEX IF NOT EXISTS observations_geom_gix      ON core.observations      USING GIST (geom);
-CREATE INDEX IF NOT EXISTS hazards_geom_gix           ON core.hazards           USING GIST (geom);
-CREATE INDEX IF NOT EXISTS trailheads_geom_gix        ON core.trailheads        USING GIST (geom);
 CREATE INDEX IF NOT EXISTS features_geom_gix           ON core.features          USING GIST (geom);
 CREATE INDEX IF NOT EXISTS features_layer_idx          ON core.features          (layer);
 CREATE INDEX IF NOT EXISTS events_sort_idx             ON core.events            (sort_order);
 CREATE INDEX IF NOT EXISTS events_place_key_idx        ON core.events            (place_key);
 CREATE INDEX IF NOT EXISTS events_activity_key_idx     ON core.events            (activity_key);
-CREATE INDEX IF NOT EXISTS print_annotations_geom_gix ON core.print_annotations USING GIST (geom);
-CREATE INDEX IF NOT EXISTS field_tracks_geom_gix      ON core.field_tracks      USING GIST (geom);
 
 -- Provenance links are always looked up by the feature they describe.
 CREATE INDEX IF NOT EXISTS feature_sources_feature_idx
@@ -353,17 +199,9 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'source_register.sources',
     'source_register.feature_sources',
-    'core.park_boundaries',
-    'core.parcels',
-    'core.trail_centerlines',
-    'core.observations',
-    'core.hazards',
-    'core.trailheads',
     'core.features',
     'core.events',
-    'core.activities',
-    'core.print_annotations',
-    'core.field_tracks'
+    'core.activities'
   ]
   LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS trg_set_updated_at ON %s', t);

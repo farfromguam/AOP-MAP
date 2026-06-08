@@ -35,6 +35,69 @@ Plan + sign-off: `brain/tasks/06_going_gold/gold_migration.md`. Review receipts:
 
 -----
 
+**2026-06-07 (TABLE CLEANUP — FULL FOLD EXECUTED: 21 objects → 8; DB + scripts + init_db.sql,
+UNCOMMITTED).** User: *"review the table diagram, consult the council. we should not have so many tables…
+attempts to remove the extraneous resulted in andon pulls 'there is data there' well it needs to be moved
+or removed. figure out the minimum and migrate data into that shape."* This **overrode** the prior
+session's "keep all 8 — source-led spine" withdrawal (`cards_not_gospel`: the user's inline correction
+wins; *"there is data there"* is not a reason to keep a table — the data moves). Confirmed two forks once
+(full fold vs thin spine; retire vs rewrite the pipeline) → user chose **full fold + rewrite the pipeline
+now**, then executed end-to-end. **The honest minimum = 7 tables + 1 view:** `core.features` (all geo) +
+`core.events` + `core.activities` + `source_register.sources`/`feature_sources` + `raw.gpx_captures`/
+`arcgis_feature_captures` + `publish.features`. **Shipped + verified by observation:** (1) migrated all 12
+rows from the 8 per-layer `core.*` tables into `core.features` (domain cols → `attrs`, `layer`=old name;
+new `mvp/scripts/migrate_layers_to_core_features.sql`), count==input 147→159, all 15 `feature_sources`
+re-pointed to `core.features` (0 dangling), gate parity exact (`publish.features WHERE layer=X` ==
+old `publish.<x>` counts); (2) rewired `export_publish_geojson.sh` — `publish.geojson` reads every
+published layer from the one `publish.features` gate, output feature-equivalent to the prior bake (only
+geo-layer `id`s shifted to `core.features` serials, the gold-precedent change), POI DOM rows observed
+rendering, served files restored byte-identical to HEAD; (3) **rewrote the validation-loop pipeline onto
+`core.features`** (`import_gpx_track`, `promote_gpx_to_trail`, `import_aop_parcel_boundary`,
+`validation_loop_smoke_test` — content-based dedup so live re-runs don't double-insert) and proved all
+four **end-to-end on a fresh volume** (exit 0; GPX→field_track→promote→publish; parcels+unioned envelope;
+observation→promote; 10/10 provenance → `features`); (4) dropped the 8 per-layer tables + 5 per-layer
+publish views on the live DB (21→8), updated `init_db.sql` to the 8-object shape, **fresh-volume repro
+exit 0** (8 objects, 0 per-layer tables/views, 5 triggers). **Pre-existing drift fixed in passing:** named
+the `gpx_captures` UNIQUE constraint (`gpx_captures_file_recorded_uniq`) in `init_db.sql` so
+`import_gpx_track.sql`'s `ON CONFLICT ON CONSTRAINT` resolves on a fresh volume (it only ever worked on
+the live volume, which carried the historical name). **Safety:** `pg_dump` backup at
+`/tmp/aop_map_backup_premigration.dump`; the migration moved data (nothing lost), the drop is reversible
+via backup + `init_db.sql`. **Records:** `tasks/07_tables/tables_diagram.md` rewritten to the 8-object
+shape; `tasks/10_deferred/retire_legacy_geo_tables.md` → DONE (was WITHDRAWN); this entry. **OWED (the
+user's git gate):** the commit. **FLAGGED (pre-existing, NOT this work):** the served `publish.geojson`
+carries a served-only park_boundary ("Ellis Cemetery (inholding parcel)") that no table holds — the bake
+drops it on next deploy (the gold "served-only hand-curated row" gap); and HEAD's served `publish.geojson`
+carries extra keys (`description`/`source`/`last_checked`) from an older writer that the current
+`attrs`-verbatim bake won't reproduce — the same deploy-drift class as the Ellis row (non-breaking: the
+viewer reads `blurb`, not those keys). **Council: FULL CLEAR (full six).** Witness pulled one andon — the
+rewritten parcel import threw a unique-violation on a duplicate-parcel batch (a C5 reject); fixed with
+`ON CONFLICT (source_key) DO NOTHING` (store-first-skip-rest, never throws), re-witnessed CLEAR. Then
+Warden/Quartermaster/Mason/Scribe all clear.
+
+-----
+
+**2026-06-07 (LEGACY-TABLE RETIREMENT — STOPPED at the drop-safety check; premise refuted, NOTHING
+dropped; BRAIN ONLY, UNCOMMITTED).** User: *"yes, retire the legacy tables one at a time."* The card's
+step-1 drop-safety check (by observation) **refuted the "legacy" framing** — the 8 per-layer `core.*`
+tables are the **source-led spine**, 7 of 8 load-bearing: `trail_centerlines` (2 LIVE published
+"Saturday Activity" rows in `publish.geojson`, **cited by the event schedule**) + 2 demo;
+`park_boundaries` (1 LIVE boundary served) + 1 demo; `trailheads` (a fully viewer-wired layer —
+`publish-trailheads` map layer + toggle + popup + feature-list — awaiting data); `hazards` (0 rows but
+its `publish.hazards` view is a bake UNION arm); `parcels` (the 2 REAL AOP parcels); `observations` (the
+northstar validation-loop row); `field_tracks` (the source GPX tracks). Only `print_annotations` (0 rows,
+`mvp/README.md`-only) has no reader — and it's the **intended print-board layer** (northstar V1, unbuilt).
+**Dropping any would break the bake/viewer or lose real data** → surfaced instead of proceeding (the
+"look before you delete; contradiction → surface" rule). `core.features` is the converged *display*
+layer; these are the *source* model — they coexist by design, gold did not replace them. **Recorded:**
+the deferred card `retire_legacy_geo_tables.md` marked **WITHDRAWN** with the per-table evidence
+(original plan kept as superseded); the diagram annotation corrected (source-led spine, not legacy).
+**Recommendation: keep all 8; the count is the honest source-led model, not bloat.** The only real lever
+for fewer objects is the long-term gold convergence of the *display* layers — not dropping the spine.
+NOTE: the Quartermaster consult HAD flagged "don't drop blind, each needs a drop-safety check" — the
+check is what caught this; the system worked.
+
+-----
+
 **2026-06-07 (COUNCIL CONSULT — "how do we have so many tables, I am at a loss"; BRAIN ONLY,
 UNCOMMITTED).** User saw the full 21-object diagram and felt lost. Convened Witness·Quartermaster·Mason
 (Steward-chaired) over the live DB. **Answer: not duplication, layering + old furniture.** Of 21: 6 are

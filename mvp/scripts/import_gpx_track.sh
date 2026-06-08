@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Import a GPX field track into the AOP MAP database.
 #
-# Lands raw XML in raw.gpx_captures and parses segments into core.field_tracks
-# (status=candidate, publish_status=hold). Adds a source row and feature_sources
-# links. See brain/northstar/source_register.md and validation_loop.md for the
-# data-zone policy.
+# Lands raw XML in raw.gpx_captures and parses segments into core.features
+# (layer='field_tracks', status=candidate, publish_status=hold). Adds a source
+# row and feature_sources links. See brain/northstar/source_register.md and
+# validation_loop.md for the data-zone policy.
 #
 # Usage: ./import_gpx_track.sh /path/to/file.gpx
 set -euo pipefail

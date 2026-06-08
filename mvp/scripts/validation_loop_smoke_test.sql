@@ -1,5 +1,13 @@
 \set ON_ERROR_STOP on
 
+-- Validation-loop smoke test (2026-06-07: re-homed onto the converged
+-- core.features). Proves the northstar loop end-to-end on ONE table: a board
+-- observation (layer='observations') is reviewed, then PROMOTED into a published
+-- trail (layer='trail_centerlines'), with provenance traced through
+-- source_register at every hop. Observations never overwrite trails directly --
+-- review promotes them (northstar/validation_loop). No FK/CHECK; values are
+-- stored, never rejected (C5/no_limiting_code_mvp).
+
 BEGIN;
 
 WITH inserted_source AS (
@@ -45,6 +53,8 @@ demo_source AS (
   ORDER BY id
   LIMIT 1
 )
+-- Backfill provenance for the original MVP demo features (now core.features rows
+-- carrying their old layer tag). No-ops on a fresh volume where they're absent.
 INSERT INTO source_register.feature_sources (
   feature_schema,
   feature_table,
@@ -58,7 +68,7 @@ INSERT INTO source_register.feature_sources (
 )
 SELECT
   'core',
-  'trail_centerlines',
+  'features',
   t.id,
   d.id,
   'demo publish sample seed',
@@ -66,14 +76,15 @@ SELECT
   DATE '2026-05-20',
   t.status,
   'Backfilled provenance link for the original MVP demo trail.'
-FROM core.trail_centerlines t
+FROM core.features t
 CROSS JOIN demo_source d
-WHERE t.name = 'Demo Ridge Trail'
+WHERE t.layer = 'trail_centerlines'
+  AND t.name = 'Demo Ridge Trail'
   AND NOT EXISTS (
     SELECT 1
     FROM source_register.feature_sources fs
     WHERE fs.feature_schema = 'core'
-      AND fs.feature_table = 'trail_centerlines'
+      AND fs.feature_table = 'features'
       AND fs.feature_id = t.id
       AND fs.source_id = d.id
       AND fs.claim = 'demo publish sample seed'
@@ -81,7 +92,7 @@ WHERE t.name = 'Demo Ridge Trail'
 UNION ALL
 SELECT
   'core',
-  'park_boundaries',
+  'features',
   b.id,
   d.id,
   'demo publish sample seed',
@@ -89,14 +100,15 @@ SELECT
   DATE '2026-05-20',
   b.status,
   'Backfilled provenance link for the original MVP demo boundary.'
-FROM core.park_boundaries b
+FROM core.features b
 CROSS JOIN demo_source d
-WHERE b.name = 'Demo Park Boundary'
+WHERE b.layer = 'park_boundaries'
+  AND b.name = 'Demo Park Boundary'
   AND NOT EXISTS (
     SELECT 1
     FROM source_register.feature_sources fs
     WHERE fs.feature_schema = 'core'
-      AND fs.feature_table = 'park_boundaries'
+      AND fs.feature_table = 'features'
       AND fs.feature_id = b.id
       AND fs.source_id = d.id
       AND fs.claim = 'demo publish sample seed'
@@ -104,7 +116,7 @@ WHERE b.name = 'Demo Park Boundary'
 UNION ALL
 SELECT
   'core',
-  'trailheads',
+  'features',
   h.id,
   d.id,
   'demo publish sample seed',
@@ -112,14 +124,15 @@ SELECT
   DATE '2026-05-20',
   h.status,
   'Backfilled provenance link for the original MVP demo trailhead.'
-FROM core.trailheads h
+FROM core.features h
 CROSS JOIN demo_source d
-WHERE h.name = 'Demo Trailhead'
+WHERE h.layer = 'trailheads'
+  AND h.name = 'Demo Trailhead'
   AND NOT EXISTS (
     SELECT 1
     FROM source_register.feature_sources fs
     WHERE fs.feature_schema = 'core'
-      AND fs.feature_table = 'trailheads'
+      AND fs.feature_table = 'features'
       AND fs.feature_id = h.id
       AND fs.source_id = d.id
       AND fs.claim = 'demo publish sample seed'
@@ -133,46 +146,52 @@ WITH smoke_source AS (
   LIMIT 1
 ),
 inserted_observation AS (
-  INSERT INTO core.observations (
-    observation_type,
+  INSERT INTO core.features (
+    layer,
+    name,
     source_id,
     status,
     confidence,
-    review_status,
-    measured_at,
+    source_key,
     notes,
     geom,
-    metadata
+    attrs
   )
   SELECT
+    'observations',
     'trail_correction',
     s.id,
     'reviewed',
     'medium',
-    'verified',
-    TIMESTAMPTZ '2026-05-20 15:45:00-05',
+    'observations:smoke_connector',
     'Smoke test observation: board review marked a connector candidate near the demo ridge trail.',
     ST_SetSRID(ST_Point(-85.8525, 35.0355), 4326),
     jsonb_build_object(
+      'observation_type', 'trail_correction',
+      'review_status', 'verified',
+      'measured_at', TIMESTAMPTZ '2026-05-20 15:45:00-05',
       'capture_method', 'board_mark_transcription',
       'review_result', 'verified_for_smoke_test',
-      'promotion_target', 'core.trail_centerlines',
+      'promotion_target', 'core.features (layer=trail_centerlines)',
       'publish_scope', 'demo_only'
     )
   FROM smoke_source s
   WHERE NOT EXISTS (
     SELECT 1
-    FROM core.observations
-    WHERE notes = 'Smoke test observation: board review marked a connector candidate near the demo ridge trail.'
+    FROM core.features
+    WHERE layer = 'observations'
+      AND notes = 'Smoke test observation: board review marked a connector candidate near the demo ridge trail.'
   )
+  ON CONFLICT (source_key) DO NOTHING
   RETURNING id
 ),
 observation_row AS (
   SELECT id FROM inserted_observation
   UNION ALL
   SELECT id
-  FROM core.observations
-  WHERE notes = 'Smoke test observation: board review marked a connector candidate near the demo ridge trail.'
+  FROM core.features
+  WHERE layer = 'observations'
+    AND notes = 'Smoke test observation: board review marked a connector candidate near the demo ridge trail.'
   ORDER BY id
   LIMIT 1
 )
@@ -189,7 +208,7 @@ INSERT INTO source_register.feature_sources (
 )
 SELECT
   'core',
-  'observations',
+  'features',
   o.id,
   s.id,
   'board mark captured as review evidence',
@@ -203,7 +222,7 @@ WHERE NOT EXISTS (
   SELECT 1
   FROM source_register.feature_sources fs
   WHERE fs.feature_schema = 'core'
-    AND fs.feature_table = 'observations'
+    AND fs.feature_table = 'features'
     AND fs.feature_id = o.id
     AND fs.source_id = s.id
     AND fs.claim = 'board mark captured as review evidence'
@@ -218,20 +237,21 @@ WITH smoke_source AS (
 ),
 observation_row AS (
   SELECT id
-  FROM core.observations
-  WHERE notes = 'Smoke test observation: board review marked a connector candidate near the demo ridge trail.'
+  FROM core.features
+  WHERE layer = 'observations'
+    AND notes = 'Smoke test observation: board review marked a connector candidate near the demo ridge trail.'
   ORDER BY id
   LIMIT 1
 ),
 updated_trail AS (
-  UPDATE core.trail_centerlines t
+  UPDATE core.features t
   SET
-    difficulty = 'green',
     status = 'verified',
     confidence = 'medium',
     permission = 'publish',
     publish_status = 'publish',
     source_id = s.id,
+    attrs = coalesce(t.attrs, '{}'::jsonb) || jsonb_build_object('difficulty', 'green'),
     geom = ST_SetSRID(ST_MakeLine(ARRAY[
       ST_Point(-85.8550, 35.0330),
       ST_Point(-85.8525, 35.0355),
@@ -244,35 +264,40 @@ updated_trail AS (
     last_verified = TIMESTAMPTZ '2026-05-20 15:50:00-05',
     updated_at = now()
   FROM smoke_source s, observation_row o
-  WHERE t.name = 'MVP Smoke: Board-Validated Connector'
+  WHERE t.layer = 'trail_centerlines'
+    AND t.name = 'MVP Smoke: Board-Validated Connector'
   RETURNING t.id
 ),
 inserted_trail AS (
-  INSERT INTO core.trail_centerlines (
+  INSERT INTO core.features (
+    layer,
     name,
-    difficulty,
     status,
     confidence,
     permission,
     publish_status,
+    source_key,
     source_id,
     geom,
+    attrs,
     notes,
     last_verified
   )
   SELECT
+    'trail_centerlines',
     'MVP Smoke: Board-Validated Connector',
-    'green',
     'verified',
     'medium',
     'publish',
     'publish',
+    'trail_centerlines:smoke_connector',
     s.id,
     ST_SetSRID(ST_MakeLine(ARRAY[
       ST_Point(-85.8550, 35.0330),
       ST_Point(-85.8525, 35.0355),
       ST_Point(-85.8500, 35.0370)
     ]), 4326),
+    jsonb_build_object('difficulty', 'green'),
     format(
       'Promoted from smoke validation observation id %s on 2026-05-20. Demo geometry only; replace with real AOP trail data before production use.',
       o.id
@@ -281,9 +306,11 @@ inserted_trail AS (
   FROM smoke_source s, observation_row o
   WHERE NOT EXISTS (
     SELECT 1
-    FROM core.trail_centerlines
-    WHERE name = 'MVP Smoke: Board-Validated Connector'
+    FROM core.features
+    WHERE layer = 'trail_centerlines'
+      AND name = 'MVP Smoke: Board-Validated Connector'
   )
+  ON CONFLICT (source_key) DO NOTHING
   RETURNING id
 ),
 trail_row AS (
@@ -292,8 +319,9 @@ trail_row AS (
   SELECT id FROM inserted_trail
   UNION ALL
   SELECT id
-  FROM core.trail_centerlines
-  WHERE name = 'MVP Smoke: Board-Validated Connector'
+  FROM core.features
+  WHERE layer = 'trail_centerlines'
+    AND name = 'MVP Smoke: Board-Validated Connector'
   ORDER BY id
   LIMIT 1
 )
@@ -310,14 +338,14 @@ INSERT INTO source_register.feature_sources (
 )
 SELECT
   'core',
-  'trail_centerlines',
+  'features',
   t.id,
   s.id,
   'verified observation promoted into trail centerline',
   'medium',
   DATE '2026-05-20',
   'verified',
-  format('Promotion is traceable from core.observations id %s to this demo trail feature.', o.id)
+  format('Promotion is traceable from core.features observation id %s to this demo trail feature.', o.id)
 FROM trail_row t
 CROSS JOIN smoke_source s
 CROSS JOIN observation_row o
@@ -325,7 +353,7 @@ WHERE NOT EXISTS (
   SELECT 1
   FROM source_register.feature_sources fs
   WHERE fs.feature_schema = 'core'
-    AND fs.feature_table = 'trail_centerlines'
+    AND fs.feature_table = 'features'
     AND fs.feature_id = t.id
     AND fs.source_id = s.id
     AND fs.claim = 'verified observation promoted into trail centerline'
@@ -333,23 +361,25 @@ WHERE NOT EXISTS (
 
 WITH observation_row AS (
   SELECT id
-  FROM core.observations
-  WHERE notes = 'Smoke test observation: board review marked a connector candidate near the demo ridge trail.'
+  FROM core.features
+  WHERE layer = 'observations'
+    AND notes = 'Smoke test observation: board review marked a connector candidate near the demo ridge trail.'
   ORDER BY id
   LIMIT 1
 ),
 trail_row AS (
   SELECT id
-  FROM core.trail_centerlines
-  WHERE name = 'MVP Smoke: Board-Validated Connector'
+  FROM core.features
+  WHERE layer = 'trail_centerlines'
+    AND name = 'MVP Smoke: Board-Validated Connector'
   ORDER BY id
   LIMIT 1
 )
-UPDATE core.observations o
+UPDATE core.features o
 SET
-  metadata = coalesce(o.metadata, '{}'::jsonb) || jsonb_build_object(
+  attrs = coalesce(o.attrs, '{}'::jsonb) || jsonb_build_object(
     'promoted_feature_schema', 'core',
-    'promoted_feature_table', 'trail_centerlines',
+    'promoted_feature_table', 'features',
     'promoted_feature_id', t.id
   ),
   updated_at = now()
@@ -367,20 +397,21 @@ FROM source_register.sources
 UNION ALL
 SELECT 'feature_sources', count(*) FROM source_register.feature_sources
 UNION ALL
-SELECT 'observations', count(*) FROM core.observations
+SELECT 'observations', count(*) FROM core.features WHERE layer = 'observations'
 UNION ALL
-SELECT 'trail_centerlines', count(*) FROM core.trail_centerlines
+SELECT 'trail_centerlines', count(*) FROM core.features WHERE layer = 'trail_centerlines'
 UNION ALL
-SELECT 'publish_trails', count(*) FROM publish.trail_centerlines
+SELECT 'publish_trails', count(*) FROM publish.features WHERE layer = 'trail_centerlines'
 ORDER BY table_name;
 
 SELECT
   o.id AS observation_id,
-  o.observation_type,
-  o.review_status,
+  o.attrs ->> 'observation_type' AS observation_type,
+  o.attrs ->> 'review_status' AS review_status,
   o.confidence,
-  o.metadata ->> 'promoted_feature_table' AS promoted_feature_table,
-  o.metadata ->> 'promoted_feature_id' AS promoted_feature_id
-FROM core.observations o
-WHERE o.notes = 'Smoke test observation: board review marked a connector candidate near the demo ridge trail.'
+  o.attrs ->> 'promoted_feature_table' AS promoted_feature_table,
+  o.attrs ->> 'promoted_feature_id' AS promoted_feature_id
+FROM core.features o
+WHERE o.layer = 'observations'
+  AND o.notes = 'Smoke test observation: board review marked a connector candidate near the demo ridge trail.'
 ORDER BY o.id;

@@ -82,39 +82,42 @@ seg_rows AS (
        LATERAL jsonb_array_elements(p -> 'segments') AS seg
 ),
 inserted_tracks AS (
-  INSERT INTO core.field_tracks (
-    track_name,
-    segment_index,
-    point_count,
-    recorded_start,
-    recorded_end,
+  -- Field tracks now live in the converged core.features (layer='field_tracks');
+  -- segment_index/point_count/recorded_*/ele_* land in attrs (2026-06-07 table
+  -- cleanup). No FK/CHECK; the segment data is stored, never rejected (C5).
+  INSERT INTO core.features (
+    layer,
+    name,
     status,
     confidence,
     permission,
     publish_status,
+    source_key,
     source_id,
     geom,
-    metadata,
+    attrs,
     notes,
     last_verified
   )
   SELECT
+    'field_tracks',
     seg_rows.track_name,
-    (seg ->> 'segment_index')::integer,
-    (seg ->> 'point_count')::integer,
-    NULLIF(seg ->> 'recorded_start', '')::timestamptz,
-    NULLIF(seg ->> 'recorded_end', '')::timestamptz,
     'candidate',
     'medium',
     'publish',
     'hold',
+    'field_tracks:' || seg_rows.source_id || ':' || (seg ->> 'segment_index'),
     seg_rows.source_id,
     ST_SetSRID(ST_GeomFromText(seg ->> 'wkt'), 4326),
-    jsonb_build_object(
+    jsonb_strip_nulls(jsonb_build_object(
+      'segment_index', (seg ->> 'segment_index')::integer,
+      'point_count', (seg ->> 'point_count')::integer,
+      'recorded_start', NULLIF(seg ->> 'recorded_start', '')::timestamptz,
+      'recorded_end', NULLIF(seg ->> 'recorded_end', '')::timestamptz,
       'ele_min', seg -> 'ele_min',
       'ele_max', seg -> 'ele_max',
       'source_file', :'file_name'
-    ),
+    )),
     format(
       'Field track segment %s from %s. Recorded with %s. Candidate evidence; not validated against board markup.',
       seg ->> 'segment_index',
@@ -126,13 +129,17 @@ inserted_tracks AS (
   WHERE NOT EXISTS (
     -- IS NOT DISTINCT FROM treats NULL = NULL as TRUE; a plain `=` returns
     -- UNKNOWN there and would silently re-import segments with no recorded_start.
-    SELECT 1 FROM core.field_tracks existing
-    WHERE existing.source_id = seg_rows.source_id
-      AND existing.segment_index = (seg ->> 'segment_index')::integer
-      AND existing.recorded_start IS NOT DISTINCT FROM
+    -- Content match (layer + source + segment + recorded_start) -- so a re-run
+    -- after the migration sees the moved rows and never double-imports.
+    SELECT 1 FROM core.features existing
+    WHERE existing.layer = 'field_tracks'
+      AND existing.source_id = seg_rows.source_id
+      AND (existing.attrs ->> 'segment_index')::integer = (seg ->> 'segment_index')::integer
+      AND NULLIF(existing.attrs ->> 'recorded_start', '')::timestamptz IS NOT DISTINCT FROM
           NULLIF(seg ->> 'recorded_start', '')::timestamptz
   )
-  RETURNING id, segment_index, source_id
+  ON CONFLICT (source_key) DO NOTHING
+  RETURNING id, (attrs ->> 'segment_index') AS segment_index, source_id
 )
 INSERT INTO source_register.feature_sources (
   feature_schema,
@@ -147,7 +154,7 @@ INSERT INTO source_register.feature_sources (
 )
 SELECT
   'core',
-  'field_tracks',
+  'features',
   it.id,
   it.source_id,
   format('GPX field track segment %s recorded by GaiaGPS', it.segment_index),
@@ -159,7 +166,7 @@ FROM inserted_tracks it
 WHERE NOT EXISTS (
   SELECT 1 FROM source_register.feature_sources fs
   WHERE fs.feature_schema = 'core'
-    AND fs.feature_table = 'field_tracks'
+    AND fs.feature_table = 'features'
     AND fs.feature_id = it.id
     AND fs.source_id = it.source_id
 );
@@ -170,22 +177,23 @@ SELECT 'gpx_import_summary' AS result;
 
 SELECT
   ft.id,
-  ft.track_name,
-  ft.segment_index,
-  ft.point_count,
-  ft.recorded_start,
-  ft.recorded_end,
+  ft.name AS track_name,
+  ft.attrs ->> 'segment_index' AS segment_index,
+  ft.attrs ->> 'point_count' AS point_count,
+  ft.attrs ->> 'recorded_start' AS recorded_start,
+  ft.attrs ->> 'recorded_end' AS recorded_end,
   ft.status,
   ft.confidence,
   ft.permission,
   ft.publish_status,
   ROUND(ST_Length(ft.geom::geography)::numeric, 1) AS length_m,
   ROUND(ST_Length(ft.geom::geography)::numeric / 1609.344, 2) AS length_mi
-FROM core.field_tracks ft
+FROM core.features ft
 JOIN source_register.sources s ON s.id = ft.source_id
-WHERE s.source_type = 'field_track_gpx'
+WHERE ft.layer = 'field_tracks'
+  AND s.source_type = 'field_track_gpx'
   AND s.url_or_contact = 'first-party GPX export: ' || :'file_name'
-ORDER BY ft.segment_index;
+ORDER BY (ft.attrs ->> 'segment_index')::integer;
 
 SELECT
   id,

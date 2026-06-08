@@ -1,7 +1,13 @@
 \set ON_ERROR_STOP on
 
--- Schema (tables and publish views) is owned by mvp/init_db.sql.
+-- Schema (core.features + the publish.features view) is owned by mvp/init_db.sql.
 -- This script only imports data; run init_db.sql first if the DB is fresh.
+--
+-- 2026-06-07 table cleanup: parcels and the park boundary envelope now live in
+-- the converged core.features (layer='parcels' / layer='park_boundaries'); the
+-- per-parcel assessment columns + the GIS metadata land in attrs (no allowlist,
+-- no CHECK -- C5). The parcel upsert keys on attrs->>'parcel_id'; the envelope is
+-- the union of the included parcel geometries.
 
 BEGIN;
 
@@ -95,26 +101,19 @@ SET
 FROM source_row r
 WHERE s.id = r.id;
 
-UPDATE core.trail_centerlines
-SET
-  permission = 'internal',
-  publish_status = 'demo_hold',
-  updated_at = now()
-WHERE name IN ('Demo Ridge Trail', 'MVP Smoke: Board-Validated Connector');
+-- Demo MVP scaffolding rows (now core.features carrying their old layer tag).
+UPDATE core.features
+SET permission = 'internal', publish_status = 'demo_hold', updated_at = now()
+WHERE layer = 'trail_centerlines'
+  AND name IN ('Demo Ridge Trail', 'MVP Smoke: Board-Validated Connector');
 
-UPDATE core.trailheads
-SET
-  permission = 'internal',
-  publish_status = 'demo_hold',
-  updated_at = now()
-WHERE name = 'Demo Trailhead';
+UPDATE core.features
+SET permission = 'internal', publish_status = 'demo_hold', updated_at = now()
+WHERE layer = 'trailheads' AND name = 'Demo Trailhead';
 
-UPDATE core.park_boundaries
-SET
-  permission = 'internal',
-  publish_status = 'demo_hold',
-  updated_at = now()
-WHERE name = 'Demo Park Boundary';
+UPDATE core.features
+SET permission = 'internal', publish_status = 'demo_hold', updated_at = now()
+WHERE layer = 'park_boundaries' AND name = 'Demo Park Boundary';
 
 WITH parcel_features AS (
   SELECT value AS feature
@@ -173,26 +172,39 @@ raw_capture AS (
   )
   RETURNING id
 ),
-updated_parcels AS (
-  UPDATE core.parcels p
-  SET
-    owner = nullif(trim(concat_ws(' ', parts.attrs ->> 'Assessment_Data_58_OWNER', nullif(parts.attrs ->> 'Assessment_Data_58_OWNER2', ' '))), ''),
-    land_area = nullif(parts.attrs ->> 'Parcels_CALC_ACRE', '')::numeric,
-    source_id = ps.id,
-    geom = parts.geom,
-    metadata = jsonb_build_object(
-      'objectid', parts.attrs -> 'OBJECTID',
-      'globalid', parts.attrs ->> 'GlobalID',
-      'gislink', parts.attrs ->> 'Parcels_GISLINK',
-      'parcelid', parts.attrs ->> 'Assessment_Data_58_PARCELID',
-      'assessment_id', parts.attrs ->> 'Assessment_Data_58_ID',
-      'address', parts.attrs ->> 'Assessment_Data_58_ADDRESS',
-      'class', parts.attrs ->> 'Assessment_Data_58_CLASS',
-      'deed_acres', nullif(parts.attrs ->> 'Assessment_Data_58_DEEDAC', '')::numeric,
-      'landuse', parts.attrs ->> 'Assessment_Data_58_LANDUSE',
+-- The per-parcel attrs bag the converged row carries (assessment + GIS metadata
+-- + the identity columns parcels used to hold as their own fields).
+parcel_attrs AS (
+  SELECT
+    pp.parcel_id,
+    pp.geom,
+    nullif(trim(concat_ws(' ', pp.attrs ->> 'Assessment_Data_58_OWNER', nullif(pp.attrs ->> 'Assessment_Data_58_OWNER2', ' '))), '') AS owner,
+    nullif(pp.attrs ->> 'Parcels_CALC_ACRE', '')::numeric AS land_area,
+    jsonb_strip_nulls(jsonb_build_object(
+      'parcel_id', pp.parcel_id,
+      'owner', nullif(trim(concat_ws(' ', pp.attrs ->> 'Assessment_Data_58_OWNER', nullif(pp.attrs ->> 'Assessment_Data_58_OWNER2', ' '))), ''),
+      'land_area', nullif(pp.attrs ->> 'Parcels_CALC_ACRE', '')::numeric,
+      'objectid', pp.attrs -> 'OBJECTID',
+      'globalid', pp.attrs ->> 'GlobalID',
+      'gislink', pp.attrs ->> 'Parcels_GISLINK',
+      'parcelid', pp.attrs ->> 'Assessment_Data_58_PARCELID',
+      'assessment_id', pp.attrs ->> 'Assessment_Data_58_ID',
+      'address', pp.attrs ->> 'Assessment_Data_58_ADDRESS',
+      'class', pp.attrs ->> 'Assessment_Data_58_CLASS',
+      'deed_acres', nullif(pp.attrs ->> 'Assessment_Data_58_DEEDAC', '')::numeric,
+      'landuse', pp.attrs ->> 'Assessment_Data_58_LANDUSE',
       'source_layer', 'Marion_Parcels',
       'source_query_where', :'query_where'
-    ),
+    )) AS attrs
+  FROM parcel_parts pp
+),
+updated_parcels AS (
+  UPDATE core.features p
+  SET
+    name = 'Parcel ' || pa.parcel_id,
+    source_id = ps.id,
+    geom = pa.geom,
+    attrs = pa.attrs,
     notes = 'AOP candidate parcel from Tennessee Comptroller Marion County parcel layer. Reference only; not a legal survey.',
     status = 'candidate',
     confidence = 'medium',
@@ -200,88 +212,73 @@ updated_parcels AS (
     publish_status = 'hold',
     last_verified = now(),
     updated_at = now()
-  FROM parcel_parts parts
+  FROM parcel_attrs pa
   CROSS JOIN parcel_source ps
-  WHERE p.parcel_id = parts.parcel_id
-  RETURNING p.id, p.parcel_id, p.land_area, p.metadata, p.geom
+  WHERE p.layer = 'parcels'
+    AND p.attrs ->> 'parcel_id' = pa.parcel_id
+  RETURNING p.id, p.attrs ->> 'parcel_id' AS parcel_id, p.attrs, p.geom
 ),
 inserted_parcels AS (
-  INSERT INTO core.parcels (
-    parcel_id,
-    owner,
-    land_area,
-    source_id,
-    geom,
-    metadata,
-    notes,
-    status,
-    confidence,
-    permission,
-    publish_status,
-    last_verified
+  INSERT INTO core.features (
+    layer, name, source_key, source_id, geom, attrs, notes,
+    status, confidence, permission, publish_status, last_verified
   )
   SELECT
-    parts.parcel_id,
-    nullif(trim(concat_ws(' ', parts.attrs ->> 'Assessment_Data_58_OWNER', nullif(parts.attrs ->> 'Assessment_Data_58_OWNER2', ' '))), ''),
-    nullif(parts.attrs ->> 'Parcels_CALC_ACRE', '')::numeric,
+    'parcels',
+    'Parcel ' || pa.parcel_id,
+    'parcels:' || pa.parcel_id,
     ps.id,
-    parts.geom,
-    jsonb_build_object(
-      'objectid', parts.attrs -> 'OBJECTID',
-      'globalid', parts.attrs ->> 'GlobalID',
-      'gislink', parts.attrs ->> 'Parcels_GISLINK',
-      'parcelid', parts.attrs ->> 'Assessment_Data_58_PARCELID',
-      'assessment_id', parts.attrs ->> 'Assessment_Data_58_ID',
-      'address', parts.attrs ->> 'Assessment_Data_58_ADDRESS',
-      'class', parts.attrs ->> 'Assessment_Data_58_CLASS',
-      'deed_acres', nullif(parts.attrs ->> 'Assessment_Data_58_DEEDAC', '')::numeric,
-      'landuse', parts.attrs ->> 'Assessment_Data_58_LANDUSE',
-      'source_layer', 'Marion_Parcels',
-      'source_query_where', :'query_where'
-    ),
+    pa.geom,
+    pa.attrs,
     'AOP candidate parcel from Tennessee Comptroller Marion County parcel layer. Reference only; not a legal survey.',
     'candidate',
     'medium',
     'publish',
     'hold',
     now()
-  FROM parcel_parts parts
+  FROM parcel_attrs pa
   CROSS JOIN parcel_source ps
   WHERE NOT EXISTS (
     SELECT 1
-    FROM core.parcels existing
-    WHERE existing.parcel_id = parts.parcel_id
+    FROM core.features existing
+    WHERE existing.layer = 'parcels'
+      AND existing.attrs ->> 'parcel_id' = pa.parcel_id
   )
-  RETURNING id, parcel_id, land_area, metadata, geom
+  -- A batch can carry the same parcel twice (duplicate ArcGIS capture); both
+  -- rows pass the pre-statement NOT EXISTS guard and generate the same
+  -- source_key. DO NOTHING stores the first and skips the rest -- never throws,
+  -- never rejects the batch (C5/no_limiting_code_mvp).
+  ON CONFLICT (source_key) DO NOTHING
+  RETURNING id, attrs ->> 'parcel_id' AS parcel_id, attrs, geom
 ),
 parcel_rows AS (
   SELECT DISTINCT ON (parcel_id)
     id,
     parcel_id,
-    land_area,
-    metadata,
+    attrs,
     geom
   FROM (
-    SELECT id, parcel_id, land_area, metadata, geom FROM updated_parcels
+    SELECT id, parcel_id, attrs, geom FROM updated_parcels
     UNION ALL
-    SELECT id, parcel_id, land_area, metadata, geom FROM inserted_parcels
+    SELECT id, parcel_id, attrs, geom FROM inserted_parcels
     UNION ALL
-    SELECT p.id, p.parcel_id, p.land_area, p.metadata, p.geom
-    FROM core.parcels p
-    JOIN parcel_parts parts ON p.parcel_id = parts.parcel_id
+    SELECT p.id, p.attrs ->> 'parcel_id' AS parcel_id, p.attrs, p.geom
+    FROM core.features p
+    JOIN parcel_attrs pa ON p.attrs ->> 'parcel_id' = pa.parcel_id
+    WHERE p.layer = 'parcels'
   ) rows
   ORDER BY parcel_id, id
 ),
 boundary_stats AS (
   SELECT
     count(*) AS parcel_count,
-    sum(land_area) AS calculated_acres,
-    sum(nullif(metadata ->> 'deed_acres', '')::numeric) AS deed_acres,
+    sum((attrs ->> 'land_area')::numeric) AS calculated_acres,
+    sum(nullif(attrs ->> 'deed_acres', '')::numeric) AS deed_acres,
     string_agg(
       format(
         '%s at %s',
         parcel_id,
-        coalesce(nullif(metadata ->> 'address', ''), 'unknown address')
+        coalesce(nullif(attrs ->> 'address', ''), 'unknown address')
       ),
       ', '
       ORDER BY parcel_id
@@ -291,16 +288,17 @@ boundary_stats AS (
 ),
 existing_boundary AS (
   SELECT id
-  FROM core.park_boundaries
-  WHERE name IN (
-    'AOP working parcel envelope - Ellis Cove Road 1040',
-    'AOP working parcel envelope - included parcel candidates'
-  )
+  FROM core.features
+  WHERE layer = 'park_boundaries'
+    AND name IN (
+      'AOP working parcel envelope - Ellis Cove Road 1040',
+      'AOP working parcel envelope - included parcel candidates'
+    )
   ORDER BY id
   LIMIT 1
 ),
 updated_boundary AS (
-  UPDATE core.park_boundaries b
+  UPDATE core.features b
   SET
     name = 'AOP working parcel envelope - included parcel candidates',
     status = 'candidate',
@@ -325,25 +323,31 @@ updated_boundary AS (
   RETURNING b.id
 ),
 inserted_boundary AS (
-  INSERT INTO core.park_boundaries (
+  INSERT INTO core.features (
+    layer,
     name,
     status,
     confidence,
     permission,
     publish_status,
+    source_key,
     source_id,
     geom,
+    attrs,
     notes,
     last_verified
   )
   SELECT
+    'park_boundaries',
     'AOP working parcel envelope - included parcel candidates',
     'candidate',
     'medium',
     'publish',
     'publish',
+    'park_boundaries:envelope',
     ps.id,
     bs.geom,
+    '{}'::jsonb,
     format(
       'Working AOP envelope from %s Tennessee Comptroller parcels: %s. Included parcels total %s calculated acres and %s deed acres; official AOP site says 600+ acres, so current holdings still need verification. Public GIS reference only; not a legal survey.',
       bs.parcel_count,
@@ -356,12 +360,14 @@ inserted_boundary AS (
   CROSS JOIN parcel_source ps
   WHERE NOT EXISTS (
       SELECT 1
-      FROM core.park_boundaries existing
-      WHERE existing.name IN (
-        'AOP working parcel envelope - Ellis Cove Road 1040',
-        'AOP working parcel envelope - included parcel candidates'
-      )
+      FROM core.features existing
+      WHERE existing.layer = 'park_boundaries'
+        AND existing.name IN (
+          'AOP working parcel envelope - Ellis Cove Road 1040',
+          'AOP working parcel envelope - included parcel candidates'
+        )
     )
+  ON CONFLICT (source_key) DO NOTHING
   RETURNING id
 ),
 boundary_row AS (
@@ -370,11 +376,12 @@ boundary_row AS (
   SELECT id FROM inserted_boundary
   UNION ALL
   SELECT id
-  FROM core.park_boundaries
-  WHERE name IN (
-    'AOP working parcel envelope - Ellis Cove Road 1040',
-    'AOP working parcel envelope - included parcel candidates'
-  )
+  FROM core.features
+  WHERE layer = 'park_boundaries'
+    AND name IN (
+      'AOP working parcel envelope - Ellis Cove Road 1040',
+      'AOP working parcel envelope - included parcel candidates'
+    )
   ORDER BY id
   LIMIT 1
 )
@@ -391,7 +398,7 @@ INSERT INTO source_register.feature_sources (
 )
 SELECT
   'core',
-  'parcels',
+  'features',
   pr.id,
   ps.id,
   format('parcel geometry and assessment attributes for included AOP parcel %s', pr.parcel_id),
@@ -400,7 +407,7 @@ SELECT
   'reviewed',
   format(
     'Imported from Tennessee Comptroller Marion_Parcels FeatureServer layer. Source parcel id: %s.',
-    pr.metadata ->> 'parcelid'
+    pr.attrs ->> 'parcelid'
   )
 FROM parcel_rows pr
 CROSS JOIN parcel_source ps
@@ -408,7 +415,7 @@ WHERE NOT EXISTS (
   SELECT 1
   FROM source_register.feature_sources fs
   WHERE fs.feature_schema = 'core'
-    AND fs.feature_table = 'parcels'
+    AND fs.feature_table = 'features'
     AND fs.feature_id = pr.id
     AND fs.source_id = ps.id
     AND fs.claim = format('parcel geometry and assessment attributes for included AOP parcel %s', pr.parcel_id)
@@ -416,7 +423,7 @@ WHERE NOT EXISTS (
 UNION ALL
 SELECT
   'core',
-  'park_boundaries',
+  'features',
   br.id,
   ps.id,
   'candidate AOP envelope from included Tennessee Comptroller parcel geometries',
@@ -431,7 +438,7 @@ WHERE NOT EXISTS (
   SELECT 1
   FROM source_register.feature_sources fs
   WHERE fs.feature_schema = 'core'
-    AND fs.feature_table = 'park_boundaries'
+    AND fs.feature_table = 'features'
     AND fs.feature_id = br.id
     AND fs.source_id = ps.id
     AND fs.claim = 'candidate AOP envelope from included Tennessee Comptroller parcel geometries'
@@ -439,7 +446,7 @@ WHERE NOT EXISTS (
 UNION ALL
 SELECT
   'core',
-  'park_boundaries',
+  'features',
   br.id,
   os.id,
   'official AOP site says 600+ acres and 120+ trails',
@@ -453,7 +460,7 @@ WHERE NOT EXISTS (
   SELECT 1
   FROM source_register.feature_sources fs
   WHERE fs.feature_schema = 'core'
-    AND fs.feature_table = 'park_boundaries'
+    AND fs.feature_table = 'features'
     AND fs.feature_id = br.id
     AND fs.source_id = os.id
     AND fs.claim = 'official AOP site says 600+ acres and 120+ trails'
@@ -465,18 +472,19 @@ SELECT 'aop_parcel_boundary_import_summary' AS result;
 
 SELECT
   p.id,
-  p.parcel_id,
-  p.land_area AS calculated_acres,
-  p.metadata ->> 'deed_acres' AS deed_acres,
+  p.attrs ->> 'parcel_id' AS parcel_id,
+  (p.attrs ->> 'land_area')::numeric AS calculated_acres,
+  p.attrs ->> 'deed_acres' AS deed_acres,
   p.status,
   p.confidence,
   p.publish_status,
-  p.metadata ->> 'address' AS address
-FROM core.parcels p
-WHERE p.parcel_id IN (
-  SELECT feature -> 'properties' ->> 'Assessment_Data_58_ID'
-  FROM jsonb_array_elements(:'parcel_features'::jsonb) AS features(feature)
-)
+  p.attrs ->> 'address' AS address
+FROM core.features p
+WHERE p.layer = 'parcels'
+  AND p.attrs ->> 'parcel_id' IN (
+    SELECT feature -> 'properties' ->> 'Assessment_Data_58_ID'
+    FROM jsonb_array_elements(:'parcel_features'::jsonb) AS features(feature)
+  )
 ORDER BY p.id;
 
 SELECT
@@ -488,9 +496,10 @@ SELECT
   publish_status,
   ST_GeometryType(geom) AS geometry_type,
   round((ST_Area(geom::geography) / 4046.8564224)::numeric, 2) AS approximate_geometry_acres
-FROM core.park_boundaries
-WHERE name IN (
-  'AOP working parcel envelope - Ellis Cove Road 1040',
-  'AOP working parcel envelope - included parcel candidates'
-)
+FROM core.features
+WHERE layer = 'park_boundaries'
+  AND name IN (
+    'AOP working parcel envelope - Ellis Cove Road 1040',
+    'AOP working parcel envelope - included parcel candidates'
+  )
 ORDER BY id;

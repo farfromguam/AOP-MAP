@@ -1,9 +1,46 @@
 # Retire the legacy per-layer geo tables (the "so many tables" cleanup)
 
+> **✅ DONE 2026-06-07 — FULL FOLD executed (DB + scripts + init_db.sql, UNCOMMITTED). 21 objects → 8.**
+> The earlier "DO NOT RETIRE — they're the source-led spine" correction was **overridden by the user**:
+> *"we should not have so many tables. attempts to remove the extraneous resulted in andon pulls 'there
+> is data there' well it needs to be moved or removed. figure out the minimum and migrate data into that
+> shape."* (`cards_not_gospel` — the user's inline correction wins.) The user chose **full fold** + **rewrite
+> the validation-loop pipeline onto `core.features`**. Done and verified by observation:
+>
+> - **Migrated** all 12 rows from the 8 per-layer `core.*` tables into `core.features` (domain fields →
+>   `attrs`, `layer`=old table name; `migrate_layers_to_core_features.sql`). count==input (147→159).
+>   All 15 `feature_sources` re-pointed to `core.features` (0 dangling).
+> - **Bake rewired** (`export_publish_geojson.sh`): `publish.geojson` now reads every published layer
+>   from the one `publish.features` gate. Output feature-equivalent to the prior bake (only the
+>   geo-layer `id`s shifted to `core.features` serials — the gold-precedent change); POI DOM rows
+>   observed rendering; served files restored byte-identical to HEAD.
+> - **Pipeline rewritten** onto `core.features` (`import_gpx_track`, `promote_gpx_to_trail`,
+>   `import_aop_parcel_boundary`, `validation_loop_smoke_test`) — proven end-to-end on a fresh volume
+>   (all exit 0; field_tracks→promote→publish; parcels+envelope; observation→promote; 10/10 provenance
+>   links → features). The northstar validation loop is re-homed on one table, not deleted.
+> - **Dropped** the 8 per-layer tables + 5 per-layer publish views on the live DB. `init_db.sql`
+>   updated (8 objects); fresh-volume repro exit 0. Also fixed a pre-existing drift: named the
+>   `gpx_captures` UNIQUE constraint so `import_gpx_track.sql`'s `ON CONFLICT ON CONSTRAINT` resolves
+>   on a fresh volume.
+> - **Final shape (the honest minimum):** `core.features` + `core.events` + `core.activities` +
+>   `source_register.sources`/`feature_sources` + `raw.gpx_captures`/`arcgis_feature_captures` +
+>   `publish.features` = 7 tables + 1 view. See `../07_tables/tables_diagram.md`.
+> - **Owed (the user's git gate):** the commit. **Flagged (pre-existing, NOT this card):** the served
+>   `publish.geojson` carries a served-only park_boundary ("Ellis Cemetery (inholding parcel)") that no
+>   table holds, so the bake drops it on next deploy — the gold "served-only hand-curated row" gap,
+>   unrelated to this fold. Same class: HEAD's served file also carries extra keys
+>   (`description`/`source`/`last_checked`) from an older writer the current `attrs`-verbatim bake won't
+>   reproduce (non-breaking — the viewer reads `blurb`). Both surface only on the next real deploy.
+> - **Council 2026-06-07: FULL CLEAR (full six).** Witness andon'd the rewritten parcel import (it threw
+>   a unique-violation on a duplicate-parcel batch — a C5 reject); fixed with `ON CONFLICT (source_key)
+>   DO NOTHING`, re-witnessed CLEAR; Warden/Quartermaster/Mason/Scribe clear.
+>
+> Everything below is the **superseded** original plan + the (now-overridden) keep-it correction, kept
+> as the record of how the framing evolved.
+
 > **Source:** council consult 2026-06-07 — the user, looking at the full table diagram, said
-> *"how do we have so many tables… I am at a loss."* The council (Witness·Quartermaster·Mason,
-> Steward-chaired) grounded the answer in live row counts. This card is the cleanup it surfaced.
-> **Status: DEFERRED** — a safe, one-at-a-time drop, each gated on a content-migrated check.
+> *"how do we have so many tables… I am at a loss."* This card is the cleanup it surfaced.
+> **Status: ~~DEFERRED~~ ~~WITHDRAWN~~ DONE (full fold; see the DONE block above).**
 
 TL;DR:
 - The live product runs on ~**5 tables** (`core.features` 147, `core.events` 13, `core.activities`

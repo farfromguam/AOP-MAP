@@ -9,9 +9,9 @@
 # Usage:
 #   ./import_geojson.sh /path/to/file.geojson schema.table
 #
-# Example (drop a generic point/line/polygon dataset into the observations
-# bucket where it can be reviewed before promotion):
-#   ./import_geojson.sh ../../website/data/aop_buildings.geojson core.observations
+# Example (drop a generic point/line/polygon dataset into core.features for
+# review before promotion; set its `layer` afterward so it tags into a bucket):
+#   ./import_geojson.sh ../../website/data/aop_buildings.geojson core.features
 #
 # Unlike the schema-specific importers (import_aop_parcel_boundary,
 # import_gpx_track, import_fema_buildings, import_marion_cemeteries), this
