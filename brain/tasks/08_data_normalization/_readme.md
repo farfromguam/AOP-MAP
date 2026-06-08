@@ -32,8 +32,20 @@ the normalization: the four reference layers' curation joins POIs in the same sh
 ## The spine card
 
 `star_driven_poi_normalization.md` — the 3-slice plan, council-corrected, with a
-tile-independent observable acceptance per slice and the loop contract. Ready for: **council
-the plan → commit-pause → ralph-loop in a fresh session** (the gold/sprint-07 cadence).
+tile-independent observable acceptance per slice and the loop contract.
+
+**✅ COMPLETE (2026-06-08).** Plan committed (`c781f59`), then all 3 slices ralph-looped + verified
+by observation in a fresh session; **full-six council done-review CLEAR** (receipt:
+`../../output/council/sprint08_done_review_20260608.md`). The card holds the EXECUTION RECORD. The
+spine card stays in this dir (not moved to `_done/`) to preserve its inbound links — the EXECUTION
+RECORD + DONE banner are the acceptance result. **OWED (user's git gate):** the commit (main.js +
+`sw.js` + `index.html` + `apply_positioned_features_to_core.py` +
+`playwright_verify_starred_poi_flip.py` + brain records). Production ★ curation is the user's to author.
+
+**⚠️ Post-clearance correction:** the card's "v53→v54 bump" was stale — HEAD already carried v54, so
+the flip didn't reach installed browsers (cached pre-flip code = the unstarred-trail-showing bug the
+user caught). Fixed by bumping **v54→v55**; new code confirmed to gate correctly. See the card's
+VERSION-BUMP CORRECTION block.
 
 ## Relationship to the rest of the brain
 

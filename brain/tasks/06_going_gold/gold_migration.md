@@ -573,6 +573,17 @@ each named store to demote as its own `- [ ]` line, with an observable close = t
 enforcement greps still at target (`editor_architecture_contracts.md` enforcement commands) **and**
 the full `playwright_verify_*` suite green. Until then: out of scope.
 
+> **2026-06-08 — the bounded breakdown this HOLD asked for now exists.** A db-first spike audit (user:
+> *"so much spike code… moving to db first… review audit… convene the council"*) mapped the remaining
+> C3 work, full-six council CLEAR. The named-store `- [ ]` lines + the Retirement-step gaps are itemized
+> in `../../output/council/spike_code_dbfirst_audit_20260608.md`: F1 `aop_positioned_features_v1`
+> geometry/icon_size → core, F2 `aop_editor_pois_v1` drawn-POI → core, F8 `aop_poi_index.json` `blurb`
+> sidecar → DB `description`; F3 = the standing legacy-file-baker OWED above (`:310-317`/`:355-361`); F5
+> fresh-volume parity (live `core.features` = 160, fresh seed = 7, **153 rows live-only** — the imports
+> are unmounted), F4 re-bake `publish.geojson` from the DB; F6 collapse the per-layer identity forks
+> (marker-as-record — the root of the recurring twin bugs), do last. **Still HELD — pulling it is the
+> user's call;** the audit is the bounded list, not an un-hold.
+
 ## Guardrails (every slice) — see the Loop contract up top; in brief
 
 - **No prod write-service / auth / moderation** (northstar V2, deferred). Dev-time bake + deploy only.

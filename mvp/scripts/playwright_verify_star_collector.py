@@ -8,8 +8,11 @@ the left POI tab (renderPoiTab) and the right ★ Visitor list
 (renderVisitorListGroup) are driven by collectStarredDestinations.
 
 Checks:
-  1. The POI tab (#poiList) renders the baked Published-destinations rows fed
-     through buildPoiGroups -> collectStarredDestinations (the real DOM path).
+  1. STAR-ONLY (2026-06-08): the published-destinations wholesale union was
+     removed from the collector, so the POI tab (#poiList) — still driven by
+     buildPoiGroups -> collectStarredDestinations — renders NO Published-
+     destinations group. (The collector-drives-tab proof now lives in the flip +
+     live-star verifiers, which wait on full map load.)
   2. The right ★ Visitor list container (#editorVisitorList) exists once the
      editor tree is built.
   3. Convergence (the desync the card names): when a feature in a RIGHT-
@@ -69,8 +72,10 @@ def main() -> int:
         wait_loaded(page)
         open_poi_tab(page)
 
-        # 1. POI tab driven by the one collector: the Published-destinations group
-        #    renders its baked rows.
+        # 1. STAR-ONLY: the published-destinations wholesale union was removed from
+        #    the collector — the POI tab renders no such group anymore. (The tab
+        #    still renders via buildPoiGroups -> collectStarredDestinations; this
+        #    asserts the wholesale union is gone, not that the tab is empty.)
         pub = page.evaluate(
             """() => {
               const g = document.querySelector('.poi-list-group[data-group-id="published_destinations"]');
@@ -78,11 +83,8 @@ def main() -> int:
               return [...g.querySelectorAll('.poi-row')].map((b) => b.dataset.poiId);
             }"""
         )
-        check("POI tab renders Published destinations through the collector",
-              bool(pub), f"rows={pub}")
-        if pub:
-            check("baked POI row ids present (pubpoi:*)",
-                  all(str(r).startswith("pubpoi:") for r in pub), f"rows={pub}")
+        check("Published-destinations group is GONE (star-only collector)",
+              pub is None, f"rows={pub}")
 
         # 2. The right ★ Visitor list container exists once the editor tree builds.
         has_right = page.evaluate(

@@ -338,6 +338,7 @@
     const clockUseNow = document.getElementById('clockUseNow');
     const clockClear = document.getElementById('clockClear');
     const resetViewerStateBtn = document.getElementById('resetViewerState');
+    const torchCacheBtn = document.getElementById('torchCache');
 
     // --- Right panel: collapse upward into its header bar ---
     const panel = document.querySelector('.panel');
@@ -461,23 +462,19 @@
       persistViewerSessionState({ active_left_tab: tabKey });
     }
 
-    // POI tab data caches. publishDataCache shadows the async-local publishData
-    // so the left-rail POI browser can read trails after they land. poiIndex
-    // is the fetched aop_poi_index.json (visitor blurbs + revisit notes).
-    // Declared here (not lower in the file) so the POI module below is not in
-    // its temporal-dead-zone when the immediate fetchPoiIndex() call fires.
-    let publishDataCache = null;
+    // POI tab data caches. poiIndex is the fetched aop_poi_index.json (visitor
+    // blurbs + revisit notes). Declared here (not lower in the file) so the POI
+    // module below is not in its temporal-dead-zone when the immediate
+    // fetchPoiIndex() call fires. (publishDataCache was removed with the
+    // published-POI wholesale union in the 2026-06-08 star-only change.)
     let poiIndex = null;
     let aopTrailNetworkCache = null; // gold trail network, set on map load (POI browser join target)
-    // Event-schedule bindings the ONE destination collector
-    // (collectStarredDestinations) reads for its event-anchors block. Hoisted
-    // here with the other POI caches so the collector — which the right ★ list
-    // renderer calls EAGERLY during layer registration, before the event module
-    // below initializes — is not in their temporal-dead-zone. (The old
-    // buildPoiGroups dodged this only because it ran solely when the POI tab was
-    // active; the unified collector runs earlier, so these move up. Values are
-    // unchanged: null / empty Map until the event loader populates them, so the
-    // collector's `if (eventScheduleConfig && …)` guard is simply false early.)
+    // Event-schedule bindings used by the Events tab + the schedule renderer
+    // (renderEventSchedule / resolveEventLocation, below). Declared here with the
+    // other POI module state; null / empty Map until the event loader populates
+    // them. (Until the 2026-06-08 star-only change these were also read eagerly by
+    // collectStarredDestinations' event-anchors union; that union was removed, so
+    // the left POI list no longer depends on them.)
     let eventScheduleConfig = null;
     const eventLocationByTag = new Map();
 
@@ -1139,14 +1136,22 @@
     // The ONE destination collector (contract C2 / universal_feature_layer
     // stage 3). Replaces the 7 bespoke buildPoiGroups source blocks (each read
     // a different store and only `drawn_pois` was star-gated) with a single walk
-    // over the FEATURE_LIST_LAYERS registry's destination specs plus the two
-    // explicit non-registry inputs (published.geojson `poi`, event anchors).
+    // over the FEATURE_LIST_LAYERS registry's destination specs. STAR-ONLY
+    // (2026-06-08): the two former wholesale unions — published `poi`
+    // (publish.geojson, bake-gated) and event anchors (aop_event_schedule.json,
+    // a static non-DB file) — were removed. They bypassed the ★ gate and put
+    // untraceable rows in the list; the POI tab is now exactly the registry's
+    // ★-curated layers. A published destination or schedule place that belongs
+    // in the list earns its row by being ★-curated on its own reference layer
+    // (cemeteries/buildings/visitor/trails) or as a drawn POI — one gate, one
+    // source. The event schedule still lives in the Events tab (its own surface).
     //
     // Each spec declares its row shape (`listRow`), its POI-tab group
     // (`listGroup`), which features surface (`listPredicate`), its surfaces
     // (`listSurfaces.left` = POI tab, `.right` = ★ Visitor list), its mode
-    // (`listMode`: 'wholesale' shows every matching row, today's left-tab
-    // behavior; 'starred' shows only highlighted rows — only editorPois), and a
+    // (`listMode`: 'wholesale' shows every matching row; 'starred' shows only
+    // ★-highlighted rows — editorPois plus the four reference layers flipped in
+    // sprint08: cemeteries/buildings/visitorContext/trails), and a
     // lazy toggle ref (`listToggle`). The star gate (highlight flag check) is
     // computed ONCE here, on `row.starred`; renderPoiTab (grouped) and
     // renderVisitorListGroup (flat) both consume these rows and neither
@@ -1154,13 +1159,17 @@
     // missing a strategy falls back (skipped if it has no listRow) and no
     // out-of-vocabulary value is dropped or thrown on.
     //
-    // NOTE (deferred, star_driven decisions #1/#2/#4): flipping the POI tab to
-    // start-empty/curated is a user-visible change held for the user. So the
-    // wholesale layers keep `listMode: 'wholesale'` — the POI tab renders the
-    // same rows it shipped. This card converges the two engines STRUCTURALLY:
-    // both renderers now read this one collector, so they cannot disagree, and
-    // a starred non-editorPois destination (e.g. a building) now surfaces in the
-    // ★ Visitor list too (the desync this card names the disease — additive).
+    // FLIPPED (sprint08 star_driven_poi_normalization, decisions #1/#2/#5): the
+    // four reference layers (cemeteries/buildings/visitorContext/trails) are now
+    // `listMode: 'starred'` — the POI tab shows only ★-curated rows. The user
+    // authorized this once the ★ became DURABLE (core.features.attrs.highlight ->
+    // bake), so a clean profile sees the curated set, not per-browser state. Card
+    // 06 had already converged the two engines STRUCTURALLY (both renderers read
+    // this one collector, so they cannot disagree); this flip is the product step
+    // on top of that. (The published `poi` and event-anchor wholesale unions
+    // that used to follow were removed in the 2026-06-08 star-only change — see
+    // the top of this comment.) A starred destination also surfaces in the ★
+    // Visitor list (additive, C5).
     function collectStarredDestinations() {
       const rows = [];
       function emit(layerKey, spec, feature) {
@@ -1224,83 +1233,6 @@
             if (!predicate(props)) continue;
             emit(layerKey, spec, feature);
           }
-        }
-      }
-
-      // 2) Published destinations — the SERVE end of the one pipeline
-      // (PostGIS core.pois → publish.pois gate → publish.geojson `poi`). This is
-      // the one explicit non-registry input: publishDataCache is a read-only
-      // baked artifact, not a FEATURE_LIST_LAYERS runtime. Wholesale, POI tab
-      // only (no per-feature ★ on a baked layer — starred stays false, so it
-      // never lands in the right list; preserved behavior).
-      if (publishDataCache && Array.isArray(publishDataCache.features)) {
-        for (const feature of publishDataCache.features) {
-          const props = feature.properties || {};
-          if (props.layer !== 'poi') continue;
-          rows.push({
-            id: `pubpoi:${props.id != null ? props.id : props.name}`,
-            name: props.name || 'Destination',
-            kind: props.kind || 'destination',
-            blurb: props.description || null,   // publish.geojson POIs carry the description (renamed from blurb 2026-06-08); `blurb` here is the internal row field, not the source key
-            revisitNote: null,
-            status: props.status || props.confidence || 'published',
-            source: 'publish.geojson (from PostGIS)',
-            caveat: null,
-            feature,
-            popupCoord: firstCoordinate(feature.geometry),
-            layerKey: 'published_destinations',
-            featureId: props.id != null ? String(props.id) : (props.name || null),
-            label: props.name || 'Destination',
-            sourceChip: 'published',
-            groupId: 'published_destinations',
-            groupLabel: poiGroupLabel('published_destinations'),
-            surfaces: { left: true, right: false },
-            // Baked read-only layer — no per-feature ★, so it never surfaces to
-            // the right list. The one star gate lives in `emit` above; published
-            // rows are POI-tab only and stay unstarred.
-            starred: false,
-            toggle: null
-          });
-        }
-      }
-
-      // 3) Event anchors — the second explicit non-registry input. Derived from
-      // aop_event_schedule.json locations resolved through the live tag→coord
-      // resolver; not a served FeatureCollection, so it is unioned here rather
-      // than walked from the registry. Wholesale, POI tab only.
-      if (eventScheduleConfig && eventScheduleConfig.locations) {
-        for (const [tag, location] of Object.entries(eventScheduleConfig.locations)) {
-          if (!location || location.hidden) continue;
-          const normalizedTag = normalizeLocationTag(tag);
-          const resolved = eventLocationByTag.get(normalizedTag);
-          if (!resolved || !resolved.coordinates) continue;
-          const entry = poiIndexLookup({ source: 'event_schedule', location_tag: tag });
-          const feature = {
-            type: 'Feature',
-            properties: { kind: 'event_anchor', location_tag: tag, label: location.label || tag },
-            geometry: { type: 'Point', coordinates: resolved.coordinates }
-          };
-          rows.push({
-            id: `event:${tag}`,
-            name: location.label || tag,
-            kind: location.role ? location.role.replace(/_/g, ' ') : 'event anchor',
-            blurb: entry && entry.blurb ? entry.blurb : null,
-            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
-            status: location.confidence || 'proposed',
-            source: location.source || 'event schedule',
-            caveat: location.caveat || null,
-            feature,
-            popupCoord: resolved.coordinates,
-            layerKey: 'event_anchors',
-            featureId: tag,
-            label: location.label || tag,
-            sourceChip: 'event',
-            groupId: 'event_anchors',
-            groupLabel: poiGroupLabel('event_anchors'),
-            surfaces: { left: true, right: false },
-            starred: false,
-            toggle: eventScheduleToggle
-          });
         }
       }
 
@@ -2278,12 +2210,24 @@
       cemeteries: {
         label: 'Cemeteries',
         idField: 'parcel_id',
+        // Star eligibility (sprint 08 — star_driven_poi_normalization). Draws
+        // the per-row ★ and lets a cemetery's curation land durably in
+        // core.features.attrs.highlight (via apply_positioned_features_to_core.py),
+        // so the bake carries it. Lands WITH the Slice C listMode flip — a
+        // 'starred' layer without `highlightable` would be a C5 row-dropping
+        // filter (no ★ control), so the two travel together.
+        highlightable: true,
         // --- Destination-list config (card 06) ---------------------------
         // Replaces the buildPoiGroups "Cemeteries" block. Marker rows only, so
-        // each site appears once. Wholesale on the POI tab (unchanged); a
-        // starred cemetery also surfaces in the ★ Visitor list (additive, C5).
+        // each site appears once. ★-curated on the POI tab (sprint08 flip below);
+        // a starred cemetery also surfaces in the ★ Visitor list (additive, C5).
         listGroup: { id: 'cemeteries', label: 'Cemeteries' },
-        listMode: 'wholesale',
+        // sprint08 (star_driven_poi_normalization): ★-curated. Lands WITH the
+        // `highlightable: true` add above — a 'starred' layer without a ★ control
+        // would be a C5 row-dropping filter. The ★ now travels durably (core.features
+        // .attrs.highlight -> bake), so a curated cemetery surfaces; uncurated ones
+        // stay off the POI tab until starred.
+        listMode: 'starred',
         listSurfaces: { left: true, right: true },
         // Iterate RAW data, not the deduped runtime state: cemeteries emit a
         // parcel + marker per site sharing one `parcel_id`, so buildFeatureListState
@@ -2333,19 +2277,26 @@
       buildings: {
         label: 'Buildings',
         idField: 'build_id',
+        // Star eligibility (sprint 08 — star_driven_poi_normalization). Draws
+        // the per-row ★ and lets a building's curation land durably in
+        // core.features.attrs.highlight (via apply_positioned_features_to_core.py),
+        // so the bake carries it. Lands WITH the Slice C listMode flip — a
+        // 'starred' layer without `highlightable` would be a C5 row-dropping
+        // filter (no ★ control), so the two travel together.
+        highlightable: true,
         // --- Destination-list config (card 06) ---------------------------
         // The ONE collector (collectStarredDestinations) reads these instead of
         // the bespoke buildPoiGroups "Buildings" block this card deleted. The
         // strategy keys mirror what that block produced byte-for-byte:
         //   listGroup     POI-tab group id/label (matches poi_index.json).
         //   listPredicate which features surface (public facilities only).
-        //   listMode      'wholesale' = today's left-tab behavior (every row
-        //                 shows, NOT yet star-gated). The star FLAG is still
-        //                 computed once in the collector; only editorPois is
-        //                 'starred' (its non-starred rows never surfaced). This
-        //                 keeps the POI tab's shipped content unchanged — the
-        //                 start-empty/curated flip is deferred to the user
-        //                 (star_driven decisions #1/#2/#4).
+        //   listMode      'starred' (sprint08 flip below) = ★-curated; only a
+        //                 starred building shows on the POI tab. The star FLAG is
+        //                 computed once in the collector and now travels durably
+        //                 (core.features.attrs.highlight -> bake), so the curated
+        //                 set survives a clean profile (star_driven decisions
+        //                 #1/#2/#5 — the flip the user authorized once the ★ path
+        //                 was durable).
         //   listSurfaces left = POI tab; right = ★ Visitor list (starred only).
         //                Buildings gain right:true so a STARRED building lands
         //                in the Visitor list too — the desync fix the card
@@ -2354,7 +2305,11 @@
         //   listRow      uniform row, with the poiIndex blurb enrichment folded
         //                in here from the old block (no validator, C5).
         listGroup: { id: 'buildings', label: 'Buildings' },
-        listMode: 'wholesale',
+        // sprint08 (star_driven_poi_normalization): ★-curated. Lands WITH the
+        // `highlightable: true` add above (C5 — no 'starred' without a ★ control).
+        // The ★ travels durably (core.features.attrs.highlight -> bake); a curated
+        // building surfaces, uncurated ones stay off the POI tab until starred.
+        listMode: 'starred',
         listSurfaces: { left: true, right: true },
         listPredicate: (props) => props.aop_facility === true,
         listToggle: () => buildingsToggle,
@@ -2657,12 +2612,16 @@
         label: 'Visitor context callouts',
         idField: 'name',
         // --- Destination-list config (card 06) ---------------------------
-        // Replaces the buildPoiGroups "Visitor support" block. Wholesale on the
-        // POI tab (unchanged — visitorContext already listed every callout); a
-        // starred callout also surfaces in the ★ Visitor list (it already did
-        // via the hardcoded VISITOR_LIST_LAYERS, now via the one collector).
+        // Replaces the buildPoiGroups "Visitor support" block. ★-curated on the
+        // POI tab (sprint08 flip below — only starred callouts show); a starred
+        // callout also surfaces in the ★ Visitor list (it already did via the
+        // hardcoded VISITOR_LIST_LAYERS, now via the one collector).
         listGroup: { id: 'visitor_support', label: 'Visitor support' },
-        listMode: 'wholesale',
+        // sprint08 (star_driven_poi_normalization): ★-curated (visitorContext was
+        // already `highlightable`). The ★ travels durably (core.features.attrs
+        // .highlight -> bake); a curated callout surfaces, uncurated ones stay off
+        // the POI tab until starred.
+        listMode: 'starred',
         listSurfaces: { left: true, right: true },
         listPredicate: () => true,
         listToggle: () => visitorContextToggle,
@@ -2830,9 +2789,10 @@
       // destination layer (was paint-only in TUNABLE_LAYERS) so a trail can be
       // starred and surfaced like every other destination. universal_feature_layer
       // stage 3 / star_driven_poi_list #1 require trails to be starrable; this
-      // spec is the registration that makes that uniform (card 05). The
-      // wholesale buildPoiGroups trails block (~1212) still runs until card 06's
-      // collectStarredDestinations consumes this registered layer.
+      // spec is the registration that makes that uniform (card 05). The ONE
+      // collector (collectStarredDestinations) consumes this registered layer;
+      // since the sprint08 flip the spec is `listMode: 'starred'`, so only
+      // ★-curated trails surface on the POI tab.
       //
       // idField is the derived `__trail_row_id` stamped at registration
       // (the trail-network load site stamps it before registerFeatureListLayer):
@@ -2849,6 +2809,12 @@
       trails: {
         label: 'Trails',
         idField: '__trail_row_id',
+        // The override key is the derived __trail_row_id. The load-time stamp
+        // writes it onto every network feature, but the right-panel ★ bridge
+        // hands us SERVED props (no stamp), so resolve from trail_number/name via
+        // the shared trailRowId helper — otherwise a panel ★ on a trail can't find
+        // its core row and the bridge silently no-ops (the trails-not-linked bug).
+        idFor: (props) => trailRowId(props),
         // Star eligibility — trails join the destination axis. `highlightable`
         // draws the per-row ★ and is the flag card 06's one collector keys on.
         highlightable: true,
@@ -2863,13 +2829,18 @@
         // dedupes by it (numbered trails collapse to one row, named trails keep
         // their own, unnamed edges carry no id and drop out of the list — by
         // absence of identity, not a vocabulary gate, C5). So the collector just
-        // walks the deduped runtime rows. Wholesale on the POI tab (unchanged);
-        // a starred trail also surfaces in the ★ Visitor list (it already did
-        // via the hardcoded VISITOR_LIST_LAYERS, now via the one collector).
+        // walks the deduped runtime rows. ★-curated on the POI tab (sprint08 flip
+        // below — only starred trails show); a starred trail also surfaces in the
+        // ★ Visitor list (it already did via the hardcoded VISITOR_LIST_LAYERS,
+        // now via the one collector).
         // `listRow` (with the trail-catalog write-up enrichment) is declared
         // below — card 05 added it; card 06 wires the collector to it.
         listGroup: { id: 'trails', label: 'Trails' },
-        listMode: 'wholesale',
+        // sprint08 (star_driven_poi_normalization): ★-curated (trails was already
+        // `highlightable`). The ★ travels durably (core.features.attrs.highlight ->
+        // bake); a curated trail surfaces, uncurated ones stay off the POI tab until
+        // starred. Numberless/nameless edges carry no `__trail_row_id` (unstarred).
+        listMode: 'starred',
         listSurfaces: { left: true, right: true },
         listPredicate: () => true,
         listToggle: () => aopTrailNetworkToggle,
@@ -2907,12 +2878,13 @@
           match: () => true,
           defaultVisible: () => true
         }],
-        // Uniform destination-row strategy for card 06's collector. Mirrors the
-        // shape the buildPoiGroups trails block hand-built today (name/kind/blurb
-        // /revisitNote/status/source/caveat/popupCoord), with the trail-catalog
-        // write-up enrichment folded in here from buildPoiGroups. Card 06 wires
-        // collectStarredDestinations to call this; until then it is unused and
-        // the legacy block is still the live path (no behavior change this card).
+        // Uniform destination-row strategy for the one collector
+        // (collectStarredDestinations) — name/kind/blurb/revisitNote/status/
+        // source/caveat/popupCoord, with the trail-catalog write-up enrichment
+        // folded in. This IS the live path: the collector calls spec.listRow for
+        // every registry destination layer, and buildPoiGroups only groups the
+        // result. Since the sprint08 flip the spec is listMode:'starred', so only
+        // ★-curated trails surface here.
         listRow: (feature) => {
           const props = (feature && feature.properties) || {};
           const cat = trailCatalogLookup(props);
@@ -2969,9 +2941,33 @@
       return `${layerKey}:${featureId}`;
     }
 
+    // The derived per-trail row id the `trails` spec dedupes + keys overrides on:
+    // `n:<number>` for numbered trails, `name:<name>` for named-but-unnumbered
+    // trails, null for unnamed edges (intentionally not directory entries). The
+    // gold-network load stamps this onto each feature as `__trail_row_id`; the
+    // right-panel ★ bridge (js/panel.js) hands us the SERVED props, which don't
+    // carry the stamp, so we recompute it from trail_number/name. ONE derivation,
+    // two callers (the load-time stamp + the bridge's idFor) — extract_before_invent.
+    function trailRowId(props) {
+      if (!props) return null;
+      if (props.__trail_row_id != null) return String(props.__trail_row_id);
+      const num = props.trail_number != null ? Number(props.trail_number) : null;
+      if (num != null && !Number.isNaN(num)) return `n:${num}`;
+      const name = (props.name != null && String(props.name) !== '') ? String(props.name) : null;
+      return name != null ? `name:${name}` : null;
+    }
+
     function positionedFeatureIdFor(layerKey, feature) {
       const spec = FEATURE_LIST_LAYERS[layerKey];
       if (!spec || !feature || !feature.properties) return null;
+      // A spec may COMPUTE its override key from props (trails: the derived
+      // __trail_row_id, recomputed from trail_number/name when a caller — the
+      // right-panel ★ bridge — passes served props that lack the stamp). Default:
+      // the plain idField value.
+      if (typeof spec.idFor === 'function') {
+        const computed = spec.idFor(feature.properties);
+        return computed == null ? null : String(computed);
+      }
       const value = feature.properties[spec.idField];
       return value == null ? null : String(value);
     }
@@ -3791,6 +3787,15 @@
       // store, keyed by layerKey + idField — so highlight/lock/geometry and the
       // editable name/notes all survive reload without baking the on-disk seed.
       savePositionedFeature(layerKey, feature, patch);
+      // Re-sync the LIVE runtime data from the store so the change lands on EVERY
+      // feature sharing the idField — the same convergence a reload gets via
+      // applyPositionedFeatures. Cemeteries emit a parcel + marker twin per
+      // parcel_id; the toggle resolves to the deduped state twin (the parcel),
+      // but collectStarredDestinations reads the marker (listFromData), so without
+      // this re-sync a cemetery ★ lands on the parcel and never surfaces in the
+      // POI tab live. Idempotent for the single-feature layers.
+      const runtime = featureListRuntime[layerKey];
+      if (runtime && runtime.data) applyPositionedFeatures(layerKey, runtime.data);
     }
 
     function findFeatureById(layerKey, featureId) {
@@ -6546,6 +6551,35 @@
 	      presetStatus.textContent = 'Park preset active.';
 	    }
 
+    // Torch the offline cache + service worker, then hard-reload from the
+    // network. The PWA service worker (sw.js) serves the shell + data caches
+    // cache-first and only refreshes on a VERSION bump — so a missed bump (or a
+    // browser that hasn't re-activated the new worker yet) keeps serving a STALE
+    // build, the class of bug that makes a flipped feature look broken. This is
+    // the manual escape hatch: delete every Cache Storage bucket, unregister the
+    // worker(s), and reload uncached. It deliberately leaves localStorage alone —
+    // the user's stars/overrides/clock survive; "Reset viewer" is the state nuke,
+    // this is the CODE nuke. After reload, index.html re-registers a fresh worker
+    // and every asset comes from the network.
+    async function torchCache() {
+      if (!window.confirm('Torch every cached app file + the service worker, then reload from the network?\n\nYour stars and edits in this browser are NOT touched — only the offline cache.')) return;
+      if (presetStatus) presetStatus.textContent = 'Torching cache…';
+      try {
+        if (window.caches && typeof caches.keys === 'function') {
+          const names = await caches.keys();
+          await Promise.all(names.map((n) => caches.delete(n)));
+        }
+      } catch (e) { console.warn('[AOP] cache torch failed', e); }
+      try {
+        if (navigator.serviceWorker && typeof navigator.serviceWorker.getRegistrations === 'function') {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+        }
+      } catch (e) { console.warn('[AOP] service worker unregister failed', e); }
+      // Reload now that the worker + caches are gone — fetches go to the network.
+      window.location.reload();
+    }
+
     function eventScheduleNow() {
       if (Number.isFinite(virtualClockMs)) return new Date(virtualClockMs);
       return new Date();
@@ -9076,12 +9110,17 @@
         // adding it is non-destructive to every existing trail consumer.
         for (const feature of aopTrailNetworkData.features || []) {
           const props = feature.properties || (feature.properties = {});
-          const num = props.trail_number != null ? Number(props.trail_number) : null;
-          const name = (props.name != null && String(props.name) !== '') ? String(props.name) : null;
-          if (num != null) props.__trail_row_id = `n:${num}`;
-          else if (name != null) props.__trail_row_id = `name:${name}`;
+          const rowId = trailRowId(props);
+          if (rowId != null) props.__trail_row_id = rowId;
           // else: unnamed edge — no row id, intentionally not a directory entry.
         }
+        // Replay any stored ★/overrides onto the network BEFORE registration, the
+        // same as buildings/cemeteries/visitor/brandLogos do — trails was the one
+        // ★-curated reference layer with no apply call, so a trail starred via the
+        // right panel (now bridged) vanished on reload. highlight is the only
+        // override trails carry (geometry is locked), and it isn't painted, so no
+        // source.setData is needed here; the POI list reads it off runtime data.
+        applyPositionedFeatures('trails', aopTrailNetworkCache);
         registerFeatureListLayer('trails', aopTrailNetworkCache);
       }
 
@@ -9505,7 +9544,6 @@
         return;
       }
 
-      publishDataCache = publishData;
       renderPoiTabIfActive();
 
       map.addSource('publish-data', {
@@ -10377,6 +10415,7 @@
       if (next) setVirtualClock(next);
     });
     if (resetViewerStateBtn) resetViewerStateBtn.addEventListener('click', resetViewerState);
+    if (torchCacheBtn) torchCacheBtn.addEventListener('click', torchCache);
 
     // Terrain has its own toggle handler (3D enable/disable, not a layer
     // visibility flip). The landcover-9 opacity is the lone slider that has

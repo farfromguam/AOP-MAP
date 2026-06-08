@@ -6,6 +6,196 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-08 (LEFT POI LIST → STAR-ONLY; Sprint 08 Slice D; CODE+DATA, UNCOMMITTED, v56→v57 bump
+PERFORMED, commit OWED).** Follow-on to the "left POI list" consult below — and a concrete cut of the
+spike-code the DB-FIRST AUDIT entry catalogs (it removed the static, non-DB event-anchor feed). User:
+*"make the list star-only -- yes where did you get the idea that this old static code not db powered is
+good to keep around? we are maintaining a bunch of spike code left and right. its cutting me to death."*
+(Overrode Slice C's "keep published wholesale" decision — `cards_not_gospel`.) **Shipped:** removed the
+two wholesale unions from `collectStarredDestinations` (`main.js`) — input 2 (published `poi` from
+`publish.geojson`, bake-gated) + input 3 (event anchors from `aop_event_schedule.json`, a static non-DB
+file). The left POI list is now a single walk over the registry's ★-gated specs — exactly the ★-curated
+set. Removed the now-dead `publishDataCache` (0 readers after the union went); rewrote the collector
+header + two stale trails-spec comments (Mason caught both) + the event-bindings comment. Trimmed
+`aop_poi_index.json` (dropped `published_destinations`+`event_anchors` group defs + 8 dead
+`event_schedule`/published blurb entries; re-emitted to HEAD's inline-`match` style → diff removals-only,
+1 ins / 60 del). Bumped `sw.js`+`index.html` **v56→v57**. The event SCHEDULE itself is untouched — it
+still powers the Events tab; it's just no longer mirrored into the POI list. **Verified by observation
+(clean SW-less profile):** list **10 rows → 1** (published 2 + event 7 gone; the only row is the one
+star-fed seed drawn POI). Star-DRIVEN both directions — `playwright_verify_star_links_live.py` PASS (★ a
+reference feature → its row appears live + survives reload). `playwright_verify_starred_poi_flip.py` +
+`playwright_verify_star_collector.py` updated to the star-only contract (published/event groups absent)
+→ PASS; `data_groups_embed` PASS; `node --check` PASS. **Events tab NOT regressed (Witness-confirmed
+differentially against a HEAD docroot): `event_schedule` 116 PASS / 8 FAIL, byte-identical on HEAD and WT
+— all 8 FAILs pre-existing, none from this diff.** **Council done-review: FULL CLEAR**
+(Witness·Quartermaster·Mason·Warden; Mason after 2 stale-comment andon-fixes; Witness corrected my "only
+#pavillion fails" → 8 pre-existing; Warden's poi_index reformat note → fixed, diff now removals-only).
+Receipt: `output/council/star_only_poi_list_done_review_20260608.md`. Card: Slice D block on
+`tasks/08_data_normalization/star_driven_poi_normalization.md`. **Pre-existing, flagged NOT fixed:** two
+`publish`/`trail_centerlines` blurb entries (group `trails`) remain orphaned in `aop_poi_index.json` (no
+`poiIndexLookup` consumer; predates this change). **OWED (the user's git gate):** the commit (`main.js`
++ `sw.js` + `index.html` + `aop_poi_index.json` + the 2 updated verifiers + the new
+`diagnose_left_poi_list.py` + brain records), with the v57 bump.
+
+-----
+
+**2026-06-08 (DB-FIRST SPIKE AUDIT + FULL-SIX COUNCIL CLEAR; BRAIN ONLY, read-only, UNCOMMITTED, NOTHING
+committed).** User: *"there is so much spike code in the app. We are moving to a db first and need to begin
+cleaning up these edge cases. review audit. do all the things. convene the council."* Audited the viewer +
+DB/bake/script layer by observation (4 read-only Explore sweeps + my own verification of every load-bearing
+claim), then ran a Steward-chaired full-six council over the audit. **Headline: the per-layer-branch slop war
+is WON — do NOT re-litigate it.** Verified clean: **C1** = 0 non-comment `layerKey === '` branches in
+`main.js` AND `panel.js`; **C6** = 0 classes, one IIFE, one registry; **C2** = one `collectStarredDestinations`
+(`main.js:1173`), one star gate, two thin renderers. No dead `buildInlineEditor`, no `?? blurb` viewer crutch.
+**The live spike is one axis down — curation + identity still partly in the browser and in served files, not
+the DB (C3).** Eight findings, ranked, all evidence-grounded:
+**F1** `aop_positioned_features_v1` — ★ migrated (Sprint 08) but **geometry/icon_size stranded file-only** (no
+core door); **F2** hand-drawn POIs (`aop_editor_pois_v1`) have **no direct DB door** (reach core only via the
+opt-in panel `created[]` path — reset loses them); **F3** the legacy **file-bakers** (`export_positioned_features.py`,
+`bake_panel_overrides.py`) still sit beside the DB path (= the standing gold OWED; the *two apply scripts* are
+a deliberate two-sink split, NOT duplication — Quartermaster correction); **F4** served `publish.geojson`
+carries stale `blurb`/`last_checked`/`source` beside `description` — **not a pure function of the DB**; **F5**
+(sharpest) a **fresh `docker compose up` does NOT reproduce the live map** — live `core.features` = **160**,
+fresh seed = **7**, **153 rows live-only** via unmounted imports; **F6** identity resolved differently per
+layer (parcel/marker twin, trail stamp-less props) = the root the recent one-off bugfixes kept patching;
+**F7** `trailheads`/`eventSchedule`/`activityHotspots`/`syntheticActivity` registered with no list spec
+(latent footguns); **F8** `blurb`→`description` naming crosswalk persists via the `aop_poi_index.json` sidecar;
+**F9** ~81 unreferenced prototype HTML files (archival). **Council: full-six CLEAR, 1 round + folds.** Warden
+CLEAR (scope right, git gate untouched, prior dirty tree left alone). Mason CLEAR + notes (seed from a snapshot
+not live importers; reuse upsert-fold-archive; column-projection only; safe-default specs — no limiting code).
+Witness ANDON→folded (F5 numbers were estimates *and wrong*; DB was up — corrected to measured 160/7/153 with
+the query). Quartermaster ANDON→folded (don't mint "Sprint 09" — this is the **bounded breakdown HELD gold
+slice 6 already asked for**; re-homed there + the standing OWED; struck the two-apply-script duplication
+framing). Scribe ANDON→folded (handoff + card home + wikilinks + fill the council section — this entry + the
+gold-slice-6 annotation are the fix). **Home:** the findings re-home onto [[gold_migration]] **slice 6 (still
+HELD — pulling it off HOLD is the USER's call)**, annotated to point at the audit as its bounded `- [ ]` list;
+NO new sprint, NO new card, NO code/DB change this turn. **Receipt:**
+`output/council/spike_code_dbfirst_audit_20260608.md` (the full audit + the folded council record). **OWED
+(user's gates):** pull gold slice 6 (or not), decide 4 forks (seed-vs-minimal-dev / file-baker fate / prototype
+archival / re-bake `publish.geojson` = git gate), and any commit. The pre-existing dirty tree from prior
+sessions is unrelated and stays the user's.
+
+-----
+
+**2026-06-08 (COUNCIL CONSULT — "the left POI list shows content I can't trace; it should be DB +
+star attributes but isn't"; BRAIN ONLY, NO code change, UNCOMMITTED).** User: *"review the left side
+poi list… I cannot figure out where they are coming from… It SHOULD be pulling from the db and star
+attributes. Consult the council. figure it out."* Diagnosed BY OBSERVATION (live viewer on :8001, live
+DB, served files, code read) then ran a Steward-chaired consult (Witness·Quartermaster·Mason·Warden).
+**Answer:** the left POI tab (`collectStarredDestinations`→`buildPoiGroups`→`renderPoiTab`,
+`main.js:1169-1426`) is a union of **four** inputs, only **two** wholesale. Observed clean-profile =
+**10 rows**: 2 `published_destinations` (publish.geojson `layer=poi`, WHOLESALE — bake is the gate,
+`starred:false` hardcoded), 7 `event_anchors` (aop_event_schedule.json, WHOLESALE, **not the DB**), 1
+`drawn_pois` (editorPois, STAR-gated, fed by the ONE seed star — `aop_seed_pavilion` carries
+`highlight:true` in `aop_editor_seed_pois.geojson`/`aop_editor_pois_v1`). The four DB-star reference
+layers (cemeteries/buildings/visitorContext/trails, `listMode:'starred'`) render **0** because nothing
+is starred: DB `core.features` 0 `attrs.highlight=true` (every layer), served files 0 `"highlight":true`,
+`aop_positioned_features_v1` absent on a clean profile. **So 9/10 visible rows are wholesale (not the
+DB-star path the user expected); 1/10 is star-fed but via the editor's localStorage seed, not the DB,
+not the reference layers. The DB-star path is fully plumbed but UNFED.** **Fix (NO code change):** the
+plan's own held step — author stars on the right-panel ★ → `apply_positioned_features_to_core.py`
+(writes `core.features.attrs.highlight`) → `export_publish_geojson.sh` (emits `attrs` verbatim, no bake
+change) → deploy. **Open fork surfaced for the user (not decided):** published + event groups stay
+wholesale by design even after authoring stars; if the user wants the WHOLE list star-driven that's a
+separate decision (Steward rec: keep them wholesale, author the reference stars). **Council: 3 CLEAR +
+1 ANDON folded.** Witness ANDON (real, grounded, verified by the Steward): the first-pass diagnosis
+over-claimed "THREE wholesale inputs / nothing starred anywhere" — corrected to TWO wholesale + the one
+seed star (proven by a controlled un-star experiment: 10→9 rows). Quartermaster CLEAR (one collector,
+`apply_positioned_features_to_core.py` is the real reusable door, fix = data not code). Mason CLEAR
+(`listMode:'starred'` is a legit declared-mode dispatch, every 'starred' layer pairs with
+`highlightable:true`, not a C5 row-dropping filter). Warden CLEAR (read-only diagnosis, git gate
+untouched — HEAD still `c781f59`, no bump; v56 is the PRIOR session's). **New artifact:** read-only
+`mvp/scripts/diagnose_left_poi_list.py` (dumps the live list + the per-browser star stores). Receipt:
+`output/council/left_poi_list_source_consult_20260608.md`. **OWED (user's gate):** nothing for this
+task; the DB-star authoring + bake + the prior session's still-uncommitted v56 commit stay the user's.
+
+-----
+
+**2026-06-08 (STAR→LEFT-LINK BUGFIX + 🔥 TORCH CACHE BUTTON; CODE, UNCOMMITTED, v55→v56 bump
+PERFORMED, commit OWED).** User: *"figure out why the stars are not linked to the left side. some
+cache or some code is lacking. make a torch cache button on the right panel under session tools."*
+**Diagnosed by observation (clean Playwright profile, NO service worker) → it is CODE, not cache.**
+A live `AOP_HOST_SET_HIGHLIGHT(layerKey, props, true)` (the exact call the right panel's ★ makes for
+a node with `spec.hostKey`) per reference layer, reading the host POI-tab DOM: **buildings ✓ and
+visitorContext ✓ linked; cemeteries ✗ and trails ✗ did not.** Two real gaps in the just-shipped
+sprint08 flip (the layers now show ONLY ★ rows, but the live author→link path was incomplete for two
+of four): **(1) Cemeteries** — the ★ toggle resolves via `findFeatureById` (the DEDUPED state twin =
+the parcel), but `collectStarredDestinations` reads the MARKER twin (`listFromData`), so the flag
+landed on the parcel and never surfaced; it only worked after reload (where `applyPositionedFeatures`
+sets BOTH twins). **(2) Trails** — the panel's gold-trail node (`aopTrails`) had **no `hostKey`**, so a
+trail ★ fell to the panel-overrides store (which the host never reads + the baker drops), AND the host
+had **no `applyPositionedFeatures('trails')`** call (the one ★-curated reference layer missing it), so
+trail stars died on reload too. **Fixes (all in `website/`, reuse-first):** • `persistFeatureFlagChange`
+now re-runs `applyPositionedFeatures(layerKey, runtime.data)` after persisting, so a live ★ lands on
+EVERY feature sharing the idField (the parcel+marker convergence a reload already got) — one line,
+reuses the proven replay, idempotent for single-feature layers. • Extracted `trailRowId(props)` (one
+derivation: `__trail_row_id` ?? `n:<num>` ?? `name:<name>` ?? null) and wired it as the trails spec's
+new `idFor`, honored by `positionedFeatureIdFor` — so the bridge resolves a trail from the panel's
+STAMP-LESS served props (the panel loads its own copy without the load-time stamp). • Added
+`applyPositionedFeatures('trails', aopTrailNetworkCache)` before its registration (reload durability;
+highlight isn't painted so no `setData` needed). • Added `hostKey: 'trails'` to the panel's `aopTrails`
+node. **🔥 Torch cache button:** new `#torchCache` under Session tools (beside Reset viewer) → confirm,
+`caches.delete` every bucket + `getRegistrations().unregister()`, then `location.reload()`. It nukes the
+CODE/offline cache (the stale-SW class of bug), NOT localStorage — "Reset viewer" stays the state nuke,
+this is the code nuke. **Verified by observation (all PASS, 0 console errors):** a diagnostic shows
+all four layers LINK live (cemeteries 0→1, trails via stamp-less props 0→1) AND survive reload; the
+torch button fires its confirm, reloads clean (caches observed as `aop-shell-v56`/`aop-data-v56` — the
+bump is live), and the clear-primitives zero out caches+registrations. No regression:
+`playwright_verify_starred_poi_flip.py` (clean-profile gating), `playwright_verify_star_collector.py`,
+`playwright_verify_data_groups_embed.py` all still PASS. New durable guard
+**`mvp/scripts/playwright_verify_star_links_live.py`** (the live author→link path the flip verifier
+doesn't cover). Touched `main.js` + `panel.js` + `index.html` → bumped `sw.js` VERSION + `#appVersion`
+**v55→v56**. **OWED (user's git gate):** the commit (4 `website/` files + the new verifier + brain
+records).
+
+-----
+
+**2026-06-08 (SPRINT 08 RALPH LOOP — all 3 slices GREEN; CODE+DB, UNCOMMITTED, v54→v55 bump
+PERFORMED, commit OWED).** Fresh session after the plan commit-pause (`c781f59 "data normalization plan"`).
+Ran `tasks/08_data_normalization/star_driven_poi_normalization.md` end-to-end — the durable
+reference-layer ★ path, then the POI-tab flip (star_driven decisions #1/#2/#5). Each slice
+verified BY OBSERVATION (the Witness/Mason standing conditions held). **Slice A** (★ door): added
+`highlightable: true` to the cemeteries+buildings specs; new
+**`mvp/scripts/apply_positioned_features_to_core.py`** reads the `positioned_features` map,
+filters to the four reference editor-layerKeys, resolves each to its core row by the per-layer DB
+lookup (cemetery **:marker** not :parcel; trail by `attrs->>'trail_number'` not the misleading
+`sfwda-<n>` index; visitor by `attrs->>'name'` not the `-N` index; building direct) and UPSERTs
+**`attrs.highlight`** as the single source of truth (NOT `is_destination` — Mason andon; no
+consumer). Reused `split_key` + the apply scaffold (`sql_str`/`run_psql`/`parse_count`); did NOT
+reuse `read_payload`/`VIEW_STATE_KEYS` (it strips `highlight`). Observed: 4-layer test bundle →
+flag on the correct rows, siblings clean, un-star wrote `false`, `trails:n:99999` UNRESOLVED
+(loud, never thrown), brandLogos/editorPois/geometry-only skipped, **idempotent** (no dup).
+**Slice B** (bake): no bake change — `export_publish_geojson.sh:87-93` emits `attrs` verbatim;
+observed each served reference file carrying one `"highlight":true` on the right feature.
+**Slice C** (flip): `listMode 'wholesale'→'starred'` on the 4 reference specs + stale-comment
+fixes + a published-`poi`-union guard comment (bake is its gate, never `'starred'`); new
+**`mvp/scripts/playwright_verify_starred_poi_flip.py`** (clean profile, waits on the **load**
+event via `window.AOP_HOST_MAP` + 4 reference sources, asserts per-group counts from the actual
+baked files) → **PASS**: each group shows only its curated ★ row (trail 15 not all 100; the flip
+GATES), `pubpoi:139/140` still render, 0 console errors; `playwright_verify_star_collector.py`
+still PASS (no regression). **Cleanup:** DB test stars reverted (0 remain); served files restored
+byte-identical to HEAD via read-only `git show HEAD:… > …` (the bake-vs-HEAD drift is pre-existing;
+`git checkout` is the user's gate). **Council done-review: full-six CLEAR** (receipt
+`output/council/sprint08_done_review_20260608.md`). **THEN the user tested and reported an unstarred
+trail still showing in the POI list — a real miss in my verification.** Root cause (found by
+observation): **HEAD's `sw.js`/`#appVersion` were ALREADY `v54`** (the FAB-fix bump had been
+committed), so the card's "owes v53→v54" was **stale** — my main.js flip rode the *same* v54 the
+pre-flip code used, so the service worker never invalidated its cache and the user's browser served
+the **cached pre-flip main.js** (old wholesale trails → unstarred trail 4 shows). My Playwright
+verifier runs in a fresh context with no SW, so it never hit that path. **Fix (performed):** bumped
+`sw.js` VERSION + `#appVersion` **v54→v55** so the cache invalidates; confirmed by observation that
+the new code GATES correctly — against the production-default 0-star bake all four reference groups
+are EMPTY (no leak), and with test stars each group shows only its curated row (verifier PASS, the
+"starred row renders" check made conditional so 0-star isn't a false-FAIL). **Working tree:**
+`website/js/main.js`+`sw.js`+`index.html` (M) + the 2 new scripts (??) + brain records. **OWED
+(user's git gate):** the commit. **Consequence to weigh before deploy:** the flip is now live in
+code; with NO production stars authored, a fresh visitor sees the four reference groups EMPTY (the
+user's own browser shows their localStorage-starred set). The plan's "author stars first, then flip"
+step is still the user's to do — star the features you want listed, run
+`apply_positioned_features_to_core.py`, bake, deploy.
+
+-----
+
 **2026-06-08 (BUGFIX — the edit pencil FAB disappears; CODE, UNCOMMITTED, v53→v54 bump OWED).** User:
 *"the edit pencil on the edit sidebar disappears every once and a while. investigate."* **Root cause
 (found + reproduced by observation, not theory):** the collapsed edit panel is a 56px rust **pencil FAB**,

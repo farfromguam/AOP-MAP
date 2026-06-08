@@ -1,19 +1,9 @@
 {
   "schema": "aop-poi-index-v1",
-  "updated_at": "2026-05-31",
+  "updated_at": "2026-06-08",
   "purpose": "Visitor-facing blurbs for the left-panel POI tab. The viewer reads this file to attach short, person-readable copy to features that already exist on the map. Blurbs live here, not on the source GeoJSONs, so a re-export of buildings/cemeteries/publish data does not overwrite this content. Entries with blurb=null carry a revisit_note explaining what info is missing; the viewer surfaces those as 'info needed' placeholders so the gaps stay auditable in git instead of hiding as TODOs in code.",
   "match_fields": "Each entry matches a feature by `source` (which layer/dataset it lives in) plus one identifying property. Order in `entries` is the order rows render under each group when no other sort is applied.",
   "groups": [
-    {
-      "id": "published_destinations",
-      "label": "Published destinations",
-      "note": "The ★ POI set baked from PostGIS: core.pois rows cleared by the publish.pois gate, exported into publish.geojson. This is the SERVE end of the one pipeline; the groups below are the legacy per-layer scaffolding it will eventually replace. Blurbs for these rows live in the DB, not in this file."
-    },
-    {
-      "id": "event_anchors",
-      "label": "Event anchors",
-      "note": "Friday 2026-06-19 Rock Warblers schedule. All currently 'proposed' until AOP confirms; see aop_event_schedule.json."
-    },
     {
       "id": "buildings",
       "label": "Buildings in the park",
@@ -41,54 +31,6 @@
     }
   ],
   "entries": [
-    {
-      "group": "event_anchors",
-      "match": { "source": "event_schedule", "location_tag": "#pavilion" },
-      "blurb": "AOP Pavilion / G-Central. Registration, the driver meeting, awards, and the campfire all happen here — base camp for the weekend. The 1010 Ellis Cove Road building.",
-      "revisit_note": null
-    },
-    {
-      "group": "event_anchors",
-      "match": { "source": "event_schedule", "location_tag": "#registration" },
-      "blurb": "Registration desk. Wristband pickup, tech check, late entries. Same spot as the pavilion.",
-      "revisit_note": null
-    },
-    {
-      "group": "event_anchors",
-      "match": { "source": "event_schedule", "location_tag": "#observed-trailhead" },
-      "blurb": "Where a recorded Saturday-afternoon ride picked up its second segment. Standing in as the event-day stage start until AOP names an official trailhead.",
-      "revisit_note": null
-    },
-    {
-      "group": "event_anchors",
-      "match": { "source": "event_schedule", "location_tag": "#observed-finish" },
-      "blurb": "Where the recorded Saturday Afternoon ride ended its second segment, just shy of the pavilion. Stand-in finish until AOP marks one.",
-      "revisit_note": null
-    },
-    {
-      "group": "event_anchors",
-      "match": { "source": "event_schedule", "location_tag": "#proving-grounds" },
-      "blurb": null,
-      "revisit_note": "Proving Grounds candidate is anchored to 665 Ellis Cove from a hotspot read — confirm with AOP whether the comp-gate course actually lives there before writing a visitor blurb."
-    },
-    {
-      "group": "event_anchors",
-      "match": { "source": "event_schedule", "location_tag": "#north-technical" },
-      "blurb": null,
-      "revisit_note": "North Technical Hotspot is GPX-dwell evidence #3, not a named obstacle yet. Walk the area and confirm what the rocks are before writing visitor copy."
-    },
-    {
-      "group": "event_anchors",
-      "match": { "source": "event_schedule", "location_tag": "#night-checkpoint" },
-      "blurb": null,
-      "revisit_note": "Night checkpoint is GPX hotspot #6. Confirm AOP wants this on the night-run route and what the spot actually is (regroup? technical bottleneck?) before writing copy."
-    },
-    {
-      "group": "event_anchors",
-      "match": { "source": "event_schedule", "location_tag": "#photo-waypoint" },
-      "blurb": null,
-      "revisit_note": "Photo waypoint candidate from hotspots #8/#9 near the pavilion approach. Confirm the photo prompt with the photo-scavenge lead before writing copy."
-    },
     {
       "group": "buildings",
       "match": { "source": "buildings", "address": "1010 Ellis Cove Road" },
@@ -164,7 +106,6 @@
   ],
   "owed_work": [
     "Field-confirm purposes for the three non-pavilion in-park buildings (1033, 665, 880 Ellis Cove).",
-    "Confirm or relocate the four event anchors flagged 'raw evidence' (proving grounds, north technical, night checkpoint, photo waypoint).",
     "Promote Saturday Afternoon segments to a real trail row once SFWDA numbered names land.",
     "Decide whether Gilliam / Bible / Tate cemeteries need any visitor context, or if a single 'nearby cemeteries' note covers them."
   ]

@@ -580,6 +580,13 @@
         nodes: [
           {
             id: 'aopTrails', kind: 'layer', label: 'AOP trail network (merged truth)', maturity: 'gold', visible: true, locked: true, expanded: false, geom: 'LineString', createNoun: 'trail',
+            // Bridge ★ to the host's `trails` FEATURE_LIST layer so a starred trail
+            // surfaces in the left POI tab (which is ★-curated since sprint08). The
+            // host resolves these served props to a trail row via trailRowId
+            // (trail_number/name) — see main.js positionedFeatureIdFor idFor. Without
+            // this the ★ fell to the panel-overrides store, which the host never
+            // reads and the baker drops, so a starred trail never linked left.
+            hostKey: 'trails',
             mapLayers: ['aop-trail-network', 'aop-trail-network-labels'],
             items: refItems('aop-trail-network', {
               key: (p) => p.name, label: (p) => `Trail ${p.name || '—'}${p.difficulty ? ' · ' + p.difficulty : ''}`,
@@ -815,9 +822,11 @@
   // through the host's own highlight store (window.AOP_HOST_SET_HIGHLIGHT) so it
   // persists like the legacy ★ AND surfaces in the EXISTING left-rail POI tab the
   // user keeps — a starred drawn POI is the visible case (the host's POI tab gates
-  // drawn POIs on highlight). Nodes with no hostKey (trails, brand logos — off the
-  // ★ axis per decision #3, pure-visibility layers) just don't bridge; the value
-  // still bakes panel-side. The key equals the node id by construction.
+  // drawn POIs on highlight). The four reference destination layers
+  // (buildings/visitorContext/cemeteries/trails) all declare hostKey so their ★
+  // surfaces in the ★-curated POI tab. Brand logos has no hostKey — off the POI-tab
+  // ★ axis per decision #3 — so it just doesn't bridge; the value still bakes
+  // panel-side. The key equals the node id by construction.
   function hostHighlight(node, item, on) {
     if (!EMBEDDED || isUserFeature(item.props)) return false;     // user-drawn features stay panel-side
     const lk = node.hostKey;
