@@ -53,6 +53,14 @@ BASELINE_NAMES = ["AOP Pavilion", "Ellis Cemetery"]
 # green on committed/baseline state.
 REQUIRE_AUTHOR = os.environ.get("AOP_REQUIRE_AUTHOR") == "1" or "--require-author" in sys.argv
 
+# Slice 3 of the description convergence (07_tables/description_blurb_convergence.md):
+# prove the renamed `description` reaches the rendered subtitle. A distinctive
+# substring of the seeded Pavilion description; when REQUIRE_DESCRIPTION is set the
+# run FAILS if it is absent from the DOM (so it cannot degrade to a "rows render"
+# baseline pass -- the Witness condition).
+DESCRIPTION_MARK = "campfire all happen here"
+REQUIRE_DESCRIPTION = os.environ.get("AOP_REQUIRE_DESCRIPTION") == "1" or "--require-description" in sys.argv
+
 
 def check(label: str, ok: bool, detail: str = "") -> None:
     mark = "PASS" if ok else "FAIL"
@@ -112,6 +120,14 @@ def main() -> int:
             for nm in BASELINE_NAMES:
                 check(f"baseline destination {nm!r} served from core via the bake",
                       nm in names, f"names={names}")
+
+        # Slice-3 positive assertion: the renamed `description` reached the rendered
+        # subtitle (main.js reads props.description; the served bake emits description).
+        if REQUIRE_DESCRIPTION:
+            pav = next((r for r in rows if r["name"] == "AOP Pavilion"), None)
+            check("published POI subtitle carries the DB description (props.description -> rendered DOM)",
+                  pav is not None and DESCRIPTION_MARK in pav.get("subtitle", ""),
+                  f"pavilion subtitle={pav['subtitle']!r}" if pav else f"no Pavilion row; names={names}")
 
         check("no console errors during POI render", not console_errors,
               "; ".join(console_errors[:3]))

@@ -71,7 +71,7 @@ def main() -> int:
             """() => ((typeof publishDataCache !== 'undefined' && publishDataCache
                        ? publishDataCache.features : []) || [])
                  .filter((f) => f.properties?.layer === 'poi')
-                 .map((f) => ({ name: f.properties.name, blurb: !!f.properties.blurb }))"""
+                 .map((f) => ({ name: f.properties.name, description: !!f.properties.description }))"""
         )
         baked_names = sorted(f["name"] for f in baked)
         check(
@@ -80,9 +80,9 @@ def main() -> int:
             f"got {baked_names}",
         )
         check(
-            "baked POIs carry their DB blurb",
-            all(f["blurb"] for f in baked),
-            f"blurb flags {[f['blurb'] for f in baked]}",
+            "baked POIs carry their DB description",
+            all(f["description"] for f in baked),
+            f"description flags {[f['description'] for f in baked]}",
         )
         check(
             "the unpublished candidate is excluded by the gate",

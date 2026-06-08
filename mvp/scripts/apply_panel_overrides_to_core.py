@@ -68,7 +68,7 @@ APPLY_SOURCE_NAME = "AOP web editor (apply)"
 # (VIEW_STATE_KEYS) -- never applied (a star is not a fact about the feature).
 # `notes` is handled specially (it is both an editable key and the catch-all
 # column), so it is intentionally absent from this direct map.
-POI_COL = {"name": "name", "description": "blurb", "kind": "kind"}
+POI_COL = {"name": "name", "description": "description", "kind": "kind"}
 
 
 def sql_str(value) -> str:
@@ -206,7 +206,7 @@ def created_block(raw: dict, idx: int) -> str:
     fp = feat.get("properties") or {}
 
     name = fp.get("name") or "Untitled"
-    blurb = fp.get("description", "")
+    description = fp.get("description", "")
     kind = fp.get("kind")
     status = fp.get("status") or "core"
     confidence = fp.get("confidence") or "observed"
@@ -223,18 +223,18 @@ def created_block(raw: dict, idx: int) -> str:
     notes_parts = [p for p in (base_notes, note_flag or None, attrs_marker(extras) or None) if p]
     notes_val = " ".join(str(p) for p in notes_parts) if notes_parts else None
 
-    cols = ["layer", "source_key", "name", "blurb", "kind", "is_destination", "status",
+    cols = ["layer", "source_key", "name", "description", "kind", "is_destination", "status",
             "confidence", "permission", "publish_status", "geom", "notes",
             "source_id", "last_verified"]
     vals = [
-        "'poi'", sql_str(source_key), sql_str(name), sql_str(blurb), sql_str(kind),
+        "'poi'", sql_str(source_key), sql_str(name), sql_str(description), sql_str(kind),
         is_destination, sql_str(status), sql_str(confidence), sql_str(permission),
         sql_str(publish_status), geom_sql, sql_str(notes_val),
         f"(SELECT id FROM source_register.sources WHERE name = {sql_str(APPLY_SOURCE_NAME)})",
         "now()",
     ]
     sets = [
-        "name = EXCLUDED.name", "blurb = EXCLUDED.blurb", "kind = EXCLUDED.kind",
+        "name = EXCLUDED.name", "description = EXCLUDED.description", "kind = EXCLUDED.kind",
         "is_destination = EXCLUDED.is_destination", "status = EXCLUDED.status",
         "confidence = EXCLUDED.confidence", "permission = EXCLUDED.permission",
         "publish_status = EXCLUDED.publish_status",

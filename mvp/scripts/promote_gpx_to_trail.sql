@@ -37,7 +37,7 @@ candidates AS (
 ),
 upserted AS (
   INSERT INTO core.features (
-    layer, name, kind, blurb, status, confidence,
+    layer, name, kind, description, status, confidence,
     permission, publish_status, source_key, source_id, geom, attrs, notes, last_verified
   )
   SELECT

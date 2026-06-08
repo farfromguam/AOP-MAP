@@ -14,7 +14,8 @@
         "layer": "editor_poi",
         "category": "Pavilion",
         "name": "AOP Pavilion",
-        "notes": "Main pavilion at 1010 Ellis Cove Road. G-Central / event registration anchor. The #pavilion tag bound to this POI resolves the event schedule's pavilion entries to this point — previously bound to the underlying FEMA building footprint (build_id 3397585); migrated here so the binding lives on a first-class editor POI rather than a 9-patch reference layer.",
+        "description": "AOP Pavilion / G-Central. Registration, driver meeting, awards, and the campfire all happen here. Resolved to the 1010 Ellis Cove Road building footprint via the #pavilion tag.",
+        "notes": "Confirmed pavilion; derived from aop_editor_seed_pois.geojson.",
         "highlight": true,
         "seed_tag": "#pavilion",
         "created": "2026-05-26T00:00:00Z"

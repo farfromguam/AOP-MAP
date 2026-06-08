@@ -42,9 +42,9 @@ WHERE NOT EXISTS (
 -- so an editor edit to one of these seeded destinations matches deterministically
 -- regardless of the serial id. Card: 06_going_gold/gold_migration.md.
 INSERT INTO core.features
-  (layer, name, kind, blurb, is_destination, status, confidence, permission,
+  (layer, name, kind, description, is_destination, status, confidence, permission,
    publish_status, source_key, source_id, geom, notes, last_verified)
-SELECT 'poi', v.name, v.kind, v.blurb, v.is_destination, v.status, v.confidence,
+SELECT 'poi', v.name, v.kind, v.description, v.is_destination, v.status, v.confidence,
        v.permission, v.publish_status, v.source_key, s.id,
        ST_SetSRID(ST_MakePoint(v.lng, v.lat), 4326), v.notes, now()
 FROM source_register.sources s,
@@ -64,12 +64,12 @@ FROM source_register.sources s,
    true, 'candidate', 'low', 'unknown', 'candidate', 'editorPois:proving-grounds-candidate',
    -85.7456022, 35.0872181,
    'Unconfirmed. 665 Ellis Cove building tagged Proving Grounds candidate from a hotspot read; must be excluded by publish.features until AOP confirms.')
-) AS v(name, kind, blurb, is_destination, status, confidence, permission,
+) AS v(name, kind, description, is_destination, status, confidence, permission,
        publish_status, source_key, lng, lat, notes)
 WHERE s.name = 'AOP bake-first POI seed'
 ON CONFLICT (source_key) DO UPDATE SET
   layer = EXCLUDED.layer, name = EXCLUDED.name, kind = EXCLUDED.kind,
-  blurb = EXCLUDED.blurb, is_destination = EXCLUDED.is_destination,
+  description = EXCLUDED.description, is_destination = EXCLUDED.is_destination,
   status = EXCLUDED.status, confidence = EXCLUDED.confidence,
   permission = EXCLUDED.permission, publish_status = EXCLUDED.publish_status,
   geom = EXCLUDED.geom, notes = EXCLUDED.notes, last_verified = now();

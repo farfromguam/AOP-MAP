@@ -1229,7 +1229,7 @@
             id: `pubpoi:${props.id != null ? props.id : props.name}`,
             name: props.name || 'Destination',
             kind: props.kind || 'destination',
-            blurb: props.blurb || null,
+            blurb: props.description || null,   // publish.geojson POIs carry the description (renamed from blurb 2026-06-08); `blurb` here is the internal row field, not the source key
             revisitNote: null,
             status: props.status || props.confidence || 'published',
             source: 'publish.geojson (from PostGIS)',

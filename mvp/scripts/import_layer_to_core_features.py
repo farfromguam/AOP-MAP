@@ -53,7 +53,9 @@ SPINE = {
     "permission": "permission",
     "publish_status": "publish_status",
 }
-# blurb is read from 'description' OR 'blurb' (CMFS crosswalk).
+# The description is read from 'description' OR 'blurb' in the SOURCE GeoJSON
+# (CMFS crosswalk for heterogeneous external vocab); it is WRITTEN to the
+# core.features.description column (renamed from `blurb` 2026-06-08).
 BLURB_KEYS = ("description", "blurb")
 
 
@@ -117,10 +119,10 @@ def feature_block(feat: dict, layer: str, prefix: str, id_field: str,
         if key in props:
             cols.append(col)
             vals.append(sql_str(props[key]))
-    blurb = next((props[k] for k in BLURB_KEYS if k in props and props[k] is not None), None)
-    if blurb is not None:
-        cols.append("blurb")
-        vals.append(sql_str(blurb))
+    description = next((props[k] for k in BLURB_KEYS if k in props and props[k] is not None), None)
+    if description is not None:
+        cols.append("description")
+        vals.append(sql_str(description))
     if note is not None:
         cols.append("notes")
         vals.append(sql_str(note))

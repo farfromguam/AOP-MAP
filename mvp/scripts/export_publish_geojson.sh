@@ -26,14 +26,15 @@ COPY (
       -- All published map layers now live in the ONE converged core.features /
       -- publish.features gate -- the 2026-06-07 table cleanup folded the per-layer
       -- core.* tables (trail_centerlines, park_boundaries, trailheads, hazards,
-      -- poi) into it. Domain columns read from attrs; kind/blurb come straight
+      -- poi) into it. Domain columns read from attrs; kind/description come straight
       -- from core.features (poi carries them, the geo layers leave them NULL --
-      -- the same property shape the per-view UNION emitted).
+      -- the same property shape the per-view UNION emitted). `description` was
+      -- renamed from `blurb` 2026-06-08 (07_tables/description_blurb_convergence.md).
       SELECT id, name,
              attrs->>'difficulty'  AS difficulty,
              attrs->>'hazard_type' AS hazard_type,
              attrs->>'severity'    AS severity,
-             kind, blurb, status, confidence, permission, layer, geom
+             kind, description, status, confidence, permission, layer, geom
       FROM publish.features
       WHERE layer IN ('trail_centerlines','park_boundaries','trailheads','hazards','poi')
       ORDER BY CASE layer

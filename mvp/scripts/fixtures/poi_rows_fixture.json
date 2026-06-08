@@ -3,8 +3,8 @@
   "publishDataCache": {
     "type": "FeatureCollection",
     "features": [
-      { "type": "Feature", "properties": { "layer": "poi", "id": 1, "name": "AOP Pavilion", "kind": "facility", "blurb": "Main gathering point.", "status": "published" }, "geometry": { "type": "Point", "coordinates": [-85.6, 35.4] } },
-      { "type": "Feature", "properties": { "layer": "poi", "id": 2, "name": "Ellis Cemetery", "kind": "cemetery", "blurb": "Historic parcel.", "status": "published" }, "geometry": { "type": "Point", "coordinates": [-85.61, 35.41] } },
+      { "type": "Feature", "properties": { "layer": "poi", "id": 1, "name": "AOP Pavilion", "kind": "facility", "description": "Main gathering point.", "status": "published" }, "geometry": { "type": "Point", "coordinates": [-85.6, 35.4] } },
+      { "type": "Feature", "properties": { "layer": "poi", "id": 2, "name": "Ellis Cemetery", "kind": "cemetery", "description": "Historic parcel.", "status": "published" }, "geometry": { "type": "Point", "coordinates": [-85.61, 35.41] } },
       { "type": "Feature", "properties": { "layer": "park_boundaries", "name": "boundary (ignored)" }, "geometry": { "type": "Polygon", "coordinates": [[[-85.7,35.3],[-85.5,35.3],[-85.5,35.5],[-85.7,35.5],[-85.7,35.3]]] } }
     ]
   },

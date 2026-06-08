@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS core.features (
   layer text,
   name text,
   kind text,
-  blurb text,
+  description text,   -- the human description (CMFS canonical name; renamed from `blurb` 2026-06-08, see 07_tables/description_blurb_convergence.md). Distinct from core.activities.description (sibling table, the reusable activity WHAT).
   is_destination boolean DEFAULT false,
   status text,
   confidence text,
@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS raw.arcgis_feature_captures (
 -- non-'publish' permission and so are CORRECTLY absent here; they bake to their
 -- own served files without this gate. Card: 06_going_gold/gold_migration.md.
 CREATE OR REPLACE VIEW publish.features AS
-  SELECT id, layer, name, kind, blurb, is_destination,
+  SELECT id, layer, name, kind, description, is_destination,
          status, confidence, permission, publish_status, attrs, geom
   FROM core.features
   WHERE permission = 'publish'

@@ -22,7 +22,7 @@ BEGIN;
 
 -- 1. trail_centerlines (LineString; difficulty -> attrs) -------------------
 INSERT INTO core.features
-  (layer, name, kind, blurb, is_destination, status, confidence, permission,
+  (layer, name, kind, description, is_destination, status, confidence, permission,
    publish_status, source_key, source_id, geom, attrs, notes, last_verified,
    created_at, updated_at)
 SELECT 'trail_centerlines', name, NULL, NULL, false, status, confidence,
@@ -34,7 +34,7 @@ ON CONFLICT (source_key) DO NOTHING;
 
 -- 2. park_boundaries (MultiPolygon; no domain extras) ----------------------
 INSERT INTO core.features
-  (layer, name, kind, blurb, is_destination, status, confidence, permission,
+  (layer, name, kind, description, is_destination, status, confidence, permission,
    publish_status, source_key, source_id, geom, attrs, notes, last_verified,
    created_at, updated_at)
 SELECT 'park_boundaries', name, NULL, NULL, false, status, confidence,
@@ -45,7 +45,7 @@ ON CONFLICT (source_key) DO NOTHING;
 
 -- 3. trailheads (Point; no domain extras) ----------------------------------
 INSERT INTO core.features
-  (layer, name, kind, blurb, is_destination, status, confidence, permission,
+  (layer, name, kind, description, is_destination, status, confidence, permission,
    publish_status, source_key, source_id, geom, attrs, notes,
    created_at, updated_at)
 SELECT 'trailheads', name, NULL, NULL, false, status, confidence,
@@ -56,7 +56,7 @@ ON CONFLICT (source_key) DO NOTHING;
 
 -- 4. parcels (Polygon; parcel_id/owner/land_area + metadata -> attrs) -------
 INSERT INTO core.features
-  (layer, name, kind, blurb, is_destination, status, confidence, permission,
+  (layer, name, kind, description, is_destination, status, confidence, permission,
    publish_status, source_key, source_id, geom, attrs, notes, last_verified,
    created_at, updated_at)
 SELECT 'parcels', 'Parcel '||parcel_id, NULL, NULL, false, status, confidence,
@@ -71,7 +71,7 @@ ON CONFLICT (source_key) DO NOTHING;
 -- 5. observations (Geometry; type/review/measured + metadata -> attrs) ------
 --    no permission/publish_status columns -> NULL (correctly never published).
 INSERT INTO core.features
-  (layer, name, kind, blurb, is_destination, status, confidence, permission,
+  (layer, name, kind, description, is_destination, status, confidence, permission,
    publish_status, source_key, source_id, geom, attrs, notes,
    created_at, updated_at)
 SELECT 'observations', observation_type, NULL, NULL, false, status, confidence,
@@ -86,7 +86,7 @@ ON CONFLICT (source_key) DO NOTHING;
 
 -- 6. field_tracks (LineString; segment/point_count/recorded + metadata) -----
 INSERT INTO core.features
-  (layer, name, kind, blurb, is_destination, status, confidence, permission,
+  (layer, name, kind, description, is_destination, status, confidence, permission,
    publish_status, source_key, source_id, geom, attrs, notes, last_verified,
    created_at, updated_at)
 SELECT 'field_tracks', track_name, NULL, NULL, false, status, confidence,
@@ -101,7 +101,7 @@ ON CONFLICT (source_key) DO NOTHING;
 
 -- 7. hazards (Point; type/severity -> attrs) -- 0 rows today, kept for repro -
 INSERT INTO core.features
-  (layer, name, kind, blurb, is_destination, status, confidence, permission,
+  (layer, name, kind, description, is_destination, status, confidence, permission,
    publish_status, source_key, source_id, geom, attrs, notes,
    created_at, updated_at)
 SELECT 'hazards', hazard_type, NULL, NULL, false, status, confidence,
@@ -114,7 +114,7 @@ ON CONFLICT (source_key) DO NOTHING;
 
 -- 8. print_annotations (Geometry; annotation_type -> attrs) -- 0 rows today --
 INSERT INTO core.features
-  (layer, name, kind, blurb, is_destination, status, confidence, permission,
+  (layer, name, kind, description, is_destination, status, confidence, permission,
    publish_status, source_key, source_id, geom, attrs, notes,
    created_at, updated_at)
 SELECT 'print_annotations', annotation_type, NULL, NULL, false, status, NULL,

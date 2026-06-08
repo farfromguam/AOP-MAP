@@ -4,6 +4,64 @@ Date: 20260527
 
 Short pointer for the next session. The durable record lives in the cards.
 
+-----
+
+**2026-06-08 (DESCRIPTION CONVERGENCE — ralph loop, all 4 slices GREEN; CODE+DB+DATA, UNCOMMITTED,
+v52→v53 bump OWED).** User: *"I want a full robust fix. source data should be updated vs support in
+code. make a card. plan it then loop."* (Overrode the additive read-both shape the council had just
+cleared — `cards_not_gospel`.) Carded `tasks/07_tables/description_blurb_convergence.md`,
+council-reviewed the plan (Mason·Witness·Warden·Quartermaster, Steward-chaired — CLEARED with all
+andons folded), then looped all 4 slices, each verified BY OBSERVATION. **Shipped:** (1) DB —
+`ALTER TABLE core.features RENAME COLUMN blurb TO description` (pg_dump backup
+`/tmp/aop_map_backup_predesc.dump`; DROP+recreate `publish.features`; 159 rows intact); updated every
+checked-in writer/reader — init_db.sql, seed_core_pois.sql, migrate_layers, promote_gpx,
+import_layer (write target; KEPT the `BLURB_KEYS` external-ingest read crosswalk),
+apply_panel_overrides_to_core (POI_COL + created_block); fresh-volume repro proven. (2) Bake —
+export_publish_geojson.sh:36 emits a single `description` key (value set-equal to DB by id; no
+`blurb`/`source`/`last_checked`). (3) Viewer — main.js:1232 reads `props.description` (NO `?? blurb`
+crutch); fixture → `description`; `playwright_verify_baked_pois_author.py` gained `--require-description`
+(positive subtitle assertion, PASS — the rendered DOM shows the DB text); sw.js + index.html bumped
+**v52→v53**. (4) Seed drift — SCOPED DOWN from "re-bake seed from DB" (that reshapes the editor
+identity/maturity/tag model = HELD gold slice-6) to a source-data RECONCILE: served + raw
+`aop_editor_seed_pois.geojson` Pavilion `description`/`notes` set to the DB value; `rebake_canonical
+--check` reproduces it (no drift return). **FULL-SIX COUNCIL DONE-REVIEW (Stop-hook convened /council)
+→ CLEAR** after the Steward fixed two findings: (a) the orphan verifier `playwright_verify_baked_pois.py`
+still read `properties.blurb` (card blast-radius) — retargeted to `description`, PASS; (b) a Quartermaster
+catch — the re-baked working-tree `publish.geojson` had DROPPED HEAD's served-only `id=5 park_boundaries
+"Ellis Cemetery (inholding parcel)"` (6→5) + re-serialized ids → **restored publish.geojson to HEAD**
+(it already serves `description`; v53 viewer fix holds, re-verified) so the description commit doesn't
+ship a feature drop; the bake-SCRIPT convergence is the durable change, the served file regenerates at
+deploy. **OWED (user's git gate):** the commit (16 tracked + 4 brain files) with the v53 bump.
+**FLAGGED:** migrate the Ellis inholding park_boundary into `core.features` before the next deploy-bake,
+or that bake drops it (pre-existing gold served-only-row gap, now decoupled from this commit).
+**Follow-ups (carded, NOT done):** the full editor-loads-DB collapse (gold slice 6, HELD); the
+`aop_poi_index.json` sidecar fold (rehome `revisit_note` + `groups[]` first). Receipts in
+`output/council/description_blurb_{flow,plan,done}_review_20260608.md`.
+
+-----
+
+**2026-06-08 (COUNCIL CONSULT — "description in editor ≠ values in view"; BRAIN ONLY,
+UNCOMMITTED).** User asked the council to explain how a feature's description flows DB→view
+and why the editor's Description doesn't match the popup. Traced by observation + ran a design
+consult (Witness·Quartermaster·Mason, Steward-chaired). **Answer: one concept, two physical
+names — `blurb` (DB column `core.features.blurb` / bake export_publish_geojson.sh:36 / viewer
+`props.blurb` main.js:1232 / poi-index sidecar) vs `description` (editor panel.js:1349 / CMFS
+canonical / ref-layer attrs).** Editor reads/writes `description`; viewer renders `blurb`; they
+never reconcile in-browser. For the Pavilion it's worse — the editor edits the FROZEN static
+`aop_editor_seed_pois.geojson` (`description` text) while the viewer renders the DB-baked
+`publish.geojson` (`blurb` text), and the two texts have DRIFTED (same key `editorPois:aop-pavilion`,
+different content). **Council REJECTED a column rename** (Mason: flag-day, hard-errors the bake +
+publish.features view, doesn't converge the `attrs.description` ref layers; the project already has
+the `BLURB_KEYS` crosswalk idiom). **CLEARED shape:** converge on the CMFS canonical `description`
+ADDITIVELY — bake emits `blurb AS description` (+ `blurb` alias), viewer reads
+`props.description ?? props.blurb`, editor unchanged, crosswalk kept. Touches main.js → owes a
+`sw.js`/`#appVersion` bump; commit is the user's git gate. Carded:
+`tasks/07_tables/description_blurb_convergence.md`; receipt:
+`output/council/description_blurb_flow_review_20260608.md`. Follow-ups (separate slices): collapse
+the static seed file into the DB-baked POIs (gold slice-6 seed→DB convergence — the real drift fix);
+sidecar `aop_poi_index.json` fold (rehome `revisit_note` + `groups[]` first); ref-layer spine-column
+populate. NOT executed — explanation + recommendation only.
+
 ## ✅ DONE — the Going-Gold ralph loop (all slices + Retirement + the human-owed DROP closed, 2026-06-07)
 
 > **SUPERSEDED 2026-06-07:** the loop ran to completion (slices 1–5 + Retirement, committed `ce920bd` /
