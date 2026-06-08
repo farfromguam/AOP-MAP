@@ -415,6 +415,18 @@
     panelCollapse?.addEventListener('click', (e) => { e.stopPropagation(); togglePanel(); });
     panelHeader?.addEventListener('click', togglePanel);
 
+    // Host hook for the embedded one-model panel (js/panel.js). When a map click
+    // selects a feature, panel.js takes the panel over with the feature editor
+    // (adds .aop-feature-editing, which hides the header). If the panel is
+    // collapsed at that moment, the editor renders behind the closed FAB and the
+    // header/pencil get hidden — the same "open the panel editor" promise the
+    // legacy revealFeatureInPanel guards by expanding first (see its collapsed
+    // check below). Expose that expand so panel.js can keep the promise for the
+    // layers it reveals (trails, boundaries, …) that have no legacy reveal binding.
+    // Idempotent: a no-op when already expanded, so it never double-toggles when
+    // both handlers fire for a FEATURE_LIST_LAYERS feature.
+    window.AOP_HOST_EXPAND_PANEL = function () { if (panelCollapsed) togglePanel(); };
+
     let viewerSessionState = (() => {
       const parsed = readJsonStore(VIEWER_SESSION_KEY, () => ({}));
       return parsed && typeof parsed === 'object' ? parsed : {};

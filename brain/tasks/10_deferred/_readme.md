@@ -36,9 +36,11 @@ its own "Deferred because" header. Reasons in brief:
   shipped and serving raw-zone data; promotion to `core`/`publish` + the open
   refinements await a user review pass. May belong on an active sprint if the
   edited-SVG loop continues — flagged in the triage report.
-- `star_driven_poi_list.md` — bake-first SERVE slice shipped (split to
-  `_done/bake_first_poi_serve_slice.md`); the AUTHOR half + pipeline forks await
-  a user decision.
+- `star_driven_poi_list.md` — **design + council record only now.** The 2026-06-08
+  full-six consult resolved the forks (storage closed by gold; user picked "build
+  the ★ path first, then flip"); the executable plan moved to **Sprint 08**
+  (`../08_data_normalization/star_driven_poi_normalization.md`). This card stays
+  here as the why.
 - `dev_db_snapshot_reseed.md` — POI dev-fixture shipped (in the same `_done`
   slice card); the full DB dump/restore mechanism is unbuilt, wants a stable
   `core` schema first.

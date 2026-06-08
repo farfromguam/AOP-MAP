@@ -33,6 +33,12 @@ buffers), the per-layer **legacy-writer retirement** (OWED), and the **entire gu
 below) is unstarted**. So the sprint's *spine* is done; the *slate* is not — Sprint 06 stays open for the
 guardrails and the held forks.
 
+> **2026-06-08:** the **curation-axis slice of Slice 6** is now carded for execution in
+> **Sprint 08 — Data Normalization** (`../08_data_normalization/star_driven_poi_normalization.md`):
+> the four reference layers' ★ moves from per-browser localStorage to a durable `core.features`
+> attribute that bakes into the served artifact, then the POI tab flips to the curated set. The
+> *broader* localStorage→working-buffer convergence stays HELD here.
+
 -----
 
 ## How the guardrail slate was chosen (council triage, 2026-06-06)

@@ -6,6 +6,95 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-08 (BUGFIX — the edit pencil FAB disappears; CODE, UNCOMMITTED, v53→v54 bump OWED).** User:
+*"the edit pencil on the edit sidebar disappears every once and a while. investigate."* **Root cause
+(found + reproduced by observation, not theory):** the collapsed edit panel is a 56px rust **pencil FAB**,
+and the pencil lives inside `.panel-header`. The new embedded one-model panel (`js/panel.js`) selects a
+feature on **map click** (`revealAtPoint`) and on **left-POI-row click** (`gotoPoi`) by adding
+`.aop-feature-editing` to `.panel` — but, unlike the legacy `revealFeatureInPanel` (main.js:3901-3905,
+which *expands* a collapsed panel first), it **never expanded**. The takeover CSS
+`panel-embed.css:179 .panel.aop-feature-editing .panel-header { display:none !important }` then hid the
+header **and the pencil**, leaving an empty rust circle with no way back into the editor. **Intermittent
+because** main.js *also* binds `bindPanelReveal`→expand for the `FEATURE_LIST_LAYERS` set (buildings,
+brand-logos, editor POIs) — clicking those expanded fine; clicking the **gold layers panel.js reveals but
+main.js doesn't** (trails `aop-trail-network`, park boundary `publish-boundar*`) stranded the pencil. A
+Playwright run clicking 8 reveal-eligible layers from a fresh collapsed reload reproduced the strand on
+trails + boundaries, ok on buildings/brand-logos. **Fix (two parts, both verified):** (1) **behavioral** —
+new thin host hook `window.AOP_HOST_EXPAND_PANEL` (main.js, beside the other `AOP_HOST_*`; idempotent
+`if (panelCollapsed) togglePanel()`); panel.js calls it via a shared `ensureHostPanelOpen()` from BOTH
+`revealAtPoint` and `gotoPoi` so selecting any feature opens its editor — the documented promise, now kept
+uniformly. (2) **CSS safety net** — scoped the four `.aop-feature-editing` chrome-hide selectors to
+`:not(.collapsed)` so the header/pencil can NEVER be hidden while collapsed, for any future path that lands
+collapsed+editing. **Verified by observation:** all 8 layers now expand on click (no strand); the forced
+collapsed+editing case shows the pencil `display:grid`/visible (safety net holds independently);
+`playwright_verify_data_groups_embed.py` still PASS (7 sections, editor takeover intact, 0 console errors);
+screenshots `brain/output/fab_pencil_{collapsed,after_trail_click}.png` show the pencil glyph, then the
+trail click opening the FEATURE editor. New regression guard
+`mvp/scripts/playwright_verify_collapsed_fab_pencil.py`. **Touched shell assets** (main.js, panel.js,
+panel-embed.css) → bumped `sw.js` VERSION + `#appVersion` **v53→v54**. **OWED (user's git gate):** the
+commit (5 `website/` files + the new verifier).
+
+-----
+
+**2026-06-08 (COUNCIL CONSULT — star_driven_poi_list readiness; BRAIN ONLY, UNCOMMITTED).** User:
+*"have the council get together on this. we should be ready to go."* over
+`tasks/10_deferred/star_driven_poi_list.md`. Ran a full-six design consult (Steward-chaired), grounded
+in observation FIRST. **Finding: the card is NOT "ready to execute as written" — but the consult is fully
+resolved; only two user decisions + the card rewrite remain.** Most of the card shipped after it was
+written: C1=0 (universal refactor), the C2 two-engines→one-collector convergence
+(`collectStarredDestinations` main.js:1152; shipped as
+`05_special_operation/_done/06_one_star_driven_collector.md`), and the gold store
+(`core.pois`/`publish.pois` DROPPED, `core.features` is the store, one `publish.geojson` bake). **Forks
+resolved:** authoring surface / bake shape / dev-time-only / structural convergence = CLOSED by gold;
+**still open** = (1) durable curation for the four *reference* layers (cemeteries/buildings/visitor/trails
+have NO author→DB ★ path — gold **slice 6, HELD**), (2) the user-visible flip itself (decisions #1/#2).
+**Three andons, all folded:** Mason — flipping cemeteries(2266)+buildings(2345) to `listMode:'starred'`
+without `highlightable:true` is a banned **C5** row-dropping filter (no ★ control exists); fix = add
+`highlightable:true` to both, flip together; visitorContext(2682)+trails(2842) are already highlightable.
+Warden — the flip is a true **DECISION** gate (the code comment main.js:1145-1147 + card 06 held it for
+the user); do NOT execute autonomously; annotate the card's directives, don't delete them. Quartermaster —
+do NOT un-defer the card whole (engine/storage halves duplicate shipped work); keep only the thin product
+slice. Witness CLEAR + caveat (baked POIs are bake-gated, won't vanish; only 1 served feature has
+`highlight===true`, so the flip empties the four groups = intended decision #2; but decision #5 unmet for
+the four layers). Scribe — card was stale (dropped objects, pre-rename `blurb`, dead `index.html:NNNN`,
+dead `../04_event_app/`→`04_edit`); recorded verdict in card + handoff same pass. **The executable slice
+(council-corrected):** add `highlightable:true` to cemeteries+buildings → flip those + visitor + trails to
+`'starred'` → published POIs stay wholesale (bake is their gate) → render left-tab curation fields (the
+`info needed — revisit` chip is already live at main.js:1396) → tile-independent acceptance cloned from
+`playwright_verify_star_collector.py`. **Blocking caveat:** in the deployed read-only viewer the four
+reference groups stay PERMANENTLY EMPTY until slice 6's author→DB ★ path lands. **Records:** card top
+annotated + stale facts/paths fixed (NOT deleted); receipt
+`output/council/star_driven_poi_list_consult_20260608.md`. **USER DECISION (same turn):** of the three
+scope options, the user picked **"build the ★ path first, then flip"** — decisions #1+#5 both met before
+any visible change; nothing empty in production. Then: *"make the plan. put it into a sprint 08 dir. call it
+data normalization."* → created **`tasks/08_data_normalization/`** (`_readme.md` + spine card
+`star_driven_poi_normalization.md` = the concrete 3-slice plan). The deferred
+`star_driven_poi_list.md` stays put as the **design + council record** (it has 17 inbound links — moving it
+would break them); the two cards point at each other, no duplication. Plan grounded in observation: bake
+already emits reference-layer
+`attrs` verbatim (`export_publish_geojson.sh:90`, no bake change needed), and
+`apply_panel_overrides_to_core.py:38-39` already names "the buildings/cemeteries/… doors are a future
+increment" — that increment is Slice A. **Slices:** A = reference-layer ★ door (add `highlightable:true` to
+cemeteries+buildings; **new `apply_positioned_features_to_core.py`** — the reference-layer ★ lives in
+`aop_positioned_features_v1`, a DIFFERENT store than the panel-overrides sink, resolved to core rows by a
+per-layer DB lookup); B = ★ travels into the bake (verify-mostly — the reference bake emits `attrs`
+verbatim); C = flip `listMode`→`'starred'` + verify render + clone the tile-independent test (owes a
+`v53`→`v54` bump). **THEN: FULL-SIX PLAN-COUNCIL CLEARED it (Steward-chaired, 1 round + 1 narrow
+re-review).** R1: Witness andon (2 facts — `sfwda-<n>` is a load index, not the trail number → resolve by
+`attrs->>'trail_number'`; reference rows DO render headless → assert per-group counts) + Mason andon (drop
+the `is_destination` dual-write — `attrs.highlight` is the sole reader/source-of-truth for these 4 layers;
+tighten Slice C to verify-first); Quartermaster + Warden clear-with-conditions (draw the reuse line: reuse
+`split_key`/`round_coords`/`_applied` scaffold, NOT `read_payload`/`VIEW_STATE_KEYS` which strips
+`highlight`; name the visitor `attrs->>'name'` join; `FEATURE_LIST_LAYERS` not `LAYER_CONFIGS`); Scribe
+clear. All folded → Witness/Mason/Quartermaster/Warden **re-reviewed CLEAR** (Witness observed the
+reference runtime seeding headless live via `window.AOP_HOST_MAP`). Receipt:
+`output/council/sprint08_plan_review_20260608.md`; plan banner = COUNCIL-CLEARED. **NEXT (user's gates):**
+commit-pause (commit the Sprint-08 plan), then ralph-loop the slices in a **fresh session** (this one is
+context-heavy). The commit + the `v53`→`v54` bump stay the user's. Touched only `brain/` — no
+`website/`/`mvp/`, Tier-0 gate did not self-fire; nothing committed.
+
+-----
+
 **2026-06-08 (DESCRIPTION CONVERGENCE — ralph loop, all 4 slices GREEN; CODE+DB+DATA, UNCOMMITTED,
 v52→v53 bump OWED).** User: *"I want a full robust fix. source data should be updated vs support in
 code. make a card. plan it then loop."* (Overrode the additive read-both shape the council had just
@@ -37,6 +126,21 @@ or that bake drops it (pre-existing gold served-only-row gap, now decoupled from
 **Follow-ups (carded, NOT done):** the full editor-loads-DB collapse (gold slice 6, HELD); the
 `aop_poi_index.json` sidecar fold (rehome `revisit_note` + `groups[]` first). Receipts in
 `output/council/description_blurb_{flow,plan,done}_review_20260608.md`.
+**→ User COMMITTED the convergence as `5b5fcdd "v53 data mutation"` (the git gate), then: "continue
+with that last bit."** **SLICE 5 (Ellis inholding migration) — the flagged gold gap closed.** The
+served-only `park_boundaries "Ellis Cemetery (inholding parcel)"` (was publish.geojson id=5, in no
+table) is now in `core.features` (live id 201, `permission/publish_status=publish`, source_key
+`park_boundaries:ellis-inholding`, provenance = TN Comptroller parcel source id 3). New checked-in
+idempotent `mvp/scripts/seed_core_park_boundaries.sql` (self-seeds its source; ON CONFLICT DO NOTHING)
++ mounted in `docker-compose.yml` so fresh volumes carry it. **Proven by observation:** the seed runs
+clean (exit 0, no dup); `publish.features` serves the envelope + Ellis; a re-bake now yields **6
+features incl. Ellis (id 201, `description`, no `blurb`)** — the bake no longer drops it — with the POI
+description convergence intact; served files restored to HEAD after verifying (the durable change is
+Ellis-in-core + the seed; the served artifact regenerates at the user's deploy). **FLAG:** the working
+envelope park_boundary (live id 194) is still live-only on fresh volumes (it came via the one-time
+`migrate_layers`); this seed reproduces Ellis only — full park_boundaries fresh-volume parity is a
+separate cleanup. **OWED:** the commit of the Slice-5 diff (seed + compose + card). Done-review receipt
+appended in `description_blurb_done_review_20260608.md`.
 
 -----
 

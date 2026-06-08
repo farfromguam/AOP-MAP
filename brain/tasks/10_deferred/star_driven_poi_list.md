@@ -1,11 +1,54 @@
 # Star-driven POI list — one authoring pipeline, not file reconciliation
 
 > **Deferred — Sprint 04 triage (2026-05-30).** The bake-first SERVE slice
-> shipped and was split to `../04_event_app/_done/bake_first_poi_serve_slice.md`.
+> shipped and was split to `../04_edit/_done/bake_first_poi_serve_slice.md`.
 > What remains here is **deferred because** it needs a user decision: the AUTHOR
-> half (who writes `core.pois` — web editor vs QGIS vs both) and the open
+> half (who writes the POI rows — web editor vs QGIS vs both) and the open
 > pipeline forks (localStorage's role, bake artifact shape, dev-time-only vs
 > prod write path) are unresolved. No code until those are picked.
+
+> **⚠ COUNCIL READINESS VERDICT — 2026-06-08 (full six, Steward-chaired).** Read
+> this first; the body below predates the gold migration + Sprint 05/07 and is
+> stale in places (it still names dropped `core.pois`/`publish.pois`, pre-rename
+> `blurb`, and old `index.html:NNNN` line numbers — the JS moved to
+> `website/js/main.js`). What the council resolved by observation:
+>
+> - **Most forks are CLOSED, not open.** Authoring surface (for POIs/editorPois:
+>   `apply_panel_overrides_to_core.py` → `core.features` → bake), bake artifact
+>   shape (one `publish.geojson`), dev-time-only write, the **structural**
+>   two-engines→one-collector convergence (shipped as
+>   `../05_special_operation/_done/06_one_star_driven_collector.md`), and the
+>   store of record (`core.features`; `core.pois`/`publish.pois` dropped) ALL
+>   shipped. The "Open forks — the real ones now" section near the bottom is no
+>   longer a fork list — see the annotation there.
+> - **STILL genuinely open:** (1) durable curation for the four **reference**
+>   layers (cemeteries/buildings/visitor/trails) — no author→DB ★ path exists for
+>   them (gold **slice 6, HELD**); (2) the user-visible flip itself (decisions
+>   #1/#2).
+> - **The executable slice (council-corrected):** (a) **add `highlightable: true`
+>   to cemeteries + buildings** — Mason andon: they have no ★ control today, so
+>   flipping them to starred without it is a banned **C5** row-dropping filter;
+>   (b) flip `listMode: 'wholesale'`→`'starred'` on cemeteries, buildings,
+>   visitorContext, trails (`main.js` ~2274/2345/2653/2860); (c) **published
+>   POIs stay wholesale** — the bake is their curation gate, never retrofit
+>   `'starred'` onto the baked `layer==='poi'` union; (d) render the left-tab
+>   curation fields — mostly already present (the `info needed — revisit` chip is
+>   live at `main.js:1396`); (e) tile-independent acceptance: clone
+>   `playwright_verify_star_collector.py` — assert `pubpoi:1`/`pubpoi:2` still
+>   render and the four wholesale groups are empty in a clean profile.
+> - **Blocking caveat:** in the deployed read-only viewer (no localStorage author
+>   session) the four reference groups would be **permanently empty** until gold
+>   slice 6's author→DB ★ path lands — their ★ never reaches the bake. So the flip
+>   delivers decision #2 (start empty/curated) but **not** #1/#5 *in production*
+>   for those layers. editorPois + baked POIs already curate end-to-end.
+> - **The user-decision fork is RESOLVED (2026-06-08):** the user picked **build the
+>   ★ path first, then flip** (decisions #1 + #5 both met before any visible change).
+>   See `../../output/council/star_driven_poi_list_consult_20260608.md`.
+> - **The executable plan now lives in Sprint 08** —
+>   `../08_data_normalization/star_driven_poi_normalization.md`. This card stays the
+>   design + council record; do NOT un-defer it whole (Quartermaster: its
+>   engine/storage halves duplicate shipped work) and do NOT execute the flip
+>   autonomously (user-visible end) — run it via the Sprint 08 loop contract.
 
 Date: 2026-05-29
 
@@ -85,7 +128,8 @@ These survive the reframe; they're about behavior, not storage:
    set across these. No layer-specific exceptions.
 2. **The POI tab starts empty.** Curated subset, not "everything we know." (A
    behavior change from `_done/left_panel_poi_browser.md`, which shipped ~20
-   unconditional rows. Empty-state copy already exists at `index.html:2114`.)
+   unconditional rows. Empty-state copy already exists — now at
+   `website/js/main.js:1338` after the JS split, not the old `index.html:2114`.)
 3. **Brand logos leave the ★ axis entirely** — cartographic decoration, never
    destinations. (They keep their own size/move drawer.)
 4. **Right ★ Visitor list and left POI tab are two renderers over one set** —
@@ -168,6 +212,15 @@ What's missing is specifically the ★/destination POI set:
 
 ### Bake-first slice — SHIPPED 2026-05-29 (session 2, user green-lit)
 
+> **ANNOTATION 2026-06-08 (council):** This block names `core.pois` / `publish.pois`
+> and `blurb` — both superseded since. The gold migration (2026-06-07,
+> `../06_going_gold/gold_migration.md`) collapsed POIs into `core.features`
+> (`layer='poi'`) and **dropped** `core.pois` + `publish.pois`; the column `blurb`
+> was renamed to `description` (2026-06-08,
+> `../07_tables/description_blurb_convergence.md`, committed `5b5fcdd`). Read the
+> nouns here as: `core.features WHERE layer='poi'`, gate `publish.features`, copy
+> field `description`. The SERVE behavior this block shipped is intact.
+
 The SERVE half of the pipeline now runs end-to-end and is verified. What landed
 (all in the working tree, uncommitted):
 
@@ -217,6 +270,17 @@ tab group renders both, no console errors). Regression: `feature_list` /
 
 ## Open forks — the real ones now (storage is settled; these are not)
 
+> **ANNOTATION 2026-06-08 (council):** Three of these four are now CLOSED by the
+> shipped gold migration — do not re-litigate them. **Authoring surface:** the web
+> editor writes via `apply_panel_overrides_to_core.py` → `core.features` → bake
+> (editor_is_the_viewer); QGIS stays a future cartography surface, not a blocker.
+> **Bake artifact shape:** one `publish.geojson` (shipped). **Where "move it
+> around" runs:** dev-time-only (northstar V1; no prod write). **Only one is still
+> open: localStorage's role** — kept as a working buffer (C3), and for the four
+> *reference* layers (cemeteries/buildings/visitor/trails) it is still the *only*
+> ★ store because no author→DB path exists for them yet (gold **slice 6, HELD**).
+> The text below is the original 2026-05-29 fork list, kept as the record.
+
 Decide these before any code. They are genuine; do not assume.
 
 - **Authoring surface.** Does the web editor write the DB (the
@@ -265,6 +329,16 @@ resolved it, and it de-risks the authoring fork above:
 - **Whichever authoring surface you pick** (the (a) fork) writes into the **same** CMFS
   shape, and the audit guards it — so the schema question does **not** block the
   authoring decision; it makes it safer.
+
+## Execution plan — moved to Sprint 08 (chosen 2026-06-08)
+
+> The user picked **"build the ★ path first, then flip"** (decisions #1 + #5 both met
+> before any visible change) and asked for the plan in an active sprint. The executable
+> 3-slice plan now lives at **`../08_data_normalization/star_driven_poi_normalization.md`**
+> (spine of Sprint 08 — "Data Normalization"), with the sprint framing in
+> `../08_data_normalization/_readme.md`. This card stays the **design + council record**;
+> that card is the **how-to-run**. Sprint 08 executes the curation-axis slice of gold
+> slice 6 (HELD, `../06_going_gold/gold_migration.md`).
 
 ## What this is NOT (out of scope / guardrails)
 

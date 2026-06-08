@@ -52,7 +52,12 @@ finish a turn, it:
    reminder, not a gate). These are findings, not failures.
 5. **Clearance marker.** If `.claude/.council-cleared` holds a hash equal to the current diff hash, the
    council already cleared *this exact diff* — exit 0. Any new change invalidates the hash (so you can't
-   clear once and keep coding — Goodhart-resistant).
+   clear once and keep coding — Goodhart-resistant). **The hash is computed EXACTLY as** (the hook,
+   `council-gate.sh`): `sha1( git diff HEAD -- website mvp  +  git status --porcelain -- website mvp )`
+   — scoped to `website`/`mvp`, and the porcelain term means **untracked** new files under them are part
+   of the hash too. When the Steward clears, write the marker with that same formula (NOT
+   `git hash-object`, NOT an all-paths diff) or it will never match and the gate keeps nudging:
+   `python3 -c "import subprocess,hashlib; g=lambda *a: subprocess.run(['git',*a],capture_output=True,text=True).stdout; open('.claude/.council-cleared','w').write(hashlib.sha1((g('diff','HEAD','--','website','mvp')+g('status','--porcelain','--','website','mvp')).encode()).hexdigest())"`
 6. **Nudge once.** Otherwise exit 2 with stderr instructing the agent to **convene the council**
    (`/council`) over the diff before declaring done, with the advisory findings inline. Because of the
    loop guard, this fires at most once per stop — it never babysits.

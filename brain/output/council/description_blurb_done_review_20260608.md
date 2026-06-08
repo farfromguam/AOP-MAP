@@ -65,6 +65,32 @@ All six seats CLEAR after the two fixes. Gate cleared; diff hash written to `.cl
 Seats: Warden a849e395ef6e732e6 · Quartermaster a75f6c24e122c2c1d · Mason a9aa25a8d249d8d94 ·
 Scribe a2f07f76c27a45d0c · (Witness done-review a9d6bf66e8a33d02a).
 
+## Slice 5 done-review (Ellis inholding migration — publish-zone data; user-directed follow-up)
+
+After the user committed the convergence (`5b5fcdd "v53 data mutation"`) and said "continue with that
+last bit," the served-only Ellis inholding park_boundary was migrated into `core.features` (new
+`mvp/scripts/seed_core_park_boundaries.sql`, idempotent, mounted; live id 201). Fresh seats over the
+Slice-5 diff:
+- **Witness — CLEAR.** Re-observed: Ellis in core + publish gate; seed clean/idempotent (exit 0, no
+  dup, the ON_ERROR_STOP report-query bug fixed); a re-bake yields 6 features incl. Ellis under
+  `description` (no `blurb`), POI convergence intact; fresh-volume repro has Ellis with self-seeded
+  provenance; served files restored to HEAD; HEAD still `5b5fcdd`.
+- **Mason — CLEAR.** Non-limiting (ON CONFLICT DO NOTHING + WHERE NOT EXISTS, no CHECK/throw); idiom
+  matches `seed_core_pois.sql`; geom `ST_SetSRID(ST_GeomFromGeoJSON(...),4326)` matches the canonical
+  parcel importer; row shape matches the envelope (194).
+- **Warden — CLEAR.** Scoped to the one flagged row; envelope (194) not mutated; git gate untouched;
+  served files restored; the "envelope still live-only on fresh volumes" flag is honest scope-bounding.
+- **Quartermaster — ANDON → re-CLEARED.** Caught that the seed's self-seeded source row diverged from
+  the canonical `import_aop_parcel_boundary.sql` definition (would materialize a thinner row on a fresh
+  volume, where the import isn't mounted). FIXED: copied the canonical field values verbatim
+  (`arcgis_feature_service` / `reference_publish` / `medium` / full license + url + retrieved_on).
+  Re-verified on a true fresh volume — the self-seeded source is byte-identical to live, Ellis
+  publishes with it linked. Re-review CLEAR.
+
+Slice 5 OWED: the commit of the diff (`seed_core_park_boundaries.sql` new + `docker-compose.yml` mount
++ card + handoff). FLAG: the working-envelope park_boundary (live 194) is still live-only on fresh
+volumes — full park_boundaries fresh-volume parity is a separate cleanup.
+
 ## Scope note recorded
 Slice 4 was scoped from "re-bake seed FROM DB" down to a source-data RECONCILE after observation
 showed the full DB→seed re-bake reshapes the editor identity/maturity/tag model = the HELD gold

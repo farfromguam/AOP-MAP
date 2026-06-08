@@ -193,6 +193,24 @@ check is NOT acceptance here. Extend the EXISTING verifiers (Quartermaster) — 
   (`panel.js:1349`) and assert it CONTAINS the DB substring `"campfire all happen here"`. Stale
   localStorage would mask the re-bake — the fresh-state reset is load-bearing.
 
+### Slice 5 — migrate the served-only Ellis inholding park_boundary into core (user-directed follow-up)
+Closes the gold gap the done-review flagged: `id=5 park_boundaries "Ellis Cemetery (inholding parcel)"`
+was served-only (not in the DB), so a DB-only bake drops it. Migrate it into `core.features` so the bake
+preserves it.
+- New checked-in `mvp/scripts/seed_core_park_boundaries.sql`: idempotent — self-seeds its provenance
+  source ("Tennessee Comptroller Marion County parcel layer", reuses live id 3) and INSERTs the Ellis
+  inholding (`layer='park_boundaries'`, `permission='publish'`, `publish_status='publish'`,
+  `source_key='park_boundaries:ellis-inholding'`, the polygon via ST_GeomFromGeoJSON, `description` = the
+  served long text) ON CONFLICT (source_key) DO NOTHING. Run on the live DB; mounted in docker-compose so
+  fresh volumes carry it too.
+- **Acceptance (observation):** live `publish.features WHERE layer='park_boundaries'` includes Ellis
+  (publish gate); a re-bake of `publish.geojson` now carries the Ellis park_boundary (6 features, not 5)
+  AND the POI `description` convergence still holds; fresh-volume repro (init + the two seeds) has Ellis
+  with provenance. Restore served files to HEAD after verifying unless shipping intentionally.
+- FLAG: the working-envelope park_boundary (live id 194) remains live-only on fresh volumes (it came via
+  the one-time `migrate_layers`); this seed makes Ellis reproducible but does not re-seed the envelope
+  (no mutation of the existing row) — full park_boundaries fresh-volume parity is a separate cleanup.
+
 ## Verification (whole card)
 Per-slice tile-independent acceptance above. The card is DONE when: DB has one `description` column
 (no `blurb`); the bake emits one `description` key; the viewer reads `props.description`; and the

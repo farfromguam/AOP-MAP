@@ -1698,6 +1698,17 @@
       if (n === node) { section.collapsed = false; node.expanded = true; parents.forEach((p) => { p.expanded = true; }); }
     });
   }
+  // Selecting a feature renders the editor takeover, which hides the panel header
+  // (and with it the pencil FAB). If the host edit panel is collapsed to that
+  // 56px FAB, expand it first so the editor is actually shown and the pencil is
+  // never left hidden behind a closed FAB — the "selecting a feature opens its
+  // editor" promise the legacy host kept via revealFeatureInPanel. Idempotent
+  // host-side (no-op when already open); a no-op too in standalone (no host).
+  function ensureHostPanelOpen() {
+    if (typeof window !== 'undefined' && typeof window.AOP_HOST_EXPAND_PANEL === 'function') {
+      window.AOP_HOST_EXPAND_PANEL();
+    }
+  }
   function revealAtPoint(point) {
     if (!point) return;
     const ids = [];
@@ -1712,6 +1723,7 @@
     const key = String(node.items.key(hits[0].properties || {}));
     expandTo(node);
     selection = { kind: 'item', nodeId: node.id, key };
+    ensureHostPanelOpen();   // map-click opens the editor; never strand the pencil
     rerender();
   }
 
@@ -1764,6 +1776,7 @@
     flyToItem(item);
     expandTo(node);
     selection = { kind: 'item', nodeId: node.id, key: item.key };
+    ensureHostPanelOpen();   // surface the editor in the right panel; never strand the pencil
     rerender();
   }
 

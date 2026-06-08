@@ -175,11 +175,21 @@ body.aop-embed-ready #panelBody { scrollbar-gutter: stable; }
  * the surrounding chrome — panel header, the kept Session-tools/Review sections,
  * and the save footer — is hidden so the editor IS the whole panel; its own
  * ‹ Layers back bar returns to the tree. (#aopPanelMount itself is a bare div, not
- * a .panel-section, so the section-hide rule below never touches the editor.) */
-.panel.aop-feature-editing .panel-header,
-.panel.aop-feature-editing #panelBody > #presetStatus,
-.panel.aop-feature-editing #panelBody > .panel-section,
-.panel.aop-feature-editing #aopPanelFooter { display: none !important; }
+ * a .panel-section, so the section-hide rule below never touches the editor.)
+ *
+ * `:not(.collapsed)` is load-bearing: when the panel is COLLAPSED it is a 56px
+ * pencil FAB, and the pencil lives inside .panel-header. A selected feature can
+ * co-occur with the collapsed state (e.g. clicking a trail/boundary on the map
+ * while the panel is collapsed adds .aop-feature-editing without expanding). Were
+ * this rule unscoped, it would `display:none` the header — and with it the only
+ * pencil — leaving an empty rust circle the user can't tap back into. Hiding the
+ * chrome is only meaningful when the editor actually owns the EXPANDED panel; the
+ * collapsed FAB always wins. (panel.js now also expands on reveal, but this keeps
+ * the FAB safe for any path that lands collapsed+editing.) */
+.panel.aop-feature-editing:not(.collapsed) .panel-header,
+.panel.aop-feature-editing:not(.collapsed) #panelBody > #presetStatus,
+.panel.aop-feature-editing:not(.collapsed) #panelBody > .panel-section,
+.panel.aop-feature-editing:not(.collapsed) #aopPanelFooter { display: none !important; }
 
 #aopPanelMount .feature-editor { display: flex; flex-direction: column; background: var(--panel-bg); }
 /* Back/head/tabs pin to the top of the scroll region (sticky) so they stay put
