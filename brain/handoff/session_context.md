@@ -6,6 +6,24 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-09 (cwc pickup — Path A batch reconciled + the owed version bump DONE; bump UNCOMMITTED).**
+Reconciled the handoff against git: the Path A batch the loop left "uncommitted, one vNN bump owed" was in
+fact committed by the user as `11fe36f more data normalization` (HEAD) — `website/js/main.js` +
+`website/js/panel.js`, `rebake_canonical.py`, `_schema.json`, all 9 re-baked served `*.geojson`, the 5 new
+`playwright_verify_shadow_a[1-5]_*.py`, the council receipts, and the brain. **But `index.html`/`sw.js` were
+NOT in that commit**, so the whole Path A batch (changed JS + every re-baked GeoJSON) shipped under the
+*unchanged* `v59` — installed PWA users would stay on the stale cached shell + data (sw.js caches GeoJSON
+cache-first, refreshing only on a VERSION bump). Did the owed bump: `v59 → v60` at both sites
+(`website/sw.js:35` const VERSION, `website/index.html:227` `#appVersion`, kept in sync). **Verified by
+observation:** restarted the :8001 viewer, `playwright_verify_shadow_a1_canonical.py` PASS (boots over the
+re-baked data, 0 console errors, all canonical values live); served `index.html` renders `v60` and served
+`sw.js` const is `v60`. Working tree = exactly `website/index.html` + `website/sw.js`, **UNCOMMITTED — the
+user's git gate.** With this bump committed, Path A (A1–A5) is code-complete, council-cleared, AND versioned.
+**NEXT (the user's call):** commit the v60 bump, then decide whether to pull **Path B / gold slice 6**
+(`../06_going_gold/gold_migration.md`) — the 20 held DB-door / identity / bake-reproducibility findings (the
+non-reproducible `publish.geojson`, the localStorage-diff published reference view, the full DB collapse).
+Path B is a major migration, still HELD for the user's pull.
+
 **2026-06-09 (RALPH LOOP STARTED — Path A slice A1 DONE + COUNCIL FULL-SIX CLEAR; CODE+DATA, UNCOMMITTED,
 one vNN bump owed, commit OWED).** Picked up the shadow-attribute resolution ralph loop in a fresh session
 (`tasks/09_editor_maturity/shadow_attribute_resolution.md`, Loop contract). **A1 (foundational canonical
