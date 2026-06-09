@@ -6,6 +6,34 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-08 (GOLD SLICE 6 PULLED by the user — F2 drawn-POI DB door DONE; DB-door code, UNCOMMITTED, NO
+bump owed, commit OWED).** After Sprint 09 Slices 1–4, the user pulled gold slice 6 ("pull gold slice 6
+now"). Executed it BOUNDED, one door (loop contract): **F2 — the drawn-POI DB door.** `aop_editor_pois_v1`
+(the editor's own draw store) had NO direct writer to `core.features` (spike audit F2) — it reached core
+only via the panel's opt-in `created[]` export, so a drawn POI vanished on browser reset and never
+published. **Shipped:** new **`mvp/scripts/apply_editor_pois_to_core.py`** — a thin INPUT ADAPTER mapping
+the drawn-POI FeatureCollection (the editor's "Copy all as GeoJSON") to the panel-overrides `created[]`
+shape (`_src='editorPois'` → `source_key='editorPois:<id>'`, the seed convention) and feeding the EXISTING
+`apply_panel_overrides_to_core` sink (`build_sql`/`run_psql`) — ONE sink, no duplicated upsert/provenance.
+Folded a Mason andon: a null/partial geometry threw in the shared `build_created_feature` → new
+`safe_geometry()` guard in `panel_overrides.py` (behavior-preserving for well-formed geometry; null/partial
+→ geom-less, never throws — R13). **Verified by observation (browserless, the gold baked-file assertion):**
+new `mvp/scripts/verify_editor_poi_db_door.py` — apply → both POIs active in `core.features` (geom present,
+survives reset); publishable → baked `publish.geojson`; candidate GATED OUT; null-geom POI upserts geom-less
+(no throw, no drop); idempotent re-apply; cleanup restores served files byte-identical to HEAD (production
+untouched). **Council: FULL SIX CLEAR** (Witness·Quartermaster·Warden·Steward-cross + Mason after the fold;
+the slice-1 `playwright_verify_baked_pois_author.py` `names=[]` failure is PRE-EXISTING — the committed
+star-only flip removed the `published_destinations` group it reads; not an F2 regression). Receipt:
+`output/council/gold_slice6_F2_drawn_poi_door_20260608.md`. **NO shell asset → NO bump owed.** **OWED
+(git gate):** the commit (the new door + verifier + the `panel_overrides.py` guard + brain). **STILL HELD
+(the user's call, each its own door):** **F1** (geometry/icon_size → core), **F4** (re-bake `publish.geojson`
+= the git gate), **F5** (fresh-volume parity — 153 live-only rows), **F6** (identity-fork collapse, highest
+risk, do last). **FLAGGED:** `playwright_verify_baked_pois_author.py` is pre-existingly STALE (reads the
+removed `published_destinations` group) — needs updating to the star-only contract (separate cleanup, not
+F2).
+
+-----
+
 **2026-06-08 (SPRINT 09 SLICES 3+4 — trailheads editable (F7) + generic-draw cleanly retired; CODE,
 UNCOMMITTED, rides the v59 batch, commit OWED).** User: *"continue all the slices until done."* Drove the
 remaining UI-completeness slices end-to-end (the commit stays the git gate). **Slice 3:** the curated

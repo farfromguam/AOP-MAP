@@ -96,6 +96,24 @@ def geom_kind(geometry: dict) -> str:
     return {"Point": "poi", "LineString": "trail", "Polygon": "area"}.get(t, "poi")
 
 
+def safe_geometry(geometry):
+    """A clean geometry dict, or None if missing / partial / unparseable -- NEVER throws
+    (R13). A drawn feature mid-draw or a non-geographic POI can carry geometry:null or a
+    type without coordinates; it must land geom-less downstream (point_geom_sql -> NULL),
+    not crash the whole batch. Behavior-preserving for a well-formed geometry: returns the
+    same {type, coordinates: round_coords(coordinates)} the inline build used to."""
+    if not isinstance(geometry, dict):
+        return None
+    gtype = geometry.get("type")
+    coords = geometry.get("coordinates")
+    if not gtype or coords is None:
+        return None
+    try:
+        return {"type": gtype, "coordinates": round_coords(coords)}
+    except Exception:
+        return None
+
+
 def build_created_feature(raw: dict, today: str):
     """A drawn feature -> a canonical-first served feature (or None if no id)."""
     props_in = dict(raw.get("properties") or {})
@@ -120,6 +138,6 @@ def build_created_feature(raw: dict, today: str):
     out_props.pop("id", None)             # avoid dup from the loop above
     return {
         "type": "Feature",
-        "geometry": {"type": raw["geometry"]["type"], "coordinates": round_coords(raw["geometry"]["coordinates"])},
+        "geometry": safe_geometry(raw.get("geometry")),  # null/partial geom -> None, never throws (R13)
         "properties": {"id": str(canonical_id), **out_props},
     }

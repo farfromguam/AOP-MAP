@@ -109,6 +109,21 @@ No shortcuts. we are trying to mature the project and not maintain shortcuts or 
 > **HELD until a human pulls it** (the user's decision). Slices 1–4 (the UI-completeness axis this sprint
 > owns) are COMPLETE.
 
+> ## ✅ SLICE 5 (F2 half) — DONE (2026-06-08; the user PULLED gold slice 6; DB door, UNCOMMITTED, NO bump owed)
+> The user pulled gold slice 6; its **F2 door** (the half of this Slice 5 that makes drawn POIs DB-first) is
+> built + verified. **`mvp/scripts/apply_editor_pois_to_core.py`** — the drawn-POI DB door: `aop_editor_pois_v1`
+> → `core.features (layer='poi')` (a thin input adapter onto the existing `apply_panel_overrides_to_core`
+> sink; `source_key='editorPois:<id>'`). A drawn POI now survives a browser reset (it is in the DB) and
+> publishes through the gate (a candidate is gated out). Verified browserless
+> (`mvp/scripts/verify_editor_poi_db_door.py`): apply → core → bake → publishes / gated / idempotent /
+> null-geom no-throw / production restored to HEAD. **Council: FULL SIX CLEAR** (1 Mason andon folded —
+> `safe_geometry` guard in `panel_overrides.py`). Receipt + ownership:
+> `../06_going_gold/gold_migration.md` slice 6 (F2 done) + `../../output/council/gold_slice6_F2_drawn_poi_door_20260608.md`.
+> **Still owed on Slice 5 (gold slice 6, HELD — the user's call):** **F1** (geometry/icon_size DB door),
+> and the production phase F4 (re-bake `publish.geojson`) / F5 (fresh-volume parity) / F6 (identity collapse).
+> **OWED (git gate):** the commit (the new `mvp/scripts` door + verifier + the `panel_overrides.py` guard +
+> brain). NO version bump (no shell asset touched).
+
 -----
 
 ## Goal (one line)

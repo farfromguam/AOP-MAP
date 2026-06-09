@@ -562,7 +562,31 @@ Collapse `core.pois` into `core.features` and prove it, so the transitional two-
 
 -----
 
-## Slice 6 — HELD (out of loop scope until a human pulls it)
+## Slice 6 — PARTIALLY PULLED by the user 2026-06-08 (F2 done; F1/F4/F5/F6 still HELD)
+
+> **2026-06-08 — the user PULLED gold slice 6** (after Sprint 09 Slices 1–4 / the editor-maturity sprint
+> reached the DB-first bar). Executing it bounded, one door per the loop contract. **✅ F2 DONE — the
+> drawn-POI DB door.** `aop_editor_pois_v1` (the editor's own draw store) now has a direct writer to
+> `core.features (layer='poi')`: new **`mvp/scripts/apply_editor_pois_to_core.py`** — a thin INPUT ADAPTER
+> mapping the drawn-POI FeatureCollection (the "Copy all as GeoJSON" export) to the panel-overrides
+> `created[]` shape (`_src='editorPois'` → `source_key='editorPois:<id>'`, the seed convention) and feeding
+> the EXISTING `apply_panel_overrides_to_core` sink (`build_sql`/`run_psql`) — ONE sink, no duplicated
+> upsert/provenance (Quartermaster). A drawn POI now (a) survives a browser reset (it is in the DB, not just
+> localStorage) and (b) publishes through the gate (`permission='publish' AND publish_status='publish'`), a
+> candidate correctly gated out. **Verified by observation (browserless, the gold baked-file assertion):**
+> new `mvp/scripts/verify_editor_poi_db_door.py` — apply → both POIs active in core (geom present);
+> publishable → `publish.geojson`; candidate gated out; **null-geometry POI upserts geom-less (no throw, no
+> drop)**; idempotent re-apply; cleanup restores served files byte-identical to HEAD. **Council: FULL SIX
+> CLEAR** (1 Mason andon folded: a null/partial geometry threw in the shared `build_created_feature` →
+> `safe_geometry()` guard added in `panel_overrides.py`, behavior-preserving for well-formed geometry).
+> Receipt: `../../output/council/gold_slice6_F2_drawn_poi_door_20260608.md`. **NO shell asset → NO bump
+> owed; the commit is the user's git gate.**
+>
+> **Still HELD (the user's call, each its own door):** **F1** (geometry/icon_size → core — extend
+> `apply_positioned_features_to_core.py` beyond `highlight`); **F4** (re-bake `publish.geojson` from the DB —
+> touches the production served file, the git gate); **F5** (fresh-volume parity — the 153 live-only imported
+> rows); **F6** (collapse the per-layer identity forks — "highest risk, do last"). The bounded list is the
+> spike audit below.
 
 **Do not execute in the loop.** Reframed per the council: most of the C2 collapse already
 shipped in Sprint 05 (one `collectStarredDestinations` at `main.js:1152`, zero `pushRow(`,
