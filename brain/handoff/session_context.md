@@ -6,6 +6,56 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-09 (SHADOW-ATTRIBUTE AUDIT — card opened + seal-team sweep DONE; BRAIN ONLY, UNCOMMITTED,
+council review NEXT).** Follow-on to the "Launchpad" trace below: a trail whose name disagrees across
+surfaces ("Launchpad" left / "Trail 1" right / "1" on the map) because the name is a **runtime sidecar
+join**, not a field. The user named the class a **shadow attribute** — a value/behavior driving what you
+see/edit that is NOT a first-class CMFS attribute (smuggled via runtime sidecar join · render-derivation ·
+localStorage-as-truth · per-layer edge dispatch · half-converged re-bake). Directive: *"this is slop. find
+all places where logic is driven in a weird edge-case way, or an MVP shortcut that needs maturing out. Data
+attributes should be cut and migrated to a common schema. The council will review when done."* **Carded**
+`tasks/09_editor_maturity/shadow_attributes_audit.md` (definition · CMFS target · C1/C3/C5/C6 guardrails =
+additive migration only · extends the spike audit F1–F9 + gold slice 6 rather than re-carding them).
+**Ran the seal team** (workflow `wf_eae016f9-626`): 8 lens agents in parallel → 73 raw findings → synthesis
+→ **45 deduped (15 HIGH / 22 MEDIUM / 8 LOW)**, every finding a real `file:line`, each mapped to its CMFS
+target; catalog written into the card's FINDINGS section. **Headline:** the trail is the worst offender
+(one feature, FOUR names / FOUR identities across four surfaces). Three structural roots, all verified
+statically: (1) the published reference view is a **per-browser localStorage diff replayed at boot** (C3);
+(2) `publish.geojson` is **NOT reproducible from the live DB** (served ids 1–6 vs DB serials 139–201,
+carries retired `blurb`, 5 files have two competing writers); (3) the canonical re-bake left
+`name`/`description` as stand-ins/blank + `_schema.json`'s crosswalk omits the two sidecars and any Tier-3
+facet block — all cluster onto **gold slice 6**. **Coverage gap (Witness will andon):** the audit is
+entirely STATIC — no live-app runtime observation yet (C4 owed); plus a scope ruling owed on the
+`#tag`→coord events binding. **NO code/data changed (audit only); nothing committed.** **COUNCIL: FULL
+SIX CLEAR** (Witness·Quartermaster·Warden·Scribe + Mason after a folded andon — four `target_canonical`
+lines phrased controlled vocabs as enums → bound to additive display-maps, map-known/pass-unknown/never-
+reject; receipt `output/council/shadow_attributes_audit_review_20260609.md`). **Steward rulings:** (1) the
+cut+migrate splits two paths — **Path A** (file/crosswalk via `rebake_canonical.py` + `_schema.json`, this
+card's scope, **first slice = trail-name convergence**, no slice-6 pull) vs **Path B** (DB-door/identity
+roots — publish.geojson reproducibility, serial-PK identity, two-store curation — **tagged to gold slice 6,
+HELD for the user's pull**); (2) the `#tag`→coord **events** binding is out of scope here (C3) → re-homed
+to the event-overlay convergence. **NEXT (the user's calls):** pull **Path A slice 1** (trail-name fold —
+website + re-bake, no DB door) or pull **gold slice 6** (Path B); the commit of this brain-only diff is the
+user's git gate.
+
+**RESOLUTION PLAN — written + COUNCIL FULL-SIX CLEAR; ralph-loop-ready (2026-06-09, same session).** Per
+the user (*"make a comprehensive approach to resolution, save in the sprint, prepare to have a ralph loop
+run until finished"*), carded `tasks/09_editor_maturity/shadow_attribute_resolution.md`: sequences all 45
+findings into **Path A** loop slices **A1** (crosswalk+`_schema.json`+re-bake join, foundational) → **A2**
+(trail read-site convergence = the Launchpad fix) → **A3** (building/cemetery/visitor) → **A4** (render-
+derived display) → **A5** (edge-dispatch→spec strategies), with **Path B** (20 findings) HELD on gold slice
+6, **2** events findings out-of-scope, **1** deferred-low — total coverage 45, each finding homed once by
+its catalog `id`. Carries a **Loop contract + verbatim loop prompt + per-slice tile-independent acceptance
++ record-on-green**; STOPS at the Path A/B boundary. **Plan-council FULL SIX CLEAR** (Quartermaster/Mason/
+Warden clear; **Witness andon** — verifiers must be live-DOM on `playwright_base.py`, A1's join machinery +
+label side-effect named → folded; **Scribe andon** — audit catalog re-emitted **id-tagged** so the plan's
+`Closes:` ids grep-resolve, 3 orphans homed → folded; both re-cleared). Receipt:
+`output/council/shadow_attribute_resolution_plan_review_20260609.md`. **NEXT (cadence):** user
+**commit-pause** (commit the id-tagged catalog + the plan), then **ralph-loop Path A in a FRESH session**
+(loop prompt in the card); the `vNN` bump + commits stay the user's git gate.
+
+-----
+
 **2026-06-08 (GOLD SLICE 6 PULLED by the user — F2 drawn-POI DB door DONE; DB-door code, UNCOMMITTED, NO
 bump owed, commit OWED).** After Sprint 09 Slices 1–4, the user pulled gold slice 6 ("pull gold slice 6
 now"). Executed it BOUNDED, one door (loop contract): **F2 — the drawn-POI DB door.** `aop_editor_pois_v1`
