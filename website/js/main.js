@@ -504,40 +504,15 @@
     // Kick off the fetch immediately; the renderer is resilient to a null index.
     fetchPoiIndex();
 
-    // --- Trail catalog (names + descriptions) sidecar --------------------
-    // Mirrors the POI-index pattern: curated trail write-ups live in
-    // website/data/aop_trail_catalog.json and are joined to the gold trail
-    // network at runtime by trail_number, so a re-export of geometry never
-    // overwrites authored (and onX-licensed) prose. Surfaces in the trail
-    // click popup, the left POI browser trails group, and (catalog is the
-    // source of truth for the copy-review page). Card:
-    // brain/tasks/04_event_app/trail_research_integration.md.
-    let trailCatalog = null; // Map<number → catalog trail entry>
-    async function fetchTrailCatalog() {
-      if (trailCatalog) return trailCatalog;
-      trailCatalog = new Map();
-      try {
-        const response = await fetch('./data/aop_trail_catalog.json');
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const cat = await response.json();
-        (cat.trails || []).forEach((t) => { if (t.number != null) trailCatalog.set(Number(t.number), t); });
-        console.info('Trail catalog loaded', trailCatalog.size, 'trails');
-      } catch (error) {
-        console.error('Trail catalog load failed', error);
-      }
-      renderPoiTabIfActive();
-      return trailCatalog;
-    }
-    fetchTrailCatalog();
-
-    // Join a gold-network feature's props to its catalog entry by trail_number
-    // (or a numeric name fallback). Null when no catalogued write-up exists.
-    function trailCatalogLookup(props) {
-      if (!trailCatalog || !props) return null;
-      let num = props.trail_number != null ? Number(props.trail_number) : null;
-      if (num == null && props.name != null && /^\d+$/.test(String(props.name))) num = Number(props.name);
-      return num != null ? (trailCatalog.get(num) || null) : null;
-    }
+    // --- Trail catalog: the runtime join is GONE (Sprint 09 / A2) ---------
+    // Curated trail write-ups (aop_trail_catalog.json) used to be joined to the
+    // gold network at render time by trail_number — the "shadow attribute" that
+    // made a trail show "Launchpad" on the left and "1" on the right. The catalog
+    // is now folded into the feature by rebake_canonical (canonical name +
+    // description + facets.difficulty/length_mi/onx_tr/connects), so every surface
+    // — map label, left list, popup, search, panel — reads the one canonical field.
+    // The authoring catalog file is still the source of truth feeding the bake and
+    // the copy-review page; only the *render-time* join was removed.
 
     // --- Unified editor tree (V3c) ---------------------------------------
     // The Map editor section is a three-bucket tree by geometry kind (Point /
@@ -595,15 +570,11 @@
     // collector (collectStarredDestinations) now walks
     // Object.entries(featureListRuntime) for every spec that declares a
     // `listRow` + `listSurfaces.right`, so the right list is the starred set
-    // across ALL destination layers, not a fixed four. This chip map stays as a
-    // presentation lookup; a spec missing an entry falls back to its layerKey
-    // (permissive, C5 — no row is dropped for an unmapped chip).
-    const VISITOR_LIST_SOURCE_CHIP = {
-      editorPois: 'drawn',
-      brandLogos: 'brand',
-      visitorContext: 'visitor',
-      trails: 'trail'
-    };
+    // across ALL destination layers, not a fixed four. The source chip is now a
+    // co-located `spec.sourceChip` field (Sprint 09 A5 — R10), read with a
+    // layerKey fallback; the free-standing VISITOR_LIST_SOURCE_CHIP dispatch map
+    // is gone. A spec without the field falls back to its layerKey (permissive,
+    // C5 — no row is dropped for an unmapped chip).
     let editorTreeBuilt = false;
     // The bucket whose + is currently active. Read by draw.on('finish') to
     // pull the right category. Cleared on Esc / cancel / mode change.
@@ -1109,18 +1080,11 @@
     // would trip the TDZ on those bindings. See the explicit call right
     // after `const featureListRuntime = {};`.
 
-    function poiIndexLookup(matchKey) {
-      if (!poiIndex || !Array.isArray(poiIndex.entries)) return null;
-      for (const entry of poiIndex.entries) {
-        const m = entry.match || {};
-        let ok = true;
-        for (const k of Object.keys(m)) {
-          if (matchKey[k] !== m[k]) { ok = false; break; }
-        }
-        if (ok) return entry;
-      }
-      return null;
-    }
+    // The per-feature poi-index blurb/revisit_note JOIN is GONE (Sprint 09 / A3):
+    // rebake_canonical folds those into each feature's `description` /
+    // `facets.revisit_note`, so building/cemetery/visitor read the canonical field
+    // directly. fetchPoiIndex + poiIndex stay only for the POI-tab GROUP taxonomy
+    // (labels + order) below — that is config, not a per-feature shadow attribute.
 
     function poiGroupLabel(groupId) {
       const groups = poiIndex && Array.isArray(poiIndex.groups) ? poiIndex.groups : [];
@@ -1183,7 +1147,7 @@
         const base = spec.listRow(feature) || {};
         const group = spec.listGroup || { id: layerKey, label: spec.label || layerKey };
         const surfaces = spec.listSurfaces || { left: true, right: true };
-        const sourceChip = (typeof VISITOR_LIST_SOURCE_CHIP === 'object' && VISITOR_LIST_SOURCE_CHIP[layerKey]) || layerKey;
+        const sourceChip = (spec && spec.sourceChip) || layerKey;
         rows.push({
           ...base,
           // identity for the right ★ list + star toggle
@@ -2206,6 +2170,20 @@
       }]
     });
 
+    // One display name for a drawn POI. The title is `name`; where a POI was
+    // drawn with only a category (name === category, or no name), the category
+    // stands in; then a generic 'POI'. This is the SINGLE derivation the left
+    // list, the edit-dock row, and the panel item label all read — replacing the
+    // three divergent forms the Sprint-09 audit named (list 'category — name',
+    // panel 'name||category', map 'coalesce name,category'). The map label symbol
+    // expression mirrors it (it can't call JS): coalesce(name, category, 'POI').
+    // The category itself stays a Tier-3 facet shown in its own field/detail — it
+    // is never smuggled into the title.
+    function poiDisplayName(props) {
+      const p = props || {};
+      return String(p.name || '').trim() || p.category || 'POI';
+    }
+
     const FEATURE_LIST_LAYERS = {
       cemeteries: {
         label: 'Cemeteries',
@@ -2240,13 +2218,16 @@
         listToggle: () => cemeteriesToggle,
         listRow: (feature) => {
           const props = (feature && feature.properties) || {};
-          const entry = poiIndexLookup({ source: 'cemeteries', geom_role: 'marker', parcel_id: props.parcel_id });
+          const facets = props.facets || {};
+          // Canonical: the poi-index blurb/revisit_note are folded into the feature's
+          // `description`/`facets.revisit_note` by rebake_canonical — read the field,
+          // not a runtime poiIndexLookup join.
           return {
             id: `cemetery:${props.parcel_id || props.name}`,
             name: props.name || 'Cemetery',
             kind: props.cemetery_type || 'cemetery',
-            blurb: entry && entry.blurb ? entry.blurb : null,
-            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
+            blurb: props.description || null,
+            revisitNote: facets.revisit_note || null,
             status: 'parcel record',
             source: 'TN Comptroller parcels',
             caveat: null,
@@ -2315,13 +2296,16 @@
         listToggle: () => buildingsToggle,
         listRow: (feature) => {
           const props = (feature && feature.properties) || {};
-          const entry = poiIndexLookup({ source: 'buildings', address: props.address });
+          const facets = props.facets || {};
+          // Canonical: name is now the facility name (baked — A3 reorders the
+          // crosswalk to prefer facility_name; address lives in facets.address);
+          // the poi-index blurb/revisit are folded into description/facets — no join.
           return {
             id: `building:${props.uuid || props.address}`,
-            name: props.facility_name || props.name || props.address || 'Building',
+            name: props.name || 'Building',
             kind: props.primary_occupancy ? props.primary_occupancy.toLowerCase() : 'building',
-            blurb: entry && entry.blurb ? entry.blurb : null,
-            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
+            blurb: props.description || null,
+            revisitNote: facets.revisit_note || null,
             status: props.confidence || 'unknown',
             source: props.footprint_source || 'FEMA USA Structures',
             caveat: null,
@@ -2361,10 +2345,12 @@
           }
         ],
         rowLabel: (props) => {
-          const base = props.building_label || props.address || `build_id ${props.build_id}`;
-          // Annotate the public facilities (Pavilion / Farmhouse / Front Office).
-          if (props.facility_name) return `${base} — ${props.facility_name.toLowerCase()}`;
-          return base;
+          // Canonical name (the facility name where one exists, else the address);
+          // append the address from facets when it differs, so a facility row still
+          // shows its street. One field, same as the list / panel / search.
+          const name = props.name || props.building_label || `build_id ${props.build_id}`;
+          const addr = (props.facets && props.facets.address) || props.address;
+          return addr && addr !== name ? `${name} · ${addr}` : name;
         },
         targetLayers: ['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline'],
         groups: [
@@ -2427,6 +2413,10 @@
       editorPois: {
         label: 'Drawn POIs',
         idField: 'id',
+        // Source chip shown on the ★ Visitor-list row (Sprint 09 A5 — R10: the
+        // chip is a co-located spec field, read with a layerKey fallback, in place
+        // of the free-standing VISITOR_LIST_SOURCE_CHIP dispatch map).
+        sourceChip: 'drawn',
         // --- Destination-list config (card 06) ---------------------------
         // Replaces the buildPoiGroups "Drawn POIs" block. This is the ONLY
         // layer that was star-gated before this card (the ★ button is the
@@ -2444,7 +2434,7 @@
           const props = (feature && feature.properties) || {};
           return {
             id: `drawn:${props.id || props.name || 'idx'}`,
-            name: props.name || props.category || 'Drawn POI',
+            name: poiDisplayName(props),
             kind: props.category || 'drawn',
             blurb: props.notes || null,
             revisitNote: null,
@@ -2494,6 +2484,13 @@
         // rewrites the array and re-feeds the source. Default layers patch the
         // positioned-overrides store + re-feed their served source.
         persistProperty: () => { saveEditorPois(); refreshEditorSource(); },
+        // Create capability (Sprint 09 A5) — the host create bridge
+        // (AOP_HOST_CREATE_FEATURE) dispatches through this instead of a literal
+        // `layerKey !== 'editorPois'` guard. A layer opts into panel-driven create
+        // by declaring `create`; a layer without it returns null (safe default, no
+        // throw — C1/R13). Reuses addDrawnPoi so a host-drawn and a panel-drawn POI
+        // land in the SAME one store (aop_editor_pois_v1).
+        create: (geometry, opts) => addDrawnPoi(geometry, (opts && opts.category) || 'Other'),
         // Group-context label strategy — replaces the per-layer
         // geometry-bucket branch in dockGroupContext. Drawn POIs
         // read as their geometry bucket; default layers read as spec.label.
@@ -2537,16 +2534,12 @@
         // public-facing list. State lives in feature.properties.highlight
         // and travels with the POI through localStorage and GeoJSON export.
         highlightable: true,
-        // Row label keeps the category alongside the name as a compact
-        // qualifier — `Pavilion — Big tent`. Same shape as before; the kind
-        // groupings (POI / Footprint / Line) replace the old flat sort, not
-        // the row label itself.
-        rowLabel: (props) => {
-          const category = props.category || 'POI';
-          const name = (props.name || '').trim();
-          if (!name || name === category) return category;
-          return `${category} — ${name}`;
-        },
+        // Row label reads the ONE drawn-POI display name (poiDisplayName) so the
+        // edit-dock row, the left list, the panel item, and the map label all show
+        // the same string — the convergence the Sprint-09 audit named
+        // (poi-display-name-three-derivations). The category is not folded into the
+        // title here; it stays a Tier-3 facet shown in the Category field / detail.
+        rowLabel: (props) => poiDisplayName(props),
         targetLayers: [
           'editor-poi-fill',
           'editor-poi-outline',
@@ -2611,6 +2604,7 @@
       visitorContext: {
         label: 'Visitor context callouts',
         idField: 'name',
+        sourceChip: 'visitor',
         // --- Destination-list config (card 06) ---------------------------
         // Replaces the buildPoiGroups "Visitor support" block. ★-curated on the
         // POI tab (sprint08 flip below — only starred callouts show); a starred
@@ -2627,13 +2621,16 @@
         listToggle: () => visitorContextToggle,
         listRow: (feature) => {
           const props = (feature && feature.properties) || {};
-          const entry = poiIndexLookup({ source: 'visitor_context', name: props.name });
+          const facets = props.facets || {};
+          // Canonical: the poi-index blurb is folded into `description` (composed
+          // from direction/services/examples where there is no blurb) by the bake —
+          // read the field, not a poiIndexLookup join.
           return {
             id: `visitor:${props.name}`,
             name: props.name || 'Visitor support',
             kind: props.kind ? props.kind.replace(/_/g, ' ') : 'visitor support',
-            blurb: entry && entry.blurb ? entry.blurb : (props.services || null),
-            revisitNote: entry && entry.revisit_note ? entry.revisit_note : null,
+            blurb: props.description || props.services || null,
+            revisitNote: facets.revisit_note || null,
             status: 'planning callout',
             source: 'AOP / RiderPlanet / Marion County Tourism',
             caveat: props.drive_time_note || null,
@@ -2721,6 +2718,7 @@
       brandLogos: {
         label: 'Brand logos',
         idField: 'logo_id',
+        sourceChip: 'brand',
         // Editable display-name property (default 'name'), co-located on the
         // spec instead of a parallel name-property map. Served-source strategy
         // re-feeds the live source after a property edit; lazy so it reads the
@@ -2809,6 +2807,7 @@
       trails: {
         label: 'Trails',
         idField: '__trail_row_id',
+        sourceChip: 'trail',
         // The override key is the derived __trail_row_id. The load-time stamp
         // writes it onto every network feature, but the right-panel ★ bridge
         // hands us SERVED props (no stamp), so resolve from trail_number/name via
@@ -2845,8 +2844,9 @@
         listPredicate: () => true,
         listToggle: () => aopTrailNetworkToggle,
         rowLabel: (props) => {
-          const cat = trailCatalogLookup(props);
-          if (cat && cat.name) return cat.name;
+          // Canonical `name` is baked (the trail catalog is folded into the feature
+          // by rebake_canonical) — read the one field, never a runtime catalog join.
+          // Catalogued trails read "Launchpad"; number-only edges read "Trail N".
           const name = (props.name != null && String(props.name) !== '') ? String(props.name) : null;
           const num = props.trail_number != null ? Number(props.trail_number) : null;
           return name || (num != null ? `Trail ${num}` : 'Trail');
@@ -2880,26 +2880,28 @@
         }],
         // Uniform destination-row strategy for the one collector
         // (collectStarredDestinations) — name/kind/blurb/revisitNote/status/
-        // source/caveat/popupCoord, with the trail-catalog write-up enrichment
-        // folded in. This IS the live path: the collector calls spec.listRow for
-        // every registry destination layer, and buildPoiGroups only groups the
-        // result. Since the sprint08 flip the spec is listMode:'starred', so only
-        // ★-curated trails surface here.
+        // source/popupCoord, all read from the feature's CANONICAL fields (the
+        // trail catalog was folded into the bake by rebake_canonical, so the row
+        // reads the same `name`/`description`/`status`/`source` the map label and
+        // popup do — no runtime join, no cross-surface fork). This IS the live
+        // path: the collector calls spec.listRow for every registry destination
+        // layer, and buildPoiGroups only groups the result. Since the sprint08
+        // flip the spec is listMode:'starred', so only ★-curated trails surface.
         listRow: (feature) => {
           const props = (feature && feature.properties) || {};
-          const cat = trailCatalogLookup(props);
+          const facets = props.facets || {};
           const num = props.trail_number != null ? Number(props.trail_number) : null;
           const name = (props.name != null && String(props.name) !== '') ? String(props.name) : null;
           return {
             id: `trail:${props.__trail_row_id || (num != null ? `n:${num}` : (name ? `name:${name}` : ''))}`,
-            name: (cat && cat.name) ? cat.name : (name || `Trail ${num}`),
-            kind: props.difficulty ? `trail · ${props.difficulty}` : 'trail',
-            blurb: (cat && cat.description) ? cat.description : null,
-            revisitNote: (cat && cat.description) ? null
-              : 'Name / description owed — number + difficulty only on the map today.',
-            status: props.difficulty || props.review_status || 'observed',
-            source: 'aop_trail_network.geojson (gold) + aop_trail_catalog.json',
-            caveat: (cat && cat.license_on_text) ? cat.license_on_text : null,
+            name: name || (num != null ? `Trail ${num}` : 'Trail'),
+            kind: facets.difficulty ? `trail · ${facets.difficulty}` : 'trail',
+            blurb: props.description || null,
+            revisitNote: props.description ? null
+              : (facets.revisit_note || 'Name / description owed — number + difficulty only on the map today.'),
+            status: props.status || 'observed',
+            source: props.source || 'aop_trail_network.geojson',
+            caveat: null,
             feature,
             popupCoord: firstCoordinate(feature && feature.geometry)
           };
@@ -3813,11 +3815,18 @@
     // one-store. Only editorPois is host-owned-and-creatable; everything else
     // authors into its own served source through the panel's normal path. Returns
     // the new feature id (so the panel can select it for immediate editing), null
-    // on failure.
+    // on failure. The creatable layer is no longer a literal `layerKey !==
+    // 'editorPois'` guard (Sprint 09 A5): the bridge dispatches through the
+    // layer's `spec.create` capability and names no layerKey — a layer opts in by
+    // declaring `create`, everything else returns null (safe default, no throw —
+    // C1/R13). editorPois declares it (→ addDrawnPoi), so a panel-drawn POI still
+    // lands in the host's ONE store; a future host-owned creatable layer just adds
+    // its own `create` strategy.
     window.AOP_HOST_CREATE_FEATURE = function (layerKey, geometry, opts) {
       try {
-        if (layerKey !== 'editorPois' || !geometry || !geometry.type) return null;
-        return addDrawnPoi(geometry, (opts && opts.category) || 'Other');
+        const spec = FEATURE_LIST_LAYERS[layerKey];
+        if (!spec || typeof spec.create !== 'function' || !geometry || !geometry.type) return null;
+        return spec.create(geometry, opts);
       } catch (e) { console.error('AOP_HOST_CREATE_FEATURE failed', e); return null; }
     };
 
@@ -9005,12 +9014,10 @@
         // footprints and the private black boxes stay out of search. Facilities
         // index by their authored name (Pavilion / Farmhouse / Front Office) with
         // the street address + role as aliases so an address query still lands.
+        // Canonical name is now the facility name (baked — A3), so index the
+        // facilities directly; the street address + role ride as search aliases.
         const facilityFeatures = buildingsData.features
-          .filter((f) => f.properties && f.properties.aop_facility === true)
-          .map((f) => ({
-            ...f,
-            properties: { ...f.properties, name: f.properties.facility_name || f.properties.name }
-          }));
+          .filter((f) => f.properties && f.properties.aop_facility === true);
         indexFeatures(
           { type: 'FeatureCollection', features: facilityFeatures },
           'facility',
@@ -9142,19 +9149,28 @@
           },
           paint: { 'text-color': '#111', 'text-halo-color': '#fff', 'text-halo-width': 1.6 }
         });
-        // Make every named trail searchable. name is the trail's number ("32") or
-        // string name ("Riot Hill", "JW2"); unnamed edges (name=null) are skipped
-        // by indexFeatures. A match flies to the trail, flips the network layer on
-        // via aopTrailNetworkToggle, and pulses the highlight. `trail <name>` is
-        // added as an alias so single-digit trails are reachable by a 2+ char query
-        // too (e.g. typing "trail 9"); the bare number also works via the
-        // single-digit search path in renderSearchResults.
+        // Make every named trail searchable. Since the trail catalog is baked in,
+        // `name` is now the curated name ("Launchpad") where one exists, else the
+        // number ("32") or a string name ("Riot Hill", "JW2"); unnamed edges
+        // (name=null) are skipped by indexFeatures. A match flies to the trail,
+        // flips the network layer on via aopTrailNetworkToggle, and pulses the
+        // highlight. Aliases keep BOTH paths reachable: `trail <name>` and the bare
+        // `trail_number` ("1", "trail 1") — so a catalogued trail is still findable
+        // by its number even though its display name is now "Launchpad" (AOP
+        // identifies trails by number on the map).
         indexFeatures(
           aopTrailNetworkData,
           'trail',
           aopTrailNetworkToggle,
           null,
-          (props) => (props.name != null ? ['trail ' + String(props.name)] : null)
+          (props) => {
+            const aliases = [];
+            if (props.name != null) aliases.push('trail ' + String(props.name));
+            if (props.trail_number != null) {
+              aliases.push(String(props.trail_number), 'trail ' + String(props.trail_number));
+            }
+            return aliases.length ? aliases : null;
+          }
         );
 
         // Slice 1 (trail_research_integration.md): clicking a trail had no popup.
@@ -9165,35 +9181,31 @@
         // The onX license note rides in the footer so the provenance is visible
         // in the editor view before any public-gated, voice-rewritten build.
         bindPopup('aop-trail-network',
+          // Title / body read the feature's CANONICAL fields — the catalog name,
+          // description, and supplementary detail (length / onX TR / connects) are
+          // baked onto the trail by rebake_canonical, so the popup agrees with the
+          // map label, the left list, and the panel by construction.
           (props) => {
-            const cat = trailCatalogLookup(props);
             const num = props.trail_number != null ? props.trail_number
               : (props.name != null && /^\d+$/.test(String(props.name)) ? props.name : null);
-            if (cat && cat.name) {
-              return num != null && String(num) !== cat.name ? `${cat.name} (Trail ${num})` : cat.name;
+            const name = (props.name != null && String(props.name) !== '') ? String(props.name) : null;
+            if (name && !/^\d+$/.test(name)) {
+              return num != null && String(num) !== name ? `${name} (Trail ${num})` : name;
             }
-            if (props.name) return `Trail ${props.name}`;
-            return num != null ? `Trail ${num}` : 'Trail';
+            return num != null ? `Trail ${num}` : (name ? `Trail ${name}` : 'Trail');
           },
           (props) => {
-            const cat = trailCatalogLookup(props);
+            const facets = props.facets || {};
             const rows = [
               ['Number', props.trail_number ?? (props.name && /^\d+$/.test(String(props.name)) ? props.name : '')],
-              ['Difficulty', props.difficulty || 'unknown']
+              ['Difficulty', facets.difficulty || props.difficulty || 'unknown']
             ];
-            if (cat) {
-              if (cat.description) rows.push(['About', cat.description]);
-              if (cat.length_mi != null) rows.push(['Length', `${cat.length_mi} mi`]);
-              if (cat.tr != null) rows.push(['onX rating', `TR${cat.tr}`]);
-              if (Array.isArray(cat.connects) && cat.connects.length) rows.push(['Connects to', cat.connects.join(', ')]);
-            } else {
-              rows.push(['Write-up', 'name / description owed']);
-            }
+            if (props.description) rows.push(['About', props.description]);
+            if (facets.length_mi != null) rows.push(['Length', `${facets.length_mi} mi`]);
+            if (facets.onx_tr != null) rows.push(['onX rating', `TR${facets.onx_tr}`]);
+            if (Array.isArray(facets.connects) && facets.connects.length) rows.push(['Connects to', facets.connects.join(', ')]);
+            if (!props.description) rows.push(['Write-up', 'name / description owed']);
             return rows;
-          },
-          (props) => {
-            const cat = trailCatalogLookup(props);
-            return cat && cat.license_on_text ? `<em>${escapeHtml(cat.license_on_text)}</em>` : '';
           }
         );
 
@@ -9922,7 +9934,9 @@
         source: 'editor-poi',
         filter: ['==', ['geometry-type'], 'Point'],
         layout: {
-          'text-field': ['coalesce', ['get', 'name'], ['get', 'category']],
+          // Mirrors poiDisplayName (name → category → 'POI') so the map label,
+          // the list, and the panel all show one drawn-POI name (A4).
+          'text-field': ['coalesce', ['get', 'name'], ['get', 'category'], 'POI'],
           'text-size': 12,
           'text-offset': [0, 1.2],
           'text-anchor': 'top'
@@ -9935,7 +9949,9 @@
         source: 'editor-poi',
         filter: ['==', ['geometry-type'], 'Polygon'],
         layout: {
-          'text-field': ['coalesce', ['get', 'name'], ['get', 'category']],
+          // Mirrors poiDisplayName (name → category → 'POI') so the map label,
+          // the list, and the panel all show one drawn-POI name (A4).
+          'text-field': ['coalesce', ['get', 'name'], ['get', 'category'], 'POI'],
           'text-size': 12
         },
         paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 }
@@ -9947,7 +9963,9 @@
         filter: ['==', ['geometry-type'], 'LineString'],
         layout: {
           'symbol-placement': 'line',
-          'text-field': ['coalesce', ['get', 'name'], ['get', 'category']],
+          // Mirrors poiDisplayName (name → category → 'POI') so the map label,
+          // the list, and the panel all show one drawn-POI name (A4).
+          'text-field': ['coalesce', ['get', 'name'], ['get', 'category'], 'POI'],
           'text-size': 12,
           'text-keep-upright': true
         },
@@ -10093,7 +10111,11 @@
           name: String(name),
           kind: typeof kindFor === 'function' ? kindFor(props) : kindFor,
           toggle: typeof toggleFor === 'function' ? toggleFor(props) : toggleFor,
-          geometry: feature.geometry
+          geometry: feature.geometry,
+          // Canonical description rides on the entry so the result row can show a
+          // muted second line without a runtime sidecar join (the trail catalog is
+          // baked into the feature). Null where the feature has no description.
+          description: props.description || null
         };
         if (featureListBindingFor) {
           const binding = featureListBindingFor(props);
@@ -10130,9 +10152,12 @@
         const key = display.toLowerCase() + '|' + entry.kind;
         let group = byKey.get(key);
         if (!group) {
-          group = { name: display, kind: entry.kind, toggle: entry.toggle, geometries: [], featureListKey: null, featureIds: [], aliases: [] };
+          group = { name: display, kind: entry.kind, toggle: entry.toggle, geometries: [], featureListKey: null, featureIds: [], aliases: [], description: null };
           byKey.set(key, group);
         }
+        // Carry the canonical description onto the group (first non-empty wins) so a
+        // result row can show its muted second line without a runtime join.
+        if (!group.description && entry.description) group.description = entry.description;
         group.geometries.push(entry.geometry);
         if (entry.featureListKey) {
           group.featureListKey = entry.featureListKey;
@@ -10280,19 +10305,15 @@
       searchResults.innerHTML = searchMatches
         .map((match, i) => {
           // Slice 3: a catalogued trail row gains a second, muted line with its
-          // curated description (truncated). The search group carries no feature
-          // props, but trailCatalogLookup keys off a numeric name, so a trail's
-          // display name ("1", "32") resolves to its catalog entry the same way
-          // the popup and POI browser do. Non-trail / un-catalogued / no-desc
-          // rows render exactly as before (single line, no .search-result-text).
+          // curated description (truncated), read from the search entry's baked
+          // canonical `description` (the trail catalog is folded into the feature) —
+          // no runtime sidecar join. Non-trail / no-desc rows render exactly as
+          // before (single line, no .search-result-text).
           let desc = null;
-          if (match.kind === 'trail') {
-            const cat = trailCatalogLookup({ name: match.name });
-            if (cat && cat.description) {
-              desc = cat.description.length > 80
-                ? cat.description.slice(0, 79).trimEnd() + '…'
-                : cat.description;
-            }
+          if (match.kind === 'trail' && match.description) {
+            desc = match.description.length > 80
+              ? match.description.slice(0, 79).trimEnd() + '…'
+              : match.description;
           }
           const head = `<div class="search-item${i === searchActive ? ' active' : ''}" data-i="${i}">`;
           if (!desc) {
@@ -10312,14 +10333,12 @@
       // never parsed as markup. Paired by index with the matches above.
       const descNodes = searchResults.querySelectorAll('.search-item');
       searchMatches.forEach((match, i) => {
-        if (match.kind !== 'trail') return;
-        const cat = trailCatalogLookup({ name: match.name });
-        if (!cat || !cat.description) return;
+        if (match.kind !== 'trail' || !match.description) return;
         const node = descNodes[i] && descNodes[i].querySelector('.search-result-desc');
         if (node) {
-          node.textContent = cat.description.length > 80
-            ? cat.description.slice(0, 79).trimEnd() + '…'
-            : cat.description;
+          node.textContent = match.description.length > 80
+            ? match.description.slice(0, 79).trimEnd() + '…'
+            : match.description;
         }
       });
       searchResults.style.display = 'block';

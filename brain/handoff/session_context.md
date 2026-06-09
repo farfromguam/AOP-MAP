@@ -6,6 +6,94 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-09 (RALPH LOOP STARTED — Path A slice A1 DONE + COUNCIL FULL-SIX CLEAR; CODE+DATA, UNCOMMITTED,
+one vNN bump owed, commit OWED).** Picked up the shadow-attribute resolution ralph loop in a fresh session
+(`tasks/09_editor_maturity/shadow_attribute_resolution.md`, Loop contract). **A1 (foundational canonical
+re-bake population) DONE.** `mvp/scripts/rebake_canonical.py`: folded the two render-time sidecar joins into
+the BAKE — trail catalog → `name`/`description`/`facets.difficulty` by `trail_number` (trail #1 now bakes
+`name="Launchpad"`, the "1" stand-in preserved under `_original`); poi-index → building/cemetery/visitor
+`description` + `facets.revisit_note` by match. Added a Tier-3 `facets` block, moved building facility-role
+out of `status` (→ `facets.facility_role`, status="raw context"), machine-layer name/status crosswalk
+(no stray labels — those symbol layers read `label`, not `name`), and fixed two latent re-bake bugs: the
+`_meta`/`_schema.json` maturity stamps were being **wiped** every re-bake (now carried forward), and the
+manifest is regenerated (counts + `updated_at` fresh). Sidecars read live from `website/data/` (not copied
+to `raw/` — an authored catalog must not go stale). **Two scope rulings:** (1) **removed `publish.geojson`
+from the re-bake CONFIG** — it is DB-baked (`export_publish_geojson.sh`, 6 features) and `raw/` is a stale
+5-feature snapshot, so an unmodified re-bake was reverting publish 6→5 (the two-writers regression); the
+full DB collapse stays **Path B / gold slice 6**. `legacy-blurb` dropped via an idempotent in-place strip
+(`strip_legacy_publish_blurb`). (2) `publish-confidence-status-off-vocabulary` **re-homed A1→A4** (a
+read-site display relabel; the bake can't own a DB-baked file) — coverage stays 22 Path A (A1=7 · A4=4).
+**Verified by observation:** new `mvp/scripts/playwright_verify_shadow_a1_canonical.py` (on
+`playwright_base.py`, tile-independent) — viewer boots over the re-baked data with **0 console errors**, all
+canonical values observed live; re-bake idempotent, `--check` non-writing, feature counts == `raw/`,
+trail-network label count 100→100 (no stray labels), out-of-vocab `brand_logo` kept. **COUNCIL: FULL SIX
+CLEAR** (Witness re-ran the verifier + cross-checked served bytes; Quartermaster confirmed one baker +
+C1/C2/C6 hold; Mason confirmed non-limiting + additive + dead code removed; Warden confirmed on-farm + git
+gate untouched; Scribe cleared after this handoff line was added). Receipt:
+`output/council/shadow_a1_canonical_rebake_20260609.md`. **OWED (user's git gate):** the commit
+(`rebake_canonical.py` + `_schema.json` + 9 served `*.geojson` + the new verifier + brain) with **one**
+`sw.js`/`#appVersion` bump covering the whole Path A batch — NOT committed, NOT bumped. **A2 ALSO DONE +
+COUNCIL FULL SIX CLEAR (same session):** the runtime `trailCatalogLookup`/`fetchTrailCatalog` join is
+deleted from `main.js`; every trail surface (left list, panel Name input, map label, search, popup) reads
+the canonical baked `name`/`description`; listRow status/source de-fabricated; number-search preserved;
+catalog `length_mi`/`onx_tr`/`connects` baked as facets so the popup reads the feature. Live-DOM verifier
+`playwright_verify_shadow_a2_trail_name.py` (all four surfaces == "Launchpad", 0 console errors). Receipt:
+`output/council/shadow_a2_trail_name_20260609.md`. (`playwright_verify_feature_list.py` fails on the
+drawn-POI Move flow — confirmed PRE-EXISTING against HEAD JS, not an A2 regression.) **A3 ALSO DONE +
+COUNCIL FULL SIX CLEAR (same session):** the per-feature `poiIndexLookup` blurb join is deleted (0 callers;
+`fetchPoiIndex` kept only for the POI-tab group taxonomy); building canonical `name` is now the facility
+name ("Pavilion", baked via `n_building`), street address → `facets.address`; building/cemetery/visitor read
+sites (listRow, rowLabel, panel node, search) all read the one canonical name + baked `description`. Live-DOM
+verifier `playwright_verify_shadow_a3_poi_name.py` (Pavilion agrees across served/search/panel row/Name
+input; address searchable as alias; 0 console errors). Receipt: `output/council/shadow_a3_poi_name_20260609.md`.
+**A4 ALSO DONE + COUNCIL FULL SIX CLEAR (same session):** render-derived display unification. One
+`poiDisplayName(props)` helper in `main.js` (`name.trim() || category || 'POI'`) feeds the editorPois
+`listRow.name` + `rowLabel`; the three `editor-poi-*labels` map symbol `text-field`s became
+`coalesce(name,category,'POI')` to mirror it — the old three-way fork (dock `category — name` / panel
+`name||category` / map coalesce) is gone. Seed POI kind un-shadowed: `rebake_canonical` seed config
+`kind=lambda p: p.get("kind") or "poi"` bakes the controlled "poi" (Mason safe default — a real `kind`
+survives; "Pavilion" → `facets.category`, raw key preserved). Source-tab File now reads a baked
+`source_file` (stamped per-feature on **named non-machine layers only** — machine/coverage stay lean);
+`fileForItem` prefers it, never "unknown" for a baked feature. Confidence/status chips relabel via additive
+`CONFIDENCE_DISPLAY`/`STATUS_DISPLAY` + `vocabDisplay` in `provenanceFields` (known→label,
+out-of-vocab→passthrough, raw value untouched — Mason; the `'medium'`→source-register-confidence mapping
+left a curation call for the user). Live-DOM verifier `playwright_verify_shadow_a4_display.py` (map source
+name == POI-tab row == panel item == Name input == "AOP Pavilion"; Kind chip "poi" + Details "Pavilion";
+building File "aop_buildings.geojson"; Status "raw context"→"Raw context"; off-vocab "medium" passes
+through; 0 console errors; A1/A2/A3 verifiers still PASS; idempotent by byte-identical re-bake). Receipt:
+`output/council/shadow_a4_display_20260609.md`.
+
+**A5 ALSO DONE + COUNCIL FULL SIX CLEAR (same session) — PATH A COMPLETE, loop at the A/B boundary.**
+Edge-dispatch → spec strategies (C1). Five call-site special-casings converged onto declarative
+spec/node capabilities, naming no layerKey/source literal: (1) `AOP_HOST_CREATE_FEATURE` dispatches a
+`spec.create` capability (was `layerKey !== 'editorPois'`; editorPois declares `create`→addDrawnPoi; a
+layer without it returns null, no throw); (2) `sourceChip` a co-located spec field on the 4 destination
+specs (the `VISITOR_LIST_SOURCE_CHIP` map deleted); (3) the sfwda node declares `hostToggle:'showSfwda'`,
+the bridge reads `node.hostToggle` (the `EXPLICIT_HOST_TOGGLE` map deleted); (4) one `USER_FEATURES_SOURCE`
+const + one `usesUserFeatures(spec)` predicate replace the `=== 'userFeatures'` literal at every call
+site; (5) `deriveItems` falls back to the canonical baked `id` before the positional `idx` (now a
+last-resort R13 default — no current items-node reaches it). Verifier
+`playwright_verify_shadow_a5_dispatch.py` (deterministic, 5/5): structural (C1=0 layerKey branches, C6=0
+classes, the dispatch maps gone, `node --check` clean) + LIVE — a "+ POI" create through the SAME bridge
+the panel's commitFeature uses dispatches via `spec.create`, the feature lands (1→2, name=='Restroom'),
+'buildings' (no create) → null, the created feature is editable through the panel's edit bridge
+(`AOP_HOST_SET_FEATURE_PROPS` → the live source reflects the rename), the panel editorPois Name input is
+live-editable (seed); 0 console errors. A Witness flakiness andon (the first verifier's
+panel-select-of-bridge-created-feature step was a re-seed race) was folded → replaced by two deterministic
+editability checks → Witness re-confirmed 5/5. Receipt: `output/council/shadow_a5_dispatch_20260609.md`.
+(Chip/SFWDA/userFeatures sub-changes are structural-only — they render into main.js's hidden #editorTree
+under embed; stated as such, no narrated DOM check.) A1–A4 verifiers still PASS.
+
+**THE RALPH LOOP IS DONE — Path A (A1·A2·A3·A4·A5) all council-cleared; STOPPED at the Path A/B boundary.**
+Path B (the 20 DB-door/identity/bake-reproducibility findings) stays HELD for the user's gold-slice-6
+pull (`../06_going_gold/gold_migration.md`). **NEXT (the user's call):** commit + ONE `sw.js`/`#appVersion`
+bump covering the WHOLE Path-A batch — `main.js` + `panel.js` + `rebake_canonical.py` + `_schema.json` +
+the re-baked served `*.geojson` + the 5 new `playwright_verify_shadow_a[1-5]_*.py` + brain — then pull
+gold slice 6 (Path B) if desired. **The commit + the bump are the user's git gate — NOT committed, NOT
+bumped; HEAD still `e34c1b8`.**
+
+-----
+
 **2026-06-09 (SHADOW-ATTRIBUTE AUDIT — card opened + seal-team sweep DONE; BRAIN ONLY, UNCOMMITTED,
 council review NEXT).** Follow-on to the "Launchpad" trace below: a trail whose name disagrees across
 surfaces ("Launchpad" left / "Trail 1" right / "1" on the map) because the name is a **runtime sidecar

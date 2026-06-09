@@ -52,12 +52,20 @@ Property keys read directly from every file in `website/data/`. The "name" and
 | `aop_buildings.geojson` (the pavilion) | `building_label`, `name`, `facility_name` | — none — |
 | `aop_cemeteries.geojson` | `name` | `note` |
 | `aop_editor_seed_pois` / drawn POIs | `name` | `notes` |
-| `aop_visitor_context_callouts` | `name`, `label` | `services` + `examples` + `source_summary` (3 keys) |
-| `aop_brand_logos` | `name`, `logo_id` | — none — |
+| `aop_visitor_context_callouts` | `name`, `label` (+ brand logos `name`/`logo_id`) | `services` + `examples` + `source_summary` (3 keys) |
 | `aop_roads` / `aop_water` / OSM | `name` | — none — |
 | `aop_lidar_tiles` | `title`, `tile_code` | — none — |
 | `aop_activity_hotspots` / synthetic | `label` / `track_name` | — none — |
 | `aop_contours`, `aop_landcover` | — NONE — (`ID`/`elev_ft`; `class`) | — none — |
+
+> **Table currency (2026-06-09):** this records the *raw-key* variability the
+> re-bake was built to absorb; it is no longer where to look for live divergence.
+> The canonical re-bake now leads every feature with `name`/`description`/`kind`
+> (+ Tier-3 `facets`), and brand logos live in `aop_visitor_context_callouts`
+> (there is no separate `aop_brand_logos` file). The variability that survives is
+> at the *read sites* — renderers that still join a sidecar or derive a display
+> value instead of reading the canonical field. That is the Sprint-09
+> shadow-attribute work (`tasks/09_editor_maturity/shadow_attribute_resolution.md`).
 
 The user's own example is the cleanest illustration: a **trail's** display name
 is `name` (or, in the SFWDA sources, nonexistent — only `trail_number`), while

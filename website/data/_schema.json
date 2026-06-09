@@ -1,6 +1,6 @@
 {
   "schema": "aop-cmfs-v1",
-  "updated_at": "2026-06-04",
+  "updated_at": "2026-06-09",
   "purpose": "Common Minimum Feature Schema — the one data contract the right-panel editor reads. See brain/research/common_feature_schema.md.",
   "canonical_fields": {
     "id": "stable feature id (machine; never blank where derivable)",
@@ -11,7 +11,16 @@
     "confidence": "official / observed / inferred / derived / synthetic",
     "permission": "license or permission to publish",
     "status": "publish / review status",
-    "last_checked": "date or method last verified"
+    "last_checked": "date or method last verified",
+    "source_file": "the served file this feature bakes to — the editor Source tab reads it directly instead of reverse-mapping the live MapLibre source id (named layers only; machine/coverage layers stay lean)"
+  },
+  "facets": {
+    "_note": "Tier-3, type-specific. Additive: emitted on a feature only where a value exists, alongside the preserved original key. Not every feature carries every facet.",
+    "difficulty": "trails — easy / moderate / difficult (park-map color; catalog fills where the feature has none)",
+    "category": "POIs — proper-noun category, e.g. Pavilion (machine coverage layers keep their sub-kind as the preserved `class` key, not stamped per feature)",
+    "facility_role": "buildings — the facility role lifted out of `status` (Pavilion / Front office / ...)",
+    "occupancy": "buildings — FEMA occupancy class",
+    "revisit_note": "what info is still owed (from the poi-index), kept auditable on the feature"
   },
   "crosswalk": {
     "name": [
@@ -74,18 +83,18 @@
       "generated_on"
     ]
   },
+  "sidecars": {
+    "aop_trail_catalog.json": "trail name + description + difficulty, joined by trail_number == number",
+    "aop_poi_index.json": "building/cemetery/visitor description (blurb) + revisit_note, joined by match{} fields"
+  },
   "rebake": {
-    "mode": "additive (canonical fields prepended; original keys preserved)",
+    "mode": "additive (canonical fields prepended; facets next; original keys preserved)",
     "raw_archive": "website/data/raw/ (pristine pre-rebake originals)",
-    "machine_layers": "id + kind per feature only; provenance is layer-level (below)"
+    "machine_layers": "id + kind per feature (name/status crosswalked where a physical key exists); provenance is layer-level (below)",
+    "sidecar_joins": "trail catalog + poi-index folded into name/description/facets at bake time (read live from website/data/, not raw/)",
+    "not_owned": "publish.geojson is DB-baked by export_publish_geojson.sh and intentionally not re-baked here"
   },
   "layers": {
-    "publish.geojson": {
-      "features": 5,
-      "kind": "(per-feature)",
-      "machine": false,
-      "maturity": "silver"
-    },
     "aop_9_patch.geojson": {
       "features": 9,
       "kind": "acquisition_aoi_cell",
@@ -250,6 +259,12 @@
         "status": "test data"
       },
       "maturity": "delete"
+    },
+    "publish.geojson": {
+      "features": 6,
+      "kind": "(per-feature)",
+      "machine": false,
+      "maturity": "silver"
     }
   },
   "maturity_tiers": {

@@ -15,6 +15,12 @@
 (function () {
   'use strict';
 
+  // The shared user-drawn feature collection. One named identity for the source
+  // (Sprint 09 A5) so the reassignment/affordance dispatch reads a predicate
+  // (usesUserFeatures, below) instead of a `=== 'userFeatures'` string literal
+  // smeared across call sites (C1).
+  const USER_FEATURES_SOURCE = 'userFeatures';
+
   // --- The map (prototype host) ----------------------------------------------
   // The panel describes the panel, NOT the map style. Map layers are added to
   // MapLibre here, exactly as the live app does; a panel node only references
@@ -204,7 +210,7 @@
     let maxSeq = 0;
     for (const feat of OVERRIDES.created) {
       const props = feat.properties || {};
-      const src = props._src || 'userFeatures';
+      const src = props._src || USER_FEATURES_SOURCE;
       const fc = LOADED[src];
       if (!fc || !fc.features) continue;                 // target layer not loaded — drop
       const fid = props._id;
@@ -544,9 +550,9 @@
         { id: 'editor-poi-outline', type: 'line', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'line-color': POI_COLOR, 'line-width': 2.5 } },
         { id: 'editor-poi-lines', type: 'line', filter: ['==', ['geometry-type'], 'LineString'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': POI_COLOR, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 2.5, 16, 5], 'line-opacity': 0.95 } },
         { id: 'editor-poi-circles', type: 'circle', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 7, 'circle-color': POI_COLOR, 'circle-stroke-color': '#f7f1e2', 'circle-stroke-width': 2 } },
-        { id: 'editor-poi-labels', type: 'symbol', filter: ['==', ['geometry-type'], 'Point'], layout: { 'text-field': ['coalesce', ['get', 'name'], ['get', 'category']], 'text-size': 12, 'text-offset': [0, 1.2], 'text-anchor': 'top' }, paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 } },
-        { id: 'editor-poi-fill-labels', type: 'symbol', filter: ['==', ['geometry-type'], 'Polygon'], layout: { 'text-field': ['coalesce', ['get', 'name'], ['get', 'category']], 'text-size': 12 }, paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 } },
-        { id: 'editor-poi-line-labels', type: 'symbol', filter: ['==', ['geometry-type'], 'LineString'], layout: { 'symbol-placement': 'line', 'text-field': ['coalesce', ['get', 'name'], ['get', 'category']], 'text-size': 12, 'text-keep-upright': true }, paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 } }
+        { id: 'editor-poi-labels', type: 'symbol', filter: ['==', ['geometry-type'], 'Point'], layout: { 'text-field': ['coalesce', ['get', 'name'], ['get', 'category'], 'POI'], 'text-size': 12, 'text-offset': [0, 1.2], 'text-anchor': 'top' }, paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 } },
+        { id: 'editor-poi-fill-labels', type: 'symbol', filter: ['==', ['geometry-type'], 'Polygon'], layout: { 'text-field': ['coalesce', ['get', 'name'], ['get', 'category'], 'POI'], 'text-size': 12 }, paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 } },
+        { id: 'editor-poi-line-labels', type: 'symbol', filter: ['==', ['geometry-type'], 'LineString'], layout: { 'symbol-placement': 'line', 'text-field': ['coalesce', ['get', 'name'], ['get', 'category'], 'POI'], 'text-size': 12, 'text-keep-upright': true }, paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 } }
       ]
     },
     {
@@ -562,7 +568,7 @@
       // User-entered features. Loads from its own served file (empty until the
       // first draw is baked); grows in-session as the user creates features, and
       // baked draws come back from disk here on reload.
-      source: 'userFeatures', url: './data/aop_user_features.geojson',
+      source: USER_FEATURES_SOURCE, url: './data/aop_user_features.geojson',
       layers: [
         { id: 'user-feature-polys', type: 'fill', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': '#b4561f', 'fill-opacity': 0.25 } },
         { id: 'user-feature-polys-outline', type: 'line', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'line-color': '#b4561f', 'line-width': 1.5 } },
@@ -607,7 +613,16 @@
             hostKey: 'trails',
             mapLayers: ['aop-trail-network', 'aop-trail-network-labels'],
             items: refItems('aop-trail-network', {
-              key: (p) => p.name, label: (p) => `Trail ${p.name || '—'}${p.difficulty ? ' · ' + p.difficulty : ''}`,
+              // Read the CANONICAL name baked onto the feature (the trail catalog is
+              // folded in by rebake_canonical): a curated trail shows "Launchpad",
+              // a number-only edge shows "Trail 15" — same as the map label, list,
+              // and popup. No "Trail " prefix on a real name (no "Trail Launchpad").
+              key: (p) => p.name,
+              label: (p) => {
+                const name = (p.name != null && String(p.name) !== '') ? String(p.name) : null;
+                const base = name ? (/^\d+$/.test(name) ? `Trail ${name}` : name) : 'Trail';
+                return p.difficulty ? `${base} · ${p.difficulty}` : base;
+              },
               detail: (p) => [p.difficulty, p.source].filter(Boolean).join(' · ')
             })
           }
@@ -632,8 +647,12 @@
             hostKey: 'buildings',
             mapLayers: ['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline'],
             items: refItems('fema-buildings', {
-              key: (p) => p.build_id, label: (p) => p.building_label || p.address || `Building ${p.build_id}`,
-              detail: (p) => p.facility_name || (p.aop_structure_box ? 'Private structure' : 'Building')
+              // Canonical name (baked to the facility name where one exists — A3),
+              // so the panel row reads the same "Pavilion" the list/map/search show;
+              // the street address is the detail line (from facets, else the raw key).
+              key: (p) => p.build_id,
+              label: (p) => p.name || p.building_label || p.address || `Building ${p.build_id}`,
+              detail: (p) => (p.facets && p.facets.address) || p.address || (p.aop_structure_box ? 'Private structure' : 'Building')
             })
           },
           {
@@ -675,7 +694,7 @@
           // SFWDA scanned paper trail map (raster overlay). Moved into Silver
           // 2026-06-05 (was External reference). It's a real first-party scan we
           // trace against; pending review before it earns a higher tier.
-          { id: 'sfwda', kind: 'layer', label: 'SFWDA paper trail map', maturity: 'silver', visible: false, mapLayers: ['sfwda-paper'] }
+          { id: 'sfwda', kind: 'layer', label: 'SFWDA paper trail map', maturity: 'silver', visible: false, mapLayers: ['sfwda-paper'], hostToggle: 'showSfwda' }
         ]
       },
       {
@@ -1220,6 +1239,12 @@
     return t === 'Point' ? 'userPoints' : t === 'LineString' ? 'userLines' : 'userPolys';
   }
   function isUserFeature(props) { return props && props._id != null; }
+  // A node whose items come from the shared user-drawn collection — its rows are
+  // reassignable between draw groups and persist into `created[]` (the generic
+  // draw groups). The deriveItems / reassignable dispatch reads this predicate
+  // instead of a literal source string (Sprint 09 A5, C1). Safe default: false
+  // for every other spec.
+  function usesUserFeatures(spec) { return !!spec && spec.source === USER_FEATURES_SOURCE; }
   function effectiveGroup(feature) {
     return (feature.properties && feature.properties.__group) || geometryDefaultGroup(feature);
   }
@@ -1236,7 +1261,14 @@
     const add = (feature) => {
       const props = feature.properties || {};
       const user = isUserFeature(props);
-      const key = user ? String(props._id) : (spec.key ? String(spec.key(props)) : String(idx));
+      // Identity is the user-feature `_id`, else the spec's key, else the
+      // canonical baked `id` (Tier-1, never blank post-re-bake) — never the
+      // positional load index (Sprint 09 A5: panel-positional-synthetic-index
+      // shadow). `idx` survives only as a last-resort default for a truly id-less
+      // item (R13); no current items-node reaches it — every one declares a key.
+      const key = user
+        ? String(props._id)
+        : (spec.key ? String(spec.key(props)) : (props.id != null ? String(props.id) : String(idx)));
       idx += 1;
       if (seen.has(key)) return;
       seen.add(key);
@@ -1253,12 +1285,12 @@
     if (fc && fc.features) {
       for (const feature of fc.features) {
         if (spec.filter && !spec.filter(feature)) continue;
-        if (spec.source === 'userFeatures' && isUserFeature(feature.properties) && effectiveGroup(feature) !== node.id) continue;
+        if (usesUserFeatures(spec) && isUserFeature(feature.properties) && effectiveGroup(feature) !== node.id) continue;
         add(feature);
       }
     }
     // 2) user features assigned INTO this node from the shared userFeatures source
-    if (spec.source !== 'userFeatures') {
+    if (!usesUserFeatures(spec)) {
       const uf = LOADED.userFeatures;
       if (uf && uf.features) {
         for (const feature of uf.features) {
@@ -1399,7 +1431,7 @@
     // Cross-group reassignment is the generic draw groups' affordance only — a
     // feature living in the shared userFeatures collection. Reference features
     // (including ones created straight into a base layer) belong to their layer.
-    const reassignable = node.items.source === 'userFeatures' && isUserFeature(props);
+    const reassignable = usesUserFeatures(node.items) && isUserFeature(props);
 
     // Each field carries the `tab` it belongs to in the takeover. Same field
     // list, routed into the 5 tabs by renderFeatureEditor.
@@ -1620,14 +1652,37 @@
   // trusted it is, whether it can be published, when it was checked. The data is
   // re-baked to the canonical schema, so this is now just the five provenance
   // fields — no per-source alias list. Each auto-hides when blank.
+  // Source-register vocabulary → display label. ADDITIVE (Mason binding): a known
+  // value gets its canonical label; an out-of-vocabulary value passes through as
+  // its own label — never dropped, blanked, coerced, or rejected (C5). The raw
+  // value is untouched on the feature. This relabels the confidence/status chips
+  // the Sprint-09 audit named (publish-confidence-status-off-vocabulary): publish
+  // trails carry an off-vocab confidence='medium' / status='observed'; mapping
+  // those to a source-register value is a CURATION call left for the user, so they
+  // pass through here as-is rather than being silently rewritten.
+  const CONFIDENCE_DISPLAY = {
+    official: 'Official', observed: 'Observed', inferred: 'Inferred',
+    derived: 'Derived', synthetic: 'Synthetic', compiled: 'Compiled',
+    community: 'Community', planning: 'Planning', draft: 'Draft',
+  };
+  const STATUS_DISPLAY = {
+    published: 'Published', review: 'In review', 'raw context': 'Raw context',
+    context: 'Context', draft: 'Draft', hold: 'Hold', planning: 'Planning',
+    'test data': 'Test data',
+  };
+  function vocabDisplay(value, map) {
+    const key = String(value).trim().toLowerCase();
+    return map[key] || String(value);
+  }
   const PROVENANCE_KEYS = [
-    ['source', 'Source'], ['confidence', 'Confidence'], ['permission', 'Permission'],
-    ['status', 'Status'], ['last_checked', 'Last checked']
+    ['source', 'Source'], ['confidence', 'Confidence', CONFIDENCE_DISPLAY],
+    ['permission', 'Permission'], ['status', 'Status', STATUS_DISPLAY],
+    ['last_checked', 'Last checked']
   ];
   function provenanceFields(props) {
     return PROVENANCE_KEYS
       .filter(([k]) => props[k] != null && String(props[k]).trim() !== '')
-      .map(([k, label]) => ({ kind: 'static', label, value: String(props[k]) }));
+      .map(([k, label, map]) => ({ kind: 'static', label, value: map ? vocabDisplay(props[k], map) : String(props[k]) }));
   }
 
   // --- "What file does this come from?" --------------------------------------
@@ -1640,6 +1695,13 @@
   const SOURCE_FILE = {};
   MAP_DATA.forEach((s) => { if (s.source && s.url) SOURCE_FILE[s.source] = s.url.replace(/^\.\//, ''); });
   function fileForItem(node, item) {
+    // Prefer the baked `source_file` provenance attribute (Sprint-09 A4): the file
+    // is read directly off the feature rather than reverse-mapped from the live
+    // MapLibre source id, which is why it never reads "unknown" for a baked
+    // feature. Fall back to the source→file map (for features without it, e.g. a
+    // brand-new live-drawn POI) then the raw source id.
+    const baked = item.props && item.props.source_file;
+    if (baked) return baked;
     const src = (item.props && item.props._src) || (node.items && node.items.source);
     return SOURCE_FILE[src] || (src ? src : 'unknown');
   }
@@ -1891,14 +1953,15 @@
   // A few host toggles drive special rendering with NO shared layer set: the
   // SFWDA paper map is a grid of `sfwda-tile-*` layers warped + shown inside the
   // host's updateLayerVisibility off its checkbox (its LAYER_TOGGLES entry has an
-  // empty layer list). The layer-intersection match below can't see those, so map
-  // such nodes to the host checkbox by id — the eye toggle then drives the host's
-  // own machinery exactly like every other layer.
-  const EXPLICIT_HOST_TOGGLE = { sfwda: 'showSfwda' };
+  // empty layer list). The layer-intersection match below can't see those, so such
+  // a node declares `node.hostToggle` = the host checkbox id (Sprint 09 A5 — a
+  // declarative node field, read with a safe default, replacing the free-standing
+  // EXPLICIT_HOST_TOGGLE id-keyed map). The eye toggle then drives the host's own
+  // machinery exactly like every other layer.
   function buildVisibilityBridge() {
     const toggles = hostToggles();
     eachLayerNode((node) => {
-      const explicitId = EXPLICIT_HOST_TOGGLE[node.id];
+      const explicitId = node.hostToggle;
       if (explicitId) { const cb = document.getElementById(explicitId); if (cb) { NODE_TOGGLE[node.id] = cb; return; } }
       if (!node.mapLayers || !node.mapLayers.length) return;
       for (const entry of toggles) {
@@ -1947,7 +2010,7 @@
   }
   function seedLoadedFromHost() {
     const srcs = new Set();
-    eachLayerNode((n) => { if (n.items && n.items.source && n.items.source !== 'userFeatures') srcs.add(n.items.source); });
+    eachLayerNode((n) => { if (n.items && n.items.source && !usesUserFeatures(n.items)) srcs.add(n.items.source); });
     for (const src of srcs) {
       const data = hostSourceData(src);
       if (data && data.type === 'FeatureCollection') LOADED[src] = JSON.parse(JSON.stringify(data));
@@ -2157,10 +2220,10 @@
   async function bootEmbedded() {
     await fetchAllData();
     // Add only the userFeatures source + layers (the host has no such source).
-    const uf = MAP_DATA.find((s) => s.source === 'userFeatures');
-    if (uf && !map.getSource('userFeatures')) {
-      map.addSource('userFeatures', { type: 'geojson', data: uf.__data !== undefined ? uf.__data : emptyFC() });
-      for (const layer of uf.layers) { try { map.addLayer(Object.assign({ source: 'userFeatures' }, layer)); } catch (e) { /* ignore */ } }
+    const uf = MAP_DATA.find((s) => s.source === USER_FEATURES_SOURCE);
+    if (uf && !map.getSource(USER_FEATURES_SOURCE)) {
+      map.addSource(USER_FEATURES_SOURCE, { type: 'geojson', data: uf.__data !== undefined ? uf.__data : emptyFC() });
+      for (const layer of uf.layers) { try { map.addLayer(Object.assign({ source: USER_FEATURES_SOURCE }, layer)); } catch (e) { /* ignore */ } }
     }
     addDraftLayers();
     seedLoadedFromHost();                         // back lists with the host's live data (keeps host overrides)

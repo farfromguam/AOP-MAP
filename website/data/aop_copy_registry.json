@@ -59,7 +59,7 @@
       "extraction": "data",
       "gaps_field": "owed_work",
       "review_priority": "high",
-      "note": "Wired via a runtime sidecar join (trailCatalogLookup in index.html), mirroring the POI-index pattern — descriptions are NOT baked into aop_trail_network.geojson. Descriptions rewritten in AOP's own voice (brain/voice/voice_guide.md): facts cross-checked against onX + observation, wording original, so the prior onX-copyright caveat no longer applies (no license footer). Trail 96 keeps the park's own 2015 wording. Integration card: brain/tasks/04_event_app/trail_research_integration.md."
+      "note": "Folded into aop_trail_network.geojson by rebake_canonical (canonical name/description + facets) — the runtime trailCatalogLookup join was removed (Sprint 09 / shadow_attribute_resolution A2); the viewer reads the baked field. The authoring catalog (aop_trail_catalog.json) still feeds the bake and this copy-review page. Descriptions are AOP's own voice (brain/voice/voice_guide.md): facts cross-checked against onX + observation, wording original, so the prior onX-copyright caveat no longer applies (no license footer). Trail 96 keeps the park's own 2015 wording. Integration card: brain/tasks/04_event_app/trail_research_integration.md."
     },
     {
       "id": "visitor_context",
