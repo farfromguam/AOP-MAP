@@ -111,10 +111,14 @@ def main():
 
         # 4) Delete THROUGH THE PANEL UI (the 🗑 Delete action in the editor) —
         #    re-open the editor, click Delete, confirm it leaves the one store.
+        page.wait_for_selector('[data-node-id="editorPois"]', timeout=10_000)  # node back after reload
         page.evaluate("""() => { const n=document.querySelector('[data-node-id="editorPois"]');
                                  const c=n&&n.querySelector('button[aria-expanded]');
                                  if(c && c.getAttribute('aria-expanded')!=='true') c.click(); }""")
-        page.wait_for_selector('[data-node-id="editorPois"] .item-select', timeout=8_000)
+        page.wait_for_timeout(300)  # let the expand rerender settle
+        # state='attached' (not 'visible'): the row is clicked via page.evaluate (DOM
+        # .click), which works regardless of a transient post-reload visibility race.
+        page.wait_for_selector('[data-node-id="editorPois"] .item-select', timeout=8_000, state='attached')
         page.evaluate("""() => { const b=[...document.querySelectorAll('[data-node-id="editorPois"] .item-select')]
                                  .find(x=>/Launchpad/.test(x.textContent)); if(b)b.click(); }""")
         page.wait_for_timeout(600)

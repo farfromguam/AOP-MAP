@@ -3803,6 +3803,23 @@
         return true;
       } catch (e) { console.error('AOP_HOST_DELETE_FEATURE failed', e); return false; }
     };
+    // Create bridge — Sprint 09, Slice 2. The right panel captures the geometry
+    // (its own crosshair place-click) but a drawn POI must land in the host's ONE
+    // store of record (editorPois → aop_editor_pois_v1), NOT the panel OVERRIDES
+    // store (which would be a twin-store create leak — the same F6 desync Slice 1b
+    // closed for edits/deletes). So the panel's commitFeature calls this for a
+    // hostEdit node; it reuses addDrawnPoi (the same builder the host's TerraDraw
+    // `finish` handler uses), so host-drawn and panel-drawn POIs are identical and
+    // one-store. Only editorPois is host-owned-and-creatable; everything else
+    // authors into its own served source through the panel's normal path. Returns
+    // the new feature id (so the panel can select it for immediate editing), null
+    // on failure.
+    window.AOP_HOST_CREATE_FEATURE = function (layerKey, geometry, opts) {
+      try {
+        if (layerKey !== 'editorPois' || !geometry || !geometry.type) return null;
+        return addDrawnPoi(geometry, (opts && opts.category) || 'Other');
+      } catch (e) { console.error('AOP_HOST_CREATE_FEATURE failed', e); return null; }
+    };
 
     // Mirror of toggleFeatureHighlight for the lock flag. Locked features
     // stay rendered and stay starrable, but the row's ✋ move handle and
@@ -7524,6 +7541,45 @@
       }
     }
 
+    // Build + persist ONE drawn feature into the editorPois array (the single
+    // store of record, aop_editor_pois_v1) and repaint the editor-poi source.
+    // Extracted from the TerraDraw `finish` handler (below) so BOTH the host draw
+    // path AND the right panel's "+ add" create affordance (via the
+    // AOP_HOST_CREATE_FEATURE bridge, Sprint 09 Slice 2) land a new feature in the
+    // SAME one store — no twin-store create leak (audit F6). Point → editor_poi,
+    // Polygon → editor_poi (footprint), LineString → editor_trace (with imagery
+    // provenance), matching the original inline construction exactly. Returns the
+    // new feature's id.
+    function addDrawnPoi(geometry, category) {
+      const cat = category || 'Other';
+      const isTrace = geometry.type === 'LineString';
+      const properties = {
+        id: `poi_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        layer: isTrace ? 'editor_trace' : 'editor_poi',
+        category: cat,
+        name: cat,
+        created: new Date().toISOString()
+      };
+      if (isTrace) {
+        Object.assign(properties, {
+          source_name: 'USDA NAIP public image service',
+          source_url: 'https://gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME/ImageServer',
+          source_year: '2023',
+          source_resolution: '60 cm source imagery; cached service draws through level 17',
+          confidence: 'draft',
+          review_status: 'raw imagery trace; needs review before core/publish'
+        });
+      }
+      editorPois.push({
+        type: 'Feature',
+        geometry: JSON.parse(JSON.stringify(geometry)),
+        properties
+      });
+      saveEditorPois();
+      refreshEditorSource();
+      return properties.id;
+    }
+
     // Single export path is clipboard GeoJSON — no file downloads. Copies the
     // whole drawn-POI set as a FeatureCollection ready to paste into
     // website/data/aop_editor_seed_pois.geojson.
@@ -9923,32 +9979,10 @@
         const category = (currentCreateBucket && currentCreateBucket.categorySelect)
           ? currentCreateBucket.categorySelect.value
           : poiCategory.value;
-        const isTrace = kind === 'LineString';
-        const properties = {
-          id: `poi_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          layer: isTrace ? 'editor_trace' : 'editor_poi',
-          category: category,
-          name: category,
-          created: new Date().toISOString()
-        };
-        if (isTrace) {
-          Object.assign(properties, {
-            source_name: 'USDA NAIP public image service',
-            source_url: 'https://gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME/ImageServer',
-            source_year: '2023',
-            source_resolution: '60 cm source imagery; cached service draws through level 17',
-            confidence: 'draft',
-            review_status: 'raw imagery trace; needs review before core/publish'
-          });
-        }
-        editorPois.push({
-          type: 'Feature',
-          geometry: JSON.parse(JSON.stringify(feature.geometry)),
-          properties
-        });
+        // Build + persist via the shared builder (also used by the panel's create
+        // bridge, Slice 2) so host-drawn and panel-drawn POIs are one-store.
+        addDrawnPoi(feature.geometry, category);
         setTimeout(() => draw.removeFeatures([id]), 0);
-        saveEditorPois();
-        refreshEditorSource();
       });
 
       // Clicking a committed POI or footprint (only while not drawing, and not

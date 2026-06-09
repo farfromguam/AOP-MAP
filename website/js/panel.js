@@ -642,7 +642,26 @@
             mapLayers: ['visitor-context-fill', 'visitor-context-outline', 'visitor-context-labels'],
             items: refItems('visitor-context', { key: (p) => p.name || p.label, label: (p) => p.name || p.label || 'Callout' })
           },
-          { id: 'trailheads', kind: 'layer', label: 'Publishable trailheads', maturity: 'silver', visible: true, mapLayers: ['publish-trailheads'] },
+          {
+            // Publishable layer awaiting data (Sprint 09 Slice 3, F7): give it an
+            // editable feature list so trailheads can be AUTHORED — it must be
+            // authorable, not visibility-only. Same publish-data + layer-filter
+            // pattern as the sibling boundaries/pubTrails nodes; a created trailhead
+            // is stamped layer:'trailheads' (createDefaults) so it matches the map
+            // filter (the publish-trailheads circle layer), this list, AND bakes to
+            // the right layer. Key/label fall back so an unnamed/empty trailhead
+            // still renders a row instead of keying to undefined (Mason R13 safe
+            // default). No hostKey: the ★→left-tab link for reference layers is the
+            // gold DB-star axis (sprint08 / slice 6), out of this UI slice.
+            id: 'trailheads', kind: 'layer', label: 'Publishable trailheads', maturity: 'silver', visible: true, locked: true, expanded: false, geom: 'Point', createNoun: 'trailhead',
+            createDefaults: () => ({ layer: 'trailheads' }),
+            mapLayers: ['publish-trailheads'],
+            items: refItems('publish-data', {
+              filter: (f) => (f.properties || {}).layer === 'trailheads',
+              key: (p) => p.name || 'trailhead', label: (p) => p.name || 'Trailhead',
+              detail: (p) => [p.status, p.permission].filter(Boolean).join(' · ')
+            })
+          },
           { id: 'eventSchedule', kind: 'layer', label: 'Event schedule POIs', maturity: 'silver', visible: false, mapLayers: ['event-session-routes', 'event-route-labels', 'event-anchor-points', 'event-anchor-labels'] },
           {
             // Brand logos (AOP badge + Rock Warblers) live in the silver
@@ -1258,11 +1277,15 @@
   }
 
   // --- Create-spec resolution (CRUD: the C for every base layer) -------------
-  // The 3 generic draw groups carry an explicit `create`. EVERY other editable,
-  // single-geometry layer gets a synthesized one so the user can author straight
-  // into it (a building into fema-buildings, a trail into aop-trail-network…),
-  // and the draw bakes back to THAT layer's file. Layers needing a richer picker
-  // (brand logos need an icon) opt out.
+  // Per-layer "+ add" IS the create path (the 3 generic draw groups Points/Lines/
+  // Polygons were retired — Sprint 09 Slice 4 / Fork #1; the per-layer controls
+  // cover every geometry type into a real source, so the generic group is not
+  // needed). EVERY editable, single-geometry layer gets a SYNTHESIZED create spec
+  // so the user authors straight into it (a building into fema-buildings, a trail
+  // into aop-trail-network, a drawn POI into editorPois…), and the draw bakes back
+  // to THAT layer's source. The `node.create` branch in makeCreateSpec is a
+  // now-unused explicit-spec hook kept for the standalone userFeatures path; layers
+  // needing a richer picker (brand logos need an icon) opt out via CREATE_BLOCK.
   const CREATE_BLOCK = new Set(['brandLogos']);
   function kindForGeom(g) { return g === 'Point' ? 'poi' : g === 'LineString' ? 'trail' : 'area'; }
   function canonicalDefaults(node, seq, geomType) {
@@ -1282,10 +1305,11 @@
     if (typeof node.createDefaults === 'function') Object.assign(props, node.createDefaults(geomType) || {});
     return props;
   }
-  // The source a node draws INTO: the 3 draw groups carry an explicit one
-  // (userFeatures); every other listable layer authors straight into its OWN
-  // served source, so the draw bakes back to that layer's file. Brand logos opt
-  // out (they need an icon picker); pure-visibility layers have no source.
+  // The source a node draws INTO: every listable layer authors straight into its
+  // OWN served source, so the draw bakes back to that layer's file (the retired
+  // generic groups' shared userFeatures source survives only for the standalone
+  // draw path). Brand logos opt out (they need an icon picker); pure-visibility
+  // layers have no source.
   function nodeCreateSource(node) {
     const src = node.create ? node.create.source : (node.items && node.items.source);
     return (src && !CREATE_BLOCK.has(node.id) && LOADED[src]) ? src : null;
@@ -1993,6 +2017,20 @@
   function commitFeature(geometry) {
     const node = placing.node;
     const spec = placing.spec;
+    // Host-owned editable source (editorPois): create through the host's ONE store
+    // of record via the bridge, NOT the panel OVERRIDES (Sprint 09 Slice 2). The
+    // panel captured the geometry; the host builds + persists the drawn feature in
+    // aop_editor_pois_v1, then we re-seed the panel's working copy from the host
+    // source so the new POI shows in the list — one store, no twin-store create
+    // leak (audit F6). Mirrors the hostEdit branch in commitChange/persistDelete.
+    if (node.hostEdit && typeof window.AOP_HOST_CREATE_FEATURE === 'function') {
+      const newId = window.AOP_HOST_CREATE_FEATURE(node.hostKey, geometry, {});
+      endDraw();
+      seedLoadedFromHost();                                   // re-read editor-poi from the one store
+      if (newId != null) selection = { kind: 'item', nodeId: node.id, key: newId };  // select → edit it
+      rerender();
+      return;
+    }
     const src = spec.source;
     createSeq += 1;
     const id = 'u' + createSeq;

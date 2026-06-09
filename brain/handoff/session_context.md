@@ -6,6 +6,63 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-08 (SPRINT 09 SLICES 3+4 — trailheads editable (F7) + generic-draw cleanly retired; CODE,
+UNCOMMITTED, rides the v59 batch, commit OWED).** User: *"continue all the slices until done."* Drove the
+remaining UI-completeness slices end-to-end (the commit stays the git gate). **Slice 3:** the curated
+visibility-only `trailheads` node (panel.js) gains an editable feature list — `refItems('publish-data',
+filter layer==='trailheads')` with `p.name||'trailhead'`/`p.name||'Trailhead'` fallbacks (sibling
+boundaries/pubTrails pattern) + `createDefaults: ()=>({layer:'trailheads'})` so an authored trailhead
+round-trips list → the `publish-trailheads` map filter → bake. No hostKey (the ★→left-tab reference-layer
+link is the gold DB-star axis). Fork #2 honored — `eventSchedule` stays visibility-only (schedule-owned).
+**Slice 4:** the generic draw group (Points/Lines/Polygons, retired `7cd51fa`) is confirmed cleanly
+retired (Fork #1) — per-layer "+ add" authors every geometry type into a real source; two stale doc
+comments fixed; the live standalone `userFeatures`/`node.create` path intentionally kept (NOT deleted —
+it is the standalone draw path). **Verified by observation:** new
+`mvp/scripts/playwright_verify_trailheads_editable.py` (drillable, authorable, unnamed-served row renders
+"Trailhead", rename persists) + `playwright_verify_per_layer_add.py` (generic nodes absent on a rendered
+panel; Line→aop-trail-network 120→121, Polygon→fema-buildings 5→6, each editable). Full regression suite
+(create/editor/embed/star-flip) PASS; de-flaked the Slice-1 guard's own post-reload expand race.
+**Council done-review (Slices 3+4): FULL SIX CLEAR** (Witness·Mason·Quartermaster·Warden·Steward-cross;
+Scribe andon for owed records → written → re-review clear). Receipt:
+`output/council/editor_slice2_done_review_20260608.md` (Slices 3+4 appended). Card: Slice-3 + Slice-4 DONE
+blocks on `tasks/09_editor_maturity/editor_completeness.md`. **One version bump (v58→v59) covers the whole
+Slices 2+3+4 uncommitted batch** (one bump per deploy, not per slice). **OWED (user's git gate):** the
+commit (`main.js` + `panel.js` + `sw.js` + `index.html` + the 3 new verifiers + brain) with the v59 bump.
+**Slices 1–4 (the UI-completeness axis Sprint 09 owns) are COMPLETE.** **NEXT — Slice 5 is a FORK for the
+user:** the DB doors (drawn-POI + geometry/icon_size → `core.features`) = **gold slice 6, HELD until a
+human pulls it**. Pulling it means DB migrations + re-baking `publish.geojson` (the git gate) + the F6
+identity re-architecture ("highest risk, last"). NOT executed autonomously — surfaced for the user's pull
+decision.
+
+-----
+
+**2026-06-08 (SPRINT 09 SLICE 2 — drawn-POI CREATE routed to the ONE store; CODE, UNCOMMITTED, v58→v59
+bump PERFORMED, commit OWED).** Picked up the loop (one slice/iteration) from Slice 1. Slice 1 had
+restored drawn-POI *editing* over `aop_editor_pois_v1` but the *create* path still leaked to the panel
+OVERRIDES twin store (F6). Slice 2 closes it. **Shipped:** (`main.js`) new `AOP_HOST_CREATE_FEATURE`
+bridge (mirrors the Slice 1 `AOP_HOST_*` family, fail-safe, scope-guarded to `editorPois`) + extracted
+**`addDrawnPoi(geometry, category)`** — a behavior-preserving lift of the host TerraDraw `finish`
+handler's inline construction (Point→`editor_poi`, LineString→`editor_trace` with NAIP provenance,
+Polygon footprint), now CALLED by the finish handler (one builder, no second create engine). (`panel.js`)
+`commitFeature` `hostEdit` branch → bridge + `seedLoadedFromHost()` re-seed + auto-select, returns
+before the OVERRIDES write (no twin-store create). Bumped `sw.js` + `#appVersion` **v58→v59**.
+**Verified by observation (new `mvp/scripts/playwright_verify_drawn_poi_create.py`, clean profile):**
+panel "+ POI" → map click → POI lands in `aop_editor_pois_v1` (1→2, id `poi_…`, layer `editor_poi`);
+**NO `aop_panel_overrides_v1` leak**; editable immediately (rename persists to the one store); survives
+reload; 0 errors. Trace branch + the bridge guard observed directly. No regression:
+`playwright_verify_drawn_poi_editor.py` / `_data_groups_embed.py` / `_starred_poi_flip.py` all PASS.
+**Help text `index.html:450` LEFT UNCHANGED** — it lives in the host `#editor` section that
+`panel-embed.css:272` hides in embedded mode (renders only in the host standalone fallback, where it's
+accurate); the staleness was cured by Slice 1 restoring the node, so the text is "true again" via the
+restoration; editing it would make it false in the only mode it shows. **Council done-review: FULL SIX
+CLEAR** (Witness ran all four verifiers live; Mason/Quartermaster/Warden/Scribe/Steward-cross-check
+clear; no andons). Receipt: `output/council/editor_slice2_done_review_20260608.md`. Card: Slice-2 DONE
+block on `tasks/09_editor_maturity/editor_completeness.md`. **NEXT:** Slice 3 (spec-complete trailheads —
+F7), then Slice 5 (DB doors — gold slice 6, the user's call to pull it). **OWED (user's git gate):** the
+commit (`main.js` + `panel.js` + `sw.js` + `index.html` + the new verifier + brain) with the v58→v59 bump.
+
+-----
+
 **2026-06-08 (SPRINT 09 SLICE 1 — drawn-POI editor RESTORED as ONE engine + ONE store; CODE,
 UNCOMMITTED, v57→v58 bump PERFORMED, commit OWED).** Executed Slice 1 of
 `tasks/09_editor_maturity/editor_completeness.md` (user accepted the council-cleared plan + Fork #0 =
