@@ -6279,162 +6279,38 @@
     let activeEventSessionId = null;
     let preferredHotLane = null;
 
-    function normalizeLocationTag(tag) {
-      const value = String(tag || '').trim();
-      if (!value) return '';
-      return value.startsWith('#') ? value : `#${value}`;
-    }
+    // The event-schedule document→GeoJSON transform now lives in the ONE shared
+    // resolver `js/event_schedule_geojson.js` (window.AOPEventSchedule), read by
+    // BOTH the embedded viewer (here) and the standalone right panel (panel.js).
+    // This is the going-gold G_E convergence of the two divergent resolvers
+    // (audit `event-overlay-two-divergent-resolvers`, C1/C6). main.js keeps the
+    // same public name + the same module-scoped maps (`eventLocationByTag`,
+    // `eventSessionById`) by re-populating them from the shared fn's return; every
+    // downstream consumer (calendar, search, CRUD list, hot button, tag-rebind)
+    // is unchanged.
 
-    function resolveEventLocation(config, tag, seen = new Set()) {
-      const normalized = normalizeLocationTag(tag);
-      if (!normalized || seen.has(normalized)) return null;
-      const raw = config?.locations?.[normalized];
-      if (!raw) return null;
-      if (raw.alias_of) {
-        seen.add(normalized);
-        const base = resolveEventLocation(config, raw.alias_of, seen);
-        if (!base) return null;
-        return {
-          ...base,
-          ...raw,
-          tag: normalized,
-          coordinates: raw.coordinates || base.coordinates,
-          label: raw.label || base.label,
-          map_label: raw.map_label || raw.label || base.map_label || base.label,
-          role: raw.role || base.role
-        };
-      }
-      const resolved = { ...raw, tag: normalized };
-      // Coordinates priority: explicit coords in the JSON win. When absent,
-      // resolve through the per-feature #tag binding so a location like
-      // #pavilion picks up the 1010 building's representative point. Card:
-      // brain/tasks/02_edit/named_feature_tagging.md.
-      if (!resolved.coordinates) {
-        const bound = tagToFeature.get(normalized);
-        if (bound && bound.coordinates) {
-          resolved.coordinates = [bound.coordinates[0], bound.coordinates[1]];
-          resolved.bound_feature = { layer: bound.layerKey, feature_id: bound.featureId };
-        }
-      }
-      return resolved;
-    }
-
-    function buildEventLocationIndex(config) {
-      eventLocationByTag.clear();
-      for (const tag of Object.keys(config?.locations || {})) {
-        const location = resolveEventLocation(config, tag);
-        if (location) eventLocationByTag.set(normalizeLocationTag(tag), location);
-      }
-    }
-
-    function eventDayShort(label) {
-      const clean = String(label || '').trim();
-      return clean.length <= 3 ? clean : clean.slice(0, 3);
-    }
-
-    function formatEventStartLocal(start) {
-      const text = String(start || '').trim();
-      if (!text) return '';
-      const match = /^(\d{1,2}):(\d{2})$/.exec(text);
-      if (!match) return text;
-      const hour = Number(match[1]);
-      const minute = Number(match[2]);
-      if (!Number.isFinite(hour) || hour < 0 || hour > 23 || !Number.isFinite(minute) || minute < 0 || minute > 59) return text;
-      const period = hour >= 12 ? 'PM' : 'AM';
-      const hour12 = ((hour + 11) % 12) + 1;
-      const minuteStr = String(minute).padStart(2, '0');
-      return `${hour12}:${minuteStr} ${period}`;
-    }
-
-    function composeEventWindowLabel(start, timeLabel) {
-      const clock = formatEventStartLocal(start);
-      const label = String(timeLabel || '').trim();
-      if (clock && label) return `${clock} · ${label}`;
-      return clock || label;
-    }
-
-    function eventRouteCoordinates(session) {
-      const tags = Array.isArray(session.route_tags) ? session.route_tags : [];
-      const coords = [];
-      for (const tag of tags) {
-        const location = eventLocationByTag.get(normalizeLocationTag(tag));
-        if (location?.coordinates) coords.push(location.coordinates);
-      }
-      return coords;
+    // The host's working-buffer override for a coordinate-less tag. Baked
+    // coordinates in the served document WIN; this fills only when a location has
+    // no baked geometry, from the per-feature #tag binding (localStorage
+    // `aop_feature_tags_v1`). After the G_E bake (#pavilion now carries baked
+    // coordinates) this is an override, not the source of an anchor's position
+    // (audit `event-anchor-position-from-localstorage-tag-binding`). Card:
+    // brain/tasks/02_edit/named_feature_tagging.md.
+    function hostResolveTagCoords(normalized) {
+      const bound = tagToFeature.get(normalized);
+      return bound && bound.coordinates ? [bound.coordinates[0], bound.coordinates[1]] : null;
     }
 
     function eventScheduleToGeojson(config) {
-      buildEventLocationIndex(config);
+      const { geojson, locationByTag, sessionById } = window.AOPEventSchedule.eventScheduleToGeojson(
+        config, { resolveTagCoords: hostResolveTagCoords });
+      // Re-populate the host's module-scoped maps from the ONE transform's output
+      // (the host's consumers read these maps directly), preserving identity.
+      eventLocationByTag.clear();
+      for (const [tag, location] of locationByTag.entries()) eventLocationByTag.set(tag, location);
       eventSessionById.clear();
-      const features = [];
-      const event = config?.event || {};
-
-      for (const [tag, location] of eventLocationByTag.entries()) {
-        if (location.hidden || !location.coordinates) continue;
-        features.push({
-          type: 'Feature',
-          properties: {
-            feature_kind: 'event_anchor',
-            event_id: event.id || '',
-            location_tag: tag,
-            name: location.label || tag,
-            map_label: location.map_label || location.label || tag,
-            role: location.role || 'event_location',
-            source: location.source || '',
-            confidence: location.confidence || config?.status || 'proposed',
-            caveat: location.caveat || event.caveat || ''
-          },
-          geometry: { type: 'Point', coordinates: location.coordinates }
-        });
-      }
-
-      for (const session of config?.sessions || []) {
-        const tag = normalizeLocationTag(session.location_tag);
-        const location = eventLocationByTag.get(tag);
-        const routeCoords = eventRouteCoordinates(session);
-        const geometry = routeCoords.length >= 2
-          ? { type: 'LineString', coordinates: routeCoords }
-          : location?.coordinates
-            ? { type: 'Point', coordinates: location.coordinates }
-            : null;
-        const props = {
-          feature_kind: 'event_session',
-          event_id: event.id || '',
-          session_id: session.id || '',
-          sort_order: Number(session.sort_order || 0),
-          day: session.date_label || '',
-          day_short: session.day_short || eventDayShort(session.date_label),
-          start_local: session.start_local || '',
-          time_label: session.time_label || '',
-          window: composeEventWindowLabel(session.start_local, session.time_label),
-          name: session.title || '',
-          title: session.title || '',
-          location_tag: tag,
-          location_label: location?.label || `Missing ${tag}`,
-          route_tags: Array.isArray(session.route_tags) ? session.route_tags.map(normalizeLocationTag) : [],
-          route_labels: routeCoords.length >= 2
-            ? session.route_tags.map((routeTag) => eventLocationByTag.get(normalizeLocationTag(routeTag))?.label || normalizeLocationTag(routeTag))
-            : [],
-          poi_role: session.poi_role || location?.role || 'event_session',
-          status: session.status || config?.status || 'proposed',
-          inspired_by: session.inspired_by || [],
-          caveat: session.caveat || location?.caveat || event.caveat || ''
-        };
-        const feature = { type: 'Feature', properties: props, geometry };
-        features.push(feature);
-        if (props.session_id) eventSessionById.set(props.session_id, feature);
-      }
-
-      return {
-        type: 'FeatureCollection',
-        metadata: {
-          schema: config?.schema || 'aop-event-schedule-v1',
-          updated_at: config?.updated_at || '',
-          status: config?.status || 'proposed',
-          event
-        },
-        features
-      };
+      for (const [id, feature] of sessionById.entries()) eventSessionById.set(id, feature);
+      return geojson;
     }
 
     // Re-resolve the schedule against the current tag bindings and push the

@@ -6,6 +6,32 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-10 (cwc — owed v61 bump DISCHARGED + G_E events convergence DONE + COUNCIL FULL-SIX CLEAR; UNCOMMITTED,
+the v60→v61 bump is the only version owed for the whole batch).** Reconciled the handoff against git: the user
+committed the Approach-C batch as `1cbd439 "v61"` — **but the version STRINGS were never bumped** (the commit is
+*named* v61 while `sw.js` VERSION + `index.html #appVersion` still read **v60**). That's the exact stale-PWA-cache
+defect the handoff kept tracking: served data (5 GeoJSON + panel.js) shipped under the unchanged cache key, so
+installed users wouldn't refresh. **Fixed in-tree** (sw.js:35 + index.html appVersion → v61; verified the running
+:8001 server delivers v61 in both, 0 stray v60). This bump is uncommitted = the user's git gate, and it now also
+covers the G_E batch (no second bump). **Then executed G_E (events overlay convergence)** via a fresh agent,
+design-first, orchestrator re-verified by observation, **council full-six clear** (Mason andon'd one dead alias →
+removed → re-clear). One shared resolver `website/js/event_schedule_geojson.js` (both index.html + right_panel.html
+load it; main.js + panel.js delegate; stripped panel resolver + `roleForTag` deleted); `#pavilion` anchor geometry
+baked (resolves on fresh localStorage); umbrella metadata → new additive `core.event_meta` table (bake reads it,
+heredoc demoted to fallback); re-baked `aop_event_schedule.json` adopted → `export --check` = NO REVERT on all 6
+files. Verifier `playwright_verify_event_schedule.py --baked` 14/14 PASS; 7 full-suite fails proven pre-existing.
+DB up (`mvp-db-1`); recovery snapshot `/tmp/aop_db_snapshots/aop_map_pre_gE_events_20260610.sql`; counts events
+13/activities 12/features 159 active. Receipts `brain/output/council/gE_events_convergence_20260610.md`; design
+`brain/output/gE_events_convergence_design_20260610.md`; card `06_going_gold/gold_slice6_backlog.md` G_E + the
+umbrella item marked `[x]`. **OWED — the user's git gate:** ONE `sw.js`/`#appVersion` **v60→v61** bump (already
+done in-tree, uncommitted) covering the whole uncommitted batch = the Approach-C files already in `1cbd439`'s tree
+PLUS the G_E files (`event_schedule_geojson.js`, `index.html`, `right_panel.html`, `main.js`, `panel.js`, `sw.js`,
+`aop_event_schedule.json`, `mvp/init_db.sql`, `seed_event_meta.py`, `export_publish_geojson.sh`,
+`playwright_verify_event_schedule.py`, `brain/`). HEAD still `1cbd439`. The user likely wants to amend `1cbd439`
+or add a follow-up commit so the v61 strings ship. **G_B (demote localStorage → working buffer) is the next slice**
+— the column home (Approach-C) and the events axis (G_E) both landed, so G_B can route reference-feature edits
+through the one DB home. `.claude/.council-cleared` stamped for this diff.
+
 **2026-06-10 (cwc — APPROACH-C SLICE DONE + COUNCIL FULL-SIX CLEAR after 2 andons fixed; UNCOMMITTED, same v60→v61
 bump owed; G_B now unblocked, G_E is the next slice).** Picked up the gold-slice-6 swarm. Environment up
 (`mvp-db-1` 15h; `core.features` 160/159 intact; fresh snapshot `/tmp/aop_db_snapshots/aop_map_pre_approachC_20260610.sql`).

@@ -125,6 +125,36 @@ CREATE TABLE IF NOT EXISTS core.activities (
   updated_at timestamptz DEFAULT now()
 );
 
+-- The umbrella EVENT metadata (going gold slice 6, G_E, 2026-06-10). One row per
+-- umbrella event -- the WHO/WHEN-banner the schedule document wraps its sessions
+-- in. It used to be a hardcoded heredoc in export_publish_geojson.sh
+-- (audit `event-umbrella-metadata-hardcoded-in-bake`); now the bake reads it from
+-- this store of record. `event_id` SOFT-references core.events.event_id (plain
+-- text, NO FK, NO CHECK -- C5/no_limiting_code_mvp). CMFS: `label` is the Tier1
+-- name, `status` the Tier2 maturity, `schema` the served document schema id; the
+-- date-range / source / caveat strings round-trip the served `event{}` block.
+-- attrs holds any future umbrella field with no allowlist. Seeded by
+-- mvp/scripts/seed_event_meta.py; the bake composes the document wrapper from it.
+CREATE TABLE IF NOT EXISTS core.event_meta (
+  id serial PRIMARY KEY,
+  event_id text UNIQUE,
+  schema text,
+  label text,
+  status text,
+  date_range_label text,
+  end_date_label text,
+  source_context text,
+  source_summary text,
+  caveat text,
+  schedule_updated_at text,
+  attrs jsonb,
+  source_id integer REFERENCES source_register.sources(id),
+  archived_at timestamptz,
+  notes text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS raw.gpx_captures (
   id serial PRIMARY KEY,
   source_id integer REFERENCES source_register.sources(id),
@@ -201,7 +231,8 @@ BEGIN
     'source_register.feature_sources',
     'core.features',
     'core.events',
-    'core.activities'
+    'core.activities',
+    'core.event_meta'
   ]
   LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS trg_set_updated_at ON %s', t);

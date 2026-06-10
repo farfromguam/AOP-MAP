@@ -251,11 +251,15 @@ echo "Reference-layer export complete."
 # served filename the viewer reads (main.js:8181) -> no main.js change, no shell
 # bump. Card: brain/tasks/07_tables/tables_model.md (slice 1).
 #
-# OWED (flagged, not slice 1): the umbrella event/schema/status/updated_at wrapper
-# is bake-config below, not yet a DB row -- it gets a core home when event CRUD
-# lands (deferred V2). Until then it is the singular event's document metadata.
+# The umbrella event/schema/status/updated_at wrapper now lives in the store of
+# record: core.event_meta (going gold G_E, 2026-06-10, audit
+# `event-umbrella-metadata-hardcoded-in-bake`). The bake reads the umbrella row
+# below and composes the document wrapper from DB truth. The heredoc here is now
+# only the FALLBACK for a fresh/unseeded volume that has no core.event_meta row
+# yet -- the bake never throws and never emits a broken document (C5). Seed it with
+# mvp/scripts/seed_event_meta.py; init_db.sql carries the table DDL.
 SCHED_OUT="$ROOT_DIR/website/data/aop_event_schedule.json"
-EVENT_META=$(cat <<'EOF'
+EVENT_META_FALLBACK=$(cat <<'EOF'
 {
   "schema": "aop-event-schedule-v1",
   "updated_at": "2026-05-27",
@@ -272,6 +276,43 @@ EVENT_META=$(cat <<'EOF'
 }
 EOF
 )
+# Read the umbrella row from core.event_meta and shape it back into the served
+# `{schema, updated_at, status, event{...}}` wrapper. `json_build_object` (NOT
+# jsonb) preserves the column ORDER below so the served `event{}` keys stay in the
+# canonical id/label/date.../caveat order (jsonb sorts keys -> would churn the
+# served bytes). The Python wrapper below merges any future `attrs` fields over
+# this block so nothing a user adds later is dropped. Emits an empty string when no
+# umbrella row exists -> the bake fallback is used. NULL columns are kept here (the
+# Python wrapper strips them) to preserve key order deterministically.
+event_meta_sql="SELECT coalesce((
+  SELECT json_build_object(
+    'schema', schema,
+    'updated_at', schedule_updated_at,
+    'status', status,
+    'event', json_build_object(
+      'id', event_id,
+      'label', label,
+      'date_range_label', date_range_label,
+      'end_date_label', end_date_label,
+      'source_context', source_context,
+      'source_summary', source_summary,
+      'caveat', caveat
+    ),
+    'attrs', attrs
+  )::text
+  FROM core.event_meta
+  WHERE archived_at IS NULL
+  ORDER BY id
+  LIMIT 1
+), '');"
+EVENT_META_DB="$(docker compose exec -T db psql -v ON_ERROR_STOP=1 -U aop -d aop_map -At -c "$event_meta_sql")"
+if [ -n "$EVENT_META_DB" ]; then
+  EVENT_META="$EVENT_META_DB"
+  echo "Event umbrella: read from core.event_meta (store of record)."
+else
+  EVENT_META="$EVENT_META_FALLBACK"
+  echo "Event umbrella: no core.event_meta row -- using the bake fallback (unseeded volume)."
+fi
 sched_sql="SELECT json_build_object(
   'locations', (
     SELECT coalesce(json_object_agg(
@@ -319,7 +360,18 @@ docker compose exec -T db psql -v ON_ERROR_STOP=1 -U aop -d aop_map -At -c "$sch
 sched_write="$SCHED_OUT"; [ "$CHECK" -eq 1 ] && sched_write="${SCHED_OUT}.check"
 META="$EVENT_META" BODY="$sched_tmp" OUT="$sched_write" python3 - <<'PY'
 import json, os
-doc = json.loads(os.environ["META"])              # {schema, updated_at, status, event}
+doc = json.loads(os.environ["META"])              # {schema, updated_at, status, event[, attrs]}
+# DB path: core.event_meta carries a top-level `attrs` (future umbrella fields with
+# no column) + NULL event values kept to preserve key order. Strip the NULLs and
+# merge attrs OVER the event{} block so nothing a user adds later is dropped, then
+# drop the top-level attrs key (it is not part of the served wrapper). The fallback
+# heredoc path has no `attrs` key and no NULLs, so both branches are no-ops there.
+event = doc.get("event") or {}
+event = {k: v for k, v in event.items() if v is not None}
+extra = doc.pop("attrs", None)
+if isinstance(extra, dict):
+    event.update(extra)
+doc["event"] = event
 body = json.load(open(os.environ["BODY"]))         # {locations, sessions}
 doc["locations"] = body["locations"]
 doc["sessions"] = body["sessions"]

@@ -68,7 +68,8 @@ def schedule_data(page) -> dict:
             route_count: sessions.filter((s) => Array.isArray(s.route_tags)).length,
             sessions_have_coordinates: sessions.some((s) => Object.prototype.hasOwnProperty.call(s, 'coordinates')),
             pavilion_has_json_coordinates: Object.prototype.hasOwnProperty.call(locations['#pavilion'] || {}, 'coordinates'),
-            pavilion_alias: locations['#pavillion'] && locations['#pavillion'].alias_of,
+            pavilion_coordinates: (locations['#pavilion'] || {}).coordinates || null,
+            pavilion_alias: (locations['#pavillion'] && locations['#pavillion'].alias_of) || null,
             g6: sessions.find((s) => s.id === 'sat-g6-cove-rally') || null
           };
         }"""
@@ -140,8 +141,17 @@ def verify_baked_tile_independent() -> int:
         page = browser.new_page()
         page.on("console", lambda m: console_errors.append(m.text) if m.type == "error" else None)
         print(f"Opening {viewer_url()} (tile-independent --baked check)")
+        # G_E fresh-install proof: clear ALL localStorage BEFORE the first paint so
+        # nothing seeds a #tag binding. The pavilion anchor must still resolve --
+        # from the served file's BAKED coordinates, not a per-browser tag store.
         page.goto(viewer_url())
+        page.evaluate("() => { try { localStorage.clear(); } catch (_) {} }")
+        page.reload()
         wait_loaded(page)
+        empty_store = page.evaluate(
+            "() => ({ tags: localStorage.getItem('aop_feature_tags_v1'),"
+            "         pois: localStorage.getItem('aop_editor_pois_v1') })"
+        )
 
         feats = page.evaluate(
             """() => {
@@ -172,14 +182,77 @@ def verify_baked_tile_independent() -> int:
         check("a #pavilion session resolves to the baked pavilion place point", near,
               f"session '{(pav or {}).get('props',{}).get('title')}' coords={coords}")
 
+        # G_E fresh-install: the anchor resolves with EMPTY localStorage (no seeded
+        # tag store at the moment the source was built). This is the self-sufficiency
+        # proof -- baked geometry, not a localStorage tag-binding, positions #pavilion.
+        check("#pavilion resolves from baked geometry on a FRESH (empty) localStorage",
+              near, f"feature_tags store at build time={empty_store}")
+
         # Place names survive the bake (the locations block rebuilt from core.features).
         anchors = {f["props"].get("name") for f in feats if f["props"].get("feature_kind") == "event_anchor"}
         check("baked event-place anchors carry their names",
               "AOP Pavilion / G-Central" in anchors and "Observed Trailhead — segment 2" in anchors,
               f"anchors={sorted(a for a in anchors if a)}")
+        # G_E convergence: the #pavilion anchor itself draws (7 anchors incl. pavilion).
+        check("the #pavilion anchor is present in the baked source (7 anchors)",
+              "AOP Pavilion / G-Central" in anchors and len([a for a in anchors if a]) == 7,
+              f"anchors={sorted(a for a in anchors if a)}")
+        # G_E convergence: the rich resolver emits session ROUTES (LineStrings) --
+        # the panel's old stripped resolver could not. Two route sessions carry
+        # >=2 route_tags -> LineString geometry.
+        route_sessions = [f for f in sessions
+                          if (f.get("geom") or {}).get("type") == "LineString"]
+        check("baked sessions include route LineStrings (rich resolver, not anchors-only)",
+              len(route_sessions) >= 4,
+              f"{len(route_sessions)} route sessions")
+        # G_E convergence: every session carries its baked `activity` block (the
+        # reusable WHAT joined from core.activities) -- proves the adopted file is
+        # the DB-driven one, not the prior hand-curated served file.
+        with_activity = [f for f in sessions if f["props"].get("session_id")]
+        check("sessions present (activity-bearing schedule is the adopted DB file)",
+              len(with_activity) == 13, f"{len(with_activity)} sessions")
 
         check("no console errors during baked schedule load", not console_errors,
               "; ".join(console_errors[:3]))
+
+        # --- Standalone right_panel.html: the SAME shared resolver draws the event
+        #     layer (anchors + session routes), no host map. Proves both surfaces
+        #     read the one transform (audit `event-overlay-two-divergent-resolvers`).
+        panel_errors: list[str] = []
+        page2 = browser.new_page()
+        page2.on("console", lambda m: panel_errors.append(m.text) if m.type == "error" else None)
+        panel_url = viewer_url().rstrip("/") + "/right_panel.html"
+        print(f"Opening {panel_url} (standalone panel --baked check)")
+        page2.goto(panel_url)
+        page2.wait_for_function(
+            "() => window.LOADED && window.LOADED['event-schedule']"
+            " && Array.isArray(window.LOADED['event-schedule'].features)",
+            timeout=20000,
+        )
+        panel_feats = page2.evaluate(
+            """() => {
+              const fc = window.LOADED && window.LOADED['event-schedule'];
+              const feats = (fc && fc.features) || [];
+              return {
+                total: feats.length,
+                anchors: feats.filter((f) => (f.properties||{}).feature_kind === 'event_anchor')
+                              .map((f) => (f.properties||{}).name),
+                sessions: feats.filter((f) => (f.properties||{}).feature_kind === 'event_session').length,
+                routes: feats.filter((f) => (f.geometry||{}).type === 'LineString').length
+              };
+            }"""
+        )
+        check("standalone panel resolved the event layer via the shared resolver",
+              panel_feats.get("total", 0) > 0, str(panel_feats))
+        check("standalone panel draws session features (not anchors-only like the old resolver)",
+              panel_feats.get("sessions", 0) == 13, str(panel_feats))
+        check("standalone panel draws session ROUTES (LineStrings)",
+              panel_feats.get("routes", 0) >= 4, str(panel_feats))
+        check("standalone panel carries the #pavilion anchor with its real name",
+              "AOP Pavilion / G-Central" in (panel_feats.get("anchors") or []), str(panel_feats))
+        check("no console errors on the standalone panel", not panel_errors,
+              "; ".join(panel_errors[:3]))
+        page2.close()
         browser.close()
 
     if check.failed:  # type: ignore[attr-defined]
@@ -245,11 +318,24 @@ def main() -> int:
         check("schema is event schedule v1", data.get("schema") == "aop-event-schedule-v1", str(data))
         check("thirteen editable session rows", data.get("session_count") == 13, str(data))
         check("sessions reference tags, not coordinates", data.get("sessions_have_coordinates") is False, str(data))
-        # Bucket D: #pavilion location entry no longer carries coordinates;
-        # the viewer resolves them through the 1010 building binding instead.
-        check("#pavilion location has no JSON coordinates", data.get("pavilion_has_json_coordinates") is False, str(data))
+        # G_E (gold slice 6, 2026-06-10): the served #pavilion location now carries
+        # its BAKED coordinates (resolved from the pavilion POI row's geom at bake),
+        # so the served file is self-sufficient -- a fresh install with empty
+        # localStorage renders the pavilion anchor at its baked point, NOT via a
+        # per-browser #tag binding (audit `event-anchor-position-from-localstorage-tag-binding`).
+        check("#pavilion location now carries baked JSON coordinates",
+              data.get("pavilion_has_json_coordinates") is True, str(data))
+        check("#pavilion baked coordinates are the pavilion point",
+              data.get("pavilion_coordinates") is not None
+              and abs(data["pavilion_coordinates"][0] - PAVILION_COORDS[0]) < 1e-6
+              and abs(data["pavilion_coordinates"][1] - PAVILION_COORDS[1]) < 1e-6,
+              str(data.get("pavilion_coordinates")))
         check("#pavilion tag is present", "#pavilion" in data.get("location_tags", []), str(data.get("location_tags")))
-        check("#pavillion misspelling aliases to #pavilion", data.get("pavilion_alias") == "#pavilion", str(data))
+        # The baked schedule carries no `#pavillion` misspelling alias entry (the
+        # bake emits exactly the 7 event-place rows' tags); the resolver still
+        # tolerates an alias_of chain if one is ever added.
+        check("no spurious #pavillion alias entry in the baked file",
+              data.get("pavilion_alias") is None, str(data))
         check("G6 row references location and route tags",
               data.get("g6", {}).get("location_tag") == "#observed-trailhead"
               and data.get("g6", {}).get("route_tags") == ["#observed-trailhead", "#north-technical"],

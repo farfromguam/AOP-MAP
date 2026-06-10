@@ -320,30 +320,19 @@
     'Landmark', '#5f9183', 'Hazard', '#cf9a4a', 'Other', '#6a6256', '#6a6256'];
   const TILE_BOUNDS = [-85.782935283, 35.067164188, -85.717154097, 35.117928496];
 
-  // Resolve the event schedule JSON (tag dictionary) into anchor points for the
-  // tags that ship coordinates. The live app additionally resolves coordinate-
-  // less tags (#pavilion) from per-feature #tag bindings; that resolver is not
-  // brought yet, so coordinate-less anchors simply don't draw here.
-  function roleForTag(tag) {
-    const t = tag.toLowerCase();
-    if (t.includes('pavilion') || t.includes('registration')) return 'pavilion';
-    if (t.includes('proving')) return 'event_proving_ground';
-    if (t.includes('checkpoint')) return 'event_checkpoint';
-    if (t.includes('photo')) return 'event_photo_waypoint';
-    return 'pavilion';
-  }
+  // Resolve the event schedule JSON document into the canonical event GeoJSON
+  // (anchor points + session routes/points). Going gold G_E (2026-06-10): the
+  // panel's prior STRIPPED reimplementation (anchors only, tag-literal names,
+  // sessions ignored, coordinate-less #pavilion dropped) is GONE -- both surfaces
+  // now read the ONE shared resolver `js/event_schedule_geojson.js`
+  // (window.AOPEventSchedule), so the standalone map draws the SAME anchors +
+  // session routes the embedded viewer does, with the same names. Coordinate-less
+  // anchors no longer "simply don't draw": #pavilion now ships baked coordinates
+  // in the served file (audit `event-anchor-position-from-localstorage-tag-binding`),
+  // so the panel needs no working-buffer hook. Collapses the two divergent
+  // resolvers (audit `event-overlay-two-divergent-resolvers`, C1/C6).
   function resolveEventSchedule(json) {
-    const feats = [];
-    const locs = (json && json.locations) || {};
-    for (const tag of Object.keys(locs)) {
-      const c = locs[tag] && locs[tag].coordinates;
-      if (!Array.isArray(c)) continue;
-      feats.push({
-        type: 'Feature', geometry: { type: 'Point', coordinates: c },
-        properties: { feature_kind: 'event_anchor', role: roleForTag(tag), map_label: tag.replace(/^#/, ''), name: tag.replace(/^#/, '') }
-      });
-    }
-    return { type: 'FeatureCollection', features: feats };
+    return window.AOPEventSchedule.eventScheduleToGeojson(json).geojson;
   }
 
   // Map sources + styled layers the prototype shows, ported from main.js. Each

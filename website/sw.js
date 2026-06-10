@@ -32,7 +32,7 @@
 //   3. reconcile DATA_ASSETS below with `ls website/data/`
 // Shell HTML + copy JSON self-heal (stale-while-revalidate), so a missed bump is
 // less dangerous than before — but bulky GeoJSON only refreshes on a bump.
-const VERSION = 'v60'; // keep in sync with #appVersion in index.html
+const VERSION = 'v61'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
@@ -52,6 +52,9 @@ const SHELL_ASSETS = [
   // stale-while-revalidate (see fetch handler) so a missed VERSION bump still
   // self-heals like the HTML shell; precached here for offline-first load.
   './css/app.css',
+  // The ONE shared event-schedule resolver (going gold G_E): both main.js and
+  // panel.js read window.AOPEventSchedule, so it precaches with the app shell.
+  './js/event_schedule_geojson.js',
   './js/main.js',
   // Right-panel swap (Stage 1): the embedded one-model panel + its scoped styles.
   './css/panel-embed.css',
