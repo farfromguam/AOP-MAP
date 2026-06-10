@@ -78,6 +78,16 @@ LAYERKEY_TO_CORE_LAYER = {
     "trails": "trails",
 }
 
+# Approach C (gold slice 6, 2026-06-10) -- UNIFY THE TWO EDITOR SINKS
+# (closes `two-editor-sinks-opposite-homes`). This reference sink now writes the
+# CMFS SPINE to core.features COLUMNS, exactly like apply_panel_overrides_to_core's
+# POI_COL -- the bake's reference arm reads the spine from COLUMNS (the one home,
+# C6), so a name/description/kind edit that arrives in a positioned-feature
+# `entry.properties` must land in the column to survive the bake. Non-spine extras
+# (and the `highlight` curation flag) ride in attrs. Mirrors apply_panel_overrides
+# POI_COL = {name,description,kind} so both sinks share one column-as-home rule.
+REF_COL = {"name": "name", "description": "description", "kind": "kind"}
+
 
 def read_positioned_features(arg: str) -> dict:
     """Read the positioned_features map from a path or '-' (stdin). Permissive
@@ -93,16 +103,44 @@ def read_positioned_features(arg: str) -> dict:
     return raw  # already a bare positioned_features map
 
 
-def highlight_set_sql(value: bool) -> str:
-    """SET clause for the resolved row. Mirrors applyPositionedFeatures (main.js
-    :3021): write the flag when the store has an opinion (true OR false) so an
-    un-star survives. Shallow jsonb `||` merge -- only `highlight` is touched,
-    sibling attrs are preserved."""
-    literal = "true" if value else "false"
-    return (
-        "SET attrs = coalesce(f.attrs, '{}'::jsonb) || "
-        f"'{{\"highlight\":{literal}}}'::jsonb"
+def _json_scalar(value) -> str:
+    """A jsonb scalar literal for an attrs `||` merge (only str/num/bool/None used
+    by the editor); falls back to a JSON-encoded string. Never throws (C5)."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return str(value)
+    return sql_str(json.dumps(value) if not isinstance(value, str) else value) + "::text"
+
+
+def set_clause(highlight: bool, props: dict) -> str:
+    """The unified SET for a resolved reference row (Approach C). CMFS spine fields
+    in `props` -> COLUMNS (the one home); the `highlight` curation flag + any
+    non-spine extra -> attrs (shallow jsonb `||` merge, siblings preserved). An
+    un-star survives because `highlight` is written whenever the store has an
+    opinion. Permissive (C5): an unknown key folds into attrs, never dropped."""
+    assigns: list[str] = []
+
+    # 1) CMFS spine -> columns (mirrors apply_panel_overrides POI_COL).
+    for editor_key, col in REF_COL.items():
+        if editor_key in props:
+            assigns.append(f"{col} = {sql_str(props[editor_key])}")
+
+    # 2) attrs merge: highlight (always, true OR false) + non-spine extras + the
+    #    spine values too (so attrs stays in sync with the column for the
+    #    attrs-readers that still exist -- the bake overlays the column on top, so
+    #    the column wins regardless; keeping attrs in sync avoids drift).
+    merge: dict[str, object] = {"highlight": highlight is True}
+    for k, v in props.items():
+        # id/view-state are not feature data; skip (split_key/VIEW handled upstream)
+        if k in ("id", "_id", "_src", "__locked", "__group", "locked"):
+            continue
+        merge[k] = v
+    pairs = ", ".join(f"{sql_str(k)}, {_json_scalar(v)}" for k, v in merge.items())
+    assigns.append(
+        f"attrs = coalesce(f.attrs, '{{}}'::jsonb) || jsonb_build_object({pairs})"
     )
+    return "SET " + ", ".join(assigns)
 
 
 def resolve_where(layerkey: str, fid: str) -> str | None:
@@ -136,16 +174,19 @@ def resolve_where(layerkey: str, fid: str) -> str | None:
     return None
 
 
-def entry_block(layerkey: str, fid: str, editor_key: str, highlight: bool) -> str | None:
-    """One starred/un-starred entry -> resolve in the WHERE and UPDATE attrs.highlight,
-    recording every matched core row in `_applied` so a zero-match is visible."""
+def entry_block(layerkey: str, fid: str, editor_key: str, highlight: bool,
+                props: dict | None = None) -> str | None:
+    """One starred/un-starred entry -> resolve in the WHERE and UPDATE the row:
+    CMFS spine in the entry's `properties` -> COLUMNS, `highlight` + extras ->
+    attrs (Approach C unification). Records every matched core row in `_applied`
+    so a zero-match is visible."""
     where = resolve_where(layerkey, fid)
     if where is None:
         return None
     return (
         "WITH up AS (\n"
         f"  UPDATE core.features f\n"
-        f"  {highlight_set_sql(highlight)}\n"
+        f"  {set_clause(highlight, props or {})}\n"
         f"  WHERE {where}\n"
         f"  RETURNING f.source_key\n"
         ")\n"
@@ -155,8 +196,11 @@ def entry_block(layerkey: str, fid: str, editor_key: str, highlight: bool) -> st
 
 def build_sql(pf: dict) -> tuple[str, list[str], list[str]]:
     """Returns (sql, in_scope_keys, unresolvable_keys). in_scope_keys = editor keys
-    for the four reference layers that carry a `highlight` opinion; unresolvable =
-    those whose id shape resolved to no predicate (reported, never thrown)."""
+    for the four reference layers that carry a `highlight` opinion OR a CMFS
+    `properties` edit (Approach C: this sink now also lands name/description/kind
+    on the COLUMN home); unresolvable = those whose id shape resolved to no
+    predicate (reported, never thrown). geometry/icon_size-only overrides stay with
+    the legacy file-baker and are skipped here."""
     parts: list[str] = ["BEGIN;"]
     parts.append("CREATE TEMP TABLE _applied(layerkey text, editor_key text, source_key text);")
 
@@ -166,10 +210,16 @@ def build_sql(pf: dict) -> tuple[str, list[str], list[str]]:
         layerkey, fid = split_key(key)
         if layerkey not in LAYERKEY_TO_CORE_LAYER:
             continue  # not a reference layer (editorPois/brandLogos/parcels/...) -- skip
-        if not isinstance(entry, dict) or "highlight" not in entry:
-            continue  # no star opinion (e.g. a geometry-only override) -- not ours
+        if not isinstance(entry, dict):
+            continue
+        props = entry.get("properties") if isinstance(entry.get("properties"), dict) else {}
+        has_highlight = "highlight" in entry
+        # a CMFS spine edit (name/description/kind) is ours too, even with no star.
+        has_spine_edit = any(k in props for k in REF_COL)
+        if not has_highlight and not has_spine_edit:
+            continue  # geometry/icon_size-only or empty -- not this sink's axis
         highlight = entry.get("highlight") is True
-        block = entry_block(layerkey, fid, key, highlight)
+        block = entry_block(layerkey, fid, key, highlight, props)
         if block is None:
             unresolvable.append(key)
             continue

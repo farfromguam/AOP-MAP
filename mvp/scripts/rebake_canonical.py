@@ -70,9 +70,6 @@ def n_trail(p): return first(p, NAME_KEYS) or (f"Trail {p['trail_number']}" if p
 def n_marker(p): return first(p, NAME_KEYS) or (f"Marker · Trail {p['trail_number']}" if p.get("trail_number") else "Trail marker")
 def n_cell(p): return f"Cell {p['cell_code']}" if p.get("cell_code") else "AOI cell"
 def n_osm(p): return first(p, NAME_KEYS)  # often unnamed; left blank rather than faked
-# buildings: the facility NAME ("Pavilion") is the display name, not the street
-# address that fills `name`/`building_label`. Prefer it; address becomes a facet.
-def n_building(p): return p.get("facility_name") or first(p, NAME_KEYS)
 
 
 def k_osm(p):
@@ -82,15 +79,12 @@ def k_osm(p):
     return "osm_feature"
 
 
-# --- Sidecar join inputs (authored catalogs, joined into the feature here) ----
-# These two files are the curated text the viewer used to join at RENDER time —
-# the "shadow attribute" the Sprint-09 audit named (a trail shows "Launchpad" on
-# one surface and "1" on another because the name was a runtime catalog join, not
-# a field). We fold them into the served features in the BAKE so the join lives in
-# one place and every surface reads one field. Read by fixed path from
-# website/data/ and never written here, so the bake stays idempotent while always
-# picking up the latest authored catalog — unlike the pristine geometry archive in
-# raw/, an actively-authored catalog must not go stale behind a one-time copy.
+# Generic JSON loader for the _schema.json manifest carry-forward and the
+# publish/live reads further down. The trail-catalog / poi-index JOIN that used to
+# run here was folded into core.features by the fold_*_into_core scripts (Approach C,
+# 2026-06-10): the reference layers (buildings / cemeteries / visitor / trails) are
+# now DB-baked by export_publish_geojson.sh, so this script no longer joins the
+# catalogs. SIDECARS below stays as the origin-provenance crosswalk.
 def _load_json(fname):
     path = os.path.join(DATA, fname)
     try:
@@ -100,13 +94,6 @@ def _load_json(fname):
         return {}
 
 
-# trail catalog: number -> {name, description, difficulty, ...}
-TRAIL_CATALOG = {t["number"]: t
-                 for t in _load_json("aop_trail_catalog.json").get("trails", [])
-                 if t.get("number") is not None}
-# poi index: [{match:{source, ...identifying}, blurb, revisit_note}, ...]
-POI_INDEX = _load_json("aop_poi_index.json").get("entries", [])
-
 # Recorded in _schema.json so the crosswalk shows where the joined values come from.
 SIDECARS = {
     "aop_trail_catalog.json": "trail name + description + difficulty, joined by trail_number == number",
@@ -114,58 +101,11 @@ SIDECARS = {
 }
 
 
-def poi_match(poi_source, props):
-    """The poi-index entry whose match{} (minus its `source`) all equal these props."""
-    for e in POI_INDEX:
-        m = e.get("match", {})
-        if m.get("source") != poi_source:
-            continue
-        if all(str(props.get(k)) == str(v) for k, v in m.items() if k != "source"):
-            return e
-    return None
-
-
-def join_name_desc(cfg, props, name, desc):
-    """Fold the render-time sidecar joins into the baked feature. Returns
-    (name, desc, poi_entry). A joined value beats the stand-in (a real trail name
-    beats the number, a curated blurb beats a blank/composed description); when the
-    sidecar has nothing, the existing crosswalk value is kept. Original physical
-    keys are preserved underneath by canonical_props (additive — Mason)."""
-    poi = None
-    if cfg.get("trail_join"):
-        cat = TRAIL_CATALOG.get(props.get("trail_number"))
-        if cat:
-            if cat.get("name"):
-                name = cat["name"]
-            if cat.get("description"):
-                desc = cat["description"]
-    ps = cfg.get("poi_source")
-    if ps:
-        poi = poi_match(ps, props)
-        if poi and poi.get("blurb"):
-            desc = poi["blurb"]
-    return name, desc, poi
-
-
-def facets(cfg, props):
+def facets(props):
     """Tier-3 type-specific facets — additive, emitted only where a value exists.
     Reads declarative property keys (never a layerKey), so a facet is a NEW derived
     view and the original physical key is preserved underneath (Mason / CMFS)."""
     f = {}
-    if cfg.get("trail_join"):
-        cat = TRAIL_CATALOG.get(props.get("trail_number"))
-        diff = props.get("difficulty") or (cat.get("difficulty") if cat else None)
-        if diff:
-            f["difficulty"] = diff
-        # Fold the catalog's supplementary trail detail so the popup reads the
-        # feature, not a runtime join (the join is deleted from the viewer in A2).
-        if cat:
-            if cat.get("length_mi") is not None:
-                f["length_mi"] = cat["length_mi"]
-            if cat.get("tr") is not None:
-                f["onx_tr"] = cat["tr"]
-            if cat.get("connects"):
-                f["connects"] = cat["connects"]
     if props.get("category"):
         f["category"] = props["category"]          # POIs: proper-noun category as a facet
     if props.get("facility_role"):
@@ -188,48 +128,22 @@ CONFIG = {
     # raw/ would silently revert the DB-baked content — the "two writers, one file"
     # shadow-attribute finding. rebake_canonical must not co-own a DB-baked file.
     # (Collapsing the publish bake to one reproducible DB writer is gold slice 6.)
+    # ── EVICTED 2026-06-10 (Approach C, gold slice 6): the four DB-baked REFERENCE
+    # files — aop_buildings / aop_cemeteries / aop_trail_network /
+    # aop_visitor_context_callouts — are NO LONGER re-baked here. They are now the
+    # sole property of the DB writer (mvp/scripts/export_publish_geojson.sh), which
+    # serves the CMFS spine from core.features COLUMNS overlaid on attrs. Co-owning
+    # them here was the `two-writers-same-five-files-rebake-vs-export` finding: a
+    # rebake_canonical run from raw/ would silently revert the DB/gold state
+    # (canonical names "Pavilion"/"Launchpad", the column-as-home spine). One writer
+    # per served file (C6) — same reason publish.geojson was never in this CONFIG.
+    # Their crosswalk/sidecar logic (n_building, trail_join, the poi-index blurb
+    # join) has been folded into core.features by the fold_*_into_core scripts, so
+    # the DB bake reproduces what this CONFIG used to. The export bake's loss-free
+    # adoption is recorded in brain/output/approachC_field_inventory_20260610.md.
     "aop_9_patch.geojson": dict(kind="acquisition_aoi_cell", name=n_cell,
         prov=dict(source="AOP data-acquisition planning grid", confidence="planning",
                   permission="n/a — planning overlay", status="planning")),
-    # poi_source: join the poi-index blurb into `description` by the index's
-    # match{} fields. status="raw context": the FEMA footprint's own status key
-    # holds the facility ROLE ("facility"/"presence_only"), not a publish state —
-    # the role is surfaced as a facet (facility_role) instead (shadow-attribute
-    # finding building-status-holds-facility-role); the raw key is preserved.
-    "aop_buildings.geojson": dict(kind="building", name=n_building, poi_source="buildings",
-        status="raw context",
-        prov=dict(source="FEMA USA Structures (ORNL)", confidence="observed (footprint)",
-                  permission="public domain (FEMA)", status="raw context")),
-    "aop_cemeteries.geojson": dict(kind="cemetery", name=None, desc=["note"],
-        poi_source="cemeteries",
-        prov=dict(source="TN Comptroller — Marion County parcels",
-                  confidence="observed (county parcel)",
-                  permission="parcel: public; burial roster: USGenWeb non-commercial",
-                  status="raw context")),
-    # name=None on trail_network/roads/water: `name` is a render key (label
-    # layers filter/draw from it). Leaving blanks blank keeps the map identical;
-    # auto-filling would spawn labels on unnamed features. trail_join folds the
-    # curated trail catalog (name/description/difficulty) in by trail_number, so a
-    # catalogued trail bakes "Launchpad" in place of the "1" stand-in — the label
-    # count is unchanged (those trails already carried the number as their name).
-    "aop_trail_network.geojson": dict(kind="trail", name=None, trail_join=True,
-        prov=dict(source="SFWDA paper map (traced + merged)",
-                  confidence="merged truth (traced)",
-                  permission="SFWDA paper map — permission TBD", status="raw context")),
-    # Mixed-kind file: callout polygons (normalized to kind=visitor_callout)
-    # plus the AOP + Rock Warblers brand-logo points (kind=brand_logo) merged in
-    # here. Discriminate on logo_id presence — brand logos carry it, callouts do
-    # not — so callout polygons still normalize their raw kind to visitor_callout.
-    # The brand features are stored canonically (carrying their own source/
-    # confidence/permission/status), so the callout `prov` defaults below only
-    # ever fill the callout polygons — the logos keep "brand owner"/"decorative".
-    "aop_visitor_context_callouts.geojson": dict(
-        kind=lambda p: "brand_logo" if p.get("logo_id") else "visitor_callout",
-        name=None, poi_source="visitor_context",
-        desc=lambda p: compose(p, ["direction", "services", "examples"]),
-        prov=dict(source="AOP pages + Marion County tourism refs",
-                  confidence="compiled", permission="context annotation",
-                  status="context")),
     # kind is the controlled CLASS of a drawn point of interest ("poi"), NOT the
     # proper-noun category ("Pavilion") — the seed-poi-kind-is-propernoun finding
     # (Sprint-09 A4). The category rides as a Tier-3 facet (facets() reads it).
@@ -337,7 +251,6 @@ def canonical_props(cfg, props, stem="feature", idx=0):
         out["id"] = f"{stem}-{idx}"          # never blank — used as an editor key
     name = resolve_name(cfg, props)
     desc = resolve_desc(cfg, props)
-    name, desc, poi = join_name_desc(cfg, props, name, desc)
     out["kind"] = resolve_kind(cfg, props)
     if machine:
         # Machine/coverage layers stay lean (id + kind; provenance is layer-level),
@@ -364,9 +277,7 @@ def canonical_props(cfg, props, stem="feature", idx=0):
         # finding (A4). Baked here it is read directly off the feature. Named layers
         # only: machine/coverage layers stay lean (no per-feature stamping bloat).
         out["source_file"] = f"{stem}.geojson"
-    fc = facets(cfg, props)
-    if poi and poi.get("revisit_note"):
-        fc["revisit_note"] = poi["revisit_note"]
+    fc = facets(props)
     # canonical first, in order; then the Tier-3 facets block; then preserve every
     # original physical key not already set (additive — nothing dropped/overwritten).
     ordered = {k: out[k] for k in CANON_ORDER if k in out}

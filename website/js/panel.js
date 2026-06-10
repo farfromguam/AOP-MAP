@@ -638,7 +638,12 @@
             mapLayers: ['publish-boundary-fill', 'publish-boundaries'],
             items: refItems('publish-data', {
               filter: (f) => (f.properties || {}).layer === 'park_boundaries',
-              key: (p) => p.name || 'boundary', label: (p) => p.name || 'Park boundary',
+              // F4 (gold slice 6, 2026-06-09): key published features by the served
+              // `id` (now the stable DB `source_key`, not the volatile serial PK),
+              // so the panel selects/dedups + bakes (`<source>:<id>` ->
+              // `ON CONFLICT (source_key)`) by the SAME canonical identity the DB
+              // upsert resolves on. `name` falls back only when id is absent (R13).
+              key: (p) => p.id || p.name || 'boundary', label: (p) => p.name || 'Park boundary',
               detail: (p) => [p.status, p.permission].filter(Boolean).join(' · ')
             })
           },
@@ -677,7 +682,8 @@
             mapLayers: ['publish-trailheads'],
             items: refItems('publish-data', {
               filter: (f) => (f.properties || {}).layer === 'trailheads',
-              key: (p) => p.name || 'trailhead', label: (p) => p.name || 'Trailhead',
+              // F4: key by the served `id` (= DB source_key); see boundaries above.
+              key: (p) => p.id || p.name || 'trailhead', label: (p) => p.name || 'Trailhead',
               detail: (p) => [p.status, p.permission].filter(Boolean).join(' · ')
             })
           },
@@ -772,7 +778,8 @@
             mapLayers: ['publish-trails'],
             items: refItems('publish-data', {
               filter: (f) => (f.properties || {}).layer === 'trail_centerlines',
-              key: (p) => p.name, label: (p) => p.name || 'Trail',
+              // F4: key by the served `id` (= DB source_key); see boundaries above.
+              key: (p) => p.id || p.name, label: (p) => p.name || 'Trail',
               detail: (p) => [p.difficulty, p.source].filter(Boolean).join(' · ')
             })
           }

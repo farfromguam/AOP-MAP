@@ -1,0 +1,134 @@
+# Gold slice 6 — the big list (Path B execution backlog)
+
+> **Opened 2026-06-09 by the user:** *"put all the things in a big list in the sprint. work through them
+> independently and relentlessly. spawn off agents so that they can use their context and not yours. when
+> done have the council review."* The hold on Path B / gold slice 6 is **lifted** — execute.
+>
+> This is the consolidated, sliced execution list for the **20 held Path-B findings** (= gold slice 6 doors
+> F1/F4/F5/F6) + the audit's owed **C4 verification debt** + the re-homed **events** axis. It does not
+> re-derive the findings — it sequences them into `- [ ]` work items. Each item cites its audit `id`
+> (grep `tasks/09_editor_maturity/shadow_attributes_audit.md` for the verbatim catalog entry: file:line,
+> evidence, target). Source of truth for scope: that audit + `gold_migration.md` slice 6 + the
+> data-model state report `../../output/data_model_state_20260609.md`.
+
+#aop #06_going_gold #slice6 #pathB #shadow_attributes #db_first #backlog #swarm
+
+-----
+
+## Execution contract (every item inherits — non-negotiable)
+
+- **Spawned-agent execution.** Each item (or tight group) is done by a **fresh agent with its own context**,
+  not the orchestrator's. The agent reads the brain, does the work, **verifies by observation**, returns a
+  concise structured result.
+- **Additive only (C5/Mason).** Add canonical fields / DB rows; never reject, drop, throw, validate, or
+  coerce-to-blank. Controlled vocabularies are display maps with a safe fallback (map known, pass unknown
+  through as its own label). **Deletes archive (`archived_at`), never hard-delete.**
+- **One home, one writer (C6).** Re-home into the ONE crosswalk + ONE renderer + ONE schema + ONE bake
+  writer per served file. No second loader/engine/registry.
+- **Verify by observation (C4, tile-independent).** Each item closes only on a real observed verifier
+  (Playwright live-DOM on `playwright_base.py`, or a browserless baked-file assertion) — never a
+  re-derivation. Attach the verifier output.
+- **The git gate is the user's.** The loop never commits, never bumps `sw.js`/`#appVersion` — it **reports**
+  the owed bump. A shell-asset or served-data change owes ONE bump covering the batch, at the user's commit.
+- **Council reviews when the batch is done** (full six — publish-zone data + a migration).
+
+## Sequencing + dependency map (read before pulling)
+
+```
+G0  Verification debt (C4)         NO DB    do FIRST (free; discharges the audit's owed gap)
+G_A Make the bake a pure function  DB       do first among DB doors (kills the silent-revert danger; unblocks F5)
+G_B Demote localStorage → buffer   DB       after G_A (needs the DB doors to exist)
+G_E Events overlay convergence     file     parallel-safe with G_A (separate axis; its own resolver/bake)
+G_C Collapse identity forks (F6)   DB       LAST — "highest risk, do last" (marker-as-record)
+G_D Fresh-volume parity (F5)       DB ⚠     DESTRUCTIVE RISK (153 live-only rows) — after G_A/G_B, with care
+G_F Deferred-low                   —        named, not dropped; revisit only on a real bug
+```
+
+**ENVIRONMENT GATE (2026-06-09):** the PostGIS DB is **down (docker daemon not running)** and the live
+`core.features` carries **~153 rows that exist only in the live volume, not the seed** (F5). Every `DB` item
+is blocked until Docker is up AND the volume's row state is confirmed intact (read-only) — and **G_D's
+fresh-volume rebuild must not run until the 153-row reconstruction path is settled** (re-import vs accept
+loss = the user's call, the one irreversible fork). G0 + G_E need no DB and run now.
+
+-----
+
+## G0 — Verification debt (C4) · NO DB · do first · **DONE 2026-06-09**
+The audit was entirely static. Discharge the owed live observation (audit "Coverage gaps" #1).
+**All three observed live** (screenshots `brain/output/g0_obs{1,2,3}_*.png`); discharges the audit's C4 gap.
+- [x] Four trail-name surfaces AGREE post-A2 — map label / search / panel row / Name input all == "Launchpad" (`g0_obs1`).
+- [x] **Two-browser divergence CONFIRMED** — ctx A (localStorage edit) renders "DIVERGENCE-TEST-EDIT" for Front Office; ctx B (fresh) renders "Front Office"; A≠B, same feature/URL/served file (`g0_obs2`). The symptom G_B fixes, now observed.
+- [x] **Brand-logo star orphaned CONFIRMED** — star → unread `aop_panel_overrides_v1`; a host-bridged star → `aop_positioned_features_v1` (`g0_obs3`). *(Honest gap: a starred building re-surfacing in the POI tab was NOT positively observed — not claimed.)*
+
+## G_A — Make the bake a pure function (Root 2) · DB · first DB door
+The served truth and the DB truth must converge so a re-bake can't silently revert gold state.
+- [x] **Fold the sidecars into `core.features`** — migrate `aop_trail_catalog.json` (name/difficulty/description) + `aop_poi_index.json` (blurb→description) rows into the DB so a bake from the store of record emits "Launchpad", not "1" (`trail-human-name-not-in-db-bake-can-only-emit-number`). · Tier1 name + Tier3 difficulty/description. — **DONE 2026-06-09:** `mvp/scripts/fold_sidecars_into_core_features.py` (additive, idempotent, writes both spine columns + `attrs` canonical block, originals under `attrs.original.*`). Verified live: trail 1='Launchpad'/easy, 2='Convergence', 6='Descension'; 40/96 NOT auto-named; count 160 intact; blurbs on buildings/cemeteries/visitor. Independently re-checked by the orchestrator. Served files untouched (→ F4).
+- [x] **PREREQUISITE (discovered 2026-06-09): catch the DB up to the served files.** — **DONE 2026-06-09:** `mvp/scripts/fold_served_enrichment_into_core.py` folded `facets`/`source_file`/`_original` into `core.features.attrs`, matched by reconstructed `source_key` (buildings:build_id, cemeteries:parcel_id:geom_role, visitor:id, trails:id) — **all 137 reference rows matched** (covers all 120 trails, vs slice-1's 87). Additive (existing DB values win; facets merged at subkey level so the DB's `revisit_note` survived), idempotent (md5 identical), count 160. Independently re-checked: coverage now buildings 5/5, cemeteries 8/8, trails 116 facets/120 srcfile, visitor 4/4 srcfile (Pavilion `facets.address`+`source_file` correct). No served/viewer/bake change.
+- [ ] **One writer per served file** — finish evicting `rebake_canonical.py` from the 4 DB-baked reference files (A1 already did `publish.geojson`); each served file has exactly one bake writer (`two-writers-same-five-files-rebake-vs-export`). · process/C6.
+  - Attempt 1 (stalled) + Attempt 2 (Agent Y, completed): both correctly **HELD all 4** — DB-bake still lossy. Bake verified a **pure function** (byte-reproducible md5 ×2) + viewer healthy; only its DB INPUT isn't loss-free. The enrichment fold added facets/source_file/_original but did NOT promote the canonical **`name`/`status`** (buildings: DB attrs `name`=address, `status`=FEMA role; served `name`="Pavilion", `status`="raw context" — from `rebake_canonical`'s `n_building`/constant) nor resolve **`difficulty`** on 2 trails (DB "moderate" vs served "easy" on sfwda-114/sfwda-98 — a data conflict to flag). Plus the fold's stash is `original` not the canonical `_original`. DB untouched, no eviction (would leave files writerless), no adoption (would regress canonical names). New verifier `playwright_verify_shadow_refbake_repro.py`.
+  - Attempt 3 (complete-reconciliation fold) **DID fix the DB** (`fold_served_canonical_into_core.py`: `attrs := attrs || served_props` → buildings attrs `name`="Pavilion"/"Front Office"/"Farmhouse", `status`="raw context", stray `original` dropped, 2-trail difficulty synced to served "easy" — all verified in the DB; KEPT, additive, advances gold). **But its DB-bake/adopt was LOSSY and the agent stalled mid-eviction**, leaving a bad tree (publish.geojson reverted to HEAD; trail_network adopted with NUMERIC names — the DB→reference bake **cannot reproduce trail human-names** "Launchpad", they're render-sensitive/special-cased). **RECOVERED:** publish.geojson re-baked to F4's source_key version (F4 verifier re-run PASS), 4 reference files reverted to HEAD (Launchpad intact). No eviction done (rebake stays the trail-name writer).
+  - **✅ FORK DECIDED by the user 2026-06-10 — APPROACH C.** This item + the "Collapse columns-vs-attrs" item below are now ONE slice. **Do it as its own carefully-verified slice BEFORE G_B** (G_B routes reference-feature edits through the one home, so the home must exist first). G_E (events) may run as a low-risk parallel win; it does not depend on this.
+    - **The home = COLUMNS.** The CMFS spine lives in `core.features` **columns** (id · name · description · kind + provenance: source · confidence · permission · status · last_checked) — typed, queryable, conformance-checkable. `attrs` holds ONLY render/domain extras (color, geom_role, occupancy_class, difficulty[facet], class, idx, water_kind, road_class, facets, source_file, _original, …).
+    - **ONE shared bake helper.** Both arms of `export_publish_geojson.sh` build `properties = {CMFS columns} ⊕ {curated attrs subset}` via the SAME function — replacing today's split (reference arm serves `attrs` verbatim; publish arm reads `name` column + `attrs->>'difficulty'`). Both arms then read the one home identically.
+    - **Unify the two editor sinks (closes `two-editor-sinks-opposite-homes`).** `apply_panel_overrides_to_core.py` (POI→columns) and `apply_positioned_features_to_core.py` (reference→attrs) BOTH write CMFS fields to **columns**, extras to `attrs`.
+    - **Field-inventory FIRST (this is what stalled the 3 prior agents).** Enumerate every key in the 4 served reference files' `properties`, classify each spine-column vs attrs-extra, so the merge is exhaustive and drops NO render key. An incomplete merge = silent render-data loss → that's why the lossy adoptions happened.
+    - **Blocker 2 fix (small, not a fork):** set unnamed trails' canonical `name = null` (keep the number in `trail_number`). Then the DB-bake reproduces HEAD's no-labels-on-unnamed behavior — do NOT store the number as `name`.
+    - **Close-out:** DB-bake the 4 reference files → semantic-diff loss-free vs HEAD (incl. null names on unnamed trails + every render key) → adopt → evict `rebake_canonical` from the 4 (one writer each) → `--check` proves no revert. Then `two-writers` is closed and G_B is unblocked.
+    - **Process caution:** snapshot the DB first; keep the verifier LEAN (file-diffs + psql + ONE short viewer smoke, no networkidle) — three prior agents hit the 600s stall watchdog on heavy Playwright runs.
+    - State so far this gets to build on: DB attrs already synced to served canonical (buildings names, etc. via `fold_served_canonical_into_core.py`); column `name` already == attrs `name` for trails (both "Launchpad"/"40"). The remaining work is the COLUMN-as-home bake + the editor-sink unification + the null-name fix.
+- [x] **Re-bake `publish.geojson` from the DB** with a **stable business-key id** (not the serial PK); drop legacy keys (`publish-geojson-stale-not-reproducible`, `published-id-is-volatile-serial`). · **F4 — production file, the git gate.** · Tier1 id. — **DONE 2026-06-09:** `export_publish_geojson.sh` publish arm now emits `properties.id = source_key` (the publish gate inlined byte-for-byte, NOT weakened); `panel.js` publish-data nodes key by served id → editor match == source_key. Verifier `playwright_verify_shadow_f4_publish_repro.py` (14 PASS), independently re-run by the orchestrator: byte-reproducible (md5 identical ×2), ids==DB source_keys (unique; the stale served file had a **colliding id=2**), no blurb, gate excludes the candidate, viewer editor resolves a published feature live (0 console errors). **Owed: v60→v61 bump** (served data + panel.js). The 4 reference files were correctly restored to HEAD (deferred → next item).
+- [ ] **Collapse the columns-vs-attrs duplication** (`canonical-fields-duplicated-columns-vs-attrs-served-from-attrs`). · Tier1/Tier2. → **MERGED into the "One writer per served file" slice above (Approach C, decided 2026-06-10)** — columns are the home, one shared bake helper, both editor sinks unified. Same work, do it there.
+- [ ] **Event umbrella metadata → `core.events` row** — move the bake-script heredoc constants into the store of record (`event-umbrella-metadata-hardcoded-in-bake`). · Tier1/Tier2.
+- [ ] **`_meta`/maturity survives a fresh volume** — maturity + trail gold block live in the DB or `_schema.json`, reproduced by the bake without the prior file (`reference-bake-no-meta-on-fresh-volume`). · Tier2.
+- [ ] **Manifest regenerated by the last writer** (`schema-manifest-stale` — A1 carried maturity forward; confirm counts/`updated_at` reproduce on a clean bake).
+
+## G_B — Demote localStorage to a working buffer (Root 1 / C3 / F1) · DB · after G_A
+The published reference view must stop being a per-browser localStorage replay.
+- [ ] **Edited props/geometry/icon_size → core** — extend `apply_positioned_features_to_core.py` beyond `highlight` so name/notes/category/geometry reach the DB (`served-features-edited-props-localstorage-only-no-db-door`). · Tier1 name/description + Tier3 category. · **F1.**
+- [ ] **One store of record for a name edit** — both surfaces (left dock + right panel) write the same DB field through one door; the two-store fork is gone (`name-edit-two-store-fork-by-surface`). · Tier1 name.
+- [ ] **panel-overrides replay is staging-only** — boot reads the served/baked truth; the localStorage diff stages an export, it is NOT the published read source (`panel-overrides-replayed-as-published-view`). · C3.
+- [ ] **star (highlight) one baked attribute** — one store of record; both surfaces write the same DB field (`highlight-two-store-by-surface`). *(coordinate with `08_data_normalization/star_driven_poi_normalization.md` — may already cover the 4 reference layers)* · Tier2.
+- [ ] **feature-visibility persisted-default is a baked attribute** — default visibility is data, not a per-browser paint filter (`feature-visibility-paint-filter-as-curation`). · Tier2/Tier3.
+- [ ] **maturity tier is a per-feature baked attribute** — the panel-node literal becomes a default, not the truth (`maturity-tier-derived-from-panel-tree-position`). · Tier2.
+
+## G_E — Events overlay convergence · file-side · parallel-safe with G_A
+Re-homed off the visitor-list axis; its own surface.
+- [ ] **One resolver** — host (`eventScheduleToGeojson`) and panel (`resolveEventSchedule`) read ONE baked event feature collection; the two divergent resolvers collapse (`event-overlay-two-divergent-resolvers`). · C1/C6.
+- [ ] **Coordinate-less anchors get baked geometry** — the resolved pavilion coordinate becomes the anchor's served geometry; `#tag` is a baked `props.tag` facet, localStorage only a working buffer (`event-anchor-position-from-localstorage-tag-binding`). · Tier1 geometry + Tier3 tag.
+
+## G_C — Collapse identity forks (Root 3 / F6) · DB · LAST (highest risk)
+One canonical id per real-world feature. Marker-as-record — the root of recurring twin bugs.
+- [ ] **One canonical `id` field** — populated by the bake from a stable business key (trail_number, parcel_id+role, callout name); `spec.idField == panel key == DB source_key` for every layer (`served-id-heterogeneous-no-canonical-key`). · Tier1 id.
+- [ ] **Cemetery twin → one record** — parcel+marker collapse to one store-of-record row (the marker) with the parcel as related geometry; `geom_role` a facet (`cemetery-parcel-marker-twin-nonunique-id`). · Tier1 id + C1.
+- [ ] **Ellis cemetery one id across files** — cross-layer representations reference one canonical id, not mint per-file ids (`ellis-cemetery-multi-id-across-files`). · Tier1 id.
+- [ ] **Buildings one id semantics** — same identity across both bake arms (not UUID in one, serial PK in the other) (`buildings-served-id-is-attrs-businesskey-not-pk`). · Tier1 id.
+- [ ] **One collector, one home** — POI-editor sink and reference-editor sink write the same canonical home; both bake arms read it (`two-editor-sinks-opposite-homes`). · C2.
+- [ ] **publish kind from the controlled list** — one feature, not a duplicate row per file; `pavilion`→`poi`+category facet (`publish-kind-taxonomy-fork`). · C6 (map known, pass unknown through).
+
+## G_D — Fresh-volume parity (F5) · DB ⚠ DESTRUCTIVE RISK · after G_A/G_B
+- [ ] **Reconstruct the ~153 live-only rows into the seed** so a clean docker rebuild reproduces the live `core.features` (live = ~160, fresh seed = 7). **Do NOT run a fresh-volume teardown until the reconstruction path is proven non-destructively first** (export the live rows → seed migration → verify a rebuild matches). The 153-row loss vs re-import is **the one irreversible fork — confirm with the user before any `down -v`.**
+
+## G_F — Deferred-low (named, not dropped)
+- [ ] `hotspot-twin-id-collision-offvocab-sort` — latent, no user-facing break; revisit only if it surfaces a real bug. Its `intensity_class` sort is already covered by A4's controlled-vocab binding.
+
+-----
+
+## Status log (the swarm appends; council reads this)
+
+- **2026-06-09 — list opened.** Environment gate hit: docker daemon down, DB unavailable; G0 + G_E started DB-free.
+- **2026-06-09 — environment up.** Docker + PostGIS started non-destructively (bind mount); `core.features` = 160 rows intact (153 live-only survived). Recovery snapshot `/tmp/aop_db_snapshots/aop_map_pre_slice6_20260609.sql`.
+- **2026-06-09 — G_A item 1 DONE** (fold sidecars into core.features; verified live + independently re-checked). G0 observation running. **F4 launched** (regenerate publish.geojson from the DB w/ stable source_key id + viewer match).
+- **2026-06-09 — G0 DONE** (all 3 C4 observations confirmed live; screenshots `brain/output/g0_obs{1,2,3}_*.png`). F4 still running; G_E/G_B/G_C queued behind it (main.js serialization).
+- **2026-06-09 — F4 DONE + independently re-verified** (publish.geojson reproducible from DB, source_key ids, 14-assertion verifier PASS on the orchestrator's own re-run). (NB: commit `69fd2d3 "v60"` shipped the **Path-A** v60 bump — `index.html`/`sw.js` only — NOT this F4 batch; F4's `publish.geojson`/`panel.js`/`export_publish_geojson.sh` are still UNCOMMITTED and still ride under v60, so this batch owes a separate **v60→v61** bump at the user's commit.) **Reference-files reproducibility launched** (the 4 ref files from the DB, one writer each — must be semantically loss-free).
+- **2026-06-09 — enrichment fold DONE** (`fold_served_enrichment_into_core.py`: facets/source_file → DB, 137 rows, verified). **Reference one-writer BLOCKED** after 3 attempts (stall/held/stall): DB→reference bake can't reproduce render-sensitive trail names + hits the columns-vs-attrs HIGH finding = an architectural fork (see the item above). Complete-fold DB change KEPT (additive, correct); the lossy served adoption was RECOVERED (publish.geojson=F4's, ref files=HEAD). **Verified batch = G0 + slice1 + enrichment fold + F4 + DB catch-up. Convening the COUNCIL on it; the reference/G_B/G_C path waits on the architectural fork.**
+- **2026-06-09 — COUNCIL FULL SIX CLEAR** on the verified batch (Witness/Warden/Quartermaster first pass; Mason + Scribe andon'd on docs only → folded → re-cleared). Marker written. Owed: the user's commit + v60→v61 bump.
+- **2026-06-10 — FORK DECIDED by the user: APPROACH C** (columns = canonical home; one shared bake helper for both arms; unify both editor sinks; field-inventory first; unnamed-trail `name=null`). Recorded as the executable plan in the "One writer per served file" item above. **Next session executes the Approach-C slice BEFORE G_B**; G_E (events) optional parallel. Pros/cons that led here are in the session transcript / the recommendation.
+- **2026-06-10 — APPROACH C SLICE DONE (`two-writers` + `columns-vs-attrs` + `two-editor-sinks` closed).** The 4 prior stalls were an incomplete field merge; this run did the FIELD INVENTORY FIRST (`brain/output/approachC_field_inventory_20260610.md`): classified every served `properties` key spine-column vs attrs-extra. Key finding — the current `attrs`-verbatim bake **already reproduced HEAD byte-for-byte**; the only column/served gaps were buildings `name` (col held the street ADDRESS) + `status` (col held the FEMA facility ROLE), and the two no-column spine fields `source`/`last_checked` (open-vocab provenance → stay in attrs). **DB change (additive, idempotent):** promoted `attrs.name`/`attrs.status` → the buildings `name`/`status` COLUMNS (address survives in `attrs.address`/`building_label`, role in `attrs.facility_role`). **Blocker-2:** no name-nulling needed — the trail `name` COLUMN already == served for all 120 trails (incl. the 20 already-NULL + 79 numeric + 21 human-named), so column-as-home reproduces HEAD's label behavior exactly. **Bake:** `export_publish_geojson.sh` now has ONE shared spine-from-columns rule (`SPINE_COLS`/`SPINE_JSONB`); reference arm serves `attrs || SPINE_JSONB` (columns win for the spine, every attrs extra preserved), publish arm names the same column set; added a `--check` non-writing fixed-point mode. **Sinks unified:** `apply_positioned_features_to_core.py` now writes CMFS spine → COLUMNS (mirrors `apply_panel_overrides` POI_COL), extras + `highlight` → attrs (real round-trip verified: a name/desc edit landed in the column, the star in attrs; then DB restored from snapshot). **Eviction:** the 4 ref files removed from `rebake_canonical.CONFIG` — export script is the sole writer. **Semantic-diff vs HEAD = LOSS-FREE** on all 4 (properties IDENTICAL; geometry delta is precision-only ≤0.056 mm — the documented 9-dec ST_AsGeoJSON canonicalization on buildings/cemeteries, not a content change). **Verifiers (lean, no networkidle):** `playwright_verify_shadow_refbake_repro.py` rewritten for the adopted state → 19 PASS (loss-free + pure-function md5 + eviction + `--check` NO REVERT + viewer smoke: trails 120/buildings 5/cemeteries 8/visitor 2+2, "Launchpad" + "Pavilion" render, 0 console errors); F4 `playwright_verify_shadow_f4_publish_repro.py` re-run → 14 PASS (publish.geojson not regressed). DB 160 rows (restored from snapshot after the sink round-trip; buildings promotion re-applied). **Owed: the same v60→v61 bump** this F4 batch already owes (served data + scripts). G_B is now unblocked (the column home exists). NOTE: `export --check` exits 1 only because of the `aop_event_schedule.json` DRIFT — the G_E events axis (DB carries a newer `core.activities` join), left at HEAD on purpose / out of this slice.
+- **2026-06-10 — COUNCIL (full six) on the Approach-C diff: 3 clear, 2 andon → both fixed + re-verified → FULL SIX CLEAR.** Witness/Warden/Quartermaster cleared first pass (Witness ran his own all-keys semantic diff + live viewer; Warden: on-farm, HEAD `69fd2d3` untouched, owed bump reported; Quartermaster: one shared `SPINE_COLS` helper, real eviction, sink reuses POI pattern). **Two andons, both grounded and both fixed:** (1) **Scribe (real data loss):** the per-feature loss-free checks (mine + the verifier) never inspected the **top-level FeatureCollection object** — the bake carried forward only `_meta`, silently dropping owner-authored collection-level provenance (buildings `_source`/`_derived`"~197 raw FEMA footprints dropped per owner decision"/`_generated_by`/`_sources_checked`/…; cemeteries `_source`/`_generated_by`; trails collection `name`; visitor `name`/`_description`/`_sources_checked`). **FIX:** `export_publish_geojson.sh` both arms now carry forward **every** top-level key (not just `_meta`); re-baked → top-level `drops=[] adds=[] value-diffs=[]` on all 4 + per-feature still 0/0; verifier gained a `COLLECTION-level top-level keys loss-free` assertion (closes the hole). (2) **Mason (dead code):** the eviction orphaned `n_building` + the `trail_join`/`poi_source` join machinery (`TRAIL_CATALOG`/`POI_INDEX`/`poi_match`/`join_name_desc`, 0 callers). **FIX:** removed them (kept `_load_json` [live at 3 sites] + `SIDECARS` [live in the manifest, byte-identical → no `_schema.json` churn]); proved behavior-preserving by re-baking all 17 rebake-owned files → byte-identical to HEAD. **Re-verified:** extended `playwright_verify_shadow_refbake_repro.py` PASS (per-feature + collection-level loss-free + pure-function + eviction + `--check` no-revert + viewer smoke "Launchpad"/"Pavilion", 0 console errors); `export --check` = `same` for the 5 in-scope files. Owed: the same **v60→v61** bump (still the user's git gate). Files now in the slice: `export_publish_geojson.sh` · `apply_positioned_features_to_core.py` · `rebake_canonical.py` · `website/data/{aop_buildings,aop_cemeteries,aop_trail_network,aop_visitor_context_callouts,publish}.geojson` · `panel.js` · `brain/output/approachC_field_inventory_20260610.md` · the 5 untracked fold/verifier scripts.
+
+## References (treat as the thing)
+- `tasks/09_editor_maturity/shadow_attributes_audit.md` — the id-tagged 45-finding catalog (grep ids here).
+- `tasks/06_going_gold/gold_migration.md` slice 6 — F1/F2(done)/F4/F5/F6 + the loop contract + guardrails.
+- `output/data_model_state_20260609.md` — the where-we-are report this executes.
+- `research/common_feature_schema.md` — the CMFS target (Tier1/2/3 + crosswalk).
+- `northstar/editor_architecture_contracts.md` — C1–C6 + R1–R14.
+- `northstar/source_register.md` — Tier-2 provenance (required fields, not a closed enum).
