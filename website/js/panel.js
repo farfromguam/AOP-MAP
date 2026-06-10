@@ -157,12 +157,34 @@
       pushTagToHost(node, item);
       return;
     }
+    // SERVED reference layer (buildings/cemeteries/visitorContext/trails):
+    // route the PROPERTY edit through the host's positioned-features door (the
+    // ONE door that reaches core.features via apply_positioned_features_to_core),
+    // instead of dead-ending in aop_panel_overrides_v1 — which has NO reference DB
+    // door (gold G_B.2, findings 2 + 4). Same bridge the ★ already uses
+    // (AOP_HOST_SET_HIGHLIGHT). Embedded only — standalone (no host) falls through
+    // to the panel buffer below, which exports through the positioned-features
+    // bundle, not a second DB door (C6). Geometry has no reference DB door (GAP B),
+    // so a geometry-only diff still stages in the panel buffer below.
+    let propsBridged = false;
+    if (node.hostProps && EMBEDDED && typeof window.AOP_HOST_SET_FEATURE_PROPS === 'function') {
+      propsBridged = window.AOP_HOST_SET_FEATURE_PROPS(node.hostKey, item.props, pickEditable(item.props)) === true;
+      if (propsBridged) {
+        pushTagToHost(node, item);
+        if (!opts.geometry) return;     // property edit landed in the one door; done
+      }
+    }
     const src = node.items && node.items.source;
     const id = item.props.id;                            // canonical id (present post-re-bake)
     if (!src || id == null) { console.warn('panel: cannot persist — no source/id for', item.label); return; }
     const k = src + ':' + id;
     const entry = OVERRIDES.edits[k] || { source: src, id: String(id) };
-    entry.properties = pickEditable(item.props);         // overwrite-on-bake snapshot
+    // When the property edit already bridged to the host's positioned-features
+    // door, do NOT re-store properties here (that would re-fork into the
+    // reference-doorless panel store, C6). The panel buffer then carries ONLY the
+    // geometry diff (which has no reference DB door — GAP B — and exports through
+    // the bundle as a working buffer).
+    if (!propsBridged) entry.properties = pickEditable(item.props);   // overwrite-on-bake snapshot
     if (opts.geometry) entry.geometry = item.feature.geometry;
     entry.updated = new Date().toISOString();
     OVERRIDES.edits[k] = entry;
@@ -233,17 +255,17 @@
       fc.features = fc.features.filter((f) => String((f.properties || {}).id) !== id);
       if (fc.features.length !== before) touched.add(src);
     }
-    // 3) property + geometry edits
-    for (const k of Object.keys(OVERRIDES.edits)) {
-      const entry = OVERRIDES.edits[k];
-      const fc = LOADED[entry.source];
-      if (!fc || !fc.features) continue;
-      const feat = fc.features.find((f) => String((f.properties || {}).id) === String(entry.id));
-      if (!feat) continue;
-      if (entry.geometry) feat.geometry = JSON.parse(JSON.stringify(entry.geometry));
-      if (entry.properties) { feat.properties = feat.properties || {}; Object.assign(feat.properties, entry.properties); }
-      touched.add(entry.source);
-    }
+    // 3) property + geometry edits on SERVED reference features — DEMOTED to a
+    //    staging-only export buffer (gold G_B.1, finding 3 keystone). The served
+    //    GeoJSON is now the published truth (Approach-C bakes name/description/kind
+    //    + highlight from core.features), so a STALE prior-session diff must NOT be
+    //    painted over the served collection at boot — the boot READ trusts the
+    //    baked file. The diff stays in OVERRIDES.edits and still rides "Export
+    //    edits" (buildExportPayload), and an in-session edit still mutates the live
+    //    feature THIS session (commitChange mutates item.props in place); only the
+    //    boot replay of a prior-session diff is demoted. `created` (step 1) and
+    //    `deleted` (step 2) replay STAY — a drawn-not-yet-baked feature has no
+    //    served truth and must show; an archived-not-yet-baked one must hide.
     for (const src of touched) { const s = map.getSource(src); if (s) s.setData(LOADED[src]); }
   }
 
@@ -599,7 +621,7 @@
             // (trail_number/name) — see main.js positionedFeatureIdFor idFor. Without
             // this the ★ fell to the panel-overrides store, which the host never
             // reads and the baker drops, so a starred trail never linked left.
-            hostKey: 'trails',
+            hostKey: 'trails', hostProps: true,
             mapLayers: ['aop-trail-network', 'aop-trail-network-labels'],
             items: refItems('aop-trail-network', {
               // Read the CANONICAL name baked onto the feature (the trail catalog is
@@ -638,7 +660,7 @@
           },
           {
             id: 'buildings', kind: 'layer', label: 'Park buildings (curated)', maturity: 'silver', visible: true, locked: true, expanded: false, geom: 'Polygon', createNoun: 'building',
-            hostKey: 'buildings',
+            hostKey: 'buildings', hostProps: true,
             mapLayers: ['building-footprint-fill', 'building-footprint-outline', 'building-footprint-aop-outline'],
             items: refItems('fema-buildings', {
               // Canonical name (baked to the facility name where one exists — A3),
@@ -651,7 +673,7 @@
           },
           {
             id: 'visitorContext', kind: 'layer', label: 'Visitor context callouts', maturity: 'silver', visible: true, locked: true, expanded: false, geom: 'Polygon', createNoun: 'callout',
-            hostKey: 'visitorContext',
+            hostKey: 'visitorContext', hostProps: true,
             mapLayers: ['visitor-context-fill', 'visitor-context-outline', 'visitor-context-labels'],
             items: refItems('visitor-context', { key: (p) => p.name || p.label, label: (p) => p.name || p.label || 'Callout' })
           },
@@ -726,7 +748,7 @@
           // Ellis). Moved into External reference 2026-06-05 (was Source layers).
           {
             id: 'cemeteries', kind: 'layer', label: 'Cemeteries (TN Comptroller)', visible: false, locked: true, expanded: false, geom: 'Polygon', createNoun: 'cemetery',
-            hostKey: 'cemeteries',
+            hostKey: 'cemeteries', hostProps: true,
             // Cemetery markers are points; only stamp the marker role on a point draw.
             createDefaults: (geomType) => geomType === 'Point' ? { geom_role: 'marker' } : null,
             mapLayers: ['cemetery-fill', 'cemetery-outline', 'cemetery-marker', 'cemetery-label'],

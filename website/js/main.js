@@ -3001,29 +3001,56 @@
       writeJsonStore(POSITIONED_FEATURES_KEY, store);
     }
 
+    // The four SERVED reference layers whose CMFS spine (name/description/kind),
+    // highlight (★), and geometry are now BAKED truth in the served GeoJSON
+    // (gold migration Approach-C: core.features COLUMNS+attrs -> the published
+    // file). For these, the localStorage positioned-features store is a
+    // working/staging buffer for "Export all" only — at BOOT it must NOT paint a
+    // prior-session diff over the baked served value (G_B.1, finding 3 keystone).
+    // A config set, not a call-site `layerKey === 'x'` branch (C1). Mirrors the
+    // Python door's LAYERKEY_TO_CORE_LAYER (the one sink for these four).
+    const BAKED_REFERENCE_LAYERS = new Set(['buildings', 'cemeteries', 'visitorContext', 'trails']);
+
     // Replay stored overrides onto a freshly fetched FeatureCollection.
     // Mutates in place so the live MapLibre source and the feature-list
     // runtime see the same references.
-    function applyPositionedFeatures(layerKey, data) {
+    //
+    // `opts.boot` (G_B.1): the boot READ for a BAKED reference layer trusts the
+    // served file as published truth — the baked attributes (geometry, the spine
+    // properties, and highlight) are NOT replayed from the store, so a STALE
+    // prior-session diff no longer overrides the baked value on reload. The diff
+    // stays in the store and still Exports; only the boot paint-over is demoted.
+    // `locked`/`icon_size` are pure view-state with no DB/baked home, so they
+    // still replay even at boot. The LIVE re-sync path (persistFeatureFlagChange
+    // -> here with no boot flag, after an in-session edit) keeps full replay so an
+    // author's edit-in-progress still propagates across feature twins THIS session.
+    function applyPositionedFeatures(layerKey, data, opts) {
       if (!data || !data.features) return data;
+      // Demote the baked-attribute replay ONLY at boot, ONLY for the baked
+      // reference layers; everything else (live re-sync, brandLogos, drawn POIs)
+      // keeps the full replay it always had.
+      const demoteBaked = !!(opts && opts.boot) && BAKED_REFERENCE_LAYERS.has(layerKey);
       const store = loadPositionedFeatures();
       for (const feature of data.features) {
         const id = positionedFeatureIdFor(layerKey, feature);
         if (id == null) continue;
         const entry = store[positionedFeatureKey(layerKey, id)];
         if (!entry) continue;
-        if (entry.geometry) feature.geometry = JSON.parse(JSON.stringify(entry.geometry));
         feature.properties = feature.properties || {};
-        // Write the flag when the store has an opinion (true OR false) so an
-        // un-star/un-lock survives reload even if the base feature shipped true.
-        if (entry.highlight !== undefined) feature.properties.highlight = entry.highlight === true;
+        if (!demoteBaked) {
+          if (entry.geometry) feature.geometry = JSON.parse(JSON.stringify(entry.geometry));
+          // Write the flag when the store has an opinion (true OR false) so an
+          // un-star/un-lock survives reload even if the base feature shipped true.
+          if (entry.highlight !== undefined) feature.properties.highlight = entry.highlight === true;
+          // Replay editable property overrides (name/label/notes/category).
+          if (entry.properties && typeof entry.properties === 'object') {
+            Object.assign(feature.properties, entry.properties);
+          }
+        }
+        // Pure view-state (no baked/DB home) replays even at boot.
         if (entry.locked !== undefined) feature.properties.locked = entry.locked === true;
         if (Number.isFinite(Number(entry.icon_size))) {
           feature.properties.icon_size = Number(entry.icon_size);
-        }
-        // Replay editable property overrides (name/label/notes/category).
-        if (entry.properties && typeof entry.properties === 'object') {
-          Object.assign(feature.properties, entry.properties);
         }
       }
       return data;
@@ -8606,7 +8633,7 @@
         // Replay any user-staged geometry overrides before the source data
         // ever reaches MapLibre, so a moved callout draws in its new spot
         // from the first frame rather than snapping in after registration.
-        applyPositionedFeatures('visitorContext', visitorContextData);
+        applyPositionedFeatures('visitorContext', visitorContextData, { boot: true });
         map.addSource('visitor-context', {
           type: 'geojson',
           data: visitorContextData,
@@ -8676,7 +8703,7 @@
       // apart). Default off — search turns the layer on when it jumps here.
       cemeteryData = await fetchJson('./data/aop_cemeteries.geojson', 'Cemetery layer missing');
       if (cemeteryData) {
-        applyPositionedFeatures('cemeteries', cemeteryData);
+        applyPositionedFeatures('cemeteries', cemeteryData, { boot: true });
         map.addSource('cemeteries', {
           type: 'geojson',
           data: cemeteryData,
@@ -8795,7 +8822,7 @@
       // reload shows the corrected position.
       buildingsData = await fetchJson('./data/aop_buildings.geojson', 'Building footprints missing');
       if (buildingsData) {
-        applyPositionedFeatures('buildings', buildingsData);
+        applyPositionedFeatures('buildings', buildingsData, { boot: true });
         map.addSource('fema-buildings', {
           type: 'geojson',
           data: buildingsData,
@@ -9107,7 +9134,7 @@
         // right panel (now bridged) vanished on reload. highlight is the only
         // override trails carry (geometry is locked), and it isn't painted, so no
         // source.setData is needed here; the POI list reads it off runtime data.
-        applyPositionedFeatures('trails', aopTrailNetworkCache);
+        applyPositionedFeatures('trails', aopTrailNetworkCache, { boot: true });
         registerFeatureListLayer('trails', aopTrailNetworkCache);
       }
 

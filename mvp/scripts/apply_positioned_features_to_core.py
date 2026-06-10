@@ -126,6 +126,17 @@ def set_clause(highlight: bool, props: dict) -> str:
         if editor_key in props:
             assigns.append(f"{col} = {sql_str(props[editor_key])}")
 
+    # 1b) Fold `notes` -> the `description` COLUMN (gold G_B.3, finding 1 GAP A).
+    #     The editor writes the free-text body as `notes` for served reference
+    #     features (main.js setFeatureProperty layerKey,id,'notes'); CMFS Tier1
+    #     carries it as `description`. An explicit `description` edit wins; else a
+    #     `notes` edit folds into the same column. ADDITIVE (C5): `notes` is NOT
+    #     dropped -- it ALSO rides into attrs verbatim (step 2), so an attrs-reader
+    #     still sees it and nothing is lost. `category` needs no column: it is a
+    #     CMFS Tier3 facet and lands in attrs through the step-2 merge as-is.
+    if "description" not in props and "notes" in props:
+        assigns.append(f"description = {sql_str(props['notes'])}")
+
     # 2) attrs merge: highlight (always, true OR false) + non-spine extras + the
     #    spine values too (so attrs stays in sync with the column for the
     #    attrs-readers that still exist -- the bake overlays the column on top, so
@@ -214,10 +225,15 @@ def build_sql(pf: dict) -> tuple[str, list[str], list[str]]:
             continue
         props = entry.get("properties") if isinstance(entry.get("properties"), dict) else {}
         has_highlight = "highlight" in entry
-        # a CMFS spine edit (name/description/kind) is ours too, even with no star.
-        has_spine_edit = any(k in props for k in REF_COL)
-        if not has_highlight and not has_spine_edit:
-            continue  # geometry/icon_size-only or empty -- not this sink's axis
+        # a CMFS spine edit (name/description/kind) is ours too, even with no star;
+        # so is a folded `notes`->description (G_B.3) or a Tier3 facet like
+        # `category` -- any real property edit lands additively (column or attrs).
+        # View-state-only keys are NOT this sink's axis (they stay with the legacy
+        # file-baker), so an entry carrying ONLY those is skipped.
+        VIEW_ONLY = {"id", "_id", "_src", "__locked", "__group", "locked", "icon_size"}
+        has_property_edit = any(k not in VIEW_ONLY for k in props)
+        if not has_highlight and not has_property_edit:
+            continue  # geometry/icon_size/view-state-only or empty -- not this sink's axis
         highlight = entry.get("highlight") is True
         block = entry_block(layerkey, fid, key, highlight, props)
         if block is None:

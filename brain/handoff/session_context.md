@@ -6,6 +6,35 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-10 (cwc — G_B HIGH trio DONE + COUNCIL FULL-SIX CLEAR; UNCOMMITTED, v61→v62 bump owed).** Continued
+the gold swarm to **G_B — demote localStorage to a working buffer** (Root 1 / C3 / F1: the published reference
+view must stop being a per-browser localStorage replay). **Reconciliation note:** while G_B ran, the user committed
+the prior G_E batch (the v61 bump + the whole G_E slice + brain) as **`86b6fcd "GE slice"`** — so HEAD moved
+1cbd439→86b6fcd and the working tree is now cleanly just G_B. (Mid-session I briefly mis-read the smaller git status
+as data loss; verify-by-observation + reflog showed it was the user's commit — nothing lost.) **Design-first:** a
+read-only state audit (`../output/gB_state_audit_design_20260610.md`) found the card overstated the open work — star
+(Sprint 08) + write-door columns (Approach-C) were already done; the real keystone was the boot READ path. **Shipped
+the HIGH trio** via a fresh agent, orchestrator re-verified by observation: **G_B.1** (keystone) demoted the boot
+`edits`/properties/geometry replay for the 4 baked reference layers to staging-only in both `panel.js`
+`applyStoredOverrides` + `main.js` `applyPositionedFeatures` (`opts.boot` gate; `created`/`deleted` kept; in-session
+edit + Export kept); **G_B.2** bridged panel reference edits + standalone ★ through the existing
+`AOP_HOST_SET_FEATURE_PROPS` → positioned-features → the one DB door (no second store); **G_B.3** folded
+`notes`→`description` + widened the apply-script gate (additive). **Verified:** new
+`playwright_verify_gB_localstorage_demotion.py` 17/17 PASS (stale diff no longer overrides baked name EMBEDDED +
+STANDALONE; created/deleted still replay; fresh-LS shows baked; 0 errors) — closes the g0_obs2 two-browser
+divergence; `node --check` both JS; `git diff HEAD -- website/data` empty (no served-data change). **Council:** five
+seats + Steward clear (Mason: one idempotent-harmless double `pushTagToHost`, not worth a revision). Receipts
+`../output/council/gB_localstorage_demotion_20260610.md`. **DB:** `mvp-db-1` up; snapshots
+`/tmp/aop_db_snapshots/aop_map_pre_gB_20260610.sql`; the verification apply→bake round-trip was fully reverted
+(served + DB restored). **OWED — the user's git gate:** a **v61→v62** bump (G_B's shell-asset changes sit on top of
+the committed v61) — made in-tree (`sw.js`/`#appVersion`), uncommitted. Working-tree batch: `website/js/main.js` ·
+`website/js/panel.js` · `mvp/scripts/apply_positioned_features_to_core.py` · `website/sw.js` · `website/index.html`
+· `mvp/scripts/playwright_verify_gB_localstorage_demotion.py` · `brain/output/gB_*` + receipts + card/handoff.
+HEAD `86b6fcd`. `.claude/.council-cleared` stamped for this diff. **DEFERRED:** findings 5 (visibility, LOW) + 6
+(maturity, MEDIUM — pair with `reference-bake-no-meta-on-fresh-volume`) + GAP B (reference-geometry DB door).
+**Next slice:** the deferred G_B follow-up, or **G_C** (collapse identity forks — highest risk, do carefully) /
+**G_D** (fresh-volume parity — DESTRUCTIVE, needs the user's explicit OK before any `down -v`).
+
 **2026-06-10 (cwc — owed v61 bump DISCHARGED + G_E events convergence DONE + COUNCIL FULL-SIX CLEAR; UNCOMMITTED,
 the v60→v61 bump is the only version owed for the whole batch).** Reconciled the handoff against git: the user
 committed the Approach-C batch as `1cbd439 "v61"` — **but the version STRINGS were never bumped** (the commit is
