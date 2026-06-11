@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AOP · Data Sources — what's actually under the hood</title>
+<style>
+  :root{
+    --ink:#23201a; --muted:#6b6358; --line:#e2dccb; --paper:#f7f3e9;
+    --card:#fffdf6; --accent:#7a5c2e; --good:#2e6b3f; --warn:#9a6a1e; --raw:#5a6b7a;
+    --pill-core:#e7f0e9; --pill-side:#f0ead9; --pill-buf:#efe6f0; --pill-raw:#e6ecf2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  header{padding:22px 26px 14px;border-bottom:1px solid var(--line);background:var(--card)}
+  h1{margin:0 0 4px;font-size:22px}
+  .sub{color:var(--muted);font-size:13px}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+  main{max-width:1100px;margin:0 auto;padding:20px 26px 80px}
+  h2{font-size:17px;margin:34px 0 4px;display:flex;align-items:center;gap:10px}
+  h2 .tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;letter-spacing:.02em}
+  .tag.solid{background:var(--pill-core);color:var(--good)}
+  .tag.mixed{background:var(--pill-side);color:var(--warn)}
+  .tag.debt{background:#f3e1e1;color:#9a3b3b}
+  .lede{color:var(--muted);font-size:13.5px;margin:2px 0 14px;max-width:760px}
+  .strip{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 6px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .stat b{font-size:21px;display:block;line-height:1.1}
+  .stat span{font-size:11.5px;color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:12px 0;overflow:hidden}
+  .card>.hd{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;user-select:none}
+  .card>.hd:hover{background:#fffef9}
+  .card>.hd .name{font-weight:600}
+  .card>.hd .meta{margin-left:auto;color:var(--muted);font-size:12.5px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+  .chev{transition:transform .15s;color:var(--muted)}
+  .open .chev{transform:rotate(90deg)}
+  .body{display:none;padding:0 16px 16px;border-top:1px solid var(--line)}
+  .open .body{display:block}
+  .pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:9px;white-space:nowrap}
+  .o-core-backed{background:var(--pill-core);color:var(--good)}
+  .o-sidecar{background:var(--pill-side);color:var(--warn)}
+  .o-runtime-buffer{background:var(--pill-buf);color:#6a3b7a}
+  .o-raw-pipeline{background:var(--pill-raw);color:var(--raw)}
+  .o-served-other{background:#eee;color:#666}
+  .note{color:var(--muted);font-size:12.5px;margin:8px 0}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;margin:8px 0}
+  th,td{text-align:left;padding:5px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .keys{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+  .keys .k{background:#f1ecde;border-radius:6px;padding:2px 7px;font-size:11.5px}
+  .keys .k.cmfs{background:#e7f0e9;color:var(--good);font-weight:600}
+  .btn{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--card);
+    border-radius:8px;padding:5px 11px;cursor:pointer;color:var(--accent)}
+  .btn:hover{background:#fffef9}
+  .rows-wrap{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:8px;margin-top:8px}
+  .rows-wrap table{margin:0}
+  .rows-wrap th{position:sticky;top:0;background:#faf7ee}
+  .scroll-x{overflow-x:auto}
+  .small{font-size:11.5px;color:var(--muted)}
+  .legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:14px 0}
+  .legend div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:12.5px}
+  .legend b{display:block;margin-bottom:3px}
+  .err{color:#9a3b3b;font-size:12.5px}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>AOP · Data Sources</h1>
+  <div class="sub">What is actually under the hood — generated from the live DB and the served files,
+  not from memory. <span id="gen"></span></div>
+</header>
+<main id="app">Loading inventory…</main>
+
+<script>
+const CMFS = ["id","name","description","kind","source","confidence","permission","status","last_checked"];
+
+async function load(){
+  let manifest, schema=null;
+  try{ manifest = await (await fetch('./data/_data_manifest.json')).json(); }
+  catch(e){ document.getElementById('app').innerHTML =
+    '<p class="err">No _data_manifest.json yet. Run:<br><code>python3 mvp/scripts/build_data_manifest.py</code></p>'; return; }
+  try{ schema = await (await fetch('./data/_schema.json')).json(); }catch(e){}
+  render(manifest, schema);
+}
+
+function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstElementChild; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function bytes(n){ if(n<1024)return n+' B'; if(n<1048576)return (n/1024).toFixed(0)+' KB'; return (n/1048576).toFixed(1)+' MB'; }
+
+function render(m, schema){
+  const app = document.getElementById('app'); app.innerHTML='';
+  document.getElementById('gen').textContent = 'Snapshot '+(m.generated_at||'?')+' · re-run the generator to refresh.';
+
+  // ---- summary strip ----
+  const served = m.served||[];
+  const byOrigin = served.reduce((a,s)=>(a[s.origin]=(a[s.origin]||0)+1,a),{});
+  const coreFeat = (m.db.tables||[]).find(t=>t.table==='features');
+  const coreRows = coreFeat ? coreFeat.row_count : '—';
+  app.append(el(`<div class="strip">
+    <div class="stat"><b>${m.db.reachable?(m.db.tables.length):'—'}</b><span>DB tables (store of record)</span></div>
+    <div class="stat"><b>${coreRows}</b><span>rows in core.features</span></div>
+    <div class="stat"><b>${served.length}</b><span>served files</span></div>
+    <div class="stat"><b>${byOrigin['core-backed']||0}</b><span>core-backed bakes</span></div>
+    <div class="stat"><b>${byOrigin['raw-pipeline']||0}</b><span>raw/derived passthrough</span></div>
+  </div>`));
+
+  // ---- legend: the three states, honestly ----
+  app.append(el(`<div class="legend">
+    <div><b style="color:var(--good)">① The spine — solid</b>The PostGIS store of record. One converged
+      <code>core.features</code> table (CMFS shape) + event/activity/provenance siblings. Normalized. Keep all of it.</div>
+    <div><b style="color:var(--warn)">② What's served — mixed, by design</b>Some files are clean bakes from the spine;
+      most are raw pipeline / imagery that never needed the spine. Looks like "many schemas"; it's really a handful of shapes.</div>
+    <div><b style="color:#9a3b3b">③ The client — the real debt</b>Not shown here (it's code, not data).
+      <code>website/js/main.js</code> is ~10.6k lines with per-layer special-casing. That's the cobbled-together part.</div>
+  </div>`));
+
+  // ================= SECTION A: DB =================
+  app.append(el(`<h2>The spine: PostGIS store of record <span class="tag solid">normalized</span></h2>`));
+  app.append(el(`<p class="lede">This is the part that is genuinely good. The "many different schemas" you remember
+    have been folded into <b>one row shape</b> — the CMFS spine columns plus a free-form <code>attrs</code> for per-domain extras.
+    Every layer below lives in the same table.</p>`));
+  if(!m.db.reachable){
+    app.append(el(`<p class="err">DB unreachable when this snapshot ran: <code>${esc(m.db.error||'')}</code>.
+      Start it with <code>docker compose -f mvp/docker-compose.yml up -d</code> and re-run the generator.</p>`));
+  }
+  for(const t of (m.db.tables||[])){
+    const card = el(`<div class="card"><div class="hd"><span class="chev">▸</span>
+      <span class="name mono">${t.schema}.${t.table}</span>
+      <span class="pill o-core-backed">${esc(t.role)}</span>
+      <span class="meta"><span>${t.row_count==null?'?':t.row_count} rows</span><span>${t.columns.length} cols</span></span>
+      </div><div class="body"></div></div>`);
+    const body = card.querySelector('.body');
+    if(t.note) body.append(el(`<p class="note">${esc(t.note)}</p>`));
+    if(t.breakdown){
+      const cols = t.breakdown.columns;
+      let html = `<div class="small">Rows by ${esc(cols[0])}:</div><table><thead><tr>`+
+        cols.map(c=>`<th>${esc(c)}</th>`).join('')+`</tr></thead><tbody>`;
+      for(const r of t.breakdown.rows){
+        html += `<tr>`+cols.map((c,i)=>`<td class="${i?'num':''}">${esc(r[c])}</td>`).join('')+`</tr>`;
+      }
+      html += `</tbody></table>`;
+      body.append(el(html));
+    }
+    // columns list
+    const colhtml = `<div class="small" style="margin-top:8px">Columns:</div><div class="keys">`+
+      t.columns.map(c=>`<span class="k ${CMFS.includes(c.name)?'cmfs':''}" title="${esc(c.type)}">${esc(c.name)}</span>`).join('')+`</div>`;
+    body.append(el(colhtml));
+    wireToggle(card);
+    app.append(card);
+  }
+
+  // ================= SECTION B: SERVED =================
+  app.append(el(`<h2>What the site serves <span class="tag mixed">mixed origin</span></h2>`));
+  app.append(el(`<p class="lede">Every file <code>website/</code> loads. The <b>origin</b> pill is the honest answer to
+    "where did this come from?": <span class="pill o-core-backed">core-backed</span> = baked from the spine ·
+    <span class="pill o-sidecar">sidecar</span> = authored copy ·
+    <span class="pill o-runtime-buffer">runtime-buffer</span> = editor scratch ·
+    <span class="pill o-raw-pipeline">raw-pipeline</span> = imagery/terrain/derived, never needed the spine.
+    Click any file to see its real rows.</p>`));
+  const order = ['core-backed','sidecar','runtime-buffer','raw-pipeline','served-other'];
+  const groups = order.map(o=>[o, served.filter(s=>s.origin===o)]).filter(([_,a])=>a.length);
+  for(const [origin, items] of groups){
+    app.append(el(`<h3 style="margin:18px 0 2px;font-size:14px"><span class="pill o-${origin}">${origin}</span>
+      <span class="small" style="margin-left:8px">${items.length} file${items.length>1?'s':''}</span></h3>`));
+    for(const s of items){
+      const fc = s.feature_count!=null ? `${s.feature_count} features` : (s.kind==='json'?'json doc':'');
+      const card = el(`<div class="card"><div class="hd"><span class="chev">▸</span>
+        <span class="name mono">${esc(s.file)}</span>
+        <span class="meta">
+          ${s.client_layer?`<span title="how the client uses it">→ ${esc(s.client_layer)}</span>`:''}
+          <span>${fc}</span><span>${bytes(s.bytes)}</span></span></div>
+        <div class="body"></div></div>`);
+      const body = card.querySelector('.body');
+      if(s.error){ body.append(el(`<p class="err">${esc(s.error)}</p>`)); }
+      if(s.origin_note) body.append(el(`<p class="note">Origin: ${esc(s.origin_note)}</p>`));
+      if(s.geometry_types){
+        body.append(el(`<p class="small">Geometry: ${Object.entries(s.geometry_types).map(([k,v])=>esc(k)+'×'+v).join(' · ')}</p>`));
+      }
+      if(s.property_keys && s.property_keys.length){
+        body.append(el(`<div class="small">Property keys (${s.property_keys.length}) — green = maps to a CMFS canonical field:</div>`+
+          `<div class="keys">`+s.property_keys.map(k=>`<span class="k ${cmfsHit(k,schema)?'cmfs':''}">${esc(k)}</span>`).join('')+`</div>`));
+      }
+      if(s.top_keys){
+        body.append(el(`<div class="small">Top-level keys:</div><div class="keys">`+
+          s.top_keys.map(k=>`<span class="k">${esc(k)}</span>`).join('')+`</div>`));
+      }
+      if(s.kind==='geojson' || s.kind==='json'){
+        const btn = el(`<button class="btn">▤ View real rows</button>`);
+        const slot = el(`<div></div>`);
+        btn.onclick = ()=>viewRows(s.file, slot, btn);
+        body.append(btn); body.append(slot);
+      }
+      wireToggle(card);
+      app.append(card);
+    }
+  }
+
+  // ================= SECTION C: CMFS contract =================
+  if(schema && schema.crosswalk){
+    app.append(el(`<h2>The CMFS contract — how the schemas got reconciled <span class="tag solid">the key</span></h2>`));
+    app.append(el(`<p class="lede">This is the normalization you fought for, made literal. Every legacy field name on the left
+      collapses to one canonical field on the right. The editor reads the right-hand column; the crosswalk does the translating
+      so the client never has to know which source a feature came from.</p>`));
+    let html = `<div class="card"><div class="body" style="display:block;border-top:none"><table><thead><tr>
+      <th>canonical (CMFS)</th><th>legacy field names that map into it</th></tr></thead><tbody>`;
+    for(const [canon, aliases] of Object.entries(schema.crosswalk)){
+      html += `<tr><td class="mono"><b>${esc(canon)}</b></td><td>${aliases.map(a=>`<code>${esc(a)}</code>`).join(', ')}</td></tr>`;
+    }
+    html += `</tbody></table></div></div>`;
+    app.append(el(html));
+  }
+
+  app.append(el(`<p class="small" style="margin-top:30px">Regenerate this inventory after any bake or schema change:
+    <code>python3 mvp/scripts/build_data_manifest.py</code></p>`));
+}
+
+function cmfsHit(key, schema){
+  if(CMFS.includes(key)) return true;
+  if(!schema||!schema.crosswalk) return false;
+  return Object.values(schema.crosswalk).some(arr=>arr.includes(key));
+}
+
+function wireToggle(card){
+  card.querySelector('.hd').onclick = ()=>card.classList.toggle('open');
+}
+
+async function viewRows(file, slot, btn){
+  if(slot.dataset.loaded){ slot.innerHTML=''; delete slot.dataset.loaded; btn.textContent='▤ View real rows'; return; }
+  btn.textContent='loading…';
+  let doc;
+  try{ doc = await (await fetch('./data/'+file)).json(); }
+  catch(e){ slot.innerHTML='<p class="err">could not load '+esc(file)+'</p>'; btn.textContent='▤ View real rows'; return; }
+  let feats=null;
+  if(doc && doc.type==='FeatureCollection') feats=doc.features||[];
+  if(feats){
+    const cap=200;
+    const cols=[]; const seen=new Set();
+    for(const f of feats.slice(0,cap)) for(const k of Object.keys(f.properties||{})) if(!seen.has(k)){seen.add(k);cols.push(k);}
+    let html=`<div class="small">${feats.length} features${feats.length>cap?` (showing first ${cap})`:''} · ${cols.length} property columns</div>
+      <div class="rows-wrap scroll-x"><table><thead><tr><th>#</th>`+cols.map(c=>`<th>${esc(c)}</th>`).join('')+`</tr></thead><tbody>`;
+    feats.slice(0,cap).forEach((f,i)=>{
+      const p=f.properties||{};
+      html+=`<tr><td class="num">${i+1}</td>`+cols.map(c=>`<td>${esc(cell(p[c]))}</td>`).join('')+`</tr>`;
+    });
+    html+=`</tbody></table></div>`;
+    slot.innerHTML=html;
+  } else {
+    // plain json: pretty-print, capped
+    const txt=JSON.stringify(doc,null,2);
+    slot.innerHTML=`<div class="rows-wrap"><pre class="mono" style="margin:0;padding:10px;white-space:pre-wrap">${esc(txt.slice(0,20000))}${txt.length>20000?'\n… (truncated)':''}</pre></div>`;
+  }
+  slot.dataset.loaded='1'; btn.textContent='▾ Hide rows';
+}
+function cell(v){
+  if(v==null) return '';
+  if(typeof v==='object') return JSON.stringify(v);
+  const s=String(v); return s.length>120? s.slice(0,120)+'…':s;
+}
+
+load();
+</script>
+</body>
+</html>

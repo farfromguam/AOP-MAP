@@ -6,6 +6,20 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-10 (assessment + data x-ray).** User asked, exhausted, for an honest read on how much is real
+vs paper mache and a viewer to see every data source. Finding recorded in
+`tasks/11_client_convergence/_readme.md` — **three layers of reality:** ① the PostGIS spine
+(`core.features`, 160 rows / 12 layers, CMFS-converged) is SOLID, keep it; ② served files are mixed by
+design (6 core-backed / 6 sidecar / 1 buffer / 18 raw-pipeline) but were never mapped for the user; ③
+the client (`main.js` ~10.6k lines, ~800 per-layer refs) is the real debt. SHIPPED + verified: the
+x-ray — `website/data_sources.html` + `mvp/scripts/build_data_manifest.py` →
+`website/data/_data_manifest.json` (card `tasks/11_client_convergence/data_source_inventory.md`). NEXT
+(awaiting user green light, loop-eligible): `tasks/11_client_convergence/client_layer_registry.md` —
+converge the client's per-layer sprawl onto one descriptor, migrate one layer at a time behind the
+existing per-layer verifiers. UNCOMMITTED (no shell asset touched → no version bump owed).
+
+-----
+
 **2026-06-10 (cwc — G_C identity-fork slice DONE in ONE pass + INDEPENDENTLY RE-VERIFIED; council review next; the
 LAST normalization slice; UNCOMMITTED, the same v62→v63 bump covers G_meta + G_C).** User called the micro-step
 cadence (one finding per slice + a full council each time): *"Just freaking do it... you dont seem to be making any

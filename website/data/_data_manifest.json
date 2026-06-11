@@ -1,0 +1,2061 @@
+{
+  "schema": "aop-data-manifest-v1",
+  "generated_at": "2026-06-11T04:06:22Z",
+  "purpose": "Ground-truth inventory of every AOP data source. Open website/data_sources.html to browse it.",
+  "layers_of_reality": {
+    "db": "PostGIS store of record \u2014 the converged, normalized spine.",
+    "served": "Files website/ loads \u2014 classified by origin (core-backed / raw-pipeline / sidecar / runtime-buffer)."
+  },
+  "db": {
+    "reachable": true,
+    "tables": [
+      {
+        "schema": "core",
+        "table": "features",
+        "role": "store-of-record",
+        "note": "The ONE converged geo table \u2014 CMFS spine + JSONB attrs, one row shape for every layer.",
+        "row_count": 160,
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer"
+          },
+          {
+            "name": "layer",
+            "type": "text"
+          },
+          {
+            "name": "name",
+            "type": "text"
+          },
+          {
+            "name": "kind",
+            "type": "text"
+          },
+          {
+            "name": "description",
+            "type": "text"
+          },
+          {
+            "name": "is_destination",
+            "type": "boolean"
+          },
+          {
+            "name": "status",
+            "type": "text"
+          },
+          {
+            "name": "confidence",
+            "type": "text"
+          },
+          {
+            "name": "permission",
+            "type": "text"
+          },
+          {
+            "name": "publish_status",
+            "type": "text"
+          },
+          {
+            "name": "source_key",
+            "type": "text"
+          },
+          {
+            "name": "archived_at",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "source_id",
+            "type": "integer"
+          },
+          {
+            "name": "geom",
+            "type": "USER-DEFINED"
+          },
+          {
+            "name": "attrs",
+            "type": "jsonb"
+          },
+          {
+            "name": "notes",
+            "type": "text"
+          },
+          {
+            "name": "last_verified",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone"
+          }
+        ],
+        "breakdown": {
+          "columns": [
+            "layer",
+            "rows",
+            "live",
+            "published"
+          ],
+          "rows": [
+            {
+              "layer": "trails",
+              "rows": "120",
+              "live": "120",
+              "published": "0"
+            },
+            {
+              "layer": "cemeteries",
+              "rows": "8",
+              "live": "8",
+              "published": "0"
+            },
+            {
+              "layer": "event",
+              "rows": "6",
+              "live": "6",
+              "published": "0"
+            },
+            {
+              "layer": "buildings",
+              "rows": "5",
+              "live": "5",
+              "published": "0"
+            },
+            {
+              "layer": "visitor",
+              "rows": "4",
+              "live": "4",
+              "published": "0"
+            },
+            {
+              "layer": "poi",
+              "rows": "4",
+              "live": "3",
+              "published": "2"
+            },
+            {
+              "layer": "trail_centerlines",
+              "rows": "4",
+              "live": "4",
+              "published": "2"
+            },
+            {
+              "layer": "park_boundaries",
+              "rows": "3",
+              "live": "3",
+              "published": "2"
+            },
+            {
+              "layer": "field_tracks",
+              "rows": "2",
+              "live": "2",
+              "published": "0"
+            },
+            {
+              "layer": "parcels",
+              "rows": "2",
+              "live": "2",
+              "published": "0"
+            },
+            {
+              "layer": "trailheads",
+              "rows": "1",
+              "live": "1",
+              "published": "0"
+            },
+            {
+              "layer": "observations",
+              "rows": "1",
+              "live": "1",
+              "published": "0"
+            }
+          ]
+        }
+      },
+      {
+        "schema": "core",
+        "table": "events",
+        "role": "store-of-record",
+        "note": "The WHEN \u2014 one row per event occurrence/session.",
+        "row_count": 13,
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer"
+          },
+          {
+            "name": "event_id",
+            "type": "text"
+          },
+          {
+            "name": "source_key",
+            "type": "text"
+          },
+          {
+            "name": "sort_order",
+            "type": "integer"
+          },
+          {
+            "name": "title",
+            "type": "text"
+          },
+          {
+            "name": "date_label",
+            "type": "text"
+          },
+          {
+            "name": "start_local",
+            "type": "text"
+          },
+          {
+            "name": "time_label",
+            "type": "text"
+          },
+          {
+            "name": "status",
+            "type": "text"
+          },
+          {
+            "name": "place_key",
+            "type": "text"
+          },
+          {
+            "name": "attrs",
+            "type": "jsonb"
+          },
+          {
+            "name": "archived_at",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "source_id",
+            "type": "integer"
+          },
+          {
+            "name": "notes",
+            "type": "text"
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "activity_key",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "schema": "core",
+        "table": "activities",
+        "role": "store-of-record",
+        "note": "The reusable WHAT \u2014 place-agnostic activities, no geometry.",
+        "row_count": 12,
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer"
+          },
+          {
+            "name": "activity_key",
+            "type": "text"
+          },
+          {
+            "name": "name",
+            "type": "text"
+          },
+          {
+            "name": "kind",
+            "type": "text"
+          },
+          {
+            "name": "description",
+            "type": "text"
+          },
+          {
+            "name": "attrs",
+            "type": "jsonb"
+          },
+          {
+            "name": "source_id",
+            "type": "integer"
+          },
+          {
+            "name": "archived_at",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "notes",
+            "type": "text"
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone"
+          }
+        ]
+      },
+      {
+        "schema": "core",
+        "table": "event_meta",
+        "role": "store-of-record",
+        "note": "The umbrella EVENT metadata \u2014 the WHO/WHEN banner.",
+        "row_count": 1,
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer"
+          },
+          {
+            "name": "event_id",
+            "type": "text"
+          },
+          {
+            "name": "schema",
+            "type": "text"
+          },
+          {
+            "name": "label",
+            "type": "text"
+          },
+          {
+            "name": "status",
+            "type": "text"
+          },
+          {
+            "name": "date_range_label",
+            "type": "text"
+          },
+          {
+            "name": "end_date_label",
+            "type": "text"
+          },
+          {
+            "name": "source_context",
+            "type": "text"
+          },
+          {
+            "name": "source_summary",
+            "type": "text"
+          },
+          {
+            "name": "caveat",
+            "type": "text"
+          },
+          {
+            "name": "schedule_updated_at",
+            "type": "text"
+          },
+          {
+            "name": "attrs",
+            "type": "jsonb"
+          },
+          {
+            "name": "source_id",
+            "type": "integer"
+          },
+          {
+            "name": "archived_at",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "notes",
+            "type": "text"
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone"
+          }
+        ]
+      },
+      {
+        "schema": "source_register",
+        "table": "sources",
+        "role": "provenance",
+        "note": "The source register \u2014 where every claim comes from.",
+        "row_count": 12,
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer"
+          },
+          {
+            "name": "name",
+            "type": "text"
+          },
+          {
+            "name": "source_type",
+            "type": "text"
+          },
+          {
+            "name": "url_or_contact",
+            "type": "text"
+          },
+          {
+            "name": "retrieved_on",
+            "type": "date"
+          },
+          {
+            "name": "license_or_permission",
+            "type": "text"
+          },
+          {
+            "name": "publish_status",
+            "type": "text"
+          },
+          {
+            "name": "confidence_default",
+            "type": "text"
+          },
+          {
+            "name": "notes",
+            "type": "text"
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone"
+          }
+        ]
+      },
+      {
+        "schema": "source_register",
+        "table": "feature_sources",
+        "role": "provenance",
+        "note": "Feature -> source provenance links.",
+        "row_count": 15,
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer"
+          },
+          {
+            "name": "feature_schema",
+            "type": "text"
+          },
+          {
+            "name": "feature_table",
+            "type": "text"
+          },
+          {
+            "name": "feature_id",
+            "type": "integer"
+          },
+          {
+            "name": "source_id",
+            "type": "integer"
+          },
+          {
+            "name": "claim",
+            "type": "text"
+          },
+          {
+            "name": "confidence",
+            "type": "text"
+          },
+          {
+            "name": "last_checked",
+            "type": "date"
+          },
+          {
+            "name": "review_status",
+            "type": "text"
+          },
+          {
+            "name": "notes",
+            "type": "text"
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone"
+          }
+        ]
+      },
+      {
+        "schema": "raw",
+        "table": "gpx_captures",
+        "role": "raw-capture",
+        "note": "Pristine GPX captures (raw zone).",
+        "row_count": 1,
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer"
+          },
+          {
+            "name": "source_id",
+            "type": "integer"
+          },
+          {
+            "name": "file_name",
+            "type": "text"
+          },
+          {
+            "name": "track_name",
+            "type": "text"
+          },
+          {
+            "name": "creator",
+            "type": "text"
+          },
+          {
+            "name": "recorded_at",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "segment_count",
+            "type": "integer"
+          },
+          {
+            "name": "point_count",
+            "type": "integer"
+          },
+          {
+            "name": "raw_xml",
+            "type": "text"
+          },
+          {
+            "name": "captured_at",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "notes",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "schema": "raw",
+        "table": "arcgis_feature_captures",
+        "role": "raw-capture",
+        "note": "Pristine ArcGIS feature captures (raw zone).",
+        "row_count": 3,
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer"
+          },
+          {
+            "name": "source_id",
+            "type": "integer"
+          },
+          {
+            "name": "source_url",
+            "type": "text"
+          },
+          {
+            "name": "query_where",
+            "type": "text"
+          },
+          {
+            "name": "fetched_at",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "feature_json",
+            "type": "jsonb"
+          },
+          {
+            "name": "notes",
+            "type": "text"
+          }
+        ]
+      }
+    ]
+  },
+  "served": [
+    {
+      "file": "aop_9_patch.geojson",
+      "bytes": 7303,
+      "origin": "raw-pipeline",
+      "origin_note": "9-patch data-acquisition AOI",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 9,
+      "geometry_types": {
+        "Polygon": 9
+      },
+      "property_keys": [
+        "id",
+        "name",
+        "description",
+        "kind",
+        "source",
+        "confidence",
+        "permission",
+        "status",
+        "last_checked",
+        "source_file",
+        "cell_code",
+        "role",
+        "generated_on",
+        "notes"
+      ],
+      "sample": {
+        "id": "aop_9_patch-0",
+        "name": "Cell NW",
+        "description": "Use for imagery/topo/DEM/lidar acquisition context only. Trails stay inside the park working envelope.",
+        "kind": "acquisition_aoi_cell",
+        "source": "brain/research/aop_data_bounds.md",
+        "confidence": "planning",
+        "permission": "n/a \u2014 planning overlay",
+        "status": "planning",
+        "last_checked": "2026-05-20",
+        "source_file": "aop_9_patch.geojson",
+        "cell_code": "NW",
+        "role": "raster_terrain_context",
+        "generated_on": "2026-05-20",
+        "notes": "Use for imagery/topo/DEM/lidar acquisition context only. Trails stay inside the park working envelope."
+      }
+    },
+    {
+      "file": "aop_activity_hotspots.geojson",
+      "bytes": 132878,
+      "origin": "raw-pipeline",
+      "origin_note": "activity hotspot build",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 130,
+      "geometry_types": {
+        "Polygon": 65,
+        "Point": 65
+      },
+      "property_keys": [
+        "id",
+        "kind",
+        "status",
+        "layer",
+        "source_type",
+        "source_files",
+        "track_names",
+        "confidence",
+        "permission",
+        "publish_status",
+        "review_status",
+        "cell_m",
+        "rank",
+        "intensity_norm",
+        "intensity_class",
+        "dwell_seconds",
+        "dwell_minutes",
+        "interest_seconds",
+        "interest_minutes",
+        "interest_mode",
+        "intensity_seconds",
+        "stop_seconds",
+        "slow_seconds",
+        "moving_seconds",
+        "moving_fraction",
+        "distance_m",
+        "avg_speed_mps",
+        "max_gap_seconds",
+        "capped_seconds",
+        "visit_count",
+        "segment_count",
+        "interval_count",
+        "sample_count",
+        "label",
+        "geom_role",
+        "name"
+      ],
+      "sample": {
+        "id": "activity_hotspot_1",
+        "name": "6.6 min",
+        "kind": "activity_hotspot",
+        "status": "hold",
+        "layer": "activity_hotspots",
+        "source_type": "field_track_gpx",
+        "source_files": [
+          "Saturday_Afternoon_Activity.gpx"
+        ],
+        "track_names": [
+          "Saturday Afternoon Activity"
+        ],
+        "confidence": "single_track",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "raw activity evidence; not a validated trail or facility",
+        "cell_m": 15.0,
+        "rank": 1,
+        "intensity_norm": 1.0,
+        "intensity_class": "peak",
+        "dwell_seconds": 398.9,
+        "dwell_minutes": 6.65,
+        "interest_seconds": 398.9,
+        "interest_minutes": 6.65,
+        "interest_mode": "total",
+        "intensity_seconds": 398.9,
+        "stop_seconds": 345.9,
+        "slow_seconds": 53.0,
+        "moving_seconds": 0.0,
+        "moving_fraction": 0.0,
+        "distance_m": 17.6,
+        "avg_speed_mps": 0.044,
+        "max_gap_seconds": 292.0,
+        "capped_seconds": 0.0,
+        "visit_count": 1,
+        "segment_count": 1,
+        "interval_count": 5,
+        "sample_count": 22,
+        "label": "6.6 min",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "file": "aop_buildings.geojson",
+      "bytes": 10664,
+      "origin": "core-backed",
+      "origin_note": "core.features WHERE layer='buildings'",
+      "client_layer": "buildings (FEATURE_LIST_LAYERS, editable)",
+      "kind": "geojson",
+      "feature_count": 5,
+      "geometry_types": {
+        "Polygon": 5
+      },
+      "property_keys": [
+        "id",
+        "zip",
+        "city",
+        "kind",
+        "name",
+        "uuid",
+        "state",
+        "county",
+        "facets",
+        "source",
+        "status",
+        "address",
+        "area_sqm",
+        "build_id",
+        "height_m",
+        "area_sqft",
+        "confidence",
+        "image_date",
+        "image_name",
+        "permission",
+        "description",
+        "outbuilding",
+        "source_file",
+        "source_name",
+        "centroid_lat",
+        "centroid_lng",
+        "last_checked",
+        "building_label",
+        "publish_status",
+        "occupancy_class",
+        "production_date",
+        "source_item_url",
+        "footprint_source",
+        "source_object_id",
+        "primary_occupancy",
+        "validation_method",
+        "source_service_url",
+        "inside_aop_boundary",
+        "secondary_occupancy",
+        "license_or_permission",
+        "maturity",
+        "_original",
+        "aop_facility",
+        "facility_name",
+        "facility_role",
+        "aop_private",
+        "aop_structure_box"
+      ],
+      "sample": {
+        "id": "3392781",
+        "zip": "37380",
+        "city": "South Pittsburg",
+        "kind": "building",
+        "name": "665 Ellis Cove Road",
+        "uuid": "{e12d8983-8f87-41b8-825a-67c6de2212cb}",
+        "state": "Tennessee",
+        "county": "Marion",
+        "facets": {
+          "address": "665 Ellis Cove Road",
+          "occupancy": "Residential"
+        },
+        "source": "ORNL",
+        "status": "raw context",
+        "address": "665 Ellis Cove Road",
+        "area_sqm": 123.49,
+        "build_id": 3392781,
+        "height_m": null,
+        "area_sqft": 1186.7,
+        "confidence": "medium",
+        "image_date": "2016-12-15",
+        "image_name": "1040010026B1E200",
+        "permission": "Private structure on AOP land; shown as presence only, not published as a destination",
+        "aop_private": true,
+        "description": null,
+        "outbuilding": "",
+        "source_file": "aop_buildings.geojson",
+        "source_name": "ORNL",
+        "centroid_lat": 35.08722305,
+        "centroid_lng": -85.74561938,
+        "last_checked": "Automated",
+        "building_label": "665 Ellis Cove Road",
+        "publish_status": "presence_only",
+        "occupancy_class": "Residential",
+        "production_date": "2019-06-06",
+        "source_item_url": "https://www.arcgis.com/home/item.html?id=e9fc147eaeae4dcaa4e9ad9802c7b9c6",
+        "footprint_source": "FEMA USA Structures / ORNL",
+        "source_object_id": 108595436,
+        "aop_structure_box": true,
+        "primary_occupancy": "Single Family Dwelling",
+        "validation_method": "Automated",
+        "source_service_url": "https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/USA_Structures_View/FeatureServer/0",
+        "inside_aop_boundary": true,
+        "secondary_occupancy": "",
+        "license_or_permission": "Private structure on AOP land; shown as presence only, not published as a destination",
+        "maturity": "silver"
+      }
+    },
+    {
+      "file": "aop_cemeteries.geojson",
+      "bytes": 12582,
+      "origin": "core-backed",
+      "origin_note": "core.features WHERE layer='cemeteries'",
+      "client_layer": "cemeteries (FEATURE_LIST_LAYERS, editable)",
+      "kind": "geojson",
+      "feature_count": 8,
+      "geometry_types": {
+        "Point": 4,
+        "MultiPolygon": 1,
+        "Polygon": 3
+      },
+      "property_keys": [
+        "id",
+        "kind",
+        "name",
+        "note",
+        "acres",
+        "facets",
+        "source",
+        "status",
+        "address",
+        "burials",
+        "geom_role",
+        "parcel_id",
+        "confidence",
+        "permission",
+        "description",
+        "source_file",
+        "burial_count",
+        "burial_terms",
+        "last_checked",
+        "parcel_class",
+        "parcel_owner",
+        "aop_inholding",
+        "burial_source",
+        "cemetery_type",
+        "parcel_source",
+        "parcel_gislink",
+        "named_burial_count",
+        "maturity",
+        "aka",
+        "same_as"
+      ],
+      "sample": {
+        "id": "093 001.02:marker",
+        "kind": "cemetery",
+        "name": "Tate Cemetery",
+        "note": "",
+        "acres": 0.698,
+        "facets": {
+          "address": "TATE COVE RD",
+          "revisit_note": "Tate Cemetery sits in the 9-patch outside the AOP working envelope. Same gap as Gilliam / Bible."
+        },
+        "source": "Tennessee Comptroller of the Treasury \u2014 Marion County parcels (TN_County_Parcel_Map FeatureServer layer 35)",
+        "status": "raw context",
+        "address": "TATE COVE RD",
+        "burials": [],
+        "geom_role": "marker",
+        "parcel_id": "093 001.02",
+        "confidence": "observed (county parcel)",
+        "permission": "parcel: public; burial roster: USGenWeb non-commercial",
+        "description": null,
+        "source_file": "aop_cemeteries.geojson",
+        "burial_count": 0,
+        "burial_terms": "",
+        "last_checked": null,
+        "parcel_class": "05 RELIGIOUS",
+        "parcel_owner": "CEMETERY TATE",
+        "aop_inholding": false,
+        "burial_source": "",
+        "cemetery_type": "cemetery",
+        "parcel_source": "Tennessee Comptroller of the Treasury \u2014 Marion County parcels (TN_County_Parcel_Map FeatureServer layer 35)",
+        "parcel_gislink": "058093    00102",
+        "named_burial_count": 0,
+        "maturity": "reference"
+      }
+    },
+    {
+      "file": "aop_contours.geojson",
+      "bytes": 13219439,
+      "origin": "raw-pipeline",
+      "origin_note": "lidar/DEM contour pipeline",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 2831,
+      "geometry_types": {
+        "LineString": 2831
+      },
+      "property_keys": [
+        "id",
+        "kind",
+        "ID",
+        "elev_m",
+        "elev_ft",
+        "idx"
+      ],
+      "sample": {
+        "id": 0,
+        "kind": "contour",
+        "ID": 0,
+        "elev_m": 283.464,
+        "elev_ft": 930,
+        "idx": 0
+      }
+    },
+    {
+      "file": "aop_editor_seed_pois.geojson",
+      "bytes": 1475,
+      "origin": "sidecar",
+      "origin_note": "seed POI installed on fresh/reset",
+      "client_layer": "editorPois seed",
+      "kind": "geojson",
+      "feature_count": 1,
+      "geometry_types": {
+        "Point": 1
+      },
+      "property_keys": [
+        "id",
+        "name",
+        "description",
+        "kind",
+        "source",
+        "confidence",
+        "permission",
+        "status",
+        "last_checked",
+        "source_file",
+        "facets",
+        "layer",
+        "category",
+        "notes",
+        "highlight",
+        "seed_tag",
+        "created"
+      ],
+      "sample": {
+        "id": "aop_seed_pavilion",
+        "name": "AOP Pavilion",
+        "description": "AOP Pavilion / G-Central. Registration, driver meeting, awards, and the campfire all happen here. Resolved to the 1010 Ellis Cove Road building footprint via the #pavilion tag.",
+        "kind": "poi",
+        "source": "editor (first-party)",
+        "confidence": "draft",
+        "permission": "first-party",
+        "status": "draft",
+        "last_checked": null,
+        "source_file": "aop_editor_seed_pois.geojson",
+        "facets": {
+          "category": "Pavilion"
+        },
+        "layer": "editor_poi",
+        "category": "Pavilion",
+        "notes": "Confirmed pavilion; derived from aop_editor_seed_pois.geojson.",
+        "highlight": true,
+        "seed_tag": "#pavilion",
+        "created": "2026-05-26T00:00:00Z"
+      }
+    },
+    {
+      "file": "aop_landcover.geojson",
+      "bytes": 435715,
+      "origin": "raw-pipeline",
+      "origin_note": "landcover classification",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 154,
+      "geometry_types": {
+        "MultiPolygon": 154
+      },
+      "property_keys": [
+        "id",
+        "kind",
+        "class"
+      ],
+      "sample": {
+        "id": "aop_landcover-0",
+        "kind": "landcover",
+        "class": "forest_evergreen"
+      }
+    },
+    {
+      "file": "aop_landcover_9patch.geojson",
+      "bytes": 4504381,
+      "origin": "raw-pipeline",
+      "origin_note": "landcover, 9-patch AOI",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 3430,
+      "geometry_types": {
+        "MultiPolygon": 3430
+      },
+      "property_keys": [
+        "id",
+        "kind",
+        "class"
+      ],
+      "sample": {
+        "id": "aop_landcover_9patch-0",
+        "kind": "landcover",
+        "class": "open_meadow"
+      }
+    },
+    {
+      "file": "aop_lidar_tiles.geojson",
+      "bytes": 27527,
+      "origin": "raw-pipeline",
+      "origin_note": "lidar tile index",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 24,
+      "geometry_types": {
+        "Polygon": 24
+      },
+      "property_keys": [
+        "id",
+        "name",
+        "description",
+        "kind",
+        "source",
+        "confidence",
+        "permission",
+        "status",
+        "last_checked",
+        "source_file",
+        "tile_code",
+        "title",
+        "project",
+        "publication_date",
+        "size_bytes",
+        "size_mb",
+        "download_url",
+        "meta_url",
+        "source_name",
+        "source_id"
+      ],
+      "sample": {
+        "id": "5bade92de4b08583a5d151af",
+        "name": "USGS Lidar Point Cloud TN 27County blk4 2015 2024261NE LAS 2018",
+        "description": null,
+        "kind": "lidar_tile",
+        "source": "ScienceBase",
+        "confidence": "inventory metadata",
+        "permission": "public domain (USGS)",
+        "status": "raw context",
+        "last_checked": "2018-09-25",
+        "source_file": "aop_lidar_tiles.geojson",
+        "tile_code": "2024261NE",
+        "title": "USGS Lidar Point Cloud TN 27County blk4 2015 2024261NE LAS 2018",
+        "project": "USGS_LPC_TN_27County_blk4_2015_LAS_2018",
+        "publication_date": "2018-09-25",
+        "size_bytes": 85771165,
+        "size_mb": 81.8,
+        "download_url": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/USGS_LPC_TN_27County_blk4_2015_LAS_2018/laz/USGS_LPC_TN_27County_blk4_2015_2024261NE_LAS_2018.laz",
+        "meta_url": "https://www.sciencebase.gov/catalog/item/5bade92de4b08583a5d151af",
+        "source_name": "ScienceBase",
+        "source_id": "5bade92de4b08583a5d151af"
+      }
+    },
+    {
+      "file": "aop_roads.geojson",
+      "bytes": 127539,
+      "origin": "raw-pipeline",
+      "origin_note": "USGS roads import",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 114,
+      "geometry_types": {
+        "LineString": 114
+      },
+      "property_keys": [
+        "id",
+        "name",
+        "description",
+        "kind",
+        "source",
+        "confidence",
+        "permission",
+        "status",
+        "last_checked",
+        "source_file",
+        "mtfcc_code",
+        "tnmfrc",
+        "interstate",
+        "us_route",
+        "state_route",
+        "county_route",
+        "road_class",
+        "usgs_layer_id"
+      ],
+      "sample": {
+        "id": "aop_roads-0",
+        "name": "I- 24",
+        "description": null,
+        "kind": "road",
+        "source": "USGS National Map (transportation)",
+        "confidence": "observed",
+        "permission": "public domain (USGS)",
+        "status": "raw context",
+        "last_checked": null,
+        "source_file": "aop_roads.geojson",
+        "mtfcc_code": "S1100",
+        "tnmfrc": 1,
+        "interstate": "24",
+        "us_route": "64",
+        "state_route": null,
+        "county_route": null,
+        "road_class": "controlled_access",
+        "usgs_layer_id": "29"
+      }
+    },
+    {
+      "file": "aop_synthetic_activity_hotspots.geojson",
+      "bytes": 70314,
+      "origin": "raw-pipeline",
+      "origin_note": "simulated Saturday activity",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 36,
+      "geometry_types": {
+        "Polygon": 18,
+        "Point": 18
+      },
+      "property_keys": [
+        "id",
+        "kind",
+        "status",
+        "layer",
+        "source_type",
+        "source_files",
+        "track_names",
+        "confidence",
+        "permission",
+        "publish_status",
+        "review_status",
+        "cell_m",
+        "rank",
+        "intensity_norm",
+        "intensity_class",
+        "dwell_seconds",
+        "dwell_minutes",
+        "interest_seconds",
+        "interest_minutes",
+        "interest_mode",
+        "intensity_seconds",
+        "stop_seconds",
+        "slow_seconds",
+        "moving_seconds",
+        "moving_fraction",
+        "distance_m",
+        "avg_speed_mps",
+        "max_gap_seconds",
+        "capped_seconds",
+        "visit_count",
+        "segment_count",
+        "interval_count",
+        "sample_count",
+        "label",
+        "geom_role",
+        "name"
+      ],
+      "sample": {
+        "id": "activity_hotspot_1",
+        "name": "924.8 min",
+        "kind": "synthetic_activity_hotspot",
+        "status": "hold",
+        "layer": "activity_hotspots",
+        "source_type": "synthetic_activity_gpx",
+        "source_files": [
+          "synthetic_saturday_activity.gpx"
+        ],
+        "track_names": [
+          "Synthetic Saturday 001 - proving ground",
+          "Synthetic Saturday 002 - photo short",
+          "Synthetic Saturday 003 - osm spine runner",
+          "Synthetic Saturday 004 - checkpoint loop",
+          "Synthetic Saturday 005 - trailhead social",
+          "Synthetic Saturday 006 - osm south connector",
+          "Synthetic Saturday 007 - osm spine runner",
+          "Synthetic Saturday 008 - photo short",
+          "Synthetic Saturday 009 - checkpoint loop",
+          "Synthetic Saturday 010 - proving ground",
+          "Synthetic Saturday 011 - photo short",
+          "Synthetic Saturday 012 - osm spine runner",
+          "Synthetic Saturday 013 - osm spine runner",
+          "Synthetic Saturday 014 - trailhead social",
+          "Synthetic Saturday 015 - osm spine runner",
+          "Synthetic Saturday 016 - north crawl",
+          "Synthetic Saturday 017 - osm spine runner",
+          "Synthetic Saturday 018 - osm south connector",
+          "Synthetic Saturday 019 - osm spine runner",
+          "Synthetic Saturday 020 - osm spine runner",
+          "Synthetic Saturday 021 - osm south connector",
+          "Synthetic Saturday 022 - osm spine runner",
+          "Synthetic Saturday 023 - photo short",
+          "Synthetic Saturday 024 - photo short",
+          "Synthetic Saturday 025 - osm spine runner",
+          "Synthetic Saturday 026 - photo short",
+          "Synthetic Saturday 027 - proving ground",
+          "Synthetic Saturday 028 - proving ground",
+          "Synthetic Saturday 029 - osm spine runner",
+          "Synthetic Saturday 030 - north crawl",
+          "Synthetic Saturday 031 - mixed sampler",
+          "Synthetic Saturday 032 - mixed sampler",
+          "Synthetic Saturday 033 - north crawl",
+          "Synthetic Saturday 034 - osm spine runner",
+          "Synthetic Saturday 035 - checkpoint loop",
+          "Synthetic Saturday 036 - proving ground",
+          "Synthetic Saturday 037 - checkpoint loop",
+          "Synthetic Saturday 038 - photo short",
+          "Synthetic Saturday 039 - osm spine runner",
+          "Synthetic Saturday 040 - photo short",
+          "Synthetic Saturday 041 - proving ground",
+          "Synthetic Saturday 042 - photo short",
+          "Synthetic Saturday 043 - osm spine runner",
+          "Synthetic Saturday 044 - trailhead social",
+          "Synthetic Saturday 045 - proving ground",
+          "Synthetic Saturday 046 - proving ground",
+          "Synthetic Saturday 047 - north crawl",
+          "Synthetic Saturday 048 - proving ground",
+          "Synthetic Saturday 049 - osm south connector",
+          "Synthetic Saturday 050 - mixed sampler",
+          "Synthetic Saturday 051 - osm spine runner",
+          "Synthetic Saturday 052 - osm south connector",
+          "Synthetic Saturday 053 - photo short",
+          "Synthetic Saturday 054 - osm spine runner",
+          "Synthetic Saturday 055 - north crawl",
+          "Synthetic Saturday 056 - osm spine runner",
+          "Synthetic Saturday 057 - checkpoint loop",
+          "Synthetic Saturday 058 - checkpoint loop",
+          "Synthetic Saturday 059 - checkpoint loop",
+          "Synthetic Saturday 060 - photo short",
+          "Synthetic Saturday 061 - north crawl",
+          "Synthetic Saturday 062 - osm spine runner",
+          "Synthetic Saturday 063 - osm spine runner",
+          "Synthetic Saturday 064 - north crawl",
+          "Synthetic Saturday 065 - north crawl",
+          "Synthetic Saturday 066 - north crawl",
+          "Synthetic Saturday 067 - north crawl",
+          "Synthetic Saturday 068 - trailhead social",
+          "Synthetic Saturday 069 - north crawl",
+          "Synthetic Saturday 070 - trailhead social",
+          "Synthetic Saturday 071 - photo short",
+          "Synthetic Saturday 072 - osm spine runner"
+        ],
+        "confidence": "synthetic_multi_user_model",
+        "permission": "internal",
+        "publish_status": "hold",
+        "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+        "cell_m": 15.0,
+        "rank": 1,
+        "intensity_norm": 1.0,
+        "intensity_class": "peak",
+        "dwell_seconds": 56785.4,
+        "dwell_minutes": 946.42,
+        "interest_seconds": 55485.3,
+        "interest_minutes": 924.76,
+        "interest_mode": "stop_slow",
+        "intensity_seconds": 7200.0,
+        "stop_seconds": 53843.6,
+        "slow_seconds": 1641.7,
+        "moving_seconds": 1300.1,
+        "moving_fraction": 0.0229,
+        "distance_m": 3580.8,
+        "avg_speed_mps": 0.063,
+        "max_gap_seconds": 318.0,
+        "capped_seconds": 0.0,
+        "visit_count": 153,
+        "segment_count": 72,
+        "interval_count": 1316,
+        "sample_count": 3554,
+        "label": "924.8 min",
+        "geom_role": "cell"
+      }
+    },
+    {
+      "file": "aop_synthetic_activity_tracks.geojson",
+      "bytes": 399761,
+      "origin": "raw-pipeline",
+      "origin_note": "simulated Saturday activity",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 72,
+      "geometry_types": {
+        "LineString": 72
+      },
+      "property_keys": [
+        "id",
+        "name",
+        "kind",
+        "status",
+        "track_name",
+        "persona",
+        "source_type",
+        "synthetic",
+        "start_anchor",
+        "start_local",
+        "end_local",
+        "duration_minutes",
+        "distance_m",
+        "osm_track_m",
+        "osm_route_count",
+        "osm_way_ids",
+        "point_count",
+        "visited_anchors",
+        "review_status"
+      ],
+      "sample": {
+        "id": "synthetic_user_001",
+        "name": "Synthetic Saturday 001 - proving ground",
+        "kind": "synthetic_activity_track",
+        "status": "synthetic Saturday simulation; not field evidence",
+        "track_name": "Synthetic Saturday 001 - proving ground",
+        "persona": "proving_ground",
+        "source_type": "synthetic_activity_gpx",
+        "synthetic": true,
+        "start_anchor": "#pavilion",
+        "start_local": "2026-05-23T13:51:23-05:00",
+        "end_local": "2026-05-23T14:40:26-05:00",
+        "duration_minutes": 49.0,
+        "distance_m": 1256.1,
+        "osm_track_m": 680.8,
+        "osm_route_count": 2,
+        "osm_way_ids": [
+          383693504,
+          1215497682,
+          1215497683
+        ],
+        "point_count": 60,
+        "visited_anchors": [
+          "#pavilion",
+          "#proving-grounds"
+        ],
+        "review_status": "synthetic Saturday simulation; not field evidence"
+      }
+    },
+    {
+      "file": "aop_trail_network.geojson",
+      "bytes": 130958,
+      "origin": "core-backed",
+      "origin_note": "core.features WHERE layer='trails'",
+      "client_layer": "trails (FEATURE_LIST_LAYERS, editable)",
+      "kind": "geojson",
+      "feature_count": 120,
+      "geometry_types": {
+        "LineString": 120
+      },
+      "property_keys": [
+        "id",
+        "kind",
+        "name",
+        "color",
+        "source",
+        "status",
+        "confidence",
+        "difficulty",
+        "permission",
+        "description",
+        "source_file",
+        "last_checked",
+        "trail_number",
+        "review_status",
+        "maturity",
+        "facets",
+        "_original"
+      ],
+      "sample": {
+        "id": "sfwda-0",
+        "kind": "trail",
+        "name": "15",
+        "color": "#1f9d3a",
+        "facets": {
+          "difficulty": "easy"
+        },
+        "source": "sfwda_trace_edited",
+        "status": "hand-edited; normalized from SVG",
+        "confidence": "merged truth (traced)",
+        "difficulty": "easy",
+        "permission": "SFWDA paper map \u2014 permission TBD",
+        "description": null,
+        "source_file": "aop_trail_network.geojson",
+        "last_checked": null,
+        "trail_number": 15,
+        "review_status": "hand-edited; normalized from SVG",
+        "maturity": "gold"
+      }
+    },
+    {
+      "file": "aop_user_features.geojson",
+      "bytes": 518,
+      "origin": "runtime-buffer",
+      "origin_note": "editor working buffer",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 0,
+      "geometry_types": {},
+      "property_keys": [],
+      "sample": null
+    },
+    {
+      "file": "aop_visitor_context_callouts.geojson",
+      "bytes": 9197,
+      "origin": "core-backed",
+      "origin_note": "core.features WHERE layer='visitor'",
+      "client_layer": "visitorContext / brandLogos",
+      "kind": "geojson",
+      "feature_count": 4,
+      "geometry_types": {
+        "Point": 2,
+        "Polygon": 2
+      },
+      "property_keys": [
+        "id",
+        "kind",
+        "name",
+        "source",
+        "status",
+        "confidence",
+        "permission",
+        "source_url",
+        "description",
+        "source_file",
+        "last_checked",
+        "maturity",
+        "logo_id",
+        "icon_size",
+        "icon_image",
+        "attribution",
+        "label",
+        "examples",
+        "food_url",
+        "services",
+        "direction",
+        "lodging_url",
+        "distance_note",
+        "directions_url",
+        "source_summary",
+        "drive_time_note"
+      ],
+      "sample": {
+        "id": "aop_badge",
+        "kind": "brand_logo",
+        "name": "AOP badge",
+        "source": "Adventure Off Road Park",
+        "status": "decorative",
+        "logo_id": "aop_badge",
+        "icon_size": 0.2,
+        "confidence": "n/a",
+        "icon_image": "brand-aop-badge",
+        "permission": "brand owner",
+        "source_url": "https://adventureoffroadpark.com/",
+        "attribution": "Adventure Off Road Park",
+        "description": null,
+        "source_file": "aop_visitor_context_callouts.geojson",
+        "last_checked": null,
+        "maturity": "silver"
+      }
+    },
+    {
+      "file": "aop_water.geojson",
+      "bytes": 223485,
+      "origin": "raw-pipeline",
+      "origin_note": "USGS hydrography import",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 94,
+      "geometry_types": {
+        "LineString": 85,
+        "Polygon": 4,
+        "Point": 5
+      },
+      "property_keys": [
+        "id",
+        "name",
+        "description",
+        "kind",
+        "source",
+        "confidence",
+        "permission",
+        "status",
+        "last_checked",
+        "source_file",
+        "gnis_id",
+        "fcode",
+        "ftype",
+        "water_kind",
+        "water_class",
+        "lengthkm",
+        "areasqkm",
+        "elevation",
+        "permanent_identifier",
+        "nhd_layer_id",
+        "nhd_layer_name"
+      ],
+      "sample": {
+        "id": "139318928",
+        "name": null,
+        "description": null,
+        "kind": "water",
+        "source": "USGS NHD",
+        "confidence": "observed",
+        "permission": "public domain (USGS)",
+        "status": "raw context",
+        "last_checked": null,
+        "source_file": "aop_water.geojson",
+        "gnis_id": null,
+        "fcode": 55800,
+        "ftype": 558,
+        "water_kind": "flowline",
+        "water_class": "artificial_path",
+        "lengthkm": 0.0040443400000000004,
+        "areasqkm": null,
+        "elevation": null,
+        "permanent_identifier": "139318928",
+        "nhd_layer_id": 6,
+        "nhd_layer_name": "Flowline - Large Scale"
+      }
+    },
+    {
+      "file": "osm_aop_9patch.geojson",
+      "bytes": 70237,
+      "origin": "raw-pipeline",
+      "origin_note": "OSM extract, 9-patch AOI",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 71,
+      "geometry_types": {
+        "Point": 3,
+        "LineString": 67,
+        "Polygon": 1
+      },
+      "property_keys": [
+        "id",
+        "name",
+        "description",
+        "kind",
+        "source",
+        "confidence",
+        "permission",
+        "status",
+        "last_checked",
+        "source_file",
+        "osm_id",
+        "osm_type",
+        "highway",
+        "service",
+        "access",
+        "tiger:cfcc",
+        "tiger:county",
+        "tiger:reviewed",
+        "gnis:feature_id",
+        "surface",
+        "ele",
+        "place",
+        "tiger:source",
+        "tiger:tlid",
+        "tiger:upload_uuid",
+        "natural",
+        "oneway",
+        "source:name",
+        "leisure"
+      ],
+      "sample": {
+        "id": 153366614,
+        "name": "Smithtown",
+        "description": null,
+        "kind": "osm_hamlet",
+        "source": "OpenStreetMap",
+        "confidence": "community",
+        "permission": "ODbL",
+        "status": "raw context",
+        "last_checked": null,
+        "source_file": "osm_aop_9patch.geojson",
+        "ele": "204",
+        "gnis:feature_id": "1314305",
+        "place": "hamlet",
+        "osm_id": 153366614,
+        "osm_type": "node"
+      }
+    },
+    {
+      "file": "osm_aop_named.geojson",
+      "bytes": 6614,
+      "origin": "raw-pipeline",
+      "origin_note": "OSM named features",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 5,
+      "geometry_types": {
+        "Point": 3,
+        "LineString": 1,
+        "Polygon": 1
+      },
+      "property_keys": [
+        "id",
+        "name",
+        "description",
+        "kind",
+        "source",
+        "confidence",
+        "permission",
+        "status",
+        "last_checked",
+        "source_file",
+        "osm_id",
+        "osm_type",
+        "gnis:feature_id",
+        "ele",
+        "place",
+        "natural",
+        "highway",
+        "source:name",
+        "leisure"
+      ],
+      "sample": {
+        "id": 153366614,
+        "name": "Smithtown",
+        "description": null,
+        "kind": "osm_hamlet",
+        "source": "OpenStreetMap",
+        "confidence": "community",
+        "permission": "ODbL",
+        "status": "raw context",
+        "last_checked": null,
+        "source_file": "osm_aop_named.geojson",
+        "ele": "204",
+        "gnis:feature_id": "1314305",
+        "place": "hamlet",
+        "osm_id": 153366614,
+        "osm_type": "node"
+      }
+    },
+    {
+      "file": "publish.geojson",
+      "bytes": 82329,
+      "origin": "core-backed",
+      "origin_note": "publish.features view (the one publish gate)",
+      "client_layer": "publish (bounds + published map features)",
+      "kind": "geojson",
+      "feature_count": 6,
+      "geometry_types": {
+        "LineString": 2,
+        "MultiPolygon": 1,
+        "Polygon": 1,
+        "Point": 2
+      },
+      "property_keys": [
+        "id",
+        "kind",
+        "name",
+        "layer",
+        "status",
+        "severity",
+        "confidence",
+        "difficulty",
+        "permission",
+        "description",
+        "hazard_type",
+        "maturity",
+        "same_as",
+        "category"
+      ],
+      "sample": {
+        "id": "trail_centerlines:3",
+        "kind": null,
+        "name": "Saturday Afternoon Activity (segment 1)",
+        "layer": "trail_centerlines",
+        "status": "observed",
+        "severity": null,
+        "confidence": "medium",
+        "difficulty": "unrated",
+        "permission": "publish",
+        "description": "Observed ride evidence \u2014 recorded GPX of one Saturday afternoon at AOP. Drawn as published trail evidence; the real trail name, difficulty, and authority are still owed.",
+        "hazard_type": null,
+        "maturity": "silver"
+      }
+    },
+    {
+      "file": "sfwda_numbered_trails.geojson",
+      "bytes": 69553,
+      "origin": "raw-pipeline",
+      "origin_note": "SFWDA paper-map trace",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 67,
+      "geometry_types": {
+        "MultiLineString": 9,
+        "LineString": 58
+      },
+      "property_keys": [
+        "id",
+        "name",
+        "description",
+        "kind",
+        "source",
+        "confidence",
+        "permission",
+        "status",
+        "last_checked",
+        "source_file",
+        "trail_number",
+        "difficulty",
+        "edge_count",
+        "parts",
+        "stitched_gaps",
+        "unjoined_gaps",
+        "number_confidence",
+        "source_name",
+        "source_type",
+        "review_status"
+      ],
+      "sample": {
+        "id": "sfwda_numbered_trails-0",
+        "name": "Trail 1",
+        "description": null,
+        "kind": "trail",
+        "source": "SFWDA AOP trail map 2015-03-11",
+        "confidence": "low",
+        "permission": "SFWDA paper map \u2014 permission TBD",
+        "status": "raster trace (2015 vintage); contiguous trail under hand-read markers; needs review before core/publish",
+        "last_checked": null,
+        "source_file": "sfwda_numbered_trails.geojson",
+        "trail_number": 1,
+        "difficulty": "easy",
+        "edge_count": 30,
+        "parts": 10,
+        "stitched_gaps": 0,
+        "unjoined_gaps": 7,
+        "number_confidence": "low",
+        "source_name": "SFWDA AOP trail map 2015-03-11",
+        "source_type": "community_raster",
+        "review_status": "raster trace (2015 vintage); contiguous trail under hand-read markers; needs review before core/publish"
+      }
+    },
+    {
+      "file": "sfwda_traced_markers.geojson",
+      "bytes": 96299,
+      "origin": "raw-pipeline",
+      "origin_note": "SFWDA paper-map trace",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 124,
+      "geometry_types": {
+        "Point": 124
+      },
+      "property_keys": [
+        "id",
+        "name",
+        "description",
+        "kind",
+        "source",
+        "confidence",
+        "permission",
+        "status",
+        "last_checked",
+        "source_file",
+        "marker_type",
+        "difficulty",
+        "trail_number",
+        "source_name",
+        "source_type",
+        "review_status",
+        "centroid_px",
+        "number_confidence",
+        "band_flag"
+      ],
+      "sample": {
+        "id": "sfwda_traced_markers-0",
+        "name": "Marker \u00b7 Trail 3",
+        "description": null,
+        "kind": "trail_marker",
+        "source": "SFWDA AOP trail map 2015-03-11",
+        "confidence": "position high; number low (hand-read)",
+        "permission": "SFWDA paper map \u2014 permission TBD",
+        "status": "raster marker; number hand-read, needs verify before core/publish",
+        "last_checked": null,
+        "source_file": "sfwda_traced_markers.geojson",
+        "marker_type": "circle",
+        "difficulty": "easy",
+        "trail_number": 3,
+        "source_name": "SFWDA AOP trail map 2015-03-11",
+        "source_type": "community_raster",
+        "review_status": "raster marker; number hand-read, needs verify before core/publish",
+        "centroid_px": [
+          1816.4,
+          286.3
+        ],
+        "number_confidence": "low"
+      }
+    },
+    {
+      "file": "sfwda_traced_trails.geojson",
+      "bytes": 286654,
+      "origin": "raw-pipeline",
+      "origin_note": "SFWDA paper-map trace",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 382,
+      "geometry_types": {
+        "LineString": 382
+      },
+      "property_keys": [
+        "id",
+        "name",
+        "description",
+        "kind",
+        "source",
+        "confidence",
+        "permission",
+        "status",
+        "last_checked",
+        "source_file",
+        "edge_id",
+        "difficulty",
+        "marker_count",
+        "trail_number",
+        "source_name",
+        "source_type",
+        "review_status"
+      ],
+      "sample": {
+        "id": 0,
+        "name": "Trail 12",
+        "description": null,
+        "kind": "trail",
+        "source": "SFWDA AOP trail map 2015-03-11",
+        "confidence": "position high (mapping-system export)",
+        "permission": "SFWDA paper map \u2014 permission TBD",
+        "status": "raster trace (2015 vintage); needs review before core/publish",
+        "last_checked": null,
+        "source_file": "sfwda_traced_trails.geojson",
+        "edge_id": 0,
+        "difficulty": "easy",
+        "marker_count": 1,
+        "trail_number": 12,
+        "source_name": "SFWDA AOP trail map 2015-03-11",
+        "source_type": "community_raster",
+        "review_status": "raster trace (2015 vintage); needs review before core/publish"
+      }
+    },
+    {
+      "file": "sfwda_trails_edited.geojson",
+      "bytes": 120203,
+      "origin": "raw-pipeline",
+      "origin_note": "SFWDA paper-map trace, hand-edited",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 120,
+      "geometry_types": {
+        "LineString": 120
+      },
+      "property_keys": [
+        "id",
+        "name",
+        "description",
+        "kind",
+        "source",
+        "confidence",
+        "permission",
+        "status",
+        "last_checked",
+        "source_file",
+        "trail_number",
+        "difficulty",
+        "review_status",
+        "color"
+      ],
+      "sample": {
+        "id": "sfwda-0",
+        "name": "15",
+        "description": null,
+        "kind": "trail",
+        "source": "sfwda_trace_edited",
+        "confidence": null,
+        "permission": "SFWDA paper map \u2014 permission TBD",
+        "status": "hand-edited; normalized from SVG",
+        "last_checked": null,
+        "source_file": "sfwda_trails_edited.geojson",
+        "trail_number": 15,
+        "difficulty": "easy",
+        "review_status": "hand-edited; normalized from SVG",
+        "color": "#1f9d3a"
+      }
+    },
+    {
+      "file": "aop_about.json",
+      "bytes": 2310,
+      "origin": "sidecar",
+      "origin_note": "authored About copy",
+      "client_layer": "About tab",
+      "kind": "json",
+      "top_keys": [
+        "schema",
+        "updated_at",
+        "purpose",
+        "heading",
+        "intro",
+        "items",
+        "note",
+        "owed_work"
+      ]
+    },
+    {
+      "file": "aop_copy_registry.json",
+      "bytes": 11682,
+      "origin": "sidecar",
+      "origin_note": "authored copy registry",
+      "client_layer": null,
+      "kind": "json",
+      "top_keys": [
+        "schema",
+        "updated_at",
+        "purpose",
+        "status_legend",
+        "extraction_legend",
+        "kinds"
+      ]
+    },
+    {
+      "file": "aop_event_schedule.json",
+      "bytes": 11362,
+      "origin": "core-backed",
+      "origin_note": "core.events + core.activities + core.event_meta",
+      "client_layer": "eventSchedule",
+      "kind": "json",
+      "top_keys": [
+        "schema",
+        "updated_at",
+        "status",
+        "event",
+        "locations",
+        "sessions"
+      ]
+    },
+    {
+      "file": "aop_poi_index.json",
+      "bytes": 6801,
+      "origin": "sidecar",
+      "origin_note": "authored POI blurbs + revisit notes",
+      "client_layer": "POI tab index",
+      "kind": "json",
+      "top_keys": [
+        "schema",
+        "updated_at",
+        "purpose",
+        "match_fields",
+        "groups",
+        "entries",
+        "owed_work"
+      ]
+    },
+    {
+      "file": "aop_synthetic_activity_report.json",
+      "bytes": 8510,
+      "origin": "raw-pipeline",
+      "origin_note": "simulated activity report",
+      "client_layer": null,
+      "kind": "json",
+      "top_keys": [
+        "schema",
+        "generated_at",
+        "simulation",
+        "inputs",
+        "summary",
+        "expected_hotspots",
+        "notes"
+      ]
+    },
+    {
+      "file": "aop_trail_catalog.json",
+      "bytes": 7060,
+      "origin": "sidecar",
+      "origin_note": "authored trail name/description/difficulty",
+      "client_layer": null,
+      "kind": "json",
+      "top_keys": [
+        "schema",
+        "updated_at",
+        "purpose",
+        "provenance_note",
+        "difficulty_legend",
+        "trails",
+        "named_landmarks",
+        "coverage",
+        "owed_work"
+      ]
+    },
+    {
+      "file": "aop_ui_strings.json",
+      "bytes": 2047,
+      "origin": "sidecar",
+      "origin_note": "authored UI strings",
+      "client_layer": "UI strings",
+      "kind": "json",
+      "top_keys": [
+        "schema",
+        "updated_at",
+        "purpose",
+        "app",
+        "search",
+        "calendar",
+        "poi",
+        "hot",
+        "install_reference",
+        "controls_reference"
+      ]
+    },
+    {
+      "file": "sfwda_raster_alignment.json",
+      "bytes": 4352,
+      "origin": "raw-pipeline",
+      "origin_note": "SFWDA raster 4-corner warp",
+      "client_layer": null,
+      "kind": "json",
+      "top_keys": [
+        "_comment",
+        "source_image",
+        "source_provenance",
+        "image_pixel_size",
+        "reference_polygon",
+        "orientation_cw_degrees",
+        "corners",
+        "grid_6x6"
+      ]
+    }
+  ]
+}
