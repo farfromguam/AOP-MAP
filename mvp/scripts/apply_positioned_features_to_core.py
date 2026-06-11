@@ -46,7 +46,9 @@ No-limiting code (C5 / gold's store-first discipline):
 
 Editor-layerKey -> core resolution (grounded 2026-06-08 against the live rows):
   buildings:<build_id>           -> source_key = the editor key (direct)
-  cemeteries:<parcel_id>         -> attrs.parcel_id == <parcel_id> AND geom_role='marker'
+  cemeteries:<parcel_id>:<role>  -> source_key = the editor key (direct, G_C canonical
+                                    id); legacy bare <parcel_id> falls back to
+                                    attrs.parcel_id == <parcel_id> AND geom_role='marker'
   visitorContext:<name>          -> core layer 'visitor', coalesce(attrs.name,attrs.label)
                                     == <name>, kind <> 'brand_logo' (decision #3)
   trails:n:<num>                 -> attrs.trail_number == <num>
@@ -164,7 +166,17 @@ def resolve_where(layerkey: str, fid: str) -> str | None:
         # editor key == core source_key (build_id == the key suffix).
         return f"{base} AND f.source_key = {sql_str(f'buildings:{fid}')}"
     if layerkey == "cemeteries":
-        # the LIST surfaces the marker row (listPredicate geom_role==='marker').
+        # G_C (gold slice 6, 2026-06-10): the cemetery editor key is now the
+        # CANONICAL id '<parcel_id>:<geom_role>' (= the source_key business part),
+        # because the host idField moved parcel_id -> id to end the twin's shared
+        # non-unique id (audit `cemetery-parcel-marker-twin-nonunique-id`). The panel
+        # surfaces the MARKER row, so a ★ arrives keyed '<parcel_id>:marker' and
+        # resolves to the marker store-of-record by source_key directly -- uniform
+        # with buildings (source_key = 'cemeteries:' + the editor key). A legacy
+        # bare-parcel_id key (pre-G_C localStorage, no :role suffix) still resolves
+        # to the marker via the fallback so an old buffered ★ is not lost (C5).
+        if ":" in fid:
+            return f"{base} AND f.source_key = {sql_str(f'cemeteries:{fid}')}"
         return (f"{base} AND f.attrs->>'parcel_id' = {sql_str(fid)} "
                 f"AND f.attrs->>'geom_role' = 'marker'")
     if layerkey == "visitorContext":

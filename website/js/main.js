@@ -2187,7 +2187,20 @@
     const FEATURE_LIST_LAYERS = {
       cemeteries: {
         label: 'Cemeteries',
-        idField: 'parcel_id',
+        // G_C (gold slice 6, 2026-06-10): the canonical baked `id` (=
+        // '<parcel_id>:<geom_role>', UNIQUE per feature) — was `parcel_id`, which
+        // the parcel + marker TWIN shared, so buildFeatureListState deduped them to
+        // the FIRST (the parcel) and a ★/edit smeared onto the parcel while the list
+        // surfaced the marker (audit `cemetery-parcel-marker-twin-nonunique-id`).
+        // Keying on the unique `id` makes the MARKER its own resolvable row: the
+        // panel passes the marker's props (it filters geom_role==='marker'), so
+        // positionedFeatureIdFor → props.id = '<parcel_id>:marker' resolves the
+        // MARKER store-of-record, not the parcel twin. The parcel stays SERVED
+        // (related geometry — cemetery-fill/outline paint it) with its own
+        // '<parcel_id>:parcel' id. `geom_role` is now a Tier-3 attrs facet + the
+        // list filter (listPredicate below). This makes `spec.idField == panel key
+        // == DB source_key business part` (`served-id-heterogeneous-no-canonical-key`).
+        idField: 'id',
         // Star eligibility (sprint 08 — star_driven_poi_normalization). Draws
         // the per-row ★ and lets a cemetery's curation land durably in
         // core.features.attrs.highlight (via apply_positioned_features_to_core.py),
@@ -8780,7 +8793,14 @@
             ['Source', props.parcel_source]
           ],
           (props) => cemeteryBurialHtml(props));
-        bindPanelReveal(['cemetery-fill', 'cemetery-marker'], 'cemeteries', 'parcel_id');
+        // G_C (gold slice 6): the cemetery idField is now the canonical `id`
+        // ('<parcel_id>:<geom_role>'), so a map-click reveal must resolve to the
+        // canonical id, NOT the bare parcel_id (which no longer keys any row).
+        // Both the parcel polygon and the marker point click-reveal the MARKER
+        // row (the store-of-record the panel/list surfaces, geom_role==='marker'),
+        // so clicking the fill or the dot lands on the same one cemetery row.
+        bindPanelReveal(['cemetery-fill', 'cemetery-marker'], 'cemeteries',
+          (props) => props && props.parcel_id != null ? `${props.parcel_id}:marker` : (props && props.id));
 
         // Per-feature visibility: 4 cemeteries, Ellis (the AOP inholding,
         // parcel 110 008.04) pre-ticked, the other three off by default.
@@ -8792,7 +8812,11 @@
           cemeteryData,
           'cemetery',
           cemeteriesToggle,
-          (props) => ({ featureListKey: 'cemeteries', featureId: props.parcel_id })
+          // G_C: the search-result reveal binding targets the canonical MARKER id
+          // (the store-of-record row), not the bare parcel_id (which no longer keys
+          // a row now that the cemetery idField is the canonical `id`).
+          (props) => ({ featureListKey: 'cemeteries',
+                        featureId: props.parcel_id != null ? `${props.parcel_id}:marker` : props.id })
         );
         // Index the county owner-of-record name too (e.g. searching
         // "Bryson & Ellis Cemetery" should also land on Ellis Cemetery).
@@ -8806,7 +8830,8 @@
               toggle: cemeteriesToggle,
               geometry: feature.geometry,
               featureListKey: 'cemeteries',
-              featureId: props.parcel_id
+              // G_C: reveal the canonical MARKER id, not the bare parcel_id.
+              featureId: props.parcel_id != null ? `${props.parcel_id}:marker` : props.id
             });
           }
         }

@@ -167,6 +167,15 @@ def main() -> int:
         by_tier[tier] = by_tier.get(tier, 0) + 1
         print(f"  [{tier:9s}] {fname:42s} {group:42s} {status}")
     update_schema(MATURITY, check)
+    # stamp_maturity authors the served files' `_meta`; promote it (and the
+    # owner-authored collection provenance) into the COMMITTED store of record so the
+    # bake can reproduce `_meta` on a fresh volume without the prior served file
+    # (reference-bake-no-meta-on-fresh-volume). One store, captured by the same author.
+    try:
+        import regen_meta
+        regen_meta.capture(check=check)
+    except Exception as exc:  # never let the store sync break the stamp itself
+        print(f"  ! regen_meta.capture skipped ({exc})")
     print("\nper tier: " + ", ".join(f"{t}={by_tier.get(t, 0)}" for t in TIERS))
     if missing:
         print("missing (not on disk, skipped): " + ", ".join(missing))

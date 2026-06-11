@@ -1476,7 +1476,13 @@
     // SOURCE — WHERE it came from. The served FILE first (answers "what file does
     // this come from?"), then coordinates, then the canonical provenance block.
     fields.push({ kind: 'static', label: 'File', value: fileForItem(node, item), tab: 'source' });
-    const mat = nodeMaturity(node);
+    // Per-feature maturity FIRST (the baked attribute, the store of record), then
+    // the panel-node literal as a DEFAULT, then the file `_meta.maturity` -- the
+    // node literal is no longer the truth (maturity-tier-derived-from-panel-tree-
+    // position, gold slice 6). A reference feature now carries `props.maturity`
+    // baked by export_publish_geojson.sh (default = the file's layer maturity); a
+    // feature with no baked maturity falls back to the node, so nothing regresses.
+    const mat = props.maturity || nodeMaturity(node);
     if (mat) fields.push({ kind: 'static', label: 'Tier', value: (MATURITY_LABEL[mat] || mat) + (effectiveItemLock(node, item) ? ' · locked' : ' · unlocked'), tab: 'source' });
     const coords = coordsString(item.feature);
     if (coords) fields.push({ kind: 'static', label: 'Coordinates', value: coords, tab: 'source' });

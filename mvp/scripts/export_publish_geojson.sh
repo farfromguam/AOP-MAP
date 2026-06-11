@@ -131,35 +131,90 @@ echo "Exporting publish views to $OUTPUT_FILE"
 # Same docker compose connection style as the import scripts.
 cd "$MVP_DIR"
 docker compose exec -T db psql -v ON_ERROR_STOP=1 -U aop -d aop_map -At -c "$SQL" > "$OUTPUT_TMP"
-# Wrap as {type, features, _meta} minified, carrying `_meta` (the publish layers'
-# maturity badge / group label the editor reads) forward from the live file --
-# the SAME `_meta` carry-forward the reference arm below does (F4, 2026-06-09).
-# Python re-serialization (separators=(",", ":")) makes the served bytes a
-# deterministic pure function of the DB rows + this script: re-running the bake
-# emits a byte-identical file (the prior PG-`COPY` formatting was already
-# deterministic but carried no `_meta`; this also unifies the serialization with
-# the reference files). `_meta` has no DB home yet -- carrying it forward is the
-# owed `reference-bake-no-meta-on-fresh-volume` item, out of THIS slice's scope.
+# Wrap as {type, features, <top-level keys>} minified. The top-level keys (the
+# publish layers' maturity badge / group label the editor reads from `_meta`, plus
+# any owner-authored collection provenance) now come from the STORE OF RECORD --
+# website/data/_schema.json (regen_meta.served_top_meta) -- NOT carried forward from
+# the prior served file. _schema.json is COMMITTED, so a FRESH VOLUME (no prior
+# served file) still reproduces `_meta` exactly: closes
+# `reference-bake-no-meta-on-fresh-volume` (gold slice 6, 2026-06-10). When the
+# store has nothing for the file yet (a fresh checkout before regen_meta.py
+# --capture), the bake falls back to carrying the live file forward so it never
+# emits a meta-less file; --capture then promotes it to the store.
+# Per-feature `maturity` (the editor Tier chip's store of record): each published
+# feature is stamped with the file's layer maturity from the store
+# (`maturity-tier-derived-from-panel-tree-position`); panel.js reads
+# props.maturity first, the node literal as a default.
+# Python re-serialization (separators=(",", ":")) keeps the served bytes a
+# deterministic pure function of the DB rows + this script + the schema store.
 PUB_WRITE="$OUTPUT_FILE"; [ "$CHECK" -eq 1 ] && PUB_WRITE="${OUTPUT_FILE}.check"
-BODY="$OUTPUT_TMP" OUT="$OUTPUT_FILE" WRITE="$PUB_WRITE" python3 - <<'PY'
-import json, os
+BODY="$OUTPUT_TMP" OUT="$OUTPUT_FILE" WRITE="$PUB_WRITE" FNAME="publish.geojson" \
+  SCRIPT_DIR="$SCRIPT_DIR" python3 - <<'PY'
+import json, os, sys
+sys.path.insert(0, os.environ["SCRIPT_DIR"])
+import regen_meta as rm
 body = json.load(open(os.environ["BODY"]))            # {type, features} from the COPY
-out_path = os.environ["OUT"]                          # live file (read _meta from it)
+out_path = os.environ["OUT"]                          # live file (carry-forward fallback)
 write_path = os.environ.get("WRITE") or out_path      # --check: write to a side path
-doc = {"type": "FeatureCollection", "features": body.get("features", [])}
-# Carry forward EVERY top-level FeatureCollection key from the live file (not just
-# _meta): owner-authored collection-level provenance/derivation that has no DB home
-# yet stays loss-free (publish.geojson ships only _meta today, but this matches the
-# reference arm so neither can silently drop a collection key). `type`/`features`
-# are this bake's own output and must NOT be carried.
-try:
-    with open(out_path) as fh:
-        prior = json.load(fh)
-    for k, v in prior.items():
-        if k not in ("type", "features"):
-            doc[k] = v
-except (FileNotFoundError, ValueError):
-    pass
+fname = os.environ["FNAME"]
+feats = body.get("features", [])
+schema = rm._load_schema()
+# G_C (gold slice 6, 2026-06-10) -- publish `kind` from the controlled list
+# (audit `publish-kind-taxonomy-fork`). The two `poi`-layer published features
+# carry a specific-class proper-noun kind (`pavilion`, `cemetery`) where the
+# controlled Tier-1 `kind` is `poi`; the specific class belongs in a Tier-3
+# `category` facet (mirrors the A4 `seed-poi-kind-is-propernoun-category` fix).
+# C5/C6 -- MAP KNOWN, PASS UNKNOWN THROUGH: only the controlled mapping below is
+# rewritten; an unmapped kind renders as-is, never thrown on, never coerced to
+# blank. Only `layer='poi'` rows are touched -- a `park_boundaries` row keeps its
+# domain kind (e.g. the Ellis inholding boundary stays `cemetery`). The original
+# class is preserved in `category` so nothing is dropped (additive).
+POI_KIND_MAP = {"pavilion": "poi", "cemetery": "poi"}
+# G_C (gold slice 6, 2026-06-10) -- Ellis cemetery is ONE real-world place
+# represented across files/layers (audit `ellis-cemetery-multi-id-across-files`):
+# `editorPois:ellis-cemetery` (poi) + `park_boundaries:ellis-inholding` (boundary)
+# in publish.geojson, and `110 008.04:parcel`/`:marker` in aop_cemeteries.geojson.
+# We do NOT hard-merge (each representation paints a different layer and is needed);
+# instead an ADDITIVE `same_as` facet links every representation to the canonical
+# site id (the cemetery MARKER, the store-of-record row) so a surface CAN know they
+# are one place. Keyed by the published source_key (the served `id`). Permissive:
+# only the known Ellis publish ids are linked; nothing else is touched.
+ELLIS_CANONICAL_ID = "110 008.04:marker"   # the cemetery marker's canonical id
+ELLIS_PUBLISH_IDS = {"editorPois:ellis-cemetery", "park_boundaries:ellis-inholding"}
+for ft in feats:
+    props = ft.get("properties")
+    if not isinstance(props, dict):
+        continue
+    if props.get("layer") == "poi":
+        k = props.get("kind")
+        if k in POI_KIND_MAP and POI_KIND_MAP[k] != k:
+            if "category" not in props or props.get("category") in (None, ""):
+                props["category"] = k          # keep the specific class as a facet
+            props["kind"] = POI_KIND_MAP[k]     # controlled Tier-1 kind
+    if props.get("id") in ELLIS_PUBLISH_IDS and "same_as" not in props:
+        props["same_as"] = ELLIS_CANONICAL_ID  # cross-link to the canonical cemetery
+# Per-feature maturity (default = the file's layer maturity from the store).
+layer_mat = (schema.get("layers", {}).get(fname, {}) or {}).get("maturity")
+if layer_mat:
+    for ft in feats:
+        props = ft.get("properties")
+        if isinstance(props, dict) and "maturity" not in props:
+            props["maturity"] = layer_mat
+doc = {"type": "FeatureCollection", "features": feats}
+top = rm.served_top_meta(fname, schema)               # store of record -> top keys
+if top:
+    for k, v in top.items():
+        doc[k] = v
+else:
+    # Fresh-volume fallback: carry the live file's top keys forward (no store yet).
+    try:
+        with open(out_path) as fh:
+            prior = json.load(fh)
+        for k, v in prior.items():
+            if k not in ("type", "features"):
+                doc[k] = v
+    except (FileNotFoundError, ValueError):
+        pass
 tmp = write_path + ".tmp"
 with open(tmp, "w") as fh:
     json.dump(doc, fh, ensure_ascii=False, separators=(",", ":"))
@@ -196,39 +251,80 @@ for pair in $REFERENCE_LAYERS; do
   # `label`) becomes a literal `\\n` and the newline is corrupted. -At prints the
   # json value raw, preserving the escape. (The publish.geojson COPY above has the
   # same latent risk if a published feature ever carries a newline -- none does today.)
+  # G_C (gold slice 6, 2026-06-10): the served `id` is now the CANONICAL business
+  # key -- the `source_key` minus its `<layer>:` prefix -- so `spec.idField ==
+  # panel key == DB source_key` for every layer (audit
+  # `served-id-heterogeneous-no-canonical-key`). It is overlaid ON TOP of attrs
+  # (after $SPINE_JSONB) so the canonical id wins over whatever `attrs.id` carried:
+  #   buildings  id = build_id          (was the FEMA UUID -- now matches source_key;
+  #                                       the UUID survives in attrs.uuid/attrs.id,
+  #                                       additive, audit `buildings-served-id-...-pk`)
+  #   cemeteries id = '<parcel_id>:<geom_role>' (UNIQUE per feature -- collapses the
+  #                                       twin's non-unique shared id; the parcel and
+  #                                       marker now carry DISTINCT canonical ids,
+  #                                       audit `cemetery-parcel-marker-twin-...`)
+  #   trails     id = 'sfwda-N'         (unchanged -- already == source_key biz key)
+  #   visitor    id = '<id>'            (unchanged -- already == source_key biz key)
+  # `geom_role` stays an attrs facet (it already rides in attrs verbatim). The host
+  # idField for cemeteries moves to `id` (js/main.js) so the editor resolves the
+  # MARKER store-of-record, not the parcel twin. ORDER BY source_key makes the bake
+  # deterministic (closes the pre-existing buildings order-only --check DRIFT).
+  ID_OVERLAY="jsonb_build_object('id', regexp_replace(source_key, '^' || layer || ':', ''))"
   layer_sql="SELECT coalesce(json_agg(json_build_object(
       'type', 'Feature',
       'geometry', ST_AsGeoJSON(geom, 9)::json,
-      'properties', attrs || $SPINE_JSONB
-    )), '[]'::json)
+      'properties', attrs || $SPINE_JSONB || $ID_OVERLAY
+    ) ORDER BY source_key), '[]'::json)
     FROM core.features
     WHERE layer = '$layer' AND archived_at IS NULL;"
   echo "Exporting core.features layer '$layer' -> $out"
   docker compose exec -T db psql -v ON_ERROR_STOP=1 -U aop -d aop_map -At -c "$layer_sql" > "$feat_tmp"
   ref_write="$out"; [ "$CHECK" -eq 1 ] && ref_write="${out}.check"
-  # Wrap as {type, features, <top-level meta>} minified; carry EVERY top-level
-  # FeatureCollection key forward from the live file (not just _meta) so the bake is
-  # loss-free at the collection level, not only per-feature. HEAD's reference files
-  # ship owner-authored collection provenance/derivation with no DB home yet --
-  # _source, _derived, _generated_by, _retrieved_on, _aop_9_patch_bbox, _source_item,
-  # _source_service, _sources_checked, _description, the collection `name`, _meta.
-  # Carrying them forward is the same stopgap as _meta (the fresh-volume DB home is
-  # the deferred reference-bake-no-meta-on-fresh-volume item). `type`/`features` are
-  # the bake's own output and must NOT be carried.
-  FEATS="$feat_tmp" OUT="$out" WRITE="$ref_write" python3 - <<'PY'
-import json, os
+  # Wrap as {type, features, <top-level keys>} minified. The top-level keys -- the
+  # owner-authored collection provenance (_source, _derived, _generated_by,
+  # _retrieved_on, _aop_9_patch_bbox, _source_item, _source_service,
+  # _sources_checked, _description, the collection `name`) AND the `_meta` block
+  # (the editor's maturity badge + the trail self-describing GOLD BLOCK) -- now come
+  # from the STORE OF RECORD, website/data/_schema.json (regen_meta.served_top_meta),
+  # NOT carried forward from the prior served file. _schema.json is COMMITTED, so a
+  # FRESH VOLUME with no prior served file reproduces every top-level key (and the
+  # gold block) BYTE-IDENTICAL: closes `reference-bake-no-meta-on-fresh-volume`
+  # (gold slice 6, 2026-06-10). Fresh-checkout fallback (no store yet): carry the
+  # live file forward, then `regen_meta.py --capture` promotes it.
+  # Per-feature `maturity` (the editor Tier chip's store of record): each reference
+  # feature is stamped with the file's layer maturity from the store
+  # (`maturity-tier-derived-from-panel-tree-position`); panel.js reads
+  # props.maturity first, the node literal as a default.
+  FEATS="$feat_tmp" OUT="$out" WRITE="$ref_write" FNAME="$fname" \
+    SCRIPT_DIR="$SCRIPT_DIR" python3 - <<'PY'
+import json, os, sys
+sys.path.insert(0, os.environ["SCRIPT_DIR"])
+import regen_meta as rm
 feats = json.load(open(os.environ["FEATS"]))
-out_path = os.environ["OUT"]                          # live file (read top-level keys from it)
+out_path = os.environ["OUT"]                          # live file (carry-forward fallback)
 write_path = os.environ.get("WRITE") or out_path      # --check: write to a side path
+fname = os.environ["FNAME"]
+schema = rm._load_schema()
+layer_mat = (schema.get("layers", {}).get(fname, {}) or {}).get("maturity")
+if layer_mat:
+    for ft in feats:
+        props = ft.get("properties")
+        if isinstance(props, dict) and "maturity" not in props:
+            props["maturity"] = layer_mat
 doc = {"type": "FeatureCollection", "features": feats}
-try:
-    with open(out_path) as fh:
-        prior = json.load(fh)
-    for k, v in prior.items():
-        if k not in ("type", "features"):
-            doc[k] = v
-except (FileNotFoundError, ValueError):
-    pass
+top = rm.served_top_meta(fname, schema)               # store of record -> top keys
+if top:
+    for k, v in top.items():
+        doc[k] = v
+else:
+    try:
+        with open(out_path) as fh:
+            prior = json.load(fh)
+        for k, v in prior.items():
+            if k not in ("type", "features"):
+                doc[k] = v
+    except (FileNotFoundError, ValueError):
+        pass
 tmp = write_path + ".tmp"
 with open(tmp, "w") as fh:
     json.dump(doc, fh, ensure_ascii=False, separators=(",", ":"))
@@ -388,6 +484,22 @@ PY
 rm -f "$sched_tmp"
 
 echo "Event-schedule export complete."
+
+# --- Manifest regen (ONE writer of the served files owns _schema.json's DERIVED
+#     fields) --------------------------------------------------------------------
+# This export script is the LAST writer of the served reference/publish files, so it
+# refreshes _schema.json's per-layer `features` count + top-level `updated_at` from
+# the served truth -- closing `schema-manifest-stale` (the export bake used to write
+# 5 files but never touch the manifest, so its counts/date drifted). The CURATED
+# fields (maturity stamp, the verbatim `meta`, collection_meta, kind, machine,
+# layer_provenance, crosswalk, facets, maturity_tiers) are PRESERVED -- maturity is
+# INPUT, counts/date are OUTPUT, no circularity. In --check mode it reports only.
+# Skipped under --check writes nothing (the side-file bake didn't change the served
+# tree, so a manifest refresh there would be spurious).
+if [ "$CHECK" -eq 0 ]; then
+  echo "Regenerating _schema.json manifest counts (regen_meta.py --manifest)"
+  python3 "$SCRIPT_DIR/regen_meta.py" --manifest
+fi
 
 # --- --check pure-function proof: byte-diff each freshly-baked side file against
 #     the live served file, then delete the side files. NO REVERT iff all match.

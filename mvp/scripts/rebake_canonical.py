@@ -316,26 +316,36 @@ def rebake_file(fname, cfg, check=False):
     stem = fname.replace(".geojson", "")
     for i, ft in enumerate(feats):
         ft["properties"] = canonical_props(cfg, ft.get("properties") or {}, stem, i)
-    # Carry the curated top-level `_meta` additions forward from the LIVE file: the
-    # maturity stamp (stamp_maturity.py) and the trail gold block
-    # (export_gold_trail_network.py) live there. raw/ carries a PARTIAL `_meta`
-    # (pristine, pre-stamp), so the old `if "_meta" not in doc` guard skipped the
-    # carry-forward and silently wiped the stamps. Instead overlay every live-only
-    # `_meta` key onto the doc's `_meta`: raw's pristine values are kept, the
-    # post-bake curation (maturity/group/locked/gold block) survives. We only author
-    # features here; `_meta` curation is theirs to keep.
+    # Carry the curated top-level `_meta` additions forward: the maturity stamp
+    # (stamp_maturity.py) and the trail gold block (export_gold_trail_network.py)
+    # live there. raw/ carries a PARTIAL `_meta` (pristine, pre-stamp), so the old
+    # `if "_meta" not in doc` guard silently wiped the stamps. We overlay every
+    # live-only `_meta` key onto the doc's `_meta` so raw's pristine values are kept
+    # and the post-bake curation survives. SOURCE OF THE CURATED `_meta`: the LIVE
+    # served file when present, else the COMMITTED store of record
+    # `_schema.json` (layers.<file>.meta) -- so a FRESH VOLUME with no live file
+    # still reproduces the stamp/gold block (reference-bake-no-meta-on-fresh-volume,
+    # gold slice 6, 2026-06-10). We only author features here; `_meta` curation is
+    # theirs to keep.
+    live_meta = None
     if os.path.exists(live_path):
         try:
             with open(live_path) as lf:
                 live_meta = json.load(lf).get("_meta")
         except (OSError, ValueError):
             live_meta = None
-        if isinstance(live_meta, dict):
-            meta = doc.get("_meta") if isinstance(doc.get("_meta"), dict) else {}
-            for k, v in live_meta.items():
-                if k not in meta:
-                    meta[k] = v
-            doc["_meta"] = meta
+    if not isinstance(live_meta, dict):
+        store = _load_json("_schema.json")
+        layer = (store.get("layers", {}) or {}).get(fname, {}) if isinstance(store, dict) else {}
+        store_meta = layer.get("meta")
+        if isinstance(store_meta, dict):
+            live_meta = store_meta
+    if isinstance(live_meta, dict):
+        meta = doc.get("_meta") if isinstance(doc.get("_meta"), dict) else {}
+        for k, v in live_meta.items():
+            if k not in meta:
+                meta[k] = v
+        doc["_meta"] = meta
     if not check:
         with open(live_path, "w") as fh:
             json.dump(doc, fh, ensure_ascii=False, separators=(",", ":"))
@@ -394,8 +404,16 @@ def write_manifest(results):
         entry = {"features": n, "kind": kind if isinstance(kind, str) else "(per-feature)", "machine": machine}
         if machine:
             entry["layer_provenance"] = CONFIG[fname].get("prov", {})
-        if isinstance(prior_layers.get(fname), dict) and "maturity" in prior_layers[fname]:
-            entry["maturity"] = prior_layers[fname]["maturity"]
+        # Preserve the CURATED store-of-record fields the maturity author wrote onto
+        # this layer (regen_meta.capture / stamp_maturity): the flat maturity stamp
+        # plus the verbatim `meta` + `collection_meta` the bake reproduces `_meta`
+        # from. A plain rebuild here must not drop them (they have no other writer;
+        # dropping them is the schema-manifest-stale failure mode in reverse).
+        prior_entry = prior_layers.get(fname)
+        if isinstance(prior_entry, dict):
+            for k in ("maturity", "group", "locked", "maturity_note", "meta", "collection_meta"):
+                if k in prior_entry:
+                    entry[k] = prior_entry[k]
         manifest["layers"][fname] = entry
     # Carry forward layers this re-bake does not process (e.g. publish.geojson is
     # DB-baked) so the manifest stays a complete catalog; refresh their live count.

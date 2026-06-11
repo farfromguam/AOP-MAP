@@ -1,6 +1,6 @@
 {
   "schema": "aop-cmfs-v1",
-  "updated_at": "2026-06-09",
+  "updated_at": "2026-06-10",
   "purpose": "Common Minimum Feature Schema — the one data contract the right-panel editor reads. See brain/research/common_feature_schema.md.",
   "canonical_fields": {
     "id": "stable feature id (machine; never blank where derivable)",
@@ -99,91 +99,236 @@
       "features": 9,
       "kind": "acquisition_aoi_cell",
       "machine": false,
-      "maturity": "reference"
-    },
-    "aop_buildings.geojson": {
-      "features": 5,
-      "kind": "building",
-      "machine": false,
-      "maturity": "silver"
-    },
-    "aop_cemeteries.geojson": {
-      "features": 8,
-      "kind": "cemetery",
-      "machine": false,
-      "maturity": "reference"
-    },
-    "aop_trail_network.geojson": {
-      "features": 120,
-      "kind": "trail",
-      "machine": false,
-      "maturity": "gold"
-    },
-    "aop_visitor_context_callouts.geojson": {
-      "features": 4,
-      "kind": "(per-feature)",
-      "machine": false,
-      "maturity": "silver"
+      "maturity": "reference",
+      "group": "9-patch acquisition AOI",
+      "locked": false,
+      "maturity_note": "reference — external raw context",
+      "meta": {
+        "maturity": "reference",
+        "group": "9-patch acquisition AOI",
+        "locked": false,
+        "maturity_note": "reference — external raw context"
+      },
+      "collection_meta": {
+        "name": "aop_9_patch_data_bounds"
+      }
     },
     "aop_editor_seed_pois.geojson": {
       "features": 1,
       "kind": "(per-feature)",
       "machine": false,
-      "maturity": "editor"
+      "maturity": "editor",
+      "group": "Drawn POIs (seed) — retired panel group",
+      "locked": false,
+      "maturity_note": "editor scratch — first-party, unlocked",
+      "meta": {
+        "maturity": "editor",
+        "group": "Drawn POIs (seed) — retired panel group",
+        "locked": false,
+        "maturity_note": "editor scratch — first-party, unlocked"
+      },
+      "collection_meta": {
+        "schema": "aop_editor_seed_v1",
+        "note": "Default editorPois loaded into aop_editor_pois_v1 on a fresh install or Reset viewer. Update workflow: draw → Export GeoJSON in the Map editor section → replace this file with the downloaded aop_editor_features.geojson → commit. Every feature gains properties.source = aop_editor_seed_v1 at load time. The optional seed_tag property writes a #tag binding into aop_feature_tags_v1 for the matching feature id; existing bindings on other layers carrying the same tag are stripped (the seed wins)."
+      }
     },
     "aop_lidar_tiles.geojson": {
       "features": 24,
       "kind": "lidar_tile",
       "machine": false,
-      "maturity": "reference"
+      "maturity": "reference",
+      "group": "Lidar tile index (USGS 3DEP)",
+      "locked": false,
+      "maturity_note": "reference — external raw context",
+      "meta": {
+        "maturity": "reference",
+        "group": "Lidar tile index (USGS 3DEP)",
+        "locked": false,
+        "maturity_note": "reference — external raw context"
+      },
+      "collection_meta": {
+        "name": "aop_lidar_tiles",
+        "description": "USGS 3DEP LAZ tile footprints intersecting the AOP 9-patch acquisition AOI. Footprints reflect each tile boundingBox returned by the TNM products API and are not legal coverage boundaries.",
+        "generated_on": "2026-05-20",
+        "aoi_bbox": [
+          -85.782935283,
+          35.067164188,
+          -85.717154097,
+          35.117928496
+        ],
+        "project": "USGS_LPC_TN_27County_blk4_2015_LAS_2018",
+        "tile_count": 24,
+        "total_size_bytes": 2788061014
+      }
     },
     "aop_roads.geojson": {
       "features": 114,
       "kind": "road",
       "machine": false,
-      "maturity": "reference"
+      "maturity": "reference",
+      "group": "Asphalt roads (USGS National Map)",
+      "locked": false,
+      "maturity_note": "reference — external raw context",
+      "meta": {
+        "maturity": "reference",
+        "group": "Asphalt roads (USGS National Map)",
+        "locked": false,
+        "maturity_note": "reference — external raw context"
+      }
     },
     "aop_water.geojson": {
       "features": 94,
       "kind": "water",
       "machine": false,
-      "maturity": "reference"
+      "maturity": "reference",
+      "group": "Hydrography (USGS NHD)",
+      "locked": false,
+      "maturity_note": "reference — external raw context",
+      "meta": {
+        "maturity": "reference",
+        "group": "Hydrography (USGS NHD)",
+        "locked": false,
+        "maturity_note": "reference — external raw context"
+      }
     },
     "osm_aop_9patch.geojson": {
       "features": 71,
       "kind": "(per-feature)",
       "machine": false,
-      "maturity": "reference"
+      "maturity": "reference",
+      "group": "OSM cluster",
+      "locked": false,
+      "maturity_note": "reference — external raw context",
+      "meta": {
+        "maturity": "reference",
+        "group": "OSM cluster",
+        "locked": false,
+        "maturity_note": "reference — external raw context"
+      },
+      "collection_meta": {
+        "metadata": {
+          "source": "OpenStreetMap via Overpass API",
+          "license": "ODbL — © OpenStreetMap contributors",
+          "query_bbox": [
+            -85.782935,
+            35.067164,
+            -85.717154,
+            35.117928
+          ],
+          "retrieved_on": "2026-05-20",
+          "filters": "highway in {track,path,footway,cycleway,bridleway,unclassified,service}; route=*; leisure park/nature_reserve; landuse=recreation_ground; tourism=information; amenity in {parking,camp_site}; natural in {peak,saddle}; place=*",
+          "notes": "9-patch AOI around AOP Ellis Cove parcel envelope. Inspection use; raw zone only."
+        }
+      }
     },
     "osm_aop_named.geojson": {
       "features": 5,
       "kind": "(per-feature)",
       "machine": false,
-      "maturity": "reference"
+      "maturity": "reference",
+      "group": "OSM named landmarks",
+      "locked": false,
+      "maturity_note": "reference — external raw context",
+      "meta": {
+        "maturity": "reference",
+        "group": "OSM named landmarks",
+        "locked": false,
+        "maturity_note": "reference — external raw context"
+      },
+      "collection_meta": {
+        "metadata": {
+          "source": "Derived from osm_aop_9patch.geojson",
+          "filter": "features with a 'name' tag",
+          "license": "ODbL — © OpenStreetMap contributors",
+          "retrieved_on": "2026-05-20"
+        }
+      }
     },
     "sfwda_traced_trails.geojson": {
       "features": 382,
       "kind": "trail",
       "machine": false,
-      "maturity": "delete"
+      "maturity": "delete",
+      "group": "SFWDA traced trails (staged for removal)",
+      "locked": false,
+      "maturity_note": "delete — staged for removal; in the Delete group until the actual delete is approved",
+      "meta": {
+        "maturity": "delete",
+        "group": "SFWDA traced trails (staged for removal)",
+        "locked": false,
+        "maturity_note": "delete — staged for removal; in the Delete group until the actual delete is approved"
+      },
+      "collection_meta": {
+        "name": "sfwda_paper_trails"
+      }
     },
     "sfwda_traced_markers.geojson": {
       "features": 124,
       "kind": "trail_marker",
       "machine": false,
-      "maturity": "reference"
+      "maturity": "reference",
+      "group": "SFWDA traced markers (extract)",
+      "locked": false,
+      "maturity_note": "reference — external raw context",
+      "meta": {
+        "maturity": "reference",
+        "group": "SFWDA traced markers (extract)",
+        "locked": false,
+        "maturity_note": "reference — external raw context"
+      },
+      "collection_meta": {
+        "name": "sfwda_paper_markers",
+        "_meta_numbers": {
+          "added": "2026-05-29 attach_trail_numbers.py (run after the trace pipeline)",
+          "method": "hand-read off 3x contact sheets, matched to markers by centroid_px (<30px)",
+          "matched": 117,
+          "of": 124,
+          "difficulty_bands": {
+            "easy": "1-20",
+            "moderate": "21-39 & 80-99",
+            "difficult": "40-79"
+          },
+          "caveat": "number provisional (2-digit high / single-digit low); trail numbers repeat along a route"
+        }
+      }
     },
     "sfwda_numbered_trails.geojson": {
       "features": 67,
       "kind": "trail",
       "machine": false,
-      "maturity": "reference"
+      "maturity": "reference",
+      "group": "SFWDA numbered trails (extract)",
+      "locked": false,
+      "maturity_note": "reference — external raw context",
+      "meta": {
+        "about": "Contiguous numbered trails stitched from the SFWDA raster trace + hand-read markers. One feature per trail number. Numbers/positions provisional (2015 vintage). Built by build_numbered_trails.py.",
+        "trails": 67,
+        "maturity": "reference",
+        "group": "SFWDA numbered trails (extract)",
+        "locked": false,
+        "maturity_note": "reference — external raw context"
+      },
+      "collection_meta": {
+        "name": "sfwda_numbered_trails"
+      }
     },
     "sfwda_trails_edited.geojson": {
       "features": 120,
       "kind": "trail",
       "machine": false,
-      "maturity": "reference"
+      "maturity": "reference",
+      "group": "SFWDA trails (edited extract)",
+      "locked": false,
+      "maturity_note": "reference — external raw context",
+      "meta": {
+        "maturity": "reference",
+        "group": "SFWDA trails (edited extract)",
+        "locked": false,
+        "maturity_note": "reference — external raw context"
+      },
+      "collection_meta": {
+        "name": "sfwda_trails_edited"
+      }
     },
     "aop_landcover.geojson": {
       "features": 154,
@@ -196,7 +341,20 @@
         "status": "raw context",
         "last_checked": "2023 imagery / 2015 lidar"
       },
-      "maturity": "derived"
+      "maturity": "derived",
+      "group": "Land cover (NAIP)",
+      "locked": false,
+      "maturity_note": "derived — machine output, not hand-edited",
+      "meta": {
+        "maturity": "derived",
+        "group": "Land cover (NAIP)",
+        "locked": false,
+        "maturity_note": "derived — machine output, not hand-edited"
+      },
+      "collection_meta": {
+        "name": "class_smooth",
+        "xy_coordinate_resolution": 1e-06
+      }
     },
     "aop_landcover_9patch.geojson": {
       "features": 3430,
@@ -209,7 +367,20 @@
         "status": "raw context",
         "last_checked": "2023 imagery / 2015 lidar"
       },
-      "maturity": "derived"
+      "maturity": "derived",
+      "group": "Land cover — 9-patch",
+      "locked": false,
+      "maturity_note": "derived — machine output, not hand-edited",
+      "meta": {
+        "maturity": "derived",
+        "group": "Land cover — 9-patch",
+        "locked": false,
+        "maturity_note": "derived — machine output, not hand-edited"
+      },
+      "collection_meta": {
+        "name": "class_smooth",
+        "xy_coordinate_resolution": 1e-06
+      }
     },
     "aop_contours.geojson": {
       "features": 2831,
@@ -222,7 +393,26 @@
         "status": "raw context",
         "last_checked": "2015 (DEM)"
       },
-      "maturity": "derived"
+      "maturity": "derived",
+      "group": "Lidar contours",
+      "locked": false,
+      "maturity_note": "derived — machine output, not hand-edited",
+      "meta": {
+        "maturity": "derived",
+        "group": "Lidar contours",
+        "locked": false,
+        "maturity_note": "derived — machine output, not hand-edited"
+      },
+      "collection_meta": {
+        "name": "contour",
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+          }
+        },
+        "xy_coordinate_resolution": 1e-06
+      }
     },
     "aop_activity_hotspots.geojson": {
       "features": 130,
@@ -234,7 +424,48 @@
         "permission": "internal",
         "status": "hold"
       },
-      "maturity": "derived"
+      "maturity": "derived",
+      "group": "Activity hotspots (GPX dwell)",
+      "locked": false,
+      "maturity_note": "derived — machine output, not hand-edited",
+      "meta": {
+        "maturity": "derived",
+        "group": "Activity hotspots (GPX dwell)",
+        "locked": false,
+        "maturity_note": "derived — machine output, not hand-edited"
+      },
+      "collection_meta": {
+        "name": "aop_activity_hotspots",
+        "metadata": {
+          "schema": "aop-activity-hotspots-v1",
+          "generated_at": "2026-05-25T14:08:43.681708+00:00",
+          "source_type": "field_track_gpx",
+          "permission": "internal",
+          "publish_status": "hold",
+          "review_status": "raw activity evidence; not a validated trail or facility",
+          "confidence": "single_track",
+          "source_files": [
+            "Saturday_Afternoon_Activity.gpx"
+          ],
+          "cell_m": 15.0,
+          "sample_m": 5.0,
+          "sample_s": 20.0,
+          "max_gap_s": 600.0,
+          "min_cell_seconds": 30.0,
+          "min_stop_slow_seconds": 0.0,
+          "max_moving_fraction": null,
+          "rank_by": "total",
+          "intensity_cap_seconds": null,
+          "label_rank_limit": 10,
+          "label_min_seconds": 120.0,
+          "point_count": 368,
+          "segment_count": 2,
+          "interval_count": 366,
+          "skipped_interval_count": 0,
+          "capped_interval_count": 0,
+          "cell_feature_count": 65
+        }
+      }
     },
     "aop_synthetic_activity_hotspots.geojson": {
       "features": 36,
@@ -246,7 +477,48 @@
         "permission": "internal",
         "status": "test data"
       },
-      "maturity": "delete"
+      "maturity": "delete",
+      "group": "Simulated Saturday activity (staged for removal)",
+      "locked": false,
+      "maturity_note": "delete — staged for removal; in the Delete group until the actual delete is approved",
+      "meta": {
+        "maturity": "delete",
+        "group": "Simulated Saturday activity (staged for removal)",
+        "locked": false,
+        "maturity_note": "delete — staged for removal; in the Delete group until the actual delete is approved"
+      },
+      "collection_meta": {
+        "name": "aop_synthetic_activity_hotspots",
+        "metadata": {
+          "schema": "aop-activity-hotspots-v1",
+          "generated_at": "2026-05-23T13:45:41.426974+00:00",
+          "source_type": "synthetic_activity_gpx",
+          "permission": "internal",
+          "publish_status": "hold",
+          "review_status": "synthetic Saturday activity model; not field evidence or validated trail/facility data",
+          "confidence": "synthetic_multi_user_model",
+          "source_files": [
+            "synthetic_saturday_activity.gpx"
+          ],
+          "cell_m": 15.0,
+          "sample_m": 5.0,
+          "sample_s": 20.0,
+          "max_gap_s": 600.0,
+          "min_cell_seconds": 90.0,
+          "min_stop_slow_seconds": 300.0,
+          "max_moving_fraction": 0.7,
+          "rank_by": "stop_slow",
+          "intensity_cap_seconds": 7200.0,
+          "label_rank_limit": 12,
+          "label_min_seconds": 1800.0,
+          "point_count": 13713,
+          "segment_count": 72,
+          "interval_count": 13634,
+          "skipped_interval_count": 7,
+          "capped_interval_count": 0,
+          "cell_feature_count": 18
+        }
+      }
     },
     "aop_synthetic_activity_tracks.geojson": {
       "features": 72,
@@ -258,13 +530,231 @@
         "permission": "internal",
         "status": "test data"
       },
-      "maturity": "delete"
+      "maturity": "delete",
+      "group": "Simulated Saturday activity (staged for removal)",
+      "locked": false,
+      "maturity_note": "delete — staged for removal; in the Delete group until the actual delete is approved",
+      "meta": {
+        "maturity": "delete",
+        "group": "Simulated Saturday activity (staged for removal)",
+        "locked": false,
+        "maturity_note": "delete — staged for removal; in the Delete group until the actual delete is approved"
+      },
+      "collection_meta": {
+        "name": "aop_synthetic_activity_tracks",
+        "metadata": {
+          "schema": "aop-synthetic-saturday-activity-v1",
+          "seed": 20260523,
+          "users": 72,
+          "start_local": "2026-05-23T13:00:00-05:00",
+          "local_timezone": "America/Chicago",
+          "saturday_date": "2026-05-23",
+          "scenario": "Many RC users start at the pavilion, follow observed trail evidence, crawl technical spots, dwell/socialize, and overlap existing raw GPX hotspots.",
+          "osm_route_index": {
+            "input": "/Users/christopherfryman/Documents/code/AOP MAP/website/data/osm_aop_9patch.geojson",
+            "feature_count": 51,
+            "track_feature_count": 47,
+            "service_feature_count": 4,
+            "indexed_osm_km": 18.87
+          },
+          "source_type": "synthetic_activity_gpx",
+          "permission": "internal",
+          "publish_status": "hold",
+          "review_status": "synthetic model for hotspot pipeline testing; not field evidence"
+        }
+      }
+    },
+    "aop_buildings.geojson": {
+      "features": 5,
+      "kind": "building",
+      "machine": false,
+      "maturity": "silver",
+      "collection_meta": {
+        "_source": "FEMA USA Structures / ORNL",
+        "_source_item": "https://www.arcgis.com/home/item.html?id=e9fc147eaeae4dcaa4e9ad9802c7b9c6",
+        "_source_service": "https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/USA_Structures_View/FeatureServer/0",
+        "_generated_by": "mvp/scripts/import_fema_buildings.py",
+        "_retrieved_on": "2026-05-21",
+        "_aop_9_patch_bbox": [
+          -85.782935283,
+          35.067164188,
+          -85.717154097,
+          35.117928496
+        ],
+        "_sources_checked": [
+          {
+            "name": "FEMA USA Structures",
+            "result": "5 curated AOP buildings kept (3 facilities + 2 private structures); raw 9-patch context dropped",
+            "selected": true
+          },
+          {
+            "name": "OpenStreetMap building=* via Overpass",
+            "result": "11 building ways found; not imported to avoid duplicate ODbL context",
+            "selected": false
+          },
+          {
+            "name": "TNMap FEMA BLE Building Footprints",
+            "result": "0 features in the 9-patch",
+            "selected": false
+          }
+        ],
+        "_derived": "Curated AOP park buildings only: 3 public facilities (Pavilion, Farmhouse, Front Office) + 2 private-structure presence boxes (665, 889). The ~197 raw FEMA 9-patch context footprints were dropped 2026-06-03 per owner decision (derived layer = curated/published set). Footprints are drag-adjustable in the viewer; bake moves back with mvp/scripts/export_positioned_features.py."
+      },
+      "meta": {
+        "maturity": "silver",
+        "group": "Park buildings",
+        "locked": true,
+        "maturity_note": "silver — pending review; locked, unlock to edit"
+      },
+      "group": "Park buildings",
+      "locked": true,
+      "maturity_note": "silver — pending review; locked, unlock to edit"
+    },
+    "aop_cemeteries.geojson": {
+      "features": 8,
+      "kind": "cemetery",
+      "machine": false,
+      "maturity": "reference",
+      "collection_meta": {
+        "_source": "Tennessee Comptroller of the Treasury — Marion County parcels (TN_County_Parcel_Map FeatureServer layer 35)",
+        "_generated_by": "mvp/scripts/import_marion_cemeteries.py"
+      },
+      "meta": {
+        "maturity": "reference",
+        "group": "Cemeteries (TN Comptroller)",
+        "locked": false,
+        "maturity_note": "reference — external raw context"
+      },
+      "group": "Cemeteries (TN Comptroller)",
+      "locked": false,
+      "maturity_note": "reference — external raw context"
+    },
+    "aop_trail_network.geojson": {
+      "features": 120,
+      "kind": "trail",
+      "machine": false,
+      "maturity": "gold",
+      "collection_meta": {
+        "name": "aop_trail_network"
+      },
+      "meta": {
+        "about": "AOP merged trail network: hand-cleaned SFWDA traced trails + OSM tracks at one level. Authoritative truth, served directly by the static viewer (layer aop-trail-network). Self-contained: each feature carries its own difficulty colour, so it renders correctly on a fresh viewer load with no pipeline, DB, or localStorage dependency.",
+        "crs": "urn:ogc:def:crs:OGC:1.3:CRS84 (WGS84 lng/lat, RFC 7946 default)",
+        "color_legend": {
+          "#1f9d3a": "easy",
+          "#2438c8": "moderate",
+          "#111111": "difficult",
+          "#f25e0d": "road",
+          "#888888": "unknown"
+        },
+        "difficulty_band": "Easy 1-20 | Moderate 21-39 & 80-99 | Difficult 40-79 (park rating; onX may differ)",
+        "feature_count": 120,
+        "difficulty_counts": {
+          "easy": 27,
+          "moderate": 48,
+          "difficult": 41,
+          "road/none": 4
+        },
+        "color_counts": {
+          "#1f9d3a": 27,
+          "#2438c8": 48,
+          "#111111": 41,
+          "#f25e0d": 4
+        },
+        "named": 100,
+        "numbered": 87,
+        "property_schema": [
+          "id",
+          "trail_number",
+          "name",
+          "kind",
+          "difficulty",
+          "color",
+          "source",
+          "review_status"
+        ],
+        "review_flags": [],
+        "generated_from": "aop_trail_network_2025_edited_10.svg round-trip; numbers/difficulty re-attached from markers",
+        "maturity": "gold",
+        "group": "AOP trail network",
+        "locked": true,
+        "maturity_note": "gold — reviewed first-party; locked, unlock to edit"
+      },
+      "group": "AOP trail network",
+      "locked": true,
+      "maturity_note": "gold — reviewed first-party; locked, unlock to edit"
+    },
+    "aop_visitor_context_callouts.geojson": {
+      "features": 4,
+      "kind": "(per-feature)",
+      "machine": false,
+      "maturity": "silver",
+      "collection_meta": {
+        "name": "aop_visitor_context_callouts",
+        "_description": "Two planning callout areas for visitor support orientation around Adventure Off Road Park. These are cartographic annotations, not surveyed service-area boundaries. To bake drag-to-move positions back here so they survive a data reset: viewer right panel 'Export all' -> save JSON -> python3 mvp/scripts/export_positioned_features.py <that file>.",
+        "_sources_checked": [
+          {
+            "name": "Adventure Off Road Park official site / rentals pages",
+            "url": "https://adventureoffroadpark.com/",
+            "used_for": "AOP address, on-site camping/RV/bunkhouse context, office contact",
+            "accessed": "2026-05-21"
+          },
+          {
+            "name": "RiderPlanet Adventure Off Road Park page",
+            "url": "https://www.riderplanet-usa.com/atv/trails/info/tennessee_15194/ride_d19a.htm",
+            "used_for": "AOP approach directions, nearby key services, camping/RV/restroom/shower notes",
+            "accessed": "2026-05-21"
+          },
+          {
+            "name": "Marion County Tennessee Tourism restaurants",
+            "url": "https://visitmarioncountytn.com/food-and-drink/all-restaurants/",
+            "used_for": "Restaurant clusters in South Pittsburg, Kimball, and Monteagle",
+            "accessed": "2026-05-21"
+          },
+          {
+            "name": "Marion County Tennessee Tourism hotels",
+            "url": "https://visitmarioncountytn.com/places-to-stay/hotels/",
+            "used_for": "Hotel/lodging clusters in South Pittsburg, Kimball, and Monteagle",
+            "accessed": "2026-05-21"
+          },
+          {
+            "name": "Distance-Cities South Pittsburg to Monteagle",
+            "url": "https://www.distance-cities.com/distance-south-pittsburg-tn-to-monteagle-tn",
+            "used_for": "South Pittsburg to Monteagle drive-time planning estimate; AOP to Monteagle label is rounded upward from park approach distance plus this city-to-city route",
+            "accessed": "2026-05-21"
+          },
+          {
+            "name": "Distance-Cities South Pittsburg to Chattanooga",
+            "url": "https://www.distance-cities.com/distance-south-pittsburg-tn-to-chattanooga-tn",
+            "used_for": "South Pittsburg to Chattanooga drive distance/time (30 mi, ~35 min via I-24); the AOP-to-Chattanooga circle label rounds the park approach plus this route to orient riders to the regional metro",
+            "accessed": "2026-05-21"
+          }
+        ]
+      },
+      "meta": {
+        "maturity": "silver",
+        "group": "Visitor context callouts",
+        "locked": true,
+        "maturity_note": "silver — pending review; locked, unlock to edit"
+      },
+      "group": "Visitor context callouts",
+      "locked": true,
+      "maturity_note": "silver — pending review; locked, unlock to edit"
     },
     "publish.geojson": {
       "features": 6,
       "kind": "(per-feature)",
       "machine": false,
-      "maturity": "silver"
+      "maturity": "silver",
+      "meta": {
+        "maturity": "silver",
+        "group": "Publishable (boundary · trails · trailheads)",
+        "locked": true,
+        "maturity_note": "silver — pending review; locked, unlock to edit"
+      },
+      "group": "Publishable (boundary · trails · trailheads)",
+      "locked": true,
+      "maturity_note": "silver — pending review; locked, unlock to edit"
     }
   },
   "maturity_tiers": {

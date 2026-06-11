@@ -6,6 +6,74 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-10 (cwc — G_C identity-fork slice DONE in ONE pass + INDEPENDENTLY RE-VERIFIED; council review next; the
+LAST normalization slice; UNCOMMITTED, the same v62→v63 bump covers G_meta + G_C).** User called the micro-step
+cadence (one finding per slice + a full council each time): *"Just freaking do it... you dont seem to be making any
+progress."* So G_C (the highest-risk slice, "do last") was done in ONE pass — all 6 identity findings together, one
+council at the end. **State-audit first** (`brain/output/gC_state_audit_20260610.md`): finding 5 (`two-editor-sinks`)
+was ALREADY closed by Approach-C (verified, not redone); 1/2/3/4/6 implemented. **Canonical id = the DB `source_key`
+business part** (`spec.idField == panel key == DB source_key` per layer): cemeteries `<parcel_id>:<geom_role>` (UNIQUE —
+collapses the twin's shared `093 001.02`), buildings `build_id` (UUID→business key; UUID kept in `attrs.uuid`), trails
+`sfwda-N`, visitor `<id>`. Bake overlays `id` from source_key + `ORDER BY source_key` (bonus: closes the pre-existing
+buildings order-only `--check` DRIFT G_meta had to hold); publish `POI_KIND_MAP` maps `pavilion/cemetery`→`poi`+`category`
+facet (known→map, unknown→pass-through, never throws); bidirectional Ellis `same_as`; `main.js` cemeteries
+`idField parcel_id→id` + 3 reveal bindings re-pointed. **Additive, archive-not-delete honored:** DB 160/159 unchanged
+(only reciprocal `same_as` added; 0 inserts/deletes/archives). **Cemetery-parcel NOT archived (flagged for council):**
+archiving it would gate-drop its served polygon = a loss; instead distinct unique ids collapse the *shared* id loss-free
+— both geometries stay served, the marker is the one identity-of-record. **Re-verified by observation (orchestrator
+re-ran):** own geometry-matched semantic diff vs HEAD = served delta ONLY {id, kind, category, same_as} (+ stacked
+G_meta maturity), 0 geometry change, 0 feature dropped, **0 duplicate ids in any file**; `playwright_verify_gC_identity.py`
+20/20 PASS incl. the key live test — a cemetery ★ lands on EXACTLY ONE store key (the marker, never the parcel twin —
+no smear), a building edit lands on `buildings:3397585`, 0 console errors; `export --check` = **NO REVERT on all 6**
+(the bake is now a pure function for everything); `node --check` both JS. Snapshot `/tmp/aop_db_snapshots/aop_map_pre_gC_20260610.sql`.
+**OWED — the user's git gate:** the SAME uncommitted **v62→v63** bump (G_C rides the G_meta batch; no second bump),
+not made; strings still v62. HEAD `bcea502`. **COUNCIL FULL-SIX CLEAR (no andons):** Witness (re-drove the live bridge himself — bogus id → empty store, proving
+real resolution; 20/20 verifier) · Warden (RULED the cemetery-parcel non-archive a justified loss-free reading, not a
+deleted directive) · Quartermaster (one id scheme, C1/C2/C6 at target) · Mason (additive passthrough kind-map, no dead
+code) · Scribe (records honest) + Steward. Receipts `brain/output/council/gC_identity_forks_20260610.md`; marker
+`.claude/.council-cleared` = `7eecec92`. Non-blocking notes: stale `main.js:3899-3905` comment; served files can
+transiently revert to HEAD between concurrent bakes (DB is source of record — re-bake to materialize before review;
+orchestrator re-confirmed current on-disk = the bake's fixed point, `export --check` NO REVERT ×6); bold-term voice
+tell. **Normalization is now functionally DONE.** Remaining: **G_D** (fresh-volume parity — DESTRUCTIVE, the user's
+explicit call before any `down -v`) + the deferred-lows (visibility, hotspot-twin — "revisit only if a real bug
+surfaces"). The whole uncommitted batch (G_meta + G_C) still owes the user's ONE **v62→v63** bump + the commit.
+
+**2026-06-10 (cwc — G_meta slice DONE + INDEPENDENTLY RE-VERIFIED; council review next; UNCOMMITTED, v62→v63 bump
+owed).** Reconciled the prior G_B handoff against git: the user **committed** the G_B HIGH-trio batch as **`bcea502
+"GE slice"`** and the owed **v61→v62 bump is discharged** (both `sw.js VERSION` and `#appVersion` now read **v62**) —
+HEAD moved `86b6fcd`→`bcea502`, working tree was clean. So everything through G_B + G_E + Approach-C is landed. Picked
+up the next workable slice off `06_going_gold/gold_slice6_backlog.md`: the three coupled deferred findings the card
+groups together — **G_meta = `reference-bake-no-meta-on-fresh-volume` (LOW) + `schema-manifest-stale` (MEDIUM) +
+`maturity-tier-derived-from-panel-tree-position` (MEDIUM)**. (G_C is explicitly *last*/highest-risk; G_D is destructive
+and gated on the user's explicit OK — neither touched.) **Design-first via a fresh agent, orchestrator re-verified by
+observation.** Store of record = the committed `website/data/_schema.json` (survives a fresh volume; the DB volume is
+exactly what F5/G_D says doesn't): it now holds per layer the maturity stamp + the **verbatim `_meta` gold block** +
+`collection_meta`. Both bake arms READ the store (not the prior served file); `export_publish_geojson.sh` (last writer)
+regenerates the derived manifest counts/date via one shared `regen_meta.py` helper, preserving curated fields; a
+per-feature `maturity` is baked (default = layer tier) onto the 4 reference layers + publish, and `panel.js:1485` reads
+`props.maturity || nodeMaturity(node)`. **Additive, loss-free** — the orchestrator's OWN keyed diff vs HEAD found the
+served delta is EXACTLY `+maturity` per feature (top-level deep-equal, geometry unchanged, nothing dropped/changed); DB
+untouched (160/159). **Re-verified by observation (orchestrator re-ran every verifier):** `verify_gMeta_bake.py` PASS
+(strip a file to `{type,features}` → re-bake reproduces `_meta` == HEAD; manifest self-heals 999→5 / 1999→today;
+curated fields preserved); `playwright_verify_gMeta_maturity.py` 19 PASS on live DOM (Tier chip follows `props.maturity`
+mutated to a sentinel "Reference", not the node literal Gold/Silver; 0 console errors); `export --check` = 5/6 `same`.
+**One held item (flagged):** `aop_buildings.geojson` is the lone `--check` DRIFT — orchestrator independently confirmed
+**order-only** (multiset-equal content + `_meta` deep-equal; the served file itself is `+maturity`-only loss-free) and
+**pre-existing** (the reference-arm SQL has no `ORDER BY`, so HEAD wouldn't byte-reproduce either) — a deterministic-row-
+order fix is owed separately, out of this slice. Trail gold block stored verbatim, not recomputed (HEAD's block is stale
+vs its own features; recompute ≠ loss-free — re-authoring it is a separate data-correctness call). DB snapshot
+`/tmp/aop_db_snapshots/aop_map_pre_gMeta_20260610.sql`. **OWED — the user's git gate: a v62→v63 bump** (served
+`_meta`/`_schema.json` + the `panel.js` shell asset) — NOT made; strings still v62. Working-tree batch:
+`mvp/scripts/{export_publish_geojson.sh,rebake_canonical.py,stamp_maturity.py,regen_meta.py,verify_gMeta_bake.py,playwright_verify_gMeta_maturity.py}`
+· `website/js/panel.js` · `website/data/_schema.json` · `website/data/{aop_buildings,aop_cemeteries,aop_trail_network,aop_visitor_context_callouts,publish}.geojson`
+· `brain/output/gMeta_design_20260610.md` + card/handoff. HEAD `bcea502`. **COUNCIL FULL-SIX CLEAR:** Witness · Warden ·
+Quartermaster · Scribe + Steward cleared first pass; Mason andon'd one grounded dead-code finding (`regen_meta.py`
+shipped a zero-caller `gold_trail_meta()` recompute fn + 3 helpers, ~65 lines, kept "for a future re-author") → fixed by
+pure deletion → `verify_gMeta_bake.py` re-run still PASS → Mason re-clear. Receipts
+`brain/output/council/gMeta_maturity_meta_manifest_20260610.md`; marker `.claude/.council-cleared` written.
+**Next:** the remaining open work is **G_C** (identity forks — highest risk, do carefully) or **G_D** (fresh-volume
+parity — DESTRUCTIVE, needs the user's explicit OK before any `down -v`).
+
 **2026-06-10 (cwc — G_B HIGH trio DONE + COUNCIL FULL-SIX CLEAR; UNCOMMITTED, v61→v62 bump owed).** Continued
 the gold swarm to **G_B — demote localStorage to a working buffer** (Root 1 / C3 / F1: the published reference
 view must stop being a per-browser localStorage replay). **Reconciliation note:** while G_B ran, the user committed
