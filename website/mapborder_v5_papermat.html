@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Map border V5 — Paper mat &amp; vignette</title>
+<style>
+  :root{
+    --brown-ink:#2e2418; --brown-mid:#4e4128; --brown-dark:#2a1f12; --brown-soft:#5a4828;
+    --rust:#a85020; --paper:#e9e0cb; --mat:#efe7d5; --rule:#7a6748; --band:46px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; height:100%; overflow:hidden; background:var(--mat);
+    font-family:Inter,system-ui,sans-serif; color:var(--brown-ink);}
+  .map{position:fixed; inset:0; background:var(--paper) url('img/map_sample.png') center/contain no-repeat;}
+  .map::after{content:""; position:absolute; inset:0;
+    background:radial-gradient(120% 120% at 50% 48%, transparent 58%, var(--paper) 92%); opacity:0.8;}
+
+  /* Wide museum mat with a bevel — the map sits in a recessed plate, so the
+     ragged data ends fall softly into the board instead of stopping mid-air. */
+  .frame{position:fixed; inset:0; pointer-events:none; z-index:5;}
+  .mat{position:absolute; inset:0;
+    box-shadow: inset 0 0 0 var(--band) var(--mat);}
+  /* Bevel: highlight on the mat's inner top/left, shadow on bottom/right. */
+  .bevel{position:absolute; inset:var(--band);
+    box-shadow:
+      inset 2px 2px 0 0 rgba(255,252,242,0.8),
+      inset -2px -2px 0 0 rgba(58,44,26,0.30),
+      0 0 0 1px var(--rule);}
+  /* Recess shadow cast by the mat onto the map. */
+  .recess{position:absolute; inset:calc(var(--band) + 1px);
+    box-shadow: inset 0 0 26px rgba(42,31,18,0.34), inset 0 6px 16px rgba(42,31,18,0.22);}
+  /* Soft drop shadow around the whole mounted plate. */
+  .mat::after{content:""; position:absolute; inset:18px; border-radius:2px;
+    box-shadow:0 18px 40px rgba(42,31,18,0.20);}
+  /* Discreet engraved caption on the mat, bottom edge. */
+  .caption{position:absolute; left:0; right:0; bottom:14px; text-align:center;
+    font:700 9.5px Inter,system-ui,sans-serif; letter-spacing:0.32em; text-transform:uppercase;
+    color:var(--brown-soft);}
+</style>
+</head>
+<body>
+  <div class="map"></div>
+  <div class="frame">
+    <div class="mat"></div>
+    <div class="recess"></div>
+    <div class="bevel"></div>
+    <div class="caption">Adventure&nbsp;Off&nbsp;Road&nbsp;Park</div>
+  </div>
+</body>
+</html>

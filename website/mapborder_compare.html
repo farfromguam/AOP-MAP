@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Map border — decorative neatline over the 9-patch (V1–V6)</title>
+  <style>
+    :root{
+      --brown-ink:#2e2418; --brown-mid:#4e4128; --brown-dark:#2a1f12; --brown-soft:#5a4828;
+      --cream-hover:#efe2c6; --cream-surface:#faf6eb; --cream-border:#d8cdb4;
+      --control-bg:#fffdf5; --control-border:#b9aa88;
+      --moss:#5f7157; --moss-dark:#384833; --moss-soft:#e3ebdc; --rust:#a85020;
+    }
+    *{box-sizing:border-box;}
+    body,html{margin:0; padding:0; background:var(--cream-surface);
+      font:15px/1.5 Inter,system-ui,sans-serif; color:var(--brown-ink);}
+    header.page{padding:26px 32px 18px; border-bottom:1px solid var(--cream-border); background:var(--control-bg);}
+    header.page h1{margin:0 0 8px; color:var(--moss-dark); font-size:1.4rem;}
+    header.page .sub{color:var(--brown-soft); font-size:0.92rem; max-width:100ch; line-height:1.55;}
+    header.page .sub strong{color:var(--brown-dark);}
+    header.page .sub code{background:var(--moss-soft); padding:1px 5px; border-radius:3px; font-size:0.85em;}
+    main{display:grid; gap:22px; padding:24px 28px;
+      grid-template-columns:repeat(auto-fit,minmax(460px,1fr)); max-width:1640px; margin:0 auto;}
+    section.variant{background:#fff; border:1px solid var(--cream-border); border-radius:12px;
+      overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,0.05); display:flex; flex-direction:column;}
+    section.variant header.v{padding:14px 18px; background:var(--moss-soft); border-bottom:1px solid var(--cream-border);}
+    section.variant header.v h2{margin:0; color:var(--moss-dark); font-size:1.05rem;
+      display:flex; align-items:center; gap:10px;}
+    section.variant header.v .num{display:inline-grid; place-items:center; width:30px; height:30px;
+      background:var(--moss); color:#f7f1e2; border-radius:50%;
+      font:800 0.78rem Inter,system-ui,sans-serif; letter-spacing:0.04em;}
+    section.variant header.v .angle{color:var(--brown-soft); font-size:0.86rem; font-style:italic;
+      margin:6px 0 0 40px; line-height:1.4;}
+    section.variant .frame{position:relative; width:100%; height:440px; background:#cfc6ac;}
+    section.variant iframe{position:absolute; inset:0; width:100%; height:100%; border:0;}
+    section.variant .links{display:flex; gap:10px; padding:10px 18px 14px; border-top:1px solid var(--cream-border);}
+    section.variant .links a{color:var(--brown-mid); text-decoration:none; padding:5px 10px;
+      border:1px solid var(--cream-border); border-radius:6px; font-size:0.82rem; background:var(--control-bg);}
+    section.variant .links a:hover{background:var(--cream-hover); color:var(--brown-dark);}
+    .tag{display:inline-block; padding:1px 8px; border-radius:10px; font-size:0.72rem; font-weight:800;
+      text-transform:uppercase; letter-spacing:0.04em; margin-right:6px; vertical-align:middle;}
+    .tag.tech{background:rgba(56,72,51,0.18); color:var(--moss-dark);}
+    .tag.ornate{background:rgba(168,80,32,0.16); color:var(--rust);}
+    .tag.quiet{background:rgba(107,90,62,0.16); color:var(--brown-dark);}
+    .footnote{margin:14px 28px 40px; padding:16px 20px; background:var(--control-bg);
+      border:1px solid var(--cream-border); border-radius:10px;}
+    .footnote h2{margin:0 0 6px; color:var(--brown-dark); font-size:0.96rem;
+      text-transform:uppercase; letter-spacing:0.05em;}
+    .footnote ul{margin:0; padding-left:18px; color:var(--brown-soft); font-size:0.86rem; line-height:1.6;}
+    .footnote b{color:var(--brown-dark);}
+    table.axes{border-collapse:collapse; width:100%; margin-top:10px; font-size:0.83rem;}
+    table.axes th, table.axes td{border:1px solid var(--cream-border); padding:6px 9px; text-align:left; vertical-align:top;}
+    table.axes th{background:var(--moss-soft); color:var(--moss-dark); font-size:0.72rem;
+      text-transform:uppercase; letter-spacing:0.04em;}
+    table.axes td.axis{font-weight:800; color:var(--brown-dark); white-space:nowrap; background:#fbf7ec;}
+    table.axes td.win{color:var(--moss-dark); font-weight:700;}
+  </style>
+</head>
+<body>
+  <header class="page">
+    <h1>A decorative map border for the 9-patch — six old-school neatlines</h1>
+    <div class="sub">
+      <strong>One problem, six framings.</strong> The map the reader cares about is the
+      <code>9-patch</code> — but its layers don't all stop at the same line. Land cover, the trail
+      network, water, and the visitor-context callouts each end at <strong>different ragged edges</strong>,
+      and when the viewport is wide (or the reader scrolls past the data) those mismatched edges trail off
+      into bare paper — it reads as unfinished, not as a map. These mockups wrap the plate in a
+      <strong>decorative border that sits off the edge</strong>, the way an old survey sheet or atlas plate
+      does: the ornamental margin becomes the visual end of the map, so the ragged data edges read as
+      "inside the frame" instead of "cut off." Every frame renders over the <strong>real AOP map</strong>
+      (<code>viewer.html</code> at Region zoom) on the live <code>Muted&nbsp;Earth</code> palette, so the
+      comparison is honest. Pick the attributes you want from each &mdash; decoration locus, how much text,
+      survey vs. ornament, and how hard the band hides the ragged edge.
+    </div>
+  </header>
+
+  <main>
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V1</span>Ruled &amp; ticked</h2>
+        <div class="angle"><span class="tag tech">Survey quad</span>A double-rule neatline with a graticule of minute-ticks down every edge and corner coordinates. Quiet, authoritative — the USGS-quad look. The paper band hides the ragged ends; ticks do the decorating.</div>
+      </header>
+      <div class="frame"><iframe src="mapborder_v1_ruledticks.html" loading="lazy" title="V1 ruled and ticked"></iframe></div>
+      <div class="links"><a href="mapborder_v1_ruledticks.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V2</span>Cartouche &amp; compass</h2>
+        <div class="angle"><span class="tag ornate">Explorer chart</span>A thin keyline, then the decoration lives in the corners: a title cartouche (top-left), a compass rose (bottom-right), and a scale bar. Most "characterful," but the long edges stay near-bare — weakest ragged-edge cover.</div>
+      </header>
+      <div class="frame"><iframe src="mapborder_v2_cartouche.html" loading="lazy" title="V2 cartouche and compass"></iframe></div>
+      <div class="links"><a href="mapborder_v2_cartouche.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V3</span>Filigree corners</h2>
+        <div class="angle"><span class="tag ornate">Antique plate</span>An engraved double-line frame with scrollwork flourishes in all four corners and a centered monogram. The vintage copperplate feel. Corner-led, so edge cover is moderate — the band carries it, the curls sell it.</div>
+      </header>
+      <div class="frame"><iframe src="mapborder_v3_filigree.html" loading="lazy" title="V3 filigree corners"></iframe></div>
+      <div class="links"><a href="mapborder_v3_filigree.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V4</span>Edge text ribbon</h2>
+        <div class="angle"><span class="tag tech">Gazetteer</span>The frame is information: title across the top, place &amp; scale across the bottom, coordinates running up the sides. A wide lettered band — directly the "text off the edge" idea, and the strongest, most deliberate ragged-edge mask.</div>
+      </header>
+      <div class="frame"><iframe src="mapborder_v4_textribbon.html" loading="lazy" title="V4 edge text ribbon"></iframe></div>
+      <div class="links"><a href="mapborder_v4_textribbon.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V5</span>Paper mat &amp; vignette</h2>
+        <div class="angle"><span class="tag quiet">Mounted plate</span>No ink ornament — a wide museum mat with a bevel, so the map looks recessed below the board and the data simply vignettes into the mat. Quietest and most modern; the cleanest hide, lets the map stay the hero.</div>
+      </header>
+      <div class="frame"><iframe src="mapborder_v5_papermat.html" loading="lazy" title="V5 paper mat and vignette"></iframe></div>
+      <div class="links"><a href="mapborder_v5_papermat.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V6</span>Checker neatline</h2>
+        <div class="angle"><span class="tag tech">Topo sheet</span>The alternating ink/paper block neatline from old topographic quads, bracketed by hairlines, with corner coordinates and a quadrangle label. Boldest, most graphic of the technical set; band fully covers the edge.</div>
+      </header>
+      <div class="frame"><iframe src="mapborder_v6_sawtooth.html" loading="lazy" title="V6 checker neatline"></iframe></div>
+      <div class="links"><a href="mapborder_v6_sawtooth.html" target="_blank">Open full window</a></div>
+    </section>
+  </main>
+
+  <div class="footnote">
+    <h2>Attribute axes to pick from</h2>
+    <table class="axes">
+      <tr><th>Axis</th><th>V1 Ruled</th><th>V2 Cartouche</th><th>V3 Filigree</th><th>V4 Text ribbon</th><th>V5 Paper mat</th><th>V6 Checker</th></tr>
+      <tr><td class="axis">Decoration locus</td><td>all edges</td><td>two corners</td><td>four corners</td><td>all edges</td><td>full perimeter</td><td>all edges</td></tr>
+      <tr><td class="axis">Style</td><td>survey quad</td><td>explorer chart</td><td>antique plate</td><td>gazetteer</td><td>mounted board</td><td>topo sheet</td></tr>
+      <tr><td class="axis">Text in frame</td><td>coords</td><td>title block + scale</td><td>monogram only</td><td>full — title, place, coords</td><td>tiny caption</td><td>coords + quad name</td></tr>
+      <tr><td class="axis">Ink weight</td><td>light</td><td>medium</td><td>medium</td><td>medium-heavy</td><td>none (tonal)</td><td>heavy</td></tr>
+      <tr><td class="axis">Band width</td><td>30&nbsp;px</td><td>16&nbsp;px</td><td>18&nbsp;px</td><td>40&nbsp;px</td><td>46&nbsp;px</td><td>34&nbsp;px</td></tr>
+      <tr><td class="axis">Hides ragged edge</td><td class="win">strong</td><td>weak (corners only)</td><td>moderate</td><td class="win">strongest</td><td class="win">strong, softest</td><td class="win">strong</td></tr>
+    </table>
+    <ul style="margin-top:12px;">
+      <li><b>The trade-off in one line:</b> the more the decoration lives on the <b>edges</b> (V1, V4, V5, V6) the better it hides the ragged layer ends; the more it lives in the <b>corners</b> (V2, V3) the more "old-map character" it has but the less it covers. The frames can be combined — e.g. a V1 ticked edge <i>plus</i> a V2 corner compass &amp; cartouche.</li>
+      <li><b>Mix &amp; match:</b> band width, whether there's edge text, the corner ornament, and the coordinate ticks are independent knobs. Tell me which to keep from which.</li>
+      <li>The border is a screen-fixed overlay, so it stays put while the map pans/zooms underneath — it frames the <i>viewport</i>, not the data, which is exactly what hides the moving ragged edges. On phone widths the band would scale down (these are shown at desktop proportions).</li>
+      <li>Backdrop here is a Region-zoom screenshot held still; in the real viewer the same frame rides on the live MapLibre canvas.</li>
+    </ul>
+    <p style="margin:8px 0 0; color:var(--brown-soft); font-size:0.85rem;">Tell me which border (or which mix of attributes) you want and I'll wire the chosen overlay into <b>viewer.html</b> / <code>css/viewer.css</code> as a fixed, pointer-events:none frame layer above <code>#map</code>.</p>
+  </div>
+</body>
+</html>

@@ -20,5 +20,7 @@ http://localhost:8000/tester.html
     - has limited sidebar
     - date shifting feature
     - add lat long shifting feature. should take current lat long and "shift" to park. walking around local neighborhoot appears to move you on the map... 
-    
+
+
+http://localhost:8000/mapborder_compare.html
 

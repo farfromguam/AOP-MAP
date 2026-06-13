@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Map border V1 — Ruled &amp; ticked</title>
+<style>
+  :root{
+    --brown-ink:#2e2418; --brown-mid:#4e4128; --brown-dark:#2a1f12; --brown-soft:#5a4828;
+    --rust:#a85020; --moss-dark:#384833;
+    --paper:#e9e0cb; --paper-deep:#e2d6bb; --rule:#3a2c1a;
+    --band:30px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; height:100%; overflow:hidden; background:var(--paper);
+    font-family:Inter,system-ui,sans-serif; color:var(--brown-ink);}
+  /* Real AOP map behind the frame, settled into paper margins so the ragged
+     data edges trail off the way they do when you scroll/widen the viewport. */
+  .map{position:fixed; inset:0; background:var(--paper) url('img/map_sample.png') center/contain no-repeat;}
+  .map::after{content:""; position:absolute; inset:0;
+    background:radial-gradient(120% 120% at 50% 48%, transparent 52%, var(--paper) 88%); opacity:0.9;}
+
+  /* Paper neatline band — masks the ragged layer ends under a clean margin. */
+  .frame{position:fixed; inset:0; pointer-events:none; z-index:5;
+    box-shadow: inset 0 0 0 var(--band) var(--paper);}
+  /* Double rule (outer thin + inner heavier), classic survey sheet. */
+  .rule-outer{position:absolute; inset:13px; border:1px solid var(--rule);}
+  .rule-inner{position:absolute; inset:var(--band); border:2px solid var(--rule);}
+  /* Graticule minute-ticks along every edge, drawn with a dash gradient. */
+  .ticks{position:absolute;}
+  .ticks.t{top:18px; left:var(--band); right:var(--band); height:11px;
+    background:repeating-linear-gradient(to right, var(--rule) 0 1px, transparent 1px 26px);}
+  .ticks.b{bottom:18px; left:var(--band); right:var(--band); height:11px;
+    background:repeating-linear-gradient(to right, var(--rule) 0 1px, transparent 1px 26px);}
+  .ticks.l{left:18px; top:var(--band); bottom:var(--band); width:11px;
+    background:repeating-linear-gradient(to bottom, var(--rule) 0 1px, transparent 1px 26px);}
+  .ticks.r{right:18px; top:var(--band); bottom:var(--band); width:11px;
+    background:repeating-linear-gradient(to bottom, var(--rule) 0 1px, transparent 1px 26px);}
+  /* Corner coordinate labels — plausible Marion County, TN graticule. */
+  .coord{position:absolute; font:700 9.5px ui-monospace,Menlo,monospace;
+    letter-spacing:0.04em; color:var(--brown-mid);}
+  .coord.tl{top:6px; left:var(--band);} .coord.tr{top:6px; right:var(--band);}
+  .coord.bl{bottom:5px; left:var(--band);} .coord.br{bottom:5px; right:var(--band);}
+  .title{position:absolute; top:1px; left:50%; transform:translateX(-50%);
+    font:800 10px Inter,system-ui,sans-serif; letter-spacing:0.34em; text-transform:uppercase;
+    color:var(--brown-dark);}
+</style>
+</head>
+<body>
+  <div class="map"></div>
+  <div class="frame">
+    <div class="rule-outer"></div>
+    <div class="rule-inner"></div>
+    <div class="ticks t"></div><div class="ticks b"></div>
+    <div class="ticks l"></div><div class="ticks r"></div>
+    <span class="coord tl">35°02′N 85°38′W</span>
+    <span class="coord tr">35°02′N 85°34′W</span>
+    <span class="coord bl">34°59′N 85°38′W</span>
+    <span class="coord br">34°59′N 85°34′W</span>
+    <span class="title">Adventure Off Road Park</span>
+  </div>
+</body>
+</html>

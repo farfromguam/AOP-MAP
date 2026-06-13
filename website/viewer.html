@@ -54,22 +54,82 @@
       </div>
       <input type="checkbox" id="showTerrain" hidden />
     </div>
-    <!-- Feature search — slice 2. The bare box (from index.html:111-120); the
-         full left-rail drawer (Search/Hot/Calendar tabs) is a later slice. -->
-    <div class="search-shell">
-      <div class="search">
-        <svg class="search-icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="9.5" cy="9.5" r="6"/>
-          <path d="M14.2 14.2 L19 19"/>
-        </svg>
-        <input type="text" id="searchInput" placeholder="Search the map…" autocomplete="off" />
-        <div class="search-results" id="searchResults"></div>
+    <!-- Left-rail drawer — slice 3 (from index.html:84-197). Two columns: an
+         icon column of tabs and a content column of stacked panels. Search
+         (slice 2) now lives in the first panel. The Hot tab (slice 5), the POI
+         sub-tab (slice 4), and the per-card resize handles are deferred. -->
+    <div class="lr-drawer" id="lrDrawer">
+      <div class="lr-icon-col" id="lrIconCol">
+        <button class="lr-tab open" id="lrTabSearch" type="button" aria-pressed="true" aria-controls="lrPanelSearch" title="Search">
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="9.5" cy="9.5" r="6"/>
+            <path d="M14.2 14.2 L19 19"/>
+          </svg>
+        </button>
+        <button class="lr-tab open" id="lrTabCal" type="button" aria-pressed="true" aria-controls="lrPanelCal" title="Events / About">
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="4" y="5" width="14" height="15" rx="1.6"/>
+            <path d="M8.5 5 V 3.5 Q8.5 3 9 3 h4 Q13.5 3 13.5 3.5 V 5"/>
+            <path d="M7 9.5 H 15"/>
+            <path d="M7 12.5 H 15"/>
+            <path d="M7 15.5 H 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="lr-content-col" id="lrContentCol">
+        <div class="lr-panel open" id="lrPanelSearch" data-card="search">
+          <div class="search-shell">
+            <div class="search">
+              <svg class="search-icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="9.5" cy="9.5" r="6"/>
+                <path d="M14.2 14.2 L19 19"/>
+              </svg>
+              <input type="text" id="searchInput" placeholder="Search the map…" autocomplete="off" />
+              <div class="search-results" id="searchResults"></div>
+            </div>
+          </div>
+        </div>
+        <div class="lr-panel open" id="lrPanelCal" data-card="cal">
+          <section class="calendar-card" id="calendarCard" aria-label="Events and park information">
+            <div class="left-tabs" role="tablist" aria-label="Left panel content">
+              <button id="leftTabEvents" class="left-tab" type="button" role="tab" aria-selected="true" aria-controls="eventsTabPanel" data-left-tab="events">Events</button>
+              <button id="leftTabAbout" class="left-tab" type="button" role="tab" aria-selected="false" aria-controls="aboutTabPanel" data-left-tab="about" tabindex="-1">About</button>
+            </div>
+            <div class="left-tab-panels">
+              <div id="eventsTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabEvents">
+                <div id="calendarBody" class="calendar-body">
+                  <div id="calendarToggle" class="calendar-heading" aria-controls="calendarBody">
+                    <span>
+                      <span class="calendar-title" id="calendarTitle">Rock Warblers Trail Blazing Invitational</span>
+                      <span class="calendar-range" id="calendarRange">Friday, June 19, 2026 – Sunday, June 21, 2026</span>
+                    </span>
+                  </div>
+                  <div id="calendarCountdown" class="calendar-countdown" hidden>
+                    <span class="calendar-countdown-label">Gates open in</span>
+                    <span class="calendar-countdown-value" id="calendarCountdownValue">--</span>
+                  </div>
+                  <ol class="calendar-days" id="calendarDays">
+                    <li class="calendar-empty">Loading schedule...</li>
+                  </ol>
+                </div>
+              </div>
+              <div id="aboutTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabAbout" hidden>
+                <div class="info-panel" id="aboutInfoPanel">
+                  <p class="info-copy">About the Rock Warblers Trail Blazing Invitational at Adventure Off Road Park — loading…</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   </div>
   <div class="message" id="message">Loading publish layer...</div>
 
   <script src="./vendor/maplibre-gl.js"></script>
+  <!-- The ONE shared event-schedule resolver (window.AOPEventSchedule); loaded
+       before viewer_core.js, same as the live page loads it before main.js. -->
+  <script src="./js/event_schedule_geojson.js"></script>
   <script src="./js/viewer_core.js"></script>
 </body>
 </html>

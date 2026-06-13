@@ -6,6 +6,28 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (SPRINT 13 SLICE 3 SHIPPED — left-rail drawer + Calendar/Events schedule. Built alongside, index.html untouched).**
+User: *"do you want to implement hot & schedule before you style?"* → yes (the drawer chrome is shared, so
+styling a bare search box now is throwaway; styling rides with each slice + a final polish). Carded + built
++ verified `tasks/13_viewer_extraction/viewer_drawer_schedule.md`. The drawer's main content **is** the
+schedule, so they shipped together. `viewer_core.js` 1249 → **1848** (+599), `viewer.html` +60 (the
+two-column `.lr-drawer`, Search moved in), `viewer.css` +79 (drawer + calendar rules + tokens); loads the
+shared `event_schedule_geojson.js` before viewer_core.js. **Verified by observation**
+(`/tmp/verify_viewer_schedule.py`, **15/15 PASS, 0 errors**) with `?clock=` fixtures: pre-event shows the
+**"GATES OPEN IN 6D 5H"** countdown; `?clock=2026-06-20T14:00` stamps a **LIVE** row + an upcoming_next
+SOON badge; row-click flies + opens a popup; About renders; drawer tabs toggle. Shots
+`brain/output/viewer_schedule_{pre,live}.png`. **Editor seam severed:** the Session-tools **virtual-clock
+UI + its localStorage** (kept only the `?clock=` fixture; `eventScheduleNow = urlClock || wall`), the
+**eventScheduleToggle checkbox** (→ `setLayerVisibility`, event layers default-off/selection-driven, so
+`PRESET_LAYERS` untouched), all `persistViewerSessionState`, drawer open/height persistence + resize
+handles. **Reuse:** the **one shared resolver** (`window.AOPEventSchedule`), the slice-2 `search-highlight`
++ `pulseHighlight`, and `indexFeatures` for event-anchor search. `refreshHotButton()` kept behind its
+`typeof===function` guard → no-op until Hot. **Deferred:** Hot tab (slice 5, drops into the drawer's 3rd
+icon), POI sub-tab (slice 4, needs `poiPopupHtml`), resize/persistence polish. **UNCOMMITTED** (user's
+gate); no version bump owed. **Slice-3 council pending.** Next: Hot (slice 5).
+
+-----
+
 **2026-06-13 (SPRINT 13 SLICE 2 SHIPPED — Search ported into the clean core. Slice 1 committed first; built alongside, index.html untouched).**
 User committed slice 1 (`f0c89e1 base viewer`) then "continue". Carded + built + verified
 `tasks/13_viewer_extraction/viewer_search.md`. Ported the feature search into the clean core:

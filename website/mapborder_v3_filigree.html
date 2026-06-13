@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Map border V3 — Filigree corners</title>
+<style>
+  :root{
+    --brown-ink:#2e2418; --brown-mid:#4e4128; --brown-dark:#2a1f12; --brown-soft:#5a4828;
+    --rust:#a85020; --paper:#e9e0cb; --rule:#3a2c1a; --band:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; height:100%; overflow:hidden; background:var(--paper);
+    font-family:Inter,system-ui,sans-serif; color:var(--brown-ink);}
+  .map{position:fixed; inset:0; background:var(--paper) url('img/map_sample.png') center/contain no-repeat;}
+  .map::after{content:""; position:absolute; inset:0;
+    background:radial-gradient(120% 120% at 50% 48%, transparent 54%, var(--paper) 90%); opacity:0.9;}
+
+  .frame{position:fixed; inset:0; pointer-events:none; z-index:5;
+    box-shadow: inset 0 0 0 var(--band) var(--paper);}
+  /* Engraved double-line plate frame. */
+  .rule{position:absolute; inset:13px; border:1px solid var(--rule);}
+  .rule.in{inset:17px; border-width:2px;}
+  /* Filigree corner ornaments — one path, mirrored to four corners. */
+  .corner{position:absolute; width:92px; height:92px; color:var(--brown-dark);}
+  .corner.tl{top:8px; left:8px;}
+  .corner.tr{top:8px; right:8px; transform:scaleX(-1);}
+  .corner.bl{bottom:8px; left:8px; transform:scaleY(-1);}
+  .corner.br{bottom:8px; right:8px; transform:scale(-1,-1);}
+  /* Center top monogram. */
+  .mono{position:absolute; top:5px; left:50%; transform:translateX(-50%);
+    font:800 11px Georgia,serif; letter-spacing:0.5em; color:var(--brown-dark);
+    background:var(--paper); padding:0 10px;}
+</style>
+</head>
+<body>
+  <div class="map"></div>
+  <div class="frame">
+    <div class="rule"></div>
+    <div class="rule in"></div>
+
+    <svg class="corner tl" viewBox="0 0 92 92" fill="none" stroke="currentColor"
+         stroke-width="1.5" stroke-linecap="round">
+      <path d="M6 86 C6 44 44 6 86 6"/>
+      <path d="M6 60 C6 38 20 26 40 26 C54 26 60 38 52 46 C46 52 36 50 39 41"/>
+      <path d="M28 6 C40 6 50 14 50 26"/>
+      <circle cx="39.5" cy="41.5" r="2.2" fill="currentColor" stroke="none"/>
+      <circle cx="86" cy="6" r="2.4" fill="#a85020" stroke="none"/>
+      <path d="M6 86 C6 70 12 62 22 60" stroke-width="1"/>
+    </svg>
+    <svg class="corner tr" viewBox="0 0 92 92" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <path d="M6 86 C6 44 44 6 86 6"/>
+      <path d="M6 60 C6 38 20 26 40 26 C54 26 60 38 52 46 C46 52 36 50 39 41"/>
+      <path d="M28 6 C40 6 50 14 50 26"/>
+      <circle cx="39.5" cy="41.5" r="2.2" fill="currentColor" stroke="none"/>
+      <circle cx="86" cy="6" r="2.4" fill="#a85020" stroke="none"/>
+      <path d="M6 86 C6 70 12 62 22 60" stroke-width="1"/>
+    </svg>
+    <svg class="corner bl" viewBox="0 0 92 92" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <path d="M6 86 C6 44 44 6 86 6"/>
+      <path d="M6 60 C6 38 20 26 40 26 C54 26 60 38 52 46 C46 52 36 50 39 41"/>
+      <path d="M28 6 C40 6 50 14 50 26"/>
+      <circle cx="39.5" cy="41.5" r="2.2" fill="currentColor" stroke="none"/>
+      <circle cx="86" cy="6" r="2.4" fill="#a85020" stroke="none"/>
+      <path d="M6 86 C6 70 12 62 22 60" stroke-width="1"/>
+    </svg>
+    <svg class="corner br" viewBox="0 0 92 92" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <path d="M6 86 C6 44 44 6 86 6"/>
+      <path d="M6 60 C6 38 20 26 40 26 C54 26 60 38 52 46 C46 52 36 50 39 41"/>
+      <path d="M28 6 C40 6 50 14 50 26"/>
+      <circle cx="39.5" cy="41.5" r="2.2" fill="currentColor" stroke="none"/>
+      <circle cx="86" cy="6" r="2.4" fill="#a85020" stroke="none"/>
+      <path d="M6 86 C6 70 12 62 22 60" stroke-width="1"/>
+    </svg>
+
+    <span class="mono">A&nbsp;·&nbsp;O&nbsp;·&nbsp;P</span>
+  </div>
+</body>
+</html>

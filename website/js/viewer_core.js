@@ -77,6 +77,14 @@
   const presetButtons = [...document.querySelectorAll('.preset-bar button[data-preset]')];
   const searchInput = document.getElementById('searchInput');
   const searchResults = document.getElementById('searchResults');
+  const calendarCard = document.getElementById('calendarCard');
+  const calendarRange = document.getElementById('calendarRange');
+  const calendarBody = document.getElementById('calendarBody');
+  const calendarDays = document.getElementById('calendarDays');
+  const calendarCountdown = document.getElementById('calendarCountdown');
+  const calendarCountdownValue = document.getElementById('calendarCountdownValue');
+  const leftTabButtons = [...document.querySelectorAll('.left-tab[data-left-tab]')];
+  const leftTabPanels = [...document.querySelectorAll('.left-tab-panel')];
 
   let activePresetId = 'park';
   let parkViewBounds = null;
@@ -86,6 +94,13 @@
   let searchGroups = [];
   let searchMatches = [];
   let searchActive = -1;
+
+  // Event-schedule state, populated by the event loader during map load.
+  let eventScheduleConfig = null;
+  let eventScheduleData = null;
+  let eventLocationByTag = new Map();
+  let eventSessionById = new Map();
+  let activeEventSessionId = null;
 
   // ── Palette consts referenced by BUILT_IN_PRESETS (main.js:1556-1611) ───
   const SKY_ATMOSPHERE = {
@@ -724,6 +739,455 @@
     clearSearchResults();
   }
 
+  // ── Event schedule + calendar (ported from main.js) ────────────────────
+  // The drawer's Calendar/Events tab. Editor seams severed: the virtual-clock
+  // Session-tools UI + stored clock are gone (only the ?clock= fixture + wall
+  // clock remain); the event-schedule checkbox toggle becomes setLayerVisibility;
+  // every persistViewerSessionState call is dropped. The document→GeoJSON
+  // transform is the ONE shared resolver (window.AOPEventSchedule).
+
+  // detailRows / list helpers (main.js:6205-6223).
+  function detailRows(rows) {
+    return rows
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
+      .map(([label, value]) => `${escapeHtml(label)}: ${escapeHtml(value)}`)
+      .join('<br/>');
+  }
+  function formatListProperty(value) {
+    if (Array.isArray(value)) return value.join(', ');
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    if (!trimmed.startsWith('[')) return value;
+    try {
+      const parsed = JSON.parse(trimmed);
+      return Array.isArray(parsed) ? parsed.join(', ') : value;
+    } catch (_) { return value; }
+  }
+
+  // Clock: the ?clock=YYYY-MM-DDTHH:MM test fixture, else the wall clock. The
+  // Session-tools virtual-clock UI + its localStorage are NOT carried.
+  function parseLocalClockString(raw) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{1,2}):(\d{2})$/.exec(String(raw || '').trim());
+    if (!m) return null;
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), 0, 0);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function clockParamDate() {
+    try {
+      const raw = new URLSearchParams(window.location.search).get('clock');
+      return raw ? parseLocalClockString(raw) : null;
+    } catch (_) { return null; }
+  }
+  const urlClockDate = clockParamDate();
+  function eventScheduleNow() {
+    return urlClockDate ? new Date(urlClockDate.getTime()) : new Date();
+  }
+
+  const CALENDAR_SESSION_DURATION_MIN = 90;
+  const EVENT_DATE_LABEL_MONTHS = {
+    january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+    july: 6, august: 7, september: 8, october: 9, november: 10, december: 11
+  };
+  function parseEventAnchorFriday() {
+    const label = eventScheduleConfig?.event?.date_range_label;
+    if (!label) return null;
+    const m = /([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})/.exec(String(label));
+    if (!m) return null;
+    const month = EVENT_DATE_LABEL_MONTHS[m[1].toLowerCase()];
+    if (month == null) return null;
+    const day = Number(m[2]);
+    const year = Number(m[3]);
+    if (!Number.isFinite(day) || !Number.isFinite(year)) return null;
+    return new Date(year, month, day, 0, 0, 0, 0);
+  }
+  function resolveCalendarAnchorSat() {
+    const friday = parseEventAnchorFriday();
+    if (!friday) return null;
+    return new Date(friday.getFullYear(), friday.getMonth(), friday.getDate() + 1, 0, 0, 0, 0);
+  }
+  function composeEventDateRangeLabel(event) {
+    const start = (event?.date_range_label || '').trim();
+    const end = (event?.end_date_label || '').trim();
+    if (!end || end === start) return start;
+    return `${start} – ${end}`;
+  }
+  function eventScheduleStartFromAnchor(dayLabel, startLocal, anchorSat) {
+    if (!anchorSat) return null;
+    const day = String(dayLabel || '').trim().toLowerCase();
+    const tm = /^(\d{1,2}):(\d{2})$/.exec(String(startLocal || '').trim());
+    if (!tm) return null;
+    const hour = Number(tm[1]);
+    const minute = Number(tm[2]);
+    if (!Number.isFinite(hour) || hour < 0 || hour > 23) return null;
+    if (!Number.isFinite(minute) || minute < 0 || minute > 59) return null;
+    let offset;
+    if (day === 'friday') offset = -1;
+    else if (day === 'saturday') offset = 0;
+    else if (day === 'sunday') offset = 1;
+    else return null;
+    return new Date(anchorSat.getFullYear(), anchorSat.getMonth(), anchorSat.getDate() + offset, hour, minute, 0, 0);
+  }
+  function computeCalendarScheduleEdges() {
+    let gatesOpen = null;
+    let weekendEnd = null;
+    if (calendarDays) {
+      for (const li of calendarDays.querySelectorAll('li[data-session-day]')) {
+        const day = (li.getAttribute('data-session-day') || '').toLowerCase();
+        const tm = /^(\d{1,2}):(\d{2})$/.exec((li.getAttribute('data-session-start') || '').trim());
+        if (!tm) continue;
+        const minutes = Number(tm[1]) * 60 + Number(tm[2]);
+        if (day === 'friday') {
+          if (gatesOpen === null || minutes < gatesOpen) gatesOpen = minutes;
+        } else if (day === 'sunday') {
+          const end = minutes + CALENDAR_SESSION_DURATION_MIN;
+          if (weekendEnd === null || end > weekendEnd) weekendEnd = end;
+        }
+      }
+    }
+    return {
+      gatesOpenMin: gatesOpen != null ? gatesOpen : 17 * 60,
+      weekendEndMin: weekendEnd != null ? weekendEnd : 18 * 60 + 30
+    };
+  }
+  function computeCalendarState(now) {
+    const edges = computeCalendarScheduleEdges();
+    const anchorSat = resolveCalendarAnchorSat();
+    if (!anchorSat) return { state: 'pre', anchorSat: null, countdownTargetMs: null };
+    const gatesH = Math.floor(edges.gatesOpenMin / 60);
+    const gatesM = edges.gatesOpenMin % 60;
+    const endH = Math.floor(edges.weekendEndMin / 60);
+    const endM = edges.weekendEndMin % 60;
+    const gatesOpen = new Date(anchorSat.getFullYear(), anchorSat.getMonth(), anchorSat.getDate() - 1, gatesH, gatesM, 0, 0);
+    const weekendEnd = new Date(anchorSat.getFullYear(), anchorSat.getMonth(), anchorSat.getDate() + 1, endH, endM, 0, 0);
+    const nowMs = now.getTime();
+    let state;
+    if (nowMs < gatesOpen.getTime()) state = 'pre';
+    else if (nowMs < weekendEnd.getTime()) state = 'live';
+    else state = 'post';
+    return {
+      state, anchorSat,
+      gatesOpenMs: gatesOpen.getTime(),
+      weekendEndMs: weekendEnd.getTime(),
+      countdownTargetMs: state === 'pre' ? gatesOpen.getTime() : null
+    };
+  }
+  function eventScheduleFormatMinutes(minutes) {
+    const m = Math.max(0, Math.round(minutes));
+    if (m < 60) return `${m}m`;
+    if (m < 1440) {
+      const h = Math.floor(m / 60);
+      const rem = m % 60;
+      return rem === 0 ? `${h}h` : `${h}h ${rem}m`;
+    }
+    const d = Math.floor(m / 1440);
+    const remH = Math.floor((m % 1440) / 60);
+    return remH === 0 ? `${d}d` : `${d}d ${remH}h`;
+  }
+  function calendarCurrentItem() {
+    return calendarDays?.querySelector('li[data-session-state="happening"]')
+      || calendarDays?.querySelector('li[data-session-state="upcoming_next"]')
+      || null;
+  }
+  function scrollCalendarCurrentRowIntoView() {
+    if (!calendarBody || !calendarDays) return;
+    const target = calendarCurrentItem();
+    if (!target) return;
+    window.requestAnimationFrame(() => {
+      if (!target.isConnected) return;
+      const bodyRect = calendarBody.getBoundingClientRect();
+      const rowRect = target.getBoundingClientRect();
+      const fullyVisible = rowRect.top >= bodyRect.top && rowRect.bottom <= bodyRect.bottom;
+      if (fullyVisible) return;
+      const offset = (rowRect.top - bodyRect.top) - (bodyRect.height / 2 - rowRect.height / 2);
+      calendarBody.scrollTop += offset;
+    });
+  }
+  // Stamp data-session-state + LIVE/SOON badges + the countdown. Runs after
+  // render and on the 60s tick. (refreshHotButton is guarded — Hot is slice 5;
+  // typeof on the undeclared name is a safe no-op until then.)
+  function refreshEventScheduleSessionStates() {
+    if (!calendarDays) return;
+    const now = eventScheduleNow();
+    const nowMs = now.getTime();
+    const calendar = computeCalendarState(now);
+    if (calendarCard) calendarCard.setAttribute('data-calendar-state', calendar.state);
+    const rows = Array.from(calendarDays.querySelectorAll('li[data-session-day]'));
+    const computed = rows.map((li) => {
+      const day = li.getAttribute('data-session-day') || '';
+      const start = li.getAttribute('data-session-start') || '';
+      const startDate = eventScheduleStartFromAnchor(day, start, calendar.anchorSat);
+      if (!startDate) return { li, state: 'future', startMs: Infinity, endMs: Infinity };
+      const startMs = startDate.getTime();
+      const endMs = startMs + CALENDAR_SESSION_DURATION_MIN * 60 * 1000;
+      let state = 'future';
+      if (nowMs >= startMs && nowMs < endMs) state = 'happening';
+      else if (nowMs >= endMs) state = 'past';
+      return { li, state, startMs, endMs };
+    });
+    if (calendar.state !== 'pre') {
+      const firstFuture = computed.find((r) => r.state === 'future');
+      if (firstFuture) firstFuture.state = 'upcoming_next';
+    }
+    for (const r of computed) {
+      r.li.setAttribute('data-session-state', r.state);
+      const prior = r.li.querySelector('.cal-live-badge, .cal-soon-badge');
+      if (prior) prior.remove();
+      if (r.state === 'happening') {
+        const badge = document.createElement('span');
+        badge.className = 'cal-live-badge';
+        badge.setAttribute('data-badge', 'live');
+        badge.textContent = 'LIVE';
+        r.li.appendChild(badge);
+      } else if (r.state === 'upcoming_next') {
+        const untilMin = (r.startMs - nowMs) / 60000;
+        const badge = document.createElement('span');
+        badge.className = 'cal-soon-badge';
+        badge.setAttribute('data-badge', 'soon');
+        badge.textContent = eventScheduleFormatMinutes(untilMin);
+        r.li.appendChild(badge);
+      }
+    }
+    if (calendarCountdown && calendarCountdownValue) {
+      if (calendar.state === 'pre' && calendar.countdownTargetMs != null) {
+        const untilMin = (calendar.countdownTargetMs - nowMs) / 60000;
+        calendarCountdownValue.textContent = eventScheduleFormatMinutes(untilMin).toUpperCase();
+        calendarCountdown.hidden = false;
+      } else {
+        calendarCountdown.hidden = true;
+      }
+    }
+    if (typeof refreshHotButton === 'function') refreshHotButton();
+    scrollCalendarCurrentRowIntoView();
+  }
+  let eventScheduleStateTimer = null;
+  function ensureEventScheduleStateTicker() {
+    if (eventScheduleStateTimer != null) return;
+    eventScheduleStateTimer = window.setInterval(() => { refreshEventScheduleSessionStates(); }, 60 * 1000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) refreshEventScheduleSessionStates();
+    });
+  }
+
+  function renderEventSchedule(config, data) {
+    const event = config?.event || {};
+    calendarRange.textContent = composeEventDateRangeLabel(event);
+    const calendarTitleEl = document.getElementById('calendarTitle');
+    if (calendarTitleEl && event.label) calendarTitleEl.textContent = event.label;
+    const sessions = (data?.features || [])
+      .filter((feature) => feature.properties?.feature_kind === 'event_session')
+      .sort((a, b) => Number(a.properties.sort_order || 0) - Number(b.properties.sort_order || 0));
+    if (!sessions.length) {
+      calendarDays.innerHTML = `<li class="calendar-empty">No schedule rows.</li>`;
+      return;
+    }
+    calendarDays.innerHTML = sessions.map((feature) => {
+      const props = feature.properties || {};
+      const tag = props.location_tag || '';
+      const location = props.location_label || tag;
+      const active = props.session_id === activeEventSessionId ? ' active' : '';
+      return `<li data-session-day="${escapeHtml(props.day || '')}" data-session-start="${escapeHtml(props.start_local || '')}">`
+        + `<button type="button" class="calendar-row${active}" data-session-id="${escapeHtml(props.session_id)}">`
+        + `<span class="calendar-day">${escapeHtml(props.day_short || props.day || '')}</span>`
+        + '<span>'
+        + `<span class="calendar-time">${escapeHtml(props.window || '')}</span>`
+        + `<span class="calendar-name">${escapeHtml(props.title || props.name || '')}</span>`
+        + `<span class="calendar-location">${escapeHtml(tag)} - ${escapeHtml(location)}</span>`
+        + '</span></button></li>';
+    }).join('');
+    refreshEventScheduleSessionStates();
+    ensureEventScheduleStateTicker();
+  }
+
+  // Popup-fit helpers: keep a session popup inside the unoccluded map slice
+  // (the container minus the floating .left-controls). main.js also subtracts
+  // the editor .panel — absent here, so the querySelector simply returns null.
+  function firstCoordinate(geometry) {
+    if (!geometry?.coordinates) return null;
+    let coords = geometry.coordinates;
+    while (Array.isArray(coords) && Array.isArray(coords[0])) coords = coords[0];
+    return Array.isArray(coords) && typeof coords[0] === 'number' ? coords : null;
+  }
+  function sessionPopupHtml(props) {
+    return `<strong>${escapeHtml(props.title || props.name || 'Event session')}</strong><br/>`
+      + detailRows([
+        ['Date', props.day],
+        ['Time', props.window],
+        ['Location', props.location_label],
+        ['Tag', props.location_tag],
+        ['Route', formatListProperty(props.route_tags)],
+        ['Status', props.status],
+        ['Inspired by', formatListProperty(props.inspired_by)],
+        ['Caveat', props.caveat]
+      ]);
+  }
+  function closeAllMapPopups() {
+    map.getContainer().querySelectorAll('.maplibregl-popup-close-button').forEach((btn) => btn.click());
+  }
+  function visibleMapRect() {
+    const container = map.getContainer().getBoundingClientRect();
+    const width = container.right - container.left;
+    let top = container.top;
+    let bottom = container.bottom;
+    let left = container.left;
+    let right = container.right;
+    const leftEl = document.querySelector('.left-controls');
+    const rightEl = document.querySelector('.panel');
+    const bottomEl = document.querySelector('.message');
+    const fullWidth = (r) => (r.right - r.left) >= width * 0.7;
+    if (leftEl) {
+      const r = leftEl.getBoundingClientRect();
+      if (fullWidth(r)) top = Math.max(top, r.bottom);
+      else left = Math.max(left, r.right);
+    }
+    if (rightEl) {
+      const r = rightEl.getBoundingClientRect();
+      if (fullWidth(r)) bottom = Math.min(bottom, r.top);
+      else right = Math.min(right, r.left);
+    }
+    if (bottomEl) {
+      const r = bottomEl.getBoundingClientRect();
+      if (r.height > 0) bottom = Math.min(bottom, r.top);
+    }
+    return { top, bottom, left, right };
+  }
+  function visibleMapPadding(extra = 20) {
+    const container = map.getContainer().getBoundingClientRect();
+    const vis = visibleMapRect();
+    return {
+      top: Math.max(0, vis.top - container.top) + extra,
+      bottom: Math.max(0, container.bottom - vis.bottom) + extra,
+      left: Math.max(0, vis.left - container.left) + extra,
+      right: Math.max(0, container.right - vis.right) + extra
+    };
+  }
+  function visibleCenterOffset(pad) {
+    return [(pad.left - pad.right) / 2, (pad.top - pad.bottom) / 2];
+  }
+  function panPopupIntoView(popup, margin = 14) {
+    if (!popup || typeof popup.getElement !== 'function') return;
+    const el = popup.getElement();
+    if (!el) return;
+    requestAnimationFrame(() => {
+      const popupRect = el.getBoundingClientRect();
+      if (!popupRect.width || !popupRect.height) return;
+      const vis = visibleMapRect();
+      let dx = 0;
+      let dy = 0;
+      if (popupRect.right > vis.right - margin) dx = popupRect.right - (vis.right - margin);
+      else if (popupRect.left < vis.left + margin) dx = popupRect.left - (vis.left + margin);
+      if (popupRect.bottom > vis.bottom - margin) dy = popupRect.bottom - (vis.bottom - margin);
+      else if (popupRect.top < vis.top + margin) dy = popupRect.top - (vis.top + margin);
+      if (dx === 0 && dy === 0) return;
+      map.panBy([dx, dy], { duration: 240 });
+    });
+  }
+
+  const EVENT_LAYER_IDS = ['event-session-routes', 'event-route-labels', 'event-anchor-points', 'event-anchor-labels'];
+  function gotoEventSession(sessionId) {
+    const feature = eventSessionById.get(sessionId);
+    if (!feature) return;
+    closeAllMapPopups();
+    activeEventSessionId = sessionId;
+    if (eventScheduleConfig && eventScheduleData) renderEventSchedule(eventScheduleConfig, eventScheduleData);
+    // Selection-driven: the event layers are default-off; showing a session
+    // turns them on (replaces main.js's eventScheduleToggle.checked = true).
+    for (const id of EVENT_LAYER_IDS) setLayerVisibility(id, true);
+    const pad = visibleMapPadding(20);
+    const bounds = geojsonBounds({ type: 'FeatureCollection', features: [feature] });
+    if (bounds) {
+      const [[minLng, minLat], [maxLng, maxLat]] = bounds;
+      if (minLng === maxLng && minLat === maxLat) {
+        map.flyTo({ center: [minLng, minLat], zoom: 17, offset: visibleCenterOffset(pad), duration: 1000, bearing: map.getBearing(), pitch: map.getPitch() });
+      } else {
+        map.fitBounds(bounds, { padding: pad, maxZoom: 16.8, duration: 1000, bearing: map.getBearing(), pitch: map.getPitch() });
+      }
+    }
+    const highlight = map.getSource('search-highlight');
+    if (highlight && feature.geometry) {
+      highlight.setData({ type: 'FeatureCollection', features: [feature] });
+      pulseHighlight();
+    }
+    const popupCoord = eventLocationByTag.get(feature.properties.location_tag)?.coordinates
+      || firstCoordinate(feature.geometry);
+    if (popupCoord) {
+      const slice = visibleMapRect();
+      const sliceWidth = Math.max(0, slice.right - slice.left);
+      const popupMax = Math.max(200, Math.min(280, sliceWidth - 28));
+      const popup = new maplibregl.Popup({ maxWidth: `${popupMax}px`, anchor: 'bottom', offset: 14, focusAfterOpen: false })
+        .setLngLat(popupCoord)
+        .setHTML(sessionPopupHtml(feature.properties))
+        .addTo(map);
+      popup.on('close', () => {
+        if (activeEventSessionId !== sessionId) return;
+        activeEventSessionId = null;
+        if (eventScheduleConfig && eventScheduleData) renderEventSchedule(eventScheduleConfig, eventScheduleData);
+      });
+      map.once('moveend', () => panPopupIntoView(popup));
+    }
+  }
+
+  // Events / About tab switch (main.js:446; POI tab is slice 4, dropped here).
+  function setLeftTab(tabKey) {
+    if (!leftTabButtons.some((button) => button.dataset.leftTab === tabKey)) tabKey = 'events';
+    for (const button of leftTabButtons) {
+      const selected = button.dataset.leftTab === tabKey;
+      button.setAttribute('aria-selected', String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    }
+    for (const panel of leftTabPanels) {
+      panel.hidden = panel.id !== `${tabKey}TabPanel`;
+    }
+    if (tabKey === 'events') scrollCalendarCurrentRowIntoView();
+    return tabKey;
+  }
+
+  // About panel render (ported from the index.html copy-data bootstrap). Only
+  // http(s) links are assigned so a hand-edited JSON link can't run script.
+  function renderAbout(about, panel) {
+    panel.textContent = '';
+    if (about.heading) {
+      const h = document.createElement('h2');
+      h.textContent = about.heading;
+      panel.append(h);
+    }
+    if (about.intro) {
+      const p = document.createElement('p');
+      p.className = 'info-copy';
+      if (about.intro.lead) p.append(document.createTextNode(about.intro.lead));
+      if (about.intro.link && about.intro.link.url) {
+        const a = document.createElement('a');
+        if (/^https?:\/\//i.test(String(about.intro.link.url))) a.href = about.intro.link.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = about.intro.link.text || about.intro.link.url;
+        p.append(a);
+      }
+      if (about.intro.tail) p.append(document.createTextNode(about.intro.tail));
+      panel.append(p);
+    }
+    if (Array.isArray(about.items) && about.items.length) {
+      const ul = document.createElement('ul');
+      ul.className = 'info-list';
+      about.items.forEach((item) => {
+        const li = document.createElement('li');
+        const label = document.createElement('span');
+        label.className = 'info-label';
+        label.textContent = item.label || '';
+        const body = document.createElement('span');
+        body.textContent = item.text || '';
+        li.append(label, body);
+        ul.append(li);
+      });
+      panel.append(ul);
+    }
+    if (about.note) {
+      const note = document.createElement('p');
+      note.className = 'info-note';
+      note.textContent = about.note;
+      panel.append(note);
+    }
+  }
+
   // ── Layer build ────────────────────────────────────────────────────────
   // Each add-site is the source + style only, ported from main.js. The popup
   // bindings, search indexing, feature-list registration, and positioned-feature
@@ -1172,6 +1636,81 @@
       indexFeatures(brandLogosData, 'logo', () => PRESET_LAYERS.showBrandLogos);
     }
 
+    // --- Event schedule (main.js:8208-8339) ---
+    // The shared resolver turns the served {event,locations,sessions} document
+    // into anchor + session GeoJSON. The 4 layers start hidden (selection-driven,
+    // not preset-driven); a calendar row / search match unhides them.
+    eventScheduleConfig = await fetchJson('./data/aop_event_schedule.json', 'Event schedule missing');
+    if (eventScheduleConfig && window.AOPEventSchedule) {
+      const built = window.AOPEventSchedule.eventScheduleToGeojson(eventScheduleConfig);
+      eventScheduleData = built.geojson;
+      eventLocationByTag = built.locationByTag;
+      eventSessionById = built.sessionById;
+      renderEventSchedule(eventScheduleConfig, eventScheduleData);
+      map.addSource('event-schedule', {
+        type: 'geojson', data: eventScheduleData,
+        attribution: 'Event schedule: proposed from sister-event references'
+      });
+      map.addLayer({
+        id: 'event-session-routes', type: 'line', source: 'event-schedule',
+        filter: ['all', ['==', ['get', 'feature_kind'], 'event_session'], ['==', ['geometry-type'], 'LineString']],
+        layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': '#b45f43',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 12, 2, 16, 4.2],
+          'line-opacity': 0.92, 'line-dasharray': [3, 1.4]
+        }
+      });
+      map.addLayer({
+        id: 'event-route-labels', type: 'symbol', source: 'event-schedule',
+        filter: ['all', ['==', ['get', 'feature_kind'], 'event_session'], ['==', ['geometry-type'], 'LineString']],
+        layout: {
+          visibility: 'none', 'symbol-placement': 'line',
+          'text-field': ['get', 'title'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 12],
+          'text-keep-upright': true
+        },
+        paint: { 'text-color': '#6f382b', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 }
+      });
+      map.addLayer({
+        id: 'event-anchor-points', type: 'circle', source: 'event-schedule',
+        filter: ['==', ['get', 'feature_kind'], 'event_anchor'],
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 4.5, 16, 8],
+          'circle-color': ['match', ['get', 'role'],
+            'pavilion', '#8b5f38', 'event_registration', '#b05a48', 'event_stage_start', '#7f7a4b',
+            'event_proving_ground', '#9a7d96', 'event_checkpoint', '#b45f43', 'event_photo_waypoint', '#5f9183',
+            '#8b5f38'],
+          'circle-stroke-color': '#f7f1e2', 'circle-stroke-width': 2
+        }
+      });
+      map.addLayer({
+        id: 'event-anchor-labels', type: 'symbol', source: 'event-schedule',
+        filter: ['==', ['get', 'feature_kind'], 'event_anchor'],
+        layout: {
+          visibility: 'none', 'text-field': ['get', 'map_label'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 12],
+          'text-offset': [0, 1.2], 'text-anchor': 'top'
+        },
+        paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 }
+      });
+      // Anchors searchable; their #tag is a search alias. A match unhides the
+      // event layers (selection-driven).
+      indexFeatures(eventScheduleData,
+        (props) => props.feature_kind === 'event_anchor' ? 'event location' : 'event session',
+        () => EVENT_LAYER_IDS,
+        (props) => props.feature_kind === 'event_anchor' ? [props.location_tag] : null);
+      // Open pointed at whatever the calendar is highlighting (live / next).
+      window.setTimeout(() => {
+        const live = calendarDays?.querySelector('li[data-session-state="happening"] .calendar-row, li[data-session-state="upcoming_next"] .calendar-row');
+        const sessionId = live?.dataset?.sessionId;
+        if (sessionId && eventSessionById.has(sessionId)) gotoEventSession(sessionId);
+      }, 300);
+    } else if (calendarDays) {
+      calendarDays.innerHTML = '<li class="calendar-empty">Schedule unavailable.</li>';
+    }
+
     // --- Search highlight overlay (main.js:9942) ---
     // Added LAST so the pulse draws above every other layer. buildSearchGroups
     // collapses the per-add-site index into ranked, segment-merged results.
@@ -1246,4 +1785,64 @@
   // later slice; search needs only the reposition.)
   window.addEventListener('scroll', () => { if (searchResults.style.display === 'block') positionSearchResults(); }, true);
   window.addEventListener('resize', () => { if (searchResults.style.display === 'block') positionSearchResults(); });
+
+  // ── Left-rail drawer reflow + tabs (main.js:10485-10569) ───────────────
+  // Two cards (Search, Calendar), both open by default. The icon tabs float
+  // down to meet their panel's top. Open/height persistence and the external
+  // lrOpenCard/lrCloseCard hooks are dropped (no session state in the read core).
+  const LR_CARDS = ['search', 'cal'];
+  const lrTabs = { search: document.getElementById('lrTabSearch'), cal: document.getElementById('lrTabCal') };
+  const lrPanels = { search: document.getElementById('lrPanelSearch'), cal: document.getElementById('lrPanelCal') };
+  const lrIconCol = document.getElementById('lrIconCol');
+  const lrContentCol = document.getElementById('lrContentCol');
+  if (lrIconCol && lrContentCol) {
+    const lrOpen = { search: true, cal: true };
+    const TAB_H = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tab-h'), 10) || 44;
+    const lrRender = () => {
+      const anyOpen = LR_CARDS.some((c) => lrOpen[c]);
+      lrContentCol.hidden = !anyOpen;
+      lrIconCol.classList.toggle('standalone', !anyOpen);
+      LR_CARDS.forEach((c) => {
+        const isOpen = !!lrOpen[c];
+        lrTabs[c].classList.toggle('open', isOpen);
+        lrTabs[c].setAttribute('aria-pressed', isOpen ? 'true' : 'false');
+        lrPanels[c].classList.toggle('open', isOpen);
+      });
+      LR_CARDS.forEach((c) => { lrTabs[c].style.marginTop = ''; });
+      void lrContentCol.offsetHeight;
+      let prevBottom = 0;
+      LR_CARDS.forEach((c, i) => {
+        const canonical = i * TAB_H;
+        const pTop = lrOpen[c] ? lrPanels[c].offsetTop : -Infinity;
+        const desired = Math.max(canonical, pTop, prevBottom);
+        lrTabs[c].style.marginTop = (desired - prevBottom) + 'px';
+        prevBottom = desired + TAB_H;
+      });
+      lrIconCol.classList.toggle('col2-short', anyOpen && lrContentCol.offsetHeight < lrIconCol.offsetHeight);
+    };
+    LR_CARDS.forEach((c) => {
+      lrTabs[c].addEventListener('click', () => { lrOpen[c] = !lrOpen[c]; lrRender(); });
+    });
+    lrRender();
+  }
+
+  // Left-tab switch (Events / About) + calendar row → fly to the session.
+  for (const button of leftTabButtons) {
+    button.addEventListener('click', () => setLeftTab(button.dataset.leftTab));
+  }
+  calendarDays?.addEventListener('click', (event) => {
+    const row = event.target.closest('.calendar-row');
+    if (row?.dataset.sessionId) gotoEventSession(row.dataset.sessionId);
+  });
+
+  // About panel copy (data/aop_about.json), best-effort — a missing file just
+  // leaves the literal fallback in the markup.
+  (function loadAbout() {
+    const panel = document.getElementById('aboutInfoPanel');
+    if (!panel) return;
+    fetch('./data/aop_about.json')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((about) => { if (about) renderAbout(about, panel); })
+      .catch(() => {});
+  })();
 })();
