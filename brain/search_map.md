@@ -74,3 +74,5 @@ TL;DR:
 - too many questions, asking instead of doing, just do it, yes/no question fatigue: `ai_rules/act_dont_ask.md`
 - writing style: `ai_rules/user_writing_style.md`, `voice/voice_guide.md`
 - canonical commands, port discipline, do not drift ports: `ai_rules/canonical_spinup_commands.md`
+- session coordination, multiple sessions at once, parallel agents, coord board, who's working on what, claim, reserve lines, live sessions, concurrency: `handoff/coord/_protocol.md`, then `ai_rules/coordination_axes.md`
+- campaign, big goal, overruns the context window, context limit, resume a goal across sessions, cursor, checkpoint, goal spans windows, meta layer, three axes, RAM vs disk: `ai_rules/coordination_axes.md`, then `tasks/_extend.md`

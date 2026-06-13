@@ -34,7 +34,12 @@ This MVP scaffold is the first practical step toward the build card:
 
 1. [X] Launch the PostGIS container in `mvp/`
 2. [X] Confirm `mvp/init_db.sql` created the database schema
-3. [ ] Connect QGIS to `localhost:55432` and inspect source/feature tables
+3. [~] Connect QGIS to `localhost:55432` and inspect source/feature tables — connection PROVEN from the
+   host (`psql`, 2026-06-10) and the importable connection + runbook are ready
+   (`../../spinup/qgis_connect_to_db.md`, `../../spinup/assets/qgis/aop_postgis_connection.xml`). The only
+   step left is the user's `brew install --cask qgis` (a Bash agent is permission-blocked from installing
+   apps). This is the tool the northstar always meant for editing — it lets the ~3k-line browser editor
+   retire.
 4. [X] Load a placeholder `publish.geojson` into `website/`
 5. [X] Preview `website/index.html`
 6. [X] Run a demo validation-loop smoke test from observation capture to promoted publish export

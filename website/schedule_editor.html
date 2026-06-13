@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2e2a22">
+<title>AOP · Schedule Editor</title>
+<style>
+  :root{
+    --ink:#23201a; --muted:#6b6358; --line:#ddd5c4; --paper:#f4efe4; --card:#fffdf7;
+    --accent:#7a5c2e; --accent2:#2e6b3f; --danger:#9a3b3b; --warn:#9a6a1e;
+    --bar:#2e2a22;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--paper);color:var(--ink);
+    font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding-bottom:90px;-webkit-text-size-adjust:100%}
+  /* sticky top bar: event + save status — always visible in the field */
+  .bar{position:sticky;top:0;z-index:10;background:var(--bar);color:#f4efe4;
+    padding:max(10px,env(safe-area-inset-top)) 14px 10px;}
+  .bar h1{margin:0;font-size:17px;font-weight:650}
+  .bar .meta{font-size:12.5px;opacity:.8;margin-top:2px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7bbf8a;margin-right:5px;vertical-align:middle}
+  .dot.off{background:#cf9a52}
+  .saved{color:#9fdcae}
+  main{max-width:680px;margin:0 auto;padding:14px}
+  .evt{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+  label{display:block;font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.02em;text-transform:uppercase;margin:8px 0 3px}
+  input,select,textarea{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);
+    border-radius:10px;background:#fff;color:var(--ink);-webkit-appearance:none}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-color:var(--accent)}
+  .row2{display:flex;gap:10px}
+  .row2>div{flex:1}
+  .sess{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 12px 14px;margin-bottom:12px}
+  .sess .hd{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+  .sess .ord{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;min-width:26px}
+  .sess .grow{flex:1}
+  .iconbtn{font:inherit;border:1px solid var(--line);background:#fff;border-radius:10px;
+    min-width:44px;height:44px;font-size:18px;cursor:pointer;color:var(--ink);line-height:1}
+  .iconbtn:active{background:#f0ead9}
+  .iconbtn.danger{color:var(--danger);border-color:#e6c9c9}
+  .addbtn{display:block;width:100%;padding:14px;font:inherit;font-weight:650;font-size:16px;
+    border:2px dashed var(--line);background:#fff;border-radius:14px;color:var(--accent);cursor:pointer}
+  .addbtn:active{background:#f0ead9}
+  /* sticky bottom action bar */
+  .actions{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;gap:8px;
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#fffdf7ee;
+    backdrop-filter:blur(6px);border-top:1px solid var(--line)}
+  .actions button{flex:1;padding:13px 10px;font:inherit;font-weight:650;font-size:15px;border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer}
+  .actions .primary{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+  .actions .ghost{color:var(--muted)}
+  .note{font-size:12.5px;color:var(--muted);margin:2px 2px 12px}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:9px;background:#f0ead9;color:var(--warn)}
+  dialog{border:none;border-radius:14px;padding:0;max-width:90vw;width:420px}
+  dialog .dlg{padding:18px}
+  dialog h3{margin:0 0 8px}
+  dialog .dlgrow{display:flex;gap:8px;margin-top:14px}
+  dialog button{flex:1;padding:11px;font:inherit;font-weight:650;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer}
+  dialog .primary{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+  textarea{min-height:60px;resize:vertical}
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1 id="evtLabel">Schedule</h1>
+  <div class="meta">
+    <span><span class="dot" id="netDot"></span><span id="netTxt">online</span></span>
+    <span id="saveTxt" class="saved">saved</span>
+    <span id="srcTxt"></span>
+  </div>
+</div>
+
+<main id="app">Loading…</main>
+
+<div class="actions">
+  <button class="primary" id="addBtn2">＋ Add session</button>
+  <button id="exportBtn">⤓ Export</button>
+  <button class="ghost" id="resetBtn">↺ Reset</button>
+</div>
+
+<dialog id="resetDlg"><div class="dlg">
+  <h3>Discard your edits?</h3>
+  <p class="note">This throws away every change saved on this device and returns to the published schedule. Can't be undone.</p>
+  <div class="dlgrow"><button id="resetCancel">Keep editing</button><button class="primary" id="resetYes" style="background:var(--danger);border-color:var(--danger)">Discard</button></div>
+</div></dialog>
+
+<script>
+const KEY = 'aop_schedule_override_v1';
+const SRC = './data/aop_event_schedule.json';
+let doc = null;          // the working document (event + sessions + locations…)
+let baked = null;        // the published baseline (for Reset)
+let saveTimer = null;
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+async function boot(){
+  try { baked = await (await fetch(SRC, {cache:'no-store'})).json(); }
+  catch(e){ baked = await (await fetch(SRC)).json().catch(()=>null); } // offline: SW cache
+  const stored = readOverride();
+  doc = stored || deepCopy(baked);
+  if(!doc){ $('app').innerHTML = '<p class="note">Could not load the schedule (no published copy and nothing saved on this device).</p>'; return; }
+  render();
+  updateNet(); window.addEventListener('online', updateNet); window.addEventListener('offline', updateNet);
+}
+function deepCopy(o){ return o ? JSON.parse(JSON.stringify(o)) : o; }
+function readOverride(){ try{ const r = localStorage.getItem(KEY); return r? JSON.parse(r): null; }catch(e){ return null; } }
+
+function markSaved(txt){ $('saveTxt').textContent = txt; }
+function writeNow(){
+  if(!doc) return;
+  doc._editedAt = new Date().toISOString();
+  try{ localStorage.setItem(KEY, JSON.stringify(doc)); markSaved('saved to this device'); $('srcTxt').textContent = 'your edits'; }
+  catch(e){ markSaved('SAVE FAILED'); }
+}
+function save(){
+  // auto-save: debounced, so a field edit can never be lost in the field
+  markSaved('saving…');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(writeNow, 250);
+}
+// Field hardening (council/mason): if the app is closed/backgrounded within the
+// 250ms debounce window, flush the pending edit immediately so no keystroke is
+// lost. pagehide covers tab close / PWA dismiss; visibilitychange covers
+// backgrounding (the common phone gesture).
+function flushPending(){ clearTimeout(saveTimer); writeNow(); }
+window.addEventListener('pagehide', flushPending);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'hidden') flushPending(); });
+function updateNet(){
+  const on = navigator.onLine;
+  $('netDot').className = 'dot' + (on?'':' off');
+  $('netTxt').textContent = on ? 'online' : 'offline — edits still save here';
+}
+
+function render(){
+  const ev = doc.event || (doc.event = {});
+  $('evtLabel').textContent = ev.label || 'Schedule';
+  $('srcTxt').textContent = readOverride() ? 'your edits' : 'published';
+  const sessions = doc.sessions || (doc.sessions = []);
+  let html = `<div class="evt">
+    <label>Event name</label>
+    <input id="ev_label" value="${esc(ev.label)}">
+    <div class="row2">
+      <div><label>Dates</label><input id="ev_dates" value="${esc(ev.date_range_label)}"></div>
+      <div><label>Status</label><input id="ev_status" value="${esc(doc.status||ev.status||'')}" list="statusOpts"></div>
+    </div>
+  </div>
+  <datalist id="statusOpts"><option>proposed</option><option>confirmed</option><option>final</option><option>cancelled</option></datalist>
+  <p class="note">${sessions.length} session${sessions.length===1?'':'s'}. Every change saves to this device automatically — works with no signal.</p>`;
+
+  sessions.forEach((s, i) => {
+    html += `<div class="sess" data-i="${i}">
+      <div class="hd">
+        <span class="ord">${i+1}</span>
+        <input class="grow f_title" data-i="${i}" value="${esc(s.title)}" placeholder="Session name">
+        <button class="iconbtn" data-up="${i}" ${i===0?'disabled':''} aria-label="Move up">↑</button>
+        <button class="iconbtn" data-down="${i}" ${i===sessions.length-1?'disabled':''} aria-label="Move down">↓</button>
+        <button class="iconbtn danger" data-del="${i}" aria-label="Delete">✕</button>
+      </div>
+      <div class="row2">
+        <div><label>Day</label><input class="f_day" data-i="${i}" value="${esc(s.date_label)}" placeholder="Saturday" list="dayOpts"></div>
+        <div><label>When</label><input class="f_when" data-i="${i}" value="${esc(s.time_label)}" placeholder="Morning"></div>
+      </div>
+      <div class="row2">
+        <div><label>Exact time (optional)</label><input class="f_time" data-i="${i}" value="${esc(s.start_local)}" placeholder="14:00" inputmode="numeric"></div>
+        <div><label>Status</label><input class="f_status" data-i="${i}" value="${esc(s.status)}" list="statusOpts"></div>
+      </div>
+    </div>`;
+  });
+  html += `<datalist id="dayOpts"><option>Friday</option><option>Saturday</option><option>Sunday</option></datalist>`;
+  html += `<button class="addbtn" id="addBtn">＋ Add a session</button>`;
+  $('app').innerHTML = html;
+  wire();
+}
+
+function wire(){
+  const ev = doc.event;
+  bind('ev_label', v=>{ ev.label=v; $('evtLabel').textContent=v||'Schedule'; });
+  bind('ev_dates', v=>{ ev.date_range_label=v; });
+  bind('ev_status', v=>{ doc.status=v; });
+  document.querySelectorAll('.f_title').forEach(el=> el.oninput = ()=>{ doc.sessions[+el.dataset.i].title = el.value; save(); });
+  document.querySelectorAll('.f_day').forEach(el=> el.oninput = ()=>{ doc.sessions[+el.dataset.i].date_label = el.value; save(); });
+  document.querySelectorAll('.f_when').forEach(el=> el.oninput = ()=>{ doc.sessions[+el.dataset.i].time_label = el.value; save(); });
+  document.querySelectorAll('.f_time').forEach(el=> el.oninput = ()=>{ doc.sessions[+el.dataset.i].start_local = el.value; save(); });
+  document.querySelectorAll('.f_status').forEach(el=> el.oninput = ()=>{ doc.sessions[+el.dataset.i].status = el.value; save(); });
+  document.querySelectorAll('[data-up]').forEach(b=> b.onclick = ()=> move(+b.dataset.up, -1));
+  document.querySelectorAll('[data-down]').forEach(b=> b.onclick = ()=> move(+b.dataset.down, 1));
+  document.querySelectorAll('[data-del]').forEach(b=> b.onclick = ()=> del(+b.dataset.del));
+  $('addBtn').onclick = addSession;
+}
+function bind(id, fn){ const el=$(id); if(el) el.oninput = ()=>{ fn(el.value); save(); }; }
+
+function renumber(){ (doc.sessions||[]).forEach((s,i)=> s.sort_order = (i+1)*10); }
+function move(i, dir){
+  const s=doc.sessions; const j=i+dir; if(j<0||j>=s.length) return;
+  [s[i],s[j]]=[s[j],s[i]]; renumber(); save(); render();
+}
+function del(i){
+  const s=doc.sessions[i];
+  if(!confirm(`Delete "${s.title||'this session'}"?`)) return;
+  doc.sessions.splice(i,1); renumber(); save(); render();
+}
+function addSession(){
+  const n = (doc.sessions=doc.sessions||[]);
+  const id = 'session-' + Date.now().toString(36);
+  n.push({ id, title:'', status: doc.status||'proposed', date_label:'', time_label:'', start_local:'', sort_order:(n.length+1)*10 });
+  renumber(); save(); render();
+  // focus the new session's title
+  const inputs = document.querySelectorAll('.f_title'); const last = inputs[inputs.length-1]; if(last){ last.focus(); last.scrollIntoView({block:'center'}); }
+}
+
+$('addBtn2').onclick = addSession;
+$('exportBtn').onclick = ()=>{
+  doc.updated_at = new Date().toISOString().slice(0,10);
+  const blob = new Blob([JSON.stringify(doc, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'aop_event_schedule.json';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+};
+$('resetBtn').onclick = ()=> $('resetDlg').showModal();
+$('resetCancel').onclick = ()=> $('resetDlg').close();
+$('resetYes').onclick = ()=>{ localStorage.removeItem(KEY); doc = deepCopy(baked); $('resetDlg').close(); render(); markSaved('reset to published'); };
+
+boot();
+</script>
+</body>
+</html>

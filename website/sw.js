@@ -55,6 +55,9 @@ const SHELL_ASSETS = [
   // The ONE shared event-schedule resolver (going gold G_E): both main.js and
   // panel.js read window.AOPEventSchedule, so it precaches with the app shell.
   './js/event_schedule_geojson.js',
+  // The ONE feature-to-text strategy (normalize_feature_display): shared by
+  // main.js + the editors via window.AOPFeatureDisplay, precached with the shell.
+  './js/feature_display.js',
   './js/main.js',
   // Right-panel swap (Stage 1): the embedded one-model panel + its scoped styles.
   './css/panel-embed.css',

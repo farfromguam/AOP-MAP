@@ -1,0 +1,28 @@
+<!DOCTYPE connections>
+<!--
+  AOP local PostGIS connection for QGIS.
+  Import it in QGIS: Browser panel -> right-click "PostgreSQL" -> "Load Connections..."
+  -> pick this file. The "AOP map (local PostGIS)" connection then appears; expand it,
+  open the `core` schema, and drag `features` onto the map.
+  Credentials are the local dev DB's (aop/aop) — safe to embed for a localhost dev box.
+  Runbook: brain/spinup/qgis_connect_to_db.md
+-->
+<qgsPgConnections version="1.0">
+  <postgresql name="AOP map (local PostGIS)"
+              host="localhost"
+              port="55432"
+              database="aop_map"
+              username="aop"
+              password="aop"
+              sslmode="SslDisable"
+              authcfg=""
+              service=""
+              estimatedMetadata="false"
+              projectsInDatabase="false"
+              allowGeometrylessTables="true"
+              saveUsername="true"
+              savePassword="true"
+              geometryColumnsOnly="false"
+              dontResolveType="false"
+              publicOnly="false"/>
+</qgsPgConnections>

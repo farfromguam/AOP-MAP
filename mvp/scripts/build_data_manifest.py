@@ -136,9 +136,9 @@ def run_psql(sql: str) -> tuple[str, bool]:
 
 
 def db_section() -> dict:
-    ok, _ = run_psql("SELECT 1;")
-    if not _:
-        return {"reachable": False, "error": ok, "tables": []}
+    err, ok = run_psql("SELECT 1;")
+    if not ok:
+        return {"reachable": False, "error": err, "tables": []}
     tables = []
     for schema, table, role, note, breakdown_sql, breakdown_cols in DB_TABLES:
         cols_out, ok = run_psql(

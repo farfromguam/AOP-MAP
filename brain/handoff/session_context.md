@@ -6,17 +6,194 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (TASK-CARD FILING PASS — moved done cards to `_done/`; no app code touched, only `brain/`).**
+User: *"review brain/tasks… cards should be loose until done, then moved to `_done/`. we have not been
+moving them. review and move where appropriate. if a card is partly done, extract the pending work into
+dedicated deferred tasks."* Reviewed every sprint. **Moved to `_done/`:** Sprint 07 (all four —
+`breif`/`tables_model`/`tables_diagram`/`description_blurb_convergence`, sprint fully closed; only `_done/`
+remains); Sprint 11 `data_source_inventory.md` (shipped+committed `0c57f6e`); Sprint 12
+`normalize_feature_display.md` + `data_points_editor.md` (both shipped+council-clear). **Partly-done →
+extracted then filed:** Sprint 12 `data_editor_map_viewer.md` — its mockup+review phase is done (V1 layout
+chosen), the production fold-in is gated on the user's preview pick (A/B/C/D), so that remainder became a new
+deferred card **`tasks/20_deferred/data_editor_fold_into_production.md`** and the source moved to `_done/`.
+**Left in place (deliberate, with reason):** Sprint 06 (gold spine done but heavily path-referenced;
+`gold_slice6_backlog` still active with G_D; `schema_conformance_audit` genuinely NOT done —
+`audit_canonical_schema.py` doesn't exist); Sprint 08 `star_driven_poi_normalization` (done but kept for
+inbound links per its own readme); Sprint 09 all three (Path A done banners, but Path B is HELD gold-slice-6
+work and `shadow_attributes_audit.md` is an **active** path-reference target from `gold_slice6_backlog` —
+moving it would break that grep ref; same Sprint-08 keep-for-links precedent); Sprint 11
+`client_layer_registry` (living punch-list); Sprint 13 (active, not started); Sprint 03 `misc_3` (active by
+request); Sprint 05 register/umbrella (sprint-framing — NB `universal_feature_layer.md`'s stage-2/3 "NEXT"
+markers are **stale**: that work shipped in its `_done/` slices + Sprint 08). Updated the 3 active inbound
+path-refs to the new `_done/` locations (`star_driven_poi_list`, `retire_legacy_geo_tables`, `11/_readme`);
+left the historical `session_context` journal paths as-is (accurate as history). All moves are plain `mv`
+(off the git index) → they show as deletions+additions for the user's review. **UNCOMMITTED** (the git gate
+is the user's). No shell asset touched → no version bump owed.
+
+-----
+
+**2026-06-13 (SPRINT 13 OPENED — viewer extraction. Assessment + sprint created; no app code touched this turn).**
+User asked to assess "pulling out the good/mature/day-of read view/controls of the left," paralleling the
+edit + data extraction. Assessment: the read/edit split today is **cosmetic** — `?edit=0` is one CSS rule
+(`app.css:401`); all 10.6k lines of `main.js` (read host + in-file editor) still load. `panel.js` is the
+already-extracted editor attaching via the `window.AOP_HOST_*` seam. User then **corrected the approach**:
+NOT subtraction (delete editor from the tangled file, keep the rest → carries all viewer debt forward), but
+**extraction to a clean core** — start empty, copy only what's used; *the move is the audit*; 1000 lines for
+a simple feature → assess if truly needed. Precedent = `panel.js` (clean rebuild, port-verbatim-what's-wired)
+run once on the editor; Sprint 13 runs it on the viewer. Debt grounded: **82** legacy markers in `main.js`,
+**38** `leftrail_*.html` mockups, **50** hidden/legacy attrs in `index.html` — a different axis than Sprint 11's
+C1=0. CARDED: **`tasks/13_viewer_extraction/_readme.md`** (approach · slate · forks) + **`viewer_core_scaffold.md`**
+(slice 1 = clean `viewer.html` + `viewer_core.js`, first port presets/zoom/3D, measure line-cost). Built
+**alongside** index.html (never gutted); becomes index.html at the final swap (slice 7, git-gated). Only
+`brain/` touched this turn → no version bump owed, UNCOMMITTED. Next: user green-lights slice 1.
+
+-----
+
+**2026-06-13 (round 5 — COORDINATION LAYER built: three axes for surviving context + parallel sessions).**
+Design conversation, user: *"I need what we talked about plus another meta layer"* → *"make it happen."* Built
+the layer that lets a goal bigger than one context window survive, plus a live board for sessions running at
+once. (Built it the same turn another session was writing round 4 into THIS file — exactly the concurrency the
+board fixes.) Frame: context window = RAM, brain = disk, the rule = scheduler; the goal lives on disk, windows
+page it forward. Three axes: **TIME** = `flows/cwc.md` + this handoff (session→session, settled);
+**CONCURRENCY** = new `handoff/coord/` board (session‖session, live, one file per session); **DEPTH** = a
+card's **cursor** (window→window, one goal). Files: **`ai_rules/coordination_axes.md`** (durable frame +
+campaign trigger: default-is-a-card, promote-to-cursor only when a goal outruns one window, agent's call at
+plan-time OR overrun — not the user's, not end-of-task; resume + checkpoint contracts).
+**`handoff/coord/_protocol.md` + `_template.md`** (per-session claim files; read-before-claim; advisory not a
+lock; drains here on finish). **`tasks/_extend.md`** +optional Cursor block (campaign cards only).
+**`flows/cwc.md`** wired: check `coord/` before claiming a card; resume from a card's cursor not the whole
+handoff. Routes in `search_map.md`; pointer in `brain_map.md`. **Brain-only diff (no website/ or mvp/) →
+council gate N/A. UNCOMMITTED** (no_commits — user's git gate).
+
+**2026-06-13 (round 4 — NORMALIZE feature display S2+S3 DONE: per-layer rules deleted from main.js).** User:
+*"do what you must."* Executed the rest of the normalization. **S2 found UNNEEDED** — the served data is
+already CMFS-normalized (every POI source file carries real status/source/kind/description); the per-layer
+constants were pure display-code artifacts overriding good data, so no bake was required (verified by dumping
+all served files). **S3 DONE + verified:** all 6 `listRow` derivations in `main.js` now call
+`window.AOPFeatureDisplay.featureDisplay(props)` (only structural id/popupCoord stay per-layer);
+`poiPopupHtml` delegates to `.popupHtml`; `feature_display.js` loaded before main.js in `index.html` +
+precached in `sw.js`. **Zero per-layer display constants remain** (grep clean). Verified by observation:
+viewer loads 0 errors; live Pavilion popup renders via the shared renderer with real values; the shipped
+`window.AOPFeatureDisplay` run in the live page on cemetery/trail/visitor/building shows REAL provenance now
+(cemetery source = full Comptroller string not "TN Comptroller parcels"; trail source "sfwda_trace_edited"
+not "observed"; etc.). Intended changes (richer, nothing lost): buildings show status/source canonical
+fields; trails lose "trail · difficulty" composite + the owed-message; drawn lose "user-drawn" const →
+real/blank; empty names → "(unnamed)". Card: `normalize_feature_display.md` (S1–S4 all ✅). **OWED — the
+user's git gate: `VERSION`/`#appVersion` v62→v63 bump (SHELL_ASSETS changed) + commit.** Council next.
+
+**2026-06-13 (round 3 — NORMALIZE feature display: one text strategy for all data).** User, on seeing the
+preview couldn't match the map for some layers: *"there should not [be] per-layer display rules — it's an
+artifact of development. find and normalise. only one text concatenation strategy for all data."* FOUND: the
+renderer is already one fn (`poiPopupHtml` main.js:1339) but the field derivation is SIX per-layer `listRow`
+rules in `FEATURE_LIST_LAYERS` (main.js:2187) — 4 of 6 **hard-code Status/Source as constants**. Key finding:
+the served data often ALREADY carries the real field (e.g. `aop_cemeteries.geojson` has the full Comptroller
+source + status) and main.js OVERRIDES it with a worse constant — so the hard-codes are diverging artifacts.
+TARGET: one branch-free `featureDisplay(props)` + one `popupHtml`, values live on the feature (baked) not in
+code. **S1 SHIPPED + verified:** `website/js/feature_display.js` (the one strategy) + the editor preview now
+calls it (not a local copy) — 4/4 Playwright PASS, 0 errors, node-checked. **main.js NOT yet touched** (still
+has its own copy until S3). Slices in card `tasks/12_field_schedule_editor/normalize_feature_display.md`:
+S2 bake the uniform fields onto served features; S3 delete main.js's 6 listRow + poiPopupHtml, call the shared
+module, **verify popup parity by observation** (carries the user's VERSION bump); S4 confirm editor==map.
+**UNCOMMITTED.** Council next.
+
+**2026-06-13 (round 2 — V1 CHOSEN + active-feature text preview, style choice pending).** User: *"go with
+the first one. add below the iphone image the text of the feature as it will be shown when it's active in
+the map. show me some variations."* → V1 (side dock) is locked; below the map, preview the selected feature
+**as the public map popup renders it** (the real `poiPopupHtml`: title · blurb / "Info needed — revisit" ·
+Kind · Status · Source · Caveat), live-updating as you edit Name/Description/Kind. Engine extended
+(`window.AOP_PREVIEW_STYLE`, `popupModel`/`popupCardHtml` mirror `main.js:1339` + `css/app.css:748`). Four
+takes: **A faithful popup card (rec)**, B phone frame ("the iphone"), C labeled fields (empty-state
+checklist), D chip card (richer — NOT today's popup, implies a live-map rework). Files
+`data_editor_v1_preview_{a_popup,b_phone,c_fields,d_chips}.html` + `_compare.html`. Playwright
+`/tmp/verify_preview.py`: 4/4 PASS (select → real title; edit Name → preview updates live; 0 errors);
+shots `/tmp/pv_*.png`. **OWED:** user picks A/B/C/D → fold V1 + that preview into `data_editor.html` +
+retire mockups; then sw.js precache + VERSION bump (user's git gate). **UNCOMMITTED.** Council next.
+
+**2026-06-13 (DATA EDITOR + MAP VIEWER — mockups, layout choice pending).** The shipped
+`data_editor.html` is a blind spreadsheet — you can type a Lat/Lng but can't see where the point lands.
+User asked for *"a simple map viewer so I can make informed edit decisions"* + *"some mockups about possible
+options"* in the compare-page review pattern. SHIPPED + verified by observation: **one shared engine
+(`website/js/data_editor_map.js`) + four layouts + a review page** — same `right_sidebar_compare.html` move
+(one direction, four placements). Each take is the **real editor** (round-trip-safe cells, per-file
+`aop_dataedit::<file>` autosave) with **one map added** over the public viewer's TNMap satellite + **two-way
+selection sync** (click row# → fly-to; **edit Lat/Lng → marker moves live**; click feature → its row). Files:
+`data_editor_map_v1_side.html` (grid left / map right — **recommended, the "map in the right sidebar"**),
+`_v2_drawer` (bottom dock, field/phone), `_v3_mapfirst` (map-led), `_v4_overlay` (slide-in, smallest diff),
+`data_editor_map_compare.html` (4 live iframes + placement-axes table + rec). Playwright: all 4 PASS, 0
+console/page errors; screenshots `/tmp/edmap_*.png`. Card: `tasks/12_field_schedule_editor/data_editor_map_viewer.md`.
+**OWED (user's call):** pick a layout → fold into `data_editor.html` + retire mockups; offline basemap
+precache + `VERSION` bump are later/git-gate. **UNCOMMITTED.**
+
+-----
+
+**2026-06-11 (DATA POINTS EDITOR + the "files are the truth" clarification).** The user has no deployed
+DB (local Docker only), edits locally → bakes → deploys static files → freezes before the event. Decision
+reached this session: **the files are the product; the database is an optional tool, not a gate** — the
+gold-migration "DB is store of record" framing is backwards for a single-author static-file workflow and
+was the source of the round-trip churn. The user, adrift and asking for the simplest possible thing
+("a spreadsheet editor for these data points… does not need to be much"), gets **`website/data_editor.html`**
+— a static, offline, file-based grid editor (file dropdown from `_data_manifest.json`, one row per
+feature, Name/Tag/Kind/Lat/Lng/Description, add/delete/export, round-trip-safe, autosave+flush). Sibling
+to `schedule_editor.html`. Card: `tasks/12_field_schedule_editor/data_points_editor.md`. Verified headless
+(edit→reload survived, 22 files, switch works). Also reframed the main.js "split" for the user as
+**subtraction, not surgery** (add small editors → delete the editor code the small ones replace → what
+remains is the viewer; git makes every deletion reversible). UNCOMMITTED.
+
+-----
+
+**2026-06-11 (FIELD SCHEDULE EDITOR — the thing the user was working toward).** User finally stated the
+real requirement: a **basic editor**, usable by **someone else** (they don't have final say), that works
+**in the field — offline, no internet, no Claude, no DB server** ("what if I need to make the update in
+the field?"). This corrected the prior QGIS / "tell-me-and-I'll-edit-the-DB" answers — both fail at
+crunch time. Architectural truth: for offline field use the **device is the source of truth in that
+moment**; local-copy editing is correct, not a hack. SHIPPED + verified v1:
+**`website/schedule_editor.html`** — standalone, mobile-first, offline-first; auto-saves every keystroke
+to `localStorage['aop_schedule_override_v1']`; edit/add/delete/reorder sessions + event meta; Export
+(download) + Reset. Does NOT touch `main.js`/`panel.js`. Card:
+`tasks/12_field_schedule_editor/_readme.md`. Verified headless (edit→reload→survived, 13 real sessions).
+**NOT yet done (earned after user confirms shape):** PWA precache (add to `sw.js` SHELL_ASSETS + user's
+VERSION bump), Export→DB loop (existing `import_event_schedule_to_core.py`), optional viewer-calendar
+overlay. **UNCOMMITTED.** Honest limit told to user: offline edit shows on that device now; reaches
+others only when a device regains signal to sync (physics).
+
+-----
+
+**2026-06-10 (QGIS — the real grip on the data).** User realized the in-browser editor (~3k lines:
+`panel.js` + `main.js` editor regions) only exists because it was their attempt to "take hold of the
+data" — and the tool the northstar always meant for that, **QGIS**, was never connected (MVP backlog
+item 3, open since sprint 1). The user did not know what QGIS was. Decision: **set up QGIS against the
+DB.** Connection PROVEN from the host (`PGPASSWORD=aop psql -h localhost -p 55432 -U aop -d aop_map`,
+2026-06-10) — QGIS will see `core.features` (159 live / 12 layers) + `publish.features` (+ ignorable
+`tiger.*` sample tables). Shipped: runbook `spinup/qgis_connect_to_db.md` + importable connection
+`spinup/assets/qgis/aop_postgis_connection.xml`. **OWED (user's step):** `brew install --cask qgis` (a
+Bash agent is permission-blocked from installing apps). Once QGIS proves it gives the grip, the browser
+editor can be DELETED rather than maintained (`tasks/11_client_convergence/client_layer_registry.md`),
+and the website reverts to the read-only viewer the northstar promised. The data spine is the asset that
+survives that deletion — the week's real value, not lost.
+
+-----
+
 **2026-06-10 (assessment + data x-ray).** User asked, exhausted, for an honest read on how much is real
 vs paper mache and a viewer to see every data source. Finding recorded in
 `tasks/11_client_convergence/_readme.md` — **three layers of reality:** ① the PostGIS spine
 (`core.features`, 160 rows / 12 layers, CMFS-converged) is SOLID, keep it; ② served files are mixed by
 design (6 core-backed / 6 sidecar / 1 buffer / 18 raw-pipeline) but were never mapped for the user; ③
-the client (`main.js` ~10.6k lines, ~800 per-layer refs) is the real debt. SHIPPED + verified: the
+the client (`main.js` ~10.6k lines) — first called "the real debt," **CORRECTED below: it already meets
+its own convergence contracts (C1=0, C6=0); the residual is only file size.** SHIPPED + verified: the
 x-ray — `website/data_sources.html` + `mvp/scripts/build_data_manifest.py` →
-`website/data/_data_manifest.json` (card `tasks/11_client_convergence/data_source_inventory.md`). NEXT
-(awaiting user green light, loop-eligible): `tasks/11_client_convergence/client_layer_registry.md` —
-converge the client's per-layer sprawl onto one descriptor, migrate one layer at a time behind the
-existing per-layer verifiers. UNCOMMITTED (no shell asset touched → no version bump owed).
+`website/data/_data_manifest.json` (card `tasks/11_client_convergence/data_source_inventory.md`).
+COMMITTED by the user as `0c57f6e "s11 recon"` (which also folded in the
+user's `10_deferred → 20_deferred` rename — content-preserving, no card directives lost). No shell asset
+touched → no version bump owed. Council done-review CLEAR (5 seats; receipt:
+`../output/council/sprint11_inventory_done_review_20260610.md`).
+
+**CORRECTION (same session):** the "client is the real paper-mache debt" claim did NOT survive a contract
+check — **C1 = 0, C6 = 0** (grep-verified): per-layer convergence is already done (sprints 06/08/09) and
+meets its own contracts. NO client-rebuild loop owed; `client_layer_registry.md` rewritten from "do the
+convergence" to "convergence already met + the real punch list." Genuine remaining work: **needs the
+user** — publishability gap (6/160 features published) + real data owed (MVP backlog 9/3/8);
+**autonomous + verifiable** — Sprint 09 editor-maturity slices, dead-mockup cleanup. The script's one
+council nit (`err, ok` naming) is fixed.
 
 -----
 

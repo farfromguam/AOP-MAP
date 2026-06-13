@@ -1,6 +1,6 @@
 {
   "schema": "aop-data-manifest-v1",
-  "generated_at": "2026-06-11T04:06:22Z",
+  "generated_at": "2026-06-11T04:26:42Z",
   "purpose": "Ground-truth inventory of every AOP data source. Open website/data_sources.html to browse it.",
   "layers_of_reality": {
     "db": "PostGIS store of record \u2014 the converged, normalized spine.",

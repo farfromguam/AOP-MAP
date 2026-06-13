@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2e2a22">
+<title>AOP · Data Editor (spreadsheet)</title>
+<style>
+  :root{
+    --ink:#23201a; --muted:#6b6358; --line:#ddd5c4; --paper:#f4efe4; --card:#fffdf7;
+    --accent:#7a5c2e; --accent2:#2e6b3f; --danger:#9a3b3b; --bar:#2e2a22;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--paper);color:var(--ink);
+    font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-bottom:80px}
+  .bar{position:sticky;top:0;z-index:10;background:var(--bar);color:#f4efe4;
+    padding:max(10px,env(safe-area-inset-top)) 14px 10px}
+  .bar h1{margin:0;font-size:16px;font-weight:650;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .bar select{font:inherit;font-size:14px;padding:5px 8px;border-radius:8px;border:1px solid #555;background:#fffdf7;color:var(--ink)}
+  .bar .meta{font-size:12px;opacity:.85;margin-top:4px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7bbf8a;margin-right:5px}
+  .dot.off{background:#cf9a52}
+  .wrap{padding:12px;overflow-x:auto}
+  table{border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:100%}
+  th{background:#efe9da;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;
+    text-align:left;padding:8px 8px;position:sticky;top:0;white-space:nowrap}
+  td{border-top:1px solid var(--line);padding:2px;vertical-align:middle}
+  td.rn{color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;padding:2px 8px;font-size:12px}
+  input.cell{width:100%;min-width:90px;font:inherit;padding:8px 7px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink)}
+  input.cell:hover{border-color:var(--line)}
+  input.cell:focus{outline:none;border-color:var(--accent);background:#fff}
+  input.num{min-width:96px;font-variant-numeric:tabular-nums}
+  input.ro{color:var(--muted);background:#f6f2e8}
+  input.wide{min-width:200px}
+  .delbtn{border:1px solid #e6c9c9;background:#fff;color:var(--danger);border-radius:7px;width:34px;height:34px;cursor:pointer;font-size:15px}
+  .delbtn:active{background:#f6e6e6}
+  .addrow td{padding:10px 8px}
+  .addbtn{font:inherit;font-weight:650;border:2px dashed var(--line);background:#fff;border-radius:9px;padding:9px 14px;color:var(--accent);cursor:pointer}
+  .actions{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;gap:8px;
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#fffdf7ee;backdrop-filter:blur(6px);border-top:1px solid var(--line)}
+  .actions button{flex:1;padding:12px;font:inherit;font-weight:650;border-radius:11px;border:1px solid var(--line);background:#fff;cursor:pointer}
+  .actions .primary{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+  .actions .ghost{color:var(--muted)}
+  .note{color:var(--muted);font-size:12.5px;margin:2px 12px 10px}
+  .saved{color:#2e6b3f}
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1>Data editor · <select id="fileSel"></select></h1>
+  <div class="meta">
+    <span><span class="dot" id="netDot"></span><span id="netTxt">online</span></span>
+    <span id="saveTxt" class="saved">—</span>
+    <span id="srcTxt"></span>
+    <span id="countTxt"></span>
+  </div>
+</div>
+<p class="note" id="hint">Pick a file. Each row is one point on the map. Edit a cell, it saves to this device instantly. Export when you're ready to publish.</p>
+<div class="wrap"><div id="grid">Loading…</div></div>
+
+<div class="actions">
+  <button class="primary" id="addBtn">＋ Add point</button>
+  <button id="exportBtn">⤓ Export file</button>
+  <button class="ghost" id="resetBtn">↺ Reset</button>
+</div>
+
+<script>
+const MANIFEST = './data/_data_manifest.json';
+const PARK = [-85.748, 35.090]; // [lng,lat] default for a new point
+const COLS = [
+  {key:'name',  label:'Name',        cls:'wide'},
+  {key:'tag',   label:'Tag',         cls:''},     // reads tag||category
+  {key:'kind',  label:'Kind',        cls:''},
+  {key:'lat',   label:'Lat',         cls:'num'},
+  {key:'lng',   label:'Lng',         cls:'num'},
+  {key:'desc',  label:'Description',  cls:'wide'}, // reads description
+];
+let fc = null;        // working FeatureCollection
+let baked = null;     // published baseline
+let file = null;      // current filename
+let saveTimer = null;
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const keyFor=f=>'aop_dataedit::'+f;
+
+async function boot(){
+  let man;
+  try{ man = await (await fetch(MANIFEST,{cache:'no-store'})).json(); }
+  catch(e){ try{ man = await (await fetch(MANIFEST)).json(); }catch(_){ $('grid').innerHTML='<p class="note">No data manifest. Run <code>python3 mvp/scripts/build_data_manifest.py</code>.</p>'; return; } }
+  const files = (man.served||[]).filter(s=> s.kind==='geojson' && (s.feature_count||0)>0)
+                                .sort((a,b)=> a.file.localeCompare(b.file));
+  const sel=$('fileSel'); sel.innerHTML='';
+  files.forEach(s=>{ const o=document.createElement('option'); o.value=s.file; o.textContent=`${s.file} (${s.feature_count})`; sel.append(o); });
+  // default to the published POIs if present
+  const def = files.find(s=>s.file==='publish.geojson') || files[0];
+  sel.value = def ? def.file : '';
+  sel.onchange = ()=> loadFile(sel.value);
+  updateNet(); addEventListener('online',updateNet); addEventListener('offline',updateNet);
+  if(def) loadFile(def.file);
+}
+
+async function loadFile(f){
+  file = f;
+  let stored=null; try{ const r=localStorage.getItem(keyFor(f)); stored=r?JSON.parse(r):null; }catch(e){}
+  try{ baked = await (await fetch('./data/'+f,{cache:'no-store'})).json(); }
+  catch(e){ baked = await (await fetch('./data/'+f)).json().catch(()=>null); }
+  fc = stored || (baked? JSON.parse(JSON.stringify(baked)) : {type:'FeatureCollection',features:[]});
+  render();
+}
+
+// ---- field read/write that PRESERVES everything we don't show ----
+function getVal(feat,key){
+  const p=feat.properties||(feat.properties={});
+  if(key==='tag')  return p.tag!=null?p.tag:(p.category!=null?p.category:'');
+  if(key==='desc') return p.description!=null?p.description:'';
+  if(key==='lat'||key==='lng'){ const c=firstCoord(feat.geometry); if(!c) return ''; return key==='lat'?c[1]:c[0]; }
+  return p[key]!=null?p[key]:'';
+}
+function setVal(feat,key,val){
+  const p=feat.properties||(feat.properties={});
+  if(key==='tag'){ if('category' in p && !('tag' in p)) p.category=val; else p.tag=val; return; }
+  if(key==='desc'){ p.description=val; return; }
+  if(key==='lat'||key==='lng'){
+    if(!feat.geometry||feat.geometry.type!=='Point') return; // don't mangle polygons/lines
+    const c=feat.geometry.coordinates; const n=parseFloat(val); if(Number.isNaN(n)) return;
+    if(key==='lat') c[1]=n; else c[0]=n; return;
+  }
+  p[key]=val;
+}
+function firstCoord(g){ if(!g)return null; let c=g.coordinates; while(Array.isArray(c)&&Array.isArray(c[0]))c=c[0]; return Array.isArray(c)?c:null; }
+function isPoint(feat){ return feat.geometry && feat.geometry.type==='Point'; }
+
+function render(){
+  const feats = fc.features||(fc.features=[]);
+  $('srcTxt').textContent = localStorage.getItem(keyFor(file)) ? 'your edits' : 'published';
+  $('countTxt').textContent = feats.length+' rows';
+  let html = '<table><thead><tr><th>#</th>'+COLS.map(c=>`<th>${c.label}</th>`).join('')+'<th></th></tr></thead><tbody>';
+  feats.forEach((f,i)=>{
+    html += `<tr data-i="${i}"><td class="rn">${i+1}</td>`;
+    COLS.forEach(c=>{
+      const ro = (c.key==='lat'||c.key==='lng') && !isPoint(f);
+      const v = getVal(f,c.key);
+      html += `<td><input class="cell ${c.cls} ${ro?'ro':''}" data-i="${i}" data-k="${c.key}" value="${esc(v)}" ${ro?'readonly title="geometry edited on the map, not here"':''}></td>`;
+    });
+    html += `<td><button class="delbtn" data-del="${i}" title="Delete this point">✕</button></td>`;
+  });
+  html += '</tbody></table>';
+  $('grid').innerHTML = html;
+  $('grid').querySelectorAll('input.cell:not(.ro)').forEach(el=>{
+    el.oninput = ()=>{ setVal(fc.features[+el.dataset.i], el.dataset.k, el.value); save(); };
+  });
+  $('grid').querySelectorAll('[data-del]').forEach(b=> b.onclick = ()=> del(+b.dataset.del));
+}
+
+function del(i){
+  const f=fc.features[i]; const nm=(f.properties&&f.properties.name)||'this point';
+  if(!confirm(`Delete "${nm}"?`)) return;
+  fc.features.splice(i,1); save(); render();
+}
+function addPoint(){
+  fc.features = fc.features||[];
+  fc.features.push({ type:'Feature', properties:{name:'', tag:'', kind:'poi'}, geometry:{type:'Point', coordinates:[PARK[0],PARK[1]]} });
+  save(); render();
+  const nameCell=[...$('grid').querySelectorAll('tr')].pop().querySelector('input.cell'); // focus the new row's Name
+  if(nameCell){ nameCell.focus(); nameCell.scrollIntoView({block:'center'}); }
+}
+
+// ---- save (auto, debounced) + flush on close (no lost edits in the field) ----
+function markSaved(t){ $('saveTxt').textContent=t; }
+function writeNow(){
+  if(!fc||!file) return;
+  try{ localStorage.setItem(keyFor(file), JSON.stringify(fc)); markSaved('saved to this device'); $('srcTxt').textContent='your edits'; }
+  catch(e){ markSaved('SAVE FAILED'); }
+}
+function save(){ markSaved('saving…'); clearTimeout(saveTimer); saveTimer=setTimeout(writeNow,250); }
+function flushPending(){ clearTimeout(saveTimer); writeNow(); }
+addEventListener('pagehide', flushPending);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flushPending(); });
+
+function updateNet(){ const on=navigator.onLine; $('netDot').className='dot'+(on?'':' off'); $('netTxt').textContent=on?'online':'offline — edits still save here'; }
+
+$('addBtn').onclick = addPoint;
+$('exportBtn').onclick = ()=>{
+  const blob=new Blob([JSON.stringify(fc,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=file; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+$('resetBtn').onclick = ()=>{
+  if(!confirm('Discard your edits to this file and return to the published version?')) return;
+  localStorage.removeItem(keyFor(file)); fc = baked? JSON.parse(JSON.stringify(baked)):{type:'FeatureCollection',features:[]};
+  render(); markSaved('reset to published');
+};
+
+boot();
+</script>
+</body>
+</html>

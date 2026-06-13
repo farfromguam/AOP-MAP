@@ -217,7 +217,7 @@ What's missing is specifically the ★/destination POI set:
 > `../06_going_gold/gold_migration.md`) collapsed POIs into `core.features`
 > (`layer='poi'`) and **dropped** `core.pois` + `publish.pois`; the column `blurb`
 > was renamed to `description` (2026-06-08,
-> `../07_tables/description_blurb_convergence.md`, committed `5b5fcdd`). Read the
+> `../07_tables/_done/description_blurb_convergence.md`, committed `5b5fcdd`). Read the
 > nouns here as: `core.features WHERE layer='poi'`, gate `publish.features`, copy
 > field `description`. The SERVE behavior this block shipped is intact.
 

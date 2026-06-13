@@ -1337,20 +1337,14 @@
     }
 
     function poiPopupHtml(row) {
-      const lines = [];
-      lines.push(`<p class="poi-popup-title">${escapeHtml(row.name)}</p>`);
-      if (row.blurb) {
-        lines.push(`<p class="poi-popup-subtitle">${escapeHtml(row.blurb)}</p>`);
-      } else if (row.revisitNote) {
-        lines.push(`<p class="poi-popup-placeholder">Info needed — revisit. ${escapeHtml(row.revisitNote)}</p>`);
-      }
-      const meta = [];
-      meta.push(`<dt>Kind</dt><dd>${escapeHtml(row.kind || 'unknown')}</dd>`);
-      if (row.status) meta.push(`<dt>Status</dt><dd>${escapeHtml(row.status)}</dd>`);
-      if (row.source) meta.push(`<dt>Source</dt><dd>${escapeHtml(row.source)}</dd>`);
-      if (row.caveat) meta.push(`<dt>Caveat</dt><dd>${escapeHtml(row.caveat)}</dd>`);
-      lines.push(`<dl class="poi-popup-meta">${meta.join('')}</dl>`);
-      return lines.join('');
+      // ONE renderer — window.AOPFeatureDisplay.popupHtml, the same the editors
+      // use. The row already carries the normalized display fields (featureDisplay);
+      // map its revisitNote key onto the model's `revisit`.
+      return window.AOPFeatureDisplay.popupHtml({
+        name: row.name, kind: row.kind, blurb: row.blurb,
+        status: row.status, source: row.source, caveat: row.caveat,
+        revisit: row.revisitNote,
+      });
     }
 
     for (const button of leftTabButtons) {
@@ -2231,19 +2225,15 @@
         listToggle: () => cemeteriesToggle,
         listRow: (feature) => {
           const props = (feature && feature.properties) || {};
-          const facets = props.facets || {};
-          // Canonical: the poi-index blurb/revisit_note are folded into the feature's
-          // `description`/`facets.revisit_note` by rebake_canonical — read the field,
-          // not a runtime poiIndexLookup join.
+          // Display text is the ONE strategy (window.AOPFeatureDisplay) — the same
+          // one the reader popup and the editors use. Only id/popupCoord stay
+          // per-layer (geometry/identity, not display text). The old per-layer
+          // Status/Source constants are gone: the feature's own fields win.
+          const d = window.AOPFeatureDisplay.featureDisplay(props);
           return {
             id: `cemetery:${props.parcel_id || props.name}`,
-            name: props.name || 'Cemetery',
-            kind: props.cemetery_type || 'cemetery',
-            blurb: props.description || null,
-            revisitNote: facets.revisit_note || null,
-            status: 'parcel record',
-            source: 'TN Comptroller parcels',
-            caveat: null,
+            name: d.name, kind: d.kind, blurb: d.blurb, revisitNote: d.revisit,
+            status: d.status, source: d.source, caveat: d.caveat,
             feature,
             popupCoord: firstCoordinate(feature && feature.geometry)
           };
@@ -2309,19 +2299,11 @@
         listToggle: () => buildingsToggle,
         listRow: (feature) => {
           const props = (feature && feature.properties) || {};
-          const facets = props.facets || {};
-          // Canonical: name is now the facility name (baked — A3 reorders the
-          // crosswalk to prefer facility_name; address lives in facets.address);
-          // the poi-index blurb/revisit are folded into description/facets — no join.
+          const d = window.AOPFeatureDisplay.featureDisplay(props);
           return {
             id: `building:${props.uuid || props.address}`,
-            name: props.name || 'Building',
-            kind: props.primary_occupancy ? props.primary_occupancy.toLowerCase() : 'building',
-            blurb: props.description || null,
-            revisitNote: facets.revisit_note || null,
-            status: props.confidence || 'unknown',
-            source: props.footprint_source || 'FEMA USA Structures',
-            caveat: null,
+            name: d.name, kind: d.kind, blurb: d.blurb, revisitNote: d.revisit,
+            status: d.status, source: d.source, caveat: d.caveat,
             feature,
             popupCoord: (props.centroid_lng != null && props.centroid_lat != null)
               ? [props.centroid_lng, props.centroid_lat]
@@ -2445,15 +2427,11 @@
         listToggle: () => editorPoiToggle,
         listRow: (feature) => {
           const props = (feature && feature.properties) || {};
+          const d = window.AOPFeatureDisplay.featureDisplay(props);
           return {
             id: `drawn:${props.id || props.name || 'idx'}`,
-            name: poiDisplayName(props),
-            kind: props.category || 'drawn',
-            blurb: props.notes || null,
-            revisitNote: null,
-            status: 'user-drawn',
-            source: 'editor — this browser',
-            caveat: null,
+            name: d.name, kind: d.kind, blurb: d.blurb, revisitNote: d.revisit,
+            status: d.status, source: d.source, caveat: d.caveat,
             feature,
             popupCoord: firstCoordinate(feature && feature.geometry) || geometryCentroid(feature && feature.geometry)
           };
@@ -2634,19 +2612,11 @@
         listToggle: () => visitorContextToggle,
         listRow: (feature) => {
           const props = (feature && feature.properties) || {};
-          const facets = props.facets || {};
-          // Canonical: the poi-index blurb is folded into `description` (composed
-          // from direction/services/examples where there is no blurb) by the bake —
-          // read the field, not a poiIndexLookup join.
+          const d = window.AOPFeatureDisplay.featureDisplay(props);
           return {
             id: `visitor:${props.name}`,
-            name: props.name || 'Visitor support',
-            kind: props.kind ? props.kind.replace(/_/g, ' ') : 'visitor support',
-            blurb: props.description || props.services || null,
-            revisitNote: facets.revisit_note || null,
-            status: 'planning callout',
-            source: 'AOP / RiderPlanet / Marion County Tourism',
-            caveat: props.drive_time_note || null,
+            name: d.name, kind: d.kind, blurb: d.blurb, revisitNote: d.revisit,
+            status: d.status, source: d.source, caveat: d.caveat,
             feature,
             popupCoord: geometryCentroid(feature && feature.geometry)
           };
@@ -2763,15 +2733,11 @@
         listPredicate: () => true,
         listRow: (feature) => {
           const props = (feature && feature.properties) || {};
+          const d = window.AOPFeatureDisplay.featureDisplay(props);
           return {
             id: `brand:${props.logo_id || props.name || 'idx'}`,
-            name: props.name || 'Logo',
-            kind: 'brand logo',
-            blurb: null,
-            revisitNote: null,
-            status: 'brand',
-            source: 'editor — brand logos',
-            caveat: null,
+            name: d.name, kind: d.kind, blurb: d.blurb, revisitNote: d.revisit,
+            status: d.status, source: d.source, caveat: d.caveat,
             feature,
             popupCoord: firstCoordinate(feature && feature.geometry) || geometryCentroid(feature && feature.geometry)
           };
@@ -2902,19 +2868,13 @@
         // flip the spec is listMode:'starred', so only ★-curated trails surface.
         listRow: (feature) => {
           const props = (feature && feature.properties) || {};
-          const facets = props.facets || {};
           const num = props.trail_number != null ? Number(props.trail_number) : null;
           const name = (props.name != null && String(props.name) !== '') ? String(props.name) : null;
+          const d = window.AOPFeatureDisplay.featureDisplay(props);
           return {
             id: `trail:${props.__trail_row_id || (num != null ? `n:${num}` : (name ? `name:${name}` : ''))}`,
-            name: name || (num != null ? `Trail ${num}` : 'Trail'),
-            kind: facets.difficulty ? `trail · ${facets.difficulty}` : 'trail',
-            blurb: props.description || null,
-            revisitNote: props.description ? null
-              : (facets.revisit_note || 'Name / description owed — number + difficulty only on the map today.'),
-            status: props.status || 'observed',
-            source: props.source || 'aop_trail_network.geojson',
-            caveat: null,
+            name: d.name, kind: d.kind, blurb: d.blurb, revisitNote: d.revisit,
+            status: d.status, source: d.source, caveat: d.caveat,
             feature,
             popupCoord: firstCoordinate(feature && feature.geometry)
           };

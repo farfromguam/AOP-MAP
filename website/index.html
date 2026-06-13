@@ -543,6 +543,9 @@
   <!-- The ONE shared event-schedule resolver (going gold G_E): main.js AND
        panel.js both read window.AOPEventSchedule, so load it before either. -->
   <script src="./js/event_schedule_geojson.js"></script>
+  <!-- The ONE feature-to-text strategy (normalize_feature_display): main.js AND
+       the editors read window.AOPFeatureDisplay, so load it before main.js. -->
+  <script src="./js/feature_display.js"></script>
   <script src="./js/main.js"></script>
 
   <!-- Right-panel swap (Stage 1): the one-model panel attaches to the live map

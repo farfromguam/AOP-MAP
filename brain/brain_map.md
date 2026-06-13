@@ -27,7 +27,7 @@ brain/
 ├── voice/          how docs should read and be shaped
 ├── ai_rules/       how the assistant collaborates here
 ├── council/        reviewer seats + the completion gate (fires when an agent thinks it's done)
-├── handoff/        session-specific handoff and onboarding notes
+├── handoff/        session-specific handoff + onboarding; coord/ is the live multi-session claim board
 └── output/         future scratch artifacts
 ```
 
@@ -70,6 +70,8 @@ completion gate. `council/completion_gate.md` is the Definition of Done and the 
 (`.claude/agents/council-*.md`, `.claude/commands/council.md`, `.claude/hooks/council-gate.sh`) are thin
 pointers into these files — edit the seat in the brain, not the adapter. **Not** the product personas:
 those (`northstar/personas.md`) are map *users*; the council are *reviewers* of agent work.
+
+`ai_rules/coordination_axes.md` is the meta-layer map for surviving context limits and parallel work: three axes — **time** (`flows/cwc.md` + `handoff/`), **concurrency** (`handoff/coord/`), **depth** (a card's **cursor**, defined in `tasks/_extend.md`) — and the rule that a card grows a cursor only when a goal outruns one context window. The default unit stays the card.
 
 `voice/voice_guide.md` and `voice/style_guide.md` govern docs.
 

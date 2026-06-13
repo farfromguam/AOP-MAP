@@ -39,6 +39,16 @@ Below the divider, use only the sections the card earns:
 - `## Verification`
 - `## Notes from implementation`
 
+## Cursor — campaign cards only
+
+Most cards don't need this. Add it only when a goal won't finish in one context window — a campaign (see `../ai_rules/coordination_axes.md`). It is the one-line "you are here" a fresh window reads to resume *without* re-reading the whole handoff. Put it at the very top of the card, right under the title:
+
+```md
+> **Cursor:** S2 — next: bake fields onto served features. Done: S1 (verified, 4/4 Playwright). Goal: <one line>.
+```
+
+Advance it at every slice checkpoint: when a slice lands (with its verification evidence in the Slices ledger below), move the cursor to the next slice and stop with margin. The cursor + the slice ledger are what let the next window page in cheap and trust what is already done.
+
 ## Decisions and questions
 
 When a card has a real fork, suggested answer first:
