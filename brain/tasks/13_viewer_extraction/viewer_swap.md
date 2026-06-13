@@ -84,6 +84,21 @@ behind the git gate, and adds the blue Locate FAB.
     console errors._
   `manifest.json` needed no change: `start_url`/`scope`/`id` are all `./`, which now resolves to the viewer.
 - **`old_index.html`** left at `#appVersion` v63 — it is a frozen legacy page, not the version source.
+- **PWA-styles audit + v65 (user, 2026-06-13, before a web push).** Audited the viewer front end against the
+  locked `spinup/working_pwa_css.md` snapshot (the hard-won iOS-PWA layout). §1–§6 + §8 + the `body{#000}`
+  keeper were all already present in `viewer.css`/`index.html`. **Gap found + fixed: §7 `resyncViewport`** —
+  `viewer_core.js` had only a search-dropdown reposition on resize and an explicit comment deferring
+  `main.js`'s `map.resize()` viewport health "to a later slice." Ported it: rAF-coalesced `map.resize()` on
+  `resize`/`orientationchange`(+250ms)/`pageshow`/`visualViewport resize`, box-change-gated (iOS finalizes
+  standalone height late; the fixed-`#map` ResizeObserver misses it → body bg shows under the home
+  indicator). **Bumped to v65** (`sw.js VERSION` + `#appVersion`) per the user's explicit go for the push.
+  Verified: `#map` fills the viewport (390×844 → mapH 844, top 0, no band) and tracks a resize to 844×390;
+  collapsed "v65", expanded "Made by Rock Warblers · v65", served `sw.js VERSION v65`; 0 errors;
+  `node --check` clean. _On-device caveat (doc rule §4): desktop Playwright can't reproduce the iOS
+  late-height band — the resync is wired + error-free; the band-fix is the user's on-device test._ **Known
+  Phase-2 gap (not ported):** the iOS-Safari-TAB `.screen-corner` fillets + `html.ios-browser` head script
+  (a Safari-tab cosmetic, hidden in the PWA) — decide separately. Doc updated: `spinup/working_pwa_css.md`
+  "Applied to the viewer front end."
 
 ## Acceptance
 

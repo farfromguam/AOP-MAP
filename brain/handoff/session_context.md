@@ -6,6 +6,21 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (PWA-STYLES AUDIT + §7 resyncViewport PORTED + v65 bump — before the user's web push).** User:
+*"bump to v65 I will push and test web features now"* + *"there should be some learnings about what it took
+to make the pwa styles half ok. review and ensure we have applied those lessons."* Audited the viewer front
+end against the locked `spinup/working_pwa_css.md`. §1–§6 + §8 + `body{#000}` already present in
+`viewer.css`/`index.html`. **Gap: §7 `resyncViewport`** — `viewer_core.js` had only a search reposition on
+resize + a comment deferring `map.resize()` "to a later slice." Ported it (rAF-coalesced `map.resize()` on
+resize/orientationchange+250/pageshow/visualViewport, box-change-gated). **Bumped v64→v65** (`sw.js` VERSION
++ `#appVersion`). Verified: `#map` fills viewport (390×844, no band) + tracks a resize; v65 in collapsed
+label + expanded credit + served sw.js; 0 errors; node --check clean. iOS late-height band-fix is the user's
+on-device test (doc §4: desktop can't repro). **Phase-2 gap NOT ported:** the iOS-Safari-TAB `.screen-corner`
+fillets + `html.ios-browser` head script (tab cosmetic, hidden in PWA). Doc updated (`working_pwa_css.md`
+"Applied to the viewer front end"); card `viewer_swap.md`. UNCOMMITTED.
+
+-----
+
 **2026-06-13 (REAL FIX — EXPANDED ⓘ attribution wrapped UNDER the locate FAB; capped its width).** My two
 prior version-display "fixes" measured the wrong element (the tiny COLLAPSED #appVersion label, never near
 the FAB) and missed what the user actually saw: the EXPANDED attribution body ("Made by Rock Warblers · v64

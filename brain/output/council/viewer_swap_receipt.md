@@ -165,6 +165,30 @@ clear) does not bypass the user. The hard gate is satisfied: the only changed we
 viewer_core.js (node --check OK). The marker invalidates the moment any session edits website/ again, which
 correctly re-nudges whoever stops next.
 
+-----
+
+RE-REVIEW #5 — 2026-06-13 (PWA-styles audit + §7 resyncViewport port + v65 bump, before the user's push).
+User: *"bump to v65 I will push and test web features now"* + *"there should be some learnings about what it
+took to make the pwa styles half ok. review and ensure we have applied those lessons."* Audited the viewer
+front end vs the locked `spinup/working_pwa_css.md`: §1–§6 + §8 + `body{#000}` already present; **gap was §7
+`resyncViewport`** (deferred "to a later slice" in viewer_core.js). Ported it (rAF-coalesced `map.resize()`
+on resize/orientationchange+250/pageshow/visualViewport, box-change-gated); bumped v64→v65.
+- witness: CLEAR — live: v65 in collapsed label + expanded credit + served sw.js; `#map` fills viewport
+  (390×844, top 0, no band) + tracks a resize to 844×390 (canvas follows → `map` in scope, resize fired); 0
+  errors. BOUNDARY stated: desktop can't repro the iOS late-height band (doc §4) — wired+error-free proven,
+  on-device band-fix is the user's test.
+- quartermaster: CLEAR — faithful PORT of main.js:10094-10118 (same events/rAF/box-gate), old partial
+  handler REPLACED not duplicated, single map/searchResults/positionSearchResults reused, v65 lockstep,
+  C1/C2/C6 untouched.
+- mason: CLEAR — rAF single-queued, box-gate can't loop (map.resize doesn't change the CSS-fixed box),
+  dead deferral comment + partial handler removed, in scope (one IIFE), cites sources, no limiting code;
+  CSS spot-check confirms #map 100dvh/100vh split (no height:100%) + body{#000}.
+Steward: full clear on re-review #5. Phase-2 gap NOT ported (noted, not owed): iOS-Safari-TAB .screen-corner
+fillets + html.ios-browser head script (tab cosmetic, hidden in PWA). Doc updated (working_pwa_css.md
+"Applied to the viewer front end"). Marker 762f8028fcc256c39ee863a8a02462b9c080867f — CLEAN this round
+(covers only website/index.html + website/js/viewer_core.js, both reviewed; the band/cleanup work is now
+committed at HEAD a2013fd, no longer in the tree).
+
 MARKER DECISION: NOT writing a clearance marker this round. The website/mvp tree now holds a large
 CONCURRENT diff that is NOT mine and NOT reviewed here — viewer_band.css, viewer_banded.html,
 viewer_banded_compare.html, a modified old_index.html, and several deleted mockup *.html (band work + a

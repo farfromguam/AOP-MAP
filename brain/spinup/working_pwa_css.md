@@ -18,6 +18,26 @@ TL;DR:
 
 -----
 
+## Applied to the viewer front end (2026-06-13)
+
+The front end is now the extracted clean viewer: `index.html` ← `viewer.html`
+(Sprint 13 swap; the old all-in-one is parked at `old_index.html`). The §1–§8 rules
+below now live in **`website/css/viewer.css`** + **`website/js/viewer_core.js`**, not
+the old inline `index.html`/`main.js`. Audited 2026-06-13 against this snapshot:
+
+- §1 head meta (`viewport-fit=cover`, `black-translucent`, manifest/theme/touch-icon): present in `index.html`.
+- §2 `--sa-*` tokens, §3 height split (`100dvh` tab / `100vh` standalone, `#map` fixed, **no** `height:100%`), §4 corner-inset margins, §6 narrow `@media (max-width:760px)` anchors, `body{background:#000}` keeper: all present in `viewer.css`.
+- §5 bottom chrome `position:fixed`: the read viewer has no edit panel; the bottom-right corner control is the **Locate FAB** (`.locate-fab`, `position:fixed`), and the bottom-left ⓘ reserves `--locate-fab-reserve:120px` so its expanded body never wraps under the FAB (same role §4's reserve played for the edit FAB).
+- **§7 `resyncViewport` — PORTED 2026-06-13** into `viewer_core.js` (was deferred). rAF-coalesced `map.resize()` on `resize`/`orientationchange`(+250ms)/`pageshow`/`visualViewport resize`, skipped when the container box is unchanged. Verified wired + error-free on desktop; the iOS late-height band-fix needs on-device confirmation (rule §4).
+- §8 `sw.js VERSION` ↔ `#appVersion`: in lockstep at **v65** (2026-06-13).
+
+**Known gap (Phase 2, NOT ported):** the iOS-Safari-TAB `.screen-corner` fillets +
+the `html.ios-browser` head-detection script are not in the viewer. They are a
+Safari-tab cosmetic (hidden in the PWA), explicitly the separate Phase-2 problem
+below — decide separately; the installed-PWA layout (§1–§8) does not need them.
+
+-----
+
 ## What "working" means here (the bar this snapshot cleared)
 
 On an installed iOS PWA, verified from the device screenshot (not Playwright):

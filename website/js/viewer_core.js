@@ -2250,11 +2250,32 @@
   document.addEventListener('click', (event) => {
     if (!event.target.closest('.search')) clearSearchResults();
   });
-  // Keep the position:fixed dropdown anchored to the input across scroll/resize.
-  // (main.js's broader resyncViewport / map.resize is PWA viewport health — a
-  // later slice; search needs only the reposition.)
+  // PWA viewport health (main.js:10084-10118; working_pwa_css.md §7). iOS finalizes
+  // the standalone viewport height LATE (status-bar / home-indicator settle, rotation,
+  // return from background) and MapLibre's ResizeObserver on the position:fixed #map
+  // doesn't always catch it — an unresized canvas leaves the body bg showing under the
+  // home indicator. map.resize() is cheap + idempotent. rAF-coalesced (visualViewport
+  // 'resize' fires continuously while the iOS URL bar / keyboard animates), and the
+  // resize is skipped when the container box hasn't actually changed. The position:fixed
+  // search dropdown reposition rides along.
+  let resyncRAF = 0;
+  let lastMapSize = '';
+  const doResyncViewport = () => {
+    resyncRAF = 0;
+    const c = map.getContainer();
+    const size = `${c.clientWidth}x${c.clientHeight}`;
+    if (size !== lastMapSize) { lastMapSize = size; map.resize(); }
+    if (searchResults.style.display === 'block') positionSearchResults();
+  };
+  const resyncViewport = () => {
+    if (resyncRAF) return;
+    resyncRAF = requestAnimationFrame(doResyncViewport);
+  };
+  window.addEventListener('resize', resyncViewport);
+  window.addEventListener('orientationchange', () => setTimeout(resyncViewport, 250));
+  window.addEventListener('pageshow', resyncViewport);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', resyncViewport);
   window.addEventListener('scroll', () => { if (searchResults.style.display === 'block') positionSearchResults(); }, true);
-  window.addEventListener('resize', () => { if (searchResults.style.display === 'block') positionSearchResults(); });
 
   // ── Left-rail drawer reflow + tabs (main.js:10485-10569) ───────────────
   // Two cards (Search, Calendar), both open by default. The icon tabs float

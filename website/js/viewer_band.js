@@ -17,11 +17,13 @@
 //      covers everything OUTSIDE the 9-patch, so data spill is hidden and the
 //      visible map is always the clean 9-patch. Drapes on terrain in 3D.
 //   2. keyline     — a line along the 9-patch boundary (the neat-line).
-//   3. lettering   — line-center symbols sitting just OUTSIDE each edge, on the
-//      paper. Ground-locked text size (exponential base 2) means each label holds
-//      a fixed FRACTION of its edge at every zoom (so it never overflows — this is
+//   3. lettering   — each edge label is RENDERED to an image (exact picked
+//      typography) and placed as a ground-aligned icon just OUTSIDE its edge, on
+//      the paper. Ground-locked icon size (exponential base 2) means each label
+//      holds a fixed FRACTION of its edge at every zoom (so it never overflows —
 //      what the old per-frame JS font hack was chasing) and it foreshortens with
-//      the terrain in 3D.
+//      the terrain in 3D. (Icons place unconditionally — MapLibre line-placed text
+//      drops out when a full-region edge straddles a vector-tile boundary.)
 //   4. corner marks— the Rock Warblers mark stamped at each boundary corner, laid
 //      flat on the ground (icon rotation + pitch aligned to the map).
 //
@@ -41,14 +43,9 @@
   function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
   // Ground-locked size: an interpolate-by-zoom whose two stops are 4 zoom levels
-  // apart with a 16× ratio == exactly 2^zoom, so the element holds a fixed
-  // ground (map) size. `perPrio` lets title vs sub differ via a data match — the
-  // match must be a STOP OUTPUT (zoom may only drive a top-level interpolate).
-  function sizeExpr(titlePx, subPx) {
-    return ['interpolate', ['exponential', 2], ['zoom'],
-      ZREF - 2, ['match', ['get', 'prio'], 'title', titlePx / 4, subPx / 4],
-      ZREF + 2, ['match', ['get', 'prio'], 'title', titlePx * 4, subPx * 4]];
-  }
+  // apart with a 16× ratio == exactly 2^zoom, so the element holds a fixed ground
+  // (map) size — it scales WITH the 9-patch at every zoom and so can never overflow
+  // its edge (this is what the old per-frame JS font hack was chasing, now native).
   function scalarSizeExpr(pxAtRef) {
     return ['interpolate', ['exponential', 2], ['zoom'],
       ZREF - 2, pxAtRef / 4, ZREF + 2, pxAtRef * 4];
@@ -86,26 +83,58 @@
     var keylineFeature = { type: 'Feature', properties: {},
       geometry: { type: 'LineString', coordinates: ring } };
 
-    // Edge → text. Each label line runs parallel to its boundary edge, offset
-    // outward into the paper. line-center drops one label at the edge's midpoint;
-    // MapLibre orients it along the line and keeps it upright, so it tracks bearing
-    // and pitch. (Which geographic edge lands at screen-top depends on the core's
-    // bearing:-90 — the assignment below is tuned so the default view reads like
-    // the picked design: title across the top, location across the bottom, the two
-    // coordinate sublabels down the sides.)
+    // Edge → text. The lettering is RENDERED to an image (so the picked typography
+    // survives exactly — weight, 0.42em tracking, uppercase, the typographic glyphs
+    // ·°′—) and placed as a GROUND-ALIGNED icon at each edge's midpoint, just
+    // OUTSIDE the boundary on the paper. Icons place unconditionally and lie flat on
+    // the ground (icon-rotation/pitch-alignment: map), so they foreshorten with the
+    // terrain in 3D — and, unlike MapLibre line-placed text, they don't drop out
+    // when a full-region edge line straddles a vector-tile boundary. `rot` orients
+    // each label along its edge in MAP space (bearing-independent), so the lettering
+    // tracks the landscape as the map rotates and tilts.
+    var midLng = (W + E) / 2, midLat = (S + N) / 2;
     var EDGES = [
-      { prio: 'title', label: 'Adventure Off Road Park',
-        line: [[W - insetX, S], [W - insetX, N]] },
-      { prio: 'sub', label: 'South Pittsburg · Marion County · Tennessee — MMXXVI',
-        line: [[E + insetX, S], [E + insetX, N]] },
-      { prio: 'sub', label: '35° 00′ North · Cumberland Plateau',
-        line: [[W, N + insetY], [E, N + insetY]] },
-      { prio: 'sub', label: '85° 36′ West · Trail Blazing Invitational',
-        line: [[W, S - insetY], [E, S - insetY]] }
+      { key: 'n', label: 'Adventure Off Road Park',                              at: [midLng, N + insetY], rot: 0,
+        fontPx: 13, weight: 800, color: TITLE_INK, spacing: 0.42 },
+      { key: 's', label: 'South Pittsburg · Marion County · Tennessee — MMXXVI', at: [midLng, S - insetY], rot: 0,
+        fontPx: 10, weight: 700, color: SUB_INK, spacing: 0.30 },
+      { key: 'w', label: '35° 00′ North · Cumberland Plateau',                   at: [W - insetX, midLat], rot: -90,
+        fontPx: 10, weight: 700, color: SUB_INK, spacing: 0.30 },
+      { key: 'e', label: '85° 36′ West · Trail Blazing Invitational',            at: [E + insetX, midLat], rot: 90,
+        fontPx: 10, weight: 700, color: SUB_INK, spacing: 0.30 }
     ];
+
+    // Render each label to a supersampled (DPR=4) ImageData stamp and register it
+    // as a map image named 'band-lab-<key>'. Canvas letterSpacing reproduces the
+    // band's 0.42em tracking; the system-ui fallback covers it if Inter isn't loaded.
+    function buildLabelImages() {
+      var DPR = 4;
+      for (var i = 0; i < EDGES.length; i++) {
+        var e = EDGES[i], name = 'band-lab-' + e.key;
+        if (map.hasImage(name)) continue;
+        var cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+        var font = e.weight + ' ' + (e.fontPx * DPR) + 'px Inter, system-ui, sans-serif';
+        var ls = e.spacing * e.fontPx * DPR;
+        var txt = e.label.toUpperCase();
+        ctx.font = font;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = ls + 'px';
+        var w = Math.ceil(ctx.measureText(txt).width) + Math.round(ls) + e.fontPx * DPR;
+        var h = Math.ceil(e.fontPx * DPR * 1.7);
+        cv.width = w; cv.height = h;
+        ctx.font = font;                                  // a resize clears the ctx
+        if ('letterSpacing' in ctx) ctx.letterSpacing = ls + 'px';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = e.color;
+        ctx.fillText(txt, w / 2, h / 2);
+        try { map.addImage(name, ctx.getImageData(0, 0, w, h), { pixelRatio: DPR }); }
+        catch (err) { console.warn('[viewer_band] label image failed:', e.key, err); }
+      }
+    }
+
     var labelFC = { type: 'FeatureCollection', features: EDGES.map(function (e) {
-      return { type: 'Feature', properties: { label: e.label, prio: e.prio },
-               geometry: { type: 'LineString', coordinates: e.line } };
+      return { type: 'Feature',
+               properties: { icon: 'band-lab-' + e.key, rot: e.rot },
+               geometry: { type: 'Point', coordinates: e.at } };
     }) };
 
     var cornerFC = { type: 'FeatureCollection',
@@ -156,20 +185,14 @@
       map.addSource('band-labels', { type: 'geojson', data: labelFC });
       map.addLayer({ id: 'band-labels', type: 'symbol', source: 'band-labels',
         layout: {
-          'symbol-placement': 'line-center',
-          'text-field': ['get', 'label'],
-          'text-transform': 'uppercase',
-          'text-letter-spacing': 0.18,
-          'text-size': sizeExpr(13, 10),
-          'text-keep-upright': true,
-          'text-allow-overlap': true,
-          'text-ignore-placement': true,
-          'text-max-angle': 80
-        },
-        paint: {
-          'text-color': ['match', ['get', 'prio'], 'title', TITLE_INK, SUB_INK],
-          'text-halo-color': PAPER,
-          'text-halo-width': 1.2
+          'icon-image': ['get', 'icon'],
+          'icon-rotate': ['get', 'rot'],
+          'icon-size': scalarSizeExpr(1.6),
+          'icon-rotation-alignment': 'map',
+          'icon-pitch-alignment': 'map',
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+          'icon-anchor': 'center'
         } });
 
       if (map.hasImage('rw-mark')) {
@@ -237,9 +260,15 @@
     // ── boot the band once the core's style + layers are in ──────────────────
     function whenReady(tries) {
       if (map.isStyleLoaded()) {
-        // Let the core's async load handler finish its addLayer calls, then add
-        // the band on top and re-raise once on the next idle for good measure.
-        setTimeout(function () { loadMark(addBand); }, 1200);
+        // Let the core's async load handler finish its addLayer calls, then build
+        // the label + corner images and add the band on top; re-raise once on the
+        // next idle for good measure. document.fonts.ready keeps the canvas
+        // lettering from measuring before Inter (if used) has loaded.
+        var start = function () { loadMark(function () { buildLabelImages(); addBand(); }); };
+        setTimeout(function () {
+          if (document.fonts && document.fonts.ready) document.fonts.ready.then(start, start);
+          else start();
+        }, 1200);
         map.once('idle', function () { if (map.getSource('band-mask')) raiseBand(); });
         return;
       }
