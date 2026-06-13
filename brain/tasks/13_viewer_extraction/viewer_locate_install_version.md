@@ -131,17 +131,25 @@ offset = new, this addendum.** Full test link: `/index.html?tester=1&clock=YYYY-
   viewer's GPS is wholly untouched.
 
 **Verified by observation** (`/tmp/verify_tester.py`, Playwright :8000 with a granted+set geolocation):
-**12/13 PASS**. Default viewer: **no badge, no `.tester` class, GPS NOT shifted** (returns the real point) —
-the read view is unchanged. Tester: badge reads **"TESTER"**, `.tester` class set, `#appVersion` **v69**;
-**1st fix pinned exactly to the pavilion** (35.090703, −85.748268); **real +0.001 lat → dot +0.001 lat from
-the anchor** (movement preserved 1:1); **`watchPosition` also shifted** (this is what the GeolocateControl
-actually uses); clicking **Locate** tracks (FAB `aria-pressed=true`) with **0 errors on the tester page**.
-The lone FAIL is a headless-GPU `fragment shader` compile error that fires on the **untouched default page**
-(0 errors on the tester page) — the same environmental WebGL noise this card already notes, outside this
-diff. Screenshot `brain/output/tester_badge.png` (rust chip top-center + the spoofed blue dot on the park).
+**12–13/13 PASS** (flake-dependent). Default viewer: **no badge, no `.tester` class, GPS NOT shifted**
+(returns the real point) — the read view is unchanged. Tester: badge reads **"TESTER"**, `.tester` class set,
+`#appVersion` **v69**; **1st fix pinned exactly to the pavilion** (35.090703, −85.748268); **real +0.001 lat →
+dot +0.001 lat from the anchor** (movement preserved 1:1); **`watchPosition` also shifted** (this is what the
+GeolocateControl actually uses); clicking **Locate** tracks (FAB `aria-pressed=true`) with **0 errors on the
+tester page**. The only ever-FAIL is a headless-GPU `fragment shader` compile error that fires (transiently)
+on the **untouched default page** — the same environmental WebGL noise this card already notes, outside this
+diff; the council Witness re-ran the script twice and observed **13/13** (the flake did not reproduce).
+Screenshot `brain/output/tester_badge.png` (rust chip top-center + the spoofed blue dot on the park).
 `node --check` clean. Shell assets changed (`viewer_core.js` + `viewer.css`) → bumped **v68 → v69**
-(`sw.js` + `#appVersion`). **`pages.md` updated** to record tester-as-mode. **UNCOMMITTED** (user's git
-gate); council not yet run on this diff.
+(`sw.js` + `#appVersion`). **`pages.md` updated** to record tester-as-mode.
+
+**Council (core three, 2026-06-13): FULL CLEAR.** Witness `clear` (re-ran the verify script, 13/13, claims
+back the running system), Warden `clear` (every hunk on-card; `v69`/`v69` matched; HEAD still at `efafaf2 v68`,
+git gate untouched), Quartermaster `clear` (no `tester.html`; GeolocateControl reused untouched; `?tester`
+reuses the `?clock=` pattern; C1/C2/C6 hold). The whole-tree `.council-cleared` marker was **deliberately NOT
+written** — the Tier-0 hash spans all of `website/`, which still carries the prior unreviewed `viewer_band.js`
++ `data_editor_map.js` from other sessions; vouching for those would be dishonest. **UNCOMMITTED** (user's git
+gate).
 
 **Still future (not this addendum):** the on-tester **edit FAB** — the editor isn't ported into the extracted
 read core yet (it lives in `panel.js` / `old_index.html`), so "Locate + Edit side by side on tester" waits on

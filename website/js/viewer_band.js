@@ -42,15 +42,6 @@
 
   function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
-  // Ground-locked size: an interpolate-by-zoom whose two stops are 4 zoom levels
-  // apart with a 16× ratio == exactly 2^zoom, so the element holds a fixed ground
-  // (map) size — it scales WITH the 9-patch at every zoom and so can never overflow
-  // its edge (this is what the old per-frame JS font hack was chasing, now native).
-  function scalarSizeExpr(pxAtRef) {
-    return ['interpolate', ['exponential', 2], ['zoom'],
-      ZREF - 2, pxAtRef / 4, ZREF + 2, pxAtRef * 4];
-  }
-
   function boot(tries) {
     var V = window.AOPViewer;
     if (!V || !V.map) {
@@ -85,124 +76,127 @@
     var keylineFeature = { type: 'Feature', properties: {},
       geometry: { type: 'LineString', coordinates: ring } };
 
-    // Edge → text. The lettering is RENDERED to an image (so the picked typography
-    // survives exactly — weight, 0.42em tracking, uppercase, the typographic glyphs
-    // ·°′—) and placed just OUTSIDE its edge on the paper, ground-aligned
-    // (icon-rotation/pitch-alignment: map). But a single wide icon sits at ONE
-    // terrain elevation (its anchor) and lies flat — over a full edge the ground
-    // climbs 250–440 m, so one icon floats over the hills in 3D. So each label is
-    // placed as a ROW OF STRIPS along its edge: every strip elevates to its OWN
-    // ground height, and the row DRAPES over the topography (verified by
-    // observation). In 2D the strips reassemble into the exact same line. (Icons,
-    // unlike MapLibre line-placed text, place unconditionally — they don't drop out
-    // when a full-region edge straddles a vector-tile boundary.)
+    // ── decorative art: lettering + corner marks, baked to a DRAPED RASTER ────
+    // A symbol/icon is a flat BILLBOARD pinned to ONE terrain elevation, so it can't
+    // fold over the hills — a single icon floats and a row of icons just staircases.
+    // The fix is the technique already proven on the SFWDA paper map (main.js ~1553):
+    // bake the art to a georeferenced image and add it as `type:'image'` sources →
+    // `type:'raster'` layers. MapLibre DRAPES raster/image layers onto the terrain
+    // mesh (render to texture, then fold per-pixel onto the hills), so the lettering
+    // conforms to the landscape CONTINUOUSLY — the same way the AOP paper map folds in
+    // 3D. The paper `fill` mask and the `line` keyline already drape, so only the
+    // lettering + corner marks (the old symbols) move onto the baked raster.
     //
-    // ASSIGNMENT is keyed to the viewer's DEFAULT bearing of -90°, at which the
-    // screen→geographic mapping is: top=West, bottom=East, left=South, right=North.
-    // So the picked screen layout (title top / location bottom / 35°N left / 85°W
-    // right) maps to: title→West edge, location→East, 35°N→South, 85°W→North. The
-    // band still rotates with the map (true geolocation); this just makes the
-    // DEFAULT view read like the picked design.
+    // The art is baked NORTH-UP and pinned by geographic corners, so it rotates/tilts
+    // with the map (true geolocation). At the DEFAULT bearing of -90° the picked screen
+    // layout (title top / location bottom / 35°N left / 85°W right) maps to: title→West
+    // edge, location→East, 35°N→South, 85°W→North; each label's `rot` (map-space, ==
+    // the canvas rotation in the north-up bake) keeps it upright along its edge there.
     var midLng = (W + E) / 2, midLat = (S + N) / 2;
+    var LABEL_P = 1.6;     // label ground scale (was the symbol icon-size at ZREF)
+    var MARK_P  = 0.40;    // corner-mark ground scale (was the symbol icon-size)
+    var GRID_N  = 6;       // art is sliced into GRID_N² draped raster tiles (SFWDA value)
 
-    // Ground scale of the label images (icon-size at ZREF). ONE constant, shared by
-    // the strip geometry and the layer's icon-size below, so they can't drift apart.
-    var LABEL_P = 1.6;
     // Metres per screen pixel at ZREF (MapLibre worldSize = 512·2^zoom = 2^(zoom+9)),
-    // used to turn a label image's pixel width into the ground span it occupies, so
-    // the strips can be spaced along the edge at the right geographic interval.
+    // so a label image's pixel width maps to the ground span it should occupy.
     function metresPerPx(lat) {
       return 40075016.686 * Math.cos(lat * Math.PI / 180) / Math.pow(2, ZREF + 9);
     }
-    var DEG_LAT = 110540;                 // metres per degree latitude (local)
-    function degLng(m, lat) { return m / (111320 * Math.cos(lat * Math.PI / 180)); }
 
-    // `axis` is the coordinate that VARIES as the text runs ('lat' for the W/E edges,
-    // 'lng' for the S/N edges); `fixed` is the inset position of the edge; `center`
-    // is the midpoint the label is centred on; `lat` is the latitude the label sits
-    // at (for the metres↔degrees conversion); `flip` reverses strip order so the word
-    // reads forwards once the image is rotated by `rot` (derived at bearing 0;
-    // placement is geographic so it is bearing-stable).
+    // Edge → label keyed to the DEFAULT -90 bearing (top=West, bottom=East,
+    // left=South, right=North): title top (W), location bottom (E, no year),
+    // latitude left (S), event right (N).
     var EDGES = [
-      { key: 'w', label: 'Adventure Off Road Park',                              axis: 'lat', fixed: W - insetX, center: midLat, lat: midLat,     rot: -90, flip: false, fontPx: 13, weight: 800, color: TITLE_INK, spacing: 0.42 },
-      { key: 'e', label: 'South Pittsburg · Marion County · Tennessee — MMXXVI', axis: 'lat', fixed: E + insetX, center: midLat, lat: midLat,     rot: -90, flip: false, fontPx: 10, weight: 700, color: SUB_INK,   spacing: 0.30 },
-      { key: 's', label: '35° 00′ North · Cumberland Plateau',                   axis: 'lng', fixed: S - insetY, center: midLng, lat: S - insetY, rot: 180, flip: true,  fontPx: 10, weight: 700, color: SUB_INK,   spacing: 0.30 },
-      { key: 'n', label: '85° 36′ West · Trail Blazing Invitational',            axis: 'lng', fixed: N + insetY, center: midLng, lat: N + insetY, rot: 0,   flip: false, fontPx: 10, weight: 700, color: SUB_INK,   spacing: 0.30 }
+      { key: 'w', label: 'Adventure Off Road Park',                      at: [W - insetX, midLat], lat: midLat,     rot: -90, fontPx: 13, weight: 800, color: TITLE_INK, spacing: 0.42 },
+      { key: 'e', label: 'South Pittsburg · Marion County · Tennessee',  at: [E + insetX, midLat], lat: midLat,     rot: -90, fontPx: 10, weight: 700, color: SUB_INK,   spacing: 0.30 },
+      { key: 's', label: '35° 00′ North · Cumberland Plateau',           at: [midLng, S - insetY], lat: S - insetY, rot: 180, fontPx: 10, weight: 700, color: SUB_INK,   spacing: 0.30 },
+      { key: 'n', label: 'Rock Warblers Trail Blazing Invitational',     at: [midLng, N + insetY], lat: N + insetY, rot: 0,   fontPx: 10, weight: 700, color: SUB_INK,   spacing: 0.30 }
     ];
 
-    // Render each label to a supersampled (DPR=4) canvas, then slice it into N equal
-    // strips and register each as map image 'band-lab-<key>-<strip>'. Canvas
-    // letterSpacing reproduces the band's 0.42em tracking; the system-ui fallback
-    // covers it if Inter isn't loaded. labelFC collects one point feature per strip,
-    // spaced along the edge so the strips tile seamlessly in 2D and drape in 3D.
-    var STRIP_M = 170;          // target ground length per strip (smaller = smoother drape)
-    var labelFC = { type: 'FeatureCollection', features: [] };
-    function buildLabelStrips() {
+    // Render one label string to a supersampled (DPR=4) canvas (exact picked
+    // typography: weight, tracking, uppercase, the ·°′— glyphs; system-ui fallback if
+    // Inter isn't loaded). `groundM` is the ground length the label should occupy
+    // along its edge (icon-size LABEL_P at ZREF) — the bake scales it to that.
+    function renderLabel(e) {
       var DPR = 4;
-      for (var i = 0; i < EDGES.length; i++) {
-        var e = EDGES[i];
-        var cv = document.createElement('canvas'), ctx = cv.getContext('2d');
-        var font = e.weight + ' ' + (e.fontPx * DPR) + 'px Inter, system-ui, sans-serif';
-        var ls = e.spacing * e.fontPx * DPR;
-        var txt = e.label.toUpperCase();
-        ctx.font = font;
-        if ('letterSpacing' in ctx) ctx.letterSpacing = ls + 'px';
-        var w = Math.ceil(ctx.measureText(txt).width) + Math.round(ls) + e.fontPx * DPR;
-        var h = Math.ceil(e.fontPx * DPR * 1.7);
-        cv.width = w; cv.height = h;
-        ctx.font = font;                                  // a resize clears the ctx
-        if ('letterSpacing' in ctx) ctx.letterSpacing = ls + 'px';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillStyle = e.color;
-        ctx.fillText(txt, w / 2, h / 2);
-
-        // Ground span the whole label occupies along its edge (icon-size LABEL_P at
-        // ZREF), split into N strips of equal pixel width == equal ground width.
-        var groundM = (w / DPR) * LABEL_P * metresPerPx(e.lat);
-        var degSpan = (e.axis === 'lat') ? groundM / DEG_LAT : degLng(groundM, e.lat);
-        var N = Math.max(6, Math.min(32, Math.round(groundM / STRIP_M)));
-        for (var s = 0; s < N; s++) {
-          var name = 'band-lab-' + e.key + '-' + s;
-          if (!map.hasImage(name)) {
-            var x0 = Math.floor(s * w / N), x1 = Math.floor((s + 1) * w / N);
-            var sw = Math.max(1, x1 - x0);
-            var sc = document.createElement('canvas'); sc.width = sw; sc.height = h;
-            var sctx = sc.getContext('2d');
-            sctx.drawImage(cv, x0, 0, sw, h, 0, 0, sw, h);
-            try { map.addImage(name, sctx.getImageData(0, 0, sw, h), { pixelRatio: DPR }); }
-            catch (err) { console.warn('[viewer_band] strip image failed:', name, err); }
-          }
-          var t = (s + 0.5) / N - 0.5;          // -0.5 … +0.5 along the span
-          if (e.flip) t = -t;
-          var off = t * degSpan;
-          var coord = (e.axis === 'lat') ? [e.fixed, e.center + off] : [e.center + off, e.fixed];
-          labelFC.features.push({ type: 'Feature',
-            properties: { icon: name, rot: e.rot },
-            geometry: { type: 'Point', coordinates: coord } });
-        }
-      }
+      var cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+      var font = e.weight + ' ' + (e.fontPx * DPR) + 'px Inter, system-ui, sans-serif';
+      var ls = e.spacing * e.fontPx * DPR;
+      var txt = e.label.toUpperCase();
+      ctx.font = font;
+      if ('letterSpacing' in ctx) ctx.letterSpacing = ls + 'px';
+      var w = Math.ceil(ctx.measureText(txt).width) + Math.round(ls) + e.fontPx * DPR;
+      var h = Math.ceil(e.fontPx * DPR * 1.7);
+      cv.width = w; cv.height = h;
+      ctx.font = font;                                  // a resize clears the ctx
+      if ('letterSpacing' in ctx) ctx.letterSpacing = ls + 'px';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = e.color;
+      ctx.fillText(txt, w / 2, h / 2);
+      return { canvas: cv, w: w, h: h, groundM: (w / DPR) * LABEL_P * metresPerPx(e.lat) };
     }
 
-    // Corner marks sit OUTSIDE the neat-line corners, pushed diagonally out from the
-    // region centre onto the paper margin (further out than the lettering inset), so
-    // they read as printer's corner ornaments rather than dots on the boundary.
+    // Corner marks sit OUTSIDE the neat-line corners, pushed diagonally out onto the
+    // paper margin so they read as printer's corner ornaments, not dots on the line.
     var cornOutX = dW * 0.052, cornOutY = dH * 0.052;
-    var cornerFC = { type: 'FeatureCollection',
-      features: [
-        [W - cornOutX, S - cornOutY], [E + cornOutX, S - cornOutY],
-        [E + cornOutX, N + cornOutY], [W - cornOutX, N + cornOutY]
-      ].map(function (c) {
-        return { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: c } };
-      }) };
+    var CORNERS = [
+      [W - cornOutX, S - cornOutY], [E + cornOutX, S - cornOutY],
+      [E + cornOutX, N + cornOutY], [W - cornOutX, N + cornOutY]
+    ];
 
-    // ── corner mark: rasterise rw-mark.svg into a flat INK silhouette stamp ───
-    // (mirrors the CSS mask+background-color trick: draw the art, then source-in
-    // fill it with the neat-line ink so it reads as a printed stamp). The SVG is
-    // width/height:100%, so it has no intrinsic size — give the <img> an explicit
-    // box before it loads so the canvas raster is sharp.
+    // Geographic frame of the baked art (region + a margin wide enough to hold the
+    // pushed-out corner marks WHOLE — they sit at cornOut 0.052 and the rotated mark
+    // box reaches ~0.05 further, so 0.12 keeps the bird/letters off the canvas edge),
+    // north-up, at an isotropic resolution (so the typography isn't squashed) capped at
+    // 4096 px (GPU/iOS texture limit).
+    var artMx = dW * 0.12, artMy = dH * 0.12;
+    var artW = W - artMx, artE = E + artMx, artS = S - artMy, artN = N + artMy;
+    var spanLngM = (artE - artW) * 111320 * Math.cos(midLat * Math.PI / 180);
+    var spanLatM = (artN - artS) * 110540;
+    var pxPerM = 4096 / Math.max(spanLngM, spanLatM);
+    var artCvW = Math.round(spanLngM * pxPerM), artCvH = Math.round(spanLatM * pxPerM);
+    function gx(lng) { return (lng - artW) / (artE - artW) * artCvW; }
+    function gy(lat) { return (artN - lat) / (artN - artS) * artCvH; }
+
+    var inkCanvas = null;   // rw-mark ink silhouette canvas, set by loadMark
+
+    // Bake lettering + corner marks into one north-up georeferenced canvas. Each label
+    // is drawn rotated by `rot` (canvas clockwise == the symbol's map-space rotate) and
+    // scaled to its ground length, so the baked look matches the picked design exactly —
+    // only now it is a raster that DRAPES over the terrain.
+    function bakeBandArt() {
+      var cv = document.createElement('canvas'); cv.width = artCvW; cv.height = artCvH;
+      var ctx = cv.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      for (var i = 0; i < EDGES.length; i++) {
+        var e = EDGES[i], L = renderLabel(e);
+        var pxLen = L.groundM * pxPerM, pxH = pxLen * (L.h / L.w);
+        ctx.save();
+        ctx.translate(gx(e.at[0]), gy(e.at[1]));
+        ctx.rotate(e.rot * Math.PI / 180);
+        ctx.drawImage(L.canvas, -pxLen / 2, -pxH / 2, pxLen, pxH);
+        ctx.restore();
+        L.canvas.width = L.canvas.height = 0;
+      }
+      if (inkCanvas) {
+        var markPx = (inkCanvas.width / 2) * MARK_P * metresPerPx(midLat) * pxPerM;
+        for (var c = 0; c < CORNERS.length; c++) {
+          ctx.save();
+          ctx.translate(gx(CORNERS[c][0]), gy(CORNERS[c][1]));
+          ctx.rotate(-90 * Math.PI / 180);
+          ctx.drawImage(inkCanvas, -markPx / 2, -markPx / 2, markPx, markPx);
+          ctx.restore();
+        }
+      }
+      return cv;
+    }
+
+    // ── corner mark: rasterise rw-mark.svg into a flat INK silhouette CANVAS ──
+    // (draw the art, then source-in fill it with the neat-line ink so it reads as a
+    // printed stamp). Kept as a canvas so the bake can draw it rotated at each corner.
     function loadMark(cb) {
-      if (map.hasImage('rw-mark')) return cb();
-      var SZ = 128;
+      if (inkCanvas) return cb();
+      var SZ = 256;
       var img = new Image();
       img.width = SZ; img.height = SZ;
       img.crossOrigin = 'anonymous';
@@ -213,7 +207,7 @@
           ctx.drawImage(img, 0, 0, SZ, SZ);
           ctx.globalCompositeOperation = 'source-in';
           ctx.fillStyle = INK; ctx.fillRect(0, 0, SZ, SZ);
-          if (!map.hasImage('rw-mark')) map.addImage('rw-mark', ctx.getImageData(0, 0, SZ, SZ), { pixelRatio: 2 });
+          inkCanvas = cv;
         } catch (err) { console.warn('[viewer_band] rw-mark raster failed:', err); }
         cb();
       };
@@ -222,7 +216,10 @@
     }
 
     // ── add the band layers (idempotent), on TOP of the core's layers ────────
-    var BAND_LAYERS = ['band-mask', 'band-keyline', 'band-labels', 'band-marks'];
+    // Paper mask (fill) and keyline (line) DRAPE natively; the lettering + corner
+    // marks ride a baked raster mesh (SFWDA recipe) so they DRAPE too.
+    var tileLayerIds = [];
+    var BAND_LAYERS = ['band-mask', 'band-keyline'];
     function addBand() {
       if (map.getSource('band-mask')) { raiseBand(); return; }
 
@@ -235,33 +232,36 @@
         layout: { 'line-join': 'miter', 'line-cap': 'square' },
         paint: { 'line-color': INK, 'line-width': 1.5 } });
 
-      map.addSource('band-labels', { type: 'geojson', data: labelFC });
-      map.addLayer({ id: 'band-labels', type: 'symbol', source: 'band-labels',
-        layout: {
-          'icon-image': ['get', 'icon'],
-          'icon-rotate': ['get', 'rot'],
-          'icon-size': scalarSizeExpr(LABEL_P),
-          'icon-rotation-alignment': 'map',
-          'icon-pitch-alignment': 'map',
-          'icon-allow-overlap': true,
-          'icon-ignore-placement': true,
-          'icon-anchor': 'center'
-        } });
-
-      if (map.hasImage('rw-mark')) {
-        map.addSource('band-marks', { type: 'geojson', data: cornerFC });
-        map.addLayer({ id: 'band-marks', type: 'symbol', source: 'band-marks',
-          layout: {
-            'icon-image': 'rw-mark',
-            'icon-size': scalarSizeExpr(0.40),
-            'icon-rotate': -90,
-            'icon-rotation-alignment': 'map',
-            'icon-pitch-alignment': 'map',
-            'icon-allow-overlap': true,
-            'icon-ignore-placement': true,
-            'icon-anchor': 'center'
-          } });
+      // Bake the art, slice it into a GRID_N×GRID_N mesh, add each tile as an image
+      // source → raster layer (the SFWDA paper-map technique). Tile pixel boundaries
+      // and geographic corners come from the SAME cuts, so the tiles are seamless;
+      // each draped raster tile folds over the terrain.
+      var art = bakeBandArt();
+      function lngOfPx(px) { return artW + (px / artCvW) * (artE - artW); }
+      function latOfPx(py) { return artN - (py / artCvH) * (artN - artS); }
+      for (var r = 0; r < GRID_N; r++) {
+        var y0 = Math.floor(r * artCvH / GRID_N);
+        var y1 = (r === GRID_N - 1) ? artCvH : Math.floor((r + 1) * artCvH / GRID_N);
+        for (var c = 0; c < GRID_N; c++) {
+          var x0 = Math.floor(c * artCvW / GRID_N);
+          var x1 = (c === GRID_N - 1) ? artCvW : Math.floor((c + 1) * artCvW / GRID_N);
+          var sub = document.createElement('canvas');
+          sub.width = x1 - x0; sub.height = y1 - y0;
+          sub.getContext('2d').drawImage(art, x0, y0, x1 - x0, y1 - y0, 0, 0, sub.width, sub.height);
+          var sid = 'band-art-' + r + '-' + c;
+          try {
+            map.addSource(sid, { type: 'image', url: sub.toDataURL('image/png'),
+              coordinates: [[lngOfPx(x0), latOfPx(y0)], [lngOfPx(x1), latOfPx(y0)],
+                            [lngOfPx(x1), latOfPx(y1)], [lngOfPx(x0), latOfPx(y1)]] });
+            map.addLayer({ id: sid, type: 'raster', source: sid,
+              paint: { 'raster-opacity': 1, 'raster-fade-duration': 0, 'raster-resampling': 'linear' } });
+            tileLayerIds.push(sid);
+          } catch (err) { console.warn('[viewer_band] art tile failed:', sid, err); }
+          sub.width = sub.height = 0;
+        }
       }
+      art.width = art.height = 0;   // release the full bake canvas
+      BAND_LAYERS = ['band-mask', 'band-keyline'].concat(tileLayerIds);
       raiseBand();
     }
 
@@ -318,12 +318,14 @@
         // the label + corner images and add the band on top; re-raise once on the
         // next idle for good measure. document.fonts.ready keeps the canvas
         // lettering from measuring before Inter (if used) has loaded.
-        var start = function () { loadMark(function () { buildLabelStrips(); addBand(); }); };
+        var start = function () { loadMark(addBand); };
         setTimeout(function () {
           if (document.fonts && document.fonts.ready) document.fonts.ready.then(start, start);
           else start();
         }, 1200);
-        map.once('idle', function () { if (map.getSource('band-mask')) raiseBand(); });
+        // Re-raise on EVERY idle: the core loads roads/rivers asynchronously and would
+        // otherwise sit on top of the band. The border must stay the highest layer.
+        map.on('idle', function () { if (map.getSource('band-mask')) raiseBand(); });
         return;
       }
       if ((tries || 0) < 200) return setTimeout(function () { whenReady((tries || 0) + 1); }, 150);
@@ -335,7 +337,7 @@
     window.AOPViewerBand = {
       addBand: addBand, raiseBand: raiseBand,
       gaps: gaps, rawGaps: rawGaps, snapBack: snapBack, region: region,
-      layers: BAND_LAYERS
+      bandLayers: function () { return BAND_LAYERS; }
     };
   }
 

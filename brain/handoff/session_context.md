@@ -16,48 +16,65 @@ the whole locate machinery is **reused untouched** — first real fix pins to th
 (`TESTER_ANCHOR`), later fixes keep their real delta → walking the real neighborhood walks the blue dot around
 the PARK. Plus a `.tester` html class (the future edit-FAB hook) + a rust **"TESTER"** chip (`viewer.css`) so a
 phone tester knows they're on the test surface. **Verified by observation** (`/tmp/verify_tester.py`, Playwright
-:8000, **12/13 PASS**): default viewer unchanged (no badge, GPS not shifted); tester pins 1st fix to the
-pavilion, **real +0.001 lat → dot +0.001 lat** (movement preserved), `watchPosition` shifted too, Locate tracks,
-**0 errors on the tester page**; lone FAIL = headless-GPU shader noise on the *untouched* default page. Shot
-`brain/output/tester_badge.png`. `node --check` clean. Shell changed (`viewer_core.js`+`viewer.css`) → **v68 →
-v69** (`sw.js`+`#appVersion`). Card addendum: `tasks/13_viewer_extraction/viewer_locate_install_version.md`;
-**`pages.md` updated** to tester-as-mode. **Still future:** the on-tester **edit FAB** waits on the editor
-porting into the extracted read core (still in `panel.js`/`old_index.html`). **UNCOMMITTED** (user's git gate);
-council not yet run on this diff. NB the working tree also holds prior unreviewed band (`viewer_band.js`) +
-data-editor fold-in (`data_editor_map.js`) work from earlier/concurrent sessions.
+:8000, **12–13/13 PASS**, flake-dependent): default viewer unchanged (no badge, GPS not shifted); tester pins 1st
+fix to the pavilion, **real +0.001 lat → dot +0.001 lat** (movement preserved), `watchPosition` shifted too,
+Locate tracks, **0 errors on the tester page**; the only FAIL = transient headless-GPU shader noise on the
+*untouched* default page (council Witness re-ran twice → **13/13**). Shot `brain/output/tester_badge.png`.
+`node --check` clean. Shell changed (`viewer_core.js`+`viewer.css`) → **v68 → v69** (`sw.js`+`#appVersion`).
+Card addendum: `tasks/13_viewer_extraction/viewer_locate_install_version.md`; **`pages.md` updated** to
+tester-as-mode. **COUNCIL (core three): FULL CLEAR** — Witness/Warden/Quartermaster all `clear`. The
+`.council-cleared` marker was **NOT written**: the Tier-0 hash spans all of `website/`, which still carries the
+prior unreviewed band (`viewer_band.js`) + data-editor (`data_editor_map.js`) work from other sessions — so the
+Stop hook will keep nudging until those are reviewed or the tester work is committed apart from them. **Still
+future:** the on-tester **edit FAB** waits on the editor porting into the extracted read core (still in
+`panel.js`/`old_index.html`). **UNCOMMITTED** (user's git gate).
 
 -----
 
-**2026-06-13 (BAND LETTERING NOW DRAPES OVER TERRAIN in 3D + corner marks rotated/out/larger.
-`viewer_band.js` only.)** User on `viewer_banded.html`: *"the text works ok in 2d and 3d. in 3d it
-should map to the topography. Also the corner art needs to be rotated -90 degrees, moved further out
-from the center and made larger."* Confirmed by observation: the `fill` paper-mask + `line` keyline
-already drape on terrain (MapLibre drapes 2D layers), but the **lettering was a single wide `symbol`
-icon per edge — one icon sits at ONE terrain elevation and lies flat**, so it floated over the hills
-(sampled relief ALONG the label edges = **268→736 m**, a ~470 m spread — a flat ribbon is glaringly
-wrong). No glyph endpoint in the core style (checked) → text MUST stay canvas-rendered, so MapLibre
-`text-field`/line-placement isn't available. **Fix (`website/js/viewer_band.js` ONLY):** each label is
-now placed as a **ROW OF STRIPS** along its edge — render the full label to one canvas (exact picked
-typography preserved: 800/700 weight, 0.42/0.30em tracking, uppercase, ·°′— glyphs), slice into N equal
-strips (`N = clamp(round(groundM/170m), 6, 32)`), register each as `band-lab-<key>-<s>`, and place each
-at its own geographic point spaced along the edge. Each strip elevates to its OWN ground height →
-**the lettering DRAPES over the topography**; in 2D the strips reassemble into the exact same line (same
-`LABEL_P=1.6` ground-lock, now a shared const). Strip spacing is computed from the image's pixel width via
-MapLibre's metres-per-pixel (`worldSize = 512·2^zoom = 2^(zoom+9)`) so the strips tile seamlessly. Per-edge
-`axis`/`fixed`/`center`/`flip` replace the old single `at` point; `flip` (S edge only) fixes word order
-under the rotated image. **Corner marks** (`band-marks`): pushed diagonally OUT onto the paper margin
-(`cornOut = dW/dH * 0.052`, was on the corner), enlarged (`scalarSizeExpr 0.17 → 0.40`), and `icon-rotate:
--90` added — at the default −90 bearing this reads as an **upright RW emblem** (was lying on its side).
-**Verified by observation** (software-GL Chromium so terrain actually meshes — headless's default GL
-fails the terrain fragment shader; flags `--use-gl=angle --use-angle=swiftshader
---enable-unsafe-swiftshader`): `brain/output/v2_drape_close_title.png` = "…E OFF ROAD PA[RK]" rides down a
-hillside, letters bending/foreshortening on the terrain surface (unmistakable drape);
-`v2_3d_region.png`/`v2_3d_eastedge.png` = whole band sits on the ground; `v2_flat_southlabel.png` = strips
-reassemble with **no visible seams**, correct word order; `v2_flat_cornerNW.png` = upright RW mark, out on
-the margin, larger; `v2_flat_full.png` = all four labels + four corner marks intact. **0 console errors**,
-`node --check` clean. Proof page only — `viewer_band.js` isn't in the production shell, so **no sw.js bump
-owed**. Carried-but-not-done unchanged from the entry below (dead `#bandFrame` divs + `viewer_band.css`
-tiles still `display:none`, harmless). **UNCOMMITTED** (user's git gate). Council not yet run.
+**2026-06-13 (BAND LETTERING NOW FOLDS OVER TERRAIN via a BAKED DRAPED-RASTER mesh — the SFWDA
+technique. Corner marks rotated/out/larger. `viewer_band.js` only.)** User on `viewer_banded.html`:
+*"the text works ok in 2d and 3d. in 3d it should map to the topography. Also the corner art needs to be
+rotated -90 degrees, moved further out from the center and made larger."*
+
+**The means matters here — two attempts, the FIRST was wrong, don't retry it:**
+- **WRONG (strips, reverted): symbols can't fold.** First I split each label into a ROW OF STRIP icons
+  along its edge. A `symbol`/icon is a flat BILLBOARD pinned to ONE terrain elevation, so a row of them
+  **STAIRCASES** — each strip flat, stepping between strips — it does NOT fold. User caught it: *"it
+  seems as if each letter is set to the current elevation rather than the string itself conforming… do I
+  need to pre-bake these banners to fold over the terrain as images? we did it with the aop map in
+  old_index??? how thorough were you in your approach search??"* Fair — I reasoned from the MapLibre model
+  and skipped `extract_before_invent` (didn't check the existing precedent first).
+- **RIGHT (baked draped raster): the SFWDA paper-map recipe.** Found it in `main.js ~1553`/`~9282-9351`:
+  the SFWDA paper map is baked to a georeferenced image, sliced into a GRID_N×GRID_N mesh, each tile added
+  as a `type:'image'` source → `type:'raster'` layer. **MapLibre DRAPES raster/image layers onto the
+  terrain mesh** (render-to-texture, then fold per-pixel onto the hills) — symbols don't drape, rasters do.
+  That is exactly the "AOP map folds over terrain" behaviour the user remembered. (Why not MapLibre
+  line-placed text instead? No glyph endpoint in the core style — checked — so text MUST stay canvas-baked.)
+
+**Final fix (`website/js/viewer_band.js` ONLY).** `fill` paper-mask + `line` keyline already drape, so
+they stay. The lettering + corner marks (the old symbols) now ride a **baked raster mesh**: `bakeBandArt()`
+draws the four labels (exact picked typography — 800/700 weight, 0.42/0.30em tracking, uppercase, ·°′—
+glyphs, each rotated by its `rot` = the old map-space icon-rotate) and the corner marks into ONE north-up
+georeferenced canvas (geo→px via `gx`/`gy`; isotropic res capped at 4096 px = GPU/iOS limit; ground sizes
+from MapLibre metres-per-pixel `worldSize = 512·2^zoom = 2^(zoom+9)`, `LABEL_P=1.6`). `addBand()` slices it
+into `GRID_N=6`² tiles (pixel cuts and geo corners derived from the SAME boundaries → seamless) and adds 36
+`image`+`raster` tile layers. **Corner marks**: pushed diagonally OUT onto the paper margin (`cornOut =
+dW/dH*0.052`, was on the corner), enlarged (`MARK_P 0.17→0.40`), rotated `-90` (upright RW emblem at the
+default −90 bearing; was on its side). Removed: `scalarSizeExpr`, the strip/`labelFC`/`buildLabelStrips`
+machinery, the `rw-mark` map-image (now a bake-time `inkCanvas`). `BAND_LAYERS` is now dynamic
+(`['band-mask','band-keyline', …36 tiles]`); verify hook exposes `bandLayers()`.
+
+**Verified by observation** (software-GL Chromium so terrain actually meshes — headless's default GL fails
+the terrain fragment shader; flags `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`):
+`brain/output/r_3d_title_fold.png` = the title's LETTERS warp continuously down a hillside (true per-pixel
+fold, NOT the earlier staircase — compare the dead `v2_drape_close_title.png` strip shot);
+`r_3d_region.png`/`r_3d_eastedge.png` = band drapes, label baselines undulate with the hills;
+`r_2d_region_default.png`/`r_flat_full.png` = 2D faithful to the picked design, all 4 labels + 4 rotated
+corner marks. **36 tiles present, 0 console errors**, `node --check` clean. **Tradeoff (inherent to
+raster, same as the SFWDA map):** slight softness only when you pixel-peep zoom into a single word
+(`r_2d_title_zoom.png`); crisp at region/normal zoom. Higher per-tile bake res is a possible follow-up but
+the single bake canvas must stay ≤~4096² for iOS. Proof page only — `viewer_band.js` isn't in the
+production shell, so **no sw.js bump owed**. **UNCOMMITTED** (user's git gate). Council not yet run.
 
 -----
 
