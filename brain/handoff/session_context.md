@@ -6,6 +6,44 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (★ MOVED INTO THE DATA MODEL — user's hard requirement. The POI directory is now highlight-driven, not an index side-join).**
+User on the 4b index-join: *"STARS. if it's not in the data model we need to add it. THIS IS THE ONLY THING
+I WILL ACCEPT."* Reversed the long-standing "a star is not a fact" policy and made ★ a published
+`properties.highlight` field, read end-to-end. **(1) Bake policy** (`mvp/scripts/panel_overrides.py`): split
+`VIEW_STATE_KEYS` → `SERVED_SKIP_KEYS` (panel-internal only) so the **file sink** `bake_panel_overrides.py`
+now BAKES the ★ (panel.js already exported it); the **DB sink** `apply_panel_overrides_to_core.py` keeps
+skipping it (no core column yet — follow-up). Synthetic dry-run: a highlight edit now bakes (1 edited).
+panel.js comment-only fix. **(2) Seed** `mvp/scripts/bake_poi_stars.py`: stamps `highlight:true` (+blurb→
+description) onto the 12 index-curated served features (buildings/trails/cemeteries/visitor/drawn).
+**(3) Viewer** (`viewer_core.js`): `buildPoiGroups` rewritten to read `highlight===true` via inline
+`STAR_GROUPS`; deleted `fetchPoiIndex`/`resolvePoiFeature`/the index runtime join. **Verified**
+(`/tmp/verify_viewer_poitab.py`, **8/8 PASS, 0 errors**) — same 7 rows, now ★-driven; index.html/main.js
+CODE untouched (main.js reads the same baked stars = durable convergence). **Caveat:** publish.geojson is
+PostGIS-exported so its 2 trail stars are lost on re-export (carry into the publish view — follow-up).
+**Owed:** the editor's live bake verifiers (`playwright_verify_baked_pois`/`_starred_poi_flip`) not run
+(synthetic only). Files changed: 5 served geojson (now carry stars) + 4 mvp/scripts (1 new) + viewer_core.js
++ panel.js comment. **UNCOMMITTED.** Council next.
+
+-----
+
+**2026-06-13 (SPRINT 13 SLICE 4b SHIPPED — POI-tab directory, index-driven. Built alongside, index.html untouched).**
+User committed `4615ae4 hotspots` then "continue" → built **4b (the POI directory)**. **Andon finding:**
+`main.js`'s `buildPoiGroups`/`collectStarredDestinations` is editor machinery (the `featureListRuntime` +
+`FEATURE_LIST_LAYERS` ★-registry), AND the ★ curation is NOT baked onto the served data (verified 0 starred
+features) — a verbatim port would be empty. So the clean core **re-derives** the directory from the
+published curation `aop_poi_index.json` (12 `{group,match,blurb}` entries), joining each to its loaded
+feature for fly-to + the normalized popup. `viewer_core.js` 2187 → **2354** (+167), viewer.html +6,
+viewer.css +13. **Verified** (`/tmp/verify_viewer_poitab.py`, **8/8 PASS, 0 errors** on a clean re-run; one
+transient headless-WebGL shader hiccup, environmental): 7 rows across Buildings (Pavilion/Farmhouse/Front
+Office), Trails (Sat Afternoon Activity ×2), Visitor support (South Pittsburg/Monteagle); row-click → popup.
+Shot `viewer_poitab.png`. Reuses `flyToFeature` + the slice-4a normalized popup + the popup-fit helpers.
+**Published-line gap surfaced (user's call):** the index's **cemeteries** (4) + **drawn_pois** (1) groups
+yield no rows — those layers aren't carried (cemeteries excluded slice 1; drawn is editor). Carrying
+cemeteries (public data, the Ellis inholding) would complete it — same fork-2 call as hotspots. **UNCOMMITTED.**
+Council next. Remaining slate: Locate/Install/version (6), the swap (7); optional cemeteries carry.
+
+-----
+
 **2026-06-13 (SPRINT 13 SLICE 4a SHIPPED — feature click popups, the "one strategy". Built alongside, index.html untouched).**
 After restoring hotspots, "continue" → POI slice. Built **4a (feature popups)**: click any
 curated/published feature → the normalized "what is this line, where did it come from?" card

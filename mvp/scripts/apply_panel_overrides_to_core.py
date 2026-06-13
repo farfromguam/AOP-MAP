@@ -63,9 +63,13 @@ COMPOSE_FILE = REPO / "mvp" / "docker-compose.yml"
 # Provenance source for editor-authored / stub rows (mirrors seed_core_pois.sql).
 APPLY_SOURCE_NAME = "AOP web editor (apply)"
 
-# Editor editable key -> core.features column. Keys NOT here (and not view state)
-# are folded into `notes` so nothing is dropped (C5). `highlight` is view state
-# (VIEW_STATE_KEYS) -- never applied (a star is not a fact about the feature).
+# Editor editable key -> core.features column. Keys NOT here (and not in
+# VIEW_STATE_KEYS) are folded into `notes` so nothing is dropped (C5). `highlight`
+# (the ★) is now PUBLISHED data in the served files (bake_panel_overrides bakes it
+# -- the user reversed the old "a star is not a fact" policy, 2026-06-13), but the
+# core schema has no `highlight` column yet, so the DB sink still skips it (it stays
+# in VIEW_STATE_KEYS here) to avoid mis-folding the star into `notes`. Carrying ★
+# into core is the follow-up: add the column, then drop it from VIEW_STATE_KEYS.
 # `notes` is handled specially (it is both an editable key and the catch-all
 # column), so it is intentionally absent from this direct map.
 POI_COL = {"name": "name", "description": "description", "kind": "kind"}

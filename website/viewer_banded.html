@@ -198,7 +198,9 @@
       }
       function Wrapped(opts) {
         var region = (opts && opts.maxBounds) ? opts.maxBounds : null;
-        if (region) opts.maxBounds = pad(region, 0.08);   // leash + a little room to pull past
+        // Generous hard backstop only; the PRECISE, uniform pull limit is enforced
+        // in screen pixels by viewer_band.js (Option B), not by maxBounds.
+        if (region) opts.maxBounds = pad(region, 0.6);
         var m = new _Map(opts);
         window.AOPViewer = { map: m, regionBounds: region };
         return m;

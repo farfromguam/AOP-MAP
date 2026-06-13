@@ -125,6 +125,7 @@
           <section class="calendar-card" id="calendarCard" aria-label="Events and park information">
             <div class="left-tabs" role="tablist" aria-label="Left panel content">
               <button id="leftTabEvents" class="left-tab" type="button" role="tab" aria-selected="true" aria-controls="eventsTabPanel" data-left-tab="events">Events</button>
+              <button id="leftTabPoi" class="left-tab" type="button" role="tab" aria-selected="false" aria-controls="poiTabPanel" data-left-tab="poi" tabindex="-1">POI</button>
               <button id="leftTabAbout" class="left-tab" type="button" role="tab" aria-selected="false" aria-controls="aboutTabPanel" data-left-tab="about" tabindex="-1">About</button>
             </div>
             <div class="left-tab-panels">
@@ -143,6 +144,11 @@
                   <ol class="calendar-days" id="calendarDays">
                     <li class="calendar-empty">Loading schedule...</li>
                   </ol>
+                </div>
+              </div>
+              <div id="poiTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabPoi" hidden>
+                <div id="poiList" class="poi-list" aria-live="polite">
+                  <p class="poi-empty">Loading places…</p>
                 </div>
               </div>
               <div id="aboutTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabAbout" hidden>

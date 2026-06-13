@@ -20,9 +20,12 @@ the raw->core->publish zones survive. See brain/research/common_feature_schema.m
 What it does, per the payload:
   - edits[]   : find the feature by canonical `properties.id` in its source file,
                 apply the changed identity/facet props (name/description/
-                difficulty/notes/category) and any moved geometry. View state
-                (`highlight`) is NOT baked -- a star is not a fact about the
-                feature. `last_checked` is stamped to today (an edit IS a check).
+                difficulty/notes/category) and any moved geometry. The ★
+                (`highlight`) IS baked now -- the user reversed the old "a star is
+                not a fact" policy (2026-06-13: stars belong in the data model), so
+                the served file (the prod data the read viewer reads) carries it.
+                Only panel-internal keys are skipped (panel_overrides.SERVED_SKIP_KEYS).
+                `last_checked` is stamped to today (an edit IS a check).
   - created[] : drawn features -> appended to the file of their HOME source.
                 Each created feature carries `_src` (the layer it was drawn into),
                 so a building drawn in the panel bakes into aop_buildings.geojson
@@ -57,7 +60,7 @@ from pathlib import Path
 # this file is the FILE sink, apply_panel_overrides_to_core.py is the DB sink.
 from panel_overrides import (
     DEFAULT_CREATED_TARGET,
-    VIEW_STATE_KEYS,
+    SERVED_SKIP_KEYS,
     load_json,
     read_payload,
     round_coords,
@@ -112,7 +115,7 @@ def apply_file_edits(path: Path, entries: list, stamp: bool, today: str, dry: bo
         patch = entry.get("properties") or {}
         touched = False
         for k, v in patch.items():
-            if k in VIEW_STATE_KEYS or k == "id":
+            if k in SERVED_SKIP_KEYS or k == "id":
                 continue
             if props.get(k) != v:
                 props[k] = v

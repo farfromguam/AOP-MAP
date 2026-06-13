@@ -106,6 +106,13 @@
   let aopActivityHotspotsData = null;
   let preferredHotLane = null;
 
+  // POI-directory state. The directory reads the baked ★ (properties.highlight)
+  // straight off the served features — the star is a published data-model field
+  // (mvp/scripts/bake_poi_stars.py), not an editor/localStorage or index side-join.
+  let poiBuildingsData = null;
+  let poiVisitorData = null;
+  let poiPublishData = null;
+
   // ── Palette consts referenced by BUILT_IN_PRESETS (main.js:1556-1611) ───
   const SKY_ATMOSPHERE = {
     'sky-color': '#7AB3FF',
@@ -1152,6 +1159,7 @@
       panel.hidden = panel.id !== `${tabKey}TabPanel`;
     }
     if (tabKey === 'events') scrollCalendarCurrentRowIntoView();
+    if (tabKey === 'poi') renderPoiTab();
     return tabKey;
   }
 
@@ -1426,6 +1434,131 @@
       if (status) status.textContent = haveHotspots ? 'Trail activity' : 'No target';
       eventBtn.setAttribute('aria-label', 'No event target');
     }
+  }
+
+  // ── POI directory (slice 4b) — ★-driven from the data model ────────────
+  // The directory IS the set of features the DATA marks as destinations:
+  // properties.highlight === true (the baked ★ — mvp/scripts/bake_poi_stars.py).
+  // This is the live page's own model; the read core reads the SAME published
+  // field, so the editor and the viewer agree on one source — no editor registry,
+  // no localStorage, no index side-join. Each carried dataset routes its starred
+  // features to a group; the taxonomy (label + order) is inline. Groups whose
+  // layers the read core doesn't carry (cemeteries, drawn) just don't appear
+  // until those layers are carried.
+  const STAR_GROUPS = [
+    { id: 'buildings', label: 'Buildings in the park', data: () => poiBuildingsData },
+    { id: 'trails', label: 'Trails', data: () => poiPublishData, pred: (p) => p.layer === 'trail_centerlines' },
+    { id: 'visitor_support', label: 'Visitor support (off-park)', data: () => poiVisitorData }
+  ];
+  function flyToFeature(feature) {
+    if (!feature || !feature.geometry) return;
+    const pad = visibleMapPadding(20);
+    const bounds = geojsonBounds({ type: 'FeatureCollection', features: [feature] });
+    if (bounds) {
+      const [[minLng, minLat], [maxLng, maxLat]] = bounds;
+      if (minLng === maxLng && minLat === maxLat) {
+        map.flyTo({ center: [minLng, minLat], zoom: 18, offset: visibleCenterOffset(pad), duration: 900, bearing: map.getBearing(), pitch: map.getPitch() });
+      } else {
+        map.fitBounds(bounds, { padding: pad, maxZoom: 18, duration: 900, bearing: map.getBearing(), pitch: map.getPitch() });
+      }
+    }
+    const highlight = map.getSource('search-highlight');
+    if (highlight) {
+      highlight.setData({ type: 'FeatureCollection', features: [feature] });
+      pulseHighlight();
+    }
+  }
+  function buildPoiGroups() {
+    const out = [];
+    for (const group of STAR_GROUPS) {
+      const data = group.data();
+      if (!data || !Array.isArray(data.features)) continue;
+      const rows = [];
+      for (const feature of data.features) {
+        const p = feature.properties || {};
+        if (p.highlight !== true) continue;          // the ★ gate, read from the data
+        if (group.pred && !group.pred(p)) continue;
+        const d = window.AOPFeatureDisplay ? window.AOPFeatureDisplay.featureDisplay(p) : {};
+        rows.push({
+          name: d.name || '(unnamed)',
+          blurb: d.blurb || '',
+          kind: d.kind || '',
+          status: d.status || '',
+          revisitNote: d.revisit || '',
+          feature
+        });
+      }
+      if (rows.length) out.push({ id: group.id, label: group.label, rows });
+    }
+    return out;
+  }
+  function renderPoiTab() {
+    const container = document.getElementById('poiList');
+    if (!container) return;
+    const groups = buildPoiGroups();
+    const totalRows = groups.reduce((sum, g) => sum + g.rows.length, 0);
+    container.innerHTML = '';
+    if (totalRows === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'poi-empty';
+      empty.textContent = poiBuildingsData ? 'No starred places yet.' : 'Loading places…';
+      container.append(empty);
+      return;
+    }
+    for (const group of groups) {
+      const groupEl = document.createElement('div');
+      groupEl.className = 'poi-list-group';
+      const head = document.createElement('div');
+      head.className = 'poi-list-group-head';
+      const label = document.createElement('span');
+      label.textContent = group.label;
+      const count = document.createElement('span');
+      count.className = 'poi-list-group-count';
+      count.textContent = `${group.rows.length}`;
+      head.append(label, count);
+      groupEl.append(head);
+      for (const row of group.rows) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'poi-row';
+        btn.setAttribute('aria-label', `Fly to ${row.name}`);
+        const name = document.createElement('span');
+        name.className = 'poi-row-name';
+        name.textContent = row.name;
+        btn.append(name);
+        const subtitle = document.createElement('span');
+        subtitle.className = 'poi-row-subtitle';
+        subtitle.textContent = row.blurb || `${row.kind} · ${row.status}`.trim();
+        btn.append(subtitle);
+        const meta = document.createElement('span');
+        meta.className = 'poi-row-meta';
+        if (row.kind) { const c = document.createElement('span'); c.textContent = row.kind; meta.append(c); }
+        if (row.status) { const c = document.createElement('span'); c.textContent = row.status; meta.append(c); }
+        btn.append(meta);
+        btn.addEventListener('click', () => gotoPoi(row));
+        groupEl.append(btn);
+      }
+      container.append(groupEl);
+    }
+  }
+  function renderPoiTabIfActive() {
+    const panel = document.getElementById('poiTabPanel');
+    if (panel && !panel.hidden) renderPoiTab();
+  }
+  function gotoPoi(row) {
+    if (!row || !row.feature || !window.AOPFeatureDisplay) return;
+    closeAllMapPopups();
+    flyToFeature(row.feature);
+    const coord = firstCoordinate(row.feature.geometry);
+    if (!coord) return;
+    const model = window.AOPFeatureDisplay.featureDisplay(row.feature.properties || {});
+    const slice = visibleMapRect();
+    const popupMax = Math.max(200, Math.min(300, Math.max(0, slice.right - slice.left) - 28));
+    const popup = new maplibregl.Popup({ maxWidth: `${popupMax}px`, className: 'poi-tab-popup' })
+      .setLngLat(coord)
+      .setHTML(window.AOPFeatureDisplay.popupHtml(model))
+      .addTo(map);
+    map.once('moveend', () => panPopupIntoView(popup));
   }
 
   // ── Layer build ────────────────────────────────────────────────────────
@@ -1716,6 +1849,7 @@
     const visitorContextData = calloutsBundle
       ? Object.assign({}, calloutsBundle, { features: calloutsBundle.features.filter((f) => (f.properties || {}).kind !== 'brand_logo') })
       : null;
+    poiVisitorData = visitorContextData;
     if (visitorContextData) {
       map.addSource('visitor-context', {
         type: 'geojson', data: visitorContextData,
@@ -1749,6 +1883,7 @@
 
     // --- FEMA building footprints (main.js:8808) ---
     const buildingsData = await fetchJson('./data/aop_buildings.geojson', 'Building footprints missing');
+    poiBuildingsData = buildingsData;
     if (buildingsData) {
       map.addSource('fema-buildings', {
         type: 'geojson', data: buildingsData,
@@ -1850,6 +1985,7 @@
       if (message) message.textContent = 'Publish layer failed to load.';
       return;
     }
+    poiPublishData = publishData;
 
     map.addSource('publish-data', { type: 'geojson', data: publishData });
     map.addLayer({
@@ -2028,6 +2164,7 @@
     fitToDataBounds(publishData);
     if (message) message.textContent = `${publishData.features.length} publish feature${publishData.features.length === 1 ? '' : 's'} loaded.`;
     applyPreset(activePresetId);
+    renderPoiTabIfActive();
   });
 
   // ── Control wiring (main.js:10364-10370, 10407) ────────────────────────
@@ -2148,6 +2285,9 @@
       .then((about) => { if (about) renderAbout(about, panel); })
       .catch(() => {});
   })();
+
+  // POI directory renders from the baked ★ on the served data (read in the load
+  // handler via renderPoiTabIfActive); nothing to fetch up front.
 
   // ── Feature click popups — the ONE normalized strategy (slice 4) ───────
   // Click a curated/published feature → its "what is this line, where did it

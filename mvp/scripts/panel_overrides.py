@@ -28,14 +28,24 @@ SCHEMA = "aop-panel-overrides-v1"
 COORD_DECIMALS = 5                      # match the served files (~1.1 m)
 DEFAULT_CREATED_TARGET = "aop_user_features.geojson"
 
-# Property keys the editor persists that are VIEW state or panel-internal, not
-# authored data -- never written into a sink. `_src` is the home-source tag a
-# created feature carries so a sink can route it; `_id` is its local pre-bake id.
-VIEW_STATE_KEYS = {"highlight", "__locked", "__group", "_id", "_src"}
+# Panel-internal keys the editor persists that are NEVER authored data and never
+# written into ANY sink. `_src` is the home-source tag a created feature carries
+# so a sink can route it; `_id` is its local pre-bake id.
+PANEL_INTERNAL_KEYS = {"__locked", "__group", "_id", "_src"}
+# Keys the *served-file* bake skips. The user reversed the old "a star is not a
+# fact" policy (2026-06-13): *"STARS. if it's not in the data model we need to add
+# it."* So the served bake (bake_panel_overrides.py, the prod data model — there is
+# no DB in prod) now PUBLISHES `highlight`; only the panel-internal keys are
+# skipped. `panel.js` already exports `highlight` in EDITABLE_SERVED_KEYS.
+SERVED_SKIP_KEYS = PANEL_INTERNAL_KEYS
+# Keys the DB/core sink skips. The core has no `highlight` column yet, so the DB
+# sink (apply_panel_overrides_to_core.py — dev/cartography only) still skips the
+# star to avoid mis-folding it into `notes`. Carrying ★ into core is a follow-up
+# (add the column, then drop it from here).
+VIEW_STATE_KEYS = {"highlight"} | PANEL_INTERNAL_KEYS
 # Identity/facet keys the editor is allowed to write back onto a served feature.
-# (the panel's pickEditable is the actual allowlist; this stays in sync with
-# EDITABLE_SERVED_KEYS there, minus the view-state `highlight`.)
-EDITABLE_KEYS = ["name", "description", "difficulty", "notes", "category", "tag"]
+# Now includes `highlight` (the published ★), matching panel.js EDITABLE_SERVED_KEYS.
+EDITABLE_KEYS = ["name", "description", "difficulty", "notes", "category", "tag", "highlight"]
 
 
 def load_json(path: Path) -> dict:

@@ -41,14 +41,81 @@ same page is eaten by leftover popup/search state; a test artifact, not a viewer
 **Reuse:** `feature_display.js` is loaded as a `<script>` (not re-ported), same as the schedule resolver;
 the popup positioning reuses the schedule slice's `closeAllMapPopups`/`visibleMapRect`/`panPopupIntoView`.
 
-## 4b — POI-tab directory (deferred, next)
+## 4b — POI-tab directory (shipped, index-driven)
 
-The drawer's Calendar card has Events + About tabs (slice 3); the **POI** sub-tab is not yet wired. It
-needs `fetchPoiIndex` (`aop_poi_index.json`), `buildPoiGroups` (join the index to the loaded layer
-features — buildings, trails, cemeteries, visitor support, event anchors, ★-drawn POIs), `renderPoiTab`
-(the grouped scrollable list with kind/status chips + revisit flags), and `gotoPoi` (fly + the same
-normalized popup). Add the POI `<button>` back to `.left-tabs` and the `poiList` panel. Bigger than 4a;
-its own pass.
+**The andon that shaped this.** `main.js`'s `buildPoiGroups` → `collectStarredDestinations` builds the POI
+tab from the editor's `featureListRuntime` + `FEATURE_LIST_LAYERS` registry, filtered to **★-curated**
+(`highlight===true`) rows. Two blockers for the read core: (1) that whole registry is editor machinery the
+clean core doesn't have; (2) **the ★ curation is NOT baked onto the served data** — verified: 0
+`highlight===true` features in `aop_buildings`/`aop_trail_network`/`aop_visitor`/`aop_cemeteries`; the stars
+live in editor localStorage. So a verbatim port would yield an empty directory.
+
+**The clean re-derivation.** The published curation is `aop_poi_index.json` itself — 12 hand-curated
+`{group, match, blurb}` entries. The read-core directory is **index-driven**: each entry is joined to its
+loaded feature (by `match.source` + address/name/layer) for fly-to + the normalized popup; rows group by
+the index's group order. No editor registry, no ★ store.
+
+**Built:** the POI sub-tab `<button>` + `poiList` panel in viewer.html; the `.poi-list*`/`.poi-row*` CSS
+(app.css:736-747); `fetchPoiIndex` + `resolvePoiFeature` + `buildPoiGroups` + `renderPoiTab` + `gotoPoi`
+(reuses `flyToFeature` + the normalized popup + `closeAllMapPopups`/`visibleMapRect`/`panPopupIntoView`).
+The three joined datasets (`poiBuildingsData`/`poiVisitorData`/`poiPublishData`) are retained at module
+scope from the load handler.
+
+### Done — 2026-06-13 (verified by observation)
+
+`/tmp/verify_viewer_poitab.py`: **8/8 PASS, 0 console errors** (one re-run — a transient headless WebGL
+"fragment shader" GPU hiccup, environmental, not the viewer). The directory renders **7 curated rows**
+across **Buildings in the park** (Pavilion / Farmhouse / Front Office), **Trails** (Saturday Afternoon
+Activity seg 1/2), **Visitor support** (South Pittsburg / Monteagle); clicking a row flies + opens the
+normalized popup ("Pavilion"). Screenshot `viewer_poitab.png`. `viewer_core.js` 2187 → **2354** (+167);
+viewer.html +6; viewer.css +13. `index.html` untouched.
+
+**Published-line gap (surfaced, the user's call — fork 2 family).** The index also has **cemeteries** (4)
+and **drawn_pois** (1) groups; those yield no rows because the read core doesn't carry the
+`aop_cemeteries` layer (excluded slice 1) or the editor drawn-POI layer. Carrying cemeteries (public TN
+Comptroller data — the Ellis inholding et al.) would complete the directory's cemeteries group; that's the
+same published-layer-line call the user made for hotspots. Surfaced, not decided.
+
+### Addendum — 2026-06-13 (★ MOVED INTO THE DATA MODEL — the user's hard requirement)
+
+User, on the index-driven directory: *"STARS. if it's not in the data model we need to add it. THIS IS THE
+ONLY THING I WILL ACCEPT."* Correct — the index side-join was a workaround. The ★ is now a **published,
+source-traceable field on the feature** (`properties.highlight`), read end-to-end. Three changes:
+
+1. **Reversed the "a star is not a fact" policy** (`mvp/scripts/panel_overrides.py`). The editor already
+   exported `highlight` (`panel.js` `EDITABLE_SERVED_KEYS`), but BOTH bake sinks stripped it via
+   `VIEW_STATE_KEYS`. Split the contract: `SERVED_SKIP_KEYS` (panel-internal only) for the **file sink**
+   (`bake_panel_overrides.py`, the prod data — there is no DB in prod) so it now **bakes the ★**;
+   `VIEW_STATE_KEYS` (still includes `highlight`) for the **DB sink** (`apply_panel_overrides_to_core.py`,
+   dev only) which keeps skipping it until the core gets a `highlight` column (noted follow-up — avoids
+   mis-folding the star into `notes`). `panel.js` comment fixed (comment-only, no behavior change).
+   Verified by a synthetic dry-run: a `highlight` edit now bakes (`1 edited`) where it was dropped before.
+2. **Seeded the data model** with the current curation: `mvp/scripts/bake_poi_stars.py` reads the
+   git-tracked `aop_poi_index.json` and stamps `highlight: true` (+ the blurb as `description` where
+   missing) onto the 12 curated served features (3 buildings, 2 trails, 4 cemeteries, 2 visitor, 1 drawn).
+   Idempotent; runs after `rebake_canonical.py`.
+3. **Viewer reads the ★** (`buildPoiGroups` rewritten): the directory IS `properties.highlight === true`,
+   grouped by an inline `STAR_GROUPS` taxonomy. The `aop_poi_index.json` runtime side-join, `fetchPoiIndex`,
+   and `resolvePoiFeature` are **deleted** — the read core now reads the SAME field the live page reads, so
+   editor and viewer agree on one published source.
+
+**Verified:** `/tmp/verify_viewer_poitab.py` 8/8 PASS, 0 errors — same 7 rows, now ★-driven off the served
+`highlight` field. The live page (`main.js` untouched) reads the same baked stars too — durable
+convergence (Sprint 08's direction, finally landed).
+
+**Caveat (publish.geojson):** it's PostGIS-exported, so the 2 trail stars baked there are overwritten on
+the next `export_publish_geojson.sh`. To make a publish-layer star durable it must be carried into the
+publish view (follow-up). File-based layers (buildings, visitor, cemeteries, editor seed) are safe.
+
+**Owed validation:** the editor's full bake verifiers (`playwright_verify_baked_pois.py` /
+`_starred_poi_flip.py`) weren't run (they need the live editor + a bake cycle); the synthetic dry-run
+covered the file-sink mechanism. Worth a confirming run.
+
+## Owed / git gate
+
+UNCOMMITTED (the user's gate). `viewer.html` still not in `sw.js` → no `#appVersion` bump owed. Remaining
+slate: Locate / Install / version (slice 6), the swap to `index.html` (slice 7). Optional: carry the
+cemeteries layer (now ★-baked in the data) to fill the directory's cemeteries group.
 
 ## Owed / git gate
 

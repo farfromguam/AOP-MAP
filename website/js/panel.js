@@ -79,14 +79,15 @@
   // DIFFS, not full-file replace (user-chosen 2026-06-04): the store keeps only
   // what changed, keyed "<source>:<canonical id>", so git diffs stay reviewable
   // and the raw->core->publish zones survive. Created features are kept WHOLE
-  // (they are new authored data, not a diff). `highlight` is VIEW state — saved
-  // for the user's convenience, but the baker drops it (a star is not a fact
-  // about the trail). See brain/research/common_feature_schema.md (save path).
+  // (they are new authored data, not a diff). `highlight` (the ★) IS exported and
+  // now bakes into the served data — the user reversed the old "a star is view
+  // state, not a fact" policy (2026-06-13): stars belong in the data model so the
+  // read viewer reads the same published field. See brain/research/common_feature_schema.md.
   const OVERRIDES_KEY = 'aop_panel_overrides_v1';
   // Identity/facet props the editor writes back for a SERVED feature. Canonical
   // `id` + the read-only provenance block are NOT here (never user-set). The
-  // baker bakes name/description/difficulty/notes/category/tag; it skips
-  // `highlight` (a star is view state, not a fact about the feature).
+  // served baker now bakes name/description/difficulty/notes/category/tag AND
+  // `highlight` (the published ★); only panel-internal keys are skipped.
   const EDITABLE_SERVED_KEYS = ['name', 'description', 'difficulty', 'notes', 'category', 'tag', 'highlight'];
   // Where drawn (user-created) features bake to. Its own file so the canonical
   // re-bake (which reads data/raw/) never touches it and never clobbers a draw.
