@@ -97,7 +97,7 @@ html, body { background: #000; }
    panel's top (driven by the reflow JS); slice 3 carries two cards
    (Search, Calendar), so the icon column reserves 2 tab-heights. */
 .lr-drawer { display: flex; align-items: stretch; }
-.lr-icon-col { flex: 0 0 var(--tab-h); width: var(--tab-h); min-height: calc(var(--tab-h) * 2); display: flex; flex-direction: column; background: var(--cream-surface); border: 1px solid var(--cream-border); border-radius: 8px 0 0 8px; overflow: hidden; position: relative; }
+.lr-icon-col { flex: 0 0 var(--tab-h); width: var(--tab-h); min-height: calc(var(--tab-h) * 3); display: flex; flex-direction: column; background: var(--cream-surface); border: 1px solid var(--cream-border); border-radius: 8px 0 0 8px; overflow: hidden; position: relative; }
 .lr-icon-col.standalone { border-radius: 8px; }
 .lr-icon-col.col2-short { border-bottom-right-radius: 8px; }
 .lr-content-col { flex: 1 1 auto; min-width: 0; align-self: flex-start; display: flex; flex-direction: column; background: var(--cream-surface); border: 1px solid var(--cream-border); border-left: 0; border-radius: 0 8px 8px 0; overflow: hidden; position: relative; }
@@ -113,8 +113,29 @@ html, body { background: #000; }
 .lr-panel.open { display: block; }
 .lr-panel.open ~ .lr-panel.open { border-top: 1px solid var(--hairline); }
 /* Inner shells lose their standalone card chrome inside the drawer. */
-.lr-panel .search-shell, .lr-panel .calendar-card { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.lr-panel .search-shell, .lr-panel .hot-control, .lr-panel .calendar-card { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .lr-panel .search-shell { display: flex; height: var(--tab-h); padding: 0 8px; align-items: center; }
+
+/* ── Hot now — slice 5 (app.css:820-853). Event lane only. ───────────── */
+.hot-control { display: grid; gap: 6px; padding: 8px; }
+.hot-control[hidden] { display: none; }
+.hot-control-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 2px; color: var(--brown-ink); }
+.hot-control-title { font: 800 0.68rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+.hot-control-status { min-width: 0; font: 600 0.68rem Inter, system-ui, sans-serif; color: var(--brown-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hot-lanes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.hot-lanes[data-lane-count="1"] { grid-template-columns: minmax(0, 1fr); }
+.hot-button { width: 100%; min-height: 64px; display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 7px; margin: 0; padding: 8px 9px; border: 1px solid rgba(85, 67, 44, 0.25); border-radius: 8px; background: var(--brown-mid); color: #f7f1e2; cursor: pointer; text-align: left; font: 700 0.74rem Inter, system-ui, sans-serif; text-transform: uppercase; }
+.hot-button[hidden] { display: none; }
+.hot-button:hover:not(:disabled) { filter: brightness(1.06); }
+.hot-button:disabled { cursor: default; opacity: 0.55; filter: saturate(0.7); }
+.hot-button[data-hot-state="hot-now"] { background: var(--rust); }
+.hot-button[data-hot-state="coming-up"] { background: var(--brown-dark); }
+.hot-button[data-hot-selected="true"] { box-shadow: 0 0 0 2px rgba(247, 241, 226, 0.82), 0 0 0 4px rgba(42, 33, 22, 0.16); }
+.hot-button[data-hot-priority="alert"][data-hot-selected="false"] { box-shadow: 0 0 0 2px rgba(191, 90, 54, 0.4); }
+.hot-button-glyph { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; font-size: 1.1rem; line-height: 1; }
+.hot-button-text { display: block; min-width: 0; }
+.hot-button-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hot-button-detail { display: block; margin-top: 1px; font: 400 0.72rem Inter, system-ui, sans-serif; text-transform: none; letter-spacing: 0; color: rgba(247, 241, 226, 0.88); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Calendar / Events + About (app.css:718-816) ───────────────────── */
 .calendar-card { display: block; padding: 0; overflow: hidden; }

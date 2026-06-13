@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Map border — the off-edge peek (interactive)</title>
+  <style>
+    :root{
+      --brown-ink:#2e2418; --brown-mid:#4e4128; --brown-dark:#2a1f12; --brown-soft:#5a4828;
+      --cream-hover:#efe2c6; --cream-surface:#faf6eb; --cream-border:#d8cdb4;
+      --control-bg:#fffdf5; --control-border:#b9aa88;
+      --moss:#5f7157; --moss-dark:#384833; --moss-soft:#e3ebdc; --rust:#a85020;
+    }
+    *{box-sizing:border-box;}
+    body,html{margin:0; padding:0; background:var(--cream-surface);
+      font:15px/1.5 Inter,system-ui,sans-serif; color:var(--brown-ink);}
+    header.page{padding:26px 32px 18px; border-bottom:1px solid var(--cream-border); background:var(--control-bg);}
+    header.page h1{margin:0 0 8px; color:var(--moss-dark); font-size:1.4rem;}
+    header.page .sub{color:var(--brown-soft); font-size:0.92rem; max-width:100ch; line-height:1.55;}
+    header.page .sub strong{color:var(--brown-dark);}
+    header.page .sub code{background:var(--moss-soft); padding:1px 5px; border-radius:3px; font-size:0.85em;}
+    .try{display:inline-block; margin-top:12px; padding:6px 13px; border-radius:999px;
+      background:var(--rust); color:#fff; font:800 0.78rem Inter,system-ui,sans-serif;
+      letter-spacing:0.04em; text-transform:uppercase;}
+    main{display:grid; gap:22px; padding:24px 28px;
+      grid-template-columns:repeat(auto-fit,minmax(420px,1fr)); max-width:1500px; margin:0 auto;}
+    section.variant{background:#fff; border:1px solid var(--cream-border); border-radius:12px;
+      overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,0.05); display:flex; flex-direction:column;}
+    section.variant.today{border-color:#d8b9a0;}
+    section.variant header.v{padding:14px 18px; background:var(--moss-soft); border-bottom:1px solid var(--cream-border);}
+    section.variant.today header.v{background:#f3e2d4;}
+    section.variant header.v h2{margin:0; color:var(--moss-dark); font-size:1.05rem;
+      display:flex; align-items:center; gap:10px;}
+    section.variant.today header.v h2{color:#8b431b;}
+    section.variant header.v .num{display:inline-grid; place-items:center; min-width:30px; height:30px; padding:0 9px;
+      background:var(--moss); color:#f7f1e2; border-radius:999px;
+      font:800 0.72rem Inter,system-ui,sans-serif; letter-spacing:0.04em;}
+    section.variant.today header.v .num{background:var(--rust);}
+    section.variant header.v .angle{color:var(--brown-soft); font-size:0.86rem; font-style:italic;
+      margin:6px 0 0 40px; line-height:1.4;}
+    section.variant .frame{position:relative; width:100%; height:460px; background:#cdbf9f;}
+    section.variant iframe{position:absolute; inset:0; width:100%; height:100%; border:0;}
+    section.variant .links{display:flex; gap:10px; padding:10px 18px 14px; border-top:1px solid var(--cream-border);}
+    section.variant .links a{color:var(--brown-mid); text-decoration:none; padding:5px 10px;
+      border:1px solid var(--cream-border); border-radius:6px; font-size:0.82rem; background:var(--control-bg);}
+    section.variant .links a:hover{background:var(--cream-hover); color:var(--brown-dark);}
+    .tag{display:inline-block; padding:1px 8px; border-radius:10px; font-size:0.72rem; font-weight:800;
+      text-transform:uppercase; letter-spacing:0.04em; margin-right:6px; vertical-align:middle;}
+    .tag.bad{background:rgba(168,80,32,0.16); color:var(--rust);}
+    .tag.egg{background:rgba(56,72,51,0.18); color:var(--moss-dark);}
+    .tag.wall{background:rgba(107,90,62,0.16); color:var(--brown-dark);}
+    .footnote{margin:14px 28px 40px; padding:16px 20px; background:var(--control-bg);
+      border:1px solid var(--cream-border); border-radius:10px;}
+    .footnote h2{margin:0 0 6px; color:var(--brown-dark); font-size:0.96rem; text-transform:uppercase; letter-spacing:0.05em;}
+    .footnote ul{margin:0; padding-left:18px; color:var(--brown-soft); font-size:0.86rem; line-height:1.6;}
+    .footnote b{color:var(--brown-dark);}
+    table.axes{border-collapse:collapse; width:100%; margin-top:10px; font-size:0.83rem;}
+    table.axes th, table.axes td{border:1px solid var(--cream-border); padding:6px 9px; text-align:left; vertical-align:top;}
+    table.axes th{background:var(--moss-soft); color:var(--moss-dark); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.04em;}
+    table.axes td.axis{font-weight:800; color:var(--brown-dark); white-space:nowrap; background:#fbf7ec;}
+  </style>
+</head>
+<body>
+  <header class="page">
+    <h1>The off-edge peek — a border you only meet by pulling past the map</h1>
+    <div class="sub">
+      <strong>Not a frame. An easter egg.</strong> The border is parked just <em>off</em> the data edge, so the
+      first impression and all normal panning look exactly like today — you never see it. Finger-pan right up
+      to the edge of the map as usual; only when you <strong>pull further</strong> — the overscroll/rubber-band
+      moment, or a viewport too long for the data — does the decorative margin <strong>peek in</strong>, instead
+      of the ragged layer ends and bare paper. The lettering is the <code>v4</code> look you liked; the choice
+      here is the <strong>feel of the reveal</strong>. <strong>These frames are live — drag inside each and
+      pull past an edge.</strong>
+      <span class="try">↪ Drag a map below, then keep pulling at an edge</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="variant today">
+      <header class="v">
+        <h2><span class="num">TODAY</span>The problem</h2>
+        <div class="angle"><span class="tag bad">What happens now</span>Pull past the edge and you get bare paper and the ragged spots where each layer quits. Nothing catches the eye — it just looks unfinished. This is the frame the others replace.</div>
+      </header>
+      <div class="frame"><iframe src="mapborder_peek_today.html" title="Today — no border"></iframe></div>
+      <div class="links"><a href="mapborder_peek_today.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V1</span>Rubber-band</h2>
+        <div class="angle"><span class="tag egg">Pure easter egg</span>Normal pan stops dead at the data edge. Pull further and the border stretches in with resistance; let go and it springs straight back out of sight. The frame is <b>never</b> a resting state — you only ever catch a glimpse. The most "hidden delight."</div>
+      </header>
+      <div class="frame"><iframe src="mapborder_peek_v1_rubberband.html" title="V1 rubber-band"></iframe></div>
+      <div class="links"><a href="mapborder_peek_v1_rubberband.html" target="_blank">Open full window</a></div>
+    </section>
+
+    <section class="variant">
+      <header class="v">
+        <h2><span class="num">V2</span>Soft wall</h2>
+        <div class="angle"><span class="tag wall">Discoverable backstop</span>Opens centered on the data just like today, but the pan limit is the <i>outer</i> edge of the border — so if you push to the edge you can come to rest <b>against</b> the frame and read it. Less "snap," more "oh, there's a border out here." Calmer; lets curious users linger.</div>
+      </header>
+      <div class="frame"><iframe src="mapborder_peek_v2_softwall.html" title="V2 soft wall"></iframe></div>
+      <div class="links"><a href="mapborder_peek_v2_softwall.html" target="_blank">Open full window</a></div>
+    </section>
+  </main>
+
+  <div class="footnote">
+    <h2>What you're choosing</h2>
+    <table class="axes">
+      <tr><th>Axis</th><th>Today</th><th>V1 Rubber-band</th><th>V2 Soft wall</th></tr>
+      <tr><td class="axis">Seen in normal use</td><td>—</td><td>never</td><td>never</td></tr>
+      <tr><td class="axis">Normal pan limit</td><td>data edge</td><td>data edge</td><td>border outer edge</td></tr>
+      <tr><td class="axis">Past the edge</td><td>bare paper + ragged ends</td><td>border stretches in (damped)</td><td>border, as a place to rest</td></tr>
+      <tr><td class="axis">On release</td><td>snaps back to data</td><td>snaps back — border hides</td><td>stays where you left it</td></tr>
+      <tr><td class="axis">Vibe</td><td>unfinished</td><td>glimpsed easter egg</td><td>discoverable frame</td></tr>
+    </table>
+    <ul style="margin-top:12px;">
+      <li><b>Both keep the first impression identical to today</b> — the border never intrudes on the centered map or ordinary panning. The only difference is what you find when you go looking (or fat-finger an overscroll).</li>
+      <li><b>This solves the "long rectangle" case too:</b> if the viewport is wider/taller than the data, the axis that can't be filled rests against the border instead of bare paper — so a weird aspect ratio reveals the frame rather than the ragged ends.</li>
+      <li>In the real viewer this rides MapLibre, not a dragged image: the border becomes a fixed overlay that's revealed in proportion to how far the camera is pushed past <code>maxBounds</code> (today the camera is hard-leashed to the 9-patch; this loosens the leash by exactly the border's width). The drag prototypes here are to choose the <i>feel</i>.</li>
+      <li>The lettering, band width, and corner marks are still the <code>v4</code> knobs — swap in any of the earlier ornaments (compass, filigree, checker) as the thing that peeks.</li>
+    </ul>
+    <p style="margin:8px 0 0; color:var(--brown-soft); font-size:0.85rem;">Tell me which feel — <b>V1 rubber-band</b> or <b>V2 soft wall</b> — and I'll wire it into <b>viewer.html</b> as a MapLibre overscroll reveal (loosen the <code>maxBounds</code> leash by the band width, fade/translate the border in with the camera, settle it back on release).</p>
+  </div>
+</body>
+</html>

@@ -66,6 +66,12 @@
             <path d="M14.2 14.2 L19 19"/>
           </svg>
         </button>
+        <button class="lr-tab" id="lrTabHot" type="button" aria-pressed="false" aria-controls="lrPanelHot" title="Hot now">
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14.082 4.78A7.564 7.564 0 0 1 11 19.25 7.562 7.562 0 0 1 5.535 6.46 7.596 7.596 0 0 0 8.25 8.801a8.234 8.234 0 0 1 3.081-6.295 7.526 7.526 0 0 0 2.751 2.273Z"/>
+            <path d="M11 16.5a3.438 3.438 0 0 0 .454-6.845 5.491 5.491 0 0 0-1.765 3.25 5.476 5.476 0 0 1-1.955-.918A3.438 3.438 0 0 0 11 16.5Z"/>
+          </svg>
+        </button>
         <button class="lr-tab open" id="lrTabCal" type="button" aria-pressed="true" aria-controls="lrPanelCal" title="Events / About">
           <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <rect x="4" y="5" width="14" height="15" rx="1.6"/>
@@ -88,6 +94,25 @@
               <div class="search-results" id="searchResults"></div>
             </div>
           </div>
+        </div>
+        <div class="lr-panel" id="lrPanelHot" data-card="hot">
+          <!-- Hot now — slice 5. Event lane only; the Trails lane (activity
+               hotspots) is deferred behind the published-layer-line call (fork 2). -->
+          <section id="hotControl" class="hot-control" aria-label="Hot now" hidden>
+            <div class="hot-control-head">
+              <span class="hot-control-title">Hot now</span>
+              <span id="hotControlStatus" class="hot-control-status">Loading</span>
+            </div>
+            <div id="hotLanes" class="hot-lanes" data-lane-count="1">
+              <button id="hotButton" type="button" class="hot-button" data-hot-lane="event" data-hot-state="empty" data-hot-selected="false" aria-label="Event hot lane">
+                <span class="hot-button-glyph" id="hotButtonGlyph" aria-hidden="true">·</span>
+                <span class="hot-button-text">
+                  <span class="hot-button-title" id="hotButtonTitle">Event</span>
+                  <span class="hot-button-detail" id="hotButtonDetail"></span>
+                </span>
+              </button>
+            </div>
+          </section>
         </div>
         <div class="lr-panel open" id="lrPanelCal" data-card="cal">
           <section class="calendar-card" id="calendarCard" aria-label="Events and park information">

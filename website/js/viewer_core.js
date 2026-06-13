@@ -1188,6 +1188,117 @@
     }
   }
 
+  // ── Hot now — Event lane (ported from main.js:6781-7057) ───────────────
+  // The drawer's third tab: "Live event" / "Starting soon" / "Next event",
+  // driven by the same clock + schedule the calendar carries; click flies to
+  // the session. The Trails lane (activity-hotspots toggle + densest-cluster
+  // fly) is DEFERRED — that layer is raw GPS evidence the read core doesn't
+  // carry (sprint readme fork 2, the user's published-layer-line call), and
+  // refreshHotButton is designed to degrade to event-only with no hotspot data.
+  const HOT_BUTTON_IMMINENT_MIN = 30;
+  const HOT_BUTTON_SESSION_LEN_MIN = 90;
+  function eventScheduleAnchorForward(dayLabel, startLocal) {
+    const anchorSat = resolveCalendarAnchorSat();
+    if (!anchorSat) return null;
+    return eventScheduleStartFromAnchor(dayLabel, startLocal, anchorSat);
+  }
+  function computeHotButtonTarget() {
+    const now = eventScheduleNow();
+    const nowMs = now.getTime();
+    let live = null;
+    let imminent = null;
+    let nextFuture = null;
+    for (const feature of eventSessionById.values()) {
+      const props = feature.properties || {};
+      const start = eventScheduleAnchorForward(props.day, props.start_local);
+      if (!start) continue;
+      const startMs = start.getTime();
+      const endMs = startMs + HOT_BUTTON_SESSION_LEN_MIN * 60 * 1000;
+      if (nowMs >= startMs && nowMs < endMs) {
+        if (!live || startMs < live.startMs) live = { feature, startMs, endMs };
+        continue;
+      }
+      if (startMs > nowMs) {
+        const minsUntil = (startMs - nowMs) / 60000;
+        if (minsUntil <= HOT_BUTTON_IMMINENT_MIN) {
+          if (!imminent || startMs < imminent.startMs) imminent = { feature, startMs, endMs };
+        }
+        if (!nextFuture || startMs < nextFuture.startMs) nextFuture = { feature, startMs, endMs };
+      }
+    }
+    if (live) return { state: 'hot-now', target: live, kind: 'live' };
+    if (imminent) return { state: 'hot-now', target: imminent, kind: 'imminent' };
+    if (nextFuture) return { state: 'coming-up', target: nextFuture };
+    return { state: 'no-event' };
+  }
+  function hotEventAvailable(decision) {
+    return decision.state === 'hot-now' || decision.state === 'coming-up';
+  }
+  function attachHotButton() {
+    const eventBtn = document.getElementById('hotButton');
+    if (eventBtn && eventBtn.dataset.bound !== '1') {
+      eventBtn.dataset.bound = '1';
+      eventBtn.addEventListener('click', () => {
+        if (eventBtn.disabled) return;
+        const id = eventBtn.dataset.targetSessionId;
+        if (id) gotoEventSession(id);
+      });
+    }
+  }
+  // Called by refreshEventScheduleSessionStates (render + 60s tick), so the Hot
+  // lane updates in lockstep with the calendar against the same clock.
+  function refreshHotButton() {
+    attachHotButton();
+    const control = document.getElementById('hotControl');
+    const status = document.getElementById('hotControlStatus');
+    const eventBtn = document.getElementById('hotButton');
+    if (!control || !eventBtn) return;
+    const glyph = document.getElementById('hotButtonGlyph');
+    const title = document.getElementById('hotButtonTitle');
+    const detail = document.getElementById('hotButtonDetail');
+    const decision = computeHotButtonTarget();
+    if (!hotEventAvailable(decision)) {
+      control.hidden = true;
+      eventBtn.dataset.hotState = 'empty';
+      eventBtn.dataset.targetSessionId = '';
+      return;
+    }
+    control.hidden = false;
+    eventBtn.dataset.hotSelected = 'true';
+    eventBtn.dataset.hotState = decision.state;
+    eventBtn.dataset.hotPriority = decision.state === 'hot-now' ? 'alert' : '';
+    const now = eventScheduleNow();
+    const props = decision.target.feature.properties || {};
+    eventBtn.disabled = false;
+    eventBtn.dataset.targetSessionId = props.session_id || '';
+    if (decision.state === 'hot-now') {
+      if (glyph) glyph.innerHTML = '<svg viewBox="0 0 22 22" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.082 4.78A7.564 7.564 0 0 1 11 19.25 7.562 7.562 0 0 1 5.535 6.46 7.596 7.596 0 0 0 8.25 8.801a8.234 8.234 0 0 1 3.081-6.295 7.526 7.526 0 0 0 2.751 2.273Z"/><path d="M11 16.5a3.438 3.438 0 0 0 .454-6.845 5.491 5.491 0 0 0-1.765 3.25 5.476 5.476 0 0 1-1.955-.918A3.438 3.438 0 0 0 11 16.5Z"/></svg>';
+      if (decision.kind === 'live') {
+        const mins = (decision.target.endMs - now.getTime()) / 60000;
+        if (title) title.textContent = 'Live event';
+        if (detail) detail.textContent = `${props.title || 'Session'} · ${eventScheduleFormatMinutes(mins)} left`;
+        if (status) status.textContent = 'Event live';
+      } else {
+        const mins = (decision.target.startMs - now.getTime()) / 60000;
+        if (title) title.textContent = 'Starting soon';
+        if (detail) detail.textContent = `${props.title || 'Session'} · in ${eventScheduleFormatMinutes(mins)}`;
+        if (status) status.textContent = 'Event soon';
+      }
+      eventBtn.setAttribute('aria-label', `Event hot: ${props.title || 'session'}`);
+    } else {
+      const mins = (decision.target.startMs - now.getTime()) / 60000;
+      if (glyph) glyph.textContent = '◷';
+      if (title) title.textContent = 'Next event';
+      if (detail) {
+        const dayPart = props.day ? `${props.day} ` : '';
+        const timePart = props.window || props.start_local || '';
+        detail.textContent = `${dayPart}${timePart} · in ${eventScheduleFormatMinutes(mins)}`;
+      }
+      if (status) status.textContent = 'Next event';
+      eventBtn.setAttribute('aria-label', `Next event: ${props.title || 'session'}`);
+    }
+  }
+
   // ── Layer build ────────────────────────────────────────────────────────
   // Each add-site is the source + style only, ported from main.js. The popup
   // bindings, search indexing, feature-list registration, and positioned-feature
@@ -1790,13 +1901,23 @@
   // Two cards (Search, Calendar), both open by default. The icon tabs float
   // down to meet their panel's top. Open/height persistence and the external
   // lrOpenCard/lrCloseCard hooks are dropped (no session state in the read core).
-  const LR_CARDS = ['search', 'cal'];
-  const lrTabs = { search: document.getElementById('lrTabSearch'), cal: document.getElementById('lrTabCal') };
-  const lrPanels = { search: document.getElementById('lrPanelSearch'), cal: document.getElementById('lrPanelCal') };
+  const LR_CARDS = ['search', 'hot', 'cal'];
+  const lrTabs = {
+    search: document.getElementById('lrTabSearch'),
+    hot: document.getElementById('lrTabHot'),
+    cal: document.getElementById('lrTabCal')
+  };
+  const lrPanels = {
+    search: document.getElementById('lrPanelSearch'),
+    hot: document.getElementById('lrPanelHot'),
+    cal: document.getElementById('lrPanelCal')
+  };
   const lrIconCol = document.getElementById('lrIconCol');
   const lrContentCol = document.getElementById('lrContentCol');
   if (lrIconCol && lrContentCol) {
-    const lrOpen = { search: true, cal: true };
+    // Hot defaults closed (live desktop default); a target un-hides the
+    // hot-control inside, so opening the Hot tab reveals the lane.
+    const lrOpen = { search: true, hot: false, cal: true };
     const TAB_H = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tab-h'), 10) || 44;
     const lrRender = () => {
       const anyOpen = LR_CARDS.some((c) => lrOpen[c]);

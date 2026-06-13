@@ -6,6 +6,25 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (SPRINT 13 SLICE 5 SHIPPED — Hot now (Event lane) into the drawer. Built alongside, index.html untouched).**
+User committed slice 3 (`87cc80e`) then "continue". Carded + built + verified
+`tasks/13_viewer_extraction/viewer_hot.md`. Added the **Hot** tab (3rd drawer icon) + the Event lane:
+`viewer_core.js` 1848 → **1969** (+121), `viewer.html` +25, `viewer.css` +21. **Verified by observation**
+(`/tmp/verify_viewer_hot.py`, **11/11 PASS, 0 errors**): pre-event "Next event" (coming-up);
+`?clock=2026-06-20T14:00` → "Live event" / "Proving Grounds · 1h left" (hot-now); clicking the Hot button
+opens the session popup. Shots `viewer_hot_{pre,live}.png`. **Cheap because the engine already existed:** the
+Hot Event lane is a thin view over the schedule slice's `eventSessionById` + clock + `gotoEventSession`; it
+wires the `refreshHotButton()` hook the schedule already called behind its `typeof` guard (now defined), so
+it updates on the same 60s tick. **Trails lane DEFERRED (fork 2):** it toggles `activity-hotspots` (raw GPS
+evidence, `permission=internal/publish_status=hold`) which slice 1 didn't carry; all 8 trail-lane helpers +
+`aopActivityHotspotsData` dropped (no dead trail code), no `#hotTrailButton`, `data-lane-count="1"`. Lands
+if/when the user includes activity-hotspots in the published line. **UNCOMMITTED** (user's gate); no version
+bump owed. **Slice-5 council pending.** Remaining slate: POI (slice 4), Locate/Install/version (slice 6),
+swap (slice 7). NB the `website/mapborder_*`/`img/` strays are still untracked (concurrent/user work — not
+mine; user stages slice files with explicit pathspec).
+
+-----
+
 **2026-06-13 (SPRINT 13 SLICE 3 SHIPPED — left-rail drawer + Calendar/Events schedule. Built alongside, index.html untouched).**
 User: *"do you want to implement hot & schedule before you style?"* → yes (the drawer chrome is shared, so
 styling a bare search box now is throwaway; styling rides with each slice + a final polish). Carded + built
