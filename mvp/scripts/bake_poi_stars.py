@@ -84,7 +84,12 @@ def write_fc(path: Path, data: dict) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--check", action="store_true",
+                    help="stamp the export's <file>.check side files instead of the served "
+                         "files (so export_publish_geojson.sh --check sees the ★ as part of "
+                         "the bake's fixed point). Files without a .check are skipped.")
     args = ap.parse_args()
+    suffix = ".check" if args.check else ""
 
     index = load(INDEX)
     entries = index.get("entries", [])
@@ -102,9 +107,12 @@ def main() -> int:
 
     total_changes = 0
     for fname, items in by_file.items():
-        path = DATA / fname
+        path = DATA / (fname + suffix)
         if not path.exists():
-            print(f"  SKIP {fname}: not found")
+            # In --check the export only wrote .check side files for its own arms;
+            # a source with no side file (e.g. the editor seed) is simply skipped.
+            if not args.check:
+                print(f"  SKIP {fname}: not found")
             continue
         fc = load(path)
         feats = fc.get("features", [])

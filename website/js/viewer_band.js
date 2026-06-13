@@ -45,13 +45,21 @@
     var region = V.regionBounds ||
       [[-85.782935283, 35.067164188], [-85.717154097, 35.117928496]];
 
-    var edges = {
-      top: document.querySelector('.band-edge.top'),
-      bottom: document.querySelector('.band-edge.bottom'),
-      left: document.querySelector('.band-edge.left'),
-      right: document.querySelector('.band-edge.right')
+    // The 9-patch frame: 8 border tiles (4 corners + 4 edges). The center is the
+    // live map. JS sizes + positions each tile every frame from the 9-patch's
+    // screen rectangle, so the whole frame tracks the boundary instead of the
+    // viewport, and the eight tiles exactly tile the margin (clean mitred corners,
+    // no overlapping full-width/full-height panels).
+    function q(sel) { return document.querySelector(sel); }
+    var tiles = {
+      tl: q('.band-tile.corner.tl'), tr: q('.band-tile.corner.tr'),
+      bl: q('.band-tile.corner.bl'), br: q('.band-tile.corner.br'),
+      top: q('.band-tile.edge.top'), bottom: q('.band-tile.edge.bottom'),
+      left: q('.band-tile.edge.left'), right: q('.band-tile.edge.right')
     };
-    if (!edges.top) { console.warn('[viewer_band] band DOM not found'); return; }
+    if (!tiles.top) { console.warn('[viewer_band] band DOM not found'); return; }
+
+    function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
 
     // Screen-space bbox of the 9-patch (works under the core's bearing:-90 because
     // we project all four corners and take the axis-aligned screen extent).
@@ -87,22 +95,51 @@
                t: Math.max(0, g.t), b: Math.max(0, g.b), W: g.W, H: g.H };
     }
 
-    // Each strip grows from its viewport edge to exactly the 9-patch boundary, so
-    // it masks the ENTIRE out-of-9-patch region (paper, ragged ends, AND any OSM
-    // roads that extend past the 9-patch) — never a fixed sliver that leaves a
-    // band of real data showing in the frame.
-    function setEdge(el, dim, px) {
-      px = (px > EPS) ? px : 0;
-      el.style[dim] = px + 'px';
-      el.style.borderWidth = px > 0 ? '' : '0';   // hide the keyline when retracted
+    // Position one tile (a corner or an edge). Degenerate tiles (no margin on that
+    // side) are hidden so their keyline never shows as a hairline at the viewport
+    // edge. Each tile still fills its whole slice of the margin (out to the viewport
+    // edge), so the frame masks the ENTIRE out-of-9-patch region (paper, ragged
+    // ends, OSM roads spilling past the boundary) — never a fixed sliver.
+    function place(el, x, y, w, h) {
+      if (w <= EPS || h <= EPS) { el.style.display = 'none'; return; }
+      el.style.display = 'block';
+      el.style.left = x + 'px'; el.style.top = y + 'px';
+      el.style.width = w + 'px'; el.style.height = h + 'px';
+    }
+
+    // The lettering hugs the map-facing edge and rides the TRUE 9-patch mid-point
+    // (the tile clips any overhang), so it holds its size and its position relative
+    // to the landmasses as the map pans — it does not float at the viewport centre.
+    function setLabel(tile, prop, px) {
+      var lab = tile.firstElementChild;
+      if (lab) lab.style[prop] = px + 'px';
     }
 
     function update() {
-      var g = gaps();
-      setEdge(edges.top, 'height', g.t);
-      setEdge(edges.bottom, 'height', g.b);
-      setEdge(edges.left, 'width', g.l);
-      setEdge(edges.right, 'width', g.r);
+      var c = map.getContainer();
+      var W = c.clientWidth, H = c.clientHeight;
+      var r = regionRect();
+      // The 9-patch boundary, clamped to the viewport. Off-screen edges collapse to
+      // a zero-width margin so that side's tiles disappear.
+      var Lx = clamp(r.minX, 0, W), Rx = clamp(r.maxX, 0, W);
+      var Ty = clamp(r.minY, 0, H), By = clamp(r.maxY, 0, H);
+      var leftW = Lx, rightW = W - Rx, topH = Ty, botH = H - By;
+      var midW = Rx - Lx, midH = By - Ty;
+
+      place(tiles.tl, 0,  0,  leftW,  topH);
+      place(tiles.tr, Rx, 0,  rightW, topH);
+      place(tiles.bl, 0,  By, leftW,  botH);
+      place(tiles.br, Rx, By, rightW, botH);
+      place(tiles.top,    Lx, 0,  midW, topH);
+      place(tiles.bottom, Lx, By, midW, botH);
+      place(tiles.left,   0,  Ty, leftW,  midH);
+      place(tiles.right,  Rx, Ty, rightW, midH);
+
+      var midX = (r.minX + r.maxX) / 2, midY = (r.minY + r.maxY) / 2;
+      setLabel(tiles.top,    'left', midX - Lx);
+      setLabel(tiles.bottom, 'left', midX - Lx);
+      setLabel(tiles.left,   'top',  midY - Ty);
+      setLabel(tiles.right,  'top',  midY - Ty);
     }
 
     // Snap the camera back so all gaps close — the band slides out with it.

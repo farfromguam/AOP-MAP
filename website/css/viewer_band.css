@@ -20,48 +20,63 @@
   overflow: hidden;
 }
 
-.band-edge {
+/* Eight border tiles of the 9-patch (4 corners + 4 edges); the center is the live
+   map. viewer_band.js absolutely positions + sizes each tile every frame from the
+   9-patch's screen rectangle, and hides any tile whose side has no margin. Because
+   the tiles track the boundary (not the viewport), the whole frame — paper, keyline,
+   lettering, corner diamonds — rides WITH the map, like a printed neat-line. */
+.band-tile {
   position: absolute;
+  display: none;            /* JS shows + sizes only the tiles that have margin */
   background: var(--paper-band);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Keyline (neat-line) on each tile's MAP-FACING side(s); the eight tiles together
+   draw one continuous rectangle hugging the 9-patch boundary, mitred at the corners.
+   A soft shadow falls inward (toward the map) so the frame reads as raised. */
+.band-tile.edge.top    { border-bottom: 1.5px solid var(--band-rule); box-shadow:  0  5px 14px rgba(42,31,18,0.16); }
+.band-tile.edge.bottom { border-top:    1.5px solid var(--band-rule); box-shadow:  0 -5px 14px rgba(42,31,18,0.16); }
+.band-tile.edge.left   { border-right:  1.5px solid var(--band-rule); box-shadow:  5px 0 14px rgba(42,31,18,0.16); }
+.band-tile.edge.right  { border-left:   1.5px solid var(--band-rule); box-shadow: -5px 0 14px rgba(42,31,18,0.16); }
+.band-tile.corner.tl   { border-right: 1.5px solid var(--band-rule); border-bottom: 1.5px solid var(--band-rule); }
+.band-tile.corner.tr   { border-left:  1.5px solid var(--band-rule); border-bottom: 1.5px solid var(--band-rule); }
+.band-tile.corner.bl   { border-right: 1.5px solid var(--band-rule); border-top:    1.5px solid var(--band-rule); }
+.band-tile.corner.br   { border-left:  1.5px solid var(--band-rule); border-top:    1.5px solid var(--band-rule); }
+
+/* The lettering. Fixed px size; JS positions each label along the TRUE 9-patch
+   mid-point and CSS anchors it to the map-facing edge, so it holds size + location
+   relative to the landmasses (does not float at the viewport centre). */
+.band-label {
+  position: absolute;
   color: var(--band-dark, #2a1f12);
   font: 800 12px Inter, system-ui, sans-serif;
   letter-spacing: 0.42em;
   text-transform: uppercase;
   white-space: nowrap;
-  overflow: hidden;
-  will-change: transform;
-  box-shadow: 0 6px 22px rgba(42, 31, 18, 0.16);
 }
-.band-edge.sub { font-weight: 700; font-size: 10px; letter-spacing: 0.3em; color: #5a4828; }
+.band-tile.edge.bottom .band-label,
+.band-tile.edge.left .band-label,
+.band-tile.edge.right .band-label { font-weight: 700; font-size: 10px; letter-spacing: 0.3em; color: #5a4828; }
+.band-tile.edge.left .band-label, .band-tile.edge.right .band-label { writing-mode: vertical-rl; }
 
-/* Each strip is flush to its viewport edge and grows INWARD to exactly the
-   9-patch boundary — viewer_band.js sets its height/width to the live gap, so the
-   band always covers the WHOLE out-of-9-patch region (no roads peek past it),
-   pinned to the data edge. At rest the size is 0 (hidden); the keyline is hidden
-   too (JS zeroes the border) so no hairline shows at the screen edge. */
-.band-edge.top    { top: 0;    left: 0; right: 0;  height: 0; border-bottom: 1.5px solid var(--band-rule); }
-.band-edge.bottom { bottom: 0; left: 0; right: 0;  height: 0; border-top:    1.5px solid var(--band-rule); }
-.band-edge.left   { left: 0;  top: 0;  bottom: 0;  width:  0; border-right:  1.5px solid var(--band-rule); }
-.band-edge.right  { right: 0; top: 0;  bottom: 0;  width:  0; border-left:   1.5px solid var(--band-rule); }
+/* Anchor each label to its tile's map-facing edge (8px clear of the keyline) and
+   centre it on the 9-patch mid (JS sets the cross-axis offset). */
+.band-tile.edge.top    .band-label { bottom: 8px; transform: translateX(-50%); }
+.band-tile.edge.bottom .band-label { top: 8px;    transform: translateX(-50%); }
+.band-tile.edge.left   .band-label { right: 8px;  transform: translateY(-50%) rotate(180deg); }
+.band-tile.edge.right  .band-label { left: 8px;   transform: translateY(-50%); }
 
-/* Vertical lettering on the side strips. */
-.band-edge.left .v, .band-edge.right .v { writing-mode: vertical-rl; }
-.band-edge.left .v { transform: rotate(180deg); }
-
-/* A thin inner keyline drawn just inside each strip's map-facing edge. */
-.band-edge::after { content: ""; position: absolute; background: rgba(58, 44, 26, 0.0); }
-
-/* Corner diamonds ride the top & bottom strips. */
-.band-dot { position: absolute; width: 8px; height: 8px; background: #a85020;
-  transform: rotate(45deg); box-shadow: 0 0 0 1px var(--band-rule); }
-/* Diamonds ride the strip's INNER edge (the 9-patch boundary). */
-.band-edge.top .band-dot.l    { left: 16px;  bottom: 7px; }
-.band-edge.top .band-dot.r    { right: 16px; bottom: 7px; }
-.band-edge.bottom .band-dot.l { left: 16px;  top: 7px; }
-.band-edge.bottom .band-dot.r { right: 16px; top: 7px; }
+/* Corner diamonds ride each corner tile's INNER corner (the 9-patch boundary). */
+.band-tile.corner::after {
+  content: ""; position: absolute; width: 8px; height: 8px; background: #a85020;
+  transform: rotate(45deg); box-shadow: 0 0 0 1px var(--band-rule);
+}
+.band-tile.corner.tl::after { right: 7px; bottom: 7px; }
+.band-tile.corner.tr::after { left: 7px;  bottom: 7px; }
+.band-tile.corner.bl::after { right: 7px; top: 7px; }
+.band-tile.corner.br::after { left: 7px;  top: 7px; }
 
 /* Small proof HUD — explains how to trigger the peek. Not part of the feature. */
 #bandProofHud {

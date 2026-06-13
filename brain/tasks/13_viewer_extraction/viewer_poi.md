@@ -107,9 +107,30 @@ convergence (Sprint 08's direction, finally landed).
 the next `export_publish_geojson.sh`. To make a publish-layer star durable it must be carried into the
 publish view (follow-up). File-based layers (buildings, visitor, cemeteries, editor seed) are safe.
 
-**Owed validation:** the editor's full bake verifiers (`playwright_verify_baked_pois.py` /
-`_starred_poi_flip.py`) weren't run (they need the live editor + a bake cycle); the synthetic dry-run
-covered the file-sink mechanism. Worth a confirming run.
+### Addendum 2 — 2026-06-13 (ALL star follow-ups closed — no pending star tasks)
+
+1. **Publish-export durability — CLOSED + VERIFIED.** `export_publish_geojson.sh` rebakes ALL the
+   reference + publish served files from core, and core has no `highlight` column, so a re-export wiped
+   EVERY baked star (not just publish's). The `--check` proved the **only** drift between the served tree
+   and a fresh core bake was the stars (everything else byte-identical). Fix: wired `bake_poi_stars.py` as
+   the export's final step (the "machine refresh THEN re-apply human curation" order, like
+   `rebake_canonical → bake_panel_overrides`), with a new `--check` flag that stamps the `.check` side
+   files. **`export_publish_geojson.sh --check` now reports NO REVERT** — the ★ is part of the bake's
+   fixed point, so a re-export re-applies it. `aop_poi_index.json` stays the single curation source-of-record.
+2. **Live-page bake verifiers — RUN.** `playwright_verify_starred_poi_flip.py` **PASS** — the live page
+   (`main.js`, untouched) reads the baked `highlight` and shows the curated ★ set (visitor 2/2, a cemetery
+   row renders, the removed wholesale unions stay gone). Editor + read viewer + live page all read the SAME
+   published field. **`playwright_verify_baked_pois.py` FAILS on 2 — but STALE:** it expects the "Published
+   destinations" wholesale group the **2026-06-08 star-only change removed** (the star-aware verifier
+   asserts it's GONE and passes). Pre-dates this work, unrelated (no `main.js`/publish-POI change here);
+   retire/rewrite it to the star-only model — flagged, not a star-data-model defect.
+3. **DB-core ★ column — UNNECESSARY now (not pending).** The export re-stamp makes the served-file ★ the
+   durable layer end-to-end, so the DB sink keeps deferring ★ (no `notes` mis-fold). Carrying ★ into
+   `core.features.attrs.highlight` so the SQL bake emits it directly is an OPTIONAL future cleanup
+   (documented in both scripts) — not required for correctness or durability.
+4. **Quartermaster DRY note (non-blocking):** the inline highlight-pulse block recurs across
+   `gotoEventSession`/`gotoMatch`/`flyToFeature` — an optional `highlightFeatures()` extraction, not star
+   work; noted, not done.
 
 ## Owed / git gate
 

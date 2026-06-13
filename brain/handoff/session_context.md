@@ -6,6 +6,46 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (BANDED-PROOF FRAME REBUILT AS A TRUE 9-PATCH — user feedback on `viewer_banded.html`).**
+User: the band lettering *"floats"* (it should hold size + location relative to the landmasses when a
+corner peeks out), and it *"appears as if there are 4 separate panels and not 8 border objects that are
+dynamic to the border of the map 9 patch."* Both confirmed by observation, then fixed. **Root cause:** the
+old band was 4 full-width/full-height strips pinned to the **viewport** edges (`top/bottom: left:0;right:0`,
+`left/right: top:0;bottom:0`) with text flex-centered — so the strips overlapped at the corners (crossing
+keylines = the "4 panels") and the text rode the viewport centre (the "float"). **Fix:** rebuilt as 8 tiles
+(4 corners + 4 edges; center = the live map) that JS sizes/positions every frame from the 9-patch's screen
+rectangle (`regionRect`), exactly tiling the margin (clean mitred corners, no overlap) and tracking the
+**boundary** not the viewport. Lettering is anchored to each tile's **map-facing edge** and rides the TRUE
+9-patch mid-point (tile clips overhang), so it holds size + position vs. the landmasses. Corner diamonds
+moved onto the 4 corner tiles' inner corners; keyline borders on map-facing sides draw one continuous
+neat-line. The leash/snap engine (`gaps`/`enforceLeash`/`snapBack`, MAX_PULL=72) is untouched. **Files:**
+`website/viewer_banded.html` (8-tile DOM), `website/css/viewer_band.css` (`.band-tile`/`.band-label`),
+`website/js/viewer_band.js` (`update()` rewritten to lay out 8 tiles + labels; `setEdge` gone). **Verified**
+(`/tmp/verify_band_fix.py`): pan moved the boundary 55px and the label offset drift was **0.00px** (no
+float); all 8 tiles render when zoomed out; corner clips show mitred neat-line + diamond + edge-hugging
+text (`brain/output/band_fix_*.png`). 0 console errors. **UNCOMMITTED** (user's git gate). This is proof-page
+work — no card; the liftable module (`viewer_band.{js,css}`) still drops into the core unchanged.
+
+-----
+
+**2026-06-13 (★ FOLLOW-UPS ALL CLOSED — publish durability fixed + verified, live-page verifiers run).**
+User: *"continue with all the star work. dont leave any pending tasks."* Closed every star loose end.
+**(1) Publish-export durability — FIXED+VERIFIED:** `export_publish_geojson.sh` rebakes ALL reference +
+publish files from core (no `highlight` column there), so a re-export wiped every baked star. `--check`
+proved the ONLY served-vs-core drift was the stars. Fix: wired `bake_poi_stars.py` as the export's final
+step (+ a new `--check` flag stamping the `.check` side files) — `export ... --check` now reports **NO
+REVERT** (★ is the bake's fixed point; re-export re-applies it). **(2) Live verifiers RUN:**
+`playwright_verify_starred_poi_flip.py` **PASS** (the live page `main.js`, untouched, reads the baked ★ —
+editor+viewer+live all read one field); `playwright_verify_baked_pois.py` fails on 2 but they're STALE
+(expect the "Published destinations" wholesale group the 2026-06-08 star-only change removed — pre-dates
+this work; retire/rewrite separately). **(3) DB-core ★ column:** now UNNECESSARY (export re-stamp is the
+durable layer) — optional future cleanup, documented. **(4)** Quartermaster `highlightFeatures()` DRY
+extraction noted-not-done (non-blocking, not star work). Files this turn: `mvp/scripts/bake_poi_stars.py`
+(+--check), `export_publish_geojson.sh` (re-stamp wiring). **UNCOMMITTED.** Council (core 3) next. Full
+record: `tasks/13_viewer_extraction/viewer_poi.md` addendum 2.
+
+-----
+
 **2026-06-13 (★ MOVED INTO THE DATA MODEL — user's hard requirement. The POI directory is now highlight-driven, not an index side-join).**
 User on the 4b index-join: *"STARS. if it's not in the data model we need to add it. THIS IS THE ONLY THING
 I WILL ACCEPT."* Reversed the long-standing "a star is not a fact" policy and made ★ a published

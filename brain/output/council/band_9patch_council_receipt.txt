@@ -1,0 +1,55 @@
+=== Council done-review — viewer_banded.html 9-patch frame rebuild ===
+date: 2026-06-13 (session)
+chair: Steward
+goal: the banded-proof decorative frame must render as a true 9-patch (8 boundary-tracking
+      border tiles) with lettering that holds size/location relative to the landmasses —
+      not 4 viewport-pinned panels with floating text.
+tier: core three (witness · warden · quartermaster) + mason — proof page only, no live
+      viewer, no publish-zone data, no sprint boundary. Not full six.
+scope reviewed (only these 3, fresh adversarial seats):
+  website/viewer_banded.html · website/css/viewer_band.css · website/js/viewer_band.js
+  (mvp/scripts/*.py|*.sh changes = pre-existing concurrent ★-star work, OUT of scope)
+diff hash (gate formula, sha1(diff HEAD -- website mvp + status --porcelain -- website mvp)):
+  00f36abb1a29605be2e585630b6c5c4771bdefde
+
+SEAT: witness
+VERDICT: clear
+EVIDENCE: re-ran /tmp/verify_band_fix.py LIVE vs running server — boundary moved 55.0px,
+  label offset drift 0.00px (off0=9.0 off1=9.0), all 8 tiles display!=none, 0 console errors.
+  Reads real DOM (getBoundingClientRect + getComputedStyle) vs real window.AOPViewerBand.rawGaps(),
+  not re-derived math. All 6 named PNGs exist in brain/output/; corner crops show mitred neat-line +
+  diamond + edge-hugging text, map data masked (no spill). node --check passes. The 1 FAIL is a
+  test-scenario assertion error (tall fit-to-region leaves top edge flush → place() correctly hides
+  the top tile), bearing on no card claim.
+
+SEAT: warden
+VERDICT: clear
+EVIDENCE: every hunk traces to the two directives (4 .band-edge strips → 8 boundary-tracking
+  .band-tile objects; update() sizes tiles from the live 9-patch rect; setLabel() rides the true
+  mid so text doesn't float). git diff --name-only touches no live-viewer file. No mutating git,
+  no git add, no commit/attribution, no version bump. viewer_band/viewer_banded absent from
+  sw.js/main.js → outside PWA precache → no #appVersion bump owed by this diff.
+
+SEAT: quartermaster
+VERDICT: clear
+EVIDENCE: new update() reuses existing regionRect() (no duplicated bbox/projection helper);
+  rawGaps()/gaps() untouched and still drive the leash. Old strip engine removed cleanly, not
+  duplicated: band-edge=0, band-dot=0, setEdge=0, .v/.band-edge.sub=0 across all 3 files. No
+  dangling DOM/class refs. New helpers (q/clamp/place/setLabel) are thin formatters. C1 (0 non-
+  comment layerKey branches), C2 (one collectStarredDestinations), C6 (no new class/editor surface)
+  all hold — untouched by this diff. node --check passes.
+
+SEAT: mason
+VERDICT: clear
+EVIDENCE: 8-tile tiling partitions the viewport exactly — X = leftW+midW+rightW = W, Y = H, only
+  the clamped center (the map) uncovered; no gaps/overlap; all 8 place() calls match their cells.
+  place() w<=EPS||h<=EPS hide suppresses every tile (and its keyline) when the 9-patch fills the
+  viewport. Label offset correct: span at translateX(-50%) + left=midX-Lx lands the center at
+  absolute x=midX (true unclamped mid); rotate(180) on the left label is a post-centering glyph
+  flip, anchor unaffected. No dead code (gaps→snapBack/peek button, rawGaps→enforceLeash still
+  live). Idiomatic (var, closure helpers, comment density). No constraint/validator/row-dropping
+  filter, no throwing strategy — place()'s hide is decorative-chrome suppression, not data filtering.
+
+RESULT: CLEAR — every convened seat clear, no andon. Gate cleared; clearance marker written.
+note: UNCOMMITTED — the commit + (if ever promoted to the live viewer) any version bump remain
+      the user's git gate. This is proof-page work; viewer_band.{js,css} still drop into the core unchanged.

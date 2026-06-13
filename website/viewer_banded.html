@@ -26,16 +26,20 @@
 <body>
   <div id="map"></div>
 
-  <!-- Decorative band overlay (proof). Four strips parked off the viewport edges
-       by viewer_band.css; viewer_band.js slides them in on overpull. The v4
+  <!-- Decorative 9-patch frame (proof). Eight border tiles — 4 corners + 4 edges —
+       with the live map as the center. viewer_band.js sizes + positions each tile
+       every frame from the 9-patch's screen rectangle, so the frame and its
+       lettering ride WITH the map (a printed neat-line), not the viewport. The v4
        lettered look the user picked. -->
   <div id="bandFrame" aria-hidden="true">
-    <div class="band-edge top">Adventure&nbsp;Off&nbsp;Road&nbsp;Park
-      <span class="band-dot l"></span><span class="band-dot r"></span></div>
-    <div class="band-edge bottom sub">South&nbsp;Pittsburg&nbsp;·&nbsp;Marion&nbsp;County&nbsp;·&nbsp;Tennessee&nbsp;&nbsp;—&nbsp;&nbsp;MMXXVI
-      <span class="band-dot l"></span><span class="band-dot r"></span></div>
-    <div class="band-edge left sub"><span class="v">35°&nbsp;00′&nbsp;North&nbsp;·&nbsp;Cumberland&nbsp;Plateau</span></div>
-    <div class="band-edge right sub"><span class="v">85°&nbsp;36′&nbsp;West&nbsp;·&nbsp;Trail&nbsp;Blazing&nbsp;Invitational</span></div>
+    <div class="band-tile corner tl"></div>
+    <div class="band-tile edge top"><span class="band-label">Adventure&nbsp;Off&nbsp;Road&nbsp;Park</span></div>
+    <div class="band-tile corner tr"></div>
+    <div class="band-tile edge left"><span class="band-label">35°&nbsp;00′&nbsp;North&nbsp;·&nbsp;Cumberland&nbsp;Plateau</span></div>
+    <div class="band-tile edge right"><span class="band-label">85°&nbsp;36′&nbsp;West&nbsp;·&nbsp;Trail&nbsp;Blazing&nbsp;Invitational</span></div>
+    <div class="band-tile corner bl"></div>
+    <div class="band-tile edge bottom"><span class="band-label">South&nbsp;Pittsburg&nbsp;·&nbsp;Marion&nbsp;County&nbsp;·&nbsp;Tennessee&nbsp;&nbsp;—&nbsp;&nbsp;MMXXVI</span></div>
+    <div class="band-tile corner br"></div>
   </div>
 
   <div class="left-controls">

@@ -485,6 +485,21 @@ rm -f "$sched_tmp"
 
 echo "Event-schedule export complete."
 
+# --- Re-apply the published POI ★ curation ------------------------------------
+# The DB has no `highlight` column yet, so the SQL bake above emits features WITHOUT
+# the star. bake_poi_stars.py stamps `properties.highlight` (the published ★; source
+# of record website/data/aop_poi_index.json) back onto the freshly-baked files -- the
+# same "machine refresh THEN re-apply human curation" order as
+# rebake_canonical -> bake_panel_overrides. This makes the ★ part of THIS bake's fixed
+# point, so a re-export never silently reverts the stars (--check stamps the .check
+# side files too, so the byte-proof still holds). Carrying ★ into core.features.attrs
+# so the SQL bake emits it directly is the eventual cleanup (then drop this step).
+if [ "$CHECK" -eq 1 ]; then
+  python3 "$SCRIPT_DIR/bake_poi_stars.py" --check
+else
+  python3 "$SCRIPT_DIR/bake_poi_stars.py"
+fi
+
 # --- Manifest regen (ONE writer of the served files owns _schema.json's DERIVED
 #     fields) --------------------------------------------------------------------
 # This export script is the LAST writer of the served reference/publish files, so it

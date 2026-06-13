@@ -1,0 +1,55 @@
+=== Option-B band proof — observed receipt ===
+date: 2026-06-13 (session)
+page: website/viewer_banded.html  js: website/js/viewer_band.js (MAX_PULL px leash)
+
+--- /tmp/probe_b.py (wide 1200x560: pull each side past the 9-patch) ---
+{
+ "MAX_PULL": 72,
+ "viewport": "1200x560 (wide)",
+ "left_after_400px_pull": {
+  "l": 72.0,
+  "r": 0,
+  "t": 0,
+  "b": 0,
+  "W": 1200,
+  "H": 560
+ },
+ "right_after_400px_pull": {
+  "l": 0,
+  "r": 72.0,
+  "t": 0,
+  "b": 0,
+  "W": 1200,
+  "H": 560
+ },
+ "top_after_400px_pull": {
+  "l": 0,
+  "r": 0.0,
+  "t": 72.0,
+  "b": 0,
+  "W": 1200,
+  "H": 560
+ },
+ "bottom_after_400px_pull": {
+  "l": 0,
+  "r": 0.0,
+  "t": 0,
+  "b": 40.0,
+  "W": 1200,
+  "H": 560
+ },
+ "recentered": {
+  "l": 0,
+  "r": 0.0,
+  "t": 0,
+  "b": 0.0,
+  "W": 1200,
+  "H": 560
+ }
+}
+ERRORS: 0 []
+
+--- /tmp/probe_b_region.py (Region aspect-fill + 3000px extreme yank) ---
+region(aspect): {'l': 249.7, 'r': 249.7, 't': 0, 'b': 0, 'W': 1200, 'H': 560}
+extreme 3000px yank: {'l': 0, 'r': 72.0, 't': 0, 'b': 0, 'W': 1200, 'H': 560}
+ERRORS: 0 []
