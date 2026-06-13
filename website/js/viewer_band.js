@@ -66,7 +66,9 @@
 
     // Text sits this far OUTSIDE the boundary (a fraction of the region), so the
     // lettering prints on the paper margin rather than straddling the neat-line.
-    var insetX = dW * 0.060, insetY = dH * 0.060;
+    // Kept small so the labels stay within a tight region-fit (e.g. the Region
+    // preset's ~20px padding) instead of clipping off the screen edge.
+    var insetX = dW * 0.030, insetY = dH * 0.030;
     var maskPad = 2.0;   // deg — large enough that the paper covers the whole
                          // visible ground out to the horizon when pitched in 3D.
 
@@ -92,15 +94,27 @@
     // when a full-region edge line straddles a vector-tile boundary. `rot` orients
     // each label along its edge in MAP space (bearing-independent), so the lettering
     // tracks the landscape as the map rotates and tilts.
+    //
+    // ASSIGNMENT is keyed to the viewer's DEFAULT bearing of -90°, at which the
+    // screen→geographic mapping is: top=West, bottom=East, left=South, right=North.
+    // So the picked screen layout (title top / location bottom / 35°N left / 85°W
+    // right) maps to: title→West edge, location→East, 35°N→South, 85°W→North. The
+    // band still rotates with the map (true geolocation); this just makes the
+    // DEFAULT view read like the picked design. `rot` keeps each label upright and
+    // running along its edge at that default (verified by observation).
     var midLng = (W + E) / 2, midLat = (S + N) / 2;
     var EDGES = [
-      { key: 'n', label: 'Adventure Off Road Park',                              at: [midLng, N + insetY], rot: 0,
+      // West edge → screen-TOP at -90: the title, reading left→right.
+      { key: 'w', label: 'Adventure Off Road Park',                              at: [W - insetX, midLat], rot: -90,
         fontPx: 13, weight: 800, color: TITLE_INK, spacing: 0.42 },
-      { key: 's', label: 'South Pittsburg · Marion County · Tennessee — MMXXVI', at: [midLng, S - insetY], rot: 0,
+      // East edge → screen-BOTTOM at -90: the location line, reading left→right.
+      { key: 'e', label: 'South Pittsburg · Marion County · Tennessee — MMXXVI', at: [E + insetX, midLat], rot: -90,
         fontPx: 10, weight: 700, color: SUB_INK, spacing: 0.30 },
-      { key: 'w', label: '35° 00′ North · Cumberland Plateau',                   at: [W - insetX, midLat], rot: -90,
+      // South edge → screen-LEFT at -90: read bottom→top (letter-tops out).
+      { key: 's', label: '35° 00′ North · Cumberland Plateau',                   at: [midLng, S - insetY], rot: 180,
         fontPx: 10, weight: 700, color: SUB_INK, spacing: 0.30 },
-      { key: 'e', label: '85° 36′ West · Trail Blazing Invitational',            at: [E + insetX, midLat], rot: 90,
+      // North edge → screen-RIGHT at -90: read top→bottom (letter-tops out).
+      { key: 'n', label: '85° 36′ West · Trail Blazing Invitational',            at: [midLng, N + insetY], rot: 0,
         fontPx: 10, weight: 700, color: SUB_INK, spacing: 0.30 }
     ];
 

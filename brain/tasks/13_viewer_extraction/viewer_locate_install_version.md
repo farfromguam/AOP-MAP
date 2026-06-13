@@ -67,3 +67,41 @@ Full PWA coherence (offline-complete viewer, install opens the viewer, precache)
 (slice 7)** when `viewer.html` becomes `index.html` and its assets replace index's in `SHELL_ASSETS` +
 the `VERSION`/`#appVersion` bump. Until then: online works; offline a viewer navigation falls back to the
 cached `index.html` shell (acceptable, documented). Next: **slice 7 — the swap** (git-gated deletion step).
+
+### Addendum — 2026-06-13 (bottom-left ⓘ: state 2 = combined bubble + longer loading credit)
+
+User: *"our ⓘ callout bottom-left has three states. 1) loading (ⓘ Made by Rock Warblers vXX) 2) loaded (ⓘ)
+vXX 3) open. I want the second state to look like the first state. currently it goes from a combined ⓘ
+bubble to a separate ⓘ next to a vXX mark. also make the first state a bit longer, right now it's only like
+half a second."*
+
+The three states are MapLibre's compact `AttributionControl`: **(1) loading** = `maplibregl-compact-show`
+present → one white pill "ⓘ Made by Rock Warblers · vNN"; **(2) loaded** = `-show` removed → bare ⓘ disc with
+`#appVersion` ("vNN") rendered as a sibling *outside* the pill (the "separate mark"); **(3) open** = user taps
+ⓘ → expanded again. Two fixes, both **viewer-only** (no editor, no data):
+
+- **State 2 → one combined bubble (`viewer.css`).** Let the flex WRAPPER
+  (`.maplibregl-ctrl-bottom-left.attrib-with-version`) carry the white `12px` pill background and drop the
+  inner compact ⓘ's own background, so a single rounded fill spans the ⓘ + "vNN" → reads as one bubble like
+  the loading credit. Scoped to the collapsed state with
+  `:has(> .maplibregl-ctrl-attrib.maplibregl-compact:not(.maplibregl-compact-show))` — expanded (loading /
+  open) keeps MapLibre's own pill untouched, and the existing `~ .attrib-version{display:none}` still hides
+  the label there so they never double up. (`:has()` is iOS-Safari-15.4+/Chromium; graceful fallback = the
+  old separate-mark look, no breakage.)
+- **State 1 timing — tried longer, REVERTED to quick collapse (`viewer_core.js`).** First attempt held the
+  credit up `ATTRIB_CREDIT_DWELL_MS = 2800` after first `sourcedata` so it was readable. User feedback
+  (2026-06-13): *"make it not wait anymore, that's worse — I thought the flash would be 'Made by Rock
+  Warblers' but it starts with that then gets joined by the other disclaimers overwhelming our simple message,
+  then disappears."* Root cause: MapLibre's expanded attribution AGGREGATES every source's `attribution` as
+  sources load, so a longer dwell only shows more of that pile-up. Reverted to the original immediate collapse
+  on first `sourcedata` — the credit collapses before the layer disclaimers pile on, keeping the brief flash
+  clean; the full disclaimers stay behind the ⓘ tap (state 3). A *readable* clean "Made by Rock Warblers"
+  credit (branding separated from the source disclaimers) is a still-open design fork, not built here.
+
+**Verified by observation** (`/tmp/shot_attrib.py` + `/tmp/probe_timing.py`, Playwright :8001): state 2 a
+single white pill "ⓘ v68" (`brain/output/attrib_after_state2.png`, CSS unchanged by the revert); after the
+revert the credit collapses on first `sourcedata` again (no artificial dwell). `node --check` clean,
+0 functional console errors (only headless-GPU WebGL noise, outside this diff). Shell changed →
+bumped **v67 → v68** (`sw.js` + `#appVersion`); this build carries the state-2 combined bubble + the
+schedule-resize restore (the dwell was added then reverted within the same uncommitted v68). **UNCOMMITTED**
+(user's git gate).

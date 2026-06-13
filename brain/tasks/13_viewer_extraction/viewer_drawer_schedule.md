@@ -117,6 +117,35 @@ index); the per-card **resize handles** + drawer **persistence** (polish). The d
 **Owed / git gate.** UNCOMMITTED (the user's gate). `viewer.html` still not in `sw.js` → **no
 `#appVersion` bump owed.** Next per the slate: **Hot** (slice 5), then POI (slice 4), then PWA/swap.
 
+### Addendum — 2026-06-13 (deferred resize handles RESTORED into index.html)
+
+User: *"review the old_index. there is a schedule/clipboard draggable area that we want to restore
+into our newer lighter index viewer."* The deferred item above (the per-card **resize handles** + their
+**height persistence**) — the draggable grip under the schedule "clipboard". Restored into the shipped
+read viewer (now `index.html`, post-swap):
+
+- **`index.html`** — the 3 handles back under each card body (`calendarResizeHandle` / `poiResizeHandle` /
+  `aboutResizeHandle`), `role="separator"` + `aria-controls`/`aria-valuenow`, ported verbatim from
+  `old_index.html`.
+- **`viewer.css`** — `.lr-resize-handle` (+ `::before` grip, `:active`, `:focus-visible`) from
+  `app.css:804-809`; the phone default `--lr-card-body-height: 160px` added to the `≤760px` media query
+  (`app.css:868`).
+- **`viewer_core.js`** — `initLrCardResize()` ported from `main.js:1370-1452`: pointer drag + keyboard
+  (Arrow/Page/Home) drive the shared `--lr-card-body-height` var on `.lr-content-col`, so all three bodies
+  stay equal across tab switches. **Reuse, not a second engine:** the existing `lrRender` reflow is exposed
+  as `window.lrReflow` (the exact contract the ported code calls) instead of building a new reflow; reuses
+  `scrollCalendarCurrentRowIntoView`. **Persistence kept** (localStorage `aop_lr_card_height_v1`, a tiny
+  inline try/catch get/set) so a grown schedule survives reload — the one session pref the read core keeps,
+  everything else stays stateless.
+
+**Verified by observation** (`/tmp/verify_schedule_resize.py`, Playwright on `:8001`, **7/7 PASS, 0 console
+errors**): handle visible; drag +160px grew `calendarBody` 240→**400px**; `aria-valuenow` + the CSS var
+track to 400; POI + About bodies both read 400px and carry their own handle; **400px persisted across
+reload**. Screenshots `brain/output/schedule_resize_{events,poi}.png`. `node --check` clean.
+
+**Shell bump owed + done:** `index.html` + `viewer.css` + `viewer_core.js` are in `sw.js` `SHELL_ASSETS`,
+so bumped **v66 → v67** (`sw.js` VERSION + `#appVersion`). **UNCOMMITTED** (the user's git gate).
+
 ## Notes
 
 Built alongside; no commits without the user's git gate; `viewer.html` not in `sw.js` → no `#appVersion`

@@ -196,13 +196,23 @@ html.ios-browser .screen-corner { display: block; }
 #pwaInstallBtn.util-install:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
 #pwaInstallBtn.util-install[hidden] { display: none; }
 #pwaIosHint.util-ios-hint { justify-self: start; max-width: 240px; }
-/* Version beside the COLLAPSED ⓘ ("ⓘ v64"). A plain inline label centered with
-   the ⓘ button (no card/shadow, so it can't overflow the icon). Hidden when the ⓘ
-   is expanded — the body already carries "Made by Rock Warblers · v64" via
-   customAttribution (viewer_core.js), so the two never double up. */
+/* Version beside the ⓘ ("ⓘ v64"), one source of truth (#appVersion):
+   - EXPANDED (loading credit / open): MapLibre's pill carries "Made by Rock Warblers
+     · v64" (customAttribution, viewer_core.js); this label hides so they don't double.
+   - COLLAPSED (loaded): the ⓘ + "v64" read as ONE white pill — the same combined-bubble
+     look as the loading credit, not a separate ⓘ disc with a floating mark beside it.
+   The combined bubble is made by letting the flex WRAPPER carry the pill background and
+   dropping the inner compact ⓘ's own background, so a single rounded fill spans both.
+   :has() scopes that to the collapsed state; expanded keeps MapLibre's own pill. */
 .maplibregl-ctrl-bottom-left.attrib-with-version { display: flex; flex-direction: row; align-items: center; }
-.attrib-version { margin: 0 0 0 5px; font: 700 0.62rem Inter, system-ui, sans-serif; line-height: 1; letter-spacing: 0.02em; color: var(--brown-mid); white-space: nowrap; user-select: none; pointer-events: none; }
+.attrib-version { margin: 0 7px 0 1px; font: 700 0.62rem Inter, system-ui, sans-serif; line-height: 1; letter-spacing: 0.02em; color: var(--brown-mid); white-space: nowrap; user-select: none; pointer-events: none; }
 .maplibregl-ctrl-attrib.maplibregl-compact-show ~ .attrib-version { display: none; }
+.attrib-with-version:has(> .maplibregl-ctrl-attrib.maplibregl-compact:not(.maplibregl-compact-show)) {
+  margin: 0 0 18px 16px; background: #fff; border-radius: 12px;
+}
+.attrib-with-version:has(> .maplibregl-ctrl-attrib.maplibregl-compact:not(.maplibregl-compact-show)) .maplibregl-ctrl-attrib.maplibregl-compact {
+  margin: 0; background: transparent;
+}
 /* The Locate control lives in the bottom-right FAB — hide MapLibre's default
    top-right geolocate button (it is the only top-right ctrl). */
 .maplibregl-ctrl-top-right .maplibregl-ctrl-group { display: none; }
@@ -251,6 +261,16 @@ html.ios-browser .screen-corner { display: block; }
 .info-label { font-weight: 800; color: var(--moss-dark); }
 .info-note { margin: 10px 0 0; padding-top: 7px; border-top: 1px solid rgba(216,205,180,0.78); font-size: 0.78rem; line-height: 1.3; color: var(--brown-soft); }
 
+/* ── Schedule "clipboard" resize handle (app.css:804-809) ───────────────────
+   One handle pinned under each card body (Events / POI / About). Dragging any
+   one updates the shared --lr-card-body-height var on .lr-content-col, so all
+   three bodies stay the same height across tab switches. Restored into the
+   read viewer (the per-card handles were deferred at the slice-7 swap). */
+.lr-resize-handle { position: relative; width: 100%; height: 13px; margin: 0; border: 0; border-top: 1px solid var(--cream-border); background: linear-gradient(180deg, rgba(250,246,235,0.92), rgba(239,226,198,0.96)); cursor: ns-resize; touch-action: none; }
+.lr-resize-handle::before { content: ""; position: absolute; left: 50%; top: 50%; width: 36px; height: 4px; transform: translate(-50%, -50%); border-top: 1px solid rgba(78,65,40,0.48); border-bottom: 1px solid rgba(78,65,40,0.34); }
+.lr-resize-handle:active { background: var(--cream-hover); }
+.lr-resize-handle:focus-visible { outline: 2px solid var(--moss-dark); outline-offset: 2px; }
+
 /* ── Feature click popup — slice 4 (app.css:748-754). The ONE normalized
    "what is this?" card: title, blurb / revisit, then Kind/Status/Source/Caveat.
    Rendered by window.AOPFeatureDisplay.popupHtml. ─────────────────────── */
@@ -287,4 +307,6 @@ html.ios-browser .screen-corner { display: block; }
   .pill-bar .pill > button { min-height: 32px; padding: 4px 6px; }
   .pill-bar .pill > button svg { width: 22px; height: 22px; }
   .search-shell { padding: 4px; }
+  /* Shorter default card body on phones (app.css:868); drag still overrides. */
+  .lr-content-col { --lr-card-body-height: 160px; }
 }

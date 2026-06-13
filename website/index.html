@@ -177,16 +177,25 @@
                     <li class="calendar-empty">Loading schedule...</li>
                   </ol>
                 </div>
+                <!-- Drag the bottom edge to grow / shrink the schedule "clipboard".
+                     The three card handles drive one shared --lr-card-body-height var
+                     on .lr-content-col (viewer_core.js initLrCardResize), so the
+                     Events / POI / About bodies stay the same height across tab
+                     switches. Restored from old_index.html (the per-card resize
+                     handles deferred at the viewer swap). -->
+                <div id="calendarResizeHandle" class="lr-resize-handle" role="separator" aria-label="Resize calendar" aria-orientation="horizontal" aria-controls="calendarBody" aria-valuenow="240" tabindex="0"></div>
               </div>
               <div id="poiTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabPoi" hidden>
                 <div id="poiList" class="poi-list" aria-live="polite">
                   <p class="poi-empty">Loading places…</p>
                 </div>
+                <div id="poiResizeHandle" class="lr-resize-handle" role="separator" aria-label="Resize POI list" aria-orientation="horizontal" aria-controls="poiList" aria-valuenow="240" tabindex="0"></div>
               </div>
               <div id="aboutTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabAbout" hidden>
                 <div class="info-panel" id="aboutInfoPanel">
                   <p class="info-copy">About the Rock Warblers Trail Blazing Invitational at Adventure Off Road Park — loading…</p>
                 </div>
+                <div id="aboutResizeHandle" class="lr-resize-handle" role="separator" aria-label="Resize about" aria-orientation="horizontal" aria-controls="aboutInfoPanel" aria-valuenow="240" tabindex="0"></div>
               </div>
             </div>
           </section>
@@ -208,7 +217,7 @@
          viewer_core.js folds it beside the collapsed bottom-left ⓘ ("ⓘ vNN",
          hidden when expanded) and also reads it into the expanded attribution body
          as "Made by Rock Warblers · vNN". Starts hidden; JS unhides on fold. -->
-    <span id="appVersion" hidden>v66</span>
+    <span id="appVersion" hidden>v68</span>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on iOS,
          where there is no programmatic install prompt). -->

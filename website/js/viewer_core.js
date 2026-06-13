@@ -67,8 +67,12 @@
   const madeBy = 'Made by Rock Warblers' + (version ? ' · ' + version : '');
   map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: madeBy }), 'bottom-left');
 
-  // Collapse the compact attribution to the ⓘ once the first source loads,
-  // then unbind so later ⓘ taps are the user's (main.js:206-214).
+  // Collapse the compact attribution to the ⓘ on the FIRST source load, then unbind
+  // so later ⓘ taps are the user's (main.js:206-214). Collapse early on purpose: the
+  // expanded control aggregates every source's attribution as sources load, so
+  // lingering only lets the layer disclaimers pile onto the "Made by Rock Warblers"
+  // credit and bury it. Quick collapse keeps the credit clean; the full disclaimers
+  // live behind the ⓘ tap (state 3).
   const collapseAttribOnce = () => {
     const el = document.querySelector('.maplibregl-ctrl-attrib.maplibregl-compact');
     if (!el) return;
@@ -2324,8 +2328,94 @@
     LR_CARDS.forEach((c) => {
       lrTabs[c].addEventListener('click', () => { lrOpen[c] = !lrOpen[c]; lrRender(); });
     });
+    // Resizing a card body shifts every panel's offsetTop, so the floating
+    // icon-column tabs must re-lay-out against the new rects (initLrCardResize
+    // calls this). Expose the existing reflow rather than build a second one.
+    window.lrReflow = lrRender;
     lrRender();
   }
+
+  // ── Schedule "clipboard" resize (main.js initializeLrCardResize) ─────────
+  // Restore the per-card drag handle the viewer swap deferred. Each card body
+  // (Events / POI / About) shares one --lr-card-body-height var on
+  // .lr-content-col, so dragging any handle keeps the three heights consistent.
+  // Height persists in localStorage so a grown schedule survives reload — the
+  // only session pref the read core keeps; everything else stays stateless.
+  (function initLrCardResize() {
+    const lrCol = document.getElementById('lrContentCol');
+    const handles = [
+      { handle: document.getElementById('calendarResizeHandle'), body: document.getElementById('calendarBody') },
+      { handle: document.getElementById('poiResizeHandle'), body: document.getElementById('poiList') },
+      { handle: document.getElementById('aboutResizeHandle'), body: document.getElementById('aboutInfoPanel') }
+    ].filter((entry) => entry.handle && entry.body);
+    if (!lrCol || !handles.length) return;
+
+    const HEIGHT_KEY = 'aop_lr_card_height_v1';
+    const readStoredHeight = () => {
+      try {
+        const raw = localStorage.getItem(HEIGHT_KEY);
+        const n = raw == null ? NaN : Number(JSON.parse(raw));
+        return Number.isFinite(n) ? n : null;
+      } catch (_) { return null; }
+    };
+    const writeStoredHeight = (value) => {
+      try { localStorage.setItem(HEIGHT_KEY, JSON.stringify(value)); } catch (_) { /* private mode / quota */ }
+    };
+
+    function cardCurrentHeight(body) {
+      if (!body) return 240;
+      const rect = body.getBoundingClientRect();
+      return (Number.isFinite(rect.height) && rect.height > 0) ? rect.height : 240;
+    }
+
+    function setCardHeight(height, persist) {
+      const next = Math.round(Math.max(0, Number(height) || 0));
+      lrCol.style.setProperty('--lr-card-body-height', `${next}px`);
+      for (const { handle } of handles) handle.setAttribute('aria-valuenow', String(next));
+      if (persist) writeStoredHeight(next);
+      scrollCalendarCurrentRowIntoView();
+      if (typeof window.lrReflow === 'function') window.lrReflow();
+    }
+
+    const stored = readStoredHeight();
+    if (Number.isFinite(stored)) setCardHeight(stored, false);
+    else for (const { handle, body } of handles) handle.setAttribute('aria-valuenow', String(Math.round(cardCurrentHeight(body))));
+
+    for (const { handle, body } of handles) {
+      let drag = null;
+      handle.addEventListener('pointerdown', (event) => {
+        if (event.button != null && event.button !== 0) return;
+        event.preventDefault();
+        drag = { y: event.clientY, height: cardCurrentHeight(body), pointerId: event.pointerId };
+        handle.setPointerCapture(event.pointerId);
+      });
+      handle.addEventListener('pointermove', (event) => {
+        if (!drag) return;
+        event.preventDefault();
+        setCardHeight(drag.height + event.clientY - drag.y, false);
+      });
+      const finishDrag = (event) => {
+        if (!drag) return;
+        const next = drag.height + event.clientY - drag.y;
+        if (handle.hasPointerCapture(drag.pointerId)) handle.releasePointerCapture(drag.pointerId);
+        drag = null;
+        setCardHeight(next, true);
+      };
+      handle.addEventListener('pointerup', finishDrag);
+      handle.addEventListener('pointercancel', finishDrag);
+      handle.addEventListener('keydown', (event) => {
+        let next = cardCurrentHeight(body);
+        if (event.key === 'ArrowDown') next += 24;
+        else if (event.key === 'ArrowUp') next -= 24;
+        else if (event.key === 'PageDown') next += 72;
+        else if (event.key === 'PageUp') next -= 72;
+        else if (event.key === 'Home') next = 0;
+        else return;
+        event.preventDefault();
+        setCardHeight(next, true);
+      });
+    }
+  })();
 
   // Left-tab switch (Events / About) + calendar row → fly to the session.
   for (const button of leftTabButtons) {

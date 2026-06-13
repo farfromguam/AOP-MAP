@@ -1,17 +1,20 @@
 /* ===========================================================================
-   AOP · Data editor + map — shared mockup engine
+   AOP · Data editor + map — the production editor engine
    ---------------------------------------------------------------------------
-   One engine, four layouts. A thin HTML sets `window.AOP_MAP_MODE` to one of:
-     'side-right'  grid left, map pinned right         (V1)
+   This IS the editor behind `data_editor.html`, which loads it as a thin shell
+   (V1 'side-right' layout + 'popup' preview — the user's pick, folded in
+   2026-06-13). It is the original `data_editor.html` engine (same getVal/setVal
+   round-trip, same per-file localStorage['aop_dataedit::<file>'] autosave) PLUS
+   a MapLibre map and two-way selection sync.
+
+   A host HTML sets `window.AOP_MAP_MODE` to one of:
+     'side-right'  grid left, map pinned right         (V1 — production)
      'map-first'   map left (primary), grid right      (V3)
      'bottom'      grid full-width, map dock at bottom (V2)
      'overlay'     grid full-width, map slides in      (V4)
-
-   It is the shipped `data_editor.html` engine (same getVal/setVal round-trip,
-   same per-file localStorage autosave) PLUS a MapLibre map and two-way
-   selection sync, so whichever layout the user picks can be folded straight
-   back into data_editor.html. Edits here share the same
-   localStorage['aop_dataedit::<file>'] keys as the real editor.
+   V2/V3/V4 were the review-mockup placements; they stay supported but only V1
+   ships. `window.AOP_PREVIEW_STYLE` (popup | phone | fields | chips) picks the
+   below-map preview; production uses 'popup'.
    =========================================================================== */
 (function () {
   const MODE = window.AOP_MAP_MODE || 'side-right';

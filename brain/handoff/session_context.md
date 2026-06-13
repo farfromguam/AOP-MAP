@@ -6,6 +6,84 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (DATA EDITOR FOLD-IN DONE — `data_editor.html` is now grid+map (V1 side-dock + popup-card),
+mockup retired, verified).** User asked me to get spun up on `data_editor.html` ("a pending map integration
+mockup and new viewer code that we may be able to leverage") and confirmed my read ("thats about right"):
+**preview A** is the pick. Executed the deferred fold-in
+(`tasks/20_deferred/_done/data_editor_fold_into_production.md`). **The shipped blind spreadsheet is now the
+map editor.** `website/data_editor.html` became a **12-line shell** — sets `AOP_MAP_MODE='side-right'` +
+`AOP_PREVIEW_STYLE='popup'`, loads `vendor/maplibre-gl.js` → `js/feature_display.js` →
+`js/data_editor_map.js`. **No re-implementation:** the shared engine `data_editor_map.js` is a SUPERSET of
+the old inline editor (same `getVal`/`setVal` round-trip, same `aop_dataedit::<file>` autosave +
+`pagehide`/`visibilitychange` flush, same manifest dropdown → `publish.geojson`, same
+add/delete/export/reset) PLUS the TNMap-satellite map + two-way sync + the below-map preview. The preview
+renders via the **same `window.AOPFeatureDisplay`** (`feature_display.js`) the new viewer uses → the card
+reads exactly what the live map shows (the normalization that post-dated the card; the stale `main.js:1339`
+mirror it described is moot). **Leverage = the new viewer code was reused as-is**, not re-derived. Retired
+`data_editor_v1_preview_a_popup.html` (confirmed unreferenced first); updated the engine header (production,
+not "mockup-only" — V2/V3/V4 modes stay supported, only V1 ships). **Verified by observation**
+(`/tmp/verify_data_editor_foldin.py`, Playwright on `:8000`, `node --check` clean): default
+`publish.geojson` 6 rows, `data-mode=side-right`, map canvas + Satellite/Street toggle, preview
+idle→popup-card on select; **two-way sync** — row-4 click selects+flies, Name edit live-updates the preview
+title ("AOP Pavilion EDITED"), Lat edit **moved the rust marker on the imagery** (before/after pixels) AND
+propagated into the persisted FC (35.0907264 → **35.100726**); all **6 features preserved**; **0 console / 0
+page errors**. Shots `brain/output/data_editor_foldin_{full,before_lat,after_lat}.png`. **Owed — the user's
+git gate:** if you want the editor offline-ready, precache `data_editor.html` + `js/data_editor_map.js` in
+`sw.js` SHELL_ASSETS (`feature_display.js` already is) → that owes a `VERSION`/`#appVersion` bump; the bump +
+commit are yours (`no_commits.md`). My diff is 3 website files (M `data_editor.html`, D mockup, M
+`data_editor_map.js`) + the card→`_done/` move. **UNCOMMITTED. Council not yet run** on this diff. NB the
+working tree also still holds the concurrent band (`viewer_band.js`) + ⓘ/v68 work that isn't mine.
+
+-----
+
+**2026-06-13 (BOTTOM-LEFT ⓘ: state-2 combined bubble + longer loading credit + v68).** User: *"the ⓘ callout
+bottom-left has three states... I want the second state to look like the first state. currently it goes from a
+combined ⓘ bubble to a separate ⓘ next to a vXX mark. also make the first state a bit longer (only ~half a
+second)."* MapLibre compact `AttributionControl`: (1) loading = `-show` → one pill "ⓘ Made by Rock Warblers ·
+vNN"; (2) loaded = bare ⓘ disc + `#appVersion` "vNN" as a sibling **outside** the pill (the separate mark);
+(3) open = expanded. **Fix 1 (`viewer.css`):** in the collapsed state the flex wrapper
+`.maplibregl-ctrl-bottom-left.attrib-with-version` carries the white 12px pill bg and the inner compact ⓘ goes
+`background:transparent`, so one rounded fill spans ⓘ + "vNN" → a single combined bubble like the loading look.
+Scoped via `:has(> .maplibregl-ctrl-attrib.maplibregl-compact:not(.maplibregl-compact-show))`; expanded keeps
+MapLibre's own pill + still hides the label (no double-up). **Fix 2 (`viewer_core.js`) — tried 2800ms dwell,
+then REVERTED.** User rejected the longer wait (*"make it not wait anymore, that's worse — the flash starts as
+'Made by Rock Warblers' then the other disclaimers pile on and overwhelm the simple message, then disappears"*).
+Root cause: MapLibre's expanded attribution aggregates every source's `attribution` as sources load, so a
+longer dwell only shows more pile-up. Reverted to the original immediate collapse on first `sourcedata` —
+collapses before the disclaimers pile on; full disclaimers stay behind the ⓘ tap (state 3). A *readable* clean
+"Made by Rock Warblers" credit (branding split from source disclaimers) is a still-open design fork, not built.
+**Verified by observation** (`/tmp/shot_attrib.py`, `/tmp/probe_timing.py`, Playwright :8001): state 2 = single
+white pill "ⓘ v68" (`brain/output/attrib_after_state2.png`, CSS unchanged by revert); post-revert collapses on
+first `sourcedata` (no dwell). `node --check` clean. Shell → **v67→v68** (`sw.js`+`#appVersion`); v68 carries the
+state-2 combined bubble + the schedule-resize restore below (dwell added then reverted within the same
+uncommitted v68). Card addendum: `tasks/13_viewer_extraction/viewer_locate_install_version.md`. **UNCOMMITTED**
+(user's git gate). Viewer-only (no editor/data).
+
+-----
+
+**2026-06-13 (SCHEDULE "CLIPBOARD" DRAG-RESIZE RESTORED into the read viewer + v67).** User: *"review the
+old_index. there is a schedule/clipboard draggable area that we want to restore into our newer lighter index
+viewer."* The "draggable area" = the per-card **resize handle** under the schedule (Events) card — the grip
+you drag to grow/shrink the schedule body. `old_index.html` had it on all 3 inner cards
+(`calendarResizeHandle`/`poiResizeHandle`/`aboutResizeHandle`); the slice-7 swap to the lighter `index.html`
+**deferred** it (the card bodies were locked at `var(--lr-card-body-height,240px)` with no handle, no JS).
+**Restored** into the shipped shell: (1) `index.html` — the 3 handle divs back under each body (verbatim from
+old_index, `role=separator`+aria); (2) `viewer.css` — `.lr-resize-handle` (+`::before` grip/`:active`/
+`:focus-visible`) from `app.css:804-809` and the phone `--lr-card-body-height:160px` default; (3)
+`viewer_core.js` — `initLrCardResize()` ported from `main.js:1370-1452` (pointer drag + Arrow/Page/Home keys
+drive the one shared `--lr-card-body-height` var on `.lr-content-col`, so all 3 bodies stay equal across tab
+switches). **Reuse not rebuild:** the existing `lrRender` reflow is exposed as `window.lrReflow` (the contract
+the ported code already calls) rather than a 2nd reflow; reuses `scrollCalendarCurrentRowIntoView`. Height
+**persists** (localStorage `aop_lr_card_height_v1`, tiny inline try/catch) so a grown schedule survives reload
+— the one session pref the read core keeps. **Verified by observation** (`/tmp/verify_schedule_resize.py`,
+Playwright :8001, **7/7 PASS, 0 console errors**): handle visible; drag +160px grew calendarBody 240→**400px**;
+aria-valuenow + CSS var track to 400; POI+About share 400px & carry their own handle; **400px persisted across
+reload**. `brain/output/schedule_resize_events.png`. `node --check` clean. Shell changed → bumped **v66→v67**
+(`sw.js`+`#appVersion`). Card addendum: `tasks/13_viewer_extraction/viewer_drawer_schedule.md`. **UNCOMMITTED**
+(user's git gate). Council not yet run.
+
+-----
+
 **2026-06-13 (BAND NOW GEOLOCATED — works in 3D, conforms to the landscape. `viewer_band.js` rewrite.)**
 User on `viewer_banded.html`: *"it does not work in 3d. these are 2d map elements that need to be
 geolocated... once done it will conform to the landscape."* Confirmed by observation: the old band was a
@@ -28,10 +106,25 @@ lines DID place, glyphs are NOT the issue — `·°′—` render fine in isolat
 observation:** `brain/output/band_icon_flat.png` (north-up, `?frame=out`) = the picked design exactly, all
 four labels + glyphs render; `brain/output/band_wide_3d.png` (3D terrain, pitched) = lettering + keyline +
 paper all **foreshorten onto the ground plane** (title recedes along the top of the trapezoid). `node
---check` clean, 0 console errors. **OPEN DESIGN FORK (user's call):** geolocation means the band ROTATES with
-the map — at the viewer's default **bearing -90** the title reads vertically on the RIGHT, not across the
-top; at north-up it's the picked design. Options: keep true-geolocated rotation, change the default bearing,
-or re-assign labels so the title lands on top at -90. **Carried but NOT done (cleanup once design accepted):**
+--check` clean, 0 console errors. **ORIENTATION FORK — RESOLVED (user picked "re-map labels for -90").**
+Geolocation means the band ROTATES with the map; user chose to keep that but re-assign the labels so the
+DEFAULT view reads like the picked design. At bearing -90 the screen→geographic mapping is top=West /
+bottom=East / left=South / right=North, so: **title→West edge (top), location→East (bottom), 35°N→South
+(left), 85°W→North (right)**, with per-label `rot` (-90/-90/180/0) keeping each upright along its edge.
+**Re-verified by observation:** `brain/output/band_remap_3d.png` (default -90, 3D) = "ADVENTURE OFF ROAD
+PARK" runs across the TOP of the perspective trapezoid, foreshortened onto the ground. NB at north-up
+(bearing 0) the band is rotated (title on the left) — the accepted tradeoff of true geolocation.
+**COUNCIL WITNESS CATCH + FIX:** the first 2D artifact (`band_remap_2d.png`, the Region preset at -90)
+showed only the SIDE labels — title/location clipped OFF-screen because the labels sat 6% OUTSIDE the region
+and the Region preset frames it with only ~20px padding (the height-limited axis crops the outer labels;
+projections checked via `/tmp/observe_default.py`). **Fix:** pulled the label inset 6% → **3%**
+(`insetX/insetY = dW/dH*0.030`) so the lettering hugs the neat-line and stays inside a tight region-fit.
+**Re-verified** (`/tmp/verify_fix2.py`, 0 console errors, clicks-only — CDP `evaluate` was flaky under
+machine load): `brain/output/band_fix2_margin.png` (-90 + a little margin) = ALL FOUR in the picked layout
+(title top / location bottom / 35°N left / 85°W right); `brain/output/band_fix2_3d.png` (-90, 3D) = title
+across the top of the trapezoid, foreshortened (3D conformance held with the smaller inset). Caveat: the
+Region preset's 20px padding is still tight — the band reads fully with a touch of margin; loosening that
+preset is a core-side follow-up, not the band. **Carried but NOT done (cleanup once design accepted):**
 the dead `#bandFrame` HTML divs + `viewer_band.css` tile/label/`[data-deco]` rules stay `display:none`
 (harmless) — the `?deco=` param + `viewer_banded_compare.html` are now no-ops; snapBack camera rubber-band
 kept verbatim. Proof page only — `viewer_band.js` isn't in the production shell, so no sw.js bump owed.
