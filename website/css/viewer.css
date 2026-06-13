@@ -130,8 +130,12 @@ html, body { background: #000; }
 .hot-button:disabled { cursor: default; opacity: 0.55; filter: saturate(0.7); }
 .hot-button[data-hot-state="hot-now"] { background: var(--rust); }
 .hot-button[data-hot-state="coming-up"] { background: var(--brown-dark); }
+.hot-button[data-hot-state="trail-hot"] { background: var(--moss); }
 .hot-button[data-hot-selected="true"] { box-shadow: 0 0 0 2px rgba(247, 241, 226, 0.82), 0 0 0 4px rgba(42, 33, 22, 0.16); }
 .hot-button[data-hot-priority="alert"][data-hot-selected="false"] { box-shadow: 0 0 0 2px rgba(191, 90, 54, 0.4); }
+/* Trail toggle ON: brighter moss + inset ring + check glyph (app.css:845-847). */
+.hot-button[data-hot-lane="trails"][data-hot-on="true"] { background: var(--moss-dark, #4e6a34); box-shadow: inset 0 0 0 2px rgba(247, 241, 226, 0.92), 0 0 0 2px rgba(78, 106, 52, 0.5); }
+.hot-button[data-hot-lane="trails"][data-hot-on="true"] .hot-button-glyph { color: #eaf3d6; }
 .hot-button-glyph { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; font-size: 1.1rem; line-height: 1; }
 .hot-button-text { display: block; min-width: 0; }
 .hot-button-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -180,6 +184,17 @@ html, body { background: #000; }
 .info-list li { display: grid; gap: 2px; padding-top: 6px; border-top: 1px solid rgba(216,205,180,0.78); font-size: 0.82rem; line-height: 1.28; }
 .info-label { font-weight: 800; color: var(--moss-dark); }
 .info-note { margin: 10px 0 0; padding-top: 7px; border-top: 1px solid rgba(216,205,180,0.78); font-size: 0.78rem; line-height: 1.3; color: var(--brown-soft); }
+
+/* ── Feature click popup — slice 4 (app.css:748-754). The ONE normalized
+   "what is this?" card: title, blurb / revisit, then Kind/Status/Source/Caveat.
+   Rendered by window.AOPFeatureDisplay.popupHtml. ─────────────────────── */
+.poi-tab-popup .poi-popup-title { margin: 0 0 4px; font: 800 0.92rem Inter, system-ui, sans-serif; line-height: 1.2; color: var(--brown-ink); }
+.poi-tab-popup .poi-popup-subtitle { margin: 0 0 6px; font-size: 0.82rem; line-height: 1.3; color: var(--brown-ink); }
+.poi-tab-popup .poi-popup-placeholder { margin: 0 0 6px; padding: 6px 7px; border-radius: 5px; background: #ecd9b1; color: var(--brown-dark); font-size: 0.78rem; line-height: 1.3; }
+.poi-tab-popup .poi-popup-meta { margin: 0; padding: 0; font-size: 0.74rem; color: var(--brown-soft); }
+.poi-tab-popup .poi-popup-meta dt { display: inline; font-weight: 700; }
+.poi-tab-popup .poi-popup-meta dd { display: inline; margin: 0 8px 0 4px; }
+.poi-tab-popup .poi-popup-meta dt::before { content: ""; display: block; }
 
 /* V5 dropped the publish-count status on every width (app.css:697). The
    element stays in the DOM (it still takes load / error textContent) but is

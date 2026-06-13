@@ -1,0 +1,77 @@
+/* viewer_band.css — PROOF styles for the off-edge decorative band (V1 rubber-band)
+   wired onto the real viewer core. Loaded AFTER css/viewer.css on viewer_banded.html.
+   The band is a fixed overlay of four edge strips that sit OFF the viewport by
+   default (each translated fully past its edge) and are slid in by viewer_band.js
+   in proportion to how far the camera is pulled past the 9-patch. pointer-events
+   are off so the map and the pill-bar keep working underneath. z-index 2 keeps it
+   above #map (z 0) but below .left-controls (z 3) so the controls stay readable. */
+
+:root {
+  --band-px: 64px;
+  --paper-band: #e3d7bb;
+  --band-rule: #3a2c1a;
+}
+
+#bandFrame {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.band-edge {
+  position: absolute;
+  background: var(--paper-band);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--band-dark, #2a1f12);
+  font: 800 12px Inter, system-ui, sans-serif;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  will-change: transform;
+  box-shadow: 0 6px 22px rgba(42, 31, 18, 0.16);
+}
+.band-edge.sub { font-weight: 700; font-size: 10px; letter-spacing: 0.3em; color: #5a4828; }
+
+/* Each strip is flush to its viewport edge and grows INWARD to exactly the
+   9-patch boundary — viewer_band.js sets its height/width to the live gap, so the
+   band always covers the WHOLE out-of-9-patch region (no roads peek past it),
+   pinned to the data edge. At rest the size is 0 (hidden); the keyline is hidden
+   too (JS zeroes the border) so no hairline shows at the screen edge. */
+.band-edge.top    { top: 0;    left: 0; right: 0;  height: 0; border-bottom: 1.5px solid var(--band-rule); }
+.band-edge.bottom { bottom: 0; left: 0; right: 0;  height: 0; border-top:    1.5px solid var(--band-rule); }
+.band-edge.left   { left: 0;  top: 0;  bottom: 0;  width:  0; border-right:  1.5px solid var(--band-rule); }
+.band-edge.right  { right: 0; top: 0;  bottom: 0;  width:  0; border-left:   1.5px solid var(--band-rule); }
+
+/* Vertical lettering on the side strips. */
+.band-edge.left .v, .band-edge.right .v { writing-mode: vertical-rl; }
+.band-edge.left .v { transform: rotate(180deg); }
+
+/* A thin inner keyline drawn just inside each strip's map-facing edge. */
+.band-edge::after { content: ""; position: absolute; background: rgba(58, 44, 26, 0.0); }
+
+/* Corner diamonds ride the top & bottom strips. */
+.band-dot { position: absolute; width: 8px; height: 8px; background: #a85020;
+  transform: rotate(45deg); box-shadow: 0 0 0 1px var(--band-rule); }
+/* Diamonds ride the strip's INNER edge (the 9-patch boundary). */
+.band-edge.top .band-dot.l    { left: 16px;  bottom: 7px; }
+.band-edge.top .band-dot.r    { right: 16px; bottom: 7px; }
+.band-edge.bottom .band-dot.l { left: 16px;  top: 7px; }
+.band-edge.bottom .band-dot.r { right: 16px; top: 7px; }
+
+/* Small proof HUD — explains how to trigger the peek. Not part of the feature. */
+#bandProofHud {
+  position: fixed; right: 12px; bottom: 12px; z-index: 9; max-width: 260px;
+  background: rgba(42, 31, 18, 0.86); color: #f3e9d2; padding: 10px 13px;
+  border-radius: 10px; font: 12px/1.45 Inter, system-ui, sans-serif;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+#bandProofHud b { color: #f6c89a; }
+#bandProofHud .k { font: 700 11px ui-monospace, Menlo, monospace; background: rgba(255,255,255,0.12);
+  padding: 1px 5px; border-radius: 4px; }
+#bandProofHud button { margin-top: 7px; pointer-events: auto; background: #a85020; color: #fff;
+  border: 0; border-radius: 6px; padding: 4px 9px; font: 700 11px Inter, system-ui, sans-serif; cursor: pointer; }

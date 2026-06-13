@@ -3,22 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Trail Blazing Invitational — Map</title>
-  <!-- AOP viewer core — Sprint 13, slice 1 (viewer extraction). A clean read
-       scaffold built ALONGSIDE index.html; the live page is the reference and is
-       never touched. Card: brain/tasks/13_viewer_extraction/viewer_core_scaffold.md
-       Slice 1 carries only the map + the pill-bar (zoom / preset / 3D). The
-       left-rail drawer (Search / Hot / Calendar), Locate, Install, and version
-       come in later slices. NOT yet precached in sw.js — no #appVersion bump owed. -->
+  <title>Trail Blazing Invitational — Map (banded proof)</title>
+  <!-- PROOF PAGE — off-edge decorative band (V1 rubber-band) on the REAL viewer core.
+       This page is a copy of viewer.html that RIDES the live core (./js/viewer_core.js,
+       ./css/viewer.css) and adds the band layer on top, so the proof always reflects the
+       latest core instead of a stale 1900-line copy. It does NOT modify the live viewer.
+       The integration seam is deliberately tiny and documented:
+         1. a constructor shim (below) captures the map + the tight 9-patch bounds and
+            loosens maxBounds by ~a band's width so the camera can be pulled past the edge;
+         2. ./css/viewer_band.css adds the four edge strips;
+         3. ./js/viewer_band.js slides them in on overpull and snaps back on release.
+       For real integration, step 1 becomes ~3 lines inside viewer_core.js (expose
+       { map, regionBounds }, pad maxBounds); steps 2 and 3 drop in unchanged. -->
   <meta name="theme-color" content="#a85020" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Trail Blazing" />
   <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
   <link href="./css/viewer.css" rel="stylesheet" />
+  <link href="./css/viewer_band.css" rel="stylesheet" />
 </head>
 <body>
   <div id="map"></div>
+
+  <!-- Decorative band overlay (proof). Four strips parked off the viewport edges
+       by viewer_band.css; viewer_band.js slides them in on overpull. The v4
+       lettered look the user picked. -->
+  <div id="bandFrame" aria-hidden="true">
+    <div class="band-edge top">Adventure&nbsp;Off&nbsp;Road&nbsp;Park
+      <span class="band-dot l"></span><span class="band-dot r"></span></div>
+    <div class="band-edge bottom sub">South&nbsp;Pittsburg&nbsp;·&nbsp;Marion&nbsp;County&nbsp;·&nbsp;Tennessee&nbsp;&nbsp;—&nbsp;&nbsp;MMXXVI
+      <span class="band-dot l"></span><span class="band-dot r"></span></div>
+    <div class="band-edge left sub"><span class="v">35°&nbsp;00′&nbsp;North&nbsp;·&nbsp;Cumberland&nbsp;Plateau</span></div>
+    <div class="band-edge right sub"><span class="v">85°&nbsp;36′&nbsp;West&nbsp;·&nbsp;Trail&nbsp;Blazing&nbsp;Invitational</span></div>
+  </div>
+
   <div class="left-controls">
     <!-- Pill bar — ported verbatim from index.html:53-83: zoom presets
          (region / park / pavilion), layer presets (park / topo / trace /
@@ -54,10 +73,7 @@
       </div>
       <input type="checkbox" id="showTerrain" hidden />
     </div>
-    <!-- Left-rail drawer — slice 3 (from index.html:84-197). Two columns: an
-         icon column of tabs and a content column of stacked panels. Search
-         (slice 2) now lives in the first panel. The Hot tab (slice 5), the POI
-         sub-tab (slice 4), and the per-card resize handles are deferred. -->
+    <!-- Left-rail drawer — Search + Events/About (same as viewer.html). -->
     <div class="lr-drawer" id="lrDrawer">
       <div class="lr-icon-col" id="lrIconCol">
         <button class="lr-tab open" id="lrTabSearch" type="button" aria-pressed="true" aria-controls="lrPanelSearch" title="Search">
@@ -96,8 +112,8 @@
           </div>
         </div>
         <div class="lr-panel" id="lrPanelHot" data-card="hot">
-          <!-- Hot now — slice 5. Event lane only; the Trails lane (activity
-               hotspots) is deferred behind the published-layer-line call (fork 2). -->
+          <!-- Hot now — slice 5. Mirrored from the current viewer.html so the live
+               core finds the elements it wires. -->
           <section id="hotControl" class="hot-control" aria-label="Hot now" hidden>
             <div class="hot-control-head">
               <span class="hot-control-title">Hot now</span>
@@ -158,13 +174,58 @@
   </div>
   <div class="message" id="message">Loading publish layer...</div>
 
+  <!-- Proof HUD — not part of the feature; explains how to trigger the peek. -->
+  <div id="bandProofHud">
+    <b>Band proof — V1 rubber-band.</b> Drag the map and <b>keep pulling past the edge</b>,
+    or hit <span class="k">Region</span> on a wide window. The lettered border peeks in
+    instead of ragged edges, then snaps back on release.
+    <br><button id="bandProofPeek" type="button">Show me (auto-peek)</button>
+  </div>
+
   <script src="./vendor/maplibre-gl.js"></script>
-  <!-- The ONE shared event-schedule resolver (window.AOPEventSchedule); loaded
-       before viewer_core.js, same as the live page loads it before main.js. -->
+  <script>
+    // PROOF SEAM (proof-only). Wrap maplibregl.Map so the band module can attach to
+    // the real core's map without the core exposing it, and loosen the camera leash
+    // by ~a band's width so the user can pull past the 9-patch. In real integration
+    // viewer_core.js exposes { map, regionBounds } and pads maxBounds itself — then
+    // this shim is deleted and viewer_band.js stays exactly as-is.
+    (function () {
+      if (!window.maplibregl || !maplibregl.Map) return;
+      var _Map = maplibregl.Map;
+      function pad(b, f) {
+        var w = b[0][0], s = b[0][1], e = b[1][0], n = b[1][1], dx = (e - w) * f, dy = (n - s) * f;
+        return [[w - dx, s - dy], [e + dx, n + dy]];
+      }
+      function Wrapped(opts) {
+        var region = (opts && opts.maxBounds) ? opts.maxBounds : null;
+        if (region) opts.maxBounds = pad(region, 0.08);   // leash + a little room to pull past
+        var m = new _Map(opts);
+        window.AOPViewer = { map: m, regionBounds: region };
+        return m;
+      }
+      Wrapped.prototype = _Map.prototype;
+      Object.keys(_Map).forEach(function (k) { Wrapped[k] = _Map[k]; });
+      maplibregl.Map = Wrapped;
+    })();
+  </script>
+  <!-- The ONE shared event-schedule resolver, loaded before the core (same as viewer.html). -->
   <script src="./js/event_schedule_geojson.js"></script>
-  <!-- The ONE feature-to-text strategy (window.AOPFeatureDisplay) — drives the
-       click popups, same module the live page + editors use. -->
-  <script src="./js/feature_display.js"></script>
   <script src="./js/viewer_core.js"></script>
+  <script src="./js/viewer_band.js"></script>
+  <script>
+    // Proof-only convenience: the "Show me" button drives an over-pan + release so
+    // the reveal + snap-back is visible without a touch device.
+    var peekBtn = document.getElementById('bandProofPeek');
+    if (peekBtn) peekBtn.addEventListener('click', function () {
+      var V = window.AOPViewer; if (!V || !V.map) return;
+      var map = V.map;
+      map.panBy([-260, 0], { duration: 650, easing: function (t) { return 1 - Math.pow(1 - t, 3); } });
+      setTimeout(function () {
+        // simulate "release": run the same snap the drag uses
+        var b = window.AOPViewerBand; if (!b) return;
+        var g = b.gaps(); map.panBy([g.l - g.r, g.t - g.b], { duration: 520 });
+      }, 1100);
+    });
+  </script>
 </body>
 </html>

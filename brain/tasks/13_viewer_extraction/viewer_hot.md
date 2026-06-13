@@ -75,6 +75,32 @@ include `activity-hotspots`.
 **Owed / git gate.** UNCOMMITTED (the user's gate). `viewer.html` still not in `sw.js` → **no `#appVersion`
 bump owed.** Remaining slate: POI (slice 4), Locate/Install/version (slice 6), the swap (slice 7).
 
+### Addendum — 2026-06-13 (FORK 2 RESOLVED by the user: Trails lane + hotspots restored)
+
+User: *"put our hotspots back in the viewer. this is basically THE feature of the app — discovery of where
+the cool spots are known to be."* That settles sprint-readme **fork 2**: the published-layer line
+**includes** `activity-hotspots`. The deferral above is reversed — the hotspots layer and the Hot **Trails
+lane** are now carried.
+
+**Restored:** the `activity-hotspots` source + 4 layers (heat / fill / outline / labels, default OFF,
+`main.js:8017`) in the layer build — added after contours so the heatmap sits beneath roads/trails, same
+z-order as live. The full two-lane Hot control: `hotspotPolygonCentroid`/`hotspotMetersBetween`/
+`findDensestHotspotCluster`/`trailHotspotsActive`/`setTrailHotspotsVisible`/`hotButtonFlyToHotspots`/
+`selectedHotLane`/`preferredHotLane`, and the trail branches of `attachHotButton`/`refreshHotButton`. The
+`#hotTrailButton` markup + the trail-lane CSS are back. **Severance kept:** the live page's
+`activityHotspotsToggle` checkbox is replaced by `setLayerVisibility` over `ACTIVITY_HOTSPOT_LAYERS`;
+`trailHotspotsActive()` reads the live layer visibility. **Improvement over main.js:** `activity-hotspots`
+is NOT in `PRESET_LAYERS`, so a preset switch no longer turns the hotspots off — the discovery layer
+persists once the user reveals it (independent of presets, like 3D).
+
+**Verified by observation.** `/tmp/verify_viewer_hotspots.py`: **8/8 PASS, 0 console errors.** The Trails
+lane reads "Where rigs spent time"; tapping it sets `data-hot-on="true"` (derived from the live layer
+visibility), the glyph → ✓, title → "Trail activity on", and the camera flies to the densest dwell
+cluster; a second tap hides it. Screenshot `brain/output/viewer_hotspots_on.png` — the moss active Trails
+lane + the amber hotspot cells on the map.
+
+**Line-cost.** `viewer_core.js` 1969 → **2151** (+182) · `viewer.html` +9 (trail button) · `viewer.css` +3.
+
 ## Verification
 
 - Playwright: default load → click Hot tab → `#hotControl` not hidden, `#hotButton[data-hot-state]` =

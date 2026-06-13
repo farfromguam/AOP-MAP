@@ -6,6 +6,41 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (SPRINT 13 SLICE 4a SHIPPED — feature click popups, the "one strategy". Built alongside, index.html untouched).**
+After restoring hotspots, "continue" → POI slice. Built **4a (feature popups)**: click any
+curated/published feature → the normalized "what is this line, where did it come from?" card
+(name/blurb/Kind/Status/Source/Caveat) via the **one shared `window.AOPFeatureDisplay`** — the northstar's
+core product test, and what slice 1 deferred when it dropped `bindPopup`. Rather than per-layer `bindPopup`,
+a single `map.on('click')` over `INTERACTIVE_POPUP_LAYERS` reads the topmost feature's props through
+`featureDisplay`/`popupHtml` (branch-free, the user's "one text strategy"). `viewer.html` loads
+`feature_display.js` before `viewer_core.js`; reuses the schedule slice's `closeAllMapPopups`/`visibleMapRect`/
+`panPopupIntoView`. `viewer_core.js` 2151 → **2187** (+36), `viewer.html` +3, `viewer.css` +8. **Verified**
+(`/tmp/verify_viewer_popups.py`, **6/6 PASS, 0 errors**): callout popup (title+blurb+meta) + building popup
+("Pavilion | Kind building · Source ORNL") — one strategy across two layers. Shots `viewer_popup_callout.png`.
+(Harness note: needs a fresh page per feature — a 2nd same-page click is eaten by leftover popup/search
+state; test artifact, not a viewer bug.) **Deferred — 4b: the POI-tab directory** (`renderPoiTab` +
+`buildPoiGroups` index↔feature join + ★-destinations + `gotoPoi`) — bigger, next. Card
+`tasks/13_viewer_extraction/viewer_poi.md`. **UNCOMMITTED.** Council next. Remaining slate: 4b, then
+Locate/Install/version (6), swap (7).
+
+-----
+
+**2026-06-13 (FORK 2 RESOLVED — activity hotspots are IN. User: hotspots are "basically THE feature… discovery of where the cool spots are").**
+The user reversed the slice-5 Trails-lane deferral: the published-layer line **includes**
+`activity-hotspots`. Restored to `viewer_core.js` (1969 → **2151**, +182): the `activity-hotspots` source +
+4 layers (heat/fill/outline/labels, default OFF, after contours = beneath roads/trails) and the full
+two-lane Hot control (`findDensestHotspotCluster` + the trail helpers + the trail branches of
+`attach`/`refreshHotButton`); `#hotTrailButton` markup + trail CSS back. **Severance kept:** the
+`activityHotspotsToggle` checkbox → `setLayerVisibility` over `ACTIVITY_HOTSPOT_LAYERS`; `trailHotspotsActive`
+reads live layer visibility. **One improvement over main.js:** hotspots are NOT in `PRESET_LAYERS`, so a
+preset switch no longer turns them off — the discovery layer persists once revealed (like 3D). **Verified**
+(`/tmp/verify_viewer_hotspots.py`, **8/8 PASS, 0 errors**): tap Trails → `data-hot-on=true` (read off the
+live layer), glyph ✓, fly to densest dwell cluster; second tap hides. Shot `viewer_hotspots_on.png`. Card
+addendum in `viewer_hot.md`. **UNCOMMITTED.** Council next, then POI (slice 4). (Note: sprint readme fork 2
+is now settled — hotspots published.)
+
+-----
+
 **2026-06-13 (SPRINT 13 SLICE 5 SHIPPED — Hot now (Event lane) into the drawer. Built alongside, index.html untouched).**
 User committed slice 3 (`87cc80e`) then "continue". Carded + built + verified
 `tasks/13_viewer_extraction/viewer_hot.md`. Added the **Hot** tab (3rd drawer icon) + the Event lane:

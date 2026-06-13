@@ -102,6 +102,10 @@
   let eventSessionById = new Map();
   let activeEventSessionId = null;
 
+  // Activity-hotspots (GPX dwell) state + the user's preferred Hot lane.
+  let aopActivityHotspotsData = null;
+  let preferredHotLane = null;
+
   // ── Palette consts referenced by BUILT_IN_PRESETS (main.js:1556-1611) ───
   const SKY_ATMOSPHERE = {
     'sky-color': '#7AB3FF',
@@ -145,12 +149,22 @@
   // activity-hotspots layer itself is dev-reference and not carried, so those
   // paint entries no-op (setPaint guards on getLayer) — the const stays so the
   // preset object ports verbatim.
+  const ACTIVITY_HOTSPOT_FILL = ['match', ['get', 'intensity_class'],
+    'low',    '#e6c86f',
+    'medium', '#d9903d',
+    'high',   '#bf5a36',
+    'peak',   '#7f2f27',
+    '#d9903d'];
   const ACTIVITY_HOTSPOT_OPACITY = [
     'interpolate', ['linear'], ['get', 'intensity_norm'],
     0, 0.12,
     0.4, 0.28,
     1, 0.58
   ];
+  // The activity-hotspots layer set, toggled by the Hot Trails lane (the
+  // "where the cool spots are" discovery affordance). Default OFF; surfaced on
+  // demand, independent of the layer presets (like 3D).
+  const ACTIVITY_HOTSPOT_LAYERS = ['activity-hotspots-heat', 'activity-hotspots-fill', 'activity-hotspots-outline', 'activity-hotspots-labels'];
 
   // ── Low-level layer helpers (main.js:1505-1515) ────────────────────────
   function setLayerVisibility(layerId, visible) {
@@ -1188,15 +1202,67 @@
     }
   }
 
-  // ── Hot now — Event lane (ported from main.js:6781-7057) ───────────────
-  // The drawer's third tab: "Live event" / "Starting soon" / "Next event",
-  // driven by the same clock + schedule the calendar carries; click flies to
-  // the session. The Trails lane (activity-hotspots toggle + densest-cluster
-  // fly) is DEFERRED — that layer is raw GPS evidence the read core doesn't
-  // carry (sprint readme fork 2, the user's published-layer-line call), and
-  // refreshHotButton is designed to degrade to event-only with no hotspot data.
+  // ── Hot now — two lanes (ported from main.js:6781-7057) ────────────────
+  // The drawer's third tab. EVENT lane: "Live event" / "Starting soon" /
+  // "Next event", driven by the schedule clock; click flies to the session.
+  // TRAILS lane: toggles the activity-hotspots layer (the "where the cool spots
+  // are" discovery) and flies to the densest dwell cluster. The activity-hotspots
+  // checkbox indirection is severed — the lane drives the layers directly via
+  // setLayerVisibility.
   const HOT_BUTTON_IMMINENT_MIN = 30;
   const HOT_BUTTON_SESSION_LEN_MIN = 90;
+  const HOT_CLUSTER_RADIUS_M = 260;
+  // Seed at the strongest hotspot polygon, grow a contiguous cluster by centroid
+  // distance, and return its bbox (not a top-K bbox that could span the park).
+  function hotspotPolygonCentroid(feature) {
+    const geom = feature.geometry;
+    if (!geom) return null;
+    const ring = geom.type === 'MultiPolygon' ? geom.coordinates?.[0]?.[0] : geom.coordinates?.[0];
+    if (!Array.isArray(ring) || !ring.length) return null;
+    let sx = 0, sy = 0, n = 0;
+    for (const c of ring) {
+      if (!Array.isArray(c) || c.length < 2) continue;
+      sx += c[0]; sy += c[1]; n += 1;
+    }
+    return n ? [sx / n, sy / n] : null;
+  }
+  function hotspotMetersBetween(a, b) {
+    const latRad = (a[1] + b[1]) * 0.5 * Math.PI / 180;
+    const dx = (a[0] - b[0]) * 111320 * Math.cos(latRad);
+    const dy = (a[1] - b[1]) * 110540;
+    return Math.hypot(dx, dy);
+  }
+  function findDensestHotspotCluster(radiusM = HOT_CLUSTER_RADIUS_M) {
+    const data = aopActivityHotspotsData;
+    if (!data?.features?.length) return null;
+    const ranked = data.features
+      .filter((f) => f.geometry?.type === 'Polygon' && f.properties)
+      .map((f) => ({
+        f,
+        score: Number(f.properties.intensity_norm ?? f.properties.dwell_minutes ?? 0),
+        centroid: hotspotPolygonCentroid(f)
+      }))
+      .filter((r) => Number.isFinite(r.score) && r.centroid)
+      .sort((a, b) => b.score - a.score);
+    if (!ranked.length) return geojsonBounds(data);
+    const seed = ranked[0];
+    const cluster = ranked.filter((r) => hotspotMetersBetween(seed.centroid, r.centroid) <= radiusM);
+    return geojsonBounds({ type: 'FeatureCollection', features: cluster.map((r) => r.f) });
+  }
+  // Trail-lane layer state, read + driven directly (no editor checkbox).
+  function trailHotspotsActive() {
+    return !!(map.getLayer('activity-hotspots-fill')
+      && map.getLayoutProperty('activity-hotspots-fill', 'visibility') === 'visible');
+  }
+  function setTrailHotspotsVisible(on) {
+    for (const id of ACTIVITY_HOTSPOT_LAYERS) setLayerVisibility(id, on);
+  }
+  function hotButtonFlyToHotspots() {
+    setTrailHotspotsVisible(true);
+    const bbox = findDensestHotspotCluster();
+    if (!bbox) return;
+    map.fitBounds(bbox, { padding: visibleMapPadding(20), maxZoom: 16.2, duration: 1000, bearing: map.getBearing(), pitch: map.getPitch() });
+  }
   function eventScheduleAnchorForward(dayLabel, startLocal) {
     const anchorSat = resolveCalendarAnchorSat();
     if (!anchorSat) return null;
@@ -1234,44 +1300,95 @@
   function hotEventAvailable(decision) {
     return decision.state === 'hot-now' || decision.state === 'coming-up';
   }
+  function selectedHotLane(decision, haveHotspots) {
+    const eventAvailable = hotEventAvailable(decision);
+    if (preferredHotLane === 'event' && eventAvailable) return 'event';
+    if (preferredHotLane === 'trails' && haveHotspots) return 'trails';
+    if (decision.state === 'hot-now') return 'event';
+    if (haveHotspots) return 'trails';
+    if (eventAvailable) return 'event';
+    return '';
+  }
   function attachHotButton() {
     const eventBtn = document.getElementById('hotButton');
+    const trailBtn = document.getElementById('hotTrailButton');
     if (eventBtn && eventBtn.dataset.bound !== '1') {
       eventBtn.dataset.bound = '1';
       eventBtn.addEventListener('click', () => {
         if (eventBtn.disabled) return;
+        preferredHotLane = 'event';
+        refreshHotButton();
         const id = eventBtn.dataset.targetSessionId;
         if (id) gotoEventSession(id);
       });
     }
+    if (trailBtn && trailBtn.dataset.bound !== '1') {
+      trailBtn.dataset.bound = '1';
+      trailBtn.addEventListener('click', () => {
+        if (trailBtn.disabled) return;
+        // Toggle keyed off the live layer state: second tap (layer ON) hides the
+        // hotspots; first tap from cold turns them ON and flies to the cluster.
+        if (trailHotspotsActive()) {
+          preferredHotLane = null;
+          setTrailHotspotsVisible(false);
+          refreshHotButton();
+        } else {
+          preferredHotLane = 'trails';
+          hotButtonFlyToHotspots();
+          refreshHotButton();
+        }
+      });
+    }
   }
-  // Called by refreshEventScheduleSessionStates (render + 60s tick), so the Hot
-  // lane updates in lockstep with the calendar against the same clock.
+  // Called by refreshEventScheduleSessionStates (render + 60s tick), so both
+  // lanes update in lockstep with the calendar against the same clock.
   function refreshHotButton() {
     attachHotButton();
     const control = document.getElementById('hotControl');
+    const lanes = document.getElementById('hotLanes');
     const status = document.getElementById('hotControlStatus');
     const eventBtn = document.getElementById('hotButton');
-    if (!control || !eventBtn) return;
+    const trailBtn = document.getElementById('hotTrailButton');
+    if (!control || !eventBtn || !trailBtn) return;
     const glyph = document.getElementById('hotButtonGlyph');
     const title = document.getElementById('hotButtonTitle');
     const detail = document.getElementById('hotButtonDetail');
+    const trailTitle = document.getElementById('hotTrailButtonTitle');
+    const trailDetail = document.getElementById('hotTrailButtonDetail');
     const decision = computeHotButtonTarget();
-    if (!hotEventAvailable(decision)) {
+    const haveHotspots = !!(aopActivityHotspotsData?.features?.length);
+    const eventAvailable = hotEventAvailable(decision);
+    if (!eventAvailable && !haveHotspots) {
       control.hidden = true;
       eventBtn.dataset.hotState = 'empty';
       eventBtn.dataset.targetSessionId = '';
+      trailBtn.dataset.hotSelected = 'false';
       return;
     }
     control.hidden = false;
-    eventBtn.dataset.hotSelected = 'true';
+    const selected = selectedHotLane(decision, haveHotspots);
+    const trailOn = haveHotspots && trailHotspotsActive();
+    if (lanes) lanes.dataset.laneCount = haveHotspots ? '2' : '1';
+    eventBtn.dataset.hotSelected = selected === 'event' ? 'true' : 'false';
+    trailBtn.dataset.hotSelected = trailOn ? 'true' : 'false';
+    trailBtn.dataset.hotOn = trailOn ? 'true' : 'false';
+    trailBtn.setAttribute('aria-pressed', trailOn ? 'true' : 'false');
+    trailBtn.hidden = !haveHotspots;
+    trailBtn.disabled = !haveHotspots;
+    trailBtn.dataset.hotState = 'trail-hot';
+    if (trailTitle) trailTitle.textContent = trailOn ? 'Trail activity on' : 'Trail activity';
+    if (trailDetail) trailDetail.textContent = trailOn ? 'Tap to hide hotspots' : 'Where rigs spent time';
+    const trailGlyph = document.getElementById('hotTrailButtonGlyph');
+    if (trailGlyph) trailGlyph.textContent = trailOn ? '✓' : '❖';
+    trailBtn.setAttribute('aria-label', trailOn ? 'Hide trail activity' : 'Show trail activity');
+
     eventBtn.dataset.hotState = decision.state;
     eventBtn.dataset.hotPriority = decision.state === 'hot-now' ? 'alert' : '';
     const now = eventScheduleNow();
-    const props = decision.target.feature.properties || {};
-    eventBtn.disabled = false;
-    eventBtn.dataset.targetSessionId = props.session_id || '';
     if (decision.state === 'hot-now') {
+      const props = decision.target.feature.properties || {};
+      eventBtn.disabled = false;
+      eventBtn.dataset.targetSessionId = props.session_id || '';
       if (glyph) glyph.innerHTML = '<svg viewBox="0 0 22 22" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.082 4.78A7.564 7.564 0 0 1 11 19.25 7.562 7.562 0 0 1 5.535 6.46 7.596 7.596 0 0 0 8.25 8.801a8.234 8.234 0 0 1 3.081-6.295 7.526 7.526 0 0 0 2.751 2.273Z"/><path d="M11 16.5a3.438 3.438 0 0 0 .454-6.845 5.491 5.491 0 0 0-1.765 3.25 5.476 5.476 0 0 1-1.955-.918A3.438 3.438 0 0 0 11 16.5Z"/></svg>';
       if (decision.kind === 'live') {
         const mins = (decision.target.endMs - now.getTime()) / 60000;
@@ -1285,7 +1402,10 @@
         if (status) status.textContent = 'Event soon';
       }
       eventBtn.setAttribute('aria-label', `Event hot: ${props.title || 'session'}`);
-    } else {
+    } else if (decision.state === 'coming-up') {
+      const props = decision.target.feature.properties || {};
+      eventBtn.disabled = false;
+      eventBtn.dataset.targetSessionId = props.session_id || '';
       const mins = (decision.target.startMs - now.getTime()) / 60000;
       if (glyph) glyph.textContent = '◷';
       if (title) title.textContent = 'Next event';
@@ -1294,8 +1414,17 @@
         const timePart = props.window || props.start_local || '';
         detail.textContent = `${dayPart}${timePart} · in ${eventScheduleFormatMinutes(mins)}`;
       }
-      if (status) status.textContent = 'Next event';
+      if (status) status.textContent = selected === 'trails' ? 'Trail activity' : 'Next event';
       eventBtn.setAttribute('aria-label', `Next event: ${props.title || 'session'}`);
+    } else {
+      // No event target, but hotspots are available — event lane idles, trails lead.
+      eventBtn.disabled = true;
+      eventBtn.dataset.targetSessionId = '';
+      if (glyph) glyph.textContent = '◷';
+      if (title) title.textContent = 'No event';
+      if (detail) detail.textContent = 'Trail activity available';
+      if (status) status.textContent = haveHotspots ? 'Trail activity' : 'No target';
+      eventBtn.setAttribute('aria-label', 'No event target');
     }
   }
 
@@ -1417,6 +1546,59 @@
             15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 1, 0],
             16, 1]
         }
+      });
+    }
+
+    // --- Activity hotspots (GPX dwell) — "where the cool spots are" (main.js:8017) ---
+    // THE discovery layer: time-weighted from first-party timestamped GPX. Default
+    // OFF; the Hot Trails lane toggles it on and flies to the densest cluster.
+    const activityData = await fetchJson('./data/aop_activity_hotspots.geojson', 'Activity hotspot layer missing');
+    if (activityData) {
+      aopActivityHotspotsData = activityData;
+      map.addSource('activity-hotspots', {
+        type: 'geojson', data: activityData,
+        attribution: 'Activity hotspots: first-party timestamped GPX'
+      });
+      map.addLayer({
+        id: 'activity-hotspots-heat', type: 'heatmap', source: 'activity-hotspots',
+        filter: ['==', ['geometry-type'], 'Point'],
+        layout: { visibility: 'none' },
+        paint: {
+          'heatmap-weight': ['interpolate', ['linear'], ['get', 'intensity_norm'], 0, 0.18, 1, 1],
+          'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 11, 0.45, 16, 1.65],
+          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 11, 18, 16, 44],
+          'heatmap-opacity': 0.68,
+          'heatmap-color': [
+            'interpolate', ['linear'], ['heatmap-density'],
+            0, 'rgba(230, 200, 111, 0)',
+            0.22, 'rgba(230, 200, 111, 0.55)',
+            0.45, 'rgba(217, 144, 61, 0.65)',
+            0.72, 'rgba(191, 90, 54, 0.76)',
+            1, 'rgba(127, 47, 39, 0.9)'
+          ]
+        }
+      });
+      map.addLayer({
+        id: 'activity-hotspots-fill', type: 'fill', source: 'activity-hotspots',
+        filter: ['==', ['geometry-type'], 'Polygon'],
+        layout: { visibility: 'none' },
+        paint: { 'fill-color': ACTIVITY_HOTSPOT_FILL, 'fill-opacity': ACTIVITY_HOTSPOT_OPACITY }
+      });
+      map.addLayer({
+        id: 'activity-hotspots-outline', type: 'line', source: 'activity-hotspots',
+        filter: ['==', ['geometry-type'], 'Polygon'],
+        layout: { visibility: 'none' },
+        paint: { 'line-color': '#7f2f27', 'line-width': 1.1, 'line-opacity': 0.55 }
+      });
+      map.addLayer({
+        id: 'activity-hotspots-labels', type: 'symbol', source: 'activity-hotspots',
+        filter: ['all', ['==', ['geometry-type'], 'Point'], ['!=', ['get', 'label'], '']],
+        layout: {
+          visibility: 'none', 'text-field': ['get', 'label'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 12],
+          'text-allow-overlap': false, 'text-ignore-placement': false
+        },
+        paint: { 'text-color': '#5b2d25', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.4 }
       });
     }
 
@@ -1966,4 +2148,40 @@
       .then((about) => { if (about) renderAbout(about, panel); })
       .catch(() => {});
   })();
+
+  // ── Feature click popups — the ONE normalized strategy (slice 4) ───────
+  // Click a curated/published feature → its "what is this line, where did it
+  // come from?" card, via the shared window.AOPFeatureDisplay (the same module
+  // the live page + editors use). Branch-free: every feature reads the same
+  // fallback chain. (The POI-tab directory + ★-destinations are slice 4b.)
+  const INTERACTIVE_POPUP_LAYERS = [
+    'aop-trail-network', 'publish-trails', 'publish-trailheads', 'publish-boundaries',
+    'building-footprint-fill', 'building-footprint-aop-outline',
+    'visitor-context-fill', 'water-points', 'streams',
+    'event-anchor-points', 'event-session-routes', 'brand-logos-icons'
+  ];
+  function interactivePopupLayers() {
+    return INTERACTIVE_POPUP_LAYERS.filter((id) => map.getLayer(id));
+  }
+  map.on('click', (e) => {
+    if (!window.AOPFeatureDisplay) return;
+    const layers = interactivePopupLayers();
+    if (!layers.length) return;
+    const feats = map.queryRenderedFeatures(e.point, { layers });
+    if (!feats.length) return;
+    const model = window.AOPFeatureDisplay.featureDisplay(feats[0].properties || {});
+    closeAllMapPopups();
+    const slice = visibleMapRect();
+    const popupMax = Math.max(200, Math.min(300, Math.max(0, slice.right - slice.left) - 28));
+    const popup = new maplibregl.Popup({ maxWidth: `${popupMax}px`, className: 'poi-tab-popup' })
+      .setLngLat(e.lngLat)
+      .setHTML(window.AOPFeatureDisplay.popupHtml(model))
+      .addTo(map);
+    map.once('moveend', () => panPopupIntoView(popup));
+  });
+  map.on('mousemove', (e) => {
+    const layers = interactivePopupLayers();
+    if (!layers.length) return;
+    map.getCanvas().style.cursor = map.queryRenderedFeatures(e.point, { layers }).length ? 'pointer' : '';
+  });
 })();
