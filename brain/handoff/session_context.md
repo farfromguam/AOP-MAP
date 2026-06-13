@@ -6,6 +6,25 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (SPRINT 13 SLICE 2 SHIPPED — Search ported into the clean core. Slice 1 committed first; built alongside, index.html untouched).**
+User committed slice 1 (`f0c89e1 base viewer`) then "continue". Carded + built + verified
+`tasks/13_viewer_extraction/viewer_search.md`. Ported the feature search into the clean core:
+`viewer_core.js` 895 → **1249** (+354), `viewer.html` +12 (the bare search box — NOT the full left-rail
+drawer yet), `viewer.css` +21. **Verified by observation** (`/tmp/verify_viewer_search.py`): **13/13 PASS,
+0 console errors** — ranked results, alias/address-alias search, trail-number path, no-match, Enter
+flies+highlights+clears, and **layer auto-unhide observed** (search a road in Satellite → it draws over
+the aerial). Shots in `brain/output/viewer_search_*.png`. **Editor seam severed (same axis as slice 1):**
+`indexFeatures`' DOM-checkbox `toggleFor` + editor `featureListBindingFor` dropped; replacement
+`indexFeatures(data, kindFor, layersFor, aliasesFor)` reuses the slice-1 **`PRESET_LAYERS`** registry for
+"unhide on landing" (no second registry); `gotoMatch` toggle.checked → `setLayerVisibility`; all
+`persistViewerSessionState` dropped; `main.js`'s `resyncViewport`/`map.resize` not carried (PWA slice 6).
+Indexed only carried layers (OSM/event-schedule/cemeteries index sites skipped). **Line-cost calibration:**
+a real interactive read control = ~350 clean lines adding NO new data source (reads already-loaded GeoJSON
++ one highlight overlay). **UNCOMMITTED** (user's gate); `viewer.html` not in `sw.js` → no version bump
+owed. Council ran on slice 1 (6/6 clear); **slice 2 council pending**. Next per slate: Calendar/Events (slice 3).
+
+-----
+
 **2026-06-13 (SPRINT 13 SLICE 1 SHIPPED — clean viewer core: map + presets/zoom/3D. Built alongside; index.html untouched).**
 Worked `tasks/13_viewer_extraction/viewer_core_scaffold.md` end to end. New files only:
 **`website/viewer.html`** (63) + **`website/css/viewer.css`** (75, pulled rule-by-rule from `app.css`,

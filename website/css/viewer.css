@@ -11,6 +11,7 @@
    this same 0 via html.editor-off). */
 :root {
   --brown-ink: #2e2418;
+  --brown-soft: #5a4828;
   --cream-hover: #efe2c6;
   --cream-surface: rgba(250, 246, 235, 0.96);
   --control-bg: #fffdf5;
@@ -59,7 +60,26 @@ html, body { background: #000; }
 .pill-bar .pill > button.terrain-button { font: 800 0.86rem Inter, system-ui, sans-serif; letter-spacing: 0.04em; }
 
 /* Keyboard focus ring on the controls (app.css:755). */
-.left-controls button:focus-visible { outline: 2px solid var(--moss-dark); outline-offset: 2px; }
+.left-controls button:focus-visible, .search input:focus-visible { outline: 2px solid var(--moss-dark); outline-offset: 2px; }
+
+/* Feature search — slice 2 (app.css:126-127, 698-717). The bare search box in
+   .left-controls; the full left-rail drawer (Search/Hot/Calendar tabs) is a
+   later slice. The results dropdown is position:fixed and anchored to the input
+   by positionSearchResults() so it escapes any clip. */
+.search-shell { border: 1px solid rgba(155,132,92,0.34); border-radius: 8px; background: var(--cream-surface); box-shadow: 0 8px 28px rgba(0,0,0,0.18); display: flex; gap: 6px; padding: 6px; }
+.search { position: relative; margin-bottom: 10px; }
+.left-controls .search { margin-bottom: 0; width: 100%; }
+.search input { width: 100%; box-sizing: border-box; padding: 8px 10px 8px 32px; font: inherit; border: 1px solid var(--control-border); border-radius: 7px; background: var(--control-bg); color: var(--brown-ink); }
+.search input:focus { outline: 2px solid var(--moss-dark); border-color: var(--moss); }
+.search-icon { position: absolute; left: 10px; top: 50%; width: 15px; height: 15px; transform: translateY(-50%); color: var(--brown-soft); pointer-events: none; z-index: 1; }
+.search-results { position: fixed; background: #fff; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 240px; overflow-y: auto; display: none; z-index: 1000; }
+.search-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 6px 9px; cursor: pointer; font-size: 0.9rem; }
+.search-item:hover, .search-item.active { background: #e8dcc3; }
+.search-kind { color: #888; font-size: 0.78rem; flex: none; padding-top: 1px; }
+.search-result-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
+.search-result-label { font-size: 0.9rem; color: var(--brown-ink); }
+.search-result-desc { font-size: 0.74rem; line-height: 1.25; color: var(--brown-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-empty { padding: 6px 9px; color: #999; font-size: 0.88rem; }
 
 /* V5 dropped the publish-count status on every width (app.css:697). The
    element stays in the DOM (it still takes load / error textContent) but is
@@ -72,4 +92,5 @@ html, body { background: #000; }
   .pill-bar { gap: 6px; }
   .pill-bar .pill > button { min-height: 32px; padding: 4px 6px; }
   .pill-bar .pill > button svg { width: 22px; height: 22px; }
+  .search-shell { padding: 4px; }
 }

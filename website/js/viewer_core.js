@@ -75,9 +75,17 @@
   const terrainToggle = document.getElementById('showTerrain'); // hidden checkbox: 3D state
   const terrainButton = document.getElementById('terrainButton');
   const presetButtons = [...document.querySelectorAll('.preset-bar button[data-preset]')];
+  const searchInput = document.getElementById('searchInput');
+  const searchResults = document.getElementById('searchResults');
 
   let activePresetId = 'park';
   let parkViewBounds = null;
+
+  // Named-feature search registry, filled by indexFeatures during map load.
+  const searchIndex = [];
+  let searchGroups = [];
+  let searchMatches = [];
+  let searchActive = -1;
 
   // ── Palette consts referenced by BUILT_IN_PRESETS (main.js:1556-1611) ───
   const SKY_ATMOSPHERE = {
@@ -465,6 +473,257 @@
     });
   }
 
+  // ── Feature search (ported from main.js:9977-10350) ────────────────────
+  // Fully client-side over the already-loaded GeoJSON — no geocoder, works
+  // offline. Editor seams severed vs main.js: indexFeatures' `toggleFor` (a DOM
+  // checkbox) becomes `layersFor` (the layer-ids to make visible on landing,
+  // reusing PRESET_LAYERS), and the `featureListBindingFor` editor-list arg +
+  // the session-persistence calls are dropped.
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  // Register every named feature of a FeatureCollection. kindFor/layersFor may
+  // be a value or a (props) => value function; layersFor returns the layer-id
+  // array to unhide when a result lands (so the camera doesn't fly to a hidden
+  // layer). aliasesFor (optional) returns extra search terms (e.g. "trail 15").
+  function indexFeatures(data, kindFor, layersFor, aliasesFor) {
+    if (!data || !data.features) return;
+    for (const feature of data.features) {
+      const props = feature.properties || {};
+      const name = props.name || props.gnis_name;
+      if (!name || !feature.geometry) continue;
+      const layers = typeof layersFor === 'function' ? layersFor(props) : layersFor;
+      const entry = {
+        name: String(name),
+        kind: typeof kindFor === 'function' ? kindFor(props) : kindFor,
+        layers: Array.isArray(layers) ? layers : (layers ? [layers] : []),
+        geometry: feature.geometry,
+        description: props.description || null
+      };
+      if (aliasesFor) {
+        const raw = aliasesFor(props);
+        const aliases = (Array.isArray(raw) ? raw : [raw])
+          .map((a) => String(a || '').trim())
+          .filter(Boolean);
+        if (aliases.length) entry.aliases = aliases;
+      }
+      searchIndex.push(entry);
+    }
+  }
+
+  // Trails imported as "<name> (segment N)" collapse to one searchable trail.
+  function searchDisplayName(name) {
+    return name.replace(/\s*\(segment[^)]*\)\s*$/i, '').trim();
+  }
+
+  // Collapse per-segment entries into one group per name+kind, framed by the
+  // union of their extents; aliases + the unhide layer-set union into the group.
+  function buildSearchGroups() {
+    const byKey = new Map();
+    for (const entry of searchIndex) {
+      const display = searchDisplayName(entry.name) || entry.name;
+      const key = display.toLowerCase() + '|' + entry.kind;
+      let group = byKey.get(key);
+      if (!group) {
+        group = { name: display, kind: entry.kind, layers: [], geometries: [], aliases: [], description: null };
+        byKey.set(key, group);
+      }
+      if (!group.description && entry.description) group.description = entry.description;
+      group.geometries.push(entry.geometry);
+      for (const id of entry.layers) if (!group.layers.includes(id)) group.layers.push(id);
+      if (entry.aliases) {
+        for (const alias of entry.aliases) if (!group.aliases.includes(alias)) group.aliases.push(alias);
+      }
+    }
+    searchGroups = [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  function clearSearchResults() {
+    searchResults.innerHTML = '';
+    searchResults.style.display = 'none';
+    searchMatches = [];
+    searchActive = -1;
+  }
+
+  // Anchor the position:fixed dropdown to the input's box so it escapes any clip
+  // but tracks the input across scroll/resize.
+  function positionSearchResults() {
+    const rect = searchInput.getBoundingClientRect();
+    searchResults.style.left = `${rect.left}px`;
+    searchResults.style.top = `${rect.bottom + 4}px`;
+    searchResults.style.width = `${rect.width}px`;
+  }
+
+  // Match the query against the group name OR any alias. A leading `#` flags a
+  // deliberate tag query — aliases only, so a name substring can't shadow it.
+  function searchGroupMatchesQuery(group, query) {
+    const tagOnly = query.startsWith('#');
+    if (!tagOnly && group.name.toLowerCase().includes(query)) return true;
+    if (group.aliases && group.aliases.length) {
+      for (const alias of group.aliases) {
+        if (alias.toLowerCase().includes(query)) return true;
+      }
+    }
+    return false;
+  }
+
+  // Relevance rank (lower = better): exact name > prefix > mid-substring. For
+  // digit-leading (trail-number) queries, float trails above non-trails so the
+  // 1-prefixed trails aren't crowded out by 1-prefixed building addresses.
+  function searchRank(group, query) {
+    const n = group.name.toLowerCase();
+    let base;
+    if (n === query) base = 0;
+    else if (n.startsWith(query)) base = 1;
+    else if (group.aliases && group.aliases.some((a) => a.toLowerCase() === query)) base = 1;
+    else if (n.includes(query)) base = 2;
+    else base = 3;
+    if (base > 0 && /^\d/.test(query)) {
+      return base * 2 + (group.kind === 'trail' ? 0 : 1);
+    }
+    return base;
+  }
+
+  function renderSearchResults() {
+    const query = searchInput.value.trim().toLowerCase();
+    // 2+ chars to avoid flooding, EXCEPT a lone digit (a valid trail number).
+    if (query.length < 2 && !/^\d$/.test(query)) {
+      searchResults.style.display = 'none';
+      searchMatches = [];
+      return;
+    }
+    // Widen the cap for digit-leading queries so the full 1-prefixed trail set
+    // is reachable (the dropdown scrolls).
+    const limit = /^\d/.test(query) ? 12 : 8;
+    searchMatches = searchGroups
+      .filter((group) => searchGroupMatchesQuery(group, query))
+      .sort((a, b) => searchRank(a, query) - searchRank(b, query))
+      .slice(0, limit);
+    if (!searchMatches.length) {
+      searchResults.innerHTML = '<div class="search-empty">No match</div>';
+      searchResults.style.display = 'block';
+      positionSearchResults();
+      return;
+    }
+    searchResults.innerHTML = searchMatches
+      .map((match, i) => {
+        // A catalogued trail row gains a second, muted line with its curated
+        // description (truncated). Non-trail / no-desc rows render single-line.
+        let desc = null;
+        if (match.kind === 'trail' && match.description) {
+          desc = match.description.length > 80
+            ? match.description.slice(0, 79).trimEnd() + '…'
+            : match.description;
+        }
+        const head = `<div class="search-item${i === searchActive ? ' active' : ''}" data-i="${i}">`;
+        if (!desc) {
+          return head
+            + `<span>${escapeHtml(match.name)}</span>`
+            + `<span class="search-kind">${escapeHtml(match.kind)}</span></div>`;
+        }
+        return head
+          + `<span class="search-result-text">`
+          + `<span class="search-result-label">${escapeHtml(match.name)}</span>`
+          + `<span class="search-result-desc"></span>`
+          + `</span>`
+          + `<span class="search-kind">${escapeHtml(match.kind)}</span></div>`;
+      })
+      .join('');
+    // Descriptions via textContent (not innerHTML) so first-party copy is never
+    // parsed as markup. Paired by index with the matches above.
+    const descNodes = searchResults.querySelectorAll('.search-item');
+    searchMatches.forEach((match, i) => {
+      if (match.kind !== 'trail' || !match.description) return;
+      const node = descNodes[i] && descNodes[i].querySelector('.search-result-desc');
+      if (node) {
+        node.textContent = match.description.length > 80
+          ? match.description.slice(0, 79).trimEnd() + '…'
+          : match.description;
+      }
+    });
+    searchResults.style.display = 'block';
+    positionSearchResults();
+  }
+
+  // Search-result pulse — `osc` runs 0→1→0 a few times across the duration.
+  const PULSE_DURATION_MS = 2600;
+  const PULSE_FLASHES = 3;
+  const PULSE_LINE_OPACITY_MIN = 0.2;
+  const PULSE_LINE_OPACITY_RANGE = 0.7;
+  const PULSE_LINE_WIDTH_MIN = 5;
+  const PULSE_LINE_WIDTH_RANGE = 9;
+  const PULSE_POINT_RADIUS_MIN = 12;
+  const PULSE_POINT_RADIUS_RANGE = 16;
+  let pulseRAF = null;
+  function pulseHighlight() {
+    if (!map.getLayer('search-highlight-line')) return;
+    setLayerVisibility('search-highlight-line', true);
+    setLayerVisibility('search-highlight-point', true);
+    if (pulseRAF) cancelAnimationFrame(pulseRAF);
+    const start = performance.now();
+    function frame(now) {
+      const t = (now - start) / PULSE_DURATION_MS;
+      if (t >= 1) {
+        setLayerVisibility('search-highlight-line', false);
+        setLayerVisibility('search-highlight-point', false);
+        pulseRAF = null;
+        return;
+      }
+      const osc = 0.5 + 0.5 * Math.cos(t * Math.PI * 2 * PULSE_FLASHES);
+      if (map.getLayer('search-highlight-line')) {
+        map.setPaintProperty('search-highlight-line', 'line-opacity',
+          PULSE_LINE_OPACITY_MIN + PULSE_LINE_OPACITY_RANGE * osc);
+        map.setPaintProperty('search-highlight-line', 'line-width',
+          PULSE_LINE_WIDTH_MIN + PULSE_LINE_WIDTH_RANGE * osc);
+      }
+      if (map.getLayer('search-highlight-point')) {
+        map.setPaintProperty('search-highlight-point', 'circle-radius',
+          PULSE_POINT_RADIUS_MIN + PULSE_POINT_RADIUS_RANGE * osc);
+        map.setPaintProperty('search-highlight-point', 'circle-stroke-opacity',
+          PULSE_LINE_OPACITY_MIN + PULSE_LINE_OPACITY_RANGE * osc);
+      }
+      pulseRAF = requestAnimationFrame(frame);
+    }
+    pulseRAF = requestAnimationFrame(frame);
+  }
+
+  function gotoMatch(index) {
+    const match = searchMatches[index];
+    if (!match) return;
+    const bounds = { minLng: Infinity, minLat: Infinity, maxLng: -Infinity, maxLat: -Infinity };
+    for (const geometry of match.geometries) {
+      if (geometry.coordinates) extendBounds(bounds, geometry.coordinates);
+    }
+    if (!Number.isFinite(bounds.minLng)) return;
+    // Unhide the result's layer(s) so it's visible on arrival even if the
+    // current preset has them off (replaces main.js's toggle.checked = true).
+    for (const id of match.layers) setLayerVisibility(id, true);
+    if (bounds.minLng === bounds.maxLng && bounds.minLat === bounds.maxLat) {
+      map.flyTo({ center: [bounds.minLng, bounds.minLat], zoom: 16, duration: 1100 });
+    } else {
+      map.fitBounds(
+        [[bounds.minLng, bounds.minLat], [bounds.maxLng, bounds.maxLat]],
+        { padding: 90, maxZoom: 16.5, duration: 1100, bearing: map.getBearing() }
+      );
+    }
+    const highlight = map.getSource('search-highlight');
+    if (highlight) {
+      highlight.setData({
+        type: 'FeatureCollection',
+        features: match.geometries.map((geometry) => ({ type: 'Feature', properties: {}, geometry }))
+      });
+      pulseHighlight();
+    }
+    searchInput.value = match.name;
+    clearSearchResults();
+  }
+
   // ── Layer build ────────────────────────────────────────────────────────
   // Each add-site is the source + style only, ported from main.js. The popup
   // bindings, search indexing, feature-list registration, and positioned-feature
@@ -655,6 +914,10 @@
         },
         paint: { 'text-color': '#4a6c73', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.5 }
       });
+      indexFeatures(waterData,
+        (props) => props.water_kind === 'point' ? (props.water_class || 'water point')
+          : props.water_kind === 'waterbody' ? 'waterbody' : 'stream',
+        (props) => props.water_kind === 'point' ? PRESET_LAYERS.showSprings : PRESET_LAYERS.showWater);
     }
 
     // --- USGS National Map asphalt roads (main.js:8467) ---
@@ -684,6 +947,7 @@
         },
         paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 }
       });
+      indexFeatures(roadsData, 'road', () => PRESET_LAYERS.showRoads);
     }
 
     // --- Visitor context callouts + brand logos (one file, split by kind) ---
@@ -723,6 +987,7 @@
         },
         paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 }
       });
+      indexFeatures(visitorContextData, 'visitor context', () => PRESET_LAYERS.showVisitorContext);
     }
 
     // --- FEMA building footprints (main.js:8808) ---
@@ -768,6 +1033,16 @@
         filter: ['==', ['get', 'aop_structure_box'], true],
         paint: { 'fill-color': '#46423b', 'fill-opacity': 0.82, 'fill-outline-color': '#2e2a25' }
       });
+      // Only the public park FACILITIES are searchable (region footprints +
+      // private black boxes stay out); address + role ride as aliases.
+      const facilityFeatures = buildingsData.features
+        .filter((f) => f.properties && f.properties.aop_facility === true);
+      indexFeatures(
+        { type: 'FeatureCollection', features: facilityFeatures },
+        'facility',
+        () => PRESET_LAYERS.showBuildings,
+        (props) => [props.address, props.facility_role]
+      );
     }
 
     // --- AOP merged trail network (the gold trail truth) (main.js:9014) ---
@@ -788,6 +1063,20 @@
         },
         paint: { 'text-color': '#111', 'text-halo-color': '#fff', 'text-halo-width': 1.6 }
       });
+      // Named trails searchable by name AND by number ("15", "trail 15").
+      indexFeatures(
+        aopTrailNetworkData,
+        'trail',
+        () => PRESET_LAYERS.showAopTrailNetwork,
+        (props) => {
+          const aliases = [];
+          if (props.name != null) aliases.push('trail ' + String(props.name));
+          if (props.trail_number != null) {
+            aliases.push(String(props.trail_number), 'trail ' + String(props.trail_number));
+          }
+          return aliases.length ? aliases : null;
+        }
+      );
     }
 
     // --- Publishable layers: boundaries, trails, trailheads (main.js:9533) ---
@@ -826,6 +1115,11 @@
       filter: ['==', ['get', 'layer'], 'trailheads'],
       paint: { 'circle-radius': 6, 'circle-color': '#6f8a5c', 'circle-stroke-color': '#f7f1e2', 'circle-stroke-width': 2 }
     });
+    indexFeatures(publishData,
+      (props) => props.layer === 'trail_centerlines' ? 'trail'
+        : props.layer === 'park_boundaries' ? 'boundary' : 'trailhead',
+      (props) => props.layer === 'trail_centerlines' ? PRESET_LAYERS.showTrails
+        : props.layer === 'park_boundaries' ? PRESET_LAYERS.showBoundaries : PRESET_LAYERS.showTrailheads);
 
     // The Park zoom preset fits the published boundary; fall back to all publish
     // features if no boundary has been exported (main.js:9612-9619).
@@ -875,7 +1169,28 @@
           'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-anchor': 'center'
         }
       });
+      indexFeatures(brandLogosData, 'logo', () => PRESET_LAYERS.showBrandLogos);
     }
+
+    // --- Search highlight overlay (main.js:9942) ---
+    // Added LAST so the pulse draws above every other layer. buildSearchGroups
+    // collapses the per-add-site index into ranked, segment-merged results.
+    map.addSource('search-highlight', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({
+      id: 'search-highlight-line', type: 'line', source: 'search-highlight',
+      layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#e8a83a', 'line-width': 8, 'line-opacity': 0.85, 'line-blur': 1.5 }
+    });
+    map.addLayer({
+      id: 'search-highlight-point', type: 'circle', source: 'search-highlight',
+      filter: ['==', ['geometry-type'], 'Point'],
+      layout: { visibility: 'none' },
+      paint: {
+        'circle-radius': 16, 'circle-color': '#e8a83a', 'circle-opacity': 0,
+        'circle-stroke-color': '#e8a83a', 'circle-stroke-width': 4, 'circle-stroke-opacity': 0.85
+      }
+    });
+    buildSearchGroups();
 
     // Initial framing + the first preset (main.js:9595 + 9970-9971).
     fitToDataBounds(publishData);
@@ -892,4 +1207,43 @@
   }
   terrainButton.addEventListener('click', () => setTerrainEnabled(!terrainToggle.checked));
   terrainToggle.addEventListener('change', () => setTerrainEnabled(terrainToggle.checked));
+
+  // Search input + dropdown (main.js:10327-10362). Session-persistence calls
+  // dropped (no viewer session state in the clean core yet).
+  searchInput.addEventListener('input', () => { searchActive = -1; renderSearchResults(); });
+  searchInput.addEventListener('focus', renderSearchResults);
+  searchInput.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      searchActive = Math.min(searchActive + 1, searchMatches.length - 1);
+      renderSearchResults();
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      searchActive = Math.max(searchActive - 1, 0);
+      renderSearchResults();
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      gotoMatch(searchActive >= 0 ? searchActive : 0);
+    } else if (event.key === 'Escape') {
+      searchInput.value = '';
+      clearSearchResults();
+      searchInput.blur();
+    }
+  });
+  // mousedown (not click) so it fires before the input blur closes the list.
+  searchResults.addEventListener('mousedown', (event) => {
+    const item = event.target.closest('.search-item');
+    if (item) {
+      event.preventDefault();
+      gotoMatch(Number(item.dataset.i));
+    }
+  });
+  document.addEventListener('click', (event) => {
+    if (!event.target.closest('.search')) clearSearchResults();
+  });
+  // Keep the position:fixed dropdown anchored to the input across scroll/resize.
+  // (main.js's broader resyncViewport / map.resize is PWA viewport health — a
+  // later slice; search needs only the reposition.)
+  window.addEventListener('scroll', () => { if (searchResults.style.display === 'block') positionSearchResults(); }, true);
+  window.addEventListener('resize', () => { if (searchResults.style.display === 'block') positionSearchResults(); });
 })();
