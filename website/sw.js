@@ -32,7 +32,7 @@
 //   3. reconcile DATA_ASSETS below with `ls website/data/`
 // Shell HTML + copy JSON self-heal (stale-while-revalidate), so a missed bump is
 // less dangerous than before — but bulky GeoJSON only refreshes on a bump.
-const VERSION = 'v63'; // keep in sync with #appVersion in index.html
+const VERSION = 'v64'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
@@ -58,6 +58,14 @@ const SHELL_ASSETS = [
   // The ONE feature-to-text strategy (normalize_feature_display): shared by
   // main.js + the editors via window.AOPFeatureDisplay, precached with the shell.
   './js/feature_display.js',
+  // Front-end read view (Sprint 13 viewer extraction, slice 7 swap): index.html
+  // is now the clean viewer, which loads these two. Precached so the front end
+  // is offline-first.
+  './css/viewer.css',
+  './js/viewer_core.js',
+  // The old all-in-one page is parked at old_index.html and still uses these
+  // (main.js + the embedded panel); the standalone field editors load them too.
+  // Kept in the precache shell so those pages also work offline.
   './js/main.js',
   // Right-panel swap (Stage 1): the embedded one-model panel + its scoped styles.
   './css/panel-embed.css',

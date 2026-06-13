@@ -24,7 +24,7 @@
    map. viewer_band.js absolutely positions + sizes each tile every frame from the
    9-patch's screen rectangle, and hides any tile whose side has no margin. Because
    the tiles track the boundary (not the viewport), the whole frame — paper, keyline,
-   lettering, corner diamonds — rides WITH the map, like a printed neat-line. */
+   lettering, corner marks — rides WITH the map, like a printed neat-line. */
 .band-tile {
   position: absolute;
   display: none;            /* JS shows + sizes only the tiles that have margin */
@@ -45,9 +45,10 @@
 .band-tile.corner.bl   { border-right: 1.5px solid var(--band-rule); border-top:    1.5px solid var(--band-rule); }
 .band-tile.corner.br   { border-left:  1.5px solid var(--band-rule); border-top:    1.5px solid var(--band-rule); }
 
-/* The lettering. Fixed px size; JS positions each label along the TRUE 9-patch
-   mid-point and CSS anchors it to the map-facing edge, so it holds size + location
-   relative to the landmasses (does not float at the viewport centre). */
+/* The lettering. The px sizes below are the BASE that JS measures once; JS then
+   scales each label to a fixed fraction of its edge so the type is pinned to the
+   map (grows/shrinks with the 9-patch, never overflows). JS also positions each
+   label along the TRUE 9-patch mid-point; CSS anchors it to the map-facing edge. */
 .band-label {
   position: absolute;
   color: var(--band-dark, #2a1f12);
@@ -68,15 +69,19 @@
 .band-tile.edge.left   .band-label { right: 8px;  transform: translateY(-50%) rotate(180deg); }
 .band-tile.edge.right  .band-label { left: 8px;   transform: translateY(-50%); }
 
-/* Corner diamonds ride each corner tile's INNER corner (the 9-patch boundary). */
+/* The Rock Warblers mark rides each corner tile's INNER corner (the 9-patch
+   boundary), where the diamonds used to sit. Drawn via a mask so the flat-silhouette
+   logo takes the neat-line ink colour and reads as a printed corner stamp. */
 .band-tile.corner::after {
-  content: ""; position: absolute; width: 8px; height: 8px; background: #a85020;
-  transform: rotate(45deg); box-shadow: 0 0 0 1px var(--band-rule);
+  content: ""; position: absolute; width: 22px; height: 22px;
+  background-color: var(--band-rule);
+  -webkit-mask: url("../assets/branding/rw-mark.svg") center / contain no-repeat;
+          mask: url("../assets/branding/rw-mark.svg") center / contain no-repeat;
 }
-.band-tile.corner.tl::after { right: 7px; bottom: 7px; }
-.band-tile.corner.tr::after { left: 7px;  bottom: 7px; }
-.band-tile.corner.bl::after { right: 7px; top: 7px; }
-.band-tile.corner.br::after { left: 7px;  top: 7px; }
+.band-tile.corner.tl::after { right: 6px; bottom: 6px; }
+.band-tile.corner.tr::after { left: 6px;  bottom: 6px; }
+.band-tile.corner.bl::after { right: 6px; top: 6px; }
+.band-tile.corner.br::after { left: 6px;  top: 6px; }
 
 /* Small proof HUD — explains how to trigger the peek. Not part of the feature. */
 #bandProofHud {

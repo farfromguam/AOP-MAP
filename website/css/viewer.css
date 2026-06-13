@@ -23,6 +23,10 @@
   --moss-dark: #384833;
   --moss-soft: #e3ebdc;
   --rust: #a85020;
+  /* Locate FAB — a GPS blue that reads against the Muted Earth map without
+     clashing with the rust edit FAB. */
+  --locate-blue: #2b7cd3;
+  --locate-blue-dark: #2367b4;
 
   /* Left-rail drawer tokens (app.css:27-30). */
   --tab-h: 44px;
@@ -141,15 +145,33 @@ html, body { background: #000; }
 .hot-button-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hot-button-detail { display: block; margin-top: 1px; font: 400 0.72rem Inter, system-ui, sans-serif; text-transform: none; letter-spacing: 0; color: rgba(247, 241, 226, 0.88); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ── Locate / Install / version float groups — slice 6 (app.css:209-274) ─ */
+/* ── Locate FAB + Install / version float groups — slice 6/7 (app.css:209-274) ─ */
 .util-group { width: var(--tab-h); justify-self: start; border-radius: 8px; overflow: hidden; box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
 .util-btn { width: var(--tab-h); height: var(--tab-h); display: grid; place-items: center; border: 0; padding: 0; cursor: pointer; transition: background 0.12s ease, color 0.12s ease; }
 .util-btn svg { width: 22px; height: 22px; }
-.util-group.util-locate { background: var(--cream-surface); border: 1px solid var(--cream-border); }
-.util-group.util-locate .util-btn { background: transparent; color: var(--brown-mid); }
-.util-group.util-locate .util-btn:hover { background: var(--cream-wash-hover); color: var(--brown-dark); }
-.util-group.util-locate .util-btn:focus-visible { outline: 2px solid var(--moss); outline-offset: -2px; }
-.util-group.util-locate .util-btn.active { background: var(--moss-soft); color: var(--moss-dark); }
+
+/* Locate — blue crosshair FAB, bottom-right. Mirrors the editor's pencil FAB
+   (app.css .panel.collapsed: 56px circle, glow + cream ring, flat 18px bottom so
+   it aligns with the bottom-left ⓘ). Locate is ALWAYS present, so it anchors the
+   far-right corner (right:12px, the same corner slot the edit FAB uses elsewhere).
+   On the future tester view, where Locate + Edit both show, the edit FAB sits to
+   its LEFT (right:80px = 12 + 56 + 12). The lit `.active` state is set by
+   viewer_core.js while the GeolocateControl tracks. */
+.locate-fab {
+  position: fixed; right: 12px; bottom: 18px; z-index: 5;
+  width: 56px; height: 56px; padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer;
+  background: var(--locate-blue); color: #f3f8ff;
+  box-shadow: 0 8px 22px rgba(20,74,128,0.42), 0 0 0 4px rgba(255,253,245,0.55);
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+.locate-fab svg { width: 24px; height: 24px; }
+.locate-fab:hover { background: var(--locate-blue-dark); }
+.locate-fab:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
+.locate-fab.active {
+  background: var(--locate-blue-dark);
+  box-shadow: 0 8px 22px rgba(20,74,128,0.5), 0 0 0 4px rgba(255,253,245,0.82), inset 0 0 0 2px rgba(255,255,255,0.6);
+}
 #pwaInstallBtn.util-install { width: var(--tab-h); height: var(--tab-h); justify-self: start; display: grid; place-items: center; padding: 0; border: 1px solid var(--rust); border-radius: 8px; background: var(--rust); color: #fff; cursor: pointer; box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
 #pwaInstallBtn.util-install svg { width: 22px; height: 22px; }
 #pwaInstallBtn.util-install:hover { background: #96461b; }

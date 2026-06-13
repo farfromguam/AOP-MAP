@@ -6,6 +6,66 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (BAND LETTERING NOW SCALES TO THE MAP — user reversed the fixed-size call).**
+Follow-up on `viewer_banded.html`. User first said the band text *"gets too big and overflows its bounds"*
+when zooming out and *"fixed is ok"* — but on reproducing (measured: font was already fixed 12/10px, the
+edge just shrinks under it) they reversed: *"make it scale then so its fixed to the map."* So the lettering
+is now SCALED to the 9-patch, not fixed px. **`viewer_band.js` only:** new `extentRatio()` caches each
+label's extent-per-font-px once (glyphs constant), and `scaleLabel(tile, edgeLen, fill)` sets
+`font-size = fill * edge / ratio` each frame — so every label spans a fixed FRACTION of the edge it sits on
+(`FILL_TOP=0.58`, `FILL_SUB=0.70`), pinned to the map and incapable of overflowing. Uses the CLAMPED
+`midW`/`midH` (visible edge) so an overfilling 9-patch can't push type past the viewport. CSS base sizes
+(12/10px) kept as the measured baseline; comment updated. **Verified by observation**
+(`/tmp/verify_band_scale.py`, 0 errors, `node --check` OK): TOP holds 58% of its edge as font goes 12.6→11.1px
+across zoom-out; RIGHT holds ~68–70% as font goes 15.2→9.7px — proportional, clears the corner marks, no
+overflow. Shots `brain/output/band_scale_z{0_region,2_out}.png`. **UNCOMMITTED.** **Council not yet run on
+this tweak** — the band design is still actively iterating and the working tree is dominated by the
+concurrent Slice-7 swap (not mine); I won't clear that combined gate. Convene the full band council once the
+look settles.
+
+-----
+
+**2026-06-13 (SPRINT 13 SLICE 7 — THE SWAP DONE + blue Locate FAB. The viewer is now the front end).**
+User (`brain/pages.md`): *"Do the blue locate tasks and ensure that the new page is 'fully ready' for
+action…. rename the old one old_index. its important that this new page function as our 'front end'."*
+**(1) Blue Locate FAB:** moved `#locateBtn` out of the left rail into a bottom-right `button.locate-fab`
+— a 56px **blue crosshair** circle mirroring the editor pencil FAB (`app.css .panel.collapsed`). User
+follow-up: locate is always present, so it anchors the **far-right corner** (`right:12px`) rather than
+holding a phantom slot beside the absent edit FAB; on the future tester view the edit FAB sits to its
+LEFT (`right:80px`). Edit FAB not shown on the read view. `viewer_core.js` wiring unchanged (keys on the `id` +
+`.active`). New `--locate-blue`/`-dark` tokens + `.locate-fab` in `viewer.css`. **(2) The swap (the
+git-gated step):** `mv index.html → old_index.html`, `mv viewer.html → index.html` (plain mv, no
+`git mv`); `sw.js` VERSION v63→**v64** + `viewer.css`/`viewer_core.js` added to `SHELL_ASSETS` (main.js/
+panel.js/app.css/panel-embed.css KEPT — additive, old_index + editors still use them); `#appVersion`
+v62→**v64**; `manifest.json` unchanged (`start_url:"./"` already resolves to the viewer). No site link
+pointed at viewer.html, so nothing stranded. **Verified by observation** (`/tmp/verify_locate_fab.py`,
+`/tmp/verify_swap.py`): `/` = clean viewer (no editor panel, presets 4 / zooms 3 / search / calendar /
+hot / install, `#appVersion v64` folded, SW registered, locate lights + dot renders); `old_index.html` =
+200, full editor page; **0 console errors** both (`/tmp/{locate_fab_corner,swap_root}.png`). `node --check`
+clean. Card `tasks/13_viewer_extraction/viewer_swap.md`. **Follow-up:** the committed
+`mvp/scripts/playwright_verify_*.py` still target the OLD full page (editor + dev layers) — re-point them
+at `old_index.html` or rewrite as viewer verifiers (noted on the card, not silently dropped). **UNCOMMITTED**
+(user's git gate — the rename shows as viewer.html-deleted + index.html-modified + old_index.html-added).
+Council next.
+
+**2026-06-13 (BAND CORNERS NOW CARRY THE ROCK WARBLERS MARK — user request on `viewer_banded.html`).**
+Follow-up to the 9-patch band. User: *"put a qr mark in the corners where the diamonds are. there should be
+one in the brain. its called qr mark but rename it to rw mark when you move it to where you like."* The asset
+was `brain/prose/qr mark.svg` (the RW bird+letters wordmark). **Moved** it out of the brain to the website
+brand home, renamed: `brain/prose/qr mark.svg` → `website/assets/branding/rw-mark.svg` (alongside
+`aop-badge.png`/`rock-warblers.jpg`; hyphen convention). **CSS** (`website/css/viewer_band.css`): the
+`.band-tile.corner::after` rule swapped from the orange rotated diamond to the RW mark, drawn via
+`mask: url("../assets/branding/rw-mark.svg")` + `background-color: var(--band-rule)` so the flat-silhouette
+logo takes the neat-line ink and reads as a printed corner stamp; 22px, inset 6px at each corner's INNER
+(boundary) corner. **Verified by observation** (`/tmp/verify_rw_mark.py`, 0 errors): asset serves HTTP 200;
+shots `brain/output/band_rwmark_{allsides,tr,bl}.png` show the bird+RW mark rendered at all four boundary
+corners (top-left sits behind the left-controls panel — UI occlusion, not a band issue). **UNCOMMITTED**
+(user's git gate): `viewer_band.css` (M), `assets/branding/rw-mark.svg` (new), `brain/prose/qr mark.svg`
+(deleted by the move). NB the tree also holds concurrent slice-6/cleanup work (`viewer.css`/`sw.js`/
+`viewer.html`) that is NOT mine — I did not touch it and won't clear the combined gate over it.
+
+-----
+
 **2026-06-13 (MOCKUP CLEANUP — 77 settled `website/*.html` retired, 119 → 42).**
 The long-deferred misc_3 item 14 / `viewer_polish_followups.md` "Mockup Cleanup" chore is
 executed. Classified every named mockup applied-vs-pending against `index.html`'s own
@@ -26,8 +86,10 @@ masters `icon_master`/`data_sources`/`copy_review`; products `index`/`right_pane
 headless :8001 = 0 console errors / 5 Comparisons links, zero dangling refs to deleted
 files (the leftrail `→ leftrail_compare.html` back-links + `copy_review → res.html` are
 PRE-EXISTING, left alone). Full record on `viewer_polish_followups.md` "Mockup Cleanup".
-All uncommitted per `no_commits.md`. The `brain/output/council/banded_b_probe_receipt.txt`
-in git status is from the separate active band work, untouched here.
+No git op by this cleanup (`no_commits.md`); the user then committed the working tree —
+cleanup bundled with the parallel band/viewer work — as `87afe8f "cleanup & viewer work"`.
+The band changes (`viewer.css`, `viewer_band.js`, `viewer_core.js`, `viewer.html`) are that
+separate active work, not the cleanup. sw.js/#appVersion bumped v62→v63 (shell asset changed).
 
 **2026-06-13 (BAND SNAP-BACK TUNED — mid-pan leash removed per user; only settle on release).**
 Follow-up to the 9-patch rebuild (entry below). User: the snap felt aggressive — *"IF we are mid pan it

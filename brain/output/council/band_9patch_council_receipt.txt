@@ -76,3 +76,40 @@ RESULT: CLEAR for the band work. NOTE: clearance marker NOT written this round �
   also holds a concurrent agent's unreviewed Sprint-13 slice-6 changes (viewer_core.js/viewer.html/
   viewer.css). The combined diff is that agent's gate to clear, not this one's. My 9-patch HTML+CSS were
   swept into the user's commit 2029871; only viewer_band.js (the snap tuning) remains uncommitted.
+
+=== ADDENDUM 2 — corner mark swap (RW wordmark) re-review (2026-06-13, same session) ===
+change: band corner decoration swapped from the orange CSS diamond to the Rock Warblers mark.
+        Asset MOVED out of the brain: brain/prose/"qr mark.svg" -> website/assets/branding/rw-mark.svg.
+        CSS: .band-tile.corner::after now mask: url("../assets/branding/rw-mark.svg") + background
+        var(--band-rule), 22px, inset 6px. viewer_band.css only (+ asset move). Per user request.
+re-review: Witness + Mason scoped to my files (concurrent viewer.css/sw.js/viewer.html are another
+        agent's, excluded).
+SEAT: witness  VERDICT: clear — curl rw-mark.svg = HTTP 200 (real SVG body); re-ran /tmp/verify_rw_mark.py
+  live, ERRORS: 0; pixels in band_rwmark_{tr,bl,allsides}.png show the bird+RW mark at all 4 boundary
+  corners in neat-line ink (not an empty/broken-mask box).
+SEAT: mason     VERDICT: clear — path ../assets/branding/rw-mark.svg resolves from website/css/; file
+  exists (5908B); both -webkit-mask + mask present; SVG mask-suitable (opaque-black paths, ink via
+  background-color); no dead refs / no leftover .band-dot / diamond styling; pure presentational CSS,
+  idiomatic to the --band-rule/--paper-band token style. (Noted + fixed: stale "corner diamonds"
+  file-top comment -> "corner marks".)
+RESULT: CLEAR for the band corner-mark change. Marker NOT written — combined working diff still holds
+  concurrent slice-6/cleanup work (viewer.css/sw.js/viewer.html); that gate is the other agent's.
+
+=== ADDENDUM 3 — band lettering scaled-to-the-map re-review (2026-06-13, same session) ===
+change: lettering switched from fixed px to scaled — extentRatio() caches extent-per-font-px once,
+        scaleLabel() sets font = fill*edge/ratio so each label spans a fixed fraction of its edge
+        (FILL_TOP=0.58, FILL_SUB=0.70); uses clamped midW/midH (overflow-safe). viewer_band.js +
+        a comment-only viewer_band.css change. Per user: "make it scale then so its fixed to the map."
+re-review: Witness + Mason scoped to my 2 files (concurrent Slice-7 swap — index.html/viewer.html(D)/
+        old_index.html/viewer.css/sw.js/data_editor_*(D) — excluded; not mine).
+SEAT: witness  VERDICT: clear — live re-ran /tmp/verify_band_scale.py: 0 errors; observed DOM shows
+  constant edge-fraction with changing font (TOP 58%→58% font 12.6→11.1px; RIGHT 68→70% font
+  15.2→9.7px) = the scaling proof; PNGs band_scale_z{0_region,2_out}.png show no overflow, corner marks
+  cleared; node --check passes.
+SEAT: mason     VERDICT: clear — f*r0=fill*edge math sound (glyph + em letter-spacing scale linearly);
+  extentRatio clears+restores inline font so _r0 is always the base ratio (re-entrancy-safe); r0<=0 +
+  ext>0/base>0 guards prevent NaN/0 font; vertical tiles read offsetHeight (writing-mode axis); clamped
+  midW/midH = overflow-safe; setLabel still positions (no orphan); idiomatic; no throw/filter.
+RESULT: CLEAR for the band scaling change. Marker NOT written — combined working diff is dominated by the
+  concurrent Slice-7 swap (not reviewed here, not mine to bless). Resolution: the swap's owner clears it,
+  or the user commits the swap (their git gate); then the band diff alone can be cleanly cleared.

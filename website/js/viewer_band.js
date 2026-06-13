@@ -100,11 +100,36 @@
     }
 
     // The lettering hugs the map-facing edge and rides the TRUE 9-patch mid-point
-    // (the tile clips any overhang), so it holds its size and its position relative
-    // to the landmasses as the map pans — it does not float at the viewport centre.
+    // (the tile clips any overhang), so it holds its position relative to the
+    // landmasses as the map pans — it does not float at the viewport centre.
     function setLabel(tile, prop, px) {
       var lab = tile.firstElementChild;
       if (lab) lab.style[prop] = px + 'px';
+    }
+
+    // Lettering is SCALED to the map: each label spans a fixed FRACTION of the edge
+    // it sits on, so it grows and shrinks with the 9-patch (printed-on-the-map feel)
+    // and never overflows the edge as you zoom out. We cache each label's
+    // extent-per-font-px ratio once (the glyphs are otherwise constant), then
+    // font-size = fraction * edge / ratio.
+    var FILL_TOP = 0.58, FILL_SUB = 0.70, FONT_MIN = 3;
+    function extentRatio(tile, lab) {
+      if (lab._r0) return lab._r0;
+      var saved = lab.style.fontSize;
+      lab.style.fontSize = '';                        // measure at the CSS base size
+      var base = parseFloat(getComputedStyle(lab).fontSize) || 10;
+      var vertical = (tile === tiles.left || tile === tiles.right);
+      var ext = vertical ? lab.offsetHeight : lab.offsetWidth;
+      lab.style.fontSize = saved;
+      if (ext > 0 && base > 0) lab._r0 = ext / base;  // px of text per px of font
+      return lab._r0 || 0;
+    }
+    function scaleLabel(tile, edgeLen, fill) {
+      var lab = tile.firstElementChild;
+      if (!lab) return;
+      var r0 = extentRatio(tile, lab);
+      if (r0 <= 0) return;                            // not measurable yet (tile hidden)
+      lab.style.fontSize = Math.max(FONT_MIN, (fill * edgeLen) / r0) + 'px';
     }
 
     function update() {
@@ -128,10 +153,10 @@
       place(tiles.right,  Rx, Ty, rightW, midH);
 
       var midX = (r.minX + r.maxX) / 2, midY = (r.minY + r.maxY) / 2;
-      setLabel(tiles.top,    'left', midX - Lx);
-      setLabel(tiles.bottom, 'left', midX - Lx);
-      setLabel(tiles.left,   'top',  midY - Ty);
-      setLabel(tiles.right,  'top',  midY - Ty);
+      setLabel(tiles.top,    'left', midX - Lx); scaleLabel(tiles.top,    midW, FILL_TOP);
+      setLabel(tiles.bottom, 'left', midX - Lx); scaleLabel(tiles.bottom, midW, FILL_SUB);
+      setLabel(tiles.left,   'top',  midY - Ty); scaleLabel(tiles.left,   midH, FILL_SUB);
+      setLabel(tiles.right,  'top',  midY - Ty); scaleLabel(tiles.right,  midH, FILL_SUB);
     }
 
     // Snap the camera back so all gaps close — the band slides out with it.

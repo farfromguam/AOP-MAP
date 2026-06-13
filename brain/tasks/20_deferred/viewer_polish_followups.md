@@ -97,7 +97,9 @@ readability, or verifier coverage, land it.
     deleted file. Pre-existing dangling refs left untouched (out of scope): the
     kept `leftrail_*` survivors back-link a never-existent `leftrail_compare.html`
     (the v1 page, retired before this pass); `copy_review.html → res.html`.
-  - Git-recoverable; uncommitted per `no_commits.md`.
+  - No git op by this cleanup (per `no_commits.md`). The user subsequently committed
+    the working tree — this cleanup bundled with parallel band/viewer work — as
+    `87afe8f "cleanup & viewer work"`. Git-recoverable.
 - [x] **Left-sidebar survivor kept:** `leftrail_compare_v2.html` + the 9 variants it
   iframes (`leftrail_current`, `eventflow_{focus,ribbon,timeline}`,
   `gates_{dash,horizon,tag}`, `tabs_{blaze,manilla,ruled}`) + `leftrail_motion`
@@ -109,9 +111,25 @@ readability, or verifier coverage, land it.
   - `calendar_placeholder_v{1,2,3,4}.html` — `calendar_placeholder_state.md` open.
   - `park_bounds_icon_review.html` — ◌ pick owed (PB1–PB9), `park_bounds_icon_apply`.
   - `right_sidebar_compare.html` + `right_sidebar_v{1,2,3,4}.html` — ◌ open toolkit.
-  - `data_editor_map_*` (5) + `data_editor_v1_preview_*` (5) — user is reviewing in
-    the UI (`data_editor_map_compare.html` / `data_editor_v1_preview_compare.html`)
-    before deciding; retirement otherwise owned by `data_editor_fold_into_production.md`.
+- [x] **2026-06-13 — data_editor BOTH axes decided; all 9 data_editor_* mockups
+  retired except the winner config + the data-grid tool.** Architecture clarified:
+  `js/data_editor_map.js` (KEPT, the shared engine) holds all layout+preview logic;
+  the mockup HTMLs were 15-line config shims (`window.AOP_MAP_MODE` / `AOP_PREVIEW_STYLE`).
+  - **Preview axis → A (popup).** User: "keep the v1 preview compare A — that's what we
+    wanted to go with" (overrides the earlier card note leaning C/labeled-fields).
+    Retired `data_editor_v1_preview_{b_phone,c_fields,d_chips,compare}.html` (4).
+  - **Map-layout axis → V1 side (`AOP_MAP_MODE='side-right'`).** User: "that was decided;
+    its first option was promoted to the one we just cleaned up." Retired
+    `data_editor_map_{compare,v1_side,v2_drawer,v3_mapfirst,v4_overlay}.html` (5).
+  - **Winner preserved:** the chosen combo (side-right map + popup preview) is fully
+    captured in the KEPT `data_editor_v1_preview_a_popup.html` (`AOP_MAP_MODE='side-right';
+    AOP_PREVIEW_STYLE='popup'`) + the engine `js/data_editor_map.js`. No design lost by
+    deleting `data_editor_map_v1_side.html`. (NB: the standalone data-grid `data_editor.html`
+    is the OLD grid-only tool, NOT the map fold — the combined map+editor lives in the
+    a_popup page; the `data_editor_fold_into_production.md` fold went to the engine, not
+    into `data_editor.html`.)
+  - 9 files retired total this pass; `website/*.html` 42 → 33. Only the deleted compare
+    pages referenced the deleted variants — no dangling refs (Witness-confirmed).
 - [x] Tools/masters kept: `icon_master.html`, `data_sources.html`, `copy_review.html`.
   Products kept: `index`, `right_panel`, `data_editor`, `schedule_editor`, `viewer`,
   `viewer_banded`.
