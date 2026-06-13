@@ -105,3 +105,44 @@ revert the credit collapses on first `sourcedata` again (no artificial dwell). `
 bumped **v67 → v68** (`sw.js` + `#appVersion`); this build carries the state-2 combined bubble + the
 schedule-resize restore (the dwell was added then reverted within the same uncommitted v68). **UNCOMMITTED**
 (user's git gate).
+
+### Addendum — 2026-06-13 (TESTER surface = `?tester=1` link, with the lat/long GPS offset)
+
+User: *"so if date offset is supported then we only need a lat long offset and then we can follow a link to
+the 'test' page."* The "test page" of `brain/pages.md` is **a mode on the read viewer reached by a link, not
+a separate `tester.html`** — per `ai_rules/editor_is_the_viewer` (V2 is V1 with more controls, not a fork)
+and because the code already drives test fixtures off URL params (`?clock=` for the date offset already lives
+in `viewer_core.js`; `old_index.html` used `?edit=`). So tester is **one umbrella param** layered on
+`index.html`, and the two test affordances compose: **date offset = the existing `?clock=`**, **lat/long
+offset = new, this addendum.** Full test link: `/index.html?tester=1&clock=YYYY-MM-DDTHH:MM`.
+
+**Built (viewer-only, `viewer_core.js` + `viewer.css`):**
+- **`?tester=1` detection** (`testerParamOn()`, truthy unless `=0`) → adds the `.tester` html class (the
+  documented hook the future on-tester **edit FAB** hangs off — see the Locate-FAB note in `index.html`) and
+  injects a small rust **"TESTER" chip** top-center (`.tester-badge`) so a field tester on a phone can tell
+  the test surface (shifted GPS/clock) from the live day-of viewer.
+- **Lat/long offset (GPS spoof).** Wraps `navigator.geolocation` (`getCurrentPosition` + `watchPosition`)
+  **before** the `GeolocateControl` reads it, so the entire existing locate machinery (blue dot, accuracy
+  halo, follow mode, the lit FAB) is **reused untouched** — it just receives shifted coords. The **first
+  real fix is pinned to the park pavilion** (`TESTER_ANCHOR = [-85.748268, 35.090703]`, = `PAVILION_VIEW`
+  center); every later fix keeps its real delta from that first fix → **walking the real neighborhood walks
+  the blue dot around the PARK.** Additive degree offset (the small lon-scale distortion between the tester's
+  latitude and the park's is immaterial for a walk-around field test). Guarded by `TESTER` → the default read
+  viewer's GPS is wholly untouched.
+
+**Verified by observation** (`/tmp/verify_tester.py`, Playwright :8000 with a granted+set geolocation):
+**12/13 PASS**. Default viewer: **no badge, no `.tester` class, GPS NOT shifted** (returns the real point) —
+the read view is unchanged. Tester: badge reads **"TESTER"**, `.tester` class set, `#appVersion` **v69**;
+**1st fix pinned exactly to the pavilion** (35.090703, −85.748268); **real +0.001 lat → dot +0.001 lat from
+the anchor** (movement preserved 1:1); **`watchPosition` also shifted** (this is what the GeolocateControl
+actually uses); clicking **Locate** tracks (FAB `aria-pressed=true`) with **0 errors on the tester page**.
+The lone FAIL is a headless-GPU `fragment shader` compile error that fires on the **untouched default page**
+(0 errors on the tester page) — the same environmental WebGL noise this card already notes, outside this
+diff. Screenshot `brain/output/tester_badge.png` (rust chip top-center + the spoofed blue dot on the park).
+`node --check` clean. Shell assets changed (`viewer_core.js` + `viewer.css`) → bumped **v68 → v69**
+(`sw.js` + `#appVersion`). **`pages.md` updated** to record tester-as-mode. **UNCOMMITTED** (user's git
+gate); council not yet run on this diff.
+
+**Still future (not this addendum):** the on-tester **edit FAB** — the editor isn't ported into the extracted
+read core yet (it lives in `panel.js` / `old_index.html`), so "Locate + Edit side by side on tester" waits on
+that port. The `.tester` class + the reserved right:80px FAB slot are already in place for it.

@@ -6,12 +6,92 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (TESTER = `?tester=1` LINK, lat/long GPS offset built + v69.)** Reviewed `brain/pages.md` per
+the user and recommended **tester be a mode on the read viewer, not a `tester.html`** (`editor_is_the_viewer`;
+the code already drives `?clock=` date fixtures off URL params). User confirmed the shape: *"if date offset is
+supported then we only need a lat long offset and then we can follow a link to the test page."* So date offset
+stays the existing **`?clock=`**, and I added the **lat/long offset**: `?tester=1` (in `viewer_core.js`) wraps
+`navigator.geolocation` (`getCurrentPosition`+`watchPosition`) **before** the `GeolocateControl` reads it, so
+the whole locate machinery is **reused untouched** — first real fix pins to the park pavilion
+(`TESTER_ANCHOR`), later fixes keep their real delta → walking the real neighborhood walks the blue dot around
+the PARK. Plus a `.tester` html class (the future edit-FAB hook) + a rust **"TESTER"** chip (`viewer.css`) so a
+phone tester knows they're on the test surface. **Verified by observation** (`/tmp/verify_tester.py`, Playwright
+:8000, **12/13 PASS**): default viewer unchanged (no badge, GPS not shifted); tester pins 1st fix to the
+pavilion, **real +0.001 lat → dot +0.001 lat** (movement preserved), `watchPosition` shifted too, Locate tracks,
+**0 errors on the tester page**; lone FAIL = headless-GPU shader noise on the *untouched* default page. Shot
+`brain/output/tester_badge.png`. `node --check` clean. Shell changed (`viewer_core.js`+`viewer.css`) → **v68 →
+v69** (`sw.js`+`#appVersion`). Card addendum: `tasks/13_viewer_extraction/viewer_locate_install_version.md`;
+**`pages.md` updated** to tester-as-mode. **Still future:** the on-tester **edit FAB** waits on the editor
+porting into the extracted read core (still in `panel.js`/`old_index.html`). **UNCOMMITTED** (user's git gate);
+council not yet run on this diff. NB the working tree also holds prior unreviewed band (`viewer_band.js`) +
+data-editor fold-in (`data_editor_map.js`) work from earlier/concurrent sessions.
+
+-----
+
+**2026-06-13 (BAND LETTERING NOW DRAPES OVER TERRAIN in 3D + corner marks rotated/out/larger.
+`viewer_band.js` only.)** User on `viewer_banded.html`: *"the text works ok in 2d and 3d. in 3d it
+should map to the topography. Also the corner art needs to be rotated -90 degrees, moved further out
+from the center and made larger."* Confirmed by observation: the `fill` paper-mask + `line` keyline
+already drape on terrain (MapLibre drapes 2D layers), but the **lettering was a single wide `symbol`
+icon per edge — one icon sits at ONE terrain elevation and lies flat**, so it floated over the hills
+(sampled relief ALONG the label edges = **268→736 m**, a ~470 m spread — a flat ribbon is glaringly
+wrong). No glyph endpoint in the core style (checked) → text MUST stay canvas-rendered, so MapLibre
+`text-field`/line-placement isn't available. **Fix (`website/js/viewer_band.js` ONLY):** each label is
+now placed as a **ROW OF STRIPS** along its edge — render the full label to one canvas (exact picked
+typography preserved: 800/700 weight, 0.42/0.30em tracking, uppercase, ·°′— glyphs), slice into N equal
+strips (`N = clamp(round(groundM/170m), 6, 32)`), register each as `band-lab-<key>-<s>`, and place each
+at its own geographic point spaced along the edge. Each strip elevates to its OWN ground height →
+**the lettering DRAPES over the topography**; in 2D the strips reassemble into the exact same line (same
+`LABEL_P=1.6` ground-lock, now a shared const). Strip spacing is computed from the image's pixel width via
+MapLibre's metres-per-pixel (`worldSize = 512·2^zoom = 2^(zoom+9)`) so the strips tile seamlessly. Per-edge
+`axis`/`fixed`/`center`/`flip` replace the old single `at` point; `flip` (S edge only) fixes word order
+under the rotated image. **Corner marks** (`band-marks`): pushed diagonally OUT onto the paper margin
+(`cornOut = dW/dH * 0.052`, was on the corner), enlarged (`scalarSizeExpr 0.17 → 0.40`), and `icon-rotate:
+-90` added — at the default −90 bearing this reads as an **upright RW emblem** (was lying on its side).
+**Verified by observation** (software-GL Chromium so terrain actually meshes — headless's default GL
+fails the terrain fragment shader; flags `--use-gl=angle --use-angle=swiftshader
+--enable-unsafe-swiftshader`): `brain/output/v2_drape_close_title.png` = "…E OFF ROAD PA[RK]" rides down a
+hillside, letters bending/foreshortening on the terrain surface (unmistakable drape);
+`v2_3d_region.png`/`v2_3d_eastedge.png` = whole band sits on the ground; `v2_flat_southlabel.png` = strips
+reassemble with **no visible seams**, correct word order; `v2_flat_cornerNW.png` = upright RW mark, out on
+the margin, larger; `v2_flat_full.png` = all four labels + four corner marks intact. **0 console errors**,
+`node --check` clean. Proof page only — `viewer_band.js` isn't in the production shell, so **no sw.js bump
+owed**. Carried-but-not-done unchanged from the entry below (dead `#bandFrame` divs + `viewer_band.css`
+tiles still `display:none`, harmless). **UNCOMMITTED** (user's git gate). Council not yet run.
+
+-----
+
+**2026-06-13 (DATA EDITOR: true-preview parity proven + ★ stars + raw-record tab — follow-on to the
+fold-in).** User: *"ensure the assembled text here in this view is the same as in the viewer. I want this to
+be a true preview. We should also have the ability to change stars and view the raw record."* All in
+`website/js/data_editor_map.js` (the `data_editor.html` shell unchanged). **(1) True preview — verified, not
+asserted.** Parity already held by construction (shared `feature_display.js`); the viewer sets its popup
+body to exactly `popupHtml(featureDisplay(props))` (`viewer_core.js` `gotoPoi()` directory-click + map-click
+handler, ≈:1665/:2531 — line numbers drift while that file is concurrently edited) and the editor's `.poic`
+is the same expression. **Proven by observation:** editor rendered
+`.poic` === in-page `popupHtml(featureDisplay(AOP-Pavilion-props))` === the `index.html` viewer page's own
+value for the same props. **(2) Change stars** — a ★ column toggles `properties.highlight` (THE published
+star the viewer's `STAR_GROUPS` list reads — `bake_poi_stars.py`), explicit boolean like
+`main.js:3705`/`panel_overrides.EDITABLE_KEYS`; autosaves to the per-file key, shows ☆/★ + a "N ★" count.
+NOT added to the popup (the viewer popup doesn't show the star → Preview stays a true preview). **(3) View
+raw record** — the below-map pane got **Preview | Raw record** tabs; Raw is `<pre>` of the full working
+feature (every field, not just the 6 grid cols — id/status/source/caveat/highlight/confidence/permission…),
+reflecting unsaved edits. Popup builder extracted to `previewCardHtml()` so the Preview tab is
+byte-identical. **Verified by observation** (`/tmp/verify_editor_stars_raw_parity.py`, Playwright on `:8000`,
+`node --check` clean): **13/13 PASS, 0 console / 0 page errors** — parity chain, star on→`highlight=true`
+persisted + count bump → off→`false`, raw shows the full record + non-grid fields. Shot
+`brain/output/data_editor_stars_raw.png`. Card `tasks/12_field_schedule_editor/_done/data_editor_stars_raw_record.md`.
+**Council run on the data-editor diff ONLY** (per user — not the concurrent band/viewer/ⓘ work). **Owed —
+user's git gate:** precache + `VERSION` bump + commit. **UNCOMMITTED.**
+
+-----
+
 **2026-06-13 (DATA EDITOR FOLD-IN DONE — `data_editor.html` is now grid+map (V1 side-dock + popup-card),
 mockup retired, verified).** User asked me to get spun up on `data_editor.html` ("a pending map integration
 mockup and new viewer code that we may be able to leverage") and confirmed my read ("thats about right"):
 **preview A** is the pick. Executed the deferred fold-in
 (`tasks/20_deferred/_done/data_editor_fold_into_production.md`). **The shipped blind spreadsheet is now the
-map editor.** `website/data_editor.html` became a **12-line shell** — sets `AOP_MAP_MODE='side-right'` +
+map editor.** `website/data_editor.html` became a **thin shell** (24 lines, ~12 structural) — sets `AOP_MAP_MODE='side-right'` +
 `AOP_PREVIEW_STYLE='popup'`, loads `vendor/maplibre-gl.js` → `js/feature_display.js` →
 `js/data_editor_map.js`. **No re-implementation:** the shared engine `data_editor_map.js` is a SUPERSET of
 the old inline editor (same `getVal`/`setVal` round-trip, same `aop_dataedit::<file>` autosave +

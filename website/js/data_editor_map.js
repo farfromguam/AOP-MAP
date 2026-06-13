@@ -168,6 +168,21 @@
   .pvchip .chips{display:flex;flex-wrap:wrap;gap:6px}
   .pvchip .chips span{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:#efe9da;color:var(--accent);border:1px solid var(--line)}
   .pvchip .chips span b{font-weight:800;color:var(--ink);margin-right:4px;text-transform:uppercase;font-size:9.5px;letter-spacing:.04em}
+
+  /* ===== star (highlight) toggle in the grid ===== */
+  th.starh{width:32px;text-align:center;padding:7px 4px}
+  td.starcell{padding:2px 2px;text-align:center}
+  .starbtn{border:1px solid var(--line);background:#fff;color:#cdbf9a;border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:15px;line-height:1;padding:0}
+  .starbtn:hover{border-color:var(--accent)}
+  .starbtn.on{color:#e0a32e;border-color:#e0a32e;background:#fdf6e3}
+
+  /* ===== preview/raw tabs + the raw record ===== */
+  .pvtabs{display:flex;gap:4px;margin:0 0 8px}
+  .pvtabs button{font:inherit;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:7px;padding:4px 10px;cursor:pointer}
+  .pvtabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .pvraw{margin:0;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    white-space:pre;overflow:auto;background:#fffdf7;border:1px solid var(--line);border-radius:8px;padding:9px 10px;color:#3a3320;max-width:100%}
   `;
 
   /* show the bar map toggle only where it controls something */
@@ -222,9 +237,10 @@
           <span id="saveTxt" class="saved">—</span>
           <span id="srcTxt"></span>
           <span id="countTxt"></span>
+          <span id="starTxt"></span>
         </div>
       </div>
-      <p class="hint" id="hint">Click a row's # to fly the map there. Edit Lat/Lng and watch the point move on the imagery. Click a map feature to jump to its row.</p>
+      <p class="hint" id="hint">Click a row's # to fly the map there. Edit Lat/Lng and watch the point move on the imagery. Click a map feature to jump to its row. Tap ★ to mark a place for the viewer's list; the Raw tab below the map shows the full record.</p>
       <div class="stage" id="stage" data-mode="${MODE}">
         <div class="gridpane"><div id="grid" style="padding:10px">Loading…</div></div>
         <div class="mappane${PREVIEW ? ' haspreview' : ''}">
@@ -337,27 +353,19 @@
     renderPreview();
   }
 
-  /* ---------- feature preview: the active-on-map text, four ways ----------- */
-  // The model + the popup HTML come from the ONE shared strategy
-  // (js/feature_display.js) that the reader view uses too — not a local copy.
-  // So the preview reads EXACTLY what the public map will, by construction.
-  function renderPreview() {
-    if (!PREVIEW) return;
-    const host = $('preview'); if (!host) return;
-    const FD = window.AOPFeatureDisplay;
-    if (!FD) { host.innerHTML = '<div class="idle">feature_display.js not loaded.</div>'; return; }
-    if (sel < 0 || !fc || !fc.features[sel]) {
-      host.innerHTML = '<div class="idle">Select a row to preview how it reads when active on the map.</div>';
-      return;
-    }
-    const m = FD.featureDisplay(fc.features[sel].properties);
-    const popupCardHtml = FD.popupHtml;
-    const cap = '<p class="pvcap"><span class="live"></span>As shown when active on the map</p>';
-    let body = '';
-    if (PREVIEW === 'popup') {
-      body = `<div class="poic">${popupCardHtml(m)}</div><div class="tip"></div>`;
-    } else if (PREVIEW === 'phone') {
-      body = `<div class="phone"><div class="screen"><div class="pin"></div><div class="poic">${popupCardHtml(m)}</div></div></div>`;
+  /* ---------- feature preview (Preview tab) + the raw record (Raw tab) ------ */
+  // Preview tab: the model + popup HTML come from the ONE shared strategy
+  // (js/feature_display.js) that the reader view uses too — not a local copy —
+  // so the card is a TRUE preview, byte-identical to the viewer popup body
+  // (viewer_core.js sets it to exactly popupHtml(featureDisplay(props))).
+  // Raw tab: the full working GeoJSON record (every field, not just the six
+  // grid columns), reflecting your unsaved edits — so you can see/confirm
+  // properties the grid doesn't surface (id, status, source, caveat, highlight…).
+  let previewTab = 'preview';
+  function previewCardHtml(m) {
+    const popupCardHtml = window.AOPFeatureDisplay.popupHtml;
+    if (PREVIEW === 'phone') {
+      return `<div class="phone"><div class="screen"><div class="pin"></div><div class="poic">${popupCardHtml(m)}</div></div></div>`;
     } else if (PREVIEW === 'fields') {
       const empty = '<span class="empty">— empty</span>';
       const row = (lab, val, cls) => `<div class="fr ${cls || ''}"><dt>${lab}</dt><dd>${val}</dd></div>`;
@@ -365,7 +373,7 @@
       if (m.blurb) sub = esc(m.blurb);
       else if (m.revisit) sub = `<span class="revisit">Info needed — revisit. ${esc(m.revisit)}</span>`;
       else sub = empty;
-      body = `<div class="pvfields">`
+      return `<div class="pvfields">`
         + row('Title', esc(m.name), 'title')
         + row('Blurb', sub)
         + row('Kind', esc(m.kind))
@@ -375,13 +383,39 @@
         + `</div>`;
     } else if (PREVIEW === 'chips') {
       const chip = (lab, val) => val ? `<span><b>${lab}</b>${esc(val)}</span>` : '';
-      body = `<div class="pvchip"><div class="hd">${esc(m.kind)}</div><div class="bd">`
+      return `<div class="pvchip"><div class="hd">${esc(m.kind)}</div><div class="bd">`
         + `<p class="nm">${esc(m.name)}</p>`
         + `<p class="bl${m.blurb ? '' : ' empty'}">${m.blurb ? esc(m.blurb) : (m.revisit ? 'Info needed — revisit. ' + esc(m.revisit) : 'No description yet')}</p>`
         + `<div class="chips">${chip('Status', m.status)}${chip('Source', m.source)}${chip('Caveat', m.caveat)}</div>`
         + `</div></div>`;
     }
-    host.innerHTML = cap + body;
+    // default 'popup' — the faithful map popup card (unchanged from the fold-in)
+    return `<div class="poic">${popupCardHtml(m)}</div><div class="tip"></div>`;
+  }
+  function renderPreview() {
+    if (!PREVIEW) return;
+    const host = $('preview'); if (!host) return;
+    const tabs = `<div class="pvtabs">`
+      + `<button data-tab="preview" class="${previewTab === 'preview' ? 'on' : ''}">Preview</button>`
+      + `<button data-tab="raw" class="${previewTab === 'raw' ? 'on' : ''}">Raw record</button>`
+      + `</div>`;
+    const wire = () => host.querySelectorAll('.pvtabs button').forEach(b => b.onclick = () => { previewTab = b.dataset.tab; renderPreview(); });
+    if (sel < 0 || !fc || !fc.features[sel]) {
+      const what = previewTab === 'raw' ? 'see its full raw record.' : 'preview how it reads when active on the map.';
+      host.innerHTML = tabs + `<div class="idle">Select a row to ${what}</div>`;
+      wire(); return;
+    }
+    if (previewTab === 'raw') {
+      const cap = '<p class="pvcap">Raw GeoJSON record · your working copy</p>';
+      host.innerHTML = tabs + cap + `<pre class="pvraw">${esc(JSON.stringify(fc.features[sel], null, 2))}</pre>`;
+      wire(); return;
+    }
+    const FD = window.AOPFeatureDisplay;
+    if (!FD) { host.innerHTML = tabs + '<div class="idle">feature_display.js not loaded.</div>'; wire(); return; }
+    const m = FD.featureDisplay(fc.features[sel].properties);
+    const cap = '<p class="pvcap"><span class="live"></span>As shown when active on the map</p>';
+    host.innerHTML = tabs + cap + previewCardHtml(m);
+    wire();
   }
 
   /* ---------- grid render -------------------------------------------------- */
@@ -389,9 +423,12 @@
     const feats = fc.features || (fc.features = []);
     $('srcTxt').textContent = localStorage.getItem(keyFor(file)) ? 'your edits' : 'published';
     $('countTxt').textContent = feats.length + ' rows';
-    let html = '<table><thead><tr><th>#</th>' + COLS.map(c => `<th>${c.label}</th>`).join('') + '<th></th></tr></thead><tbody>';
+    updateStarCount();
+    let html = '<table><thead><tr><th>#</th><th class="starh" title="Star (highlight) — shows in the viewer’s places list">★</th>' + COLS.map(c => `<th>${c.label}</th>`).join('') + '<th></th></tr></thead><tbody>';
     feats.forEach((f, i) => {
+      const starred = (f.properties || {}).highlight === true;
       html += `<tr data-i="${i}"${i === sel ? ' class="sel"' : ''}><td class="rn" data-go="${i}" title="Fly map here">${i + 1}</td>`;
+      html += `<td class="starcell"><button class="starbtn ${starred ? 'on' : ''}" data-star="${i}" title="${starred ? 'Starred — shows in the viewer’s places list. Click to unstar.' : 'Not starred. Click to star (highlight=true).'}">${starred ? '★' : '☆'}</button></td>`;
       COLS.forEach(c => {
         const ro = (c.key === 'lat' || c.key === 'lng') && !isPoint(f);
         const v = getVal(f, c.key);
@@ -412,7 +449,30 @@
       el.onfocus = () => select(+el.dataset.i, false);
     });
     $('grid').querySelectorAll('[data-go]').forEach(td => td.onclick = () => select(+td.dataset.go, true));
+    $('grid').querySelectorAll('[data-star]').forEach(b => b.onclick = () => toggleStar(+b.dataset.star));
     $('grid').querySelectorAll('[data-del]').forEach(b => b.onclick = () => del(+b.dataset.del));
+  }
+
+  /* ---------- star (highlight) — the published ★ the viewer's list reads ---- */
+  // Same data-model field + boolean convention as panel.js/main.js (the ★ is
+  // properties.highlight === true, baked by mvp/scripts/bake_poi_stars.py and
+  // published). Toggling it here writes the working FC; bake/export carry it.
+  function starCount() { return (fc && fc.features || []).filter(f => (f.properties || {}).highlight === true).length; }
+  function updateStarCount() { const el = $('starTxt'); if (el) { const n = starCount(); el.textContent = n ? (n + ' ★') : ''; } }
+  function toggleStar(i) {
+    const f = fc.features[i]; if (!f) return;
+    const p = f.properties || (f.properties = {});
+    p.highlight = !(p.highlight === true);
+    save();
+    const on = p.highlight === true;
+    const btn = document.querySelector('.starbtn[data-star="' + i + '"]');
+    if (btn) {
+      btn.classList.toggle('on', on);
+      btn.textContent = on ? '★' : '☆';
+      btn.title = on ? 'Starred — shows in the viewer’s places list. Click to unstar.' : 'Not starred. Click to star (highlight=true).';
+    }
+    updateStarCount();
+    if (i === sel) renderPreview(); // the raw record shows highlight
   }
 
   function del(i) {

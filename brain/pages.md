@@ -19,11 +19,21 @@ http://localhost:8000/data_editor.html
     - week before editor. should produce baked files 
     - park specific
 
-http://localhost:8000/tester.html
+tester  →  NOT a page. A MODE on the read viewer, reached by a link:
+    http://localhost:8000/index.html?tester=1
+    (editor_is_the_viewer: V2 is V1 with more controls, not a fork. The test
+     fixtures already ride URL params — ?clock= for the date offset.)
     - week before tester
     - has limited sidebar
-    - date shifting feature
-    - add lat long shifting feature. should take current lat long and "shift" to park. walking around local neighborhoot appears to move you on the map... 
+    [x] date shifting feature  → the existing ?clock=YYYY-MM-DDTHH:MM fixture (viewer_core.js).
+    [x] lat long shifting feature → ?tester=1 wraps navigator.geolocation: the first real
+        GPS fix pins to the park pavilion, later fixes keep their real delta, so walking the
+        local neighborhood walks the blue dot around the PARK. Reuses the locate machinery
+        untouched. (brain/tasks/13_viewer_extraction/viewer_locate_install_version.md addendum)
+    [ ] on-tester EDIT FAB (Locate + Edit side by side) — waits on the editor porting into the
+        extracted read core (still in panel.js / old_index.html). The .tester class + the
+        right:80px FAB slot are already reserved.
+    full test link: /index.html?tester=1&clock=YYYY-MM-DDTHH:MM
 
 
 http://localhost:8000/mapborder_compare.html

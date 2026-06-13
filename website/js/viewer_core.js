@@ -94,6 +94,68 @@
     }
   })();
 
+  // ── Tester surface (brain/pages.md "week before tester") ───────────────
+  // A field-test view reached by a LINK, not a separate HTML file
+  // (ai_rules/editor_is_the_viewer): /index.html?tester=1 turns it on. The date
+  // offset is the existing ?clock= fixture above; this adds the lat/long offset,
+  // so the full test link is /index.html?tester=1&clock=YYYY-MM-DDTHH:MM .
+  function testerParamOn() {
+    try {
+      const v = new URLSearchParams(window.location.search).get('tester');
+      return v !== null && v !== '0';
+    } catch (_) { return false; }
+  }
+  const TESTER = testerParamOn();
+
+  // Lat/long offset (GPS spoof). The tester walks their real neighborhood and the
+  // blue dot walks the PARK: the FIRST real fix is pinned to the park anchor, and
+  // every later fix keeps its real delta from that first fix. Done by wrapping
+  // navigator.geolocation BEFORE the GeolocateControl reads it, so the whole locate
+  // machinery below (blue dot, accuracy halo, follow mode, the lit FAB) is reused
+  // untouched — it just receives shifted coordinates. Additive degree offset; the
+  // small longitude-scale distortion between the tester's latitude and the park's
+  // is immaterial for a walk-around field test.
+  const TESTER_ANCHOR = [-85.748268, 35.090703]; // park pavilion (= PAVILION_VIEW.center)
+  if (TESTER && navigator.geolocation) {
+    const geo = navigator.geolocation;
+    const realGet = geo.getCurrentPosition.bind(geo);
+    const realWatch = geo.watchPosition.bind(geo);
+    let offset = null; // [dLng, dLat], locked on the first real fix
+    const shift = (pos) => {
+      const c = pos.coords;
+      if (!offset) offset = [TESTER_ANCHOR[0] - c.longitude, TESTER_ANCHOR[1] - c.latitude];
+      return {
+        timestamp: pos.timestamp,
+        coords: {
+          latitude: c.latitude + offset[1],
+          longitude: c.longitude + offset[0],
+          accuracy: c.accuracy,
+          altitude: c.altitude,
+          altitudeAccuracy: c.altitudeAccuracy,
+          heading: c.heading,
+          speed: c.speed
+        }
+      };
+    };
+    geo.getCurrentPosition = (success, error, options) =>
+      realGet((pos) => success(shift(pos)), error, options);
+    geo.watchPosition = (success, error, options) =>
+      realWatch((pos) => success(shift(pos)), error, options);
+    console.info('[tester] lat/long offset on — Locate pins your first fix to the park pavilion; real movement is preserved.');
+  }
+
+  // Visible "TESTER" chip so a field tester on a phone can tell the test surface
+  // (shifted GPS/clock) from the live day-of viewer. The `.tester` html class is
+  // also where the future edit affordances hang (see index.html Locate-FAB note).
+  if (TESTER) {
+    document.documentElement.classList.add('tester');
+    const badge = document.createElement('div');
+    badge.className = 'tester-badge';
+    badge.textContent = 'TESTER';
+    badge.title = 'Test surface — GPS and/or clock may be shifted';
+    document.body.appendChild(badge);
+  }
+
   // Field "where am I" — blue dot + accuracy halo + follow mode, from the device
   // GPS (works offline at the park). The default top-right button is hidden by
   // CSS; the left-rail Locate button drives it (main.js:186-228).

@@ -190,6 +190,18 @@ html.ios-browser .screen-corner { display: block; }
   background: var(--locate-blue-dark);
   box-shadow: 0 8px 22px rgba(20,74,128,0.5), 0 0 0 4px rgba(255,253,245,0.82), inset 0 0 0 2px rgba(255,255,255,0.6);
 }
+
+/* Tester chip — injected by viewer_core.js only on ?tester=1. A small top-center
+   badge so a field tester on a phone can tell the test surface (shifted GPS/clock)
+   from the live day-of viewer. Non-interactive; clears the safe-area notch. */
+.tester-badge {
+  position: fixed; top: calc(8px + var(--sa-top)); left: 50%; transform: translateX(-50%);
+  z-index: 6; pointer-events: none;
+  padding: 3px 11px; border-radius: 999px;
+  background: var(--rust); color: #fff;
+  font: 700 11px/1.4 -apple-system, system-ui, sans-serif; letter-spacing: 0.16em;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.32);
+}
 #pwaInstallBtn.util-install { width: var(--tab-h); height: var(--tab-h); justify-self: start; display: grid; place-items: center; padding: 0; border: 1px solid var(--rust); border-radius: 8px; background: var(--rust); color: #fff; cursor: pointer; box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
 #pwaInstallBtn.util-install svg { width: 22px; height: 22px; }
 #pwaInstallBtn.util-install:hover { background: #96461b; }

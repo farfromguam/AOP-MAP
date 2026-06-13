@@ -87,45 +87,60 @@
 
     // Edge → text. The lettering is RENDERED to an image (so the picked typography
     // survives exactly — weight, 0.42em tracking, uppercase, the typographic glyphs
-    // ·°′—) and placed as a GROUND-ALIGNED icon at each edge's midpoint, just
-    // OUTSIDE the boundary on the paper. Icons place unconditionally and lie flat on
-    // the ground (icon-rotation/pitch-alignment: map), so they foreshorten with the
-    // terrain in 3D — and, unlike MapLibre line-placed text, they don't drop out
-    // when a full-region edge line straddles a vector-tile boundary. `rot` orients
-    // each label along its edge in MAP space (bearing-independent), so the lettering
-    // tracks the landscape as the map rotates and tilts.
+    // ·°′—) and placed just OUTSIDE its edge on the paper, ground-aligned
+    // (icon-rotation/pitch-alignment: map). But a single wide icon sits at ONE
+    // terrain elevation (its anchor) and lies flat — over a full edge the ground
+    // climbs 250–440 m, so one icon floats over the hills in 3D. So each label is
+    // placed as a ROW OF STRIPS along its edge: every strip elevates to its OWN
+    // ground height, and the row DRAPES over the topography (verified by
+    // observation). In 2D the strips reassemble into the exact same line. (Icons,
+    // unlike MapLibre line-placed text, place unconditionally — they don't drop out
+    // when a full-region edge straddles a vector-tile boundary.)
     //
     // ASSIGNMENT is keyed to the viewer's DEFAULT bearing of -90°, at which the
     // screen→geographic mapping is: top=West, bottom=East, left=South, right=North.
     // So the picked screen layout (title top / location bottom / 35°N left / 85°W
     // right) maps to: title→West edge, location→East, 35°N→South, 85°W→North. The
     // band still rotates with the map (true geolocation); this just makes the
-    // DEFAULT view read like the picked design. `rot` keeps each label upright and
-    // running along its edge at that default (verified by observation).
+    // DEFAULT view read like the picked design.
     var midLng = (W + E) / 2, midLat = (S + N) / 2;
+
+    // Ground scale of the label images (icon-size at ZREF). ONE constant, shared by
+    // the strip geometry and the layer's icon-size below, so they can't drift apart.
+    var LABEL_P = 1.6;
+    // Metres per screen pixel at ZREF (MapLibre worldSize = 512·2^zoom = 2^(zoom+9)),
+    // used to turn a label image's pixel width into the ground span it occupies, so
+    // the strips can be spaced along the edge at the right geographic interval.
+    function metresPerPx(lat) {
+      return 40075016.686 * Math.cos(lat * Math.PI / 180) / Math.pow(2, ZREF + 9);
+    }
+    var DEG_LAT = 110540;                 // metres per degree latitude (local)
+    function degLng(m, lat) { return m / (111320 * Math.cos(lat * Math.PI / 180)); }
+
+    // `axis` is the coordinate that VARIES as the text runs ('lat' for the W/E edges,
+    // 'lng' for the S/N edges); `fixed` is the inset position of the edge; `center`
+    // is the midpoint the label is centred on; `lat` is the latitude the label sits
+    // at (for the metres↔degrees conversion); `flip` reverses strip order so the word
+    // reads forwards once the image is rotated by `rot` (derived at bearing 0;
+    // placement is geographic so it is bearing-stable).
     var EDGES = [
-      // West edge → screen-TOP at -90: the title, reading left→right.
-      { key: 'w', label: 'Adventure Off Road Park',                              at: [W - insetX, midLat], rot: -90,
-        fontPx: 13, weight: 800, color: TITLE_INK, spacing: 0.42 },
-      // East edge → screen-BOTTOM at -90: the location line, reading left→right.
-      { key: 'e', label: 'South Pittsburg · Marion County · Tennessee — MMXXVI', at: [E + insetX, midLat], rot: -90,
-        fontPx: 10, weight: 700, color: SUB_INK, spacing: 0.30 },
-      // South edge → screen-LEFT at -90: read bottom→top (letter-tops out).
-      { key: 's', label: '35° 00′ North · Cumberland Plateau',                   at: [midLng, S - insetY], rot: 180,
-        fontPx: 10, weight: 700, color: SUB_INK, spacing: 0.30 },
-      // North edge → screen-RIGHT at -90: read top→bottom (letter-tops out).
-      { key: 'n', label: '85° 36′ West · Trail Blazing Invitational',            at: [midLng, N + insetY], rot: 0,
-        fontPx: 10, weight: 700, color: SUB_INK, spacing: 0.30 }
+      { key: 'w', label: 'Adventure Off Road Park',                              axis: 'lat', fixed: W - insetX, center: midLat, lat: midLat,     rot: -90, flip: false, fontPx: 13, weight: 800, color: TITLE_INK, spacing: 0.42 },
+      { key: 'e', label: 'South Pittsburg · Marion County · Tennessee — MMXXVI', axis: 'lat', fixed: E + insetX, center: midLat, lat: midLat,     rot: -90, flip: false, fontPx: 10, weight: 700, color: SUB_INK,   spacing: 0.30 },
+      { key: 's', label: '35° 00′ North · Cumberland Plateau',                   axis: 'lng', fixed: S - insetY, center: midLng, lat: S - insetY, rot: 180, flip: true,  fontPx: 10, weight: 700, color: SUB_INK,   spacing: 0.30 },
+      { key: 'n', label: '85° 36′ West · Trail Blazing Invitational',            axis: 'lng', fixed: N + insetY, center: midLng, lat: N + insetY, rot: 0,   flip: false, fontPx: 10, weight: 700, color: SUB_INK,   spacing: 0.30 }
     ];
 
-    // Render each label to a supersampled (DPR=4) ImageData stamp and register it
-    // as a map image named 'band-lab-<key>'. Canvas letterSpacing reproduces the
-    // band's 0.42em tracking; the system-ui fallback covers it if Inter isn't loaded.
-    function buildLabelImages() {
+    // Render each label to a supersampled (DPR=4) canvas, then slice it into N equal
+    // strips and register each as map image 'band-lab-<key>-<strip>'. Canvas
+    // letterSpacing reproduces the band's 0.42em tracking; the system-ui fallback
+    // covers it if Inter isn't loaded. labelFC collects one point feature per strip,
+    // spaced along the edge so the strips tile seamlessly in 2D and drape in 3D.
+    var STRIP_M = 170;          // target ground length per strip (smaller = smoother drape)
+    var labelFC = { type: 'FeatureCollection', features: [] };
+    function buildLabelStrips() {
       var DPR = 4;
       for (var i = 0; i < EDGES.length; i++) {
-        var e = EDGES[i], name = 'band-lab-' + e.key;
-        if (map.hasImage(name)) continue;
+        var e = EDGES[i];
         var cv = document.createElement('canvas'), ctx = cv.getContext('2d');
         var font = e.weight + ' ' + (e.fontPx * DPR) + 'px Inter, system-ui, sans-serif';
         var ls = e.spacing * e.fontPx * DPR;
@@ -140,19 +155,43 @@
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillStyle = e.color;
         ctx.fillText(txt, w / 2, h / 2);
-        try { map.addImage(name, ctx.getImageData(0, 0, w, h), { pixelRatio: DPR }); }
-        catch (err) { console.warn('[viewer_band] label image failed:', e.key, err); }
+
+        // Ground span the whole label occupies along its edge (icon-size LABEL_P at
+        // ZREF), split into N strips of equal pixel width == equal ground width.
+        var groundM = (w / DPR) * LABEL_P * metresPerPx(e.lat);
+        var degSpan = (e.axis === 'lat') ? groundM / DEG_LAT : degLng(groundM, e.lat);
+        var N = Math.max(6, Math.min(32, Math.round(groundM / STRIP_M)));
+        for (var s = 0; s < N; s++) {
+          var name = 'band-lab-' + e.key + '-' + s;
+          if (!map.hasImage(name)) {
+            var x0 = Math.floor(s * w / N), x1 = Math.floor((s + 1) * w / N);
+            var sw = Math.max(1, x1 - x0);
+            var sc = document.createElement('canvas'); sc.width = sw; sc.height = h;
+            var sctx = sc.getContext('2d');
+            sctx.drawImage(cv, x0, 0, sw, h, 0, 0, sw, h);
+            try { map.addImage(name, sctx.getImageData(0, 0, sw, h), { pixelRatio: DPR }); }
+            catch (err) { console.warn('[viewer_band] strip image failed:', name, err); }
+          }
+          var t = (s + 0.5) / N - 0.5;          // -0.5 … +0.5 along the span
+          if (e.flip) t = -t;
+          var off = t * degSpan;
+          var coord = (e.axis === 'lat') ? [e.fixed, e.center + off] : [e.center + off, e.fixed];
+          labelFC.features.push({ type: 'Feature',
+            properties: { icon: name, rot: e.rot },
+            geometry: { type: 'Point', coordinates: coord } });
+        }
       }
     }
 
-    var labelFC = { type: 'FeatureCollection', features: EDGES.map(function (e) {
-      return { type: 'Feature',
-               properties: { icon: 'band-lab-' + e.key, rot: e.rot },
-               geometry: { type: 'Point', coordinates: e.at } };
-    }) };
-
+    // Corner marks sit OUTSIDE the neat-line corners, pushed diagonally out from the
+    // region centre onto the paper margin (further out than the lettering inset), so
+    // they read as printer's corner ornaments rather than dots on the boundary.
+    var cornOutX = dW * 0.052, cornOutY = dH * 0.052;
     var cornerFC = { type: 'FeatureCollection',
-      features: [[W, S], [E, S], [E, N], [W, N]].map(function (c) {
+      features: [
+        [W - cornOutX, S - cornOutY], [E + cornOutX, S - cornOutY],
+        [E + cornOutX, N + cornOutY], [W - cornOutX, N + cornOutY]
+      ].map(function (c) {
         return { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: c } };
       }) };
 
@@ -201,7 +240,7 @@
         layout: {
           'icon-image': ['get', 'icon'],
           'icon-rotate': ['get', 'rot'],
-          'icon-size': scalarSizeExpr(1.6),
+          'icon-size': scalarSizeExpr(LABEL_P),
           'icon-rotation-alignment': 'map',
           'icon-pitch-alignment': 'map',
           'icon-allow-overlap': true,
@@ -214,7 +253,8 @@
         map.addLayer({ id: 'band-marks', type: 'symbol', source: 'band-marks',
           layout: {
             'icon-image': 'rw-mark',
-            'icon-size': scalarSizeExpr(0.17),
+            'icon-size': scalarSizeExpr(0.40),
+            'icon-rotate': -90,
             'icon-rotation-alignment': 'map',
             'icon-pitch-alignment': 'map',
             'icon-allow-overlap': true,
@@ -278,7 +318,7 @@
         // the label + corner images and add the band on top; re-raise once on the
         // next idle for good measure. document.fonts.ready keeps the canvas
         // lettering from measuring before Inter (if used) has loaded.
-        var start = function () { loadMark(function () { buildLabelImages(); addBand(); }); };
+        var start = function () { loadMark(function () { buildLabelStrips(); addBand(); }); };
         setTimeout(function () {
           if (document.fonts && document.fonts.ready) document.fonts.ready.then(start, start);
           else start();

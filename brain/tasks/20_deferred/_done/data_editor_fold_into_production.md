@@ -58,7 +58,8 @@ Pick the active-feature text preview that renders below the V1 side-dock map. Fr
 - [x] User picks the preview style (A/B/C/D). → **A** (faithful popup card), confirmed 2026-06-13.
 - [x] `data_editor.html` carries the V1 map + chosen preview; round-trip-safe grid + per-file autosave
       preserved (map is additive); two-way selection sync works (row# → fly, Lat/Lng edit → marker
-      moves, map click → row). → the engine is a superset; `data_editor.html` is now a 12-line shell.
+      moves, map click → row). → the engine is a superset; `data_editor.html` is now a thin shell (24 lines,
+      ~12 structural + a comment) that just loads it.
 - [x] Mockup files retired (confirmed unreferenced first); `data_editor.html` is the one editor.
 - [x] Verified by observation (Playwright, 0 console/page errors), as the mockups were.
 
