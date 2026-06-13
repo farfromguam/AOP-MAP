@@ -6,6 +6,52 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (BAND NOW GEOLOCATED — works in 3D, conforms to the landscape. `viewer_band.js` rewrite.)**
+User on `viewer_banded.html`: *"it does not work in 3d. these are 2d map elements that need to be
+geolocated... once done it will conform to the landscape."* Confirmed by observation: the old band was a
+screen-space HTML overlay (8 axis-aligned `<div>` tiles repositioned each frame from the 9-patch's screen
+**bounding box**); in 3D the 9-patch projects to a perspective TRAPEZOID and a rectangle of divs can't follow
+it — the frame floated flat over the tilted scene (`brain/output/band_3d_1_pitched.png`). **Fix (rewrote
+`website/js/viewer_band.js` ONLY):** the band is now ACTUAL MapLibre layers tied to the region's geographic
+boundary, so MapLibre projects them through the same camera (bearing/pitch/terrain) and they conform for
+free — (1) **paper mask** = donut `fill` (2° outer ring minus the 9-patch hole) hiding all spill, drapes on
+terrain; (2) **keyline** = `line` on the boundary ring; (3) **lettering** = each edge label RENDERED to a
+canvas image (exact picked typography — 800/700 weight, 0.42/0.30em tracking, uppercase, the ·°′— glyphs)
+and placed as a **ground-aligned `icon`** (`icon-rotation/pitch-alignment:map`) at the edge midpoint; (4)
+**corner RW marks** = the rw-mark.svg rasterised to a flat-ink stamp, ground-aligned. Ground-locked size
+(`['interpolate',['exponential',2],['zoom'],…]`) holds each label at a fixed FRACTION of its edge at every
+zoom → **the HR/text-scaling problem is gone natively** (no more per-frame JS font hack). **Why canvas→icon,
+not MapLibre text:** symbol text with `symbol-placement:line-center` placed **0** — a full-region edge line
+straddles a vector-tile boundary so line-center drops out (proven: source had the lines, isolated short
+lines DID place, glyphs are NOT the issue — `·°′—` render fine in isolation). Icons place unconditionally
+(corner marks placed 4 every run) and lie flat on the ground → robust + conformant. **Verified by
+observation:** `brain/output/band_icon_flat.png` (north-up, `?frame=out`) = the picked design exactly, all
+four labels + glyphs render; `brain/output/band_wide_3d.png` (3D terrain, pitched) = lettering + keyline +
+paper all **foreshorten onto the ground plane** (title recedes along the top of the trapezoid). `node
+--check` clean, 0 console errors. **OPEN DESIGN FORK (user's call):** geolocation means the band ROTATES with
+the map — at the viewer's default **bearing -90** the title reads vertically on the RIGHT, not across the
+top; at north-up it's the picked design. Options: keep true-geolocated rotation, change the default bearing,
+or re-assign labels so the title lands on top at -90. **Carried but NOT done (cleanup once design accepted):**
+the dead `#bandFrame` HTML divs + `viewer_band.css` tile/label/`[data-deco]` rules stay `display:none`
+(harmless) — the `?deco=` param + `viewer_banded_compare.html` are now no-ops; snapBack camera rubber-band
+kept verbatim. Proof page only — `viewer_band.js` isn't in the production shell, so no sw.js bump owed.
+**UNCOMMITTED** (user's git gate). Council not yet run — design still has the orientation fork open.
+
+-----
+
+**2026-06-13 (iOS SAFARI-TAB CORNER FILLETS PORTED + v66).** User: *"the pwa files USED to work. so we
+should trust whatever was set. add the corner fillets & bump the version."* Closed the Phase-2 gap from the
+entry below. Ported VERBATIM from the old working page: the 4 `.screen-corner` divs + the head
+`html.ios-browser` detection script (iOS && !standalone; iPad via maxTouchPoints; dropped only the
+editor-off branch — no editor in the viewer) into `index.html`, and the `.screen-corner` CSS
+(`app.css:103-108`) + `--frame-radius:18px` into `viewer.css`. Bumped v65→**v66** (`sw.js` + `#appVersion`).
+Verified: desktop → fillets hidden (`display:none`, no `ios-browser` class), v66; iPhone-UA → head script
+auto-adds `ios-browser` + fillet `display:block`; forced-class → 4 fillets render 18×18 at the corners; 0
+errors; node --check clean. On-device Safari-tab blend is the user's test. Docs: `working_pwa_css.md` (fillets
+now "PORTED"), card `viewer_swap.md`. UNCOMMITTED.
+
+-----
+
 **2026-06-13 (PWA-STYLES AUDIT + §7 resyncViewport PORTED + v65 bump — before the user's web push).** User:
 *"bump to v65 I will push and test web features now"* + *"there should be some learnings about what it took
 to make the pwa styles half ok. review and ensure we have applied those lessons."* Audited the viewer front

@@ -44,6 +44,7 @@
   --sa-bottom: env(safe-area-inset-bottom, 0px);
   --sa-left:   env(safe-area-inset-left, 0px);
   --sa-right:  env(safe-area-inset-right, 0px);
+  --frame-radius: 18px; /* iOS Safari-tab corner fillet radius */
 }
 
 /* Full-bleed map (app.css:67-92). Context-split height: 100dvh in a browser
@@ -63,6 +64,19 @@ html, body { background: #000; }
 .maplibregl-ctrl-bottom-left { margin: 0; }
 .maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib { margin: 0 0 18px 16px; max-width: calc(100vw - 24px - var(--sa-left) - var(--sa-right) - var(--locate-fab-reserve)); }
 .maplibregl-ctrl-bottom-right{ margin-bottom: var(--sa-bottom); margin-right: var(--sa-right); }
+
+/* Inverted black corner fillets — round the map into iOS Safari's black chrome bands
+   so the frame reads rounded, not sharp. Scoped to the iOS Safari TAB via
+   html.ios-browser (head script in index.html); hidden in the installed PWA (device
+   rounds the screen) + desktop. #000 blends with body{background:#000}. z:1 sits above
+   the map canvas but below every control (z≥3), so they never paint over the
+   pills/FAB. (app.css:103-108, verbatim.) */
+.screen-corner { display: none; position: fixed; width: var(--frame-radius); height: var(--frame-radius); z-index: 1; pointer-events: none; }
+html.ios-browser .screen-corner { display: block; }
+.screen-corner.tl { top: 0;    left: 0;  background: radial-gradient(circle at bottom right, transparent calc(var(--frame-radius) - 0.5px), #000 var(--frame-radius)); }
+.screen-corner.tr { top: 0;    right: 0; background: radial-gradient(circle at bottom left,  transparent calc(var(--frame-radius) - 0.5px), #000 var(--frame-radius)); }
+.screen-corner.bl { bottom: 0; left: 0;  background: radial-gradient(circle at top right,     transparent calc(var(--frame-radius) - 0.5px), #000 var(--frame-radius)); }
+.screen-corner.br { bottom: 0; right: 0; background: radial-gradient(circle at top left,      transparent calc(var(--frame-radius) - 0.5px), #000 var(--frame-radius)); }
 
 /* Left control stack — slice 1 carries only the pill-bar (app.css:124-125). */
 .left-controls { position: absolute; left: calc(12px + var(--sa-left)); top: calc(12px + var(--sa-top)); z-index: 3; width: 340px; max-width: calc(100vw - 392px - var(--sa-left) - var(--sa-right)); display: grid; gap: 8px; }

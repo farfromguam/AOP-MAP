@@ -189,6 +189,30 @@ fillets + html.ios-browser head script (tab cosmetic, hidden in PWA). Doc update
 (covers only website/index.html + website/js/viewer_core.js, both reviewed; the band/cleanup work is now
 committed at HEAD a2013fd, no longer in the tree).
 
+-----
+
+RE-REVIEW #6 — 2026-06-13 (iOS Safari-tab corner fillets PORTED + v66).
+User: *"the pwa files USED to work. so we should trust whatever was set. add the corner fillets & bump the
+version."* Ported the fillets VERBATIM from the old working page into the viewer + bumped v65→v66.
+Files: website/index.html (head ios-browser script + 4 .screen-corner divs + #appVersion v66),
+website/css/viewer.css (--frame-radius:18px + .screen-corner rules), website/sw.js (VERSION v66).
+- witness: CLEAR — desktop: 4 divs, no ios-browser class, all display:none, v66 (collapsed + expanded +
+  served sw.js); forced class → 4 fillets display:block 18×18 pinned to corners; iPhone-UA → head script
+  auto-adds ios-browser + fillet display:block; 0 errors all contexts. Boundary: on-device Safari
+  chrome-band blend + installed-PWA suppression are the user's physical-device test.
+- quartermaster: CLEAR — .screen-corner CSS byte-identical to app.css:103-108; head script logic identical
+  to old_index.html (only the editor-off branch dropped, justified — no editor in the read viewer); 4 divs
+  identical; necessary port (viewer loads viewer.css not app.css), not gratuitous duplication; C1/C2/C6
+  untouched.
+- mason: CLEAR — z:1 above the map canvas, below all controls (.left-controls z:3 / locate z:5 /
+  search z:1000); elementFromPoint(1,1) returns the map canvas → pointer-events:none keeps drag/ⓘ
+  unblocked; head script runs pre-paint, try/catch, additive-only; --frame-radius consumed, no orphan/dead
+  code; verbatim known-good block; no limiting code.
+Steward: full clear on re-review #6. Marker 81c9f24ff736de4b7927ec1bdc3a669063c475a0 — CLEAN (covers only
+website/{css/viewer.css,index.html,sw.js}, all reviewed; HEAD 4553d72; no concurrent work in the tree). The
+viewer now carries the COMPLETE working_pwa_css.md lesson set: §1–§8 + the body{#000} keeper + the §7
+resyncViewport + the iOS-Safari-tab fillets.
+
 MARKER DECISION: NOT writing a clearance marker this round. The website/mvp tree now holds a large
 CONCURRENT diff that is NOT mine and NOT reviewed here — viewer_band.css, viewer_banded.html,
 viewer_banded_compare.html, a modified old_index.html, and several deleted mockup *.html (band work + a

@@ -99,6 +99,16 @@ behind the git gate, and adds the blue Locate FAB.
   Phase-2 gap (not ported):** the iOS-Safari-TAB `.screen-corner` fillets + `html.ios-browser` head script
   (a Safari-tab cosmetic, hidden in the PWA) — decide separately. Doc updated: `spinup/working_pwa_css.md`
   "Applied to the viewer front end."
+- **Corner fillets PORTED + v66 (user, 2026-06-13: *"the pwa files USED to work. so we should trust whatever
+  was set. add the corner fillets & bump the version."*).** Closed the Phase-2 gap above: ported the iOS
+  Safari-tab `.screen-corner` fillets VERBATIM from the old working page — the 4 `.screen-corner` divs +
+  head `html.ios-browser` detection script (iOS && !standalone, iPad-via-maxTouchPoints; minus the
+  editor-off branch the read viewer doesn't use) in `index.html`, and the `.screen-corner` CSS
+  (`app.css:103-108`) + `--frame-radius:18px` in `viewer.css`. Bumped **v65→v66** (`sw.js` + `#appVersion`).
+  Verified: desktop → 4 divs, no `ios-browser` class, all `display:none`, v66; iPhone-UA → head script
+  auto-adds `ios-browser`, fillet `display:block`; forced-class → all 4 render 18×18 at the corners
+  (`/tmp/fillet_tl.png`); served `sw.js v66`; 0 errors; `node --check` clean. _On-device iOS-Safari-tab
+  blend is the user's test (desktop has no chrome bands to round into)._ Doc: `working_pwa_css.md`.
 
 ## Acceptance
 

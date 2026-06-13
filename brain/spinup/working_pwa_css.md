@@ -31,10 +31,14 @@ the old inline `index.html`/`main.js`. Audited 2026-06-13 against this snapshot:
 - **§7 `resyncViewport` — PORTED 2026-06-13** into `viewer_core.js` (was deferred). rAF-coalesced `map.resize()` on `resize`/`orientationchange`(+250ms)/`pageshow`/`visualViewport resize`, skipped when the container box is unchanged. Verified wired + error-free on desktop; the iOS late-height band-fix needs on-device confirmation (rule §4).
 - §8 `sw.js VERSION` ↔ `#appVersion`: in lockstep at **v65** (2026-06-13).
 
-**Known gap (Phase 2, NOT ported):** the iOS-Safari-TAB `.screen-corner` fillets +
-the `html.ios-browser` head-detection script are not in the viewer. They are a
-Safari-tab cosmetic (hidden in the PWA), explicitly the separate Phase-2 problem
-below — decide separately; the installed-PWA layout (§1–§8) does not need them.
+- **iOS-Safari-TAB `.screen-corner` fillets — PORTED 2026-06-13** (user: *"the pwa
+  files USED to work. so we should trust whatever was set."*). The 4 `.screen-corner`
+  divs + the `.screen-corner` CSS (verbatim from `app.css:103-108`, with
+  `--frame-radius:18px`) + the `html.ios-browser` head-detection script (verbatim from
+  the old page, minus the editor-off branch) now live in `index.html` + `viewer.css`.
+  Verified: hidden on desktop (`display:none`, no `ios-browser` class); auto-detected +
+  rendered `display:block` 18×18 at the 4 corners under an iPhone UA; 0 errors. The
+  on-device iOS-Safari-tab blend is the user's test (desktop can't show the chrome bands).
 
 -----
 

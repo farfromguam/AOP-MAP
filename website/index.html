@@ -24,9 +24,33 @@
   <meta name="apple-mobile-web-app-title" content="Trail Blazing" />
   <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
   <link href="./css/viewer.css" rel="stylesheet" />
+  <!-- iOS Safari-TAB rounded-corner fillets: set html.ios-browser BEFORE first paint
+       so the .screen-corner divs round the map into Safari's black chrome bands. Only
+       on an iOS device in a TAB — NOT the installed PWA (no bands; the device rounds the
+       screen) and NOT desktop/non-iOS. iPad reports as MacIntel + touch, so cover it via
+       maxTouchPoints. (Ported verbatim from the old page's head gate, minus the
+       editor-off branch the read viewer has no use for.) -->
+  <script>
+    (function () {
+      try {
+        var isIOS = /iP(hone|od|ad)/.test(navigator.userAgent) ||
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var standalone = window.matchMedia('(display-mode: standalone)').matches ||
+                         navigator.standalone === true;
+        if (isIOS && !standalone) document.documentElement.classList.add('ios-browser');
+      } catch (_) {}
+    })();
+  </script>
 </head>
 <body>
   <div id="map"></div>
+  <!-- Inverted black corner fillets that round the map into the iOS Safari-tab chrome
+       (see .screen-corner; gated by html.ios-browser). Hidden in the installed PWA and
+       on desktop. -->
+  <div class="screen-corner tl" aria-hidden="true"></div>
+  <div class="screen-corner tr" aria-hidden="true"></div>
+  <div class="screen-corner bl" aria-hidden="true"></div>
+  <div class="screen-corner br" aria-hidden="true"></div>
   <div class="left-controls">
     <!-- Pill bar — ported verbatim from index.html:53-83: zoom presets
          (region / park / pavilion), layer presets (park / topo / trace /
@@ -184,7 +208,7 @@
          viewer_core.js folds it beside the collapsed bottom-left ⓘ ("ⓘ vNN",
          hidden when expanded) and also reads it into the expanded attribution body
          as "Made by Rock Warblers · vNN". Starts hidden; JS unhides on fold. -->
-    <span id="appVersion" hidden>v65</span>
+    <span id="appVersion" hidden>v66</span>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on iOS,
          where there is no programmatic install prompt). -->
