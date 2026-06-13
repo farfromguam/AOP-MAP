@@ -6,9 +6,11 @@
    Source: brain/tasks/13_viewer_extraction/viewer_core_scaffold.md */
 
 /* Palette + layout tokens (app.css:8-56) — only the subset the pill-bar,
-   controls margins, and attribution reference. --edit-fab-reserve is 0 here:
-   the read viewer has no edit FAB, so the ⓘ reclaims full width (app.css gives
-   this same 0 via html.editor-off). */
+   controls margins, and attribution reference. The read viewer has no edit FAB,
+   but its bottom-right corner holds the Locate FAB — so the bottom-left ⓘ
+   attribution reserves --locate-fab-reserve on the right (same role app.css's
+   --edit-fab-reserve plays for the editor's corner FAB) so its expanded body
+   never wraps under the button. */
 :root {
   --brown-ink: #2e2418;
   --brown-mid: #4e4128;
@@ -27,6 +29,10 @@
      clashing with the rust edit FAB. */
   --locate-blue: #2b7cd3;
   --locate-blue-dark: #2367b4;
+  /* Space the bottom-left ⓘ attribution must leave clear on the right so its
+     expanded text never wraps under the bottom-right Locate FAB (56px + 12px
+     margin + gap). Mirrors app.css --edit-fab-reserve (120px for the same 56px FAB). */
+  --locate-fab-reserve: 120px;
 
   /* Left-rail drawer tokens (app.css:27-30). */
   --tab-h: 44px;
@@ -38,8 +44,6 @@
   --sa-bottom: env(safe-area-inset-bottom, 0px);
   --sa-left:   env(safe-area-inset-left, 0px);
   --sa-right:  env(safe-area-inset-right, 0px);
-
-  --edit-fab-reserve: 0px;
 }
 
 /* Full-bleed map (app.css:67-92). Context-split height: 100dvh in a browser
@@ -57,7 +61,7 @@ html, body { background: #000; }
 .maplibregl-ctrl-top-left    { margin-top: var(--sa-top); margin-left: var(--sa-left); }
 .maplibregl-ctrl-top-right   { margin-top: var(--sa-top); margin-right: var(--sa-right); }
 .maplibregl-ctrl-bottom-left { margin: 0; }
-.maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib { margin: 0 0 18px 16px; max-width: calc(100vw - 24px - var(--sa-left) - var(--sa-right) - var(--edit-fab-reserve)); }
+.maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib { margin: 0 0 18px 16px; max-width: calc(100vw - 24px - var(--sa-left) - var(--sa-right) - var(--locate-fab-reserve)); }
 .maplibregl-ctrl-bottom-right{ margin-bottom: var(--sa-bottom); margin-right: var(--sa-right); }
 
 /* Left control stack — slice 1 carries only the pill-bar (app.css:124-125). */
@@ -178,13 +182,15 @@ html, body { background: #000; }
 #pwaInstallBtn.util-install:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
 #pwaInstallBtn.util-install[hidden] { display: none; }
 #pwaIosHint.util-ios-hint { justify-self: start; max-width: 240px; }
-.util-version { width: var(--tab-h); justify-self: start; display: grid; place-items: center; padding: 4px 0; border-radius: 8px; background: var(--cream-surface); border: 1px solid var(--cream-border); box-shadow: 0 8px 28px rgba(0,0,0,0.18); font: 800 0.6rem Inter, system-ui, sans-serif; letter-spacing: 0.03em; color: var(--brown-mid); user-select: none; cursor: default; }
-/* Folded into the bottom-left ⓘ (foldVersionIntoInfoControl): the corner lays out
-   as a row so it reads "ⓘ v62", and the chip drops its full-width card sizing. */
-.maplibregl-ctrl-bottom-left.attrib-with-version { display: flex; flex-direction: row; align-items: flex-end; }
-.maplibregl-ctrl-bottom-left.attrib-with-version .util-version { width: auto; margin: 0 0 18px 5px; padding: 1px 6px; border-radius: 7px; font-size: 0.62rem; box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
-/* The Locate control lives in the left rail — hide MapLibre's default top-right
-   geolocate button (it is the only top-right ctrl). */
+/* Version beside the COLLAPSED ⓘ ("ⓘ v64"). A plain inline label centered with
+   the ⓘ button (no card/shadow, so it can't overflow the icon). Hidden when the ⓘ
+   is expanded — the body already carries "Made by Rock Warblers · v64" via
+   customAttribution (viewer_core.js), so the two never double up. */
+.maplibregl-ctrl-bottom-left.attrib-with-version { display: flex; flex-direction: row; align-items: center; }
+.attrib-version { margin: 0 0 0 5px; font: 700 0.62rem Inter, system-ui, sans-serif; line-height: 1; letter-spacing: 0.02em; color: var(--brown-mid); white-space: nowrap; user-select: none; pointer-events: none; }
+.maplibregl-ctrl-attrib.maplibregl-compact-show ~ .attrib-version { display: none; }
+/* The Locate control lives in the bottom-right FAB — hide MapLibre's default
+   top-right geolocate button (it is the only top-right ctrl). */
 .maplibregl-ctrl-top-right .maplibregl-ctrl-group { display: none; }
 
 /* ── Calendar / Events + About (app.css:718-816) ───────────────────── */

@@ -31,7 +31,7 @@
        every frame from the 9-patch's screen rectangle, so the frame and its
        lettering ride WITH the map (a printed neat-line), not the viewport. The v4
        lettered look the user picked. -->
-  <div id="bandFrame" aria-hidden="true">
+  <div id="bandFrame" aria-hidden="true" data-deco="rule">
     <div class="band-tile corner tl"></div>
     <div class="band-tile edge top"><span class="band-label">Adventure&nbsp;Off&nbsp;Road&nbsp;Park</span></div>
     <div class="band-tile corner tr"></div>
@@ -232,6 +232,31 @@
         var g = b.gaps(); map.panBy([g.l - g.r, g.t - g.b], { duration: 520 });
       }, 1100);
     });
+  </script>
+  <script>
+    // Proof-only: ?deco=… picks a corner-decoration variant (composable, e.g.
+    // ?deco=rule+bracket); ?frame=out hides the proof chrome and frames the whole
+    // 9-patch, so the compare page's iframes show the decorated border statically.
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var deco = params.get('deco');
+      var frame = document.getElementById('bandFrame');
+      if (deco && frame) frame.setAttribute('data-deco', deco.replace(/\+/g, ' '));
+      if (params.get('frame') === 'out') {
+        document.body.classList.add('band-preview');
+        // Frame the whole 9-patch with margins on every side so the decorated border
+        // shows. The core does its own initial framing (zooms to a default view) after
+        // load, so we RE-ASSERT fitBounds for the first few seconds to win that race;
+        // once the core settles, the last fit holds.
+        var ticks = 0, iv = setInterval(function () {
+          var V = window.AOPViewer;
+          if (V && V.map && V.regionBounds && window.AOPViewerBand) {
+            V.map.fitBounds(V.regionBounds, { padding: 90, duration: 0 });
+          }
+          if (++ticks > 40) clearInterval(iv);   // ~6s of re-assertion, then leave it
+        }, 150);
+      }
+    })();
   </script>
 </body>
 </html>

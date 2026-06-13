@@ -113,3 +113,40 @@ SEAT: mason     VERDICT: clear — f*r0=fill*edge math sound (glyph + em letter-
 RESULT: CLEAR for the band scaling change. Marker NOT written — combined working diff is dominated by the
   concurrent Slice-7 swap (not reviewed here, not mine to bless). Resolution: the swap's owner clears it,
   or the user commits the swap (their git gate); then the band diff alone can be cleanly cleared.
+
+=== ADDENDUM 4 — corner-keyline fix + decoration variants + compare re-review (2026-06-13) ===
+change: (1) removed the 4 corner-tile keyline borders (ran to viewport edge = "into infinity"); edge
+        tiles already draw the 9-patch rectangle. (2) ?deco variants: rule (hairline flanks lettering),
+        bracket (inner ⌐ at each corner mark), composable. (3) ?frame=out preview + new
+        viewer_banded_compare.html (2x2). Files: viewer_band.css, viewer_banded.html, +compare page.
+re-review: Witness + Mason scoped to my 3 files (concurrent Slice-7 swap excluded; not mine).
+SEAT: witness  VERDICT: clear — live re-ran /tmp/verify_band_deco2.py: 0 errors, all 4 variants margins
+  {90,90,120,120} topShown:true; pseudo reads confirm rule ::before ink #3a2c1a/260px & bracket ::before
+  1px border, neither leaks into clean, both compose; PNGs show keyline as a clean rectangle around the
+  9-patch (no infinity line), rule fills mark→text gap, bracket frames each corner, compare = real 2x2.
+SEAT: mason     VERDICT: clear — corner-border removal leaves edge borders drawing the full rectangle (no
+  gap), no stray refs; variants scoped via [data-deco~=] so clean (no attr) is untouched, ~= composes
+  "rule bracket"; param IIFE bounded (clearInterval at >40 ticks), guards before acting (no throw),
+  replace(/\+/g) harmless-redundant; idiomatic; pure presentation, no limiting code.
+RESULT: CLEAR for the band deco work. Marker NOT written — combined working diff still holds the concurrent
+  Slice-7 swap (and the advisory sw.js/#appVersion note belongs to that, not the proof page). Open product
+  decision: user to pick a variant (rec: rule).
+
+=== ADDENDUM 5 — band design SETTLED (rule default, thinner, shadows removed) (2026-06-13) ===
+user: "go with the hairline rule make it thinner ... it has the borders as last discussed" (+ earlier
+      reported "dropshadows going to infinity on some corners").
+change: (1) removed the box-shadow from all 4 .band-tile.edge rules — each tile spans its whole margin so
+        its shadow bled along the perpendicular edges to the viewport corner (same "infinity" class as the
+        old corner border); frame is now a flat printed neat-line. (2) rule hairline 1.4px -> 0.75px (both
+        orientations). (3) #bandFrame data-deco="rule" is the markup DEFAULT (no-param load shows rule);
+        ?deco still overrides. Files: viewer_band.css, viewer_banded.html.
+SEAT: witness  VERDICT: clear — live re-ran /tmp/verify_band_final.py + DOM read of all 8 tiles: data-deco
+  =rule, every tile box-shadow=none, rule 0.75px ink, margins {90,90,120,120}, 0 errors; band_final{,_tl,_tr}.png
+  show thin rule + keyline + corner marks, clean margins, NO shadow bleed toward any viewport corner.
+SEAT: mason     VERDICT: clear — box-shadow gone (only unrelated #bandProofHud keeps one); keyline 1.5px &
+  bracket 1.2px untouched; 0.75px on both rule orientations only; data-deco="rule" matched by [data-deco~=
+  "rule"], param script overrides when present, unknown/missing token falls back to clean baseline (no
+  throw); no dead code, idiomatic. NOTE (user/Warden call): uncommitted diff also carries the bracket
+  variant + compare page (coherent proof scaffolding) — decide what ships.
+RESULT: CLEAR — band aesthetic SETTLED. Marker still NOT written (combined working diff holds the concurrent
+  Slice-7 swap). To clear the gate: commit the swap (user's git gate), then the band diff alone clears.

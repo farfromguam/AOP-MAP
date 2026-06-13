@@ -33,17 +33,17 @@
   box-sizing: border-box;
 }
 
-/* Keyline (neat-line) on each tile's MAP-FACING side(s); the eight tiles together
-   draw one continuous rectangle hugging the 9-patch boundary, mitred at the corners.
-   A soft shadow falls inward (toward the map) so the frame reads as raised. */
-.band-tile.edge.top    { border-bottom: 1.5px solid var(--band-rule); box-shadow:  0  5px 14px rgba(42,31,18,0.16); }
-.band-tile.edge.bottom { border-top:    1.5px solid var(--band-rule); box-shadow:  0 -5px 14px rgba(42,31,18,0.16); }
-.band-tile.edge.left   { border-right:  1.5px solid var(--band-rule); box-shadow:  5px 0 14px rgba(42,31,18,0.16); }
-.band-tile.edge.right  { border-left:   1.5px solid var(--band-rule); box-shadow: -5px 0 14px rgba(42,31,18,0.16); }
-.band-tile.corner.tl   { border-right: 1.5px solid var(--band-rule); border-bottom: 1.5px solid var(--band-rule); }
-.band-tile.corner.tr   { border-left:  1.5px solid var(--band-rule); border-bottom: 1.5px solid var(--band-rule); }
-.band-tile.corner.bl   { border-right: 1.5px solid var(--band-rule); border-top:    1.5px solid var(--band-rule); }
-.band-tile.corner.br   { border-left:  1.5px solid var(--band-rule); border-top:    1.5px solid var(--band-rule); }
+/* Keyline (neat-line): ONLY the four EDGE tiles carry it, on their map-facing side.
+   Those four borders already meet at the 9-patch corners and draw the COMPLETE
+   boundary rectangle — so the corner tiles draw NO keyline. (A border on a corner
+   tile would run from the boundary corner out to the viewport edge: a line into
+   infinity.) No drop-shadow: each tile spans its whole margin, so a box-shadow bled
+   along the tile's perpendicular edges out to the viewport corner — same "infinity"
+   problem. The frame reads as a flat printed neat-line instead. */
+.band-tile.edge.top    { border-bottom: 1.5px solid var(--band-rule); }
+.band-tile.edge.bottom { border-top:    1.5px solid var(--band-rule); }
+.band-tile.edge.left   { border-right:  1.5px solid var(--band-rule); }
+.band-tile.edge.right  { border-left:   1.5px solid var(--band-rule); }
 
 /* The lettering. The px sizes below are the BASE that JS measures once; JS then
    scales each label to a fixed fraction of its edge so the type is pinned to the
@@ -82,6 +82,57 @@
 .band-tile.corner.tr::after { left: 6px;  bottom: 6px; }
 .band-tile.corner.bl::after { right: 6px; top: 6px; }
 .band-tile.corner.br::after { left: 6px;  top: 6px; }
+
+/* ─── Corner-decoration VARIATIONS (proof) ──────────────────────────────────────
+   Switch with ?deco=… on viewer_banded.html — space-separated and composable:
+     (none/clean) → mark + boundary keyline only           [the default]
+     rule         → a hairline flanks the centred lettering out toward the marks
+     bracket      → an inner ⌐ frames each corner mark (a "dolly")
+   e.g.  ?deco=rule  ·  ?deco=bracket  ·  ?deco=rule+bracket                       */
+
+/* rule — a hairline fills the gap between the corner mark and the lettering,
+   centred on the text's own midline (so it tracks the scaled type). The tile's
+   overflow:hidden clips each rule at the boundary corner. */
+#bandFrame[data-deco~="rule"] .band-tile.edge .band-label::before,
+#bandFrame[data-deco~="rule"] .band-tile.edge .band-label::after {
+  content: ""; position: absolute; background: var(--band-rule);
+}
+#bandFrame[data-deco~="rule"] .band-tile.edge.top .band-label::before,
+#bandFrame[data-deco~="rule"] .band-tile.edge.top .band-label::after,
+#bandFrame[data-deco~="rule"] .band-tile.edge.bottom .band-label::before,
+#bandFrame[data-deco~="rule"] .band-tile.edge.bottom .band-label::after {
+  top: 50%; height: 0.75px; width: 50vw; transform: translateY(-50%);
+}
+#bandFrame[data-deco~="rule"] .band-tile.edge.top .band-label::before,
+#bandFrame[data-deco~="rule"] .band-tile.edge.bottom .band-label::before { right: 100%; margin-right: .85em; }
+#bandFrame[data-deco~="rule"] .band-tile.edge.top .band-label::after,
+#bandFrame[data-deco~="rule"] .band-tile.edge.bottom .band-label::after  { left: 100%;  margin-left: .85em; }
+#bandFrame[data-deco~="rule"] .band-tile.edge.left .band-label::before,
+#bandFrame[data-deco~="rule"] .band-tile.edge.left .band-label::after,
+#bandFrame[data-deco~="rule"] .band-tile.edge.right .band-label::before,
+#bandFrame[data-deco~="rule"] .band-tile.edge.right .band-label::after {
+  left: 50%; width: 0.75px; height: 50vh; transform: translateX(-50%);
+}
+#bandFrame[data-deco~="rule"] .band-tile.edge.left .band-label::before,
+#bandFrame[data-deco~="rule"] .band-tile.edge.right .band-label::before { bottom: 100%; margin-bottom: .85em; }
+#bandFrame[data-deco~="rule"] .band-tile.edge.left .band-label::after,
+#bandFrame[data-deco~="rule"] .band-tile.edge.right .band-label::after  { top: 100%;    margin-top: .85em; }
+
+/* bracket — an inner ⌐ offset into the corner margin, framing the mark. Fixed size
+   (so it never runs to infinity); the corner tile clips it on a shallow peek. */
+#bandFrame[data-deco~="bracket"] .band-tile.corner::before {
+  content: ""; position: absolute; width: 30px; height: 30px;
+}
+#bandFrame[data-deco~="bracket"] .band-tile.corner.tl::before { right: 3px; bottom: 3px; border-right: 1.2px solid var(--band-rule); border-bottom: 1.2px solid var(--band-rule); }
+#bandFrame[data-deco~="bracket"] .band-tile.corner.tr::before { left: 3px;  bottom: 3px; border-left:  1.2px solid var(--band-rule); border-bottom: 1.2px solid var(--band-rule); }
+#bandFrame[data-deco~="bracket"] .band-tile.corner.bl::before { right: 3px; top: 3px;    border-right: 1.2px solid var(--band-rule); border-top:    1.2px solid var(--band-rule); }
+#bandFrame[data-deco~="bracket"] .band-tile.corner.br::before { left: 3px;  top: 3px;    border-left:  1.2px solid var(--band-rule); border-top:    1.2px solid var(--band-rule); }
+
+/* Preview mode (?frame=out) hides the proof chrome so the frame reads clean in the
+   compare iframes. */
+body.band-preview .left-controls,
+body.band-preview #bandProofHud,
+body.band-preview .message { display: none !important; }
 
 /* Small proof HUD — explains how to trigger the peek. Not part of the feature. */
 #bandProofHud {

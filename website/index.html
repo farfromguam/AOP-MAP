@@ -10,8 +10,9 @@
        tangled page is parked at old_index.html; the editor lives in panel.js + the
        standalone field tools (schedule_editor.html, data_editor.html) + QGIS.
        Carries the map, the pill-bar (zoom / preset / 3D), the left-rail drawer
-       (Search / Hot / Calendar→Events/POI/About), the blue Locate FAB, Install,
-       and the version chip. -->
+       (Search / Hot / Calendar→Events/POI/About), the blue Locate FAB, and Install.
+       The build credit + version ride in the bottom-left ⓘ attribution body
+       ("Made by Rock Warblers · vNN"), not a chip. -->
   <meta name="theme-color" content="#a85020" />
   <!-- PWA: installable + offline. Registers ./sw.js. The viewer's own assets
        (viewer.css, viewer_core.js) are precached in sw.js SHELL_ASSETS; #appVersion
@@ -179,10 +180,11 @@
       </svg>
     </button>
 
-    <!-- Build version. foldVersionIntoInfoControl() RELOCATES it into the
-         bottom-left info ⓘ at runtime so the corner reads "ⓘ v64". Keep in sync
-         with VERSION in sw.js (both name the same build). -->
-    <div class="util-version" id="appVersion" title="App build version">v64</div>
+    <!-- Build version — the version-of-record, kept in sync with VERSION in sw.js.
+         viewer_core.js folds it beside the collapsed bottom-left ⓘ ("ⓘ v64",
+         hidden when expanded) and also reads it into the expanded attribution body
+         as "Made by Rock Warblers · vNN". Starts hidden; JS unhides on fold. -->
+    <span id="appVersion" hidden>v65</span>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on iOS,
          where there is no programmatic install prompt). -->

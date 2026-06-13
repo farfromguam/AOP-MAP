@@ -107,10 +107,24 @@ readability, or verifier coverage, land it.
 - [x] **Right-panel survivor kept:** the live `right_panel.html` is the right-panel
   baseline; `right_sidebar_compare.html` (+ its v1–v4 iframes) kept as the OPEN
   per-row edit-toolkit comparison. `poi_crud_compare.html` was already gone.
-- [ ] **STILL PENDING (kept, awaiting a user pick — do not retire):**
-  - `calendar_placeholder_v{1,2,3,4}.html` — `calendar_placeholder_state.md` open.
-  - `park_bounds_icon_review.html` — ◌ pick owed (PB1–PB9), `park_bounds_icon_apply`.
-  - `right_sidebar_compare.html` + `right_sidebar_v{1,2,3,4}.html` — ◌ open toolkit.
+- [x] **2026-06-13 — last three pending sets resolved by the user; cleanup complete.**
+  `website/*.html` 33 → 25 (119 at sweep start). The current live `index.html` is the
+  clean viewer spike (`6b911ec`); the deleted compare/review pages were referenced only
+  by the parked `old_index.html`, whose Comparisons section was trimmed to its 3 valid
+  survivors (`copy_review`, `icon_master`, `leftrail_compare_v2`). No dangling refs.
+  - **Calendar placeholder → V2 spinner.** Kept `calendar_placeholder_v2_spinner.html`;
+    retired `v1_skeleton`, `v3_pulse`, `v4_dotprogress` + the throwaway
+    `calendar_placeholder_compare.html` (4). **OWED:** wire V2 into the live calendar
+    loading state — DEFERRED until the viewer spike settles (don't collide with the
+    user's in-flight `index.html`/`viewer_core.js`). Card: `calendar_placeholder_state.md`.
+  - **Park-bounds icon → dropped.** User: "nothing for park bounds icon." Retired
+    `park_bounds_icon_review.html`. The `park_bounds_icon_apply` card's PB1–PB9 pick is
+    abandoned for now (current `#zoomPark` SVG stands); its reference to the review page
+    is now stale — update that card if the icon swap is ever reopened.
+  - **Right-sidebar toolkit → dropped.** User: "nothing for right sidebar compare."
+    Retired `right_sidebar_compare.html` + `right_sidebar_v{1_dock,2_takeover,3_split,4_sheet}.html`
+    (5). The live right-panel surface is `right_panel.html` (kept); any wired toolkit
+    behavior already lives in `panel.js`.
 - [x] **2026-06-13 — data_editor BOTH axes decided; all 9 data_editor_* mockups
   retired except the winner config + the data-grid tool.** Architecture clarified:
   `js/data_editor_map.js` (KEPT, the shared engine) holds all layout+preview logic;

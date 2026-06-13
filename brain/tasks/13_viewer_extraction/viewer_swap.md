@@ -51,8 +51,38 @@ behind the git gate, and adds the blue Locate FAB.
   `./css/panel-embed.css` + `./css/app.css` were **kept** (additive, not pruned — `old_index.html` and
   the field editors still use them, so they stay offline-capable too). The navigation fallback already
   serves `./index.html`, which is now the viewer.
-- **`index.html` `#appVersion`** v62 → **v64** (in sync with `sw.js`). `manifest.json` needed no change:
-  `start_url`/`scope`/`id` are all `./`, which now resolves to the viewer.
+- **`index.html` `#appVersion`** v62 → **v64** (in sync with `sw.js`). _Version-display, two follow-ups
+  (user, 2026-06-13):_
+  1. _The always-on v64 chip beside the ⓘ overflowed under it. First fix: moved the credit entirely into
+     the ⓘ **attribution body** via `customAttribution` ("Made by Rock Warblers · v64") and removed the
+     chip + `foldVersionIntoInfoControl()` + the dead CSS._
+  2. _User then wanted the version label back on the COLLAPSED ⓘ but gone when expanded
+     (*"v64 there when its not expanded. invisible when expanded. keep inner text. it still overflows the
+     locate icon"*). Re-added `#appVersion` beside the ⓘ as a minimal centered inline label
+     (`.attrib-version` — no card/shadow, so it can't overflow the icon), folded in by
+     `foldVersionBesideInfo()`; CSS hides it on expand via
+     `.maplibregl-ctrl-attrib.maplibregl-compact-show ~ .attrib-version { display:none }`. The
+     `customAttribution` body text is kept for the expanded state. Version stays **v64** (user named it)._
+  3. _**The actual overflow** (user: *"it still wraps under the blue locate button. do you not see this?"*).
+     My first two "verifications" measured the wrong element — the small COLLAPSED `#appVersion` label
+     (bottom-left, never near the FAB) — and missed the real problem: the **EXPANDED attribution body**
+     ("Made by Rock Warblers · v64 | Brand logos: … | Buildings: … | …") spanned the full container width
+     (`max-width` ≈ `100vw − 24px`), so on every width its right end wrapped UNDER the bottom-right Locate
+     FAB (reproduced: `OVERLAPS_FAB:true` at 1400/768/390). Root cause: `viewer.css` had ALREADY ported
+     app.css's reserve mechanism — `.maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib { max-width:
+     calc(… − var(--edit-fab-reserve)) }` — but with `--edit-fab-reserve: 0px` and a comment claiming "the
+     read viewer has no edit FAB, so the ⓘ reclaims full width." That 0px reserve WAS the bug: the viewer's
+     bottom-right corner does have a FAB (Locate). Fix (one token, one rule, mirroring app.css): renamed the
+     inert token to **`--locate-fab-reserve: 120px`**, pointed the existing rule at it, rewrote the comment.
+     (Council/Mason caught a first attempt that ADDED a second token + duplicate rule instead of fixing the
+     existing one — consolidated per the andon.) Now the expanded body wraps in a left column, clear of the
+     FAB._
+  - _Verified by observation at desktop, 768 tablet, **and** 390 mobile, EXPANDED (the state that was
+    broken): `OVERLAPS_FAB:false` at all three — 24px gap between the attribution's right edge and the FAB
+    left edge; the long body wraps left of the FAB (`/tmp/attrib_wrap_{desktop,tablet,mobile}.png`).
+    Collapsed still shows "v64" beside the ⓘ; expanded still carries "Made by Rock Warblers · v64". 0
+    console errors._
+  `manifest.json` needed no change: `start_url`/`scope`/`id` are all `./`, which now resolves to the viewer.
 - **`old_index.html`** left at `#appVersion` v63 — it is a frozen legacy page, not the version source.
 
 ## Acceptance
@@ -62,7 +92,8 @@ behind the git gate, and adds the blue Locate FAB.
       renders. 0 errors. (First built at `right:80px`; moved to the corner per the user follow-up above —
       re-verified `rightGap:12`, clear of the bottom-left ⓘ, lights on click, 0 errors.)
 - [x] `http://localhost:8000/` serves the clean viewer (no editor `.panel`); presets(4)/zooms(3)/search/
-      calendar/hot/install all present; `#appVersion` reads **v64** folded into the ⓘ; service worker
+      calendar/hot/install all present; "v64" shows beside the collapsed ⓘ and the build credit
+      **"Made by Rock Warblers · v64"** is in the ⓘ body when expanded; service worker
       registers. **0 console errors.**
 - [x] `http://localhost:8000/old_index.html` → **200**, still the full all-in-one editor page.
 - [x] `node --check` clean on `sw.js` + `viewer_core.js`.

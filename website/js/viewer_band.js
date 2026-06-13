@@ -1,34 +1,58 @@
-// viewer_band.js — PROOF of the off-edge decorative band (V1 "rubber-band"),
+// viewer_band.js — GEOLOCATED off-edge decorative band ("printed neat-line"),
 // wired onto the REAL MapLibre map of the clean viewer core.
 //
-// Purpose: determine HOW the band integrates with the core JS + MapLibre, on a
-// dedicated page, WITHOUT touching the live viewer. This is the liftable module:
-// the only thing the core must provide is the map instance, the tight 9-patch
-// bounds (REGION_BOUNDS), and a maxBounds loosened by ~a band's width so the
-// camera can be pulled past the 9-patch edge. On viewer_banded.html those three
-// are supplied by a small constructor shim (window.AOPViewer); in real
-// integration viewer_core.js exposes them directly and this file drops in as-is.
+// WHY THIS IS A REWRITE (2026-06-13): the band used to be a screen-space HTML
+// overlay — eight axis-aligned <div> tiles repositioned every frame from the
+// 9-patch's screen *bounding box*. That works top-down, but in 3D (pitch + the
+// terrain toggle) the 9-patch projects to a perspective TRAPEZOID, and an
+// axis-aligned rectangle of divs cannot follow it — the frame floats flat over a
+// tilted scene instead of sitting on the ground. The user's call: "these are 2d
+// map elements that need to be geolocated... once done it will conform to the
+// landscape." So the band is now drawn as ACTUAL map layers tied to the region's
+// geographic boundary; MapLibre projects them through the same camera as the map
+// (bearing, pitch, terrain), so the frame conforms to the landscape automatically.
 //
-// The band is a MASK pinned to the 9-patch rectangle: it covers everything
-// OUTSIDE the 9-patch, so data layers may overfill the bounds (no per-shape
-// trimming) and the user never sees spill or ragged ends — the visible map is
-// always the clean 9-patch. Generalises to any park: set that park's bounds.
+// The band is four geolocated pieces, all pinned to the 9-patch rectangle:
+//   1. paper mask  — a donut fill (huge outer ring minus the 9-patch hole) that
+//      covers everything OUTSIDE the 9-patch, so data spill is hidden and the
+//      visible map is always the clean 9-patch. Drapes on terrain in 3D.
+//   2. keyline     — a line along the 9-patch boundary (the neat-line).
+//   3. lettering   — line-center symbols sitting just OUTSIDE each edge, on the
+//      paper. Ground-locked text size (exponential base 2) means each label holds
+//      a fixed FRACTION of its edge at every zoom (so it never overflows — this is
+//      what the old per-frame JS font hack was chasing) and it foreshortens with
+//      the terrain in 3D.
+//   4. corner marks— the Rock Warblers mark stamped at each boundary corner, laid
+//      flat on the ground (icon rotation + pitch aligned to the map).
 //
-// Pull behaviour — DON'T fight the gesture; only settle on release:
-//   • Inside the 9-patch            → no gap → frame hidden; pan freely.
-//   • Pull past any edge            → the frame peeks in (its tiles grow with the
-//     gap) and tracks the boundary live; the camera is NOT counter-panned, so a
-//     drag is never yanked away mid-gesture. How far you can pull is bounded only
-//     by the map's own maxBounds backstop — a user can only scroll so far.
-//   • Release                       → snapBack() eases the gap closed so the frame
-//     retracts and the clean 9-patch fills the view again (rubber-band).
+// Camera behaviour is unchanged from the rubber-band era: the map's own maxBounds
+// is the hard backstop, and on RELEASE after a drag past the edge snapBack() eases
+// the 9-patch back into frame. That logic is screen-space (it just pulls the
+// camera) and is kept verbatim; only the VISUAL band moved onto the map.
 (function () {
   'use strict';
 
-  var EPS = 2;         // px — gaps under this read as "filled" (rounding guard).
   var SNAP_MS = 520;   // ms — release rubber-band duration.
+  var ZREF = 13;       // zoom at which the px sizes below are measured; ground-lock
+                       // doubles them per zoom level (exponential base 2).
+
+  var PAPER = '#e3d7bb', INK = '#3a2c1a', TITLE_INK = '#2a1f12', SUB_INK = '#5a4828';
 
   function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+  // Ground-locked size: an interpolate-by-zoom whose two stops are 4 zoom levels
+  // apart with a 16× ratio == exactly 2^zoom, so the element holds a fixed
+  // ground (map) size. `perPrio` lets title vs sub differ via a data match — the
+  // match must be a STOP OUTPUT (zoom may only drive a top-level interpolate).
+  function sizeExpr(titlePx, subPx) {
+    return ['interpolate', ['exponential', 2], ['zoom'],
+      ZREF - 2, ['match', ['get', 'prio'], 'title', titlePx / 4, subPx / 4],
+      ZREF + 2, ['match', ['get', 'prio'], 'title', titlePx * 4, subPx * 4]];
+  }
+  function scalarSizeExpr(pxAtRef) {
+    return ['interpolate', ['exponential', 2], ['zoom'],
+      ZREF - 2, pxAtRef / 4, ZREF + 2, pxAtRef * 4];
+  }
 
   function boot(tries) {
     var V = window.AOPViewer;
@@ -40,28 +64,142 @@
     var map = V.map;
     var region = V.regionBounds ||
       [[-85.782935283, 35.067164188], [-85.717154097, 35.117928496]];
+    var W = region[0][0], S = region[0][1], E = region[1][0], N = region[1][1];
+    var dW = E - W, dH = N - S;
 
-    // The 9-patch frame: 8 border tiles (4 corners + 4 edges). The center is the
-    // live map. JS sizes + positions each tile every frame from the 9-patch's
-    // screen rectangle, so the whole frame tracks the boundary instead of the
-    // viewport, and the eight tiles exactly tile the margin (clean mitred corners,
-    // no overlapping full-width/full-height panels).
-    function q(sel) { return document.querySelector(sel); }
-    var tiles = {
-      tl: q('.band-tile.corner.tl'), tr: q('.band-tile.corner.tr'),
-      bl: q('.band-tile.corner.bl'), br: q('.band-tile.corner.br'),
-      top: q('.band-tile.edge.top'), bottom: q('.band-tile.edge.bottom'),
-      left: q('.band-tile.edge.left'), right: q('.band-tile.edge.right')
-    };
-    if (!tiles.top) { console.warn('[viewer_band] band DOM not found'); return; }
+    // Text sits this far OUTSIDE the boundary (a fraction of the region), so the
+    // lettering prints on the paper margin rather than straddling the neat-line.
+    var insetX = dW * 0.060, insetY = dH * 0.060;
+    var maskPad = 2.0;   // deg — large enough that the paper covers the whole
+                         // visible ground out to the horizon when pitched in 3D.
 
-    function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+    // ── geolocated geometry ──────────────────────────────────────────────────
+    var ring = [[W, S], [E, S], [E, N], [W, N], [W, S]];
 
-    // Screen-space bbox of the 9-patch (works under the core's bearing:-90 because
-    // we project all four corners and take the axis-aligned screen extent).
+    var maskFeature = { type: 'Feature', properties: {}, geometry: {
+      type: 'Polygon', coordinates: [
+        [[W - maskPad, S - maskPad], [E + maskPad, S - maskPad],
+         [E + maskPad, N + maskPad], [W - maskPad, N + maskPad], [W - maskPad, S - maskPad]],
+        ring   // hole = the clean 9-patch
+      ] } };
+
+    var keylineFeature = { type: 'Feature', properties: {},
+      geometry: { type: 'LineString', coordinates: ring } };
+
+    // Edge → text. Each label line runs parallel to its boundary edge, offset
+    // outward into the paper. line-center drops one label at the edge's midpoint;
+    // MapLibre orients it along the line and keeps it upright, so it tracks bearing
+    // and pitch. (Which geographic edge lands at screen-top depends on the core's
+    // bearing:-90 — the assignment below is tuned so the default view reads like
+    // the picked design: title across the top, location across the bottom, the two
+    // coordinate sublabels down the sides.)
+    var EDGES = [
+      { prio: 'title', label: 'Adventure Off Road Park',
+        line: [[W - insetX, S], [W - insetX, N]] },
+      { prio: 'sub', label: 'South Pittsburg · Marion County · Tennessee — MMXXVI',
+        line: [[E + insetX, S], [E + insetX, N]] },
+      { prio: 'sub', label: '35° 00′ North · Cumberland Plateau',
+        line: [[W, N + insetY], [E, N + insetY]] },
+      { prio: 'sub', label: '85° 36′ West · Trail Blazing Invitational',
+        line: [[W, S - insetY], [E, S - insetY]] }
+    ];
+    var labelFC = { type: 'FeatureCollection', features: EDGES.map(function (e) {
+      return { type: 'Feature', properties: { label: e.label, prio: e.prio },
+               geometry: { type: 'LineString', coordinates: e.line } };
+    }) };
+
+    var cornerFC = { type: 'FeatureCollection',
+      features: [[W, S], [E, S], [E, N], [W, N]].map(function (c) {
+        return { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: c } };
+      }) };
+
+    // ── corner mark: rasterise rw-mark.svg into a flat INK silhouette stamp ───
+    // (mirrors the CSS mask+background-color trick: draw the art, then source-in
+    // fill it with the neat-line ink so it reads as a printed stamp). The SVG is
+    // width/height:100%, so it has no intrinsic size — give the <img> an explicit
+    // box before it loads so the canvas raster is sharp.
+    function loadMark(cb) {
+      if (map.hasImage('rw-mark')) return cb();
+      var SZ = 128;
+      var img = new Image();
+      img.width = SZ; img.height = SZ;
+      img.crossOrigin = 'anonymous';
+      img.onload = function () {
+        try {
+          var cv = document.createElement('canvas'); cv.width = SZ; cv.height = SZ;
+          var ctx = cv.getContext('2d');
+          ctx.drawImage(img, 0, 0, SZ, SZ);
+          ctx.globalCompositeOperation = 'source-in';
+          ctx.fillStyle = INK; ctx.fillRect(0, 0, SZ, SZ);
+          if (!map.hasImage('rw-mark')) map.addImage('rw-mark', ctx.getImageData(0, 0, SZ, SZ), { pixelRatio: 2 });
+        } catch (err) { console.warn('[viewer_band] rw-mark raster failed:', err); }
+        cb();
+      };
+      img.onerror = function () { console.warn('[viewer_band] rw-mark image failed to load'); cb(); };
+      img.src = './assets/branding/rw-mark.svg';
+    }
+
+    // ── add the band layers (idempotent), on TOP of the core's layers ────────
+    var BAND_LAYERS = ['band-mask', 'band-keyline', 'band-labels', 'band-marks'];
+    function addBand() {
+      if (map.getSource('band-mask')) { raiseBand(); return; }
+
+      map.addSource('band-mask', { type: 'geojson', data: maskFeature });
+      map.addLayer({ id: 'band-mask', type: 'fill', source: 'band-mask',
+        paint: { 'fill-color': PAPER, 'fill-antialias': true } });
+
+      map.addSource('band-keyline', { type: 'geojson', data: keylineFeature });
+      map.addLayer({ id: 'band-keyline', type: 'line', source: 'band-keyline',
+        layout: { 'line-join': 'miter', 'line-cap': 'square' },
+        paint: { 'line-color': INK, 'line-width': 1.5 } });
+
+      map.addSource('band-labels', { type: 'geojson', data: labelFC });
+      map.addLayer({ id: 'band-labels', type: 'symbol', source: 'band-labels',
+        layout: {
+          'symbol-placement': 'line-center',
+          'text-field': ['get', 'label'],
+          'text-transform': 'uppercase',
+          'text-letter-spacing': 0.18,
+          'text-size': sizeExpr(13, 10),
+          'text-keep-upright': true,
+          'text-allow-overlap': true,
+          'text-ignore-placement': true,
+          'text-max-angle': 80
+        },
+        paint: {
+          'text-color': ['match', ['get', 'prio'], 'title', TITLE_INK, SUB_INK],
+          'text-halo-color': PAPER,
+          'text-halo-width': 1.2
+        } });
+
+      if (map.hasImage('rw-mark')) {
+        map.addSource('band-marks', { type: 'geojson', data: cornerFC });
+        map.addLayer({ id: 'band-marks', type: 'symbol', source: 'band-marks',
+          layout: {
+            'icon-image': 'rw-mark',
+            'icon-size': scalarSizeExpr(0.17),
+            'icon-rotation-alignment': 'map',
+            'icon-pitch-alignment': 'map',
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+            'icon-anchor': 'center'
+          } });
+      }
+      raiseBand();
+    }
+
+    // Keep the band on top if the core adds any layer after us.
+    function raiseBand() {
+      for (var i = 0; i < BAND_LAYERS.length; i++) {
+        if (map.getLayer(BAND_LAYERS[i])) map.moveLayer(BAND_LAYERS[i]);
+      }
+    }
+
+    // ── snapBack (camera rubber-band) — unchanged screen-space logic ─────────
+    // Screen-space bbox of the 9-patch (axis-aligned extent of the four projected
+    // corners). Only used to decide how far to pull the camera back on release.
     function regionRect() {
-      var w = region[0][0], s = region[0][1], e = region[1][0], n = region[1][1];
-      var pts = [map.project([w, s]), map.project([w, n]), map.project([e, s]), map.project([e, n])];
+      var pts = [map.project([W, S]), map.project([W, N]), map.project([E, S]), map.project([E, N])];
       var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       for (var i = 0; i < pts.length; i++) {
         var p = pts[i];
@@ -70,130 +208,52 @@
       }
       return { minX: minX, minY: minY, maxX: maxX, maxY: maxY };
     }
-
-    // SIGNED bare-margin on each viewport side (negative = the 9-patch edge is
-    // OFF-screen past that edge). snapBack and the verify hook read from this.
     function rawGaps() {
       var c = map.getContainer();
-      var W = c.clientWidth, H = c.clientHeight;
       var r = regionRect();
-      return { l: r.minX, r: W - r.maxX, t: r.minY, b: H - r.maxY, W: W, H: H };
+      return { l: r.minX, r: c.clientWidth - r.maxX, t: r.minY, b: c.clientHeight - r.maxY };
     }
-
-    // Clamped, non-negative gaps — what the mask actually covers per side.
     function gaps() {
       var g = rawGaps();
-      return { l: Math.max(0, g.l), r: Math.max(0, g.r),
-               t: Math.max(0, g.t), b: Math.max(0, g.b), W: g.W, H: g.H };
+      return { l: Math.max(0, g.l), r: Math.max(0, g.r), t: Math.max(0, g.t), b: Math.max(0, g.b) };
     }
-
-    // Position one tile (a corner or an edge). Degenerate tiles (no margin on that
-    // side) are hidden so their keyline never shows as a hairline at the viewport
-    // edge. Each tile still fills its whole slice of the margin (out to the viewport
-    // edge), so the frame masks the ENTIRE out-of-9-patch region (paper, ragged
-    // ends, OSM roads spilling past the boundary) — never a fixed sliver.
-    function place(el, x, y, w, h) {
-      if (w <= EPS || h <= EPS) { el.style.display = 'none'; return; }
-      el.style.display = 'block';
-      el.style.left = x + 'px'; el.style.top = y + 'px';
-      el.style.width = w + 'px'; el.style.height = h + 'px';
-    }
-
-    // The lettering hugs the map-facing edge and rides the TRUE 9-patch mid-point
-    // (the tile clips any overhang), so it holds its position relative to the
-    // landmasses as the map pans — it does not float at the viewport centre.
-    function setLabel(tile, prop, px) {
-      var lab = tile.firstElementChild;
-      if (lab) lab.style[prop] = px + 'px';
-    }
-
-    // Lettering is SCALED to the map: each label spans a fixed FRACTION of the edge
-    // it sits on, so it grows and shrinks with the 9-patch (printed-on-the-map feel)
-    // and never overflows the edge as you zoom out. We cache each label's
-    // extent-per-font-px ratio once (the glyphs are otherwise constant), then
-    // font-size = fraction * edge / ratio.
-    var FILL_TOP = 0.58, FILL_SUB = 0.70, FONT_MIN = 3;
-    function extentRatio(tile, lab) {
-      if (lab._r0) return lab._r0;
-      var saved = lab.style.fontSize;
-      lab.style.fontSize = '';                        // measure at the CSS base size
-      var base = parseFloat(getComputedStyle(lab).fontSize) || 10;
-      var vertical = (tile === tiles.left || tile === tiles.right);
-      var ext = vertical ? lab.offsetHeight : lab.offsetWidth;
-      lab.style.fontSize = saved;
-      if (ext > 0 && base > 0) lab._r0 = ext / base;  // px of text per px of font
-      return lab._r0 || 0;
-    }
-    function scaleLabel(tile, edgeLen, fill) {
-      var lab = tile.firstElementChild;
-      if (!lab) return;
-      var r0 = extentRatio(tile, lab);
-      if (r0 <= 0) return;                            // not measurable yet (tile hidden)
-      lab.style.fontSize = Math.max(FONT_MIN, (fill * edgeLen) / r0) + 'px';
-    }
-
-    function update() {
-      var c = map.getContainer();
-      var W = c.clientWidth, H = c.clientHeight;
-      var r = regionRect();
-      // The 9-patch boundary, clamped to the viewport. Off-screen edges collapse to
-      // a zero-width margin so that side's tiles disappear.
-      var Lx = clamp(r.minX, 0, W), Rx = clamp(r.maxX, 0, W);
-      var Ty = clamp(r.minY, 0, H), By = clamp(r.maxY, 0, H);
-      var leftW = Lx, rightW = W - Rx, topH = Ty, botH = H - By;
-      var midW = Rx - Lx, midH = By - Ty;
-
-      place(tiles.tl, 0,  0,  leftW,  topH);
-      place(tiles.tr, Rx, 0,  rightW, topH);
-      place(tiles.bl, 0,  By, leftW,  botH);
-      place(tiles.br, Rx, By, rightW, botH);
-      place(tiles.top,    Lx, 0,  midW, topH);
-      place(tiles.bottom, Lx, By, midW, botH);
-      place(tiles.left,   0,  Ty, leftW,  midH);
-      place(tiles.right,  Rx, Ty, rightW, midH);
-
-      var midX = (r.minX + r.maxX) / 2, midY = (r.minY + r.maxY) / 2;
-      setLabel(tiles.top,    'left', midX - Lx); scaleLabel(tiles.top,    midW, FILL_TOP);
-      setLabel(tiles.bottom, 'left', midX - Lx); scaleLabel(tiles.bottom, midW, FILL_SUB);
-      setLabel(tiles.left,   'top',  midY - Ty); scaleLabel(tiles.left,   midH, FILL_SUB);
-      setLabel(tiles.right,  'top',  midY - Ty); scaleLabel(tiles.right,  midH, FILL_SUB);
-    }
-
-    // Snap the camera back so all gaps close — the band slides out with it.
-    // panBy is a pure pixel translation, so it preserves zoom/bearing/pitch and
-    // needs no bearing-aware math. +dx pans content left (closes a left gap);
-    // +dy pans content up (closes a top gap).
     var snapping = false, userDragged = false;
     function snapBack() {
       var g = gaps();
-      var dx = g.l - g.r;
-      var dy = g.t - g.b;
+      var dx = g.l - g.r, dy = g.t - g.b;
       if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
         snapping = true;
         map.panBy([dx, dy], { duration: SNAP_MS, easing: easeOutCubic });
       }
     }
-
-    // The frame tracks the boundary live during a pan (update on every move), but
-    // the camera is never counter-panned mid-gesture — the user keeps the drag,
-    // bounded only by the map's maxBounds backstop. Settling happens on RELEASE
-    // (moveend after a real drag), via snapBack().
-    map.on('move', update);
-    map.on('render', update);
-    map.on('resize', update);
     map.on('dragstart', function () { userDragged = true; });
     map.on('moveend', function () {
-      if (snapping) { snapping = false; return; }   // ignore the snap's own moveend
-      if (!userDragged) return;                       // ignore preset / zoom moves
+      if (snapping) { snapping = false; return; }
+      if (!userDragged) return;
       userDragged = false;
       snapBack();
     });
 
-    update();
+    // ── boot the band once the core's style + layers are in ──────────────────
+    function whenReady(tries) {
+      if (map.isStyleLoaded()) {
+        // Let the core's async load handler finish its addLayer calls, then add
+        // the band on top and re-raise once on the next idle for good measure.
+        setTimeout(function () { loadMark(addBand); }, 1200);
+        map.once('idle', function () { if (map.getSource('band-mask')) raiseBand(); });
+        return;
+      }
+      if ((tries || 0) < 200) return setTimeout(function () { whenReady((tries || 0) + 1); }, 150);
+      console.warn('[viewer_band] style never loaded — band not added.');
+    }
+    whenReady(0);
 
-    // Verify hook for the proof's Playwright check.
-    window.AOPViewerBand = { update: update, gaps: gaps, rawGaps: rawGaps,
-                             snapBack: snapBack, region: region };
+    // Verify hook for the proof's Playwright checks + the "Show me" button.
+    window.AOPViewerBand = {
+      addBand: addBand, raiseBand: raiseBand,
+      gaps: gaps, rawGaps: rawGaps, snapBack: snapBack, region: region,
+      layers: BAND_LAYERS
+    };
   }
 
   boot(0);

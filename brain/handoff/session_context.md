@@ -6,6 +6,97 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (REAL FIX — EXPANDED ⓘ attribution wrapped UNDER the locate FAB; capped its width).** My two
+prior version-display "fixes" measured the wrong element (the tiny COLLAPSED #appVersion label, never near
+the FAB) and missed what the user actually saw: the EXPANDED attribution body ("Made by Rock Warblers · v64
+| Brand logos… | Buildings… | …") spanned the full container width and wrapped UNDER the bottom-right Locate
+FAB. Reproduced by observation: `OVERLAPS_FAB:true` at 1400/768/390 (on mobile it wrapped to ~3 lines right
+under the button). Root cause: `viewer.css` had ALREADY ported app.css's reserve rule
+(`.maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib{max-width:calc(… - var(--edit-fab-reserve))}`) but
+with `--edit-fab-reserve: 0px` + a comment "the read viewer has no edit FAB so the ⓘ reclaims full width" —
+that 0px WAS the bug (the bottom-right corner has the Locate FAB). Fix (`viewer.css` only, one token/one
+rule mirroring app.css): renamed the inert token → `--locate-fab-reserve: 120px`, pointed the existing rule
+at it, rewrote the comment. (Council/Mason ANDON caught a first attempt that added a SECOND token +
+duplicate rule; consolidated.) Re-verified EXPANDED at desktop/768/390: `OVERLAPS_FAB:false`, 24px gap, body
+wraps left of the FAB (`brain/output/council/attrib_fab_*.png`), 0 errors. LESSONS: (1) verify the state the
+user describes (expanded), not a convenient proxy; (2) check for an existing mechanism before adding one.
+Card addendum `viewer_swap.md` item 3. UNCOMMITTED.
+
+-----
+
+**2026-06-13 (BAND DESIGN SETTLED — hairline `rule` default, thinner; drop-shadow removed; council-clean).**
+User picked the variant: *"go with the hairline rule make it thinner ... it has the borders as last
+discussed"* (+ had reported *"dropshadows going to infinity on some corners"*). **(1) Shadow-infinity fix**
+(`viewer_band.css`): removed the `box-shadow` from all four `.band-tile.edge` rules — each edge tile spans
+its whole margin, so its box-shadow bled along the tile's PERPENDICULAR edges out to the viewport corner
+(same "to infinity" class as the corner-border bug). The frame is now a flat printed neat-line (keyline +
+paper). **(2) `rule` is the DEFAULT** — `#bandFrame` carries `data-deco="rule"` in markup, so a no-param
+load shows the hairline-flanked lettering; `?deco=` still overrides (clean/bracket/rule+bracket, compare
+page). **(3) Hairline thinned** 1.4px → **0.75px** (both orientations). **Verified by observation**
+(`/tmp/verify_band_final.py`, 0 errors): data-deco=rule, every tile box-shadow=none, rule 0.75px ink,
+margins {90,90,120,120}; `brain/output/band_final{,_tl,_tr}.png` show the thin rule + keyline + corner RW
+marks with NO shadow bleed at any corner. **Council CLEAR** (Witness+Mason, addendum 5 in
+`brain/output/council/band_9patch_council_receipt.txt`). **Mason note (user call):** the uncommitted band
+diff also carries the bracket variant + `viewer_banded_compare.html` (proof scaffolding) — keep or trim at
+commit. **UNCOMMITTED.** Gate marker NOT written: the shared working tree still holds the concurrent
+Slice-7 swap — committing that (user's git gate) leaves the band diff alone, which then clears the gate.
+
+-----
+
+**2026-06-13 (VERSION LABEL — back beside the COLLAPSED ⓘ, hidden when expanded).** Refinement of the
+prior version-display entry below. User: *"I want the v64 there when its not expanded. invisible when
+expanded. keep inner text. it still overflows the locate icon."* Re-added `#appVersion` beside the ⓘ as a
+minimal centered inline label (`.attrib-version`, no card/shadow so it can't overflow the icon), folded by
+`foldVersionBesideInfo()` in `viewer_core.js`; CSS hides it on expand
+(`.maplibregl-ctrl-attrib.maplibregl-compact-show ~ .attrib-version{display:none}`). The expanded body
+keeps "Made by Rock Warblers · v64" (customAttribution). Version stays **v64** (user named it; no bump).
+Files: `website/index.html`, `website/js/viewer_core.js`, `website/css/viewer.css`. Verified at desktop +
+414px mobile: collapsed shows "v64" beside the ⓘ, `overlapsFab:false`; expanded hides it; body keeps the
+credit; 0 errors (`/tmp/version_collapsed_{desktop,mobile}.png`). NOTE the "still overflows in testing" was
+likely a **stale installed-PWA shell** — js/css are stale-while-revalidate so a reload or two online picks
+up the new shell; version intentionally kept at v64 so no SW VERSION bump forces it. Card addendum on
+`viewer_swap.md`. UNCOMMITTED.
+
+-----
+
+**2026-06-13 (BAND: corner-keyline-into-infinity FIXED + corner-decoration variations + compare page).**
+On `viewer_banded.html`, user: the corner patches' black border "going into infinity" should only surround
+the 9-patch; and asked for corner-decoration *variations* ("dollies"), floating the idea of "a hr that
+fills the space between the bird and the text." **(1) Keyline fix** (`viewer_band.css`): removed the keyline
+borders from the four CORNER tiles — the four EDGE tiles already meet at the corners and draw the complete
+boundary rectangle, so a corner border only added a line running from the boundary corner out to the
+viewport edge (the "infinity"). Verified: keyline now traces ONLY the 9-patch. **(2) Decoration variants**
+(composable, switch with `?deco=` on viewer_banded.html): `rule` = a hairline flanks the centred lettering
+out to the corner marks, on its own midline so it tracks the scaled type (the user's hr idea, all 4 edges);
+`bracket` = an inner ⌐ frames each corner RW mark (a "dolly"); they compose (`?deco=rule+bracket`); default
+(no param) = clean. CSS-only via label `::before/::after` (rule) and corner `::before` (bracket).
+**(3) Preview + compare:** `?frame=out` hides the proof chrome and re-asserts `fitBounds(regionBounds,{padding})`
+for ~6s to win the core's initial framing, so the band shows statically; new **`website/viewer_banded_compare.html`**
+(2×2 iframes: clean / rule / bracket / rule+bracket, each with an "open ↗" full-screen link) — one URL per
+`feedback_always_compare_page`. **Verified by observation** (`/tmp/verify_band_deco{,2}.py`, 0 errors): all 4
+render (margins 90/120, tiles shown); pseudo-element reads confirm rule ::before = ink #3a2c1a / 260px and
+bracket ::before = 1px border; shots `brain/output/band_deco2_{clean,rule,bracket,both}.png` + `band_deco_compare.png`.
+**My recommendation:** `rule` (matches the user's own idea, classic, not too much); `bracket` if they want
+ornament; `both` likely too much. **Files (mine):** `viewer_band.css`, `viewer_banded.html`, new
+`viewer_banded_compare.html`. **UNCOMMITTED.** Council NOT run — design still being chosen by the user, and
+the tree still mixes the concurrent Slice-7 work; will convene once a variant is picked.
+
+-----
+
+**2026-06-13 (FOLLOW-UP — version moved into the ⓘ body; user committed the swap).** The folded v64 chip
+beside the bottom-left ⓘ overflowed under the control. Per user (*"the V64 can go away and we can put that
+text + some made by rockwarblers v64 inside of the info body"*): removed the chip +
+`foldVersionIntoInfoControl()` + the dead `.util-version`/`.attrib-with-version` CSS; `#appVersion` is now a
+hidden version-of-record that `viewer_core.js` reads into the ⓘ's MapLibre **attribution body** via
+`customAttribution` as **"Made by Rock Warblers · v64"** (leads the source-credit list). ⓘ is back to a
+clean compact control. Files: `website/index.html`, `website/js/viewer_core.js`, `website/css/viewer.css`.
+Verified (`/tmp/verify_info_credit.py`): `#appVersion` hidden, no `attrib-with-version`, expanded body =
+"Made by Rock Warblers · v64 | Brand logos: … | Buildings: …", 0 errors (`/tmp/info_credit_expanded.png`).
+Prior swap + right:12px corner reposition are COMMITTED (`6b911ec`); this version follow-up is the new
+uncommitted diff. Card addendum on `viewer_swap.md`.
+
+-----
+
 **2026-06-13 (BAND LETTERING NOW SCALES TO THE MAP — user reversed the fixed-size call).**
 Follow-up on `viewer_banded.html`. User first said the band text *"gets too big and overflows its bounds"*
 when zooming out and *"fixed is ok"* — but on reproducing (measured: font was already fixed 12/10px, the

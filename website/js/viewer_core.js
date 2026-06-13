@@ -56,8 +56,16 @@
   // for the 3D view (main.js:163).
   map.touchZoomRotate.disableRotation();
 
-  // Bottom-left ⓘ attribution (main.js:166).
-  map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
+  // Bottom-left ⓘ attribution (main.js:166). Two faces of the same version:
+  //  - COLLAPSED: a small "v64" label sits beside the ⓘ (#appVersion, folded in
+  //    below). CSS hides it when the ⓘ is expanded.
+  //  - EXPANDED: the build credit "Made by Rock Warblers · v64" rides in the
+  //    attribution body via customAttribution.
+  // #appVersion (index.html) is the version-of-record, synced with VERSION in sw.js.
+  const versionEl = document.getElementById('appVersion');
+  const version = versionEl ? versionEl.textContent.trim() : '';
+  const madeBy = 'Made by Rock Warblers' + (version ? ' · ' + version : '');
+  map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: madeBy }), 'bottom-left');
 
   // Collapse the compact attribution to the ⓘ once the first source loads,
   // then unbind so later ⓘ taps are the user's (main.js:206-214).
@@ -70,14 +78,14 @@
   };
   map.on('sourcedata', collapseAttribOnce);
 
-  // Fold the build version INTO the bottom-left ⓘ so the corner reads "ⓘ v62"
-  // (main.js:173-180) — relocates #appVersion out of the left stack into the
-  // attribution control's bottom-left container (created by addControl above).
-  (function foldVersionIntoInfoControl() {
+  // Fold the version label in beside the ⓘ (a sibling AFTER the attrib element,
+  // so the CSS `.maplibregl-compact-show ~ .attrib-version` can hide it on expand).
+  (function foldVersionBesideInfo() {
     const bottomLeft = map.getContainer().querySelector('.maplibregl-ctrl-bottom-left');
-    const versionEl = document.getElementById('appVersion');
     if (bottomLeft && versionEl) {
       bottomLeft.classList.add('attrib-with-version');
+      versionEl.classList.add('attrib-version');
+      versionEl.hidden = false;
       bottomLeft.appendChild(versionEl);
     }
   })();
