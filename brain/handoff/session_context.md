@@ -6,6 +6,66 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (MOCKUP CLEANUP — 77 settled `website/*.html` retired, 119 → 42).**
+The long-deferred misc_3 item 14 / `viewer_polish_followups.md` "Mockup Cleanup" chore is
+executed. Classified every named mockup applied-vs-pending against `index.html`'s own
+✓/◌ Comparisons status board (more authoritative than scattered session notes — it caught
+two of my misreads: `park_bounds_icon_review` and `right_sidebar_compare` are PENDING, not
+applied, so both kept). Deleted the applied-choice families (bottombar/floatgroup/
+editor_unified/add_any_type/poi_crud/editor_dock/hot_glyph/button_icon/topo×3 +
+right_sidebar old A/B/C + 26 non-survivor leftrail) and, per user, the 11 orphan
+`mapborder_*` (superseded by the active `viewer_banded.html` band work). Removed 6 dead
+links from the `index.html` Comparisons section (5 survive) and repointed 2 stale
+`main.js` topo comments. **Kept pending (do NOT retire):** `calendar_placeholder_v*`,
+`park_bounds_icon_review`, `right_sidebar_compare`+v1–v4, and the 10 `data_editor_*`
+mockups — the user is reviewing those last in the UI before deciding
+(`http://localhost:8000/data_editor_map_compare.html` + `…_v1_preview_compare.html`).
+Kept survivors: `leftrail_compare_v2` + its 9 iframes + `leftrail_motion`/`load_animations`;
+masters `icon_master`/`data_sources`/`copy_review`; products `index`/`right_panel`/
+`data_editor`/`schedule_editor`/`viewer`/`viewer_banded`. Verified: `node --check` clean,
+headless :8001 = 0 console errors / 5 Comparisons links, zero dangling refs to deleted
+files (the leftrail `→ leftrail_compare.html` back-links + `copy_review → res.html` are
+PRE-EXISTING, left alone). Full record on `viewer_polish_followups.md` "Mockup Cleanup".
+All uncommitted per `no_commits.md`. The `brain/output/council/banded_b_probe_receipt.txt`
+in git status is from the separate active band work, untouched here.
+
+**2026-06-13 (BAND SNAP-BACK TUNED — mid-pan leash removed per user; only settle on release).**
+Follow-up to the 9-patch rebuild (entry below). User: the snap felt aggressive — *"IF we are mid pan it
+should not take it from us. only when we let go. -- a user can only scroll so far anyways."* Confirmed it was
+NOT my doing: the original **Option-B leash** (`enforceLeash`) ran on every `move` and instantly counter-panned
+(`panBy({duration:0})`) to cap overpull at `MAX_PULL=72px` — it yanked the camera back mid-drag. **Fix
+(removal, `website/js/viewer_band.js` only):** deleted `enforceLeash`/`axisCorrection`/`MAX_PULL`/the
+`clamping` guard/`onMove` and the now-unused `wpx`/`hpx` in `rawGaps()`. `move`/`render`/`resize` now just
+`update()` (tiles track the boundary live, no counter-pan); the only mid-pan limit is the map's own
+`maxBounds` backstop (the shim's `pad(region,0.6)`). Settling stays on RELEASE — `snapBack()` on `moveend`
+after a real drag (unchanged, gated by `userDragged`/`snapping`). Export drops `enforceLeash`/`MAX_PULL`, adds
+`snapBack`. **Verified by real gesture** (`/tmp/verify_band_snap.py`, 3/3, 0 errors): at region the vertical
+axis is filled (g.t≈0); a held mouse-drag down ~300px opened a **178.6px** top gap (old cap was 72 → leash
+provably gone); mouse-up snapped it back to **0.0px**. Shots `brain/output/band_snap_{1_middrag,2_released}.png`.
+`node --check` OK; repo grep shows zero orphaned leash refs. **Council re-reviewed** (Mason+Witness fresh on
+the new diff → both clear; Warden/Quartermaster trivially clear — pure deletion, same files). **Known test
+wart (not a code bug):** `/tmp/verify_band_fix.py` is 4/5 — its tall-viewport "top band visible" assertion is
+wrong (region-fit pins the 9-patch to height, so the top band stays off-screen); the layout code is correct.
+**UNCOMMITTED** (user's git gate).
+
+-----
+
+**2026-06-13 (SPRINT 13 SLICE 6 SHIPPED — Locate / Install / version + PWA chrome. Built alongside, index.html untouched).**
+User committed the star work (`2029871 star poi bake rework`) then "continue" → slice 6. Ported the last of
+the left-control stack: **Locate** (the geolocate control + the `.util-locate` button + lit/dim wiring),
+**Install** (the `#pwaInstallBtn` + iOS hint + `beforeinstallprompt`/iOS scripts), the **version** chip
+(`#appVersion` folded into the bottom-left ⓘ via `foldVersionIntoInfoControl`), plus the head manifest +
+apple-touch-icon links and the `./sw.js` registration. `viewer.html` +75, `viewer.css` +25, `viewer_core.js`
++33. **Verified** (`/tmp/verify_viewer_pwa.py`, **9/9 PASS, 0 errors**, geolocation granted): "ⓘ v62" folded,
+Locate lights + blue dot renders, Install hidden-until-installable, sw registers. Shot `viewer_pwa.png`.
+**sw.js / index.html / main.js UNTOUCHED → no version bump owed.** **Deferred to the SWAP (slice 7):**
+`viewer.html` + assets → `SHELL_ASSETS`, the VERSION/#appVersion bump, the manifest `start_url` — all
+reconcile when viewer.html BECOMES index.html. Card
+`tasks/13_viewer_extraction/viewer_locate_install_version.md`. **UNCOMMITTED.** Council next. **Last slice:
+7 — the swap** (git-gated: viewer.html → index.html, editor stays in panel.js + the standalone field tools).
+
+-----
+
 **2026-06-13 (BANDED-PROOF FRAME REBUILT AS A TRUE 9-PATCH — user feedback on `viewer_banded.html`).**
 User: the band lettering *"floats"* (it should hold size + location relative to the landmasses when a
 corner peeks out), and it *"appears as if there are 4 separate panels and not 8 border objects that are

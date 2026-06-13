@@ -14,23 +14,19 @@
 // trimming) and the user never sees spill or ragged ends — the visible map is
 // always the clean 9-patch. Generalises to any park: set that park's bounds.
 //
-// "Option B" leash (this file): a UNIFORM, pixel-space pull limit on ALL FOUR
-// sides, independent of the 9-patch shape / bearing / window aspect:
-//   • Inside the 9-patch            → no gap → mask fully hidden.
-//   • Pull past any edge            → you may reveal at most MAX_PULL px of the
-//     exterior on that side; the mask grows to cover exactly that gap.
-//   • Can't fill the viewport       → (zoomed out / odd aspect) the mask covers
-//     the whole margin so no exterior shows — the 9-patch stays fully on screen.
-//   • Release                       → eases back so the gap closes and the mask
-//     retracts. The px leash is enforced in screen space, so top/bottom behave
-//     exactly like left/right even when the 9-patch fills one axis.
+// Pull behaviour — DON'T fight the gesture; only settle on release:
+//   • Inside the 9-patch            → no gap → frame hidden; pan freely.
+//   • Pull past any edge            → the frame peeks in (its tiles grow with the
+//     gap) and tracks the boundary live; the camera is NOT counter-panned, so a
+//     drag is never yanked away mid-gesture. How far you can pull is bounded only
+//     by the map's own maxBounds backstop — a user can only scroll so far.
+//   • Release                       → snapBack() eases the gap closed so the frame
+//     retracts and the clean 9-patch fills the view again (rubber-band).
 (function () {
   'use strict';
 
-  var MAX_PULL = 72;   // px — how far past the 9-patch you may pull on ANY side
-                       // (uniform; this is the mask's max reveal on an overpull).
   var EPS = 2;         // px — gaps under this read as "filled" (rounding guard).
-  var SNAP_MS = 520;
+  var SNAP_MS = 520;   // ms — release rubber-band duration.
 
   function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
@@ -76,16 +72,12 @@
     }
 
     // SIGNED bare-margin on each viewport side (negative = the 9-patch edge is
-    // OFF-screen past that edge) plus the 9-patch's own screen extent. The leash
-    // and the mask both read from this.
+    // OFF-screen past that edge). snapBack and the verify hook read from this.
     function rawGaps() {
       var c = map.getContainer();
       var W = c.clientWidth, H = c.clientHeight;
       var r = regionRect();
-      return {
-        l: r.minX, r: W - r.maxX, t: r.minY, b: H - r.maxY,
-        wpx: r.maxX - r.minX, hpx: r.maxY - r.minY, W: W, H: H
-      };
+      return { l: r.minX, r: W - r.maxX, t: r.minY, b: H - r.maxY, W: W, H: H };
     }
 
     // Clamped, non-negative gaps — what the mask actually covers per side.
@@ -157,41 +149,13 @@
       }
     }
 
-    // Option-B leash, enforced in screen pixels so it is uniform on all sides:
-    //   • if the 9-patch FILLS an axis (taller/wider than the viewport) → it's an
-    //     overpull; cap the exterior shown on each side at MAX_PULL px.
-    //   • if the 9-patch CANNOT fill an axis → keep it fully on screen (no edge
-    //     pushed off); the mask covers the leftover margin.
-    // A counter-pan (jump, no animation) pins the camera at the limit; a guard
-    // stops the panBy's own 'move' from re-entering.
-    var clamping = false;
-    function axisCorrection(gA, gB, extent, viewport) {
-      if (extent >= viewport) {                 // overpull regime → cap at MAX_PULL
-        if (gA > MAX_PULL) return (gA - MAX_PULL);
-        if (gB > MAX_PULL) return -(gB - MAX_PULL);
-      } else {                                   // can't fill → keep 9-patch on screen
-        if (gA < 0) return gA;
-        if (gB < 0) return -gB;
-      }
-      return 0;
-    }
-    function enforceLeash() {
-      if (clamping) return;
-      var g = rawGaps();
-      var dx = axisCorrection(g.l, g.r, g.wpx, g.W);
-      var dy = axisCorrection(g.t, g.b, g.hpx, g.H);
-      if (dx !== 0 || dy !== 0) {
-        clamping = true;
-        map.panBy([dx, dy], { duration: 0 });
-        clamping = false;
-      }
-    }
-
-    function onMove() { enforceLeash(); update(); }
-
-    map.on('move', onMove);
+    // The frame tracks the boundary live during a pan (update on every move), but
+    // the camera is never counter-panned mid-gesture — the user keeps the drag,
+    // bounded only by the map's maxBounds backstop. Settling happens on RELEASE
+    // (moveend after a real drag), via snapBack().
+    map.on('move', update);
     map.on('render', update);
-    map.on('resize', onMove);
+    map.on('resize', update);
     map.on('dragstart', function () { userDragged = true; });
     map.on('moveend', function () {
       if (snapping) { snapping = false; return; }   // ignore the snap's own moveend
@@ -200,12 +164,11 @@
       snapBack();
     });
 
-    enforceLeash();
     update();
 
     // Verify hook for the proof's Playwright check.
     window.AOPViewerBand = { update: update, gaps: gaps, rawGaps: rawGaps,
-                             enforceLeash: enforceLeash, region: region, MAX_PULL: MAX_PULL };
+                             snapBack: snapBack, region: region };
   }
 
   boot(0);

@@ -141,6 +141,30 @@ html, body { background: #000; }
 .hot-button-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hot-button-detail { display: block; margin-top: 1px; font: 400 0.72rem Inter, system-ui, sans-serif; text-transform: none; letter-spacing: 0; color: rgba(247, 241, 226, 0.88); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* ── Locate / Install / version float groups — slice 6 (app.css:209-274) ─ */
+.util-group { width: var(--tab-h); justify-self: start; border-radius: 8px; overflow: hidden; box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+.util-btn { width: var(--tab-h); height: var(--tab-h); display: grid; place-items: center; border: 0; padding: 0; cursor: pointer; transition: background 0.12s ease, color 0.12s ease; }
+.util-btn svg { width: 22px; height: 22px; }
+.util-group.util-locate { background: var(--cream-surface); border: 1px solid var(--cream-border); }
+.util-group.util-locate .util-btn { background: transparent; color: var(--brown-mid); }
+.util-group.util-locate .util-btn:hover { background: var(--cream-wash-hover); color: var(--brown-dark); }
+.util-group.util-locate .util-btn:focus-visible { outline: 2px solid var(--moss); outline-offset: -2px; }
+.util-group.util-locate .util-btn.active { background: var(--moss-soft); color: var(--moss-dark); }
+#pwaInstallBtn.util-install { width: var(--tab-h); height: var(--tab-h); justify-self: start; display: grid; place-items: center; padding: 0; border: 1px solid var(--rust); border-radius: 8px; background: var(--rust); color: #fff; cursor: pointer; box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+#pwaInstallBtn.util-install svg { width: 22px; height: 22px; }
+#pwaInstallBtn.util-install:hover { background: #96461b; }
+#pwaInstallBtn.util-install:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
+#pwaInstallBtn.util-install[hidden] { display: none; }
+#pwaIosHint.util-ios-hint { justify-self: start; max-width: 240px; }
+.util-version { width: var(--tab-h); justify-self: start; display: grid; place-items: center; padding: 4px 0; border-radius: 8px; background: var(--cream-surface); border: 1px solid var(--cream-border); box-shadow: 0 8px 28px rgba(0,0,0,0.18); font: 800 0.6rem Inter, system-ui, sans-serif; letter-spacing: 0.03em; color: var(--brown-mid); user-select: none; cursor: default; }
+/* Folded into the bottom-left ⓘ (foldVersionIntoInfoControl): the corner lays out
+   as a row so it reads "ⓘ v62", and the chip drops its full-width card sizing. */
+.maplibregl-ctrl-bottom-left.attrib-with-version { display: flex; flex-direction: row; align-items: flex-end; }
+.maplibregl-ctrl-bottom-left.attrib-with-version .util-version { width: auto; margin: 0 0 18px 5px; padding: 1px 6px; border-radius: 7px; font-size: 0.62rem; box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
+/* The Locate control lives in the left rail — hide MapLibre's default top-right
+   geolocate button (it is the only top-right ctrl). */
+.maplibregl-ctrl-top-right .maplibregl-ctrl-group { display: none; }
+
 /* ── Calendar / Events + About (app.css:718-816) ───────────────────── */
 .calendar-card { display: block; padding: 0; overflow: hidden; }
 .left-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 8px; border-bottom: 0; background: transparent; }

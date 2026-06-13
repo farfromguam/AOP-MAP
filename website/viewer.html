@@ -11,6 +11,11 @@
        left-rail drawer (Search / Hot / Calendar), Locate, Install, and version
        come in later slices. NOT yet precached in sw.js — no #appVersion bump owed. -->
   <meta name="theme-color" content="#a85020" />
+  <!-- PWA: installable + offline. Registers the existing ./sw.js. Full precache
+       of the viewer's own assets + the VERSION bump land at the swap (slice 7),
+       when this file becomes index.html. -->
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Trail Blazing" />
@@ -161,6 +166,48 @@
         </div>
       </div>
     </div>
+
+    <!-- Locate — its own float group below the drawer. Drives the hidden top-right
+         GeolocateControl: blue dot, accuracy halo, follow mode. Works offline at
+         the park (device GPS). -->
+    <div class="util-group util-locate" role="group" aria-label="Locate">
+      <button type="button" id="locateBtn" class="util-btn" aria-pressed="false" title="Show my location" aria-label="Show my location">
+        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="5.4"/>
+          <path d="M11 2.5v2.7M11 16.8v2.7M2.5 11h2.7M16.8 11h2.7"/>
+          <circle cx="11" cy="11" r="1.3" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Install — the button IS the group; self-hides (hidden) until the browser
+         reports the app installable. Logic in the PWA script below. -->
+    <button type="button" id="pwaInstallBtn" class="util-install" hidden
+            title="Install app" aria-label="Install AOP Map as an app">
+      <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M11 3v9M7.5 8.5 11 12l3.5-3.5"/>
+        <path d="M4.5 15v2.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V15"/>
+      </svg>
+    </button>
+
+    <!-- Build version. foldVersionIntoInfoControl() RELOCATES it into the
+         bottom-left info ⓘ at runtime so the corner reads "ⓘ v62". Keep in sync
+         with VERSION in sw.js (both name the same build). -->
+    <div class="util-version" id="appVersion" title="App build version">v62</div>
+
+    <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on iOS,
+         where there is no programmatic install prompt). -->
+    <div id="pwaIosHint" class="util-ios-hint" hidden role="dialog" aria-label="Install instructions"
+         style="padding:12px 14px; border:1px solid #a85020; border-radius:10px;
+                background:#F5EFE0; color:#3a2a1a; font:14px/1.4 system-ui,sans-serif;
+                box-shadow:0 2px 10px rgba(0,0,0,.25);">
+      To install: tap the <b>Share</b> button, then <b>Add to Home Screen</b>.
+      <button type="button" id="pwaIosHintClose"
+              style="margin-top:8px; padding:5px 10px; border:1px solid #a85020;
+                     border-radius:6px; background:#fff; color:#a85020; cursor:pointer;">
+        Got it
+      </button>
+    </div>
   </div>
   <div class="message" id="message">Loading publish layer...</div>
 
@@ -172,5 +219,56 @@
        click popups, same module the live page + editors use. -->
   <script src="./js/feature_display.js"></script>
   <script src="./js/viewer_core.js"></script>
+
+  <!-- PWA: "Install app" button + iOS hint. Hidden by default; on Chromium it
+       shows once beforeinstallprompt fires and triggers the native prompt on
+       click; on iOS Safari it toggles the Add-to-Home-Screen steps. Self-hides
+       when already installed / standalone. (Ported from index.html.) -->
+  <script>
+    (function () {
+      const btn = document.getElementById('pwaInstallBtn');
+      const iosHint = document.getElementById('pwaIosHint');
+      const iosHintClose = document.getElementById('pwaIosHintClose');
+      let deferredPrompt = null;
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+      const ua = window.navigator.userAgent;
+      const isIos = /iPad|iPhone|iPod/.test(ua)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isIosSafari = isIos && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+      function hide() { btn.hidden = true; iosHint.hidden = true; }
+      if (!isStandalone && isIosSafari) {
+        btn.hidden = false;
+        btn.addEventListener('click', () => { iosHint.hidden = !iosHint.hidden; });
+        iosHintClose.addEventListener('click', () => { iosHint.hidden = true; });
+      }
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (!isStandalone) btn.hidden = false;
+      });
+      btn.addEventListener('click', async () => {
+        if (!deferredPrompt) return; // iOS path handled above
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        if (outcome === 'accepted') btn.hidden = true;
+      });
+      window.addEventListener('appinstalled', hide);
+    })();
+  </script>
+
+  <!-- PWA: register the service worker. Scoped to this directory. Failure is
+       non-fatal — the viewer runs fine without it, just without offline caching.
+       (The viewer's own assets join sw.js SHELL_ASSETS at the swap, slice 7.) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((err) => {
+          console.warn('[AOP] service worker registration failed:', err);
+        });
+      });
+    }
+  </script>
 </body>
 </html>

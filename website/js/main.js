@@ -5124,9 +5124,9 @@
             'hillshade-highlight-color': '#f7eed8',
             'hillshade-accent-color': '#8a7860'
           },
-          // Contour topo "faded back" so the orange trail pops (user pick, real-
-          // data compare in topo_trail_compare.html + topo_trail_orange_compare.html,
-          // linked from the right-rail Review section). Background = V1 faded sienna:
+          // Contour topo "faded back" so the orange trail pops (user pick from the
+          // topo-colour compare pass, now retired; decision recorded in the brain —
+          // misc_3 item 13 + research/viewer.md). Background = V1 faded sienna:
           // the warm-sienna hue is kept but the ON-opacity is dialed back (index
           // 0.98->0.5, fine 0.8->0.28) and the colours lightened so the relief reads
           // as a quiet ground. The zoom-fade structure is preserved (50 ft index
@@ -5150,7 +5150,7 @@
           // (overrides the per-difficulty blue/green/black) so trails pop against
           // the faded contour + hillshade relief. User pick O6 (pure, no casing) —
           // a brighter, slightly wider, full-opacity orange that stands alone now
-          // that the topo is dialed back. See topo_trail_orange_compare.html.
+          // that the topo is dialed back. (Compare page retired; pick recorded in brain.)
           'aop-trail-network': { 'line-color': '#ff5a14', 'line-width': 3.8, 'line-opacity': 1 },
           'publish-trailheads': { 'circle-color': '#546f4b', 'circle-radius': 6.5, 'circle-opacity': 1 },
           // Roads: ONE road style. No per-preset recolour — roads keep the single

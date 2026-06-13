@@ -70,6 +70,38 @@
   };
   map.on('sourcedata', collapseAttribOnce);
 
+  // Fold the build version INTO the bottom-left ⓘ so the corner reads "ⓘ v62"
+  // (main.js:173-180) — relocates #appVersion out of the left stack into the
+  // attribution control's bottom-left container (created by addControl above).
+  (function foldVersionIntoInfoControl() {
+    const bottomLeft = map.getContainer().querySelector('.maplibregl-ctrl-bottom-left');
+    const versionEl = document.getElementById('appVersion');
+    if (bottomLeft && versionEl) {
+      bottomLeft.classList.add('attrib-with-version');
+      bottomLeft.appendChild(versionEl);
+    }
+  })();
+
+  // Field "where am I" — blue dot + accuracy halo + follow mode, from the device
+  // GPS (works offline at the park). The default top-right button is hidden by
+  // CSS; the left-rail Locate button drives it (main.js:186-228).
+  const geolocate = new maplibregl.GeolocateControl({
+    positionOptions: { enableHighAccuracy: true },
+    trackUserLocation: true,
+    showUserLocation: true,
+    showAccuracyCircle: true
+  });
+  map.addControl(geolocate, 'top-right');
+  const locateBtn = document.getElementById('locateBtn');
+  if (locateBtn) {
+    locateBtn.addEventListener('click', () => geolocate.trigger());
+    const lit = () => { locateBtn.classList.add('active'); locateBtn.setAttribute('aria-pressed', 'true'); };
+    const dim = () => { locateBtn.classList.remove('active'); locateBtn.setAttribute('aria-pressed', 'false'); };
+    geolocate.on('trackuserlocationstart', lit);
+    geolocate.on('trackuserlocationend', dim);
+    geolocate.on('error', dim);
+  }
+
   // ── Control DOM (the pill-bar shell in viewer.html) ────────────────────
   const message = document.getElementById('message');
   const terrainToggle = document.getElementById('showTerrain'); // hidden checkbox: 3D state

@@ -77,10 +77,44 @@ readability, or verifier coverage, land it.
 
 - [ ] Pick and wire one calendar loading placeholder variant from `calendar_placeholder_state.md`.
 - [x] **2026-05-29 — Calendar-group icon picked and wired.** Candidate A (Clipboard + ruled lines) lifted into `#lrTabCal` SVG. Compare page retired. See `calendar_group_icon_review.md`.
-- [ ] Retire old comparison mockups after choices land. Full inventory at time of 2026-05-27 misc_3 triage: `website/leftrail_*.html` (~40+ files), `website/poi_crud_*.html`, `website/calendar_placeholder_*.html`, `website/load_animations.html`, `website/park_bounds_icon_review.html`, `website/hot_glyph_options.html`, `website/button_icon_picker.html`. (Retired 2026-05-29: `calendar_group_icon_review.html`, the four `*_compare.html` files; surviving compare/review pages linked from the right-panel "Comparisons" section.)
-- [ ] Keep one left-sidebar comparison surface for layout/CSS review.
-- [ ] Keep one right-panel comparison surface for layout/CSS review. Current candidate is `website/poi_crud_compare.html` with V1 chosen; decide whether to keep the compare page, keep only `poi_crud_v1_accordion.html`, or replace it with a newer right-panel baseline.
-- [ ] Remove stale variant files only after the winning behavior is documented in the owning card.
+- [x] **2026-06-13 — BULK RETIREMENT DONE (77 files deleted; `website/*.html` 119 → 42).**
+  Settled-choice mockups removed; choices live in `index.html`/`panel.js` and the
+  owning cards (re-verified against `index.html`'s own ✓/◌ Comparisons status board).
+  - **Deleted (applied, choice landed):** `bottombar_*` (9; V5 FAB), `floatgroup_*`
+    (5; V2), `editor_unified_*` (8; V3c), `add_any_type_*` (5; V2), `poi_crud_*`
+    (4; V1), `editor_dock_types_compare` (1), `hot_glyph_options` (1),
+    `button_icon_picker` (1), `topo_{color,trail,trail_orange}_compare` (3; sienna/
+    V1 bg/O6), `right_sidebar_{a_slim,b_chips,c_dock}` (3; old A/B/C, superseded by
+    the v1–v4 rebuild), and 26 non-survivor `leftrail_*`.
+  - **Deleted (orphan, user-confirmed):** `mapborder_*` (11; no owning card, not
+    referenced, superseded by the active `viewer_banded.html` Option-B band work).
+  - **`index.html` Comparisons section:** 6 dead `<a>` links removed (bottombar/
+    editor_unified/floatgroup/topo×3); 5 survive (copy_review, icon_master,
+    leftrail_compare_v2, right_sidebar_compare, park_bounds_icon_review). Two stale
+    `js/main.js` topo doc-comments repointed to the brain. `node --check` clean,
+    served :8001 headless = **0 console errors, 5 Comparisons links render**.
+  - **Reference integrity:** scanned all remaining `*.html`/`*.js` — no ref to any
+    deleted file. Pre-existing dangling refs left untouched (out of scope): the
+    kept `leftrail_*` survivors back-link a never-existent `leftrail_compare.html`
+    (the v1 page, retired before this pass); `copy_review.html → res.html`.
+  - Git-recoverable; uncommitted per `no_commits.md`.
+- [x] **Left-sidebar survivor kept:** `leftrail_compare_v2.html` + the 9 variants it
+  iframes (`leftrail_current`, `eventflow_{focus,ribbon,timeline}`,
+  `gates_{dash,horizon,tag}`, `tabs_{blaze,manilla,ruled}`) + `leftrail_motion`
+  (referenced by the kept `load_animations.html`).
+- [x] **Right-panel survivor kept:** the live `right_panel.html` is the right-panel
+  baseline; `right_sidebar_compare.html` (+ its v1–v4 iframes) kept as the OPEN
+  per-row edit-toolkit comparison. `poi_crud_compare.html` was already gone.
+- [ ] **STILL PENDING (kept, awaiting a user pick — do not retire):**
+  - `calendar_placeholder_v{1,2,3,4}.html` — `calendar_placeholder_state.md` open.
+  - `park_bounds_icon_review.html` — ◌ pick owed (PB1–PB9), `park_bounds_icon_apply`.
+  - `right_sidebar_compare.html` + `right_sidebar_v{1,2,3,4}.html` — ◌ open toolkit.
+  - `data_editor_map_*` (5) + `data_editor_v1_preview_*` (5) — user is reviewing in
+    the UI (`data_editor_map_compare.html` / `data_editor_v1_preview_compare.html`)
+    before deciding; retirement otherwise owned by `data_editor_fold_into_production.md`.
+- [x] Tools/masters kept: `icon_master.html`, `data_sources.html`, `copy_review.html`.
+  Products kept: `index`, `right_panel`, `data_editor`, `schedule_editor`, `viewer`,
+  `viewer_banded`.
 
 ## Code-review refactor residue (from `app_code_review_followups`, 2026-06-01)
 

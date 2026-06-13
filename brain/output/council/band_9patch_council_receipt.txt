@@ -53,3 +53,26 @@ EVIDENCE: 8-tile tiling partitions the viewport exactly — X = leftW+midW+right
 RESULT: CLEAR — every convened seat clear, no andon. Gate cleared; clearance marker written.
 note: UNCOMMITTED — the commit + (if ever promoted to the live viewer) any version bump remain
       the user's git gate. This is proof-page work; viewer_band.{js,css} still drop into the core unchanged.
+
+=== ADDENDUM — band snap-back tuning re-review (2026-06-13, same session) ===
+change: removed the mid-pan Option-B leash (enforceLeash/axisCorrection/MAX_PULL/clamping/onMove +
+        unused wpx/hpx). move/render/resize -> update() only; settle on RELEASE via snapBack().
+        viewer_band.js only. Per user: "if we are mid pan it should not take it from us. only when we
+        let go. a user can only scroll so far anyways."
+re-review tier: Mason + Witness fresh on the new diff (Warden/Quartermaster trivially clear — pure
+        deletion, same files; Mason's repo-wide grep confirms zero orphaned refs).
+
+SEAT: mason     VERDICT: clear  — enforceLeash/axisCorrection/MAX_PULL/clamping/onMove/wpx/hpx fully
+  removed, zero orphaned refs repo-wide; move/render/resize bind update directly; snapBack still gated
+  by userDragged/snapping; rawGaps() correct after field drop; export updated; node --check passes;
+  pure non-limiting removal.
+SEAT: witness   VERDICT: clear  — re-ran /tmp/verify_band_snap.py LIVE: region g.t=0; held drag-down
+  opened a 178.6px top gap (old cap 72 -> leash gone); mouse-up snapped to 0.0px; 0 errors; pixels in
+  band_snap_1_middrag/2_released.png confirm peek+retract. Caveat: /tmp/verify_band_fix.py is 4/5 — the
+  tall-viewport top-band ASSERTION is wrong (region-fit pins to height), layout code unaffected; not a
+  regression.
+
+RESULT: CLEAR for the band work. NOTE: clearance marker NOT written this round — the working tree now
+  also holds a concurrent agent's unreviewed Sprint-13 slice-6 changes (viewer_core.js/viewer.html/
+  viewer.css). The combined diff is that agent's gate to clear, not this one's. My 9-patch HTML+CSS were
+  swept into the user's commit 2029871; only viewer_band.js (the snap tuning) remains uncommitted.
