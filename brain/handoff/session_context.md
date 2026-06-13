@@ -6,6 +6,31 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (SPRINT 13 SLICE 1 SHIPPED — clean viewer core: map + presets/zoom/3D. Built alongside; index.html untouched).**
+Worked `tasks/13_viewer_extraction/viewer_core_scaffold.md` end to end. New files only:
+**`website/viewer.html`** (63) + **`website/css/viewer.css`** (75, pulled rule-by-rule from `app.css`,
+each block citing its source line) + **`website/js/viewer_core.js`** (895). Ported from `main.js`: map
+construction + region/park bounds + bottom ⓘ, the **12 published-layer** sources/style the read presets
+show, and `applyPreset`/`goToView`/3D. **Verified by observation** (`/tmp/verify_viewer_core.py`, fixed-
+camera control test): **19/19 PASS, 0 console errors**; 4 presets render distinct frames, Satellite pulls
+TNMap tiles, 3 zoom buttons move the camera, 3D pitches + pulls AWS terrarium; side-by-side vs
+`index.html?edit=0` the base read matches (shots in `brain/output/viewer_core_*.png`). **Key finding for
+the sprint's measurement:** presets/zoom/3D did NOT drag more than expected — the *feature* is ~90 lines;
+the cost is the published-layer **style** it operates on (~586 lines = 411 layer-build + 175 verbatim
+`BUILT_IN_PRESETS`), which is **load-bearing read product**, not sediment. The "5 generations" debt lives
+in the per-add-site editor/POI hooks the read core severs: `bindPopup`/`indexFeatures`/
+`applyPositionedFeatures`/`bindPanelReveal`/feature-list, the brand-logo cap store, the slider plumbing,
+and — the big one — `applyPreset` in `main.js` is **not** editor-free: it drives visibility through the
+editor's **checkbox registry** + carries snapshot/tuner/session tails. The clean core replaces all that
+with a DOM-free `PRESET_LAYERS` map (preset bool → layer ids). **Scope lines (documented in the card):**
+popups dropped (slice 4), dev-reference layers not carried (so **Trace** is a degraded relief view — its
+SFWDA/OSM workbench refs are gone; flags readme fork 2 for the user's published-layer-line call),
+later-slice layers (editor-poi/event-schedule/publish-pois ★) absent and their preset paints no-op.
+**UNCOMMITTED** (user's git gate). `viewer.html` not in `sw.js` yet → **no version bump owed**. Next per
+the slate: **Search** slice. Council next.
+
+-----
+
 **2026-06-13 (TASK-CARD FILING PASS — moved done cards to `_done/`; no app code touched, only `brain/`).**
 User: *"review brain/tasks… cards should be loose until done, then moved to `_done/`. we have not been
 moving them. review and move where appropriate. if a card is partly done, extract the pending work into

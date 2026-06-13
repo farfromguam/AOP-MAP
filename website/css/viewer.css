@@ -1,0 +1,75 @@
+/* AOP viewer core styles — Sprint 13 slice 1 (viewer extraction).
+   Started empty per the card; every rule below was pulled from css/app.css
+   ONLY because a ported slice-1 control needs it. Each block names its
+   app.css source line. As later slices port the drawer / locate / install /
+   version, pull their rules in the same way — do NOT link app.css wholesale.
+   Source: brain/tasks/13_viewer_extraction/viewer_core_scaffold.md */
+
+/* Palette + layout tokens (app.css:8-56) — only the subset the pill-bar,
+   controls margins, and attribution reference. --edit-fab-reserve is 0 here:
+   the read viewer has no edit FAB, so the ⓘ reclaims full width (app.css gives
+   this same 0 via html.editor-off). */
+:root {
+  --brown-ink: #2e2418;
+  --cream-hover: #efe2c6;
+  --cream-surface: rgba(250, 246, 235, 0.96);
+  --control-bg: #fffdf5;
+  --control-border: #b9aa88;
+  --moss: #5f7157;
+  --moss-dark: #384833;
+
+  --sa-top:    env(safe-area-inset-top, 0px);
+  --sa-bottom: env(safe-area-inset-bottom, 0px);
+  --sa-left:   env(safe-area-inset-left, 0px);
+  --sa-right:  env(safe-area-inset-right, 0px);
+
+  --edit-fab-reserve: 0px;
+}
+
+/* Full-bleed map (app.css:67-92). Context-split height: 100dvh in a browser
+   tab (collapsing address bar), 100vh in the installed PWA (closes the iOS
+   bottom band). overflow:hidden stops page rubber-band. */
+body, html { margin: 0; padding: 0; height: 100dvh; overflow: hidden; font-family: Inter, system-ui, sans-serif; }
+html, body { background: #000; }
+#map { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; }
+@media (display-mode: standalone) {
+  html, body, #map { height: 100vh; }
+}
+
+/* MapLibre corner controls clear of the notch / home indicator (app.css:111-123).
+   Only the bottom-left ⓘ attribution is present in slice 1. */
+.maplibregl-ctrl-top-left    { margin-top: var(--sa-top); margin-left: var(--sa-left); }
+.maplibregl-ctrl-top-right   { margin-top: var(--sa-top); margin-right: var(--sa-right); }
+.maplibregl-ctrl-bottom-left { margin: 0; }
+.maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib { margin: 0 0 18px 16px; max-width: calc(100vw - 24px - var(--sa-left) - var(--sa-right) - var(--edit-fab-reserve)); }
+.maplibregl-ctrl-bottom-right{ margin-bottom: var(--sa-bottom); margin-right: var(--sa-right); }
+
+/* Left control stack — slice 1 carries only the pill-bar (app.css:124-125). */
+.left-controls { position: absolute; left: calc(12px + var(--sa-left)); top: calc(12px + var(--sa-top)); z-index: 3; width: 340px; max-width: calc(100vw - 392px - var(--sa-left) - var(--sa-right)); display: grid; gap: 8px; }
+.left-controls * { box-sizing: border-box; letter-spacing: 0; }
+
+/* Pill bar: zoom / preset / 3D (app.css:301-308). */
+.pill-bar { display: grid; grid-template-columns: 3fr 4fr 1fr; gap: 8px; align-items: stretch; }
+.pill-bar .pill { display: flex; width: 100%; border: 1px solid var(--control-border); border-radius: 999px; background: var(--control-bg); overflow: hidden; box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+.pill-bar .pill > button { flex: 1; min-width: 0; min-height: 36px; padding: 6px 8px; border: 0; background: transparent; color: var(--brown-ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.pill-bar .pill > button + button { border-left: 1px solid var(--control-border); }
+.pill-bar .pill > button:hover:not(.active):not(:disabled) { background: var(--cream-hover); }
+.pill-bar .pill > button.active { background: var(--moss); color: var(--control-bg); border-left-color: transparent; }
+.pill-bar .pill > button svg { width: 22px; height: 22px; }
+.pill-bar .pill > button.terrain-button { font: 800 0.86rem Inter, system-ui, sans-serif; letter-spacing: 0.04em; }
+
+/* Keyboard focus ring on the controls (app.css:755). */
+.left-controls button:focus-visible { outline: 2px solid var(--moss-dark); outline-offset: 2px; }
+
+/* V5 dropped the publish-count status on every width (app.css:697). The
+   element stays in the DOM (it still takes load / error textContent) but is
+   not painted. */
+.message { display: none; }
+
+/* Narrow-screen pill sizing (app.css:861-865). */
+@media (max-width: 760px) {
+  .left-controls { left: calc(8px + var(--sa-left)); right: calc(8px + var(--sa-right)); top: calc(8px + var(--sa-top)); width: auto; max-width: none; gap: 6px; }
+  .pill-bar { gap: 6px; }
+  .pill-bar .pill > button { min-height: 32px; padding: 4px 6px; }
+  .pill-bar .pill > button svg { width: 22px; height: 22px; }
+}
