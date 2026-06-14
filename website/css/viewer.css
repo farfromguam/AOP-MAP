@@ -264,6 +264,15 @@ html.ios-browser .screen-corner { display: block; }
 .calendar-name { display: block; margin-top: 1px; font-size: 0.88rem; line-height: 1.18; overflow-wrap: anywhere; }
 .calendar-location { display: block; margin-top: 2px; font-size: 0.74rem; line-height: 1.15; color: var(--brown-soft); overflow-wrap: anywhere; }
 .calendar-empty { padding: 8px; font-size: 0.86rem; color: var(--brown-soft); }
+/* Schedule loading placeholder — spinner row (calendar_placeholder_v2_spinner.html,
+   "V2"). The 44px glyph column lines up with the calendar-row day/time column, so the
+   ring sits where the schedule rows will land. Namespaced keyframe to avoid collision. */
+@keyframes calLoadSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.loading-row { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; gap: 8px; padding: 9px 8px; }
+.loading-glyph { display: flex; align-items: center; justify-content: center; }
+.spinner-ring { width: 18px; height: 18px; border: 2px solid var(--cream-border); border-top-color: var(--brown-soft); border-radius: 50%; animation: calLoadSpin 0.9s linear infinite; }
+.loading-text { font-size: 0.84rem; color: var(--brown-soft); line-height: 1.3; }
+.loading-text strong { display: block; font: 700 0.82rem Inter, system-ui, sans-serif; color: var(--brown-mid); }
 .calendar-days li[data-session-state] { position: relative; }
 .calendar-days li[data-session-state="happening"] { background: #dde2cf; box-shadow: inset 3px 0 0 0 var(--rust); }
 .calendar-days li[data-session-state="upcoming_next"] { background: #ecd9b1; box-shadow: inset 3px 0 0 0 var(--brown-dark); }

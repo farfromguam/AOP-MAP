@@ -174,7 +174,21 @@
                     <span class="calendar-countdown-value" id="calendarCountdownValue">--</span>
                   </div>
                   <ol class="calendar-days" id="calendarDays">
-                    <li class="calendar-empty">Loading schedule...</li>
+                    <!-- Spinner loading row (calendar_placeholder_v2_spinner.html, "V2").
+                         viewer_core.js replaces calendarDays.innerHTML with the real
+                         session rows the moment the event-schedule JSON resolves, so
+                         this shows only while the schedule is actually loading. -->
+                    <li class="calendar-loading">
+                      <div class="loading-row">
+                        <div class="loading-glyph">
+                          <div class="spinner-ring" role="status" aria-label="Loading"></div>
+                        </div>
+                        <div class="loading-text">
+                          <strong>Loading events…</strong>
+                          Schedule arriving shortly
+                        </div>
+                      </div>
+                    </li>
                   </ol>
                 </div>
                 <!-- Drag the bottom edge to grow / shrink the schedule "clipboard".
@@ -217,7 +231,7 @@
          viewer_core.js folds it beside the collapsed bottom-left ⓘ ("ⓘ vNN",
          hidden when expanded) and also reads it into the expanded attribution body
          as "Made by Rock Warblers · vNN". Starts hidden; JS unhides on fold. -->
-    <span id="appVersion" hidden>v73</span>
+    <span id="appVersion" hidden>v74</span>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on iOS,
          where there is no programmatic install prompt). -->

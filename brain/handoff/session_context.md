@@ -16,6 +16,20 @@ The recent thrust is **extracting the read viewer into a standalone shell**
 re-attaching the pieces that were severed in the split. Most recent landings,
 all **UNCOMMITTED** (user's git gate):
 
+- **Schedule loading spinner + single-number search review.** Card:
+  `tasks/13_viewer_extraction/viewer_schedule_loading.md`. (1) The Events tab's bare
+  `Loading schedule...` text is now the designed **spinner row** from
+  `calendar_placeholder_v2_spinner.html` ("V2"): ring + "Loading events… / Schedule
+  arriving shortly", shown only while the schedule JSON loads (the existing
+  `calendarDays.innerHTML` swap removes it on data — the user's "only if it's actually
+  loading"). 2 files, +24/−1, **no JS** — `index.html` markup + `viewer.css` spinner
+  block. Verified by observation (Playwright 11/11, 0 errors; 13 real rows replace the
+  spinner; `brain/output/schedule_spinner_leftrail.png`). (2) Single-number search
+  ("1" → trail 1 **and** 1X) reviewed and **verified identical** between `old_index.html`
+  and the extracted viewer (same 12 rows, 0 errors) — **no change owed**; left untouched
+  per the "dont change yet" hold. `sw.js`/`#appVersion` bump owed on commit (shell assets
+  changed) — the user's git gate. UNCOMMITTED. (An early misread chased the
+  `load_animations.html` entrance choreography — reverted, no stray change.)
 - **v72 — left-controls overlay no longer eats map drags over its empty regions.**
   CSS-only fix in `viewer.css`: `.left-controls` was a fixed 340px-wide overlay with
   default `pointer-events`, so its grid gaps, the pill-bar gaps, and the full-width
