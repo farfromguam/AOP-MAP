@@ -32,7 +32,7 @@
 //   3. reconcile DATA_ASSETS below with `ls website/data/`
 // Shell HTML + copy JSON self-heal (stale-while-revalidate), so a missed bump is
 // less dangerous than before — but bulky GeoJSON only refreshes on a bump.
-const VERSION = 'v88'; // keep in sync with #appVersion in index.html
+const VERSION = 'v89'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
@@ -117,6 +117,7 @@ const DATA_ASSETS = [
   './data/bronze_osm_aop_9patch.geojson',
   './data/bronze_osm_aop_named.geojson',
   './data/sfwda_aop_trail_map.webp',
+  './data/sfwda_aop_trail_map_no_trails.webp',
   './data/sfwda_raster_alignment.json',
   './data/delete_sfwda_traced_trails.geojson',
   // Removed as of v21 (unreferenced by index.html — present on disk only):

@@ -86,6 +86,7 @@ contributor-shaped layers (submitted trails, activity hotspots).
 | OSM service roads | `osm_aop_9patch.geojson` | off | `tasks/01_mvp/community_trails_import.md` |
 | OSM named landmarks | `osm_aop_named.geojson` | off | `tasks/01_mvp/community_trails_import.md` |
 | SFWDA paper trail map | `sfwda_aop_trail_map.webp` + `sfwda_raster_alignment.json` | off | `tasks/01_mvp/community_trails_import.md` |
+| SFWDA paper map — trails removed (Trace overlay) | `sfwda_aop_trail_map_no_trails.webp` + `sfwda_raster_alignment.json` | on (Trace) | `tasks/01_mvp/poi_search_click_links.md` |
 | SFWDA traced trails (extracted) | `sfwda_traced_trails.geojson` | off | `tasks/04_event_app/paper_map_trail_extraction.md` |
 | SFWDA traced markers (difficulty) | `sfwda_traced_markers.geojson` | off | `tasks/04_event_app/paper_map_trail_extraction.md` |
 
@@ -311,6 +312,16 @@ already-loaded GeoJSON -- so it works offline.
   `trail`, and `searchDisplayName()` strips a trailing `(segment N)` suffix so a
   GPX-imported trail collapses to one result. Real named AOP trails become
   searchable automatically once they land in `publish.geojson`.
+- Camp POIs / waypoints (`aop-waypoints`, the Affinity satellite trace) are
+  searchable + clickable as of v89 (`tasks/01_mvp/poi_search_click_links.md`):
+  `indexFeatures` registers them with their per-feature `kind` (comp pad / cabin /
+  rv site / cemetery / entrance …), and `aop-waypoints` is in
+  `INTERACTIVE_POPUP_LAYERS` so a click opens the normalized `AOPFeatureDisplay`
+  card. Descriptions are authored onto the gold features (Hot Rocks Comp Pad → the
+  RC-crawl note, etc.). That card now also renders a final **data-driven link**
+  (`link_url`/`link_label` on the feature, via `feature_display.js`) — region
+  callouts → Marion County tourism, AOP badge → its site, Rock Warblers → its
+  event page; the brand logos also gained real `description` tooltips.
 - OSM `highway=track` ways are wired for search, but all 47 in the 9-patch are
   unnamed in OSM so none surface yet.
 - The box sits in the top-left control cluster with the preset buttons:

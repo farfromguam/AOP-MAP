@@ -11,9 +11,38 @@ Short pointer for the next session. The durable record lives in the cards
 
 ## Latest (2026-06-14)
 
+**Council made task-scoped (durable rule fix).** Multi-agent commingling was causing the
+council to be deferred / its clearance to go stale (`coord/five-item-review.md` +
+`six-item-viewer-batch.md` say so in their own words). Fixed: the council now reviews the
+current task's `claim:`, not the whole working tree, and a commingled tree is never grounds
+to defer — *"get the council together on that and ignore what is not yours."* Codified in
+`council/completion_gate.md` ("Scoped to your task" + best-effort-marker note),
+`council/_readme.md`, `council/steward.md`, `.claude/commands/council.md`,
+`handoff/coord/_protocol.md`. Then ran the now-scoped council retrospectively over the
+recent batch (`305fcc3..HEAD`): Witness/Quartermaster/Mason **clear**; Warden **andon →
+resolved clear** (it flagged a third card's work the batch spans — the illustrator-trace
+waypoints/Shower House/scripts — which has its own card + its own council clearance on
+disk). No code defect; the only residual is the user's commits commingling three cards,
+which is the git gate. Receipt: `brain/output/council/recent_batch_retro_20260614.md`.
+
 The 2026-06-14 session-by-session changelog is archived →
 `session_context_20260614.md`. Headline state for the next session:
 
+- **POI search/click/links + G-Central scrub — shipped v89 (UNCOMMITTED).** Camp
+  POIs (waypoints) are now searchable + clickable with descriptions (Hot Rocks Comp
+  Pad reads as an RC-crawl comp pad); AOP badge + Rock Warblers logos got real
+  tooltips; a data-driven final `link` renders in popups (region callouts → Marion
+  County tourism, AOP → its site, Rock Warblers → FB event). "G-Central" removed from
+  all product data/code (served + `raw/` + manifest + poi_index + the active
+  `show_and_shine_northstar.md`). Authored fields live ON the data in served **and**
+  `raw/`; only a generic link renderer in `feature_display.js`. Verified
+  (`/tmp/verify_poi_batch.py`, all PASS, 0 console errors). Diff: `viewer_core.js`,
+  `feature_display.js`, `viewer.css`, `sw.js`, `index.html` + the data files. Card:
+  `tasks/01_mvp/poi_search_click_links.md`. The "no-trails" SFWDA paper overlay
+  for Trace is **also done** — the user supplied a clean trail-free sheet
+  (`sfwda_aop_trail_map_no_trails.webp`), wired as a 6x6 warp-mesh of
+  `sfwda-notrails-tile-r-c` image sources (the old page's bake), default-on in Trace
+  at raster-opacity 0.7. `core` DB not scrubbed of G-Central (no Docker).
 - **Landcover tree cover — hand-edited + integrated.** The user traced the 9-patch
   vegetation in Affinity (165→159 polys); baked to
   `website/data/aop_landcover_9patch.geojson` (318 features, subdivided), recolored

@@ -17,7 +17,7 @@ This is the CONCURRENCY axis. The TIME axis (settled history) stays in the hando
 1. **Claim.** Starting live work while another session may be running? Copy `_template.md` to `<session-slug>.md`. You own that file; nobody else writes it.
 2. **Read before you claim.** Read the other files here first. If a session already claims your area or card, take something else or coordinate through the user.
 3. **Keep it current.** Update your file as you go — status, and what you are touching.
-4. **Drain on finish.** Write the durable note to `handoff/session_context.md` (and the card), then set your file to `status: done` with a `next:` pointer, or delete it. The board holds *live* state; the handoff holds *settled* history. Nothing here is permanent until it lands in the handoff.
+4. **Council your claim, then drain.** Before you call your work done, convene the council over **your claim** — `git diff HEAD -- <your claimed paths>` — and tell the seats to ignore hunks owned by another session (the tree is commingled; that is never grounds to defer). Record the verdict in your card/coord note. Then write the durable note to `handoff/session_context.md` (and the card), set your file to `status: done` with a `next:` pointer, or delete it. The board holds *live* state; the handoff holds *settled* history. Nothing here is permanent until it lands in the handoff. See `brain/council/completion_gate.md` "Scoped to your task."
 
 ## Honest limits
 

@@ -48,6 +48,11 @@
       source: pick(props, ['source', '_src', 'footprint_source']),
       caveat: pick(props, ['caveat', 'drive_time_note']),
       revisit: pick(props, ['revisit_note', 'revisitNote']) || pick(facets, ['revisit_note']),
+      // Optional final outbound link, data-driven (e.g. a region callout's
+      // tourism page, a brand logo's official site). A feature opts in by
+      // carrying link_url; no per-layer rule, no hard-coded destinations.
+      link: pick(props, ['link_url']),
+      linkLabel: pick(props, ['link_label']),
     };
   }
 
@@ -63,7 +68,13 @@
     if (m.status) meta += `<dt>Status</dt><dd>${esc(m.status)}</dd>`;
     if (m.source) meta += `<dt>Source</dt><dd>${esc(m.source)}</dd>`;
     if (m.caveat) meta += `<dt>Caveat</dt><dd>${esc(m.caveat)}</dd>`;
-    return s + `<dl class="poi-popup-meta">${meta}</dl>`;
+    s += `<dl class="poi-popup-meta">${meta}</dl>`;
+    // A final, optional outbound link — last element of the card, after the
+    // meta list. Rendered only when the feature carries link_url (data-driven).
+    if (m.link) {
+      s += `<a class="poi-popup-link" href="${esc(m.link)}" target="_blank" rel="noopener noreferrer">${esc(m.linkLabel || 'Open link')}</a>`;
+    }
+    return s;
   }
 
   root.AOPFeatureDisplay = { featureDisplay, popupHtml, esc };

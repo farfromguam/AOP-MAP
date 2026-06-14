@@ -58,7 +58,10 @@ council must run fast and self-served, never as a reason to stop and poll the us
    and **Scribe**, chaired by the **Steward**, who synthesizes and is the only seat that clears the gate.
 
 The seat that convenes the council picks the tier honestly by risk. A one-line copy edit does not need
-six critics; a data merge into the publish zone or a sprint-closing refactor does.
+six critics; a data merge into the publish zone or a sprint-closing refactor does. It also **scopes the
+review to its own task's changes — the coord-board `claim:`, not the whole working tree** — and ignores
+hunks owned by another live session. Commingled trees are never a reason to defer the council; see
+[[completion_gate]] "Scoped to your task."
 
 ## The self-served principle (reconciling with THE BAR)
 

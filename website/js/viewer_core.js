@@ -464,12 +464,96 @@
   // Toggle ids a preset names but that aren't here (showEventSchedule, showOsm*,
   // showSfwda, showCemeteries, showActivityHotspots, showEditorPois, …) are simply
   // ignored — those layers belong to later slices or to the dev pile.
+  // SFWDA no-trails paper is a GRID_N×GRID_N warp mesh (ported from main.js's
+  // rotate→slice→tile bake): a single 4-corner image source can't apply the
+  // georeferencing grid's warp, so the sheet becomes 36 image tiles. The tile
+  // layer ids are fixed up front so the preset map can name them before the
+  // async bake (in the load handler) actually creates them.
+  const SFWDA_NOTRAILS_GRID_N = 6;
+  const SFWDA_NOTRAILS_TILE_IDS = [];
+  for (let r = 0; r < SFWDA_NOTRAILS_GRID_N; r++) {
+    for (let c = 0; c < SFWDA_NOTRAILS_GRID_N; c++) {
+      SFWDA_NOTRAILS_TILE_IDS.push(`sfwda-notrails-tile-${r}-${c}`);
+    }
+  }
+
+  // Canvas helpers for the SFWDA warp mesh — ported from main.js (the old page's
+  // proven paper-map bake): load the image, rotate it to the recorded
+  // orientation, and slice the rotated canvas into N×N webp data-URL tiles.
+  function loadImageEl(src) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => { console.warn('SFWDA image failed to load:', src); resolve(null); };
+      img.src = src;
+    });
+  }
+  function rotateToCanvas(img, orientationCw) {
+    const cw = ((orientationCw % 360) + 360) % 360;
+    const W = img.naturalWidth, H = img.naturalHeight;
+    const canvas = document.createElement('canvas');
+    if (cw === 90 || cw === 270) { canvas.width = H; canvas.height = W; }
+    else { canvas.width = W; canvas.height = H; }
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    if (cw === 90) { ctx.translate(H, 0); ctx.rotate(Math.PI / 2); ctx.drawImage(img, 0, 0); }
+    else if (cw === 180) { ctx.translate(W, H); ctx.rotate(Math.PI); ctx.drawImage(img, 0, 0); }
+    else if (cw === 270) { ctx.translate(0, W); ctx.rotate(-Math.PI / 2); ctx.drawImage(img, 0, 0); }
+    else { ctx.drawImage(img, 0, 0); }
+    return canvas;
+  }
+  function sliceCanvasN(canvas, n) {
+    const W = canvas.width, H = canvas.height;
+    const out = [];
+    for (let r = 0; r < n; r++) {
+      const row = [];
+      // integer pixel boundaries; last row/col absorbs the rounding remainder.
+      const y0 = Math.floor(r * H / n);
+      const y1 = (r === n - 1) ? H : Math.floor((r + 1) * H / n);
+      for (let c = 0; c < n; c++) {
+        const x0 = Math.floor(c * W / n);
+        const x1 = (c === n - 1) ? W : Math.floor((c + 1) * W / n);
+        const sub = document.createElement('canvas');
+        sub.width = x1 - x0; sub.height = y1 - y0;
+        const sctx = sub.getContext('2d');
+        sctx.imageSmoothingQuality = 'high';
+        sctx.drawImage(canvas, x0, y0, x1 - x0, y1 - y0, 0, 0, sub.width, sub.height);
+        row.push(sub.toDataURL('image/webp', 0.9));
+        sub.width = sub.height = 0; // release the slice's backing store
+      }
+      out.push(row);
+    }
+    return out;
+  }
+  // Fallback only: a bilinear grid from the 4 corners {nw,ne,se,sw} when the
+  // alignment file carries no warp grid. Returns (n+1)×(n+1) [lng,lat] nodes.
+  function bilinearGridFromCorners(corners, n) {
+    if (!corners) return null;
+    const NW = corners.nw, NE = corners.ne, SE = corners.se, SW = corners.sw;
+    if (!NW || !NE || !SE || !SW) return null;
+    const out = [];
+    for (let r = 0; r <= n; r++) {
+      const v = r / n; const row = [];
+      for (let c = 0; c <= n; c++) {
+        const u = c / n;
+        row.push([
+          (1 - u) * (1 - v) * NW[0] + u * (1 - v) * NE[0] + u * v * SE[0] + (1 - u) * v * SW[0],
+          (1 - u) * (1 - v) * NW[1] + u * (1 - v) * NE[1] + u * v * SE[1] + (1 - u) * v * SW[1]
+        ]);
+      }
+      out.push(row);
+    }
+    return out;
+  }
+
   const PRESET_LAYERS = {
     showLandcover: ['landcover-forest'],
     showLandcover9: ['landcover-9patch-forest'],
     showHillshade: ['lidar-hillshade'],
     showContours: ['contours-minor', 'contours-index', 'contours-labels'],
     showSatellite: ['tnmap-satellite'],
+    showSfwdaNoTrails: SFWDA_NOTRAILS_TILE_IDS,
     showRoads: ['roads-local-casing', 'roads-local', 'roads-connecting-casing', 'roads-connecting', 'roads-secondary-casing', 'roads-secondary', 'roads-ramp-casing', 'roads-ramp', 'roads-controlled-casing', 'roads-controlled', 'roads-labels'],
     showVisitorContext: ['visitor-context-fill', 'visitor-context-outline', 'visitor-context-labels'],
     showBrandLogos: ['brand-logos-icons'],
@@ -496,7 +580,7 @@
         showSatellite: false, showUsdaNaip: false, showNinePatch: false, showLidarTiles: false,
         showRoads: true, showVisitorContext: true, showBrandLogos: true, showWater: true,
         showSprings: false, showCemeteries: false, showBuildings: true, showOsmPark: false,
-        showOsmTracks: false, showOsmService: false, showOsmNamed: false, showSfwda: false,
+        showOsmTracks: false, showOsmService: false, showOsmNamed: false, showSfwda: false, showSfwdaNoTrails: false,
         showTrails: false, showAopTrailNetwork: true, showBoundaries: true, showTrailheads: true,
         showEditorPois: true
       },
@@ -548,7 +632,7 @@
         showSatellite: false, showUsdaNaip: false, showNinePatch: false, showLidarTiles: false,
         showRoads: true, showVisitorContext: true, showBrandLogos: true, showWater: true,
         showSprings: true, showCemeteries: false, showBuildings: true, showOsmPark: false,
-        showOsmTracks: false, showOsmService: false, showOsmNamed: false, showSfwda: false,
+        showOsmTracks: false, showOsmService: false, showOsmNamed: false, showSfwda: false, showSfwdaNoTrails: false,
         showTrails: false, showAopTrailNetwork: true, showBoundaries: true, showTrailheads: true,
         showEditorPois: true
       },
@@ -596,6 +680,7 @@
         showRoads: true, showVisitorContext: false, showBrandLogos: true, showWater: false,
         showSprings: false, showCemeteries: false, showBuildings: true, showOsmPark: false,
         showOsmTracks: false, showOsmService: true, showOsmNamed: true, showSfwda: true,
+        showSfwdaNoTrails: true,
         showTrails: false, showAopTrailNetwork: true, showBoundaries: false, showTrailheads: true,
         showEditorPois: true
       },
@@ -649,7 +734,7 @@
         showSatellite: true, showUsdaNaip: false, showNinePatch: false, showLidarTiles: false,
         showRoads: false, showVisitorContext: false, showBrandLogos: false, showWater: false,
         showSprings: false, showCemeteries: false, showBuildings: false, showOsmPark: false,
-        showOsmTracks: false, showOsmService: false, showOsmNamed: false, showSfwda: false,
+        showOsmTracks: false, showOsmService: false, showOsmNamed: false, showSfwda: false, showSfwdaNoTrails: false,
         showTrails: false, showAopTrailNetwork: false, showBoundaries: false, showTrailheads: false,
         showEditorPois: false
       },
@@ -1954,6 +2039,49 @@
       layout: { visibility: 'none' }, paint: { 'raster-opacity': 1 }
     });
 
+    // --- SFWDA paper map, trails removed (Trace preset overlay) ---
+    // The original SFWDA sheet minus the drawn trail lines (user-supplied export):
+    // trails now live in the gold vector network, so the raster only carries the
+    // paper's legend / title / entrance labels as Trace context. The sheet is
+    // ROTATED (orientation_cw_degrees) and WARPED onto its georeferencing grid —
+    // a single 4-corner image source can't do the warp, so it becomes a
+    // GRID_N×GRID_N mesh of image tiles, exactly as the old all-in-one page builds
+    // the paper map (main.js rotateToCanvas → sliceCanvasN → per-tile image
+    // source). Added here so the tiles sit above the hillshade/satellite but below
+    // every vector layer (trails/waypoints draw on top).
+    await (async function addSfwdaNoTrails() {
+      const align = await fetchJson('./data/sfwda_raster_alignment.json', 'SFWDA alignment missing');
+      if (!align) return;
+      const N = SFWDA_NOTRAILS_GRID_N;
+      // (N+1)×(N+1) grid of [lng,lat] geo nodes. Prefer the warp grid; fall back
+      // to a bilinear grid built from the 4 corners if it's absent.
+      const gridKey = `grid_${N}x${N}`;
+      const grid = (Array.isArray(align[gridKey]) && align[gridKey].length === N + 1)
+        ? align[gridKey]
+        : bilinearGridFromCorners(align.corners, N);
+      if (!grid) return;
+      const orientCw = (((Number(align.orientation_cw_degrees) || 0) % 360) + 360) % 360;
+      const img = await loadImageEl('./data/sfwda_aop_trail_map_no_trails.webp');
+      if (!img) return;
+      const tiles = sliceCanvasN(rotateToCanvas(img, orientCw), N);
+      for (let r = 0; r < N; r++) {
+        for (let c = 0; c < N; c++) {
+          if (!tiles[r][c]) continue;
+          const id = `sfwda-notrails-tile-${r}-${c}`;
+          map.addSource(id, {
+            type: 'image', url: tiles[r][c],
+            // tile (r,c) image corners → grid nodes: TL/TR/BR/BL.
+            coordinates: [grid[r][c], grid[r][c + 1], grid[r + 1][c + 1], grid[r + 1][c]]
+          });
+          map.addLayer({
+            id, type: 'raster', source: id,
+            layout: { visibility: 'none' },
+            paint: { 'raster-opacity': 0.7, 'raster-fade-duration': 0 }
+          });
+        }
+      }
+    })();
+
     // --- Lidar contours (Topo preset) (main.js:7952) ---
     const contourData = await fetchJson('./data/gold_aop_contours.geojson', 'Contour layer missing');
     if (contourData) {
@@ -2362,6 +2490,14 @@
         },
         paint: { 'text-color': '#10243a', 'text-halo-color': '#ffffff', 'text-halo-width': 1.6 }
       });
+      // Make the camp POIs searchable. They're always-on (not preset-gated), so
+      // the landing layer-set just keeps them visible. Kind comes off the feature
+      // (comp pad, cabin, rv site, …) so the result tag reads better than "poi".
+      indexFeatures(
+        aopWaypointsData,
+        (props) => props.kind ? String(props.kind) : 'poi',
+        ['aop-waypoints', 'aop-waypoints-labels']
+      );
     }
 
     // --- Publishable layers: boundaries, trails, trailheads (main.js:9533) ---
@@ -2822,7 +2958,8 @@
     'aop-trail-network', 'publish-trails', 'publish-trailheads', 'publish-boundaries',
     'building-footprint-fill', 'building-footprint-aop-outline',
     'visitor-context-fill', 'water-points', 'streams',
-    'event-anchor-points', 'event-session-routes', 'brand-logos-icons'
+    'event-anchor-points', 'event-session-routes', 'brand-logos-icons',
+    'aop-waypoints'
   ];
   function interactivePopupLayers() {
     return INTERACTIVE_POPUP_LAYERS.filter((id) => map.getLayer(id));

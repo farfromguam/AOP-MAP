@@ -58,6 +58,12 @@ finish a turn, it:
    of the hash too. When the Steward clears, write the marker with that same formula (NOT
    `git hash-object`, NOT an all-paths diff) or it will never match and the gate keeps nudging:
    `python3 -c "import subprocess,hashlib; g=lambda *a: subprocess.run(['git',*a],capture_output=True,text=True).stdout; open('.claude/.council-cleared','w').write(hashlib.sha1((g('diff','HEAD','--','website','mvp')+g('status','--porcelain','--','website','mvp')).encode()).hexdigest())"`
+   **Under concurrency this marker is best-effort, not the authority.** It hashes the *whole* tree, so a
+   second live session editing a shared file invalidates a first session's clearance (this is exactly how
+   the v88 landcover clearance `c91d81a` went stale). That is correct, not a bug: the tree did change. The
+   durable, per-task clearance is the **verdict receipt in the card / coord note** (Tier 1/2, above) — it
+   doesn't go stale when someone else's hunk moves. A re-nudge here under parallel work is harmless (the
+   loop guard fires it once); the user separates the trees at the git gate regardless.
 6. **Nudge once.** Otherwise exit 2 with stderr instructing the agent to **convene the council**
    (`/council`) over the diff before declaring done, with the advisory findings inline. Because of the
    loop guard, this fires at most once per stop — it never babysits.
@@ -73,6 +79,15 @@ from the evidence base:
 - **Fresh, independent contexts.** Each seat is a separate subagent (`.claude/agents/council-*.md`) that
   sees **only the diff + the card's acceptance criteria** — not the reasoning that produced the change.
   This defeats the producer's blindness to its own errors and self-preference bias.
+- **Scoped to your task, not the working tree (multi-agent).** Review **your own task's changes — and
+  ignore what is not yours.** When you are the only live session, your task *is* the working tree and
+  there is nothing to scope. When sessions run concurrently (`handoff/coord/`), the tree is commingled:
+  scope each seat to the paths in **your** coord-board `claim:` (`git diff HEAD -- <your claimed paths>`),
+  and tell the seats to ignore hunks owned by another session. This is the user's rule, stated 2026-06-14:
+  *"I give you a task. You get the council together on that and ignore what is not yours."* The council
+  must **never be deferred** because the tree is commingled — that excuse is what this scoping removes.
+  Record the verdict in your card / coord note (per-task, durable — it never goes stale); that receipt,
+  not the whole-tree Tier-0 marker, is the authority while sessions are parallel.
 - **Prompted to refute.** Each seat tries to find where the work is *wrong* against its lens, not to
   confirm it's right. A seat that only ever clears is rubber-stamping.
 - **Tier by risk** (the Steward chooses): **core three** (Witness · Warden · Quartermaster) by default;

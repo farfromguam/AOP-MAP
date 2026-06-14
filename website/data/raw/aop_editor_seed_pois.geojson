@@ -14,7 +14,7 @@
         "layer": "editor_poi",
         "category": "Pavilion",
         "name": "AOP Pavilion",
-        "description": "AOP Pavilion / G-Central. Registration, driver meeting, awards, and the campfire all happen here. Resolved to the 1010 Ellis Cove Road building footprint via the #pavilion tag.",
+        "description": "AOP Pavilion. Registration, driver meeting, awards, and the campfire all happen here. Resolved to the 1010 Ellis Cove Road building footprint via the #pavilion tag.",
         "notes": "Confirmed pavilion; derived from aop_editor_seed_pois.geojson.",
         "highlight": true,
         "seed_tag": "#pavilion",

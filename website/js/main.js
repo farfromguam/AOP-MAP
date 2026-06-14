@@ -6325,7 +6325,7 @@
       const source = map.getSource('event-schedule');
       if (source) source.setData(eventScheduleData);
       // The calendar row label includes the resolved location label; if the
-      // location went from "Missing #pavilion" to "AOP Pavilion / G-Central",
+      // location went from "Missing #pavilion" to "AOP Pavilion",
       // the row text needs to refresh.
       if (typeof renderEventSchedule === 'function') {
         renderEventSchedule(eventScheduleConfig, eventScheduleData);

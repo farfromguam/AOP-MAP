@@ -133,7 +133,7 @@
     "confidence": "medium",
     "aop_facility": true,
     "facility_name": "Pavilion",
-    "facility_role": "Pavilion / G-Central — registration, awards, campfire"
+    "facility_role": "Pavilion — registration, awards, campfire"
    },
    "geometry": {
     "type": "Polygon",

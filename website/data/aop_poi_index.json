@@ -34,7 +34,7 @@
     {
       "group": "buildings",
       "match": { "source": "buildings", "address": "1010 Ellis Cove Road" },
-      "blurb": "AOP Pavilion / G-Central. The on-site building that hosts registration, awards, and the campfire. Footprint from FEMA structures data; AOP confirms it's the pavilion.",
+      "blurb": "AOP Pavilion. The on-site building that hosts registration, awards, and the campfire. Footprint from FEMA structures data; AOP confirms it's the pavilion.",
       "revisit_note": null
     },
     {

@@ -249,7 +249,7 @@ Avoid "cleanest" as a main award. AOP's scale identity is rocks, mud, water, gra
 
 ## Event operations
 
-Home base: Pavilion / G-Central.
+Home base: Pavilion.
 
 Schedule shape:
 - line up after driver meeting or before awards

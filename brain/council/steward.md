@@ -23,6 +23,10 @@ bugs in the code; it makes sure the council is reviewing the *right* thing again
 
 1. **States the goal in one line** — what this work was supposed to achieve, pulled from the card, not
    from the agent's narration of what it did.
+1a. **Scopes the diff to this task** — review the current task's changes (the coord-board `claim:`), not
+   the whole working tree. When another session is live, hand the seats only the claimed paths and tell
+   them to ignore hunks that belong to someone else. *"Get the council together on that and ignore what is
+   not yours"* — a commingled tree is never grounds to defer. (See [[completion_gate]] "Scoped to your task.")
 2. **Sets the tier** (0 / core-three / full) honestly by risk. Publish-zone data, sprint-closing
    refactors, and anything touching the validation loop get the full council. A copy edit does not.
 3. **Names the termination condition** up front: the gate clears when every convened seat returns

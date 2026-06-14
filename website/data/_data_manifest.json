@@ -972,7 +972,7 @@
       "sample": {
         "id": "aop_seed_pavilion",
         "name": "AOP Pavilion",
-        "description": "AOP Pavilion / G-Central. Registration, driver meeting, awards, and the campfire all happen here. Resolved to the 1010 Ellis Cove Road building footprint via the #pavilion tag.",
+        "description": "AOP Pavilion. Registration, driver meeting, awards, and the campfire all happen here. Resolved to the 1010 Ellis Cove Road building footprint via the #pavilion tag.",
         "kind": "poi",
         "source": "editor (first-party)",
         "confidence": "draft",
