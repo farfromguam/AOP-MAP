@@ -421,3 +421,131 @@ still one ~3976-vertex / 47-hole polygon after the v81 cap — drew almost nothi
   small pieces" guards) → **23 PASS, RESULT: PASS** (also fixed two pre-existing
   Map-serialization hangs in that verifier — `fitBounds`/`zoomTo` arrows returned
   the Map). `sw.js`/`#appVersion` v82→**v83**. **UNCOMMITTED** (user's git gate).
+
+## Update: vegetation → editable SVG round-trip (2026-06-14)
+
+The user: *"I need the landcover exported to a svg so I can edit it. there are
+some polygons that need to be manually resolved. we have been working towards a
+single green for treecover."* They want to hand-resolve the tree-cover polygons in
+a vector editor (Illustrator/Inkscape/Affinity) against the satellite.
+
+- **What gets edited is the dissolved canopy, NOT the shipped GeoJSON.** The viewer
+  `aop_landcover*.geojson` is grid-subdivided into many small fill pieces purely so
+  MapLibre's earcut renders the canopy everywhere (the corner-fix, above) — a render
+  workaround, not an editable shape (nobody hand-edits 324 grid cells). The editable
+  "single green for tree cover" is the **dissolved canopy mass**: the forest classes
+  unioned, clearings as holes — exactly what `simplify_landcover_vegetation.clean_parts()`
+  builds *before* it subdivides.
+- **`mvp/scripts/export_landcover_svg.py` (new).** Re-dissolves from the gitignored
+  5-class cache (`mvp/cache/landcover/*.5class.geojson`), and writes each canopy
+  polygon as ONE named, filled, editable compound `<path>` (exterior + holes,
+  `fill-rule:evenodd`) in a **Vegetation** layer over a locked **Satellite** backdrop.
+  `python3 export_landcover_svg.py [park|9patch|both]` → `brain/output/landcover_trace/`.
+  Park `aop_landcover_trace.svg` (6.4 MB, **18 polys**, ≤187 verts); 9-patch
+  `aop_landcover_9patch_trace.svg` (9.3 MB, **165 polys**).
+- **Reuse, not a second pipeline.** The projection + satellite-backdrop machinery
+  was extracted from `export_illustrator_trace.py` into a shared `RasterFrame` class
+  (the raster's own **UTM 16N** grid, JPEG backdrop, round-trip `<metadata>`); the
+  trail-trace exporter now calls it too. The dissolve/clean comes from
+  `simplify_landcover_vegetation` (`FOREST_CLASSES`, `clean_parts`); the viewer
+  feature contract (grid-subdivide fill + LineString outline) was extracted there
+  into a shared `vegetation_features()` used by both the 5-class bake and the
+  re-import.
+- **Both refactors are output-neutral (verified, precise framing).** Running the
+  refactored script vs the HEAD pre-refactor script on the **same current inputs**
+  produces byte-identical output: `simplify_landcover_vegetation` re-bakes the
+  committed `website/data/aop_landcover*.geojson` byte-for-byte, and
+  `export_illustrator_trace` bakes the trail-trace SVG to the identical md5 under
+  both versions. **Caveat (council Witness, 2026-06-14):** a *fresh* trail-trace
+  bake no longer matches the **committed** `aop_satellite_trace.svg` — but the cause
+  is a **concurrent session editing that exporter's input** (`aop_trail_network.geojson`),
+  **not** this refactor (proven: HEAD and refactored scripts bake the identical md5
+  to each other on the live input). "Behavior-preserving" here means
+  refactored-equals-predecessor, which is what was checked.
+- **`mvp/scripts/import_landcover_svg.py` (new)** closes the loop: reads the edited
+  Vegetation layer back, inverts the UTM frame from the SVG `<metadata>` (no warp),
+  unions the hand-resolved polygons, and re-bakes the viewer file via
+  `vegetation_features()` (target park vs 9-patch read from the SVG meta). It reads
+  its OWN metadata (does **not** fall back to the trail-trace frame like the trail
+  importer — that frame is the 9-patch raster and would mis-place a park edit).
+- **Verified by observation (2026-06-14).** Durable verifier
+  `mvp/scripts/verify_landcover_svg_roundtrip.py` (not transcript-only — a re-runnable
+  script that exits non-zero on regression; uncommitted per the user's git gate)
+  observes the actual SVG files: poly + ring-count
+  parity, **max Hausdorff 0.912 cm** (the 2-dp-metre path-rounding ceiling, same as
+  the trail trace), canopy area drift **~0%** (park 2.117 km²/523 ac, 9-patch
+  28.1 km²/6944 ac) → **RESULT: PASS**. Export→import of the *unedited* SVG
+  reproduces the viewer contract (park 18 fill + 1 outline = live 19; 9-patch 323
+  fill + 1 outline vs live's 324 — a one-grid-cell difference from the cm-level
+  rounding, not a content change). Rendered the park SVG (Playwright): the green
+  overlays the forest canopy, the cleared park staging area + fields read as bare
+  satellite, the stroke traces the canopy edge — `brain/output/landcover_trace/_render_park_{full,crop}.png`.
+- **Next: the user edits in Illustrator, then `import_landcover_svg.py` re-bakes the
+  viewer file** (importer is self-round-trip-verified; its real test is the first
+  editor-saved SVG, exactly as with the trail trace). **UNCOMMITTED** (user's git gate).
+
+### Update: first hand-edit ingested + lightweight preview page (2026-06-14)
+
+The user resolved the **9-patch** vegetation by hand in **Affinity Designer** and
+dropped it back at `brain/import/trace_upload/aop_landcover_trace.svg` (+ the
+`.afdesign` master): **165 → 159 polygons** (merged/deleted ~6 by hand). Affinity's
+export keeps the `Vegetation` layer + per-shape names (`serif:id="Vegetation N"`) but
+**strips the projection `<metadata>` and the embedded satellite** — and adds a
+near-identity layer transform — exactly like its trail-trace export. The edited SVG's
+viewBox (`0 0 6093 5706`) **is** the 9-patch raster's metre grid, so the shapes still
+register 1:1 on the satellite with no georeferencing.
+
+The user asked for "a dedicated lightweight page that uses this … I want to see what
+it does." Built `mvp/scripts/build_landcover_edit_preview.py`: pulls the `Vegetation`
+group + frame from the edited SVG and writes a **self-contained, dependency-free**
+page (`brain/output/landcover_trace/landcover_edit_preview.html`) that re-attaches the
+satellite backdrop (`satellite_9patch.jpg`, by reference — does NOT need the stripped
+metadata/raster) and overlays the edited shapes, with wheel-zoom + drag-pan and
+toggles for satellite / fill-vs-outline / opacity. **Extraction assumption (council
+Mason):** the generator pulls the one flat `<g id="Vegetation">` group as raw markup
+(Affinity emits paths-only, no nesting). If a future editor exports *nested* groups,
+re-flatten the Vegetation layer before previewing rather than expecting the
+non-greedy group grab to capture nested children. **Verified by observation:**
+rendered at `:8002`, the green tracks the canopy and pulls off the cleared
+fields/staging, edges hold at 23× zoom, **0 console errors**
+(`brain/output/landcover_trace/_preview_{default,outline,zoom}.png`). This is a
+*preview*, not the viewer re-bake — wiring the edit back into the viewer still goes
+through `import_landcover_svg.py` (which needs the stripped frame recovered from the
+9-patch target; owed when the user wants it in the map). **UNCOMMITTED** (git gate).
+
+### Update: standalone MapLibre render test — raw vs subdivided (2026-06-14)
+
+The user: *"test it in a map. no opacity no borders. make the color a light sagey
+color. the past time we put a high vertex image into the map it caused rendering
+issues. we test it separately first. then integrate after success."* Right instinct:
+**158 of their 159 edited shapes are tiny (<50 verts), but one is the 3969-vertex /
+48-subpath canopy mass** my export handed them — the same giant+holey single fill
+polygon the v79→v83 saga blamed for MapLibre earcut dropping the corners.
+
+Built `mvp/scripts/build_landcover_map_test.py`: recovers the stripped 9-patch frame
+(`RasterFrame`), inverts the edited SVG to lng/lat (reuses `import_landcover_svg.read_polys`),
+and emits TWO geojsons + a standalone MapLibre page (`brain/output/landcover_trace/landcover_map_test.html`,
+local vendored maplibre, satellite as an offline `image` source) that flips between
+**RAW** (the 159 shapes, monster intact) and **SUBDIVIDED** (union + grid-subdivide via
+the shared `vegetation_features` → 317 small fill pieces, worst 202 verts). Fill is
+**solid light sage `#cfdabf`, no `fill-outline-color`, `fill-opacity:1`** — per the ask.
+
+**Verified by observation (`:8003`, 0 console errors):** SUBDIVIDED renders the full
+canopy across all four quadrants — clean, the integration-ready form
+(`_maptest_sub_nosat.png`, `_maptest_sub_sat.png` over imagery). **Notable:** in this
+isolated single-layer test the **RAW 3969-vert monster also rendered fully** — overview,
+z13, z14, and the historically-empty TR/BL corners all filled, no dropped chunks
+(`_maptest_raw_nosat.png`, `_rawzoom_*.png`). So the old bug did **not** reproduce here
+(it may need the live viewer's two-layer + maxBounds + Region-preset state). **Recommendation
+for integration: ship the SUBDIVIDED form regardless** — it's the proven, de-risked shape
+(what the viewer already bakes, verified across zooms in v83) and renders identically
+clean; betting on the raw monster because one isolated test passed isn't worth it.
+**Next (on the user's go): integrate** — teach `import_landcover_svg.py` to recover the
+9-patch frame (same `RasterFrame` recovery this test uses), bake → `aop_landcover_9patch.geojson`,
+bump `sw.js`/`#appVersion`. Sage tone is one constant (`SAGE`) — trivial to retune.
+**Factor-forward (council Quartermaster):** `build_landcover_map_test.recover_frame()` and
+`import_landcover_svg.load_meta()` are the two halves of one frame-recovery decision —
+at integration, expose ONE shared recovery (a `recover_frame(target)` both call) instead
+of `load_meta` re-implementing the raster fallback it currently `sys.exit`s on.
+**Council-reviewed:** this map-test delta cleared all four seats (Witness · Warden ·
+Mason · Quartermaster), 2026-06-14. **UNCOMMITTED** (git gate).

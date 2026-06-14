@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AOP land cover — MapLibre render test (raw vs subdivided)</title>
+<link href="/website/vendor/maplibre-gl.css" rel="stylesheet" />
+<script src="/website/vendor/maplibre-gl.js"></script>
+<style>
+  html,body{margin:0;height:100%;font:13px/1.4 -apple-system,Segoe UI,Roboto,sans-serif}
+  #map{position:absolute;inset:0}
+  #panel{position:absolute;top:12px;left:12px;z-index:2;background:#1b1b1bdd;color:#eee;
+    backdrop-filter:blur(6px);border:1px solid #ffffff22;border-radius:10px;padding:12px 14px;
+    box-shadow:0 6px 20px #0007;min-width:230px}
+  #panel h1{font-size:13px;margin:0 0 8px}
+  .row{display:flex;gap:7px;margin:7px 0;flex-wrap:wrap}
+  button{background:#2c2c2c;color:#eee;border:1px solid #ffffff22;border-radius:7px;
+    padding:5px 10px;cursor:pointer;font-size:12px}
+  button.on{background:#5b7a4a;border-color:#5b7a4a;color:#fff}
+  .note{color:#9bd07e;font-size:11px;margin-top:8px}
+  .warn{color:#ffb37a}
+</style></head>
+<body>
+<div id="map"></div>
+<div id="panel">
+  <h1>Land cover — MapLibre render test</h1>
+  <div class="row">
+    <button id="bRaw">RAW (159, worst 3969v)</button>
+    <button id="bSub" class="on">SUBDIVIDED (317)</button>
+  </div>
+  <div class="row">
+    <button id="bSat" class="on">Satellite</button>
+  </div>
+  <div class="note" id="msg">SUBDIVIDED — the integration-ready form.</div>
+</div>
+<script>
+const SAGE="#cfdabf", CORNERS=[[-85.78306101658708, 35.11860156121478], [-85.71621367216926, 35.11791191683665], [-85.71701963200547, 35.06647816589451], [-85.78382503563897, 35.06716650321733]], BOUNDS=[[-85.78382503563897, 35.06647816589451], [-85.71621367216926, 35.11860156121478]];
+const map=new maplibregl.Map({container:'map', style:{version:8, sources:{}, layers:[
+  {id:'bg', type:'background', paint:{'background-color':'#e7ddc4'}}
+]}, bounds:BOUNDS, fitBoundsOptions:{padding:20}, attributionControl:false});
+window.map=map; window._ready=false;
+map.on('load', ()=>{
+  map.addSource('sat',{type:'image', url:'./satellite_9patch.jpg', coordinates:CORNERS});
+  map.addLayer({id:'sat', type:'raster', source:'sat', paint:{'raster-opacity':1}});
+  map.addSource('raw',{type:'geojson', data:'./landcover_map_raw.geojson'});
+  map.addSource('sub',{type:'geojson', data:'./landcover_map_subdivided.geojson'});
+  // solid light sage, NO border (no fill-outline-color), NO opacity (fill-opacity 1)
+  map.addLayer({id:'veg-raw', type:'fill', source:'raw',
+    paint:{'fill-color':SAGE,'fill-opacity':1}, layout:{visibility:'none'}});
+  map.addLayer({id:'veg-sub', type:'fill', source:'sub',
+    paint:{'fill-color':SAGE,'fill-opacity':1}});
+  window._ready=true;
+});
+const bRaw=document.getElementById('bRaw'), bSub=document.getElementById('bSub'),
+      bSat=document.getElementById('bSat'), msg=document.getElementById('msg');
+function show(which){
+  if(!map.getLayer('veg-sub')) return;
+  const raw=which==='raw';
+  map.setLayoutProperty('veg-raw','visibility', raw?'visible':'none');
+  map.setLayoutProperty('veg-sub','visibility', raw?'none':'visible');
+  bRaw.classList.toggle('on',raw); bSub.classList.toggle('on',!raw);
+  msg.innerHTML = raw
+    ? '<span class="warn">RAW — one 3969-vertex shape. Watch for dropped chunks / missing canopy.</span>'
+    : 'SUBDIVIDED — the integration-ready form.';
+}
+bRaw.onclick=()=>show('raw'); bSub.onclick=()=>show('sub');
+bSat.onclick=()=>{ if(!map.getLayer('sat')) return;
+  const v=map.getLayoutProperty('sat','visibility')!=='none';
+  map.setLayoutProperty('sat','visibility', v?'none':'visible'); bSat.classList.toggle('on',!v);};
+</script>
+</body></html>

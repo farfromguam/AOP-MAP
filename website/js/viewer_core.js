@@ -320,11 +320,13 @@
   // base paint for the land-cover layers below, so one definition serves both.
   // The land cover ships a single dissolved `vegetation` class (forest greens
   // merged, non-tree dropped to the base map — simplify_landcover_vegetation.py),
-  // so these are flat vegetation colours: the former forest tone for each preset.
-  const LANDCOVER_MUTED_FILL = '#b8c1a1';
-  const LANDCOVER_MUTED_OUTLINE = '#a6af8d';
-  const LANDCOVER_RELIEF_FILL = '#c0c6ad';
-  const LANDCOVER_RELIEF_OUTLINE = '#aeb499';
+  // so these are flat vegetation colours. The user's single tree-cover green:
+  // #D1D2B8 (light sage), same fill + outline so there's no contrasting border
+  // (the outline still bridges sub-pixel grid slivers, just invisibly).
+  const LANDCOVER_MUTED_FILL = '#D1D2B8';
+  const LANDCOVER_MUTED_OUTLINE = '#D1D2B8';
+  const LANDCOVER_RELIEF_FILL = '#D1D2B8';
+  const LANDCOVER_RELIEF_OUTLINE = '#D1D2B8';
   // Activity-hotspot opacity is referenced by the Park/Topo preset paints. The
   // activity-hotspots layer itself is dev-reference and not carried, so those
   // paint entries no-op (setPaint guards on getLayer) — the const stays so the
@@ -2177,6 +2179,43 @@
         () => PRESET_LAYERS.showBuildings,
         (props) => [props.address, props.facility_role]
       );
+
+      // Facility name pins — a labelled marker at each public building's centre so
+      // people can read what's where (Front Office, Farmhouse, Pavilion, Shower
+      // House). The footprint shows the shape; the pin + name says what it is. A
+      // circle can't sit at a polygon centroid (it draws at every vertex), so derive
+      // a point from each facility's centroid. Always on, like the camp waypoints —
+      // key wayfinding; private structures (the dark presence boxes) get no pin.
+      const facilityPoints = {
+        type: 'FeatureCollection',
+        features: facilityFeatures
+          .filter((f) => f.properties.centroid_lng != null && f.properties.centroid_lat != null)
+          .map((f) => ({
+            type: 'Feature',
+            properties: { name: f.properties.facility_name || f.properties.name },
+            geometry: { type: 'Point', coordinates: [f.properties.centroid_lng, f.properties.centroid_lat] }
+          }))
+      };
+      map.addSource('aop-facilities', { type: 'geojson', data: facilityPoints });
+      map.addLayer({
+        id: 'aop-facility-pin', type: 'circle', source: 'aop-facilities',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 7],
+          'circle-color': '#8a4b2a', 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2
+        }
+      });
+      map.addLayer({
+        id: 'aop-facility-labels', type: 'symbol', source: 'aop-facilities',
+        filter: ['to-boolean', ['get', 'name']],
+        layout: {
+          'text-field': ['get', 'name'], 'text-size': 12,
+          'text-offset': [0, 1.2], 'text-anchor': 'top',
+          // only 4, and they're the key wayfinding anchors — never let the trail /
+          // waypoint label crowd declutter them away.
+          'text-allow-overlap': true
+        },
+        paint: { 'text-color': '#4a2c18', 'text-halo-color': '#ffffff', 'text-halo-width': 1.8 }
+      });
     }
 
     // --- AOP merged trail network (the gold trail truth) (main.js:9014) ---
@@ -2224,6 +2263,31 @@
           return aliases.length ? aliases : null;
         }
       );
+    }
+
+    // --- Hand-traced camp POIs / waypoints (Affinity satellite trace) ---
+    // RV sites, cabins, firepit, entrances, etc. placed over the satellite and
+    // re-imported (aop_waypoints_traced.geojson, raw zone). Named point markers,
+    // shown in every preset so the camp infrastructure always reads.
+    const aopWaypointsData = await fetchJson('./data/aop_waypoints_traced.geojson', 'Camp waypoints');
+    if (aopWaypointsData && aopWaypointsData.features && aopWaypointsData.features.length) {
+      map.addSource('aop-waypoints', { type: 'geojson', data: aopWaypointsData });
+      map.addLayer({
+        id: 'aop-waypoints', type: 'circle', source: 'aop-waypoints',
+        paint: {
+          'circle-radius': 5, 'circle-color': '#1e90ff',
+          'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2
+        }
+      });
+      map.addLayer({
+        id: 'aop-waypoints-labels', type: 'symbol', source: 'aop-waypoints',
+        filter: ['to-boolean', ['get', 'name']],
+        layout: {
+          'text-field': ['get', 'name'], 'text-size': 11,
+          'text-offset': [0, 1.1], 'text-anchor': 'top', 'text-optional': true
+        },
+        paint: { 'text-color': '#10243a', 'text-halo-color': '#ffffff', 'text-halo-width': 1.6 }
+      });
     }
 
     // --- Publishable layers: boundaries, trails, trailheads (main.js:9533) ---

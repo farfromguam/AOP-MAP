@@ -11,6 +11,80 @@ Short pointer for the next session. The durable record lives in the cards
 
 ## Latest (2026-06-14)
 
+- **First real Affinity hand-trace ingested (satellite trace round-trip).** The
+  user traced/refined in **Affinity Designer** and dropped the edited SVG at
+  `brain/import/trace_upload/aop_satellite_trace.svg`. Hardened
+  `mvp/scripts/import_illustrator_trace.py` for Affinity's export (metadata-frame
+  fallback, wrapper-`<g>` name inheritance + transform compose, `serif:id` layer
+  match, leading-trail-number provenance match, `<n> name` label-doubling strip,
+  stray-circle sweep). **Ingested + verified by observation:**
+  `website/data/aop_trail_network.geojson` = **130** trails (120 gold-provenance
+  carried incl. 8 renamed→clean-name, **10** new user-traced needing names),
+  `aop_waypoints_traced.geojson` = **26** named POIs (RV sites, cabins, entrances,
+  comp pad, racetrack…), `aop_buildings_traced.geojson` = **6** (Front Office moved
+  + Shower House new). Live viewer ingests all 130, clean un-doubled labels, **0
+  fatal console errors** (`brain/output/verify_ingest_viewer.py` PASS); overlay
+  `brain/output/illustrator_trace/_verify_ingest{,_camp}.png`. Trail 67 split per
+  the user (short=67 gold, long=blank/unknown). Re-import is read-modify-write on the
+  gold file → run once from the committed baseline. **Then wired into the read viewer**
+  (user "not seeing it in the map"): the SW precaches data + only refreshes on a
+  `VERSION` bump, and the waypoints had no layer — so added an `aop-waypoints`
+  circle+label layer in `viewer_core.js` (reads `aop_waypoints_traced.geojson`,
+  precached in `sw.js`), merged **Shower House** into the wired `aop_buildings.geojson`
+  (merge, not swap — keeps the 5 existing buildings' FEMA provenance), and bumped
+  `v83`→`v84` (`sw.js` + `index.html`). Verified on `:8001`
+  (`brain/output/verify_waypoints_layer.py` PASS — 26/26 waypoints render, Shower
+  House present, 0 fatal errors; `node --check` clean). **Owed:** name the 10 new
+  trails; richer POI-tab integration (blurbs/icons/search) for the waypoints; apply
+  Front Office's refined footprint. Card:
+  `tasks/14_illustrator_trace/satellite_illustrator_export.md`. UNCOMMITTED (git gate; the v84 bump + commit are the user's).
+
+- **Vegetation land cover → editable SVG round-trip (NEW).** The user: *"I need the
+  landcover exported to a svg so I can edit it … some polygons … manually resolved …
+  single green for treecover."* Built the vegetation sibling of the satellite trace:
+  `mvp/scripts/export_landcover_svg.py` writes the **dissolved canopy** (forest classes
+  unioned, clearings as holes — the editable tree mass, NOT the viewer's 324 grid-render
+  pieces) as named, filled, editable compound `<path>`s in a **Vegetation** layer over a
+  locked **Satellite** backdrop, in the raster's own UTM-16N round-trip frame →
+  `brain/output/landcover_trace/aop_landcover_trace.svg` (park, 18 polys) +
+  `aop_landcover_9patch_trace.svg` (165 polys). **Reuse, not a 2nd pipeline:** extracted
+  a shared `RasterFrame` (frame+backdrop+metadata) from `export_illustrator_trace.py` and
+  a shared `vegetation_features()` (viewer fill/outline contract) from
+  `simplify_landcover_vegetation.py` — both refactors **output-neutral** (HEAD vs
+  refactored script bake byte-identical on the same inputs; the viewer geojson
+  re-bakes unchanged). `import_landcover_svg.py` closes the loop (reads edited
+  Vegetation back, re-bakes the viewer file via the shared contract; reads its OWN
+  metadata, not the trail frame). **Verified by observation:** durable verifier
+  `verify_landcover_svg_roundtrip.py` (uncommitted per git gate) → **RESULT: PASS**
+  (max **Hausdorff 0.912 cm**, poly+ring parity, canopy area drift ~0%, park 523 ac /
+  9-patch 6944 ac); Playwright render shows green on forest, fields/staging as bare
+  satellite (`_render_park_{full,crop}.png`). **Council: all five seats clear** —
+  Warden·Quartermaster·Mason·Scribe clear first pass; Witness **andon** on a
+  "byte-identical" wording overclaim (a fresh trail-trace bake drifts ~2 cm — cause is
+  a *concurrent session editing the input trail geojson*, NOT this refactor; proven
+  HEAD==refactored) → records corrected to "output-neutral" + round-trip verifier
+  added, Witness **re-review clear**. **Then: user hand-edited the 9-patch in Affinity**
+  (`brain/import/trace_upload/aop_landcover_trace.svg`, 165→159 polys; Affinity strips
+  the `<metadata>`+satellite, viewBox still = the raster metre grid). Built
+  `mvp/scripts/build_landcover_edit_preview.py` → a self-contained lightweight page
+  (`brain/output/landcover_trace/landcover_edit_preview.html`, served `:8002`) that
+  re-attaches the satellite and overlays the edited shapes (zoom/pan, sat + fill/outline
+  + opacity toggles); verified by observation, 0 console errors
+  (`_preview_{default,outline,zoom}.png`). **Then (user: "test it in a map, no opacity/
+  borders, light sage; high-vertex broke rendering before; test separately then
+  integrate"):** built `mvp/scripts/build_landcover_map_test.py` → a standalone MapLibre
+  page (`landcover_map_test.html`, `:8003`) flipping **RAW** (159 shapes incl. one
+  3969-vert monster) vs **SUBDIVIDED** (317 grid pieces via `vegetation_features`), solid
+  light sage `#cfdabf`, no border, no opacity. **Verified `:8003`, 0 errors:** subdivided
+  renders the full canopy clean; **the raw monster also rendered fully** (overview/z13/z14/
+  corners — the old bug did NOT reproduce in this isolated single-layer test). **Recommend
+  shipping SUBDIVIDED regardless** (proven/de-risked). Council-cleared 4 seats (Witness ·
+  Warden · Mason · Quartermaster). **Owed: the actual viewer re-bake** via
+  `import_landcover_svg.py` — recover the stripped 9-patch frame (share `recover_frame`,
+  don't duplicate — Quartermaster), bake `aop_landcover_9patch.geojson`, bump version.
+  Card: `tasks/01_mvp/_done/landcover_layer.md` ("vegetation → editable SVG round-trip");
+  search-map routed. **No `.council-cleared`** (working tree still commingled with the
+  concurrent illustrator-trace / waypoints changes). UNCOMMITTED (user's git gate).
 - **v83 — five-item viewer review (concurrent session; coord claim
   `handoff/coord/five-item-review.md`).** The user listed five fixes; all shipped and
   **verified by observation** on `:8001` (fresh SW-cold context, 0 console errors):

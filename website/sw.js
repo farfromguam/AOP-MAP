@@ -32,7 +32,7 @@
 //   3. reconcile DATA_ASSETS below with `ls website/data/`
 // Shell HTML + copy JSON self-heal (stale-while-revalidate), so a missed bump is
 // less dangerous than before — but bulky GeoJSON only refreshes on a bump.
-const VERSION = 'v83'; // keep in sync with #appVersion in index.html
+const VERSION = 'v86'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
@@ -92,6 +92,7 @@ const DATA_ASSETS = [
   './data/aop_roads.geojson',
   './data/aop_water.geojson',
   './data/aop_buildings.geojson',
+  './data/aop_waypoints_traced.geojson',
   './data/aop_cemeteries.geojson',
   './data/aop_landcover.geojson',
   './data/aop_landcover_9patch.geojson',

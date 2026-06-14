@@ -1,7 +1,10 @@
 # Satellite 9-patch → Illustrator hand-trace export (+ round-trip)
 
 Started: 2026-06-14
-Status: SHIPPED (export + import, verified by observation). **Council-cleared**
+Status: SHIPPED + **first real Affinity round-trip ingested** (2026-06-14, verified
+by observation — see "First real round-trip" below: 130 trails / 26 waypoints / 6
+buildings, importer hardened for Affinity's export). Export + import originally
+verified by observation. **Council-cleared**
 (Witness · Quartermaster · Mason clear; Warden clear-in-isolation — the andon was
 on a concurrent session's commingled tree, not this work; receipt
 `brain/output/council/illustrator_trace_export.md`). Mason andon → fixed: the
@@ -87,6 +90,17 @@ down too). The projection params live in the SVG `<metadata>` so import inverts 
 lock-step. Datum note: vectors are WGS84, projected with NAD83/GRS80 params — the
 ~1 m CONUS datum slip is sub-pixel at 1.5 m/px and accepted.
 
+**Shared frame (2026-06-14):** the raster-read + backdrop-embed + projection
+`<metadata>` was extracted into a `RasterFrame` class in `export_illustrator_trace.py`
+so the sibling vegetation exporter (`export_landcover_svg.py`,
+`tasks/01_mvp/_done/landcover_layer.md`) reuses the exact same UTM-16N frame instead
+of re-implementing it. This exporter's `main()` now calls `RasterFrame` too. The
+refactor is **output-neutral**: the HEAD pre-refactor script and the refactored
+script bake `aop_satellite_trace.svg` to the **identical md5** on the same inputs.
+(A fresh bake differs from the *committed* SVG only because a concurrent session
+edited this exporter's input `aop_trail_network.geojson` — independent of the
+refactor; verified by the council Witness, 2026-06-14.)
+
 ## Verified by observation (2026-06-14)
 
 - **Projection:** forward∘inverse round-trips sub-mm; the documented 9-patch bbox
@@ -108,13 +122,97 @@ lock-step. Datum note: vectors are WGS84, projected with NAD83/GRS80 params — 
 - **SVG structure:** 4 layers, 1 embedded `<image>`, every feature group carries
   all three name channels (0 missing).
 
+## First real round-trip — Affinity Designer (2026-06-14)
+
+The user hand-traced in **Affinity Designer** and dropped the edited export at
+`brain/import/trace_upload/aop_satellite_trace.svg` (+ the `.afdesign` master).
+Affinity's SVG export differs hard from the generated one; the importer was
+hardened to ingest it (the card's "confirm against the first real edited file"):
+
+- **`<metadata>` stripped** → `load_meta` falls back to the original export's frame
+  (deterministic: same raster + fixed UTM params). **Frame is intact — no rescale:**
+  Affinity rounded the viewBox (`6092.6`→`6093`) but did NOT rescale geometry, so the
+  frame applies 1:1. Evidence: the unedited originals reproject onto HEAD's committed
+  geometry at the SVG's own quantization floor — the path `d` carries 2-decimal-metre
+  coords, so a vertex returns within **~1–2.4 cm** of HEAD (sub-pixel at 1.5 m/px).
+  Larger per-vertex deltas are the user's **real hand-edits**, not frame error (e.g.
+  Ground Control moved ~1 m; trail 67 + two others changed vertex counts). *(The
+  separate **0.7 cm** figure is the importer's in-memory self-round-trip — export→
+  reimport without saving — NOT a measurement of the committed gold file; don't
+  conflate them.)*
+- **Names moved onto wrapper `<g>`s.** Affinity wraps every *moved/new* object in
+  `<g transform=… serif:id="Name">` with the name on the wrapper, geometry (no name)
+  inside. `walk` now carries an **inherited name** down to the leaf and composes the
+  wrapper transform, so grouped features (Front Office, Shower House, all new
+  waypoints) keep their names instead of importing as `None`.
+- **Layer match.** `collect_layer` also matches `serif:id` + the dash-id (Affinity
+  renamed `id="Gold-Trails"`, kept `serif:id="Gold Trails"`).
+- **Provenance w/o `data-fid`** (Affinity strips `data-*`): match order is now
+  data-fid → exact name → name-as-prior-id (unnamed `sfwda-N`) → **leading trail
+  number** (carries gold lineage through a rename like `Launchpad`→`1 Launchpad`).
+- **Number-prefix normalization.** The export names a trail by its plain name
+  (`Launchpad`); the user re-prefixed the number for legibility (`1 Launchpad`).
+  The viewer label already composes `<n> name`, so the importer strips a leading
+  `<trail_number> ` → stored name reverts to `Launchpad`, label renders `1 Launchpad`
+  (no `1 1 Launchpad`). Stable round-trip.
+- **Stray-POI sweep.** Waypoint `<circle>`s are swept from **every** editable layer,
+  so two entrance pins drawn into the Gold Trails layer (`Jeep Entrance`,
+  `Buggy Entrance`) are ingested, not silently dropped.
+
+**Ingested (verified by observation):** `aop_trail_network.geojson` = **130**
+trails (120 gold-provenance carried incl. all 8 renamed, **10** new user-traced —
+9 unnamed + the de-identified long-67), `aop_waypoints_traced.geojson` = **26**
+named POIs, `aop_buildings_traced.geojson` = **6** (incl. moved Front Office +
+new Shower House). The live viewer ingests all 130 and renders them with clean,
+un-doubled labels, **0 fatal console errors** (`brain/output/verify_ingest_viewer.py`
+PASS, 195 trail feats rendered); the satellite overlay shows correct registration +
+sensible placement (`brain/output/illustrator_trace/_verify_ingest.png`,
+`_verify_ingest_camp.png`).
+
+**Trail 67:** the user split it — a short 14-vertex segment keeps `67` (gold), the
+long 65-vertex original they de-named in Affinity → imports as a blank/unknown new
+trail (their call: *"the short is 67 the long should be blank/unknown"*).
+
+**Re-import is read-modify-write on `aop_trail_network.geojson`** (it reads the live
+gold as the provenance baseline), so run it **once against the committed baseline** —
+re-running on its own output drifts provenance. To redo: restore from HEAD first
+(`git show HEAD:website/data/aop_trail_network.geojson > …`), then import once.
+
+**Wired into the read viewer (2026-06-14, user: "I am not seeing it in the map"):**
+The new POIs were INVISIBLE for two reasons — (1) the service worker precaches the
+data files and only refreshes on a `VERSION` bump (so the cached app served the old
+v83 data), and (2) the waypoints had **no layer**. Fixed:
+- **Waypoints** → new `aop-waypoints` source + `aop-waypoints` (circle) +
+  `aop-waypoints-labels` (symbol) layers in `viewer_core.js` (mirrors the
+  trail-network/water-points pattern), reading `aop_waypoints_traced.geojson`,
+  shown in every preset. Added to the `sw.js` `DATA_ASSETS` precache.
+- **Shower House** → merged into the WIRED `aop_buildings.geojson` (NOT a swap — a
+  swap would strip the existing 5 buildings' FEMA/ORNL address+facility provenance);
+  added as one raw-zone feature (the other 5 untouched). The user's refined Front
+  Office *geometry* was left for later (the existing footprint already renders).
+- **Cache bump** `v83`→`v84` (`sw.js` `VERSION` + `index.html` `#appVersion`) so the
+  new trail/waypoint/building data is served past the cache-first SW.
+- **Verified by observation:** `brain/output/verify_waypoints_layer.py` PASS on
+  `:8001` — `aop-waypoints` + labels exist, **26/26 render**, Shower House present
+  (6 buildings), 0 fatal console errors; `_verify_waypoints_live.png`. `node --check`
+  clean on `viewer_core.js`.
+
+**Owed / next (left for the user's call):**
+- **10 new trails need names + difficulty** (currently grey / needs-review).
+- **Waypoints are a flat raw-zone marker layer** — richer POI-tab integration
+  (blurbs, kinds/icons, grouping, search) is the next slice, gated by
+  `northstar/source_register.md`. The trace `permission` is still "SFWDA — TBD".
+- **Front Office** refined geometry from the trace not yet applied (cosmetic;
+  existing FEMA footprint still renders).
+- **The `v84` bump + commit are the user's git gate** (uncommitted).
+- `AOP Pavilion` waypoint was deleted by the user (the Pavilion *building* stays).
+
 ## Open / next
 
-- **The user edits, then we re-import.** `import_illustrator_trace.py` is built
-  and self-round-trip-verified, but its real test is the user's *Illustrator-saved*
-  SVG (Illustrator may rewrite `id`/transforms/curves — the importer composes
-  ancestor transforms and reduces curves to endpoints like the paper-map importer,
-  but confirm against the first real edited file).
+- **The user edits, then we re-import.** `import_illustrator_trace.py` is built and
+  self-round-trip-verified, AND now proven against the first real Affinity export
+  (see above). The importer composes ancestor transforms, inherits wrapper names,
+  and reduces curves to endpoints.
 - **Raster choice.** NAIP 2023 (1.5 m/px, on-disk, offline) is the default. The
   viewer's sharper **TNMap 2022 6-inch** is online-tiles only (licensing =
   inspection, not republish) — swap in if the user wants more detail for tracing.

@@ -130,6 +130,32 @@ def boundary_lines(parts):
     return unary_union([p.boundary for p in parts])
 
 
+def vegetation_features(parts, kind="landcover"):
+    """Cleaned canopy polygons -> the viewer's vegetation FeatureCollection body:
+    grid-subdivided fill polygons (so earcut renders everywhere) plus one
+    LineString outline (the true canopy edge). The single source of the viewer's
+    landcover feature contract — shared by the 5-class bake (main) and the
+    hand-edit re-import (import_landcover_svg.py). Returns (features, fill_pieces)."""
+    fill_pieces = []
+    for p in parts:
+        fill_pieces.extend(subdivided(p))
+    outline = boundary_lines(parts)
+    feats = [
+        {
+            "type": "Feature",
+            "properties": {"id": i + 1, "kind": kind, "class": "vegetation", "role": "fill"},
+            "geometry": mapping(p),
+        }
+        for i, p in enumerate(fill_pieces)
+    ]
+    feats.append({
+        "type": "Feature",
+        "properties": {"id": len(fill_pieces) + 1, "kind": kind, "class": "vegetation", "role": "outline"},
+        "geometry": mapping(outline),
+    })
+    return feats, fill_pieces
+
+
 def main(in_path, out_path):
     with open(in_path) as f:
         fc = json.load(f)
@@ -147,25 +173,8 @@ def main(in_path, out_path):
     union = unary_union([shape(ft["geometry"]).buffer(0) for ft in forest])
     parts = clean_parts(union)
 
-    fill_pieces = []
-    for p in parts:
-        fill_pieces.extend(subdivided(p))
-    outline = boundary_lines(parts)
-
     kind = forest[0]["properties"].get("kind", "landcover")
-    out_features = [
-        {
-            "type": "Feature",
-            "properties": {"id": i + 1, "kind": kind, "class": "vegetation", "role": "fill"},
-            "geometry": mapping(p),
-        }
-        for i, p in enumerate(fill_pieces)
-    ]
-    out_features.append({
-        "type": "Feature",
-        "properties": {"id": len(fill_pieces) + 1, "kind": kind, "class": "vegetation", "role": "outline"},
-        "geometry": mapping(outline),
-    })
+    out_features, fill_pieces = vegetation_features(parts, kind)
 
     meta = dict(fc.get("_meta", {}))
     meta["maturity_note"] = (

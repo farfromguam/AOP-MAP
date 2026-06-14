@@ -75,9 +75,21 @@ def feature_name(el):
     return None
 
 
-def load_meta(root):
+def load_meta(root, svg_path=None):
+    """Read the UTM-16N frame from the SVG <metadata>. Affinity/Illustrator drop
+    <metadata> on export, so when it's missing recover the frame from the original
+    exported trace (DEFAULT_SVG) — the frame is deterministic (same raster + fixed
+    UTM params), so it is exactly the frame the edited file was traced over."""
     md = root.find(f"{SVG}metadata")
-    meta = json.loads(md.text)
+    txt = (md.text or "").strip() if md is not None and md.text else ""
+    if not txt:
+        fb_root = ET.parse(DEFAULT_SVG).getroot()
+        fb = fb_root.find(f"{SVG}metadata")
+        txt = (fb.text or "").strip() if fb is not None else ""
+        src = "uploaded SVG" if svg_path is None else Path(svg_path).name
+        print(f"  [meta] {src} carries no projection metadata "
+              f"(editor stripped it); recovered frame from {DEFAULT_SVG.name}")
+    meta = json.loads(txt)
     assert meta.get("epsg") == 26916, f"unexpected frame {meta.get('epsg')}"
     return meta
 
@@ -89,20 +101,46 @@ def frame_to_lnglat(meta, xs, ys):
     return np.atleast_1d(lon), np.atleast_1d(lat)
 
 
-def walk(el, mat):
-    """Yield (element, composed_matrix) for el and all descendants."""
+def walk(el, mat, inherited=None):
+    """Yield (element, composed_matrix, inherited_name) for el and all descendants.
+    inherited_name is the name of the nearest *ancestor* that carried one: editors
+    (Affinity) wrap a moved/new object in a <g transform=...> and put the object
+    NAME on that wrapper, not on the leaf geometry, so a leaf must recover its name
+    from above."""
     here = parse_transform(el.get("transform"))
     # compose mat * here
     a, b, c, d, e, f = mat; a2, b2, c2, d2, e2, f2 = here
     m = [a*a2+c*b2, b*a2+d*b2, a*c2+c*d2, b*c2+d*d2, a*e2+c*f2+e, b*e2+d*f2+f]
-    yield el, m
+    yield el, m, inherited
+    child_inh = feature_name(el) or inherited
     for child in el:
-        yield from walk(child, m)
+        yield from walk(child, m, child_inh)
+
+
+def walk_layer(layer):
+    """Walk a category layer's contents, composing transforms, WITHOUT letting the
+    layer group's own name ("Gold Trails" etc.) leak down as a feature name — only
+    names on wrapping <g>s *inside* the layer are inherited by their leaves."""
+    base = parse_transform(layer.get("transform"))
+    for child in layer:
+        yield from walk(child, base, None)
+
+
+def _lead_num(name):
+    """Leading integer of a name ("11 Ground Control" -> 11), else None."""
+    m = re.match(r"\s*(\d+)\b", name or "")
+    return int(m.group(1)) if m else None
 
 
 def collect_layer(root, label):
-    for g in root.findall(f"{SVG}g"):
-        if g.get(f"{INK}label") == label or g.get("id") == ai_escape(label):
+    """Find a category layer by any name channel an editor may have kept. Affinity
+    renames the id ("Gold Trails" -> id="Gold-Trails") but preserves serif:id, and
+    drops inkscape:label; Illustrator keeps the `_x20_`-escaped id. Search the whole
+    tree (iter) so a layer nested under an editor's wrapper group is still found."""
+    esc = ai_escape(label); dash = label.replace(" ", "-")
+    for g in root.iter(f"{SVG}g"):
+        if (g.get(f"{INK}label") == label or g.get(f"{SERIF}id") == label
+                or g.get("id") in (esc, dash, label)):
             return g
     return None
 
@@ -113,21 +151,29 @@ def _ring(meta, m, poly):
     return [[round(float(a), 7), round(float(b), 7)] for a, b in zip(lon, lat)]
 
 
-def import_trails(meta, layer, prior_by_id=None, prior_by_name=None):
-    """Re-import the Gold Trails layer. Each trail is ONE named <path> object (no
-    wrapper group, no text). Its edited geometry + name are the new truth; the rest
-    of its gold props (color/maturity/permission/…) are carried forward from the
-    matching prior feature so a round-trip does NOT strip provenance. Match key:
-    data-fid (stable id), then name; no match -> user-drawn-new, thin provenance."""
+def import_trails(meta, layer, prior_by_id=None, prior_by_name=None, prior_by_tn=None):
+    """Re-import the Gold Trails layer. Each trail is ONE named <path> object (the
+    name may sit on the path or on an editor wrapper <g> above it). Its edited
+    geometry + name are the new truth; the rest of its gold props
+    (color/maturity/permission/…) are carried forward from the matching prior
+    feature so a round-trip does NOT strip provenance. Match order:
+    data-fid (Illustrator keeps it; Affinity strips), exact name, name-as-prior-id
+    (unnamed trails export their `sfwda-N` id as the object name), then the leading
+    trail number (a rename like "Launchpad" -> "1 Launchpad" still carries gold
+    lineage). No match -> user-drawn-new, thin "needs review" provenance."""
     prior_by_id = prior_by_id or {}
     prior_by_name = prior_by_name or {}
+    prior_by_tn = prior_by_tn or {}
     feats = []
-    for el, m in walk(layer, [1, 0, 0, 1, 0, 0]):
+    for el, m, inh in walk_layer(layer):
         if not el.tag.endswith("path"):
             continue
-        name = feature_name(el)
+        name = feature_name(el) or inh
         fid = el.get("data-fid") or None
-        prior = prior_by_id.get(fid) or (prior_by_name.get(name.lower()) if name else None)
+        prior = (prior_by_id.get(fid)
+                 or (prior_by_name.get(name.lower()) if name else None)
+                 or (prior_by_id.get(name) if name else None)
+                 or (prior_by_tn.get(_lead_num(name)) if name else None))
         tn = el.get("data-trail-number") or None
         lines = [_ring(meta, m, poly) for poly in path_points(el.get("d", "")) if len(poly) >= 2]
         if not lines:
@@ -142,6 +188,16 @@ def import_trails(meta, layer, prior_by_id=None, prior_by_name=None):
                      "difficulty": el.get("data-difficulty") or None,
                      "source": "illustrator_trace_new",
                      "review_status": "new trail from Illustrator SVG; needs review"}
+        # The export writes a named trail's object as just its name ("Launchpad").
+        # A user may re-prefix the trail number for legibility while tracing
+        # ("Launchpad" -> "1 Launchpad"); the viewer label already composes
+        # "<number> <name>", so strip a leading "<trail_number> " to avoid a doubled
+        # "1 1 Launchpad" (round-trips stably: export name -> edit -> import strips).
+        tnum = props.get("trail_number")
+        if name and tnum is not None:
+            mm = re.match(r"\s*(\d+)\s+(.+)$", name)
+            if mm and int(mm.group(1)) == tnum:
+                name = mm.group(2).strip()
         props["name"] = name                        # the edited name wins
         feats.append({"type": "Feature", "properties": props, "geometry": geom})
     return feats
@@ -149,13 +205,13 @@ def import_trails(meta, layer, prior_by_id=None, prior_by_name=None):
 
 def import_points(meta, layer):
     feats = []
-    for el, m in walk(layer, [1, 0, 0, 1, 0, 0]):
+    for el, m, inh in walk_layer(layer):
         if not el.tag.endswith("circle"):
             continue
         x, y = apply(m, float(el.get("cx", 0)), float(el.get("cy", 0)))
         lon, lat = frame_to_lnglat(meta, [x], [y])
         feats.append({"type": "Feature",
-                      "properties": {"name": feature_name(el), "kind": el.get("data-kind") or "poi"},
+                      "properties": {"name": feature_name(el) or inh, "kind": el.get("data-kind") or "poi"},
                       "geometry": {"type": "Point",
                                    "coordinates": [round(float(lon[0]), 7), round(float(lat[0]), 7)]}})
     return feats
@@ -163,7 +219,7 @@ def import_points(meta, layer):
 
 def import_polys(meta, layer):
     feats = []
-    for el, m in walk(layer, [1, 0, 0, 1, 0, 0]):
+    for el, m, inh in walk_layer(layer):
         if not el.tag.endswith("path"):
             continue
         rings = []
@@ -176,7 +232,7 @@ def import_polys(meta, layer):
             rings.append(ring)
         if rings:
             feats.append({"type": "Feature",
-                          "properties": {"name": feature_name(el), "kind": "building"},
+                          "properties": {"name": feature_name(el) or inh, "kind": "building"},
                           "geometry": {"type": "Polygon", "coordinates": rings}})
     return feats
 
@@ -187,38 +243,59 @@ def main():
     argv = [a for a in argv if not a.startswith("--")]
     svg_path = Path(argv[0]) if argv else DEFAULT_SVG
     root = ET.parse(svg_path).getroot()
-    meta = load_meta(root)
+    meta = load_meta(root, svg_path)
 
     # index the CURRENT gold network so each edited trail carries its full props
-    # forward (provenance-preserving re-merge by stable id, then name).
+    # forward (provenance-preserving re-merge by stable id, then name, then number).
     dest = DATA / "aop_trail_network.geojson"
     prior = json.loads(dest.read_text()) if dest.exists() else {"features": []}
-    by_id, by_name = {}, {}
+    by_id, by_name, by_tn = {}, {}, {}
     for f in prior.get("features", []):
         pp = f.get("properties", {})
         if pp.get("id"):
             by_id[pp["id"]] = f
         if pp.get("name"):
             by_name[str(pp["name"]).lower()] = f
+        if pp.get("trail_number") is not None:
+            by_tn[pp["trail_number"]] = f
 
     trails = collect_layer(root, "Gold Trails")
-    tf = import_trails(meta, trails, by_id, by_name) if trails is not None else []
+    tf = import_trails(meta, trails, by_id, by_name, by_tn) if trails is not None else []
     carried = sum(1 for f in tf if f["properties"].get("maturity"))
+    newt = sum(1 for f in tf if f["properties"].get("source") == "illustrator_trace_new")
     out = {"type": "FeatureCollection", "name": "aop_trail_network",
            "_meta": {"generated_from": f"{svg_path.name} (Illustrator round-trip); "
                      "_meta re-stamped by export_gold_trail_network.py"},
            "features": tf}
     dest.write_text(json.dumps(out, indent=1))
-    print(f"trails: {len(tf)} -> {dest.relative_to(REPO)}  ({carried} carried full gold props)")
+    print(f"trails: {len(tf)} -> {dest.relative_to(REPO)}  "
+          f"({carried} carried full gold props, {newt} user-drawn new)")
 
     if want_all:
-        for label, fn, imp in [("Waypoints", "aop_waypoints_traced.geojson", import_points),
-                               ("Buildings", "aop_buildings_traced.geojson", import_polys)]:
-            lay = collect_layer(root, label)
-            ff = imp(meta, lay) if lay is not None else []
-            (DATA / fn).write_text(json.dumps(
-                {"type": "FeatureCollection", "name": fn[:-8], "features": ff}, indent=1))
-            print(f"{label.lower()}: {len(ff)} -> website/data/{fn}")
+        blay = collect_layer(root, "Buildings")
+        bf = import_polys(meta, blay) if blay is not None else []
+        (DATA / "aop_buildings_traced.geojson").write_text(json.dumps(
+            {"type": "FeatureCollection", "name": "aop_buildings_traced", "features": bf}, indent=1))
+        print(f"buildings: {len(bf)} -> website/data/aop_buildings_traced.geojson")
+
+        # Waypoints: sweep <circle>s from EVERY editable layer, not just Waypoints.
+        # A POI drawn into the wrong layer (e.g. an entrance dropped in Gold Trails)
+        # is still a named point — ingest it, don't silently drop it.
+        wf, strays = [], []
+        for lname in ("Waypoints", "Gold Trails", "Buildings"):
+            lay = collect_layer(root, lname)
+            if lay is None:
+                continue
+            for feat in import_points(meta, lay):
+                wf.append(feat)
+                if lname != "Waypoints":
+                    strays.append((feat["properties"].get("name"), lname))
+        (DATA / "aop_waypoints_traced.geojson").write_text(json.dumps(
+            {"type": "FeatureCollection", "name": "aop_waypoints_traced", "features": wf}, indent=1))
+        print(f"waypoints: {len(wf)} -> website/data/aop_waypoints_traced.geojson")
+        if strays:
+            print(f"  swept {len(strays)} stray point POI(s) from non-Waypoints layers: "
+                  + ", ".join(f"{n!r}<-{l}" for n, l in strays))
 
 
 if __name__ == "__main__":

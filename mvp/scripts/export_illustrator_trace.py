@@ -139,6 +139,63 @@ def _xml(s):
             .replace(">", "&gt;").replace('"', "&quot;"))
 
 
+# ============================================================== raster frame
+class RasterFrame:
+    """A satellite GeoTIFF's own UTM-16N grid, used as the SVG coordinate frame,
+    plus the embedded JPEG backdrop and the round-trip projection metadata.
+
+    SVG user units = UTM 16N metres, origin at the raster NW corner, +x east,
+    +y south — so vectors land 1:1 on the imagery (no resampling) and the
+    importer inverts it with no warp. Shared by every Illustrator exporter so the
+    frame + projection params are defined once, not re-derived per script.
+    """
+
+    def __init__(self, tif_path, jpg_path, jpg_quality=90):
+        tif = tifffile.TiffFile(str(tif_path))
+        page = tif.pages[0]
+        tags = {t.name: t.value for t in page.tags.values()}
+        pxX, pxY = tags["ModelPixelScaleTag"][0], tags["ModelPixelScaleTag"][1]
+        tp = tags["ModelTiepointTag"]          # (i,j,k, X,Y,Z) maps pixel (i,j)->(X,Y)
+        self.minE = tp[3] - tp[0] * pxX
+        self.maxN = tp[4] + tp[1] * pxY        # +Y up; row increases southward
+        self.img_w, self.img_h = page.imagewidth, page.imagelength
+        self.px = (pxX, pxY)
+        self.width_u = self.img_w * pxX        # SVG user units (UTM metres)
+        self.height_u = self.img_h * pxY
+        self.raster_name = Path(tif_path).name
+        # backdrop: RGB only (drop NIR 4th band). JPEG — NAIP is photographic, so
+        # JPEG cuts the embed ~6x vs PNG and keeps the SVG light enough to open
+        # snappily in Illustrator; plenty of fidelity at 0.6–1.5 m/px.
+        arr = page.asarray()
+        rgb = arr[:, :, :3] if arr.ndim == 3 else np.stack([arr] * 3, -1)
+        Image.fromarray(rgb.astype(np.uint8)).save(jpg_path, quality=jpg_quality)
+        self.raster_b64 = base64.b64encode(Path(jpg_path).read_bytes()).decode()
+
+    def to_frame(self, lon, lat):              # lng/lat -> SVG frame (metres, y south)
+        E, N = geodetic_to_utm(lon, lat)
+        return (E - self.minE), (self.maxN - N)
+
+    def meta(self, note, extra=None):
+        """The projection metadata block the importer reads to invert the frame.
+        `note` is exporter-specific prose; `extra` appends after it."""
+        nw = utm_to_geodetic(self.minE, self.maxN)
+        se = utm_to_geodetic(self.minE + self.width_u, self.maxN - self.height_u)
+        m = {
+            "projection": "utm", "epsg": 26916, "datum": "NAD83 (GRS80)",
+            "lon0_deg": -87.0, "k0": _K0, "false_easting": _FE, "false_northing": _FN,
+            "frame_origin_easting": self.minE, "frame_origin_northing": self.maxN,
+            "width_m": self.width_u, "height_m": self.height_u,
+            "raster": self.raster_name, "raster_px": [self.img_w, self.img_h],
+            "px_size_m": [self.px[0], self.px[1]],
+            "bbox_lnglat_nw": [float(nw[0]), float(nw[1])],
+            "bbox_lnglat_se": [float(se[0]), float(se[1])],
+            "note": note,
+        }
+        if extra:
+            m.update(extra)
+        return m
+
+
 # ===================================================================== data load
 def load(fn):
     p = DATA / fn
@@ -152,30 +209,15 @@ def norm_diff(d):
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # --- raster georeference straight from the GeoTIFF ---
-    tif = tifffile.TiffFile(str(TIF))
-    page = tif.pages[0]
-    tags = {t.name: t.value for t in page.tags.values()}
-    pxX, pxY = tags["ModelPixelScaleTag"][0], tags["ModelPixelScaleTag"][1]
-    tp = tags["ModelTiepointTag"]              # (i,j,k, X,Y,Z) maps pixel (i,j)->(X,Y)
-    minE = tp[3] - tp[0] * pxX
-    maxN = tp[4] + tp[1] * pxY                 # +Y up; row increases southward
-    img_w, img_h = page.imagewidth, page.imagelength
-    width_u = img_w * pxX                       # SVG user units (UTM metres)
-    height_u = img_h * pxY
-
-    def to_frame(lon, lat):                     # lng/lat -> SVG frame (metres, y south)
-        E, N = geodetic_to_utm(lon, lat)
-        return (E - minE), (maxN - N)
-
-    # --- backdrop (RGB; drop NIR 4th band). JPEG: NAIP is photographic, so JPEG
-    # cuts the embed ~6x vs PNG and keeps the SVG light enough to open snappily in
-    # Illustrator. Plenty of fidelity for tracing at 1.5 m/px. ---
-    arr = page.asarray()
-    rgb = arr[:, :, :3] if arr.ndim == 3 else np.stack([arr]*3, -1)
+    # raster grid + backdrop + projection frame (shared with export_landcover_svg)
     jpg_path = OUT_DIR / "satellite_9patch.jpg"
-    Image.fromarray(rgb.astype(np.uint8)).save(jpg_path, quality=90)
-    raster_b64 = base64.b64encode(jpg_path.read_bytes()).decode()
+    F = RasterFrame(TIF, jpg_path)
+    pxX, pxY = F.px
+    minE, maxN = F.minE, F.maxN
+    img_w, img_h = F.img_w, F.img_h
+    width_u, height_u = F.width_u, F.height_u
+    to_frame = F.to_frame
+    raster_b64 = F.raster_b64
 
     # ---------------------------------------------------------------- vectors
     def path_d(coords, close=False):
@@ -262,19 +304,11 @@ def main():
                           f'cx="{x[0]:.1f}" cy="{y[0]:.1f}" r="9">{title}</circle>')
 
     # ---------------------------------------------------------------- assemble
-    nw = utm_to_geodetic(minE, maxN); se = utm_to_geodetic(minE + width_u, maxN - height_u)
-    meta = {
-        "projection": "utm", "epsg": 26916, "datum": "NAD83 (GRS80)",
-        "lon0_deg": -87.0, "k0": _K0, "false_easting": _FE, "false_northing": _FN,
-        "frame_origin_easting": minE, "frame_origin_northing": maxN,
-        "width_m": width_u, "height_m": height_u,
-        "raster": TIF.name, "raster_px": [img_w, img_h], "px_size_m": [pxX, pxY],
-        "bbox_lnglat_nw": [float(nw[0]), float(nw[1])],
-        "bbox_lnglat_se": [float(se[0]), float(se[1])],
-        "note": ("SVG user units = UTM 16N metres; x=E-origin_E, y=origin_N-N. "
-                 "import_illustrator_trace.py inverts this (no warp). Feature name = "
-                 "layer name, read from inkscape:label / serif:id / title / id."),
-    }
+    meta = F.meta(note=(
+        "SVG user units = UTM 16N metres; x=E-origin_E, y=origin_N-N. "
+        "import_illustrator_trace.py inverts this (no warp). Feature name = "
+        "layer name, read from inkscape:label / serif:id / title / id."))
+    nw, se = meta["bbox_lnglat_nw"], meta["bbox_lnglat_se"]
     INK = ('xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
            'xmlns:serif="http://www.serif.com/"')
     svg = f'''<?xml version="1.0" encoding="UTF-8"?>
