@@ -1,6 +1,6 @@
 # Session Handoff
 
-Date: 20260613
+Date: 20260614
 
 Short pointer for the next session. The durable record lives in the cards
 (`tasks/*/_done/<feature>.md`), `research/viewer.md`, `search_map.md`, and
@@ -10,6 +10,30 @@ Short pointer for the next session. The durable record lives in the cards
 -----
 
 ## Latest (2026-06-14)
+
+- **Six-item viewer batch (v87) — shipped + verified.** One user drop: (1) trail
+  number-first **display name** as a single source — `trailDisplayName()` stamps
+  `display_name` on each trail at load; the map label AND search now both read
+  "1 Launchpad" (was a label-only concat; name/number stay separate so the trace
+  re-import round-trips). (2) **Borderless tree cover** — removed both landcover
+  `-outline` layers + refs + unused consts; solid fill (opacity 1). (3) **Medallion
+  data tiers** — re-tiered every served file via `stamp_maturity.py` (now bronze/
+  silver/gold; delete kept as a lifecycle flag) + new `set_feature_maturity.py`
+  (per-feature: Ellis→gold, others bronze; 5 buildings→gold, Shower House→bronze);
+  gold=9 silver=2 bronze=11 delete=3. Decisions (asked): **full rename**, and
+  **derived/reference layers that render in production = gold**. (4) **Production
+  data-tier alert** — `auditProductionTiers()` console.warns on bronze/silver in
+  production (Shower House, callouts, publish), never hides ([[no-limiting-code-mvp]]).
+  (5) **One persistent active item** — search de-thrones an active event row; the
+  selection (search or event) stays highlighted until the next pick (popup-close no
+  longer clears it). (6) **Pro-Line at the firepit** — `sat-proline-fire`
+  `location_tag`→`#firepit` + baked `#firepit` location; Firepit waypoint tagged.
+  **Verified by observation** `:8001`: `brain/output/verify_label_border_persist_firepit.py`
+  13/13 + `verify_production_tier_alert.py` PASS, 0 console errors; screenshot
+  `verify_treecover_borderless.png`. Card:
+  `tasks/02_edit/_done/six_item_viewer_batch_20260614.md`. **Owed:** editor
+  (`panel.js`) medallion re-group (chip learns bronze; tree layout deferred).
+  UNCOMMITTED (git gate); working tree already at v87.
 
 - **First real Affinity hand-trace ingested (satellite trace round-trip).** The
   user traced/refined in **Affinity Designer** and dropped the edited SVG at

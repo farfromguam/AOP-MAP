@@ -856,7 +856,12 @@
   // source of truth, so fall back to the loaded file's stamp when a node doesn't
   // declare one. Rendered as a small chip on the group row and as a Source-tab
   // field. See brain/research/data_maturity_tiers.md.
-  const MATURITY_LABEL = { gold: 'Gold', silver: 'Silver', editor: 'Editor', derived: 'Derived', reference: 'Reference', delete: 'Delete' };
+  // Medallion tiers (gold / silver / bronze; delete = lifecycle). The legacy
+  // labels (editor/derived/reference) are kept so any not-yet-restamped file
+  // still renders. NOTE: the editor's group TREE still uses the pre-medallion
+  // layout — a full re-group to the 3 medallion buckets is owed (see
+  // brain/research/data_maturity_tiers.md); this map just renders the chip.
+  const MATURITY_LABEL = { gold: 'Gold', silver: 'Silver', bronze: 'Bronze', editor: 'Editor', derived: 'Derived', reference: 'Reference', delete: 'Delete' };
   function nodeMaturity(node) {
     if (node.maturity) return node.maturity;
     const src = node.items && node.items.source;

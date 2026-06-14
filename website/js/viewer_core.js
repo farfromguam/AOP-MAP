@@ -316,17 +316,15 @@
     'horizon-fog-blend': 0.5,
     'fog-ground-blend': 0.5
   };
-  // Land-cover fill/outline families: muted (Park) and relief (Topo). Also the
-  // base paint for the land-cover layers below, so one definition serves both.
-  // The land cover ships a single dissolved `vegetation` class (forest greens
-  // merged, non-tree dropped to the base map — simplify_landcover_vegetation.py),
-  // so these are flat vegetation colours. The user's single tree-cover green:
-  // #D1D2B8 (light sage), same fill + outline so there's no contrasting border
-  // (the outline still bridges sub-pixel grid slivers, just invisibly).
+  // Land-cover fill families: muted (Park) and relief (Topo). Also the base paint
+  // for the land-cover layers below, so one definition serves both. The land cover
+  // ships a single dissolved `vegetation` class (forest greens merged, non-tree
+  // dropped to the base map — simplify_landcover_vegetation.py), so these are flat
+  // vegetation colours. The user's single tree-cover green: #D1D2B8 (light sage),
+  // drawn as a SOLID, BORDERLESS fill (no canopy-edge outline — the user wanted the
+  // tree cover borderless so it doesn't show the grid patching).
   const LANDCOVER_MUTED_FILL = '#D1D2B8';
-  const LANDCOVER_MUTED_OUTLINE = '#D1D2B8';
   const LANDCOVER_RELIEF_FILL = '#D1D2B8';
-  const LANDCOVER_RELIEF_OUTLINE = '#D1D2B8';
   // Activity-hotspot opacity is referenced by the Park/Topo preset paints. The
   // activity-hotspots layer itself is dev-reference and not carried, so those
   // paint entries no-op (setPaint guards on getLayer) — the const stays so the
@@ -467,8 +465,8 @@
   // showSfwda, showCemeteries, showActivityHotspots, showEditorPois, …) are simply
   // ignored — those layers belong to later slices or to the dev pile.
   const PRESET_LAYERS = {
-    showLandcover: ['landcover-forest', 'landcover-forest-outline'],
-    showLandcover9: ['landcover-9patch-forest', 'landcover-9patch-forest-outline'],
+    showLandcover: ['landcover-forest'],
+    showLandcover9: ['landcover-9patch-forest'],
     showHillshade: ['lidar-hillshade'],
     showContours: ['contours-minor', 'contours-index', 'contours-labels'],
     showSatellite: ['tnmap-satellite'],
@@ -502,16 +500,14 @@
         showTrails: false, showAopTrailNetwork: true, showBoundaries: true, showTrailheads: true,
         showEditorPois: true
       },
-      sliders: { landcover9Opacity: 55, sfwdaOpacity: 70, sfwdaMultiply: 0 },
+      sliders: { landcover9Opacity: 100, sfwdaOpacity: 70, sfwdaMultiply: 0 },
       paints: {
         // No-tree-cover base = the warm tan Topo and Trace already share, so the
         // areas the vegetation simplify dropped read as warm earth, not bright
         // paper. (User: "update park to have this as the no tree cover color.")
         background: { 'background-color': '#e7ddc4' },
-        'landcover-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.9 },
-        'landcover-forest-outline': { 'line-color': LANDCOVER_MUTED_OUTLINE, 'line-width': 0.8, 'line-opacity': 0.55 },
-        'landcover-9patch-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.55 },
-        'landcover-9patch-forest-outline': { 'line-color': LANDCOVER_MUTED_OUTLINE, 'line-width': 0.6, 'line-opacity': 0.35 },
+        'landcover-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 1 },
+        'landcover-9patch-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 1 },
         'lidar-hillshade': {
           'hillshade-exaggeration': 0.6,
           'hillshade-shadow-color': '#3a2f22',
@@ -556,13 +552,11 @@
         showTrails: false, showAopTrailNetwork: true, showBoundaries: true, showTrailheads: true,
         showEditorPois: true
       },
-      sliders: { landcover9Opacity: 38, sfwdaOpacity: 60, sfwdaMultiply: 100 },
+      sliders: { landcover9Opacity: 100, sfwdaOpacity: 60, sfwdaMultiply: 100 },
       paints: {
         background: { 'background-color': '#e7ddc4' },
-        'landcover-forest': { 'fill-color': LANDCOVER_RELIEF_FILL, 'fill-opacity': 0.62 },
-        'landcover-forest-outline': { 'line-color': LANDCOVER_RELIEF_OUTLINE, 'line-width': 0.7, 'line-opacity': 0.35 },
-        'landcover-9patch-forest': { 'fill-color': LANDCOVER_RELIEF_FILL, 'fill-opacity': 0.38 },
-        'landcover-9patch-forest-outline': { 'line-color': LANDCOVER_RELIEF_OUTLINE, 'line-width': 0.5, 'line-opacity': 0.25 },
+        'landcover-forest': { 'fill-color': LANDCOVER_RELIEF_FILL, 'fill-opacity': 1 },
+        'landcover-9patch-forest': { 'fill-color': LANDCOVER_RELIEF_FILL, 'fill-opacity': 1 },
         'lidar-hillshade': {
           'hillshade-exaggeration': 0.45,
           'hillshade-shadow-color': '#7a6a52',
@@ -713,11 +707,11 @@
   // be a value or a (props) => value function; layersFor returns the layer-id
   // array to unhide when a result lands (so the camera doesn't fly to a hidden
   // layer). aliasesFor (optional) returns extra search terms (e.g. "trail 15").
-  function indexFeatures(data, kindFor, layersFor, aliasesFor) {
+  function indexFeatures(data, kindFor, layersFor, aliasesFor, nameFor) {
     if (!data || !data.features) return;
     for (const feature of data.features) {
       const props = feature.properties || {};
-      const name = props.name || props.gnis_name;
+      const name = nameFor ? nameFor(props) : (props.name || props.gnis_name);
       if (!name || !feature.geometry) continue;
       const layers = typeof layersFor === 'function' ? layersFor(props) : layersFor;
       const entry = {
@@ -741,6 +735,24 @@
   // Trails imported as "<name> (segment N)" collapse to one searchable trail.
   function searchDisplayName(name) {
     return name.replace(/\s*\(segment[^)]*\)\s*$/i, '').trim();
+  }
+
+  // The ONE source of truth for a trail's display name. AOP labels trails by
+  // NUMBER first: a named trail reads "1 Launchpad", an unnamed trail (name IS
+  // the number) reads "15", the rare name-without-number falls back to the bare
+  // name. Computed once onto each feature's `display_name` at load so the map
+  // label AND the search index read the same string (the v83 label-only `concat`
+  // expression left search showing just "Launchpad"). NOT baked back to the file:
+  // the trail name stays clean (`name`+`trail_number` separate) so the Affinity
+  // trace re-import — which strips leading numbers from labels — round-trips.
+  function trailDisplayName(props) {
+    const num = props.trail_number;
+    const hasNum = num != null && String(num).trim() !== '';
+    const name = props.name;
+    const hasName = name != null && String(name).trim() !== '';
+    if (hasNum && hasName && String(name) !== String(num)) return `${num} ${name}`;
+    if (hasNum) return String(num);
+    return hasName ? String(name) : '';
   }
 
   // Collapse per-segment entries into one group per name+kind, framed by the
@@ -948,6 +960,13 @@
         [[bounds.minLng, bounds.minLat], [bounds.maxLng, bounds.maxLat]],
         { padding: 90, maxZoom: 16.5, duration: 1100, bearing: map.getBearing() }
       );
+    }
+    // A search result becomes THE active item — it de-thrones any active event
+    // selection so only one thing is ever highlighted for orientation, and it
+    // clears the now-stale active calendar row (shared search-highlight source).
+    if (activeEventSessionId) {
+      activeEventSessionId = null;
+      if (eventScheduleConfig && eventScheduleData) renderEventSchedule(eventScheduleConfig, eventScheduleData);
     }
     const highlight = map.getSource('search-highlight');
     if (highlight) {
@@ -1339,11 +1358,9 @@
         .setLngLat(popupCoord)
         .setHTML(sessionPopupHtml(feature.properties))
         .addTo(map);
-      popup.on('close', () => {
-        if (activeEventSessionId !== sessionId) return;
-        activeEventSessionId = null;
-        if (eventScheduleConfig && eventScheduleData) renderEventSchedule(eventScheduleConfig, eventScheduleData);
-      });
+      // Closing the popup does NOT clear the selection: the chosen event stays the
+      // active item (highlighted + active calendar row) for orientation until the
+      // user picks something else (another event or a search result de-thrones it).
       map.once('moveend', () => panPopupIntoView(popup));
     }
   }
@@ -1795,6 +1812,69 @@
     map.once('moveend', () => panPopupIntoView(popup));
   }
 
+  // ── Data-maturity production guard (task 4, user 2026-06-14) ────────────
+  // Medallion tiers: gold = curated/verified + accepted in production; silver =
+  // pending review; bronze = not yet promoted (`delete` is a separate lifecycle
+  // flag). PRODUCTION = the layers this read viewer renders. This NEVER hides or
+  // filters anything (no-limiting-code rule) — it only warns the developer in the
+  // console when bronze/silver data is live, so "production should be gold" stays
+  // visible. A file's tier is its `_meta.maturity`; a MIXED file (e.g. buildings:
+  // Shower House bronze among gold) carries the exception per-feature, so the
+  // worst per-feature tier wins when features declare their own `maturity`.
+  function medallionTier(value) {
+    if (value === 'gold' || value === 'silver' || value === 'bronze') return value;
+    // Legacy (derived/reference/editor/raw/null) reads as un-promoted.
+    return 'bronze';
+  }
+  // [sourceId, human label] for every source the production read viewer renders.
+  const PRODUCTION_TIER_SOURCES = [
+    ['aop-trail-network', 'AOP trail network'],
+    ['aop-landcover', 'Land cover'],
+    ['aop-landcover-9patch', 'Land cover (9-patch)'],
+    ['aop-contours', 'Lidar contours'],
+    ['usgs-water', 'Hydrography'],
+    ['usgs-roads', 'Roads'],
+    ['visitor-context', 'Visitor context callouts'],
+    ['fema-buildings', 'Park buildings'],
+    ['aop-waypoints', 'Camp waypoints'],
+    ['publish-data', 'Publishable layers'],
+    ['activity-hotspots', 'Activity hotspots']
+  ];
+  function auditProductionTiers() {
+    const flagged = [];
+    for (const [id, label] of PRODUCTION_TIER_SOURCES) {
+      const src = map.getSource(id);
+      if (!src || typeof src.serialize !== 'function') continue;
+      let data;
+      try { data = src.serialize().data; } catch (e) { continue; }
+      if (!data || typeof data === 'string') continue;
+      const counts = { bronze: 0, silver: 0, gold: 0 };
+      let perFeature = false;
+      for (const feature of (data.features || [])) {
+        const m = feature.properties && feature.properties.maturity;
+        if (m == null) continue;
+        perFeature = true;
+        counts[medallionTier(m)]++;
+      }
+      let tier;
+      if (perFeature) tier = counts.bronze ? 'bronze' : (counts.silver ? 'silver' : 'gold');
+      else if (data._meta && data._meta.maturity) tier = medallionTier(data._meta.maturity);
+      else continue; // no tier info — don't fabricate an alert
+      if (tier === 'bronze' || tier === 'silver') {
+        const detail = perFeature
+          ? ` — ${counts.bronze} bronze, ${counts.silver} silver of ${data.features.length} features`
+          : '';
+        flagged.push(`  • ${label} [${id}]: ${tier}${detail}`);
+      }
+    }
+    if (flagged.length) {
+      console.warn(
+        '[AOP] ⚠ PRODUCTION DATA TIER ALERT — un-promoted (bronze) or pending '
+        + '(silver) data is live in production. Promote to gold or pull it:\n'
+        + flagged.join('\n'));
+    }
+  }
+
   // ── Layer build ────────────────────────────────────────────────────────
   // Each add-site is the source + style only, ported from main.js. The popup
   // bindings, search indexing, feature-list registration, and positioned-feature
@@ -1812,19 +1892,12 @@
       map.addLayer({
         id: 'landcover-9patch-forest', type: 'fill', source: 'aop-landcover-9patch',
         // The vegetation fill ships as small grid-subdivided polygons (role=fill)
-        // so earcut renders it everywhere; the canopy edge is a separate LineString
-        // (role=outline), drawn by the -outline layer below. main.js seeds this
-        // from the (editor-only) opacity slider; the clean core uses the Park-preset
-        // default 0.55 directly (applyPreset resets it).
+        // so earcut renders it everywhere. NO canopy-edge outline: the user wanted
+        // the tree cover borderless ("remove borders" — the edge line read as a
+        // sage border on the tan base and exposed the grid patching). Solid fill,
+        // no stroke. (The LineString edge feature is left unrendered.)
         filter: ['==', ['geometry-type'], 'Polygon'],
-        paint: { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.55 }
-      });
-      map.addLayer({
-        id: 'landcover-9patch-forest-outline', type: 'line', source: 'aop-landcover-9patch',
-        // Trace only the dissolved canopy edge (role=outline LineString) — NOT the
-        // rings of every grid-subdivided fill piece, which would draw a grid.
-        filter: ['==', ['geometry-type'], 'LineString'],
-        paint: { 'line-color': LANDCOVER_MUTED_OUTLINE, 'line-width': 0.6, 'line-opacity': 0.35 }
+        paint: { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 1 }
       });
     }
 
@@ -1837,14 +1910,9 @@
       });
       map.addLayer({
         id: 'landcover-forest', type: 'fill', source: 'aop-landcover',
+        // Solid, borderless tree cover — see the 9-patch fill above.
         filter: ['==', ['geometry-type'], 'Polygon'],
-        paint: { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.9 }
-      });
-      map.addLayer({
-        id: 'landcover-forest-outline', type: 'line', source: 'aop-landcover',
-        // Canopy edge only (role=outline LineString), not the fill-piece rings.
-        filter: ['==', ['geometry-type'], 'LineString'],
-        paint: { 'line-color': LANDCOVER_MUTED_OUTLINE, 'line-width': 0.8, 'line-opacity': 0.55 }
+        paint: { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 1 }
       });
     }
 
@@ -2221,6 +2289,12 @@
     // --- AOP merged trail network (the gold trail truth) (main.js:9014) ---
     const aopTrailNetworkData = await fetchJson('./data/aop_trail_network.geojson', 'AOP trail network missing');
     if (aopTrailNetworkData) {
+      // Stamp the number-first display name onto every trail (in-memory only) so
+      // the label layer and the search index share one source — see trailDisplayName.
+      for (const feature of (aopTrailNetworkData.features || [])) {
+        const props = feature.properties || (feature.properties = {});
+        props.display_name = trailDisplayName(props);
+      }
       map.addSource('aop-trail-network', { type: 'geojson', data: aopTrailNetworkData });
       map.addLayer({
         id: 'aop-trail-network', type: 'line', source: 'aop-trail-network',
@@ -2229,27 +2303,20 @@
       });
       map.addLayer({
         id: 'aop-trail-network-labels', type: 'symbol', source: 'aop-trail-network',
-        filter: ['to-boolean', ['get', 'name']],
+        // Number-first label read straight from the precomputed display_name (the
+        // single source of truth — see trailDisplayName), so the map label and the
+        // search result always read identically ("1 Launchpad").
+        filter: ['to-boolean', ['get', 'display_name']],
         layout: {
           visibility: 'none', 'symbol-placement': 'line-center',
-          // AOP labels trails by NUMBER first. A trail with a known name reads
-          // "1 Launchpad"; an unnamed trail (name is just the number) reads "15";
-          // the rare name-without-number falls back to the bare name. (User:
-          // "AOP uses numbers almost exclusively.")
-          'text-field': [
-            'case',
-            ['all', ['has', 'trail_number'],
-                    ['!=', ['to-string', ['get', 'name']], ['to-string', ['get', 'trail_number']]]],
-            ['concat', ['to-string', ['get', 'trail_number']], ' ', ['to-string', ['get', 'name']]],
-            ['has', 'trail_number'],
-            ['to-string', ['get', 'trail_number']],
-            ['to-string', ['get', 'name']]
-          ],
+          'text-field': ['get', 'display_name'],
           'text-size': 12
         },
         paint: { 'text-color': '#111', 'text-halo-color': '#fff', 'text-halo-width': 1.6 }
       });
-      // Named trails searchable by name AND by number ("15", "trail 15").
+      // Search results show the number-first display name ("1 Launchpad"), the
+      // same string the map label uses, and stay searchable by name AND by number
+      // ("launchpad", "1", "trail 1").
       indexFeatures(
         aopTrailNetworkData,
         'trail',
@@ -2261,7 +2328,8 @@
             aliases.push(String(props.trail_number), 'trail ' + String(props.trail_number));
           }
           return aliases.length ? aliases : null;
-        }
+        },
+        (props) => props.display_name || props.name
       );
     }
 
@@ -2478,6 +2546,10 @@
       }
     });
     buildSearchGroups();
+
+    // Data-maturity production guard (task 4): warn the developer if any
+    // un-promoted (bronze) or pending (silver) data is live in production.
+    auditProductionTiers();
 
     // Initial framing + the first preset (main.js:9595 + 9970-9971).
     fitToDataBounds(publishData);

@@ -599,3 +599,42 @@ The user: *"integrate it, ship the subdivided form. make the green this color: D
 - **Council: all five seats clear** (Witness · Warden · Quartermaster · Mason · Scribe),
   2026-06-14. Scribe pulled one andon — the card's earlier "UNCOMMITTED" line was false
   (the tree was already committed as v84) — corrected in place (this block).
+
+### Update: opacity iteration — solid → "slight on the non-park" (2026-06-14)
+
+After the committed `#D1D2B8` integration, the user iterated the compositing:
+
+1. *"probably no opacity — I calculated the color with none accounted for."* → set all
+   landcover fill-opacity to **1 (solid)** so `#D1D2B8` renders as the true value (Park +
+   Topo presets, both park + 9-patch layers; slider defaults 100; initial paints 1).
+   `sw.js`/`#appVersion` **v86→v87**. UNCOMMITTED.
+2. *"there should be some opacity for the non-park areas … just slight … enough so we don't
+   have to make a border. make some mockups."* → the **park layer stays solid**; the
+   **9-patch (non-park) opacity** is the variable, and the opacity step at the park
+   boundary becomes the separator (no drawn border). Built an interactive chooser
+   `brain/output/landcover_trace/mockups/compare.html` (standalone MapLibre — the full
+   viewer hangs headlessly on `setPaintProperty`, and live flipping is better for "I'll
+   choose styles"): park solid `#D1D2B8`, non-park opacity preset buttons 100→60 + slider,
+   paper/satellite backdrop. Served `:8005`, 0 console errors.
+- **Finding (durable): grid-subdivided fill shows opacity SEAMS at <100%.** MapLibre
+  antialiases each fill piece's shared edge, so adjacent subdivided pieces double their
+  edge alpha when transparent → a faint ~550 m grid appears at <100% (verified: visible at
+  70%, near-gone at 95%, absent at 100%). **Fix: `fill-antialias: false`** on the fill
+  layers — pieces then tile seamlessly at any opacity (verified clean at 70% in the
+  chooser). This must go into `viewer_core.js` when the non-park opacity drops below 100%.
+- **Pending the user's pick.** When the user names a non-park %, set
+  `landcover-9patch-forest` fill-opacity to it (park stays 1) + `fill-antialias:false` on
+  both landcover fills, in Park + Topo, bump version, verify. The live viewer (`:8001`)
+  currently shows the non-park **solid** (step 1) — the intermediate state until the pick.
+- **Council (opacity delta, 2026-06-14): Witness · Mason · Scribe clear** (viewer renders
+  solid `#D1D2B8` at opacity 1 both layers; chooser + `fill-antialias:false` seam-fix
+  verified; record honest). **Warden andon — commingled tree:** the uncommitted
+  `viewer_core.js` bundles the concurrent session's unrelated work (trail `display_name`
+  unification, event-selection change, popup-close) + modified `aop_waypoints_traced.geojson`
+  / `aop_event_schedule.json`. That session also **removed the landcover outline layers +
+  `LANDCOVER_*_OUTLINE` consts** — it edits the same landcover paint as this work (the
+  removal aligns with the no-border direction, but it isn't this task's change). My
+  landcover-opacity hunks (fill-opacity→1, slider→100, v87) are gate-ready on their own;
+  the rest belongs to the other session and should be committed separately (`git add -p`).
+  **No `.council-cleared`** — the Tier-0 hash spans all of `website/`+`mvp/`, i.e. the
+  commingled tree, so stamping it would falsely certify the other session's code.

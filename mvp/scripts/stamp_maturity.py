@@ -48,70 +48,69 @@ DATA = REPO / "website" / "data"
 SCHEMA = DATA / "_schema.json"
 
 # Tier legend (also written to _schema.json so the contract is self-describing).
+# MEDALLION tiers (user, 2026-06-14): "rename all our data sources to bronze /
+# silver / gold". gold = curated/verified first-party AND accepted in production;
+# silver = first-party but pending review; bronze = raw / inspection / not yet
+# promoted to production (the former editor + derived + reference + raw all read
+# as un-promoted). `delete` is NOT a medallion quality tier — it is an orthogonal
+# lifecycle flag (staged for removal), kept so the Delete review-pen still works.
 TIERS = OrderedDict([
-    ("gold", "Curated, reviewed, first-party, final. Locked — unlock to edit."),
-    ("silver", "Curated first-party, pending review (text / confirmation / placeholder-real). Locked."),
-    ("editor", "First-party editor scratch (drawn / seed). Unlocked."),
-    ("derived", "Machine-computed reference (not hand-edited). Unlocked."),
-    ("reference", "External raw context we trace against but don't own. Unlocked."),
+    ("gold", "Curated/verified first-party, accepted in production. Locked — unlock to edit."),
+    ("silver", "First-party but pending review (text / confirmation / placeholder-real). Locked."),
+    ("bronze", "Raw / inspection / not yet promoted to production. Unlocked."),
     ("delete", "Staged for removal — sits in the Delete group until the actual delete is approved. Unlocked."),
 ])
 LOCKED_TIERS = {"gold", "silver"}
 
 # filename -> (tier, group display name). The group name is the editor grouping
 # this file lives under — "the group maps to the file it lives in" (user, 2026-06-05).
+# filename -> (medallion tier, group display name). Tier = "did it make it to
+# production?" — gold = curated/verified AND a layer the read viewer renders;
+# silver = first-party pending review; bronze = not in production / not promoted.
+# A FILE tier is the collection's overall state; a mixed file (e.g. buildings:
+# 5 gold + Shower House bronze; cemeteries: Ellis gold + 3 bronze) carries the
+# exception at the per-FEATURE `maturity` field (see set_feature_maturity.py).
 MATURITY = OrderedDict([
-    # -- gold: the only gold dataset today is the merged trail network --
-    ("aop_trail_network.geojson",            ("gold",      "AOP trail network")),
+    # -- gold: verified first-party + accepted production layers (user, 2026-06-14:
+    #    "derived/reference layers that render in production are gold") --
+    ("aop_trail_network.geojson",            ("gold",   "AOP trail network")),
+    ("aop_buildings.geojson",                ("gold",   "Park buildings")),  # Shower House is per-feature bronze
+    ("aop_waypoints_traced.geojson",         ("gold",   "Camp waypoints / POIs")),
+    ("aop_landcover.geojson",                ("gold",   "Land cover (NAIP)")),
+    ("aop_landcover_9patch.geojson",         ("gold",   "Land cover — 9-patch")),
+    ("aop_contours.geojson",                 ("gold",   "Lidar contours")),
+    ("aop_activity_hotspots.geojson",        ("gold",   "Activity hotspots (GPX dwell)")),
+    ("aop_roads.geojson",                    ("gold",   "Asphalt roads (USGS National Map)")),
+    ("aop_water.geojson",                    ("gold",   "Hydrography (USGS NHD)")),
     # -- silver: real first-party, pending review --
-    ("aop_visitor_context_callouts.geojson", ("silver",    "Visitor context callouts")),
-    ("aop_buildings.geojson",                ("silver",    "Park buildings")),
-    ("publish.geojson",                      ("silver",    "Publishable (boundary · trails · trailheads)")),
-    # -- editor scratch (first-party, unlocked) --
-    # (aop_brand_logos.geojson retired 2026-06-05: the AOP + Rock Warblers logos
-    #  were merged into aop_visitor_context_callouts.geojson as kind=brand_logo
-    #  point features. They inherit that file's silver _meta. The "Map editor"
-    #  panel group retired 2026-06-05; the Brand logos node moved up to Silver and
-    #  now tags itself silver to match the file it lives in.)
-    # These two editor-scratch files have no panel node anymore (the draw groups +
-    #  Drawn POIs retired with the Map editor group); the host map still owns the
-    #  sources. Left at editor tier — not staged for delete (user said "retiring,"
-    #  not "delete"; nothing of value to stage — userFeatures is empty, editor-poi
-    #  holds 1 seed POI).
-    ("aop_editor_seed_pois.geojson",         ("editor",    "Drawn POIs (seed) — retired panel group")),
-    ("aop_user_features.geojson",            ("editor",    "Drawn features — retired panel group")),
-    # -- derived: machine outputs, never gold (do-not-gold list) --
-    ("aop_landcover.geojson",                ("derived",   "Land cover (NAIP)")),
-    ("aop_landcover_9patch.geojson",         ("derived",   "Land cover — 9-patch")),
-    ("aop_contours.geojson",                 ("derived",   "Lidar contours")),
-    ("aop_activity_hotspots.geojson",        ("derived",   "Activity hotspots (GPX dwell)")),
-    # -- delete: staged for removal (user, 2026-06-05). Whole-file members only.
+    ("aop_visitor_context_callouts.geojson", ("silver", "Visitor context callouts")),
+    ("publish.geojson",                      ("silver", "Publishable (boundary · trails · trailheads)")),
+    # -- bronze: raw / inspection / not yet promoted to production --
+    ("aop_buildings_traced.geojson",         ("bronze", "Park buildings (raw hand-trace source)")),
+    ("aop_editor_seed_pois.geojson",         ("bronze", "Drawn POIs (seed) — retired panel group")),
+    ("aop_user_features.geojson",            ("bronze", "Drawn features — retired panel group")),
+    ("aop_9_patch.geojson",                  ("bronze", "9-patch acquisition AOI")),
+    ("aop_cemeteries.geojson",               ("bronze", "Cemeteries (TN Comptroller)")),  # Ellis is per-feature gold
+    ("aop_lidar_tiles.geojson",              ("bronze", "Lidar tile index (USGS 3DEP)")),
+    ("osm_aop_9patch.geojson",               ("bronze", "OSM cluster")),
+    ("osm_aop_named.geojson",                ("bronze", "OSM named landmarks")),
+    ("sfwda_numbered_trails.geojson",        ("bronze", "SFWDA numbered trails (extract)")),
+    ("sfwda_traced_markers.geojson",         ("bronze", "SFWDA traced markers (extract)")),
+    ("sfwda_trails_edited.geojson",          ("bronze", "SFWDA trails (edited extract)")),
+    # -- delete: staged for removal (lifecycle flag, orthogonal to the medallion).
     #  Springs (part of aop_water.geojson) and OSM park polygon (part of
     #  osm_aop_9patch.geojson) are ALSO in the Delete panel group, but their files
-    #  carry layers that stay, so the files keep their reference tier — those are
+    #  carry layers that stay, so the files keep their own tier — those are
     #  panel-only moves until the file is split. --
     ("aop_synthetic_activity_hotspots.geojson", ("delete", "Simulated Saturday activity (staged for removal)")),
     ("aop_synthetic_activity_tracks.geojson",   ("delete", "Simulated Saturday activity (staged for removal)")),
-    ("sfwda_traced_trails.geojson",          ("delete",    "SFWDA traced trails (staged for removal)")),
-    # -- reference: external raw context (do-not-gold list) --
-    ("aop_9_patch.geojson",                  ("reference", "9-patch acquisition AOI")),
-    ("aop_cemeteries.geojson",               ("reference", "Cemeteries (TN Comptroller)")),
-    ("aop_lidar_tiles.geojson",              ("reference", "Lidar tile index (USGS 3DEP)")),
-    ("aop_roads.geojson",                    ("reference", "Asphalt roads (USGS National Map)")),
-    ("aop_water.geojson",                    ("reference", "Hydrography (USGS NHD)")),
-    ("osm_aop_9patch.geojson",               ("reference", "OSM cluster")),
-    ("osm_aop_named.geojson",                ("reference", "OSM named landmarks")),
-    ("sfwda_numbered_trails.geojson",        ("reference", "SFWDA numbered trails (extract)")),
-    ("sfwda_traced_markers.geojson",         ("reference", "SFWDA traced markers (extract)")),
-    ("sfwda_trails_edited.geojson",          ("reference", "SFWDA trails (edited extract)")),
+    ("sfwda_traced_trails.geojson",          ("delete", "SFWDA traced trails (staged for removal)")),
 ])
 
 NOTES = {
-    "gold": "gold — reviewed first-party; locked, unlock to edit",
+    "gold": "gold — verified first-party, accepted in production; locked, unlock to edit",
     "silver": "silver — pending review; locked, unlock to edit",
-    "editor": "editor scratch — first-party, unlocked",
-    "derived": "derived — machine output, not hand-edited",
-    "reference": "reference — external raw context",
+    "bronze": "bronze — raw / inspection / not yet promoted to production; unlocked",
     "delete": "delete — staged for removal; in the Delete group until the actual delete is approved",
 }
 

@@ -44,16 +44,37 @@ mixes three different things. They are orthogonal:
 `source` is **not** a rung on the maturity ladder — it is the provenance axis.
 A `gold` file is still made of features that each carry their own `source`.
 
-## The tiers
+## The tiers — MEDALLION (user, 2026-06-14)
 
-| Tier | Meaning | Locked? | Editor section |
-| --- | --- | --- | --- |
-| `gold` | Curated, reviewed, first-party, final. | yes | **Gold data** |
-| `silver` | Real first-party but pending review (text tightening, AOP confirmation, or placeholder-real data). | yes | **Silver — pending review** |
-| `editor` | First-party editor scratch (drawn / seed). | no | _(retired 2026-06-05 — the Map editor panel group is gone; these files keep an editor `_meta` but have no panel node)_ |
-| `derived` | Machine-computed reference (you don't hand-edit a contour line). | no | Derived layers |
-| `reference` | External raw context we trace against but don't own. | no | Source / External reference |
-| `delete` | Staged for removal — held in the Delete group until the actual delete is approved (NOT auto-deleted). | no | **Delete — staged for removal** |
+> *"rename all our data sources to bronze / silver / gold. ellis cemetery made it
+> from bronze to gold. no other cemeteries did. same with park buildings — only 5
+> made it. others did not."*
+
+The earlier 6-rung ladder (`gold/silver/editor/derived/reference`) collapsed into
+the industry-standard **medallion**: a promotion pipeline where data starts
+**bronze** and earns **silver** then **gold** as it's curated and verified.
+`delete` survives as an **orthogonal lifecycle flag** (the removal pen), NOT a
+quality rung. The decisive question for a tier is *"did it make it to production?"*
+
+| Tier | Meaning | Locked? |
+| --- | --- | --- |
+| `gold` | Curated/verified first-party AND accepted in production (incl. the machine-derived layers the read viewer renders — land cover, contours, water, roads — per the user's 2026-06-14 call). | yes |
+| `silver` | First-party but pending review (text tightening, AOP confirmation, or placeholder-real data). | yes |
+| `bronze` | Raw / inspection / not yet promoted to production. Absorbs the former editor + derived + reference + raw rungs. | no |
+| `delete` | Lifecycle flag (not a medallion rung): staged for removal — held in the Delete group until the actual delete is approved (NOT auto-deleted). | no |
+
+A FILE tier is the collection's overall state; a **mixed** file carries the
+exception at the per-FEATURE `maturity` field, stamped by
+`mvp/scripts/set_feature_maturity.py`: **Ellis Cemetery** features = gold while
+Tate/Bible/Gilliam = bronze; the **5 ORNL park-building footprints** = gold while
+the raw-trace **Shower House** = bronze.
+
+**Production guard (task 4):** `website/js/viewer_core.js` `auditProductionTiers()`
+runs once on map load and `console.warn`s the developer when any production-rendered
+source carries bronze/silver data (currently: Park buildings → Shower House bronze;
+Visitor context callouts → silver; Publishable layers → silver). Per
+[[no-limiting-code-mvp]] it NEVER hides/filters — it only surfaces "production
+should be gold" so leaks are visible, not enforced.
 
 "Locked, not un-editable" (the user's words): a locked tier renders its existing
 features read-only until you click the lock open. **Adding** a new feature is
@@ -61,36 +82,41 @@ never lock-gated — a new draw lands editable even inside a locked layer (the l
 protects existing curated data, not your new authoring). So "any gold file can
 make new items" and "unlock first to edit" coexist.
 
-## Current sort (2026-06-05, after the group reorganization)
+## Current sort (2026-06-14, medallion re-tier — was the 2026-06-05 6-rung sort)
 
-Stamped by `mvp/scripts/stamp_maturity.py` (the `MATURITY` map is the source of
-truth; mirror any change into the `panel.js` node `maturity:` tags). The user
-reorganized the right-panel groups on 2026-06-05 — the moves are folded in below.
+Stamped by `mvp/scripts/stamp_maturity.py` (file `_meta`; the `MATURITY` map is the
+source of truth) + `mvp/scripts/set_feature_maturity.py` (per-feature for mixed
+files). Counts: **gold=9, silver=2, bronze=11, delete=3**.
 
-- **gold (1):** `aop_trail_network.geojson` — the merged trail network. ~120
-  edges; still may need edits.
-- **silver (3 files):** `aop_visitor_context_callouts.geojson` (region callouts —
-  pending text review; also holds the 2 brand-logo points), `aop_buildings.geojson`
-  (curated park buildings), `publish.geojson` (boundary · submitted trails ·
-  trailheads). The **Silver panel group** additionally shows two nodes relocated
-  here on 2026-06-05: **Brand logos** (the callout file's logo points — chip now
-  reads Silver, matching the file) and **SFWDA paper trail map** (a raster overlay
-  with no geojson `_meta`; node-tagged `silver`).
-- **editor (2):** `aop_editor_seed_pois.geojson` (1 seed POI),
-  `aop_user_features.geojson` (empty). The **Map editor panel group RETIRED
-  2026-06-05** — the three draw groups (Points / Lines / Polygons) and Drawn POIs
-  were dropped. These files keep their editor `_meta` and the host map still owns
-  the sources, but they have no panel node. (The former `aop_brand_logos.geojson`
-  was merged into the silver callout file on 2026-06-05 as `kind=brand_logo`
-  points; that node now lives in Silver.)
-- **derived (4):** land cover (×2), contours, **activity hotspots** (real
-  GPX-dwell — moved into Derived from the old User-submitted group 2026-06-05).
-- **reference (10):** 9-patch, **cemeteries** (now shown in the External-reference
-  panel group, moved from Source layers 2026-06-05), lidar tiles, roads, water,
-  OSM (×2), SFWDA extracts (numbered / traced-markers / edited).
+- **gold (9):** `aop_trail_network.geojson`; `aop_buildings.geojson` (5 ORNL
+  footprints — Shower House is per-feature **bronze**); `aop_waypoints_traced.geojson`
+  (camp POIs incl. the #firepit tag); and the accepted machine-derived production
+  layers the read viewer renders — `aop_landcover.geojson`, `aop_landcover_9patch.geojson`,
+  `aop_contours.geojson`, `aop_activity_hotspots.geojson`, `aop_roads.geojson`,
+  `aop_water.geojson`. (User 2026-06-14: derived/reference layers that render in
+  production are gold.)
+- **silver (2):** `aop_visitor_context_callouts.geojson` (region callouts pending
+  text review; also holds the 2 brand-logo points), `publish.geojson` (boundary ·
+  trails · trailheads, pending).
+- **bronze (11):** `aop_buildings_traced.geojson` (raw trace source),
+  `aop_editor_seed_pois.geojson`, `aop_user_features.geojson`, `aop_9_patch.geojson`,
+  `aop_cemeteries.geojson` (**Ellis is per-feature gold**; Tate/Bible/Gilliam bronze),
+  `aop_lidar_tiles.geojson`, `osm_aop_9patch.geojson`, `osm_aop_named.geojson`,
+  `sfwda_numbered_trails.geojson`, `sfwda_traced_markers.geojson`,
+  `sfwda_trails_edited.geojson`. (SFWDA paper raster has no geojson `_meta`;
+  `panel.js` node retag silver→bronze is owed — see Deferred.)
 - **delete (3):** `aop_synthetic_activity_hotspots.geojson` +
   `aop_synthetic_activity_tracks.geojson` (the simulated-Saturday pair) and
-  `sfwda_traced_trails.geojson`. Staged for removal in the **Delete** panel group.
+  `sfwda_traced_trails.geojson`. Staged for removal in the **Delete** panel group
+  (lifecycle flag, not a medallion rung).
+
+**Editor (`panel.js`) re-group owed.** The editor tree still uses the pre-medallion
+group layout (Gold / Silver / Derived / Reference / Delete sections with hardcoded
+node `maturity:` tags). The chip renderer now knows `bronze` (`MATURITY_LABEL`), but
+the buildings node (now gold) and SFWDA node (now bronze) still sit in their old
+groups, and there is no Bronze section. A full editor re-group to the 3 medallion
+buckets is deferred — the editor is a semi-retired surface and the read viewer +
+data + production alert (the user's actual asks) are done. Not blocking.
 
 **Delete group (user, 2026-06-05).** The user staged several do-NOT-gold layers
 for removal — but as a *review pen*, not an immediate delete (they'd asked to drop
@@ -120,7 +146,8 @@ rebake_canonical.py            # machine refresh from data/raw/ (wipes _meta)
 bake_panel_overrides.py        # human curation on top
 export_gold_trail_network.py   # trail gold block
 export_publish_geojson.sh      # ← going-gold bake from PostGIS core (slice 2+)
-stamp_maturity.py              # ← maturity stamp, last
+set_feature_maturity.py        # ← per-FEATURE medallion for mixed files (Ellis, Shower House)
+stamp_maturity.py              # ← per-FILE maturity stamp, last
 ```
 
 `rebake_canonical.py` now **carries a live `_meta` forward** (raw/ is pristine and

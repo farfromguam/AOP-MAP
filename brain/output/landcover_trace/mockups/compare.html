@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Land cover — non-park opacity options</title>
+<link href="/website/vendor/maplibre-gl.css" rel="stylesheet" />
+<script src="/website/vendor/maplibre-gl.js"></script>
+<style>
+  html,body{margin:0;height:100%;font:13px/1.45 -apple-system,Segoe UI,Roboto,sans-serif}
+  #map{position:absolute;inset:0}
+  #panel{position:absolute;top:12px;left:12px;z-index:2;background:#1d1c19e8;color:#eee;
+    backdrop-filter:blur(6px);border:1px solid #ffffff22;border-radius:11px;padding:13px 15px;
+    box-shadow:0 8px 24px #0008;width:260px}
+  #panel h1{font-size:13px;margin:0 0 2px}
+  #panel .sub{color:#cdd9bd;font-size:11px;margin-bottom:11px}
+  .lbl{font-size:11px;color:#bbb;margin:10px 0 5px;text-transform:uppercase;letter-spacing:.04em}
+  .opts{display:flex;flex-wrap:wrap;gap:6px}
+  .opts button{background:#2c2b27;color:#eee;border:1px solid #ffffff22;border-radius:7px;
+    padding:5px 9px;cursor:pointer;font-size:12px;min-width:42px}
+  .opts button.on{background:#cdd9bd;border-color:#cdd9bd;color:#222;font-weight:600}
+  input[type=range]{width:100%;margin-top:8px}
+  .read{margin-top:10px;font-size:12px}
+  .read b{color:#d1d2b8}
+  .sat{margin-top:12px;display:flex;gap:8px;align-items:center}
+  .sat button{background:#2c2b27;color:#eee;border:1px solid #ffffff22;border-radius:7px;padding:5px 10px;cursor:pointer}
+  .sat button.on{background:#5b7a4a;border-color:#5b7a4a;color:#fff}
+  .hint{color:#8b8b85;font-size:11px;margin-top:12px}
+</style></head>
+<body>
+<div id="map"></div>
+<div id="panel">
+  <h1>Land cover — non-park opacity</h1>
+  <div class="sub">Park area stays solid · #D1D2B8</div>
+  <div class="lbl">Non-park (context) opacity</div>
+  <div class="opts" id="opts"></div>
+  <input id="slider" type="range" min="30" max="100" value="85">
+  <div class="read">Non-park <b id="npv">85%</b> · Park <b>100%</b></div>
+  <div class="sat"><span>Backdrop:</span>
+    <button id="bPaper" class="on">Paper</button><button id="bSat">Satellite</button></div>
+  <div class="hint">No border — the opacity step alone separates park from context.
+    Click a preset or drag. Tell me the % you like.</div>
+</div>
+<script>
+const GREEN='#D1D2B8';
+const CORNERS=[[-85.78306101658708,35.11860156121478],[-85.71621367216926,35.11791191683665],[-85.71701963200547,35.06647816589451],[-85.78382503563897,35.06716650321733]];
+const BOUNDS=[[-85.78382503563897,35.06647816589451],[-85.71621367216926,35.11860156121478]];
+const PRESETS=[100,95,90,85,80,75,70,60];
+const map=new maplibregl.Map({container:'map',style:{version:8,sources:{},layers:[
+  {id:'bg',type:'background',paint:{'background-color':'#e7ddc4'}}
+]},bounds:BOUNDS,fitBoundsOptions:{padding:24},attributionControl:false});
+let np=0.85;
+map.on('load',()=>{
+  map.addSource('sat',{type:'image',url:'/brain/output/landcover_trace/satellite_9patch.jpg',coordinates:CORNERS});
+  map.addLayer({id:'sat',type:'raster',source:'sat',layout:{visibility:'none'},paint:{'raster-opacity':1}});
+  map.addSource('np',{type:'geojson',data:'/website/data/aop_landcover_9patch.geojson'});
+  map.addSource('pk',{type:'geojson',data:'/website/data/aop_landcover.geojson'});
+  // non-park (full AOI context), variable opacity, NO border. fill-antialias:false
+  // so the grid-subdivided pieces tile seamlessly at <100% (no opacity seams).
+  map.addLayer({id:'veg-np',type:'fill',source:'np',filter:['==',['geometry-type'],'Polygon'],
+    paint:{'fill-color':GREEN,'fill-opacity':np,'fill-antialias':false}});
+  // park area, solid, drawn on top
+  map.addLayer({id:'veg-pk',type:'fill',source:'pk',filter:['==',['geometry-type'],'Polygon'],
+    paint:{'fill-color':GREEN,'fill-opacity':1,'fill-antialias':false}});
+});
+const optsEl=document.getElementById('opts'), slider=document.getElementById('slider'), npv=document.getElementById('npv');
+function setNp(v){ np=v/100; npv.textContent=v+'%'; slider.value=v;
+  if(map.getLayer('veg-np')) map.setPaintProperty('veg-np','fill-opacity',np);
+  [...optsEl.children].forEach(btn=>btn.classList.toggle('on', +btn.dataset.v===v)); }
+PRESETS.forEach(v=>{ const btn=document.createElement('button'); btn.textContent=v+'%'; btn.dataset.v=v;
+  btn.onclick=()=>setNp(v); optsEl.appendChild(btn); });
+slider.addEventListener('input',e=>setNp(+e.target.value));
+const bPaper=document.getElementById('bPaper'), bSat=document.getElementById('bSat');
+function backdrop(sat){ if(!map.getLayer('sat'))return;
+  map.setLayoutProperty('sat','visibility',sat?'visible':'none');
+  map.setPaintProperty('bg','background-color',sat?'#000':'#e7ddc4');
+  bSat.classList.toggle('on',sat); bPaper.classList.toggle('on',!sat); }
+bPaper.onclick=()=>backdrop(false); bSat.onclick=()=>backdrop(true);
+map.on('load',()=>setNp(85));
+</script>
+</body></html>

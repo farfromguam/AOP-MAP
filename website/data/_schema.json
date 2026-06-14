@@ -99,15 +99,15 @@
       "features": 9,
       "kind": "acquisition_aoi_cell",
       "machine": false,
-      "maturity": "reference",
+      "maturity": "bronze",
       "group": "9-patch acquisition AOI",
       "locked": false,
-      "maturity_note": "reference — external raw context",
+      "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked",
       "meta": {
-        "maturity": "reference",
+        "maturity": "bronze",
         "group": "9-patch acquisition AOI",
         "locked": false,
-        "maturity_note": "reference — external raw context"
+        "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked"
       },
       "collection_meta": {
         "name": "aop_9_patch_data_bounds"
@@ -117,15 +117,15 @@
       "features": 1,
       "kind": "(per-feature)",
       "machine": false,
-      "maturity": "editor",
+      "maturity": "bronze",
       "group": "Drawn POIs (seed) — retired panel group",
       "locked": false,
-      "maturity_note": "editor scratch — first-party, unlocked",
+      "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked",
       "meta": {
-        "maturity": "editor",
+        "maturity": "bronze",
         "group": "Drawn POIs (seed) — retired panel group",
         "locked": false,
-        "maturity_note": "editor scratch — first-party, unlocked"
+        "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked"
       },
       "collection_meta": {
         "schema": "aop_editor_seed_v1",
@@ -136,15 +136,15 @@
       "features": 24,
       "kind": "lidar_tile",
       "machine": false,
-      "maturity": "reference",
+      "maturity": "bronze",
       "group": "Lidar tile index (USGS 3DEP)",
       "locked": false,
-      "maturity_note": "reference — external raw context",
+      "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked",
       "meta": {
-        "maturity": "reference",
+        "maturity": "bronze",
         "group": "Lidar tile index (USGS 3DEP)",
         "locked": false,
-        "maturity_note": "reference — external raw context"
+        "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked"
       },
       "collection_meta": {
         "name": "aop_lidar_tiles",
@@ -165,45 +165,45 @@
       "features": 114,
       "kind": "road",
       "machine": false,
-      "maturity": "reference",
+      "maturity": "gold",
       "group": "Asphalt roads (USGS National Map)",
-      "locked": false,
-      "maturity_note": "reference — external raw context",
+      "locked": true,
+      "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit",
       "meta": {
-        "maturity": "reference",
+        "maturity": "gold",
         "group": "Asphalt roads (USGS National Map)",
-        "locked": false,
-        "maturity_note": "reference — external raw context"
+        "locked": true,
+        "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
       }
     },
     "aop_water.geojson": {
       "features": 94,
       "kind": "water",
       "machine": false,
-      "maturity": "reference",
+      "maturity": "gold",
       "group": "Hydrography (USGS NHD)",
-      "locked": false,
-      "maturity_note": "reference — external raw context",
+      "locked": true,
+      "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit",
       "meta": {
-        "maturity": "reference",
+        "maturity": "gold",
         "group": "Hydrography (USGS NHD)",
-        "locked": false,
-        "maturity_note": "reference — external raw context"
+        "locked": true,
+        "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
       }
     },
     "osm_aop_9patch.geojson": {
       "features": 71,
       "kind": "(per-feature)",
       "machine": false,
-      "maturity": "reference",
+      "maturity": "bronze",
       "group": "OSM cluster",
       "locked": false,
-      "maturity_note": "reference — external raw context",
+      "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked",
       "meta": {
-        "maturity": "reference",
+        "maturity": "bronze",
         "group": "OSM cluster",
         "locked": false,
-        "maturity_note": "reference — external raw context"
+        "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked"
       },
       "collection_meta": {
         "metadata": {
@@ -225,15 +225,15 @@
       "features": 5,
       "kind": "(per-feature)",
       "machine": false,
-      "maturity": "reference",
+      "maturity": "bronze",
       "group": "OSM named landmarks",
       "locked": false,
-      "maturity_note": "reference — external raw context",
+      "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked",
       "meta": {
-        "maturity": "reference",
+        "maturity": "bronze",
         "group": "OSM named landmarks",
         "locked": false,
-        "maturity_note": "reference — external raw context"
+        "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked"
       },
       "collection_meta": {
         "metadata": {
@@ -266,15 +266,15 @@
       "features": 124,
       "kind": "trail_marker",
       "machine": false,
-      "maturity": "reference",
+      "maturity": "bronze",
       "group": "SFWDA traced markers (extract)",
       "locked": false,
-      "maturity_note": "reference — external raw context",
+      "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked",
       "meta": {
-        "maturity": "reference",
+        "maturity": "bronze",
         "group": "SFWDA traced markers (extract)",
         "locked": false,
-        "maturity_note": "reference — external raw context"
+        "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked"
       },
       "collection_meta": {
         "name": "sfwda_paper_markers",
@@ -296,17 +296,17 @@
       "features": 67,
       "kind": "trail",
       "machine": false,
-      "maturity": "reference",
+      "maturity": "bronze",
       "group": "SFWDA numbered trails (extract)",
       "locked": false,
-      "maturity_note": "reference — external raw context",
+      "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked",
       "meta": {
         "about": "Contiguous numbered trails stitched from the SFWDA raster trace + hand-read markers. One feature per trail number. Numbers/positions provisional (2015 vintage). Built by build_numbered_trails.py.",
         "trails": 67,
-        "maturity": "reference",
+        "maturity": "bronze",
         "group": "SFWDA numbered trails (extract)",
         "locked": false,
-        "maturity_note": "reference — external raw context"
+        "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked"
       },
       "collection_meta": {
         "name": "sfwda_numbered_trails"
@@ -316,15 +316,15 @@
       "features": 120,
       "kind": "trail",
       "machine": false,
-      "maturity": "reference",
+      "maturity": "bronze",
       "group": "SFWDA trails (edited extract)",
       "locked": false,
-      "maturity_note": "reference — external raw context",
+      "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked",
       "meta": {
-        "maturity": "reference",
+        "maturity": "bronze",
         "group": "SFWDA trails (edited extract)",
         "locked": false,
-        "maturity_note": "reference — external raw context"
+        "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked"
       },
       "collection_meta": {
         "name": "sfwda_trails_edited"
@@ -341,18 +341,18 @@
         "status": "raw context",
         "last_checked": "2023 imagery / 2015 lidar"
       },
-      "maturity": "derived",
+      "maturity": "gold",
       "group": "Land cover (NAIP)",
-      "locked": false,
-      "maturity_note": "derived — machine output, not hand-edited",
+      "locked": true,
+      "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit",
       "meta": {
-        "maturity": "derived",
+        "maturity": "gold",
         "group": "Land cover (NAIP)",
-        "locked": false,
-        "maturity_note": "derived — machine output, not hand-edited"
+        "locked": true,
+        "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
       },
       "collection_meta": {
-        "name": "class_smooth",
+        "name": "vegetation",
         "xy_coordinate_resolution": 1e-06
       }
     },
@@ -367,18 +367,19 @@
         "status": "raw context",
         "last_checked": "2023 imagery / 2015 lidar"
       },
-      "maturity": "derived",
+      "maturity": "gold",
       "group": "Land cover — 9-patch",
-      "locked": false,
-      "maturity_note": "derived — machine output, not hand-edited",
+      "locked": true,
+      "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit",
       "meta": {
-        "maturity": "derived",
+        "maturity": "gold",
+        "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit",
+        "generated_from": "aop_landcover_trace.svg",
         "group": "Land cover — 9-patch",
-        "locked": false,
-        "maturity_note": "derived — machine output, not hand-edited"
+        "locked": true
       },
       "collection_meta": {
-        "name": "class_smooth",
+        "name": "vegetation",
         "xy_coordinate_resolution": 1e-06
       }
     },
@@ -393,15 +394,15 @@
         "status": "raw context",
         "last_checked": "2015 (DEM)"
       },
-      "maturity": "derived",
+      "maturity": "gold",
       "group": "Lidar contours",
-      "locked": false,
-      "maturity_note": "derived — machine output, not hand-edited",
+      "locked": true,
+      "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit",
       "meta": {
-        "maturity": "derived",
+        "maturity": "gold",
         "group": "Lidar contours",
-        "locked": false,
-        "maturity_note": "derived — machine output, not hand-edited"
+        "locked": true,
+        "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
       },
       "collection_meta": {
         "name": "contour",
@@ -424,15 +425,15 @@
         "permission": "internal",
         "status": "hold"
       },
-      "maturity": "derived",
+      "maturity": "gold",
       "group": "Activity hotspots (GPX dwell)",
-      "locked": false,
-      "maturity_note": "derived — machine output, not hand-edited",
+      "locked": true,
+      "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit",
       "meta": {
-        "maturity": "derived",
+        "maturity": "gold",
         "group": "Activity hotspots (GPX dwell)",
-        "locked": false,
-        "maturity_note": "derived — machine output, not hand-edited"
+        "locked": true,
+        "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
       },
       "collection_meta": {
         "name": "aop_activity_hotspots",
@@ -568,7 +569,7 @@
       "features": 5,
       "kind": "building",
       "machine": false,
-      "maturity": "silver",
+      "maturity": "gold",
       "collection_meta": {
         "_source": "FEMA USA Structures / ORNL",
         "_source_item": "https://www.arcgis.com/home/item.html?id=e9fc147eaeae4dcaa4e9ad9802c7b9c6",
@@ -601,33 +602,33 @@
         "_derived": "Curated AOP park buildings only: 3 public facilities (Pavilion, Farmhouse, Front Office) + 2 private-structure presence boxes (665, 889). The ~197 raw FEMA 9-patch context footprints were dropped 2026-06-03 per owner decision (derived layer = curated/published set). Footprints are drag-adjustable in the viewer; bake moves back with mvp/scripts/export_positioned_features.py."
       },
       "meta": {
-        "maturity": "silver",
+        "maturity": "gold",
         "group": "Park buildings",
         "locked": true,
-        "maturity_note": "silver — pending review; locked, unlock to edit"
+        "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
       },
       "group": "Park buildings",
       "locked": true,
-      "maturity_note": "silver — pending review; locked, unlock to edit"
+      "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
     },
     "aop_cemeteries.geojson": {
       "features": 8,
       "kind": "cemetery",
       "machine": false,
-      "maturity": "reference",
+      "maturity": "bronze",
       "collection_meta": {
         "_source": "Tennessee Comptroller of the Treasury — Marion County parcels (TN_County_Parcel_Map FeatureServer layer 35)",
         "_generated_by": "mvp/scripts/import_marion_cemeteries.py"
       },
       "meta": {
-        "maturity": "reference",
+        "maturity": "bronze",
         "group": "Cemeteries (TN Comptroller)",
         "locked": false,
-        "maturity_note": "reference — external raw context"
+        "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked"
       },
       "group": "Cemeteries (TN Comptroller)",
       "locked": false,
-      "maturity_note": "reference — external raw context"
+      "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked"
     },
     "aop_trail_network.geojson": {
       "features": 120,
@@ -648,12 +649,12 @@
           "#888888": "unknown"
         },
         "difficulty_band": "Easy 1-20 | Moderate 21-39 & 80-99 | Difficult 40-79 (park rating; onX may differ)",
-        "feature_count": 120,
+        "feature_count": 130,
         "difficulty_counts": {
           "easy": 27,
           "moderate": 48,
           "difficult": 41,
-          "road/none": 4
+          "road/none": 14
         },
         "color_counts": {
           "#1f9d3a": 27,
@@ -661,7 +662,7 @@
           "#111111": 41,
           "#f25e0d": 4
         },
-        "named": 100,
+        "named": 120,
         "numbered": 87,
         "property_schema": [
           "id",
@@ -673,16 +674,18 @@
           "source",
           "review_status"
         ],
-        "review_flags": [],
-        "generated_from": "aop_trail_network_2025_edited_10.svg round-trip; numbers/difficulty re-attached from markers",
+        "review_flags": [
+          "14 non-road trails still have no difficulty (grey): None, sfwda-15, sfwda-63, None, None, None, None, None, None, None, sfwda-68, sfwda-94, None, None"
+        ],
+        "generated_from": "aop_satellite_trace.svg (Affinity hand-trace) round-trip; numbers/difficulty re-attached from markers",
         "maturity": "gold",
         "group": "AOP trail network",
         "locked": true,
-        "maturity_note": "gold — reviewed first-party; locked, unlock to edit"
+        "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
       },
       "group": "AOP trail network",
       "locked": true,
-      "maturity_note": "gold — reviewed first-party; locked, unlock to edit"
+      "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
     },
     "aop_visitor_context_callouts.geojson": {
       "features": 4,
@@ -758,11 +761,9 @@
     }
   },
   "maturity_tiers": {
-    "gold": "Curated, reviewed, first-party, final. Locked — unlock to edit.",
-    "silver": "Curated first-party, pending review (text / confirmation / placeholder-real). Locked.",
-    "editor": "First-party editor scratch (drawn / seed). Unlocked.",
-    "derived": "Machine-computed reference (not hand-edited). Unlocked.",
-    "reference": "External raw context we trace against but don't own. Unlocked.",
+    "gold": "Curated/verified first-party, accepted in production. Locked — unlock to edit.",
+    "silver": "First-party but pending review (text / confirmation / placeholder-real). Locked.",
+    "bronze": "Raw / inspection / not yet promoted to production. Unlocked.",
     "delete": "Staged for removal — sits in the Delete group until the actual delete is approved. Unlocked."
   }
 }

@@ -21,6 +21,17 @@
         35.0907264
       ]
     },
+    "#firepit": {
+      "role": "firepit",
+      "label": "Firepit",
+      "source": "AOP satellite hand-trace (Affinity) — Firepit waypoint in aop_waypoints_traced.geojson.",
+      "map_label": "Firepit",
+      "confidence": "high",
+      "coordinates": [
+        -85.7482023,
+        35.090492
+      ]
+    },
     "#trails": {
       "role": "event_stage_start",
       "label": "Park trails",
@@ -149,7 +160,7 @@
       "sort_order": 180,
       "time_label": "Evening",
       "start_local": "19:00",
-      "location_tag": "#pavilion"
+      "location_tag": "#firepit"
     },
     {
       "id": "sat-fire",
