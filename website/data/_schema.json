@@ -92,7 +92,7 @@
     "raw_archive": "website/data/raw/ (pristine pre-rebake originals)",
     "machine_layers": "id + kind per feature (name/status crosswalked where a physical key exists); provenance is layer-level (below)",
     "sidecar_joins": "trail catalog + poi-index folded into name/description/facets at bake time (read live from website/data/, not raw/)",
-    "not_owned": "silver_publish.geojson is DB-baked by export_publish_geojson.sh and intentionally not re-baked here"
+    "not_owned": "gold_publish.geojson is DB-baked by export_publish_geojson.sh and intentionally not re-baked here"
   },
   "layers": {
     "bronze_aop_9_patch.geojson": {
@@ -687,11 +687,11 @@
       "locked": true,
       "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
     },
-    "silver_aop_visitor_context_callouts.geojson": {
+    "gold_aop_visitor_context_callouts.geojson": {
       "features": 4,
       "kind": "(per-feature)",
       "machine": false,
-      "maturity": "silver",
+      "maturity": "gold",
       "collection_meta": {
         "name": "aop_visitor_context_callouts",
         "_description": "Two planning callout areas for visitor support orientation around Adventure Off Road Park. These are cartographic annotations, not surveyed service-area boundaries. To bake drag-to-move positions back here so they survive a data reset: viewer right panel 'Export all' -> save JSON -> python3 mvp/scripts/export_positioned_features.py <that file>.",
@@ -735,29 +735,29 @@
         ]
       },
       "meta": {
-        "maturity": "silver",
+        "maturity": "gold",
         "group": "Visitor context callouts",
         "locked": true,
-        "maturity_note": "silver — pending review; locked, unlock to edit"
+        "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
       },
       "group": "Visitor context callouts",
       "locked": true,
-      "maturity_note": "silver — pending review; locked, unlock to edit"
+      "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
     },
-    "silver_publish.geojson": {
-      "features": 6,
+    "gold_publish.geojson": {
+      "features": 4,
       "kind": "(per-feature)",
       "machine": false,
-      "maturity": "silver",
+      "maturity": "gold",
       "meta": {
-        "maturity": "silver",
+        "maturity": "gold",
         "group": "Publishable (boundary · trails · trailheads)",
         "locked": true,
-        "maturity_note": "silver — pending review; locked, unlock to edit"
+        "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
       },
       "group": "Publishable (boundary · trails · trailheads)",
       "locked": true,
-      "maturity_note": "silver — pending review; locked, unlock to edit"
+      "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
     }
   },
   "maturity_tiers": {

@@ -32,7 +32,7 @@
 //   3. reconcile DATA_ASSETS below with `ls website/data/`
 // Shell HTML + copy JSON self-heal (stale-while-revalidate), so a missed bump is
 // less dangerous than before — but bulky GeoJSON only refreshes on a bump.
-const VERSION = 'v89'; // keep in sync with #appVersion in index.html
+const VERSION = 'v90'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
@@ -85,7 +85,7 @@ const SHELL_ASSETS = [
 // so these are fetched with allSettled rather than addAll. Whatever isn't here
 // (or fails) still gets cached the first time the app fetches it online.
 const DATA_ASSETS = [
-  './data/silver_publish.geojson',
+  './data/gold_publish.geojson',
   './data/aop_poi_index.json',
   './data/aop_trail_catalog.json',
   './data/gold_aop_trail_network.geojson',
@@ -100,7 +100,7 @@ const DATA_ASSETS = [
   './data/bronze_aop_lidar_tiles.geojson',
   './data/gold_aop_activity_hotspots.geojson',
   './data/delete_aop_synthetic_activity_hotspots.geojson',
-  './data/silver_aop_visitor_context_callouts.geojson',
+  './data/gold_aop_visitor_context_callouts.geojson',
   // Deliberately NOT precached (M13): gold_aop_contours.geojson (~14 MB) and
   // delete_aop_synthetic_activity_tracks.geojson (~1 MB) are the two heaviest layers and
   // both default OFF (showContours / showSyntheticActivity unchecked). Precaching
@@ -108,7 +108,7 @@ const DATA_ASSETS = [
   // weak field signal, for layers most installs never turn on. The cache-first
   // `/data/` fetch handler still caches each the first time it IS viewed online,
   // so "offline-after-once" holds for whoever actually enables them.
-  // (brand logos merged into silver_aop_visitor_context_callouts.geojson, 2026-06-05)
+  // (brand logos merged into gold_aop_visitor_context_callouts.geojson, 2026-06-05)
   './data/bronze_aop_editor_seed_pois.geojson',
   './data/aop_event_schedule.json',
   './data/aop_about.json',

@@ -29,7 +29,7 @@ importer stays in lock-step.
 Layers (top -> bottom):
   Satellite      the NAIP 2023 9-patch ortho (locked reference) [lock]
   Buildings      FEMA/ORNL in-park footprints (polygons)        [reference/edit]
-  Waypoints      named point POIs (pavilion, cemeteries)        [reference/edit]
+  Waypoints      named point POIs (pavilion, camp POIs)         [reference/edit]
   Gold Trails    the merged gold trail network, colour=difficulty [EDIT]
 
 Output: brain/output/illustrator_trace/aop_satellite_trace.svg
@@ -236,7 +236,7 @@ def main():
         return f'id="{eid}" inkscape:label="{lab}" serif:id="{lab}"', f'<title>{lab}</title>'
 
     # Gold trails -- each trail is ONE named <path> (Multi parts = subpaths) ----
-    trails = load("aop_trail_network.geojson")
+    trails = load("gold_aop_trail_network.geojson")
     trail_els = []
     for f in trails["features"]:
         g = f["geometry"]; p = f["properties"]
@@ -263,7 +263,7 @@ def main():
             f'd="{d}">{title}</path>')
 
     # Buildings -- each footprint is ONE named compound <path> -----------------
-    buildings = load("aop_buildings.geojson")
+    buildings = load("gold_aop_buildings.geojson")
     bldg_els = []
     for f in buildings["features"]:
         g = f["geometry"]; p = f["properties"]
@@ -281,9 +281,14 @@ def main():
         bldg_els.append(f'<path {attrs} class="building" d="{d}">{title}</path>')
 
     # Waypoints -- each POI is ONE named <circle> (deduped by name) ------------
-    wp_sources = [(load("publish.geojson"), lambda pr: pr.get("kind") == "poi"),
-                  (load("aop_cemeteries.geojson"), lambda pr: pr.get("geom_role") == "marker"),
-                  (load("aop_editor_seed_pois.geojson"), lambda pr: True)]
+    # Cemeteries are NOT a waypoint source: they live in their own (bronze)
+    # cemeteries dataset, not the camp-infrastructure trace. Ellis still appears
+    # here because it is a publish POI (gold_publish.geojson, kind="poi"); the
+    # off-park three (Tate/Bible/Gilliam) were cemetery-only, so dropping the
+    # cemeteries source removes them from the template. (User, 2026-06-14: "remove
+    # it from the export and the import ... I dont want it.")
+    wp_sources = [(load("gold_publish.geojson"), lambda pr: pr.get("kind") == "poi"),
+                  (load("bronze_aop_editor_seed_pois.geojson"), lambda pr: True)]
     seen = set(); wp_els = []
     for fc, keep in wp_sources:
         for f in fc["features"]:

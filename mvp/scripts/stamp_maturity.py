@@ -82,9 +82,9 @@ MATURITY = OrderedDict([
     ("aop_activity_hotspots.geojson",        ("gold",   "Activity hotspots (GPX dwell)")),
     ("aop_roads.geojson",                    ("gold",   "Asphalt roads (USGS National Map)")),
     ("aop_water.geojson",                    ("gold",   "Hydrography (USGS NHD)")),
-    # -- silver: real first-party, pending review --
-    ("aop_visitor_context_callouts.geojson", ("silver", "Visitor context callouts")),
-    ("publish.geojson",                      ("silver", "Publishable (boundary · trails · trailheads)")),
+    # -- gold: promoted from silver 2026-06-14 (user: context callouts + publish to gold) --
+    ("aop_visitor_context_callouts.geojson", ("gold",   "Visitor context callouts")),
+    ("publish.geojson",                      ("gold",   "Publishable (boundary · trails · trailheads)")),
     # -- bronze: raw / inspection / not yet promoted to production --
     ("aop_buildings_traced.geojson",         ("bronze", "Park buildings (raw hand-trace source)")),
     ("aop_editor_seed_pois.geojson",         ("bronze", "Drawn POIs (seed) — retired panel group")),

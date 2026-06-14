@@ -1432,7 +1432,7 @@
       "sample": null
     },
     {
-      "file": "silver_aop_visitor_context_callouts.geojson",
+      "file": "gold_aop_visitor_context_callouts.geojson",
       "bytes": 9197,
       "origin": "core-backed",
       "origin_note": "core.features WHERE layer='visitor'",
@@ -1485,9 +1485,9 @@
         "source_url": "https://adventureoffroadpark.com/",
         "attribution": "Adventure Off Road Park",
         "description": null,
-        "source_file": "silver_aop_visitor_context_callouts.geojson",
+        "source_file": "gold_aop_visitor_context_callouts.geojson",
         "last_checked": null,
-        "maturity": "silver"
+        "maturity": "gold"
       }
     },
     {
@@ -1665,13 +1665,13 @@
       }
     },
     {
-      "file": "silver_publish.geojson",
+      "file": "gold_publish.geojson",
       "bytes": 82329,
       "origin": "core-backed",
       "origin_note": "publish.features view (the one publish gate)",
       "client_layer": "publish (bounds + published map features)",
       "kind": "geojson",
-      "feature_count": 6,
+      "feature_count": 4,
       "geometry_types": {
         "LineString": 2,
         "MultiPolygon": 1,
@@ -1706,7 +1706,7 @@
         "permission": "publish",
         "description": "Observed ride evidence \u2014 recorded GPX of one Saturday afternoon at AOP. Drawn as published trail evidence; the real trail name, difficulty, and authority are still owed.",
         "hazard_type": null,
-        "maturity": "silver"
+        "maturity": "gold"
       }
     },
     {

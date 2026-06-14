@@ -86,18 +86,26 @@ make new items" and "unlock first to edit" coexist.
 
 Stamped by `mvp/scripts/stamp_maturity.py` (file `_meta`; the `MATURITY` map is the
 source of truth) + `mvp/scripts/set_feature_maturity.py` (per-feature for mixed
-files). Counts: **gold=9, silver=2, bronze=11, delete=3**.
+files). Counts: **gold=11, silver=0, bronze=11, delete=3**.
 
-- **gold (9):** `aop_trail_network.geojson`; `aop_buildings.geojson` (5 ORNL
-  footprints — Shower House is per-feature **bronze**); `aop_waypoints_traced.geojson`
-  (camp POIs incl. the #firepit tag); and the accepted machine-derived production
-  layers the read viewer renders — `aop_landcover.geojson`, `aop_landcover_9patch.geojson`,
-  `aop_contours.geojson`, `aop_activity_hotspots.geojson`, `aop_roads.geojson`,
-  `aop_water.geojson`. (User 2026-06-14: derived/reference layers that render in
-  production are gold.)
-- **silver (2):** `aop_visitor_context_callouts.geojson` (region callouts pending
-  text review; also holds the 2 brand-logo points), `publish.geojson` (boundary ·
-  trails · trailheads, pending).
+- **gold (11):** `aop_trail_network.geojson`; `aop_buildings.geojson` (5 ORNL
+  footprints — Shower House is per-feature **bronze**, now **starred** as a POI);
+  `aop_waypoints_traced.geojson` (camp POIs incl. the #firepit tag); the accepted
+  machine-derived production layers the read viewer renders — `aop_landcover.geojson`,
+  `aop_landcover_9patch.geojson`, `aop_contours.geojson`, `aop_activity_hotspots.geojson`,
+  `aop_roads.geojson`, `aop_water.geojson` (User 2026-06-14: derived/reference layers
+  that render in production are gold); and — **promoted from silver 2026-06-14 (v90)** —
+  `aop_visitor_context_callouts.geojson` (region callouts + the 2 brand-logo points) and
+  `publish.geojson` (boundary · trails · trailheads). The served files were renamed
+  `silver_* → gold_*` with their `_meta` + per-feature `maturity` re-stamped gold, and
+  the runtime/catalog references swept (viewer_core / main / panel / data_editor_map /
+  sw / `_schema.json` / `_data_manifest.json`). `auditProductionTiers()` is data-driven,
+  so the production-tier alert self-clears (only Shower House bronze remains flagged).
+- **silver (0):** both former silver files were promoted to gold (above). Owed: the
+  promotion edited the **served** `gold_publish.geojson`; `raw/publish.geojson` + the
+  PostGIS `publish` view still carry the 2 removed Saturday-segment trail_centerlines
+  + the de-duped Ellis POI, and do not yet carry the added Jackson Point — a re-bake
+  would re-introduce/drop those until the DB is curated.
 - **bronze (11):** `aop_buildings_traced.geojson` (raw trace source),
   `aop_editor_seed_pois.geojson`, `aop_user_features.geojson`, `aop_9_patch.geojson`,
   `aop_cemeteries.geojson` (**Ellis is per-feature gold**; Tate/Bible/Gilliam bronze),

@@ -83,7 +83,7 @@ object name to rename.
 | Satellite | `mvp/cache/imagery/naip_2023_9patch.tif` | NAIP 2023, 4-band, **EPSG:26916** (NAD83/UTM 16N), 3996×3742 px @ 1.525 m/px. Gitignored cache. |
 | Gold Trails | `website/data/aop_trail_network.geojson` | 120 LineStrings, `maturity:gold`, `color`+`difficulty`+`name`/`trail_number`. |
 | Buildings | `website/data/aop_buildings.geojson` | 5 in-park footprints (665, 889 Ellis Cove, Front Office, Farmhouse, Pavilion). |
-| Waypoints | `publish.geojson` POIs + `aop_cemeteries.geojson` markers + `aop_editor_seed_pois.geojson` | deduped by name → AOP Pavilion, Ellis/Tate/Bible/Gilliam Cemetery. |
+| Waypoints | `silver_publish.geojson` POIs + `bronze_aop_editor_seed_pois.geojson` | deduped by name → AOP Pavilion, Ellis Cemetery. **Cemeteries dropped 2026-06-14** (`aop_cemeteries.geojson` no longer a source); Ellis survives as a publish POI. Off-park Tate/Bible/Gilliam are bronze-only (`bronze_aop_cemeteries.geojson`). |
 
 ## Frame / projection (the load-bearing part)
 
@@ -217,6 +217,81 @@ two private Ellis Cove houses stay as the dark presence boxes (their data says "
 — presence only, not a destination"). No new data file (derived from the wired
 buildings). Cache bump `v85`→`v86`. **Verified on `:8001`:** 4/4 pins + 4/4 names
 render, 0 fatal errors, `node --check` clean (`_verify_facility_labels.png`).
+
+**Off-park cemeteries de-promoted from gold (2026-06-14, user: "off park
+cementaries should not have made it to gold. they need to be bronze. we got what
+we needed from the raw cementary data"):** the trace swept **all four** county
+cemeteries into the gold waypoints (line 86 sources them from
+`aop_cemeteries.geojson` markers), so the read viewer drew Tate, Bible, Gilliam,
+**and** Ellis — when only **Ellis** (the in-park inholding, the one
+`aop_inholding===true` feature) belongs on the published map. The three off-park
+cemeteries are *bronze* reference and already live in `bronze_aop_cemeteries.geojson`
+(`stamp_maturity.py` already models this: line 71 "cemeteries: Ellis gold + 3
+bronze", line 93 "Ellis is per-feature gold"). Fix: removed the Tate/Bible/Gilliam
+features from the served `gold_aop_waypoints_traced.geojson` (26→**23** features;
+Ellis kept, with its in-park description). **A `vNN` cache bump is OWED (the user's
+git gate, not the agent's — `completion_gate.md`):** the served data changed, so the
+SW will serve stale cached data until `sw.js` `VERSION` + `index.html` `#appVersion`
+are bumped `v89`→`v90` at commit time. (An earlier pass bumped them in the working
+tree; the council Warden pulled andon — the bump is the user's — so it was reverted to
+`v89` and left as this owed note.) Nothing lost — the three remain bronze in
+`bronze_aop_cemeteries.geojson`. **Verified by observation** (`/tmp/verify_cemetery_fix.py`
+on `:8001`, `/tmp/verify_cemetery_fix.png`): with the whole 9-patch framed (so an
+off-park marker would paint if present), `queryRenderedFeatures` on `aop-waypoints`
+returns cemetery-kind == `['Ellis Cemetery']`, zero stray Tate/Bible/Gilliam labels,
+0 console errors.
+
+**Durability gap CLOSED — cemeteries removed from the round-trip (2026-06-14, user:
+"remove it from the export and the import ... I dont want it. cleanup. we need to be
+able to edit the master ai sheet and re-upload as needed"):** the served-only fix
+above would have been undone by the next re-import (the trace SOURCE still carried all
+four). Now the pipeline itself is cemetery-free:
+- **`export_illustrator_trace.py`** — dropped `aop_cemeteries.geojson` as a waypoint
+  source entirely. Ellis still seeds in because it is *also* a publish POI
+  (`silver_publish.geojson`, `kind="poi"`, name "Ellis Cemetery"); Tate/Bible/Gilliam
+  were cemetery-only, so they no longer enter the template.
+  **Cross-session dependency (2026-06-14):** a concurrent session is promoting publish
+  silver→gold (`silver_publish.geojson`→`gold_publish.geojson`). This export references
+  the **HEAD** name (`silver_publish.geojson`) on purpose — not coupling to their
+  uncommitted rename. When that promotion commits, this one `load()` path must move to
+  `gold_publish.geojson`. (The import path — the actual re-upload workflow — does NOT
+  read publish, so it is unaffected.)
+- **`import_illustrator_trace.py`** — drops any waypoint whose name ends with
+  "Cemetery" **except** "Ellis Cemetery". Matched on NAME, not `data-kind`, because
+  Affinity strips `data-*` on export (so the kind tag is gone in the real master).
+- **Stale medallion paths fixed in both scripts** (the round-trip was broken
+  independently of cemeteries after the "medallion rename" commit `91a017e` renamed the
+  served files): export now reads `gold_aop_trail_network.geojson` /
+  `gold_aop_buildings.geojson` / `silver_publish.geojson` /
+  `bronze_aop_editor_seed_pois.geojson`; import reads+writes
+  `gold_aop_trail_network.geojson`, writes `gold_aop_waypoints_traced.geojson` and
+  `bronze_aop_buildings_traced.geojson`. So a re-upload now lands on the SERVED files.
+
+**Verified by observation (2026-06-14):** `python3 -m py_compile` clean on both
+scripts; ran the fixed import against the real Affinity master
+(`brain/import/trace_upload/aop_satellite_trace.svg --all`) — output: `trails: 130
+(120 carried, 10 new), buildings: 6, waypoints: 23 (dropped 3 off-park cemeteries:
+Tate Cemetery, Bible Cemetery, Gilliam Cemetery)`, Ellis kept. The served files were
+backed up first and **restored** after the run, so the working tree still holds only
+the Ellis-only served waypoints from the prior fix (no re-import output kept). `git
+status` shows exactly: the two scripts + `gold_aop_waypoints_traced.geojson` +
+`sw.js` + `index.html`.
+
+**Found while verifying — authored waypoint copy does NOT survive a re-import (owed,
+user's call):** the camp-waypoint **descriptions, `location_tag`s, and meaningful
+`kind`s** (Hot Rocks Comp Pad's RC-crawl note, Firepit `#firepit`, Ellis's "private
+inholding" blurb, cabin/rv-site/comp-pad kinds) are authored ONTO the served gold
+file, not stored in the SVG — so the re-import flattens every `kind` to `poi` and
+drops all descriptions. This is the same loss the *trails* avoid via provenance-carry
+(merge prior gold props by `data-fid`/name). To make "re-upload as needed" truly
+non-destructive, mirror that for waypoints: read the prior served
+`gold_aop_waypoints_traced.geojson`, carry `description`/`kind`/`location_tag`/`link_*`
+forward by name on import. Not done here (it is a separate enhancement, not part of
+the cemetery removal) — flagged so a re-upload isn't run blind. **Also still owed:**
+a re-imported file is written `indent=1` and without the `_meta` maturity block, so it
+needs a re-stamp (`stamp_maturity.py` — itself carrying stale un-prefixed keys from the
+medallion rename, a separate cleanup) before it matches the served compact+`_meta`
+shape.
 
 **Owed / next (left for the user's call):**
 - **10 new trails need names + difficulty** (currently grey / needs-review).

@@ -43,7 +43,7 @@
     return [[w - dx, s - dy], [e + dx, n + dy]];
   })(REGION_BOUNDS, BAND_PAD);
   // Tighter-than-region fallback for the Park camera preset, used until
-  // silver_publish.geojson's park parcel loads.
+  // gold_publish.geojson's park parcel loads.
   const PARK_BOUNDS_FALLBACK = [[-85.761008221, 35.084085624], [-85.739081159, 35.10100706]];
 
   // ── Map construction (main.js:123-166) ─────────────────────────────────
@@ -767,6 +767,14 @@
       const on = Boolean(preset.toggles[toggleId]);
       for (const id of layerIds) setLayerVisibility(id, on);
     }
+    // Location pins — the camp waypoints + facility name pins — are otherwise
+    // always-on, but they clutter the Trace and Satellite reads. Keep them to
+    // Park and Topo only (user, 2026-06-14: pins belong on the Topo navigational
+    // read, not on the Satellite imagery).
+    const pinsOn = presetId === 'park' || presetId === 'topo';
+    for (const id of ['aop-waypoints', 'aop-waypoints-labels', 'aop-facility-pin', 'aop-facility-labels']) {
+      setLayerVisibility(id, pinsOn);
+    }
     applyPaintState(preset.paints);
     presetButtons.forEach((button) => {
       button.classList.toggle('active', button.dataset.preset === presetId);
@@ -835,7 +843,13 @@
     const hasNum = num != null && String(num).trim() !== '';
     const name = props.name;
     const hasName = name != null && String(name).trim() !== '';
-    if (hasNum && hasName && String(name) !== String(num)) return `${num} ${name}`;
+    if (hasNum && hasName) {
+      const n = String(name).trim();
+      // Name already equals or leads with the number — don't double-prefix.
+      // (The data now stores "1 Launchpad" directly, not "Launchpad".)
+      if (n === String(num) || n.startsWith(String(num) + ' ')) return n;
+      return `${num} ${name}`;
+    }
     if (hasNum) return String(num);
     return hasName ? String(name) : '';
   }
@@ -2287,11 +2301,11 @@
     }
 
     // --- Visitor context callouts + brand logos (one file, split by kind) ---
-    // main.js:8599 / 9698 both read silver_aop_visitor_context_callouts.geojson; fetchJson
+    // main.js:8599 / 9698 both read gold_aop_visitor_context_callouts.geojson; fetchJson
     // memoizes so this is one request split two ways. The drag-to-move override
     // replay (applyPositionedFeatures) is editor machinery — not carried; the read
     // core draws the served (baked) geometry.
-    const calloutsBundle = await fetchJson('./data/silver_aop_visitor_context_callouts.geojson', 'Visitor context callouts missing');
+    const calloutsBundle = await fetchJson('./data/gold_aop_visitor_context_callouts.geojson', 'Visitor context callouts missing');
     const visitorContextData = calloutsBundle
       ? Object.assign({}, calloutsBundle, { features: calloutsBundle.features.filter((f) => (f.properties || {}).kind !== 'brand_logo') })
       : null;
@@ -2386,8 +2400,9 @@
       // people can read what's where (Front Office, Farmhouse, Pavilion, Shower
       // House). The footprint shows the shape; the pin + name says what it is. A
       // circle can't sit at a polygon centroid (it draws at every vertex), so derive
-      // a point from each facility's centroid. Always on, like the camp waypoints —
-      // key wayfinding; private structures (the dark presence boxes) get no pin.
+      // a point from each facility's centroid. Shown in Park + Topo only (gated
+      // out of Trace/Satellite with the camp waypoints — see applyPreset); private
+      // structures (the dark presence boxes) get no pin.
       const facilityPoints = {
         type: 'FeatureCollection',
         features: facilityFeatures
@@ -2470,7 +2485,7 @@
     // --- Hand-traced camp POIs / waypoints (Affinity satellite trace) ---
     // RV sites, cabins, firepit, entrances, etc. placed over the satellite and
     // re-imported (gold_aop_waypoints_traced.geojson, raw zone). Named point markers,
-    // shown in every preset so the camp infrastructure always reads.
+    // shown in Park + Topo (gated out of Trace/Satellite — see applyPreset).
     const aopWaypointsData = await fetchJson('./data/gold_aop_waypoints_traced.geojson', 'Camp waypoints');
     if (aopWaypointsData && aopWaypointsData.features && aopWaypointsData.features.length) {
       map.addSource('aop-waypoints', { type: 'geojson', data: aopWaypointsData });
@@ -2490,8 +2505,8 @@
         },
         paint: { 'text-color': '#10243a', 'text-halo-color': '#ffffff', 'text-halo-width': 1.6 }
       });
-      // Make the camp POIs searchable. They're always-on (not preset-gated), so
-      // the landing layer-set just keeps them visible. Kind comes off the feature
+      // Make the camp POIs searchable. A search match re-shows them via the
+      // landing layer-set even from Trace/Satellite. Kind comes off the feature
       // (comp pad, cabin, rv site, …) so the result tag reads better than "poi".
       indexFeatures(
         aopWaypointsData,
@@ -2506,7 +2521,7 @@
     // not carried here.
     let publishData;
     try {
-      const response = await fetch('./data/silver_publish.geojson');
+      const response = await fetch('./data/gold_publish.geojson');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       publishData = await response.json();
     } catch (error) {

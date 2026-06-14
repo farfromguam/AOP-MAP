@@ -5,7 +5,7 @@ gold_*"), and sweep the runtime references so nothing 404s.
 
   aop_trail_network.geojson      -> gold_aop_trail_network.geojson
   aop_cemeteries.geojson         -> bronze_aop_cemeteries.geojson
-  publish.geojson                -> silver_publish.geojson
+  publish.geojson                -> gold_publish.geojson
   aop_synthetic_activity_*.geojson -> delete_aop_synthetic_activity_*.geojson
 
 Tier per file is the single source of truth in stamp_maturity.MATURITY (imported,

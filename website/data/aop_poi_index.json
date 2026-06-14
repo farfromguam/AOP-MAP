@@ -50,18 +50,6 @@
       "revisit_note": null
     },
     {
-      "group": "trails",
-      "match": { "source": "publish", "layer": "trail_centerlines", "name": "Saturday Afternoon Activity (segment 1)" },
-      "blurb": "Observed ride evidence — recorded GPX of one Saturday afternoon at AOP. Drawn as published trail evidence; the real trail name, difficulty, and authority are still owed.",
-      "revisit_note": "Promote to a real trail row once the SFWDA numbered-trail-name research lands (see brain/tasks/01_mvp/_done/community_trails_import.md)."
-    },
-    {
-      "group": "trails",
-      "match": { "source": "publish", "layer": "trail_centerlines", "name": "Saturday Afternoon Activity (segment 2)" },
-      "blurb": "Second segment of the recorded Saturday-afternoon ride, running from the trailhead toward the pavilion. Same evidence-only status as segment 1.",
-      "revisit_note": "Promote to a real trail row once SFWDA numbered trail names land."
-    },
-    {
       "group": "cemeteries",
       "match": { "source": "cemeteries", "geom_role": "marker", "parcel_id": "110 008.04" },
       "blurb": "Ellis Cemetery — the AOP inholding. A 0.12-acre family cemetery carved out of the working envelope (the interior ring in the park boundary). Treat as private; stay clear of the parcel.",

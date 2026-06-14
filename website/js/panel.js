@@ -367,9 +367,9 @@
   //   image     — a single georeferenced image (4 corner coords)
   //   images    — bitmap icons to addImage() before the layers are added
   const MAP_DATA = [
-    // ---- Publishable (silver_publish.geojson: boundaries + trails + trailheads) ----
+    // ---- Publishable (gold_publish.geojson: boundaries + trails + trailheads) ----
     {
-      source: 'publish-data', url: './data/silver_publish.geojson',
+      source: 'publish-data', url: './data/gold_publish.geojson',
       layers: [
         { id: 'publish-boundary-fill', type: 'fill', filter: ['==', ['get', 'layer'], 'park_boundaries'], paint: { 'fill-color': '#d8c8a2', 'fill-opacity': 0.10 } },
         { id: 'publish-boundaries', type: 'line', filter: ['==', ['get', 'layer'], 'park_boundaries'], paint: { 'line-color': '#6e5a3c', 'line-width': 2.5 } },
@@ -537,7 +537,7 @@
       // Callout polygons + brand-logo points share one file (logos merged
       // 2026-06-05). This source takes only the callouts; the brand-logos
       // source below takes only the logos. Same split as host main.js.
-      source: 'visitor-context', url: './data/silver_aop_visitor_context_callouts.geojson',
+      source: 'visitor-context', url: './data/gold_aop_visitor_context_callouts.geojson',
       transform: (fc) => Object.assign({}, fc, { features: (fc.features || []).filter((f) => (f.properties || {}).kind !== 'brand_logo') }),
       layers: [
         { id: 'visitor-context-fill', type: 'fill', paint: { 'fill-color': '#d8b173', 'fill-opacity': 0.18 } },
@@ -546,9 +546,9 @@
       ]
     },
     {
-      // Brand logos now live in silver_aop_visitor_context_callouts.geojson as
+      // Brand logos now live in gold_aop_visitor_context_callouts.geojson as
       // kind=brand_logo points; pull just those into this icon source.
-      source: 'brand-logos', url: './data/silver_aop_visitor_context_callouts.geojson',
+      source: 'brand-logos', url: './data/gold_aop_visitor_context_callouts.geojson',
       transform: (fc) => Object.assign({}, fc, { features: (fc.features || []).filter((f) => (f.properties || {}).kind === 'brand_logo') }),
       images: [{ name: 'brand-aop-badge', url: './assets/branding/aop-badge.png' }, { name: 'brand-rock-warblers', url: './assets/branding/rock-warblers.jpg' }],
       layers: [
@@ -702,7 +702,7 @@
           { id: 'eventSchedule', kind: 'layer', label: 'Event schedule POIs', maturity: 'silver', visible: false, mapLayers: ['event-session-routes', 'event-route-labels', 'event-anchor-points', 'event-anchor-labels'] },
           {
             // Brand logos (AOP badge + Rock Warblers) live in the silver
-            // silver_aop_visitor_context_callouts.geojson as kind=brand_logo points.
+            // gold_aop_visitor_context_callouts.geojson as kind=brand_logo points.
             // Moved into the Silver group 2026-06-05 (was Map editor; that group
             // retired). The chip now reads Silver, matching the file it lives in.
             id: 'brandLogos', kind: 'layer', label: 'Brand logos (AOP & Rock Warblers)', maturity: 'silver', visible: true, expanded: false, geom: 'Point',

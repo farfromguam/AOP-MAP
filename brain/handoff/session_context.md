@@ -28,6 +28,53 @@ which is the git gate. Receipt: `brain/output/council/recent_batch_retro_2026061
 The 2026-06-14 session-by-session changelog is archived →
 `session_context_20260614.md`. Headline state for the next session:
 
+- **Gold-promotion + pins + publish-curation batch — v90 (UNCOMMITTED).** A 9-item
+  user batch: (1) location pins (camp waypoints + facility pins) gated to **Park +
+  Topo only** (out of Trace/Satellite) in `viewer_core.js` `applyPreset`; (2/8)
+  Saturday-segment trail_centerlines removed from publish + their `aop_poi_index.json`
+  orphans; (3) **Shower House starred** (`highlight:true`, stays bronze); (4) the 20
+  `sfwda-*` placeholder trail names set to null; (5) **Launchpad → "1 Launchpad"** (data
+  + a `trailDisplayName` no-double-prefix guard); (6/7) both remaining **silver files
+  promoted to gold** — `silver_publish.geojson`→`gold_publish.geojson` and
+  `silver_aop_visitor_context_callouts.geojson`→`gold_aop_visitor_context_callouts.geojson`
+  (rename + `_meta`/per-feature re-stamp + reference sweep + `stamp_maturity.MATURITY`),
+  with the duplicate Ellis **POI** dropped (inholding parcel kept); (9) **Jackson Point**
+  (OSM peak) added to the gold publish group. **This batch performs the `v89→v90` bump**
+  (the working tree was actually at v89 — index.html had been reverted mid-session — so
+  the one bump covers the pending cemetery fix below AND this batch). **Pins directive
+  REVERSED by the user 2026-06-14** (verbatim: *"the pins show up on satellite but not
+  topo. this is backwards."*): the original "no pins in trace or topo" (→ Park+Satellite,
+  first shipped + verified) became **Park+Topo** (`viewer_core.js:774` `pinsOn = park ||
+  topo`; pins on the Topo navigational read, off the Satellite imagery). Code + verifier
+  + card all agree on Park+Topo; re-verified by observation 20/20 (the only flake is the
+  external `tnmap.tn.gov` satellite tile in headless). Pin-flip cleared by a core-three
+  council (`brain/output/council/pins_topo_not_satellite_20260614.md`). Card:
+  `tasks/01_mvp/gold_promotion_pins_curation_v90.md` (RESOLVED → SHIPPED). **Durability gap:**
+  `raw/publish.geojson` + PostGIS `publish` view still carry the removed Saturday
+  segments + Ellis POI and lack Jackson Point (served-only curation; DB owed).
+
+- **Off-park cemeteries removed from gold waypoints + the trace round-trip
+  (UNCOMMITTED; the `v89`→`v90` bump is now PERFORMED by the v90 batch above).** The satellite
+  trace had swept all four county cemeteries into
+  `gold_aop_waypoints_traced.geojson`, so the read viewer drew Tate/Bible/Gilliam/Ellis.
+  User: only Ellis (the in-park inholding) belongs; the other three are bronze reference
+  (already in `bronze_aop_cemeteries.geojson`). (1) Removed the three from the served
+  file (26→23 feats, Ellis kept);
+  verified rendered cemetery-kind == `['Ellis Cemetery']`, 0 console errors (the served
+  data change is what makes the `v89`→`v90` bump owed — see header). (2) Then
+  closed the durability gap so a re-upload can't reintroduce them: dropped
+  `aop_cemeteries.geojson` from `export_illustrator_trace.py`'s waypoint sources (Ellis
+  still seeds via the publish POI), added a name-based cemetery drop to
+  `import_illustrator_trace.py` (keeps Ellis), and fixed both scripts' **stale medallion
+  paths** (the round-trip had been broken since commit `91a017e` renamed served files).
+  Verified by running the fixed import against the real Affinity master — "waypoints: 23
+  (dropped 3 off-park cemeteries)", served files backed-up + restored after. **Owed
+  (flagged, user's call):** a re-import still strips authored waypoint
+  descriptions/`kind`/tags (mirror the trail provenance-carry for waypoints to fix) and
+  writes without `_meta` (needs a re-stamp; `stamp_maturity.py` also has stale medallion
+  keys). Card: `tasks/14_illustrator_trace/satellite_illustrator_export.md` ("Off-park
+  cemeteries de-promoted from gold" + "Durability gap CLOSED").
+
 - **POI search/click/links + G-Central scrub — shipped v89 (UNCOMMITTED).** Camp
   POIs (waypoints) are now searchable + clickable with descriptions (Hot Rocks Comp
   Pad reads as an RC-crawl comp pad); AOP badge + Rock Warblers logos got real

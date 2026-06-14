@@ -539,7 +539,7 @@
       group.forEach(s => { const o = document.createElement('option'); o.value = s.file; o.textContent = `${s.file} (${s.feature_count})`; og.append(o); });
       selEl.append(og);
     }
-    const def = files.find(s => s.file === 'silver_publish.geojson') || files[0];
+    const def = files.find(s => s.file === 'gold_publish.geojson') || files[0];
     selEl.value = def ? def.file : '';
     selEl.onchange = () => loadFile(selEl.value);
 

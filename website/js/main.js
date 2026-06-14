@@ -11,7 +11,7 @@
     const REGION_BOUNDS = [[-85.782935283, 35.067164188], [-85.717154097, 35.117928496]];
 
     // Tighter-than-region fallback for the Park camera preset. The live park
-    // bounds come from silver_publish.geojson's `park_boundaries` parcel
+    // bounds come from gold_publish.geojson's `park_boundaries` parcel
     // (parkViewBounds, derived on load); this is the static stand-in for when
     // that data hasn't loaded — same parcel envelope, so Park never collapses
     // back to the full-region zoom. Spans ~1/3 of REGION_BOUNDS per side.
@@ -1102,7 +1102,7 @@
     // a different store and only `drawn_pois` was star-gated) with a single walk
     // over the FEATURE_LIST_LAYERS registry's destination specs. STAR-ONLY
     // (2026-06-08): the two former wholesale unions — published `poi`
-    // (silver_publish.geojson, bake-gated) and event anchors (aop_event_schedule.json,
+    // (gold_publish.geojson, bake-gated) and event anchors (aop_event_schedule.json,
     // a static non-DB file) — were removed. They bypassed the ★ gate and put
     // untraceable rows in the list; the POI tab is now exactly the registry's
     // ★-curated layers. A published destination or schedule place that belongs
@@ -3057,7 +3057,7 @@
 
     // --- Brand-logos override store --------------------------------------
     // Mirrors the visitor-context pattern: the seed geometry ships in
-    // website/data/silver_aop_visitor_context_callouts.geojson (the logos were merged
+    // website/data/gold_aop_visitor_context_callouts.geojson (the logos were merged
     // there as kind=brand_logo points, 2026-06-05), and each drag commits a new
     // Point to localStorage so the user's placement survives reload. Keyed
     // by `logo_id` (aop_badge, rock_warblers) — the on-disk file can be
@@ -7666,7 +7666,7 @@
 
     // Camera/zoom presets, separate from the layer presets (Park/Topo/Trace).
     // Region fits REGION_BOUNDS (the 9-patch, also the map's maxBounds); Park
-    // fits the live park boundary from silver_publish.geojson; Pavilion is the 1010
+    // fits the live park boundary from gold_publish.geojson; Pavilion is the 1010
     // Ellis Cove Rd building. Each zoom shortcut returns to the intended flat
     // west-up read; layer presets preserve the current camera.
     const PAVILION_VIEW = { center: [-85.748268, 35.090703], zoom: 17 };
@@ -7685,7 +7685,7 @@
         // "same zoom"); padding:20 lands it ~1.0+ tighter (measured 14.75 vs
         // Region 13.74), a clearly visible step in. Fall back to the park-parcel
         // envelope (not REGION_BOUNDS) so Park is always tighter than Region
-        // even before silver_publish.geojson loads.
+        // even before gold_publish.geojson loads.
         map.fitBounds(parkViewBounds || PARK_BOUNDS_FALLBACK, {
           padding: 20, bearing: VIEW_BEARING, pitch: VIEW_PITCH, duration: 1100, maxZoom: 15.5
         });
@@ -7725,7 +7725,7 @@
         './data/aop_event_schedule.json',
         './data/gold_aop_water.geojson',
         './data/gold_aop_roads.geojson',
-        './data/silver_aop_visitor_context_callouts.geojson',
+        './data/gold_aop_visitor_context_callouts.geojson',
         './data/bronze_aop_cemeteries.geojson',
         './data/gold_aop_buildings.geojson',
         './data/bronze_osm_aop_9patch.geojson',
@@ -8605,7 +8605,7 @@
       // (kind=brand_logo, merged 2026-06-05); take only the callout polygons
       // here so the fill/outline/label layers, search, and feature list never
       // see the logos. The brand block below renders the logos as icons.
-      const calloutsBundle = await fetchJson('./data/silver_aop_visitor_context_callouts.geojson', 'Visitor context callouts missing');
+      const calloutsBundle = await fetchJson('./data/gold_aop_visitor_context_callouts.geojson', 'Visitor context callouts missing');
       visitorContextData = calloutsBundle
         ? Object.assign({}, calloutsBundle, {
             features: calloutsBundle.features.filter((f) => (f.properties || {}).kind !== 'brand_logo')
@@ -9543,7 +9543,7 @@
       let publishData;
 
       try {
-        const response = await fetch('./data/silver_publish.geojson');
+        const response = await fetch('./data/gold_publish.geojson');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         publishData = await response.json();
       } catch (error) {
@@ -9591,7 +9591,7 @@
         paint: { 'circle-radius': 6, 'circle-color': '#6f8a5c', 'circle-stroke-color': '#f7f1e2', 'circle-stroke-width': 2 }
       });
 
-      // Baked destination POIs (publish.pois -> silver_publish.geojson `poi` layer).
+      // Baked destination POIs (publish.pois -> gold_publish.geojson `poi` layer).
       map.addLayer({
         id: 'publish-pois',
         type: 'circle',
@@ -9603,7 +9603,7 @@
       updateLayerVisibility();
       fitToDataBounds(publishData);
 
-      // V3c: surface silver_publish.geojson trailheads as feature-list rows so the
+      // V3c: surface gold_publish.geojson trailheads as feature-list rows so the
       // Point → Trailheads sub-group has rows to render. Filter publishData
       // down to just the trailhead features; `id` defaults to the index
       // when properties don't carry an idField match. Card:
@@ -9700,11 +9700,11 @@
       // seed file just moves the first-load coords; overrides win on next
       // load. Card: brain/tasks/02_edit/branding.md.
       //
-      // Source: the logos were merged into silver_aop_visitor_context_callouts.geojson
+      // Source: the logos were merged into gold_aop_visitor_context_callouts.geojson
       // (2026-06-05) as kind=brand_logo points. Pull just those out here; the
       // dedicated brand-logos source + icon layer (and all the drag/resize/cap
       // machinery) are unchanged below.
-      const brandBundle = await fetchJson('./data/silver_aop_visitor_context_callouts.geojson', 'Brand logos missing');
+      const brandBundle = await fetchJson('./data/gold_aop_visitor_context_callouts.geojson', 'Brand logos missing');
       brandLogosData = brandBundle
         ? Object.assign({}, brandBundle, {
             features: brandBundle.features.filter((f) => (f.properties || {}).kind === 'brand_logo')

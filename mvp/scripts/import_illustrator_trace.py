@@ -247,7 +247,7 @@ def main():
 
     # index the CURRENT gold network so each edited trail carries its full props
     # forward (provenance-preserving re-merge by stable id, then name, then number).
-    dest = DATA / "aop_trail_network.geojson"
+    dest = DATA / "gold_aop_trail_network.geojson"
     prior = json.loads(dest.read_text()) if dest.exists() else {"features": []}
     by_id, by_name, by_tn = {}, {}, {}
     for f in prior.get("features", []):
@@ -274,25 +274,42 @@ def main():
     if want_all:
         blay = collect_layer(root, "Buildings")
         bf = import_polys(meta, blay) if blay is not None else []
-        (DATA / "aop_buildings_traced.geojson").write_text(json.dumps(
+        (DATA / "bronze_aop_buildings_traced.geojson").write_text(json.dumps(
             {"type": "FeatureCollection", "name": "aop_buildings_traced", "features": bf}, indent=1))
-        print(f"buildings: {len(bf)} -> website/data/aop_buildings_traced.geojson")
+        print(f"buildings: {len(bf)} -> website/data/bronze_aop_buildings_traced.geojson")
 
         # Waypoints: sweep <circle>s from EVERY editable layer, not just Waypoints.
         # A POI drawn into the wrong layer (e.g. an entrance dropped in Gold Trails)
         # is still a named point — ingest it, don't silently drop it.
-        wf, strays = [], []
+        #
+        # Cemeteries are dropped: they are not camp waypoints (they live in the
+        # bronze cemeteries dataset), and a re-upload of the master must never
+        # re-promote them to gold. Match on NAME, not data-kind — Affinity strips
+        # data-* on export, so the kind tag is unreliable. Ellis (the in-park
+        # inholding the map shows) is kept. (User, 2026-06-14: "remove it from the
+        # export and the import ... I dont want it. ... edit the master ai sheet
+        # and re-upload as needed.")
+        def _is_dropped_cemetery(nm):
+            nm = (nm or "").strip()
+            return nm.lower().endswith("cemetery") and nm != "Ellis Cemetery"
+
+        wf, strays, dropped = [], [], []
         for lname in ("Waypoints", "Gold Trails", "Buildings"):
             lay = collect_layer(root, lname)
             if lay is None:
                 continue
             for feat in import_points(meta, lay):
+                nm = feat["properties"].get("name")
+                if _is_dropped_cemetery(nm):
+                    dropped.append(nm)
+                    continue
                 wf.append(feat)
                 if lname != "Waypoints":
-                    strays.append((feat["properties"].get("name"), lname))
-        (DATA / "aop_waypoints_traced.geojson").write_text(json.dumps(
+                    strays.append((nm, lname))
+        (DATA / "gold_aop_waypoints_traced.geojson").write_text(json.dumps(
             {"type": "FeatureCollection", "name": "aop_waypoints_traced", "features": wf}, indent=1))
-        print(f"waypoints: {len(wf)} -> website/data/aop_waypoints_traced.geojson")
+        print(f"waypoints: {len(wf)} -> website/data/gold_aop_waypoints_traced.geojson"
+              + (f"  (dropped {len(dropped)} off-park cemeteries: {', '.join(dropped)})" if dropped else ""))
         if strays:
             print(f"  swept {len(strays)} stray point POI(s) from non-Waypoints layers: "
                   + ", ".join(f"{n!r}<-{l}" for n, l in strays))
