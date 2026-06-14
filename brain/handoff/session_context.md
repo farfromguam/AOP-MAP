@@ -6,6 +6,24 @@ Short pointer for the next session. The durable record lives in the cards.
 
 -----
 
+**2026-06-13 (LEFT-RAIL DRAWER open/close now PERSISTS + clipboard height verified — v69 → v70.)** User on
+the main read viewer: Search + Clipboard show open on the left at load; *"make it so that the open/close
+state is saved in … local storage. also persist the drawer height of the clipboard."* The drawer
+**open/close** was the last severed piece (`viewer_drawer_schedule.md` restored the resize handles + height
+earlier; open/close stayed stateless, snapping back to `{search:true, hot:false, cal:true}` every reload).
+Restored in **`viewer_core.js` only** by porting the lean form of `main.js`'s `LEFT_RAIL_DRAWER_KEY`:
+`aop_left_rail_drawer_v1` stores `{search,hot,cal}` booleans, read on init (tolerant of the old viewer's
+`{open:{…}}` envelope on the same key, else the existing default), written on each tab click — same inline
+try/catch shape as the `aop_lr_card_height_v1` height pref beside it; first-load default unchanged. The
+clipboard **height** already persisted; this pass **verified it end-to-end**. **Verified by observation**
+(`verify_drawer_persist.py`, Playwright `:8001`, **18/18 PASS, 0 console/page errors**): after closing
+Search + opening Hot + keyboard-resizing the clipboard (240→432px), **a reload kept all of it**. Screenshot
+`brain/output/drawer_persist.png`; `node --check` clean. `viewer_core.js` is a `SHELL_ASSETS` file (SWR), so
+bumped **v69 → v70** (`sw.js` + `#appVersion`). Card addendum on
+`tasks/13_viewer_extraction/viewer_drawer_schedule.md`. **UNCOMMITTED** (user's git gate). Council not yet run.
+
+-----
+
 **2026-06-13 (TESTER = `?tester=1` LINK, lat/long GPS offset built + v69.)** Reviewed `brain/pages.md` per
 the user and recommended **tester be a mode on the read viewer, not a `tester.html`** (`editor_is_the_viewer`;
 the code already drives `?clock=` date fixtures off URL params). User confirmed the shape: *"if date offset is
@@ -81,9 +99,9 @@ fine. left should be north/south lat long cumberland plateau. right should be ro
 invitational. bottom should be the same minus the year. the bird's nose is cut off top-right. the R is cut
 off bottom-left. roads and rivers appear on top of the border — the border should be the highest."* Four
 fixes in `viewer_band.js`: (1) **label content** (the picked set, keyed to the −90 default view: top=West=
-title, left=South=`35° 00′ North · Cumberland Plateau` (kept), right=North=`Rock Warblers Trail Blazing
-Invitational` (was `85° 36′ West · Trail Blazing Invitational`), bottom=East=`South Pittsburg · Marion
-County · Tennessee` (dropped `— MMXXVI`)); (2) **corner clipping** — the bake margin `artMx/artMy 0.075→
+title, left=South=`35° 00′ North · 85° 36′ West · Cumberland Plateau` (longitude added), right=North=
+`Rock Warblers · Trail Blazing Invitational` (was `85° 36′ West · Trail Blazing Invitational`), bottom=
+East=`South Pittsburg · Marion County · Tennessee` (dropped `— MMXXVI`)); (2) **corner clipping** — the bake margin `artMx/artMy 0.075→
 0.12` so the whole rotated rw-mark box (cornOut 0.052 + ~0.05 reach) stays off the canvas edge; (3) same
 fix covers the bottom-left `R`; (4) **z-order** — `raiseBand` now fires on EVERY `map.on('idle')` (was
 `once`), since the core loads roads/rivers async and would otherwise sit on top. **Verified by

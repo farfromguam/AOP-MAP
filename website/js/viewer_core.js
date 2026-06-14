@@ -2345,8 +2345,9 @@
 
   // ── Left-rail drawer reflow + tabs (main.js:10485-10569) ───────────────
   // Two cards (Search, Calendar), both open by default. The icon tabs float
-  // down to meet their panel's top. Open/height persistence and the external
-  // lrOpenCard/lrCloseCard hooks are dropped (no session state in the read core).
+  // down to meet their panel's top. Each card's open/closed state persists
+  // across reloads (localStorage), the same way the card-height pref below does;
+  // the external lrOpenCard/lrCloseCard hooks stay dropped in the read core.
   const LR_CARDS = ['search', 'hot', 'cal'];
   const lrTabs = {
     search: document.getElementById('lrTabSearch'),
@@ -2363,7 +2364,26 @@
   if (lrIconCol && lrContentCol) {
     // Hot defaults closed (live desktop default); a target un-hides the
     // hot-control inside, so opening the Hot tab reveals the lane.
-    const lrOpen = { search: true, hot: false, cal: true };
+    const LR_DEFAULT_OPEN = { search: true, hot: false, cal: true };
+    // Persist which cards are open so a user's drawer layout survives reload.
+    // Forward-only key per viewer_storage_migration.md; tolerant of the old
+    // viewer's { open: {...} } envelope on the same key, else falls to defaults.
+    const DRAWER_KEY = 'aop_left_rail_drawer_v1';
+    const readDrawerOpen = () => {
+      try {
+        const raw = JSON.parse(localStorage.getItem(DRAWER_KEY) || 'null');
+        const src = (raw && typeof raw === 'object')
+          ? (raw.open && typeof raw.open === 'object' ? raw.open : raw)
+          : null;
+        const open = {};
+        LR_CARDS.forEach((c) => { open[c] = typeof src?.[c] === 'boolean' ? src[c] : LR_DEFAULT_OPEN[c]; });
+        return open;
+      } catch (_) { return { ...LR_DEFAULT_OPEN }; }
+    };
+    const lrOpen = readDrawerOpen();
+    const writeDrawerOpen = () => {
+      try { localStorage.setItem(DRAWER_KEY, JSON.stringify({ search: !!lrOpen.search, hot: !!lrOpen.hot, cal: !!lrOpen.cal })); } catch (_) { /* private mode / quota */ }
+    };
     const TAB_H = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tab-h'), 10) || 44;
     const lrRender = () => {
       const anyOpen = LR_CARDS.some((c) => lrOpen[c]);
@@ -2388,7 +2408,7 @@
       lrIconCol.classList.toggle('col2-short', anyOpen && lrContentCol.offsetHeight < lrIconCol.offsetHeight);
     };
     LR_CARDS.forEach((c) => {
-      lrTabs[c].addEventListener('click', () => { lrOpen[c] = !lrOpen[c]; lrRender(); });
+      lrTabs[c].addEventListener('click', () => { lrOpen[c] = !lrOpen[c]; lrRender(); writeDrawerOpen(); });
     });
     // Resizing a card body shifts every panel's offsetTop, so the floating
     // icon-column tabs must re-lay-out against the new rects (initLrCardResize

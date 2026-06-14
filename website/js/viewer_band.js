@@ -57,9 +57,11 @@
 
     // Text sits this far OUTSIDE the boundary (a fraction of the region), so the
     // lettering prints on the paper margin rather than straddling the neat-line.
-    // Kept small so the labels stay within a tight region-fit (e.g. the Region
-    // preset's ~20px padding) instead of clipping off the screen edge.
-    var insetX = dW * 0.030, insetY = dH * 0.030;
+    // Sets the label band's centerline; cornOut below sits a hair inboard of this
+    // (0.039) so the corner marks optically share this ring. Kept small so the
+    // labels stay within a tight region-fit (e.g. the Region preset's ~20px
+    // padding) instead of clipping off the screen edge.
+    var insetX = dW * 0.042, insetY = dH * 0.042;
     var maskPad = 2.0;   // deg — large enough that the paper covers the whole
                          // visible ground out to the horizon when pitched in 3D.
 
@@ -109,8 +111,8 @@
     var EDGES = [
       { key: 'w', label: 'Adventure Off Road Park',                      at: [W - insetX, midLat], lat: midLat,     rot: -90, fontPx: 13, weight: 800, color: TITLE_INK, spacing: 0.42 },
       { key: 'e', label: 'South Pittsburg · Marion County · Tennessee',  at: [E + insetX, midLat], lat: midLat,     rot: -90, fontPx: 10, weight: 700, color: SUB_INK,   spacing: 0.30 },
-      { key: 's', label: '35° 00′ North · Cumberland Plateau',           at: [midLng, S - insetY], lat: S - insetY, rot: 180, fontPx: 10, weight: 700, color: SUB_INK,   spacing: 0.30 },
-      { key: 'n', label: 'Rock Warblers Trail Blazing Invitational',     at: [midLng, N + insetY], lat: N + insetY, rot: 0,   fontPx: 10, weight: 700, color: SUB_INK,   spacing: 0.30 }
+      { key: 's', label: '35° 00′ North · 85° 36′ West · Cumberland Plateau', at: [midLng, S - insetY], lat: S - insetY, rot: 180, fontPx: 10, weight: 700, color: SUB_INK, spacing: 0.30 },
+      { key: 'n', label: 'Rock Warblers · Trail Blazing Invitational',        at: [midLng, N + insetY], lat: N + insetY, rot: 0,   fontPx: 10, weight: 700, color: SUB_INK, spacing: 0.30 }
     ];
 
     // Render one label string to a supersampled (DPR=4) canvas (exact picked
@@ -138,14 +140,17 @@
 
     // Corner marks sit OUTSIDE the neat-line corners, pushed diagonally out onto the
     // paper margin so they read as printer's corner ornaments, not dots on the line.
-    var cornOutX = dW * 0.052, cornOutY = dH * 0.052;
+    // Pulled a hair INboard of the label inset (0.039 vs 0.042) so the bird's body
+    // mass optically seats on the lettering's centerline: its crest/tail bias the
+    // silhouette outboard, so a centroid-matched mark still reads as leaning out.
+    var cornOutX = dW * 0.039, cornOutY = dH * 0.039;
     var CORNERS = [
       [W - cornOutX, S - cornOutY], [E + cornOutX, S - cornOutY],
       [E + cornOutX, N + cornOutY], [W - cornOutX, N + cornOutY]
     ];
 
     // Geographic frame of the baked art (region + a margin wide enough to hold the
-    // pushed-out corner marks WHOLE — they sit at cornOut 0.052 and the rotated mark
+    // pushed-out corner marks WHOLE — they sit at cornOut 0.042 and the rotated mark
     // box reaches ~0.05 further, so 0.12 keeps the bird/letters off the canvas edge),
     // north-up, at an isotropic resolution (so the typography isn't squashed) capped at
     // 4096 px (GPU/iOS texture limit).

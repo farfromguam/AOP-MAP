@@ -146,6 +146,35 @@ reload**. Screenshots `brain/output/schedule_resize_{events,poi}.png`. `node --c
 **Shell bump owed + done:** `index.html` + `viewer.css` + `viewer_core.js` are in `sw.js` `SHELL_ASSETS`,
 so bumped **v66 → v67** (`sw.js` VERSION + `#appVersion`). **UNCOMMITTED** (the user's git gate).
 
+### Addendum — 2026-06-13 (drawer OPEN/CLOSE persistence restored — the last deferred drawer piece)
+
+User on the shipped read viewer: *"on load it seems search and clipboard is open on the left side. Can we
+make it so that the open/close state is saved in a session/local storage? … localstorage is fine. also
+persist the drawer height of the clipboard."* The drawer **open/close** state was the one piece still
+severed — the addendum above restored the resize handles + their height; open/close stayed stateless, so
+every reload snapped back to the hardcoded `{search:true, hot:false, cal:true}`. Now restored in
+`viewer_core.js` **only**:
+
+- Ported the lean form of `main.js`'s `LEFT_RAIL_DRAWER_KEY` logic into the read core's drawer block.
+  `aop_left_rail_drawer_v1` stores `{search,hot,cal}` booleans; read on init (`readDrawerOpen` — tolerant
+  of the old viewer's `{ open: {…} }` envelope on the **same** key, else falls to the existing default
+  `{search:true, hot:false, cal:true}`), written on every tab click (`writeDrawerOpen`). Same inline
+  try/catch get/set shape as the `aop_lr_card_height_v1` height pref right below it — **no** JSON-store
+  helpers pulled in, and a first-time visitor's default layout is unchanged.
+- **Clipboard height** was already persisting (`aop_lr_card_height_v1`, restored in the addendum above);
+  this pass **verified it end-to-end** rather than re-asserting it.
+
+**Verified by observation** (`verify_drawer_persist.py`, Playwright `:8001`, **18/18 PASS, 0 console/page
+errors**): clean load shows the defaults (Search open, Hot closed, Clipboard open, no drawer key yet);
+closing Search + opening Hot writes `{"search":false,"hot":true,"cal":true}`; keyboard-resizing the
+clipboard handle grew `calendarBody` 240→**432px** and wrote `aop_lr_card_height_v1=432`; **after reload
+both survived** — Search stayed closed, Hot stayed open, Clipboard stayed open and 432px tall. Screenshot
+`brain/output/drawer_persist.png`. `node --check` clean.
+
+**Shell bump owed + done:** `viewer_core.js` is in `sw.js` `SHELL_ASSETS` (served stale-while-revalidate),
+bumped **v69 → v70** (`sw.js` VERSION + `#appVersion`). **UNCOMMITTED** (the user's git gate). This closes
+the deferred "drawer persistence (polish)" item — open/close **and** height now persist.
+
 ## Notes
 
 Built alongside; no commits without the user's git gate; `viewer.html` not in `sw.js` → no `#appVersion`
