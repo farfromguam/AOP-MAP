@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
-"""Verify the Locate FAB's off-park distance notice (v81).
+"""Verify the Locate FAB's off-park distance notice (v82).
 
 The map camera is leashed to the printed sheet (REGION_MAXBOUNDS), so a real GPS fix
 from off-park lands outside maxBounds and the blue dot can't show — Locate looked dead
 from home. Now the FAB reads the fix once (coarse + fast): near the park it hands off
-to the normal blue-dot follow flow; far away it shows the straight-line miles to the
-park ("You're <dist> away / from the park, as the bird flies"); and a failed/blocked
-fix shows a visible "Couldn't get your location" notice instead of silently no-op'ing.
+to the normal blue-dot follow flow; far away it shows the straight-line miles AND a
+rough drive time ("<dist> away, as the bird flies / about a <t> drive"); a failed fix
+shows a visible "Couldn't get your location" notice instead of silently no-op'ing; and
+the FAB itself only appears when the device exposes navigator.geolocation.
 
 Observed by spoofing device geolocation (grant + set_geolocation) on the live :8001
-viewer and reading the real #locateNotice DOM. Four cases:
-  - Chattanooga (~25 mi)   -> "<dist> mi away … as the bird flies", NO drive time
+viewer and reading the real #locateNotice / #locateBtn DOM. Five cases:
+  - Chattanooga (~25 mi)   -> "<dist> away … as the bird flies" + a "drive" time
   - Nashville  (~94 mi)    -> same shape, larger number
   - park pavilion (0 mi)   -> notice STAYS hidden; the GeolocateControl dot appears
   - permission revoked     -> notice shows "Couldn't get your location" (never dead)
+  - no navigator.geolocation -> the FAB never reveals (stays hidden)
 """
 import sys
 from playwright.sync_api import sync_playwright
@@ -57,7 +59,7 @@ def load_at(page, geo, ctx):
         try:
             page.goto(URL, wait_until="domcontentloaded", timeout=20000)
             page.wait_for_function("window.AOPViewer && window.AOPViewer.map", timeout=15000)
-            page.wait_for_selector("#locateBtn", timeout=10000)
+            page.wait_for_selector("#locateBtn", state="visible", timeout=10000)
             page.wait_for_timeout(800)
             return
         except Exception as e:  # noqa: BLE001 — navigation/target churn, retry
@@ -97,17 +99,17 @@ def main():
         page.on("console", lambda m: msgs.append((classify(m.text), m.text)) if m.type == "error" else None)
         page.on("pageerror", lambda e: msgs.append((classify(str(e)), str(e))))
 
-        # --- far: Chattanooga — bird-flies miles, NO drive time --------------
+        # --- far: Chattanooga — bird-flies miles AND a drive time ------------
         load_at(page, CHATTANOOGA, ctx)
         vis, text, dot = click_locate_and_read(page)
-        ok_chat = vis and ("mi away" in text) and ("as the bird flies" in text) and ("drive" not in text)
+        ok_chat = vis and ("mi away" in text) and ("as the bird flies" in text) and ("drive" in text)
         results.append(("chattanooga_far", ok_chat, f"vis={vis} dot={dot} text={text!r}"))
         page.screenshot(path="brain/output/locate_travel_chattanooga.png")
 
         # --- very far: Nashville — same shape, larger number -----------------
         load_at(page, NASHVILLE, ctx)
         vis, text, dot = click_locate_and_read(page)
-        ok_nash = vis and ("mi away" in text) and ("as the bird flies" in text) and ("drive" not in text)
+        ok_nash = vis and ("mi away" in text) and ("as the bird flies" in text) and ("drive" in text)
         results.append(("nashville_veryfar", ok_nash, f"vis={vis} dot={dot} text={text!r}"))
         page.screenshot(path="brain/output/locate_travel_nashville.png")
 
@@ -131,6 +133,27 @@ def main():
         ok_denied = (not n["hidden"]) and ("Couldn't get your location" in denied_text)
         results.append(("denied_visible", ok_denied, f"hidden={n['hidden']} text={denied_text!r}"))
         page.screenshot(path="brain/output/locate_travel_denied.png")
+
+        # --- NO geolocation API: the FAB must not show at all -----------------
+        # A separate context whose navigator.geolocation is undefined BEFORE any page
+        # script runs (init script). viewer_core.js reveals the FAB only when
+        # navigator.geolocation exists, so here it must stay hidden.
+        ctx2 = browser.new_context(viewport={"width": 1200, "height": 900})
+        ctx2.add_init_script(
+            "Object.defineProperty(navigator, 'geolocation', { configurable: true, get: () => undefined });"
+        )
+        page2 = ctx2.new_page()
+        page2.on("console", lambda m: msgs.append((classify(m.text), m.text)) if m.type == "error" else None)
+        page2.on("pageerror", lambda e: msgs.append((classify(str(e)), str(e))))
+        page2.goto(URL, wait_until="domcontentloaded", timeout=20000)
+        page2.wait_for_function("window.AOPViewer && window.AOPViewer.map", timeout=15000)
+        page2.wait_for_timeout(1500)  # give viewer_core.js time to (not) reveal the FAB
+        has_geo = page2.evaluate("!!navigator.geolocation")
+        btn = page2.eval_on_selector("#locateBtn", "el => ({hidden: el.hidden, visible: el.offsetParent !== null})")
+        ok_nogps = (has_geo is False) and btn["hidden"] and (not btn["visible"])
+        results.append(("no_gps_button_hidden", ok_nogps, f"navigator.geolocation={has_geo} btn_hidden={btn['hidden']} btn_visible={btn['visible']}"))
+        page2.screenshot(path="brain/output/locate_travel_nogps.png")
+        ctx2.close()
 
         browser.close()
 

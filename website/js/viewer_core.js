@@ -194,7 +194,10 @@
   });
   map.addControl(geolocate, 'top-right');
   const locateBtn = document.getElementById('locateBtn');
-  if (locateBtn) {
+  // The FAB ships hidden (index.html) and is only revealed when the device actually
+  // exposes geolocation — no GPS API, no button, rather than a button that can't work.
+  if (locateBtn && navigator.geolocation) {
+    locateBtn.hidden = false;
     const lit = () => { locateBtn.classList.add('active'); locateBtn.setAttribute('aria-pressed', 'true'); };
     const dim = () => { locateBtn.classList.remove('active'); locateBtn.setAttribute('aria-pressed', 'false'); };
     geolocate.on('trackuserlocationstart', lit);
@@ -205,13 +208,13 @@
     // so a real GPS fix from off-park lands outside maxBounds — MapLibre can't pan to
     // it and the blue dot can't show, which made Locate look dead from home. So we
     // read the fix ONCE first: at/near the park, hand off to the normal blue-dot
-    // follow flow; far away, show the straight-line ("as the bird flies") miles to
-    // the park; if the fix fails, SAY SO in the notice (never silently dead — that
-    // was the off-park "button does nothing" report). Coarse + fast
-    // (enableHighAccuracy:false) — we only need a rough distance to pick the branch,
-    // so don't wait on a slow high-accuracy GPS lock; the on-site dot uses the
-    // control's own high accuracy. (In ?tester=1 the GPS shim above pins the fix to
-    // the park, so this always takes the near branch — by design.)
+    // follow flow; far away, show the straight-line ("as the bird flies" — the event
+    // is the Rock Warblers, so the bird framing is on theme) miles AND a rough drive
+    // time; if the fix fails, SAY SO in the notice (never silently dead — that was the
+    // off-park "button does nothing" report). Coarse + fast (enableHighAccuracy:false)
+    // — we only need a rough distance to pick the branch, so don't wait on a slow
+    // high-accuracy GPS lock; the on-site dot uses the control's own high accuracy.
+    // (In ?tester=1 the GPS shim above pins the fix to the park → always near branch.)
     const NEAR_MI = 3; // inside this, you're effectively at the park → show the dot
     const milesToPark = (lng, lat) => {
       const R = 3958.8, toRad = (d) => d * Math.PI / 180;
@@ -220,7 +223,15 @@
         Math.cos(toRad(PARK_ANCHOR[1])) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
       return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     };
-    const fmtMiles = (mi) => mi < 1 ? 'under a mile' : (mi < 10 ? `${mi.toFixed(1)} mi` : `${Math.round(mi)} mi`);
+    const fmtMiles = (mi) => mi < 1 ? 'under a mi' : (mi < 10 ? `${mi.toFixed(1)} mi` : `${Math.round(mi)} mi`);
+    const fmtDrive = (mi) => {
+      const roadMi = mi * 1.2;                 // straight-line → road distance
+      const mph = mi < 12 ? 32 : 55;           // local streets vs. mostly-highway
+      const mins = Math.round(roadMi / mph * 60 / 5) * 5; // round to 5 min
+      if (mins < 60) return `about a ${mins} min drive`;
+      const h = Math.floor(mins / 60), m = mins % 60;
+      return m === 0 ? `about a ${h} hr drive` : `about a ${h} hr ${m} min drive`;
+    };
     const notice = document.getElementById('locateNotice');
     let noticeTimer = null;
     const showNotice = (strong, sub) => {
@@ -234,15 +245,11 @@
 
     locateBtn.addEventListener('click', () => {
       if (notice) notice.hidden = true;
-      if (!navigator.geolocation) {
-        showNotice("Location isn't available", 'This device or browser blocks GPS');
-        return;
-      }
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const mi = milesToPark(pos.coords.longitude, pos.coords.latitude);
           if (mi <= NEAR_MI) geolocate.trigger(); // at the park → blue dot + follow
-          else showNotice(`You're ${fmtMiles(mi)} away`, 'from the park, as the bird flies');
+          else showNotice(`${fmtMiles(mi)} away, as the bird flies`, fmtDrive(mi));
         },
         () => showNotice("Couldn't get your location", 'Turn on Location access and try again'),
         { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }

@@ -820,29 +820,37 @@ Recorded 2026-05-21 (rebuilt the same day onto lidar + leaf-on imagery).
 - **Vegetation simplification (2026-06-14).** The user's call: combine the two
   greens into one vegetation layer and let every non-tree area read as the base
   map. `mvp/scripts/simplify_landcover_vegetation.py` keeps the two forest
-  classes, dissolves them with a unary union (touching deciduous/evergreen merge
-  into one shape), explodes the union to polygons, re-tags every feature
-  `class=vegetation`, and drops the three open classes. Park: 154→18 features
-  (435 KB→105 KB); 9-patch: 3430→165 (4.5 MB→891 KB). It is wired as the final
-  step of both `build_landcover.sh` and `build_landcover_9patch.sh` (the 5-class
-  export is kept in the gitignored cache `mvp/cache/landcover/*.5class.geojson`),
-  so a pipeline rebuild stays simplified. This is a directed simplification of a
-  *derived* layer — the 5-class source is recoverable from git + the cache + the
-  pipeline — not banned limiting code (`ai_rules/no_limiting_code_mvp.md` defers
-  the display call to the user).
+  classes, dissolves them with a unary union, then caps per-polygon complexity
+  (see the render-fix bullet below), re-tags every feature `class=vegetation`,
+  and drops the three open classes. Park: 154→18 features; 9-patch: 3430→165. It
+  is wired as the final step of both `build_landcover.sh` and
+  `build_landcover_9patch.sh` (the 5-class export is kept in the gitignored cache
+  `mvp/cache/landcover/*.5class.geojson`), so a pipeline rebuild stays simplified.
+  This is a directed simplification of a *derived* layer — the 5-class source is
+  recoverable from git + the cache + the pipeline — not banned limiting code
+  (`ai_rules/no_limiting_code_mvp.md` defers the display call to the user).
+  Committed as `da5d032 v79`.
+- **Corner render fix.** The first pass dissolved the canopy into one
+  ~28k-vertex / 282-hole polygon, which MapLibre's `fill` tessellation could not
+  fully draw — the map's TR/BR/BL corners showed empty paper even though dense
+  forest is there (the user checked against the satellite). The script now caps
+  complexity after the union: drop interior holes below ~5000 m² + light
+  Douglas-Peucker simplify, taking the worst polygon to 3976 verts / 47 holes
+  (was 28107/282), coverage ±0.1%, natural edge kept (the outline still traces
+  it — no viewer change). Committed as `692464b v81`.
 - Verified with `mvp/scripts/playwright_verify_landcover.py` (updated to the
-  vegetation contract) on 2026-06-14: all substantive checks PASS on the live
-  read viewer — both layers carry only `vegetation`, the retired forest/open
-  sub-classes are gone, the fill is one flat green, the 9-patch sits at the base
-  of the stack, and both render (18 / 165). The verifier's own console-summary
-  line did not flush under a temp-fs tail hang, so the council Witness re-ran a
-  clean Playwright capture and observed 0 console errors. (The script's
-  editor-only sections — the layer checkboxes and 9-patch opacity drawer — are
-  guarded so it runs against either the read viewer `index.html` or the editor
-  host `old_index.html`.) `sw.js`/`#appVersion` were advanced to `v80` for the
-  data change (user's git gate to commit).
-- Build card: `tasks/01_mvp/landcover_layer.md` ("Update: lidar canopy-height
-  rebuild"; "Update: vegetation simplification").
+  vegetation contract) plus a fresh render agent on 2026-06-14: both layers carry
+  only `vegetation`, retired sub-classes gone, one flat green fill, 9-patch at the
+  base of the stack, both render; after the fix the previously-empty corners fill
+  with a continuous canopy, stable across zoom, **0 console errors**. The
+  verifier's own console-summary line did not flush under a temp-fs hang, so the
+  0-errors observation comes from clean separate captures (receipt
+  `brain/output/council/witness_vegetation_render.md`; shots
+  `brain/output/veg_fixed_*.png` vs `diag_veg_*.png`). (The script's editor-only
+  sections are guarded so it runs against `index.html` or `old_index.html`.)
+  `sw.js`/`#appVersion` rode the v79→v82 contributor bumps.
+- Build card: `tasks/01_mvp/_done/landcover_layer.md` ("Update: vegetation
+  simplification"; "Update: corner rendering fix").
 
 ### Cartographic palette (Muted Earth)
 

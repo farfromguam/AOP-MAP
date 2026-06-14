@@ -35,6 +35,23 @@ The prior thrust is **extracting the read viewer into a standalone shell**
 re-attaching the pieces that were severed in the split. Most recent landings,
 all **UNCOMMITTED** (user's git gate):
 
+- **v82 — Locate: keep "as the bird flies" + drive time back, and hide the FAB
+  without GPS.** The user kept the on-theme bird framing (Rock Warblers) and reversed
+  the v81 drop: the off-park card is now two lines — *"&lt;dist&gt; away, as the bird
+  flies"* + *"about a &lt;t&gt; drive"* (`fmtDrive` restored). And the Locate FAB now
+  **ships hidden** (`index.html` `hidden` + `.locate-fab[hidden]{display:none}`),
+  revealed by `viewer_core.js` only inside `if (locateBtn && navigator.geolocation)` —
+  no geolocation API → no button (the unreachable `!navigator.geolocation` click branch
+  was removed). Verified by observation (`verify_locate_travel.py`, now 5 cases incl.
+  **no-geolocation → FAB hidden**; 4 runs PASS, 0 real errors; screenshots add
+  `locate_travel_nogps.png`). `sw.js`/`#appVersion` v81→v82. **Council cleared (Witness ·
+  Warden · Mason, first pass; receipts `brain/output/council/v82_locate_gps_gate.md`).**
+  Working tree = exactly this locate diff (landcover landed in the user's v81 commit), so
+  `.claude/.council-cleared` written. UNCOMMITTED (user's git gate). *(User self-committed
+  v80 `cdcc918`, v81 `692464b`.)* **Then (same undeployed v82) the notice was moved to the
+  LEFT of the FAB** per the user (`.locate-notice` `right:12→80px; bottom:84→18px`,
+  CSS-only); Witness-cleared at reduced tier, verified at 1200px + 390px (left of FAB,
+  on-screen, no overlap); marker re-written.
 - **v81 — Locate copy = bird-flies miles, drop drive time, and a VISIBLE failure
   path.** Testing v80 on the phone (confirmed on v80), the user saw nothing off-park.
   Root cause wasn't cache: the v80 high-accuracy read hit the error path on a
@@ -81,16 +98,24 @@ all **UNCOMMITTED** (user's git gate):
   to a flat vegetation green per preset (`main.js`/`panel.js` editor host still
   carry the old `match`, falls through to the same green — cleanup owed on
   editor port). `playwright_verify_landcover.py` updated to the vegetation
-  contract and re-run on the live read viewer: single class, retired sub-classes
-  gone, flat green, base-of-stack, 18/165 render — substantive checks PASS
-  (console-summary line didn't flush under a temp-fs hang; council Witness re-ran
-  a clean capture → 0 console errors); screenshots show green vegetation on paper.
-  Card addendum: `tasks/01_mvp/_done/landcover_layer.md` ("Update: vegetation
-  simplification"); `research/viewer.md` Land-Cover section updated.
-  `sw.js`/`#appVersion` ride the contributor v80 bump. **Council reviewed
-  (2026-06-14): Witness·Warden·Quartermaster·Mason clear; Scribe andon →
-  records corrected (this).** UNCOMMITTED (user's git gate; Warden: isolate into
-  its own commit — the Tier-0 hash spans other sessions' work).
+  contract: single class, retired sub-classes gone, flat green, base-of-stack,
+  18/165 render. **Committed by the user as `da5d032 v79`.** Council reviewed
+  (Witness·Warden·Quartermaster·Mason clear; Scribe andon → records corrected).
+  **Then a real render bug surfaced:** the user saw empty TR/BR/BL corners + zoom
+  "pop" where the satellite shows dense trees. Cause: the `unary_union` dissolve
+  merged the canopy into one ~28k-vertex/282-hole polygon and MapLibre's fill
+  tessellation dropped chunks (forest area WAS present in all quadrants — it just
+  wasn't drawn). **Fixed (data only):** the simplify script now caps per-polygon
+  complexity — drop interior holes <~5000 m² (`HOLE_MIN_DEG2`) + light DP simplify
+  (`SIMPLIFY_DEG` ~3 m) → max 3976 verts/47 holes (was 28107/282), 187/0 for the
+  park, coverage ±0.1%, natural edge kept so the outline still works (no viewer
+  change). Verified by observation (fresh render agent: corners fill, one
+  continuous canopy, stable across zoom, 0 console errors;
+  `brain/output/veg_fixed_*.png` vs `diag_veg_*.png`; receipt
+  `brain/output/council/witness_vegetation_render.md`). **Committed as
+  `692464b v81`** (HEAD carries the 3976/47 data; `sw.js`/`#appVersion` now v82).
+  Card `tasks/01_mvp/_done/landcover_layer.md` (two addenda); `research/viewer.md`
+  updated.
 - **v79 — all event copy rewritten from `brain/import/TBI.copy`** (the event lead's
   real copy). Council-cleared at v78 (core three: witness·warden·quartermaster, all
   `clear`; receipts in `brain/output/council/*_tbi_copy.md`); v79 is the one

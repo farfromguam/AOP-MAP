@@ -250,4 +250,42 @@ lines. Re-run reproducibly clean (Witness 10/10, Steward 5/5, 0 real errors); Wi
 re-reviewed → **clear**, additionally confirming the noise filter cannot mask a real
 locate-path failure (the handler signals only via `#locateNotice` DOM, a channel the
 filter never reads). UNCOMMITTED at clear time (user's git gate; the v81 bump + commit
-stay the user's).
+stay the user's). *(The user later committed v81 as `692464b`.)*
+
+### Follow-up: v82 — keep "as the bird flies", drive time back, hide FAB without GPS
+
+The user reversed the v81 drop and refined: keep **"as the bird flies"** (on theme —
+the event is the Rock Warblers), put the **drive time back** alongside it, and **don't
+show the Locate button at all unless the device has geolocation.** Changes (`viewer_core.js`
++ `index.html` + `viewer.css`):
+- Far notice is now two lines: **"&lt;dist&gt; away, as the bird flies"** (strong) +
+  **"about a &lt;t&gt; drive"** (sub). `fmtDrive` restored (×1.2 road-circuity, 32 mph
+  under 12 mi else 55, rounded to 5 min). `fmtMiles` shortened "under a mile"→"under a mi".
+- **GPS-capability gate:** the FAB ships `hidden` (`index.html`) with
+  `.locate-fab[hidden]{display:none}` (`viewer.css`); `viewer_core.js` reveals it
+  (`locateBtn.hidden=false`) only inside `if (locateBtn && navigator.geolocation)`. No
+  geolocation API → no button. The now-unreachable `!navigator.geolocation` click branch
+  was removed.
+
+**Verified by observation** (`verify_locate_travel.py`, now **5 cases**: Chattanooga /
+Nashville far = bird-flies + a drive time; park = notice hidden + dot; permission revoked
+= "Couldn't get your location"; **no `navigator.geolocation` = FAB stays hidden**, via a
+fresh context whose `navigator.geolocation` is undefined before page scripts). 4 runs
+PASS, 0 real errors; screenshots `locate_travel_{chattanooga,nashville,atpark,denied,nogps}.png`
+(nogps shows no FAB bottom-right). `sw.js`/`#appVersion` **v81 → v82**.
+
+**Council cleared (Witness · Warden · Mason, 2026-06-14;** receipts
+`brain/output/council/v82_locate_gps_gate.md`**)** — full clear, first pass. The
+website/mvp working tree is exactly this locate diff (the parallel landcover work landed
+in the user's v81 commit), so `.claude/.council-cleared` was written for the current
+hash. UNCOMMITTED — the v82 bump + commit stay the user's git gate.
+
+**v82 tweak — notice moved to the LEFT of the FAB.** Per the user ("put the messages to
+the left of the location button"): `.locate-notice` moved from above the FAB
+(`right:12px; bottom:84px`) to beside it (`right:80px; bottom:18px`, bottoms aligned),
+`max-width` `min(76vw,280px)`→`min(72vw,260px)`. CSS-only; still v82 (undeployed).
+**Council: Witness clear** (reduced tier — visual reposition; receipt note in
+`v82_locate_gps_gate.md`'s follow-up). Verified by observation at 1200px AND 390px
+(notice right edge 12px left of the FAB, fully on-screen, no overlap, clear of the
+bottom-left version pill); screenshots `locate_travel_chattanooga.png`,
+`locate_travel_mobile_left.png`. `.council-cleared` re-written for the new hash.

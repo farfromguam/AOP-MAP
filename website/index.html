@@ -231,7 +231,7 @@
          viewer_core.js folds it beside the collapsed bottom-left ⓘ ("ⓘ vNN",
          hidden when expanded) and also reads it into the expanded attribution body
          as "Made by Rock Warblers · vNN". Starts hidden; JS unhides on fold. -->
-    <span id="appVersion" hidden>v81</span>
+    <span id="appVersion" hidden>v82</span>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on iOS,
          where there is no programmatic install prompt). -->
@@ -255,7 +255,9 @@
        so the tester view can show Locate + Edit side by side. The edit FAB is not
        shown on this read view. Wiring (click → trigger, lit on track) keys on the
        id in viewer_core.js, unchanged from when this lived in the left rail. -->
-  <button type="button" id="locateBtn" class="locate-fab" aria-pressed="false"
+  <!-- Ships hidden; viewer_core.js reveals it only when navigator.geolocation exists
+       (no GPS support → no button). -->
+  <button type="button" id="locateBtn" class="locate-fab" aria-pressed="false" hidden
           title="Show my location" aria-label="Show my location">
     <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <circle cx="11" cy="11" r="5.4"/>

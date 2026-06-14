@@ -196,6 +196,7 @@ html.ios-browser .screen-corner { display: block; }
   box-shadow: 0 8px 22px rgba(20,74,128,0.42), 0 0 0 4px rgba(255,253,245,0.55);
   transition: background 0.12s ease, box-shadow 0.12s ease;
 }
+.locate-fab[hidden] { display: none; }
 .locate-fab svg { width: 24px; height: 24px; }
 .locate-fab:hover { background: var(--locate-blue-dark); }
 .locate-fab:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
@@ -205,11 +206,12 @@ html.ios-browser .screen-corner { display: block; }
 }
 
 /* Travel notice — shown beside the Locate FAB when the device is off-park (the
-   camera leash means the blue dot can't show from home). Anchored above the FAB
-   (bottom 18 + 56 + 10), capped width, tap to dismiss. */
+   camera leash means the blue dot can't show from home). Anchored to the LEFT of the
+   FAB (right 12 + 56 + 12 gap = 80px), bottoms aligned (bottom 18px), capped width,
+   tap to dismiss. */
 .locate-notice {
-  position: fixed; right: 12px; bottom: 84px; z-index: 6;
-  max-width: min(76vw, 280px);
+  position: fixed; right: 80px; bottom: 18px; z-index: 6;
+  max-width: min(72vw, 260px);
   background: var(--locate-blue); color: #f3f8ff;
   padding: 10px 13px; border-radius: 12px; cursor: pointer;
   box-shadow: 0 8px 22px rgba(20,74,128,0.42), 0 0 0 3px rgba(255,253,245,0.55);

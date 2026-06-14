@@ -345,7 +345,43 @@ non-tree area read as the base map paper.
   stack, 18/165 render). The verifier's own console-summary line did not flush
   under a temp-fs tail hang, so the council Witness re-ran a clean Playwright
   capture (`console.error` + `pageerror`) and observed **0 console errors**.
-- **Owed (user's git gate):** commit. `sw.js` VERSION + `#appVersion` were bumped
-  for the data change (a contributor advanced both to `v80`). NB the Warden
-  flagged the Tier-0 clearance hash spans the whole `website`+`mvp` tree (other
-  sessions' uncommitted work) — isolate this into its own commit (`git add -p`).
+- **Committed.** The user committed this pass as **`da5d032 v79`** (the data
+  files, `simplify_landcover_vegetation.py`, the `viewer_core.js` flat-green
+  paint, the verifier update, and this card addendum). Not owed — it shipped.
+
+-----
+
+## Update: corner rendering fix (2026-06-14)
+
+The user reported the vegetation showed empty top-right / bottom-right /
+bottom-left corners and patches "popping" at different zooms — and that the
+**satellite shows dense trees in those areas**. It was a real rendering bug, not
+open ground:
+
+- **Root cause.** The first pass dissolved all forest with `unary_union`, which
+  merged the near-continuous mountain canopy into a single polygon of ~28,000
+  vertices and ~282 interior holes. MapLibre's `fill` tessellation silently drops
+  chunks of a polygon that complex, so large parts of the canopy never rendered —
+  the empty corners. (Verified: forest *area* was present in all four quadrants of
+  the data, so geometry wasn't missing — it wasn't being drawn.)
+- **Fix (data only).** `simplify_landcover_vegetation.py` now, after the union,
+  caps per-polygon complexity: drop interior holes below ~5000 m² (`HOLE_MIN_DEG2`
+  — small noise clearings; filling them also reads truer to the dense canopy the
+  imagery shows) and lightly Douglas-Peucker simplify the edge (`SIMPLIFY_DEG`
+  ~3 m). Worst-case polygon went 28107 verts / 282 holes → **3976 verts / 47
+  holes** (9-patch) and 3228/10 → **187/0** (park) — back in the range that always
+  rendered (the open classes peaked at 2343/46). Coverage unchanged (±0.1% area).
+  The script prints the worst-case verts/holes each build so a regression toward
+  the tessellation-breaking shape is visible.
+- **Verified by observation (2026-06-14).** A fresh render agent drove the live
+  `:8001` viewer (Region preset + z12.4/13/14/15, `window.AOPViewer.map`): the
+  previously-empty TR/BR/BL corners now fill with green, the canopy reads as one
+  continuous mass (not a central blob with bites), coverage is stable across zoom
+  (no blink-out), **0 console errors**. Before/after shots:
+  `brain/output/diag_veg_region_preset.png` (broken) vs
+  `brain/output/veg_fixed_region_preset.png` + `veg_fixed_z124_lite.png` (fixed);
+  receipt `brain/output/council/witness_vegetation_render.md`.
+- **Committed** as **`692464b v81`** (HEAD carries the 3976/47 data; working tree
+  is clean against it). `sw.js`/`#appVersion` now `v82` (later contributor bumps).
+  No outline/viewer change was needed — the fix keeps the natural forest edge, so
+  the existing outline still traces it.
