@@ -272,7 +272,12 @@ scrollable directory of places already drawn on the map: event anchors,
 in-park buildings, observed trails, cemeteries, off-park visitor support, and
 the user's drawn POIs. Each row shows a name, a 1-2 sentence visitor blurb,
 and chips for kind / status / source. Click a row to fly the map, auto-enable
-the source layer if it was off, and open a popup with the same fields. Rows
+the source layer if it was off, and open a popup with the same fields. The
+selection highlight **persists** (v83): it flashes, then holds steady on the
+selected feature until the next selection re-pulses on the new one — the user
+saw POId trails "highlight and show you where they are but [not] persist" (a
+trail's backing layer can be off in the active preset, so once the old transient
+pulse faded nothing remained). Rows
 where the blurb is still owed render a yellow `info needed — revisit` chip;
 the subtitle on those rows carries the explicit revisit note. Visitor copy
 and revisit notes live in a single file, `website/data/aop_poi_index.json`,
@@ -312,7 +317,13 @@ already-loaded GeoJSON -- so it works offline.
   substring match, dropdown of up to 8 results with a kind tag, arrow-key
   navigation, Enter selects, Escape clears.
 - On select it `fitBounds`/`flyTo`s to the feature, auto-enables the feature's
-  layer toggle if it was off, and flashes a yellow highlight pulse.
+  layer toggle if it was off, and flashes a highlight pulse that then **holds
+  steady on the selection until the next select** (v83 — see the POI directory
+  note above; same `search-highlight` source/pulse).
+- Trail labels are **number-first** (v83): the `aop-trail-network-labels`
+  `text-field` reads `"N Name"` for a known-name trail (e.g. `1 Launchpad`), the
+  bare number for an unnamed trail (`15`), and falls back to the name for the rare
+  named-but-unnumbered trail. AOP identifies trails by number, so the number leads.
 - Tag aliases (added 2026-05-23): `indexFeatures` accepts an optional
   `aliasesFor(props)` that adds extra search terms per entry. Event-schedule
   anchors pass their `location_tag` (e.g. `#pavilion`, `#registration`)
@@ -498,8 +509,13 @@ Recorded on 2026-05-20:
 - Source: `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png`, `encoding: 'terrarium'`, `maxzoom: 15`.
 - 2D shading: MapLibre `hillshade` layer `lidar-hillshade`, toggle `Lidar hillshade (USGS 3DEP)`.
 - 3D terrain: `map.setTerrain` with exaggeration 1.4 plus `map.setSky`
-  atmosphere, controlled by the dedicated `3D` button. Drag with right-click /
-  two-finger to tilt and rotate.
+  atmosphere, controlled by the dedicated `3D` button. **Orientation is locked
+  (v83):** gesture pitch + rotate are disabled (`touchPitch.disable()`,
+  `dragRotate.disable()`, plus the long-standing `touchZoomRotate.disableRotation()`)
+  so stray fingers can't tilt or spin the map — the user hit accidental pan/tilt on
+  the 3D view. Pitch is button-only: the `3D` button eases to 60°, the zoom presets
+  reset to flat west-up. One-finger pan and pinch/scroll zoom are unchanged;
+  programmatic `easeTo`/`flyTo` are unaffected.
 - Attribution shown in the viewer credits AWS Terrain Tiles (USGS 3DEP, SRTM, GMTED, ETOPO1).
 - Verified with `mvp/scripts/playwright_verify_lidar_tiles.py` on 2026-05-20: 21 of 21 checks PASS, 109 AWS Terrarium tile requests during the run, 0 console errors.
 - The hillshade and 3D terrain are global-DEM derivatives, not the locally-derived 1-meter DEM lidar product. The locally-derived contour layer below is the lidar-grade product; swapping the hillshade onto AOP-specific 1 m DEM tiles is tracked at `tasks/01_mvp/_readme.md` item #10.
@@ -830,14 +846,24 @@ Recorded 2026-05-21 (rebuilt the same day onto lidar + leaf-on imagery).
   recoverable from git + the cache + the pipeline — not banned limiting code
   (`ai_rules/no_limiting_code_mvp.md` defers the display call to the user).
   Committed as `da5d032 v79`.
-- **Corner render fix.** The first pass dissolved the canopy into one
+- **Corner render fix (v81).** The first pass dissolved the canopy into one
   ~28k-vertex / 282-hole polygon, which MapLibre's `fill` tessellation could not
   fully draw — the map's TR/BR/BL corners showed empty paper even though dense
-  forest is there (the user checked against the satellite). The script now caps
-  complexity after the union: drop interior holes below ~5000 m² + light
-  Douglas-Peucker simplify, taking the worst polygon to 3976 verts / 47 holes
-  (was 28107/282), coverage ±0.1%, natural edge kept (the outline still traces
-  it — no viewer change). Committed as `692464b v81`.
+  forest is there (the user checked against the satellite). v81 capped complexity
+  after the union (drop holes <~5000 m² + DP-simplify → worst polygon 3976/47).
+  Committed as `692464b v81`.
+- **Corner render fix, part 2 — subdivide the fill (v83).** The v81 cap was not
+  enough: a single 3976-vert/47-hole fill polygon still degenerated, so the whole
+  9-patch canopy rendered as just the central park blob. The real fix is to stop
+  shipping the canopy as one giant fill polygon —
+  `simplify_landcover_vegetation.py` now **grid-subdivides** the cleaned mass into
+  ~550 m cells for the fill (9-patch: 1 giant → 324 pieces, worst 202 verts;
+  park: 18, unchanged) and emits the canopy **edge as a separate LineString**
+  (`role:"outline"`). The viewer's fill layers filter to `geometry-type=Polygon`,
+  the `-outline` line layers to `LineString`, so the outline traces the true edge,
+  not the subdivision grid (`viewer_core.js` + `main.js`). Verified on `:8001`:
+  veg renders in all four quadrants, 354 features across the AOI, 0 console errors;
+  `playwright_verify_landcover.py` updated to the new contract (23 PASS). `v82→v83`.
 - Verified with `mvp/scripts/playwright_verify_landcover.py` (updated to the
   vegetation contract) plus a fresh render agent on 2026-06-14: both layers carry
   only `vegetation`, retired sub-classes gone, one flat green fill, 9-patch at the
@@ -864,6 +890,12 @@ Recorded on 2026-05-21:
   adjusted in one pass so the layers read as one map rather than a stack of
   independently-coloured overlays. POI editor category colours were muted to
   fit while staying distinguishable.
+- **Per-preset base (v83).** The map background is set per layer-preset. `Topo`
+  and `Trace` share a warm tan base `#e7ddc4`; `Park`'s background was the brighter
+  paper `#efe7d5`. Since the vegetation simplify drops non-tree ground to the base,
+  the user asked for Park's **no-tree-cover** to read as that same warm tan, so
+  `Park` (and the map's initial background) now use `#e7ddc4` too. `Satellite`
+  keeps `#efe7d5` as its imagery fallback on purpose.
 
 ## Verification scripts
 

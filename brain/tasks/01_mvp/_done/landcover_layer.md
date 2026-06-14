@@ -385,3 +385,39 @@ open ground:
   is clean against it). `sw.js`/`#appVersion` now `v82` (later contributor bumps).
   No outline/viewer change was needed — the fix keeps the natural forest edge, so
   the existing outline still traces it.
+
+## Update: corner rendering fix, part 2 — subdivide the fill (v83, 2026-06-14)
+
+The v81 complexity cap was **not enough**. The user reported the same empty
+corners again ("all but top right have un-natural rendering errors ... satellite
+confirms there are trees here"). Observed on the live `:8001` viewer at the Region
+zoom: the whole 9-patch canopy rendered as only a **central blob** (the small
+park-clipped `landcover-forest`), while the wide `landcover-9patch-forest` —
+still one ~3976-vertex / 47-hole polygon after the v81 cap — drew almost nothing.
+
+- **Real root cause.** A *single* fill polygon that large+holey still degenerates
+  in MapLibre's per-tile earcut tessellation (lines never hit this — which is why
+  the OLD outline always drew while the fill vanished). Capping vertex count alone
+  doesn't fix it; you have to stop shipping the canopy as one giant fill polygon.
+- **Fix (data, `simplify_landcover_vegetation.py`).** After the union + dehole +
+  simplify, the cleaned mass is now **grid-subdivided** for the fill: any polygon
+  over `SUBDIVIDE_VERTS` (600) is clipped into `GRID_DEG` (~0.006° ≈ 550 m) cells,
+  so every emitted fill piece is small. The dissolved canopy **edge** is emitted
+  separately as `role:"outline"` LineString features. 9-patch: 1 giant → **324
+  fill pieces + 1 outline, worst piece 202 verts / 3 holes**; park unchanged
+  (18 pieces, ≤187 verts — under the threshold, not subdivided). Adjacent pieces
+  share exact edges (no overlap → no opacity seam).
+- **Viewer (`viewer_core.js` + `main.js`).** The two fill layers filter to
+  `['==',['geometry-type'],'Polygon']`; the two `-outline` line layers filter to
+  `['==',['geometry-type'],'LineString']` — so the outline traces the true canopy
+  edge, NOT the subdivision grid. Both hosts updated (same files feed both).
+- **Verified by observation (v83, 2026-06-14).** `:8001`, fresh SW-cold context:
+  the 9-patch fill renders in **all four quadrants** (was centre-only) — quadrant
+  hit-counts TL/TR/BL/BR all ≥3; **354 features render across the AOI**; render is
+  fast (fitBounds 1.0 s, screenshot 0.5 s — no slow/hung tessellation); **0 console
+  errors**. Region screenshot `brain/output/v5_region.png` shows continuous canopy
+  to every corner. Canonical `playwright_verify_landcover.py` updated to the new
+  contract (polygons + a line outline; "no giant fill polygon" + "subdivided into
+  small pieces" guards) → **23 PASS, RESULT: PASS** (also fixed two pre-existing
+  Map-serialization hangs in that verifier — `fitBounds`/`zoomTo` arrows returned
+  the Map). `sw.js`/`#appVersion` v82→**v83**. **UNCOMMITTED** (user's git gate).

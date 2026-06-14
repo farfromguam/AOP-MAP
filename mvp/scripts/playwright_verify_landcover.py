@@ -79,8 +79,20 @@ def geojson_summary(page, url: str) -> dict | None:
           if (!r.ok) return null;
           const d = await r.json();
           const feats = d.features || [];
+          const isPoly = (t) => t === 'Polygon' || t === 'MultiPolygon';
+          const isLine = (t) => t === 'LineString' || t === 'MultiLineString';
+          const vcount = (g) => {
+            const rings = g.type === 'Polygon' ? g.coordinates
+              : g.type === 'MultiPolygon' ? g.coordinates.flat() : [];
+            return rings.reduce((s, ring) => s + ring.length, 0);
+          };
+          const polys = feats.filter((f) => isPoly(f.geometry.type));
+          const lines = feats.filter((f) => isLine(f.geometry.type));
           return {
             total: feats.length,
+            fillCount: polys.length,
+            lineCount: lines.length,
+            maxFillVerts: polys.reduce((m, f) => Math.max(m, vcount(f.geometry)), 0),
             classes: [...new Set(feats.map((f) => f.properties.class))].sort(),
             types: [...new Set(feats.map((f) => f.geometry.type))].sort()
           };
@@ -181,7 +193,10 @@ def main() -> int:
         bg = page.evaluate(
             "() => window.map.getPaintProperty('background', 'background-color')"
         )
-        check("paper background colour applied", bg == "#efe7d5", f"background={bg}")
+        # Park's no-tree-cover base is the warm tan Topo/Trace share (#e7ddc4), so
+        # the areas vegetation simplify dropped read as warm earth, not bright paper
+        # (user directive, v83). Satellite keeps #efe7d5 as its imagery fallback.
+        check("Park no-tree base colour applied", bg == "#e7ddc4", f"background={bg}")
 
         bottom = first_layer_id(page)
         check("9-patch forest renders at the base of the layer stack",
@@ -190,16 +205,22 @@ def main() -> int:
         data = landcover_data(page)
         check("aop_landcover.geojson loaded", data is not None)
         if data:
-            check("vegetation polygons present", data["total"] >= 1,
-                  f"{data['total']} features")
+            check("vegetation fill polygons present", data["fillCount"] >= 1,
+                  f"{data['fillCount']} fill polygons")
             check("layer carries the single dissolved vegetation class",
                   data["classes"] == LANDCOVER_CLASSES, str(data["classes"]))
             check("retired forest/open sub-classes are gone",
                   not (RETIRED_CLASSES & set(data["classes"])),
                   str(data["classes"]))
-            check("geometry is polygonal",
-                  set(data["types"]) <= {"Polygon", "MultiPolygon"},
+            check("geometry is polygons + a separate line outline",
+                  set(data["types"]) <= {"Polygon", "MultiPolygon", "LineString", "MultiLineString"}
+                  and data["lineCount"] >= 1,
                   str(data["types"]))
+            # Regression guard: the canopy must stay subdivided into small fill
+            # pieces. One giant polygon (the old 3976-vert mass) is what dropped
+            # the corners — fail if any fill piece grows back past the limit.
+            check("no giant fill polygon (subdivided for reliable tessellation)",
+                  data["maxFillVerts"] < 1500, f"max {data['maxFillVerts']} verts/piece")
 
         rendered = rendered_count(page, ["landcover-forest"])
         check("forest features render in viewport", rendered > 0,
@@ -219,22 +240,31 @@ def main() -> int:
         d9 = landcover9_data(page)
         check("aop_landcover_9patch.geojson loaded", d9 is not None)
         if d9:
-            check("9-patch vegetation polygons present", d9["total"] >= 1,
-                  f"{d9['total']} features")
+            check("9-patch vegetation fill polygons present", d9["fillCount"] >= 1,
+                  f"{d9['fillCount']} fill polygons")
             check("9-patch layer carries the single dissolved vegetation class",
                   d9["classes"] == LANDCOVER_CLASSES, str(d9["classes"]))
             check("9-patch retired forest/open sub-classes are gone",
                   not (RETIRED_CLASSES & set(d9["classes"])),
                   str(d9["classes"]))
-            check("9-patch geometry is polygonal",
-                  set(d9["types"]) <= {"Polygon", "MultiPolygon"},
+            check("9-patch geometry is polygons + a separate line outline",
+                  set(d9["types"]) <= {"Polygon", "MultiPolygon", "LineString", "MultiLineString"}
+                  and d9["lineCount"] >= 1,
                   str(d9["types"]))
+            # The 9-patch is where the giant polygon failed — assert it is now
+            # split into many small pieces (was 1 giant; expect hundreds).
+            check("9-patch fill is subdivided into small pieces",
+                  d9["fillCount"] >= 50 and d9["maxFillVerts"] < 1500,
+                  f"{d9['fillCount']} pieces, max {d9['maxFillVerts']} verts")
 
-        # wide view so the 9-patch context around the park is in frame
+        # wide view so the 9-patch context around the park is in frame. NB: the
+        # arrow MUST NOT return map.fitBounds(...) — that returns the Map, and
+        # Playwright hangs trying to serialize its circular structure. Wrap so the
+        # evaluate returns undefined.
         page.evaluate(
-            "() => window.map.fitBounds("
+            "() => { window.map.fitBounds("
             "[[-85.782935, 35.067164], [-85.717154, 35.117928]], "
-            "{ padding: 20, duration: 0 })"
+            "{ padding: 20, duration: 0 }); }"
         )
         page.wait_for_timeout(900)
         rendered9 = rendered_count(page, ["landcover-9patch-forest"])
@@ -316,7 +346,9 @@ def main() -> int:
             set_toggle(page, "showContours", False)
 
         print("\n== Zoomed in ==")
-        page.evaluate("() => window.map.zoomTo(15.2, { duration: 0 })")
+        # Wrap so the arrow returns undefined, not the Map (see the fitBounds note
+        # above — returning the Map hangs Playwright's serialization).
+        page.evaluate("() => { window.map.zoomTo(15.2, { duration: 0 }); }")
         page.wait_for_timeout(900)
         page.screenshot(path=str(OUTPUT_DIR / SCREENSHOTS["zoom"]))
 

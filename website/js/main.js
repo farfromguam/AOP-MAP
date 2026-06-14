@@ -7775,12 +7775,18 @@
           id: 'landcover-9patch-forest',
           type: 'fill',
           source: 'aop-landcover-9patch',
+          // Vegetation ships as grid-subdivided fill polygons (role=fill) + a
+          // separate LineString canopy edge (role=outline) — see
+          // simplify_landcover_vegetation.py. Fill draws the polygons only.
+          filter: ['==', ['geometry-type'], 'Polygon'],
           paint: { 'fill-color': LANDCOVER_FILL, 'fill-opacity': sliderPercent(landcover9Opacity) }
         });
         map.addLayer({
           id: 'landcover-9patch-forest-outline',
           type: 'line',
           source: 'aop-landcover-9patch',
+          // Canopy edge only, not the grid of subdivided-fill rings.
+          filter: ['==', ['geometry-type'], 'LineString'],
           paint: { 'line-color': LANDCOVER_OUTLINE, 'line-width': 0.6, 'line-opacity': 0.35 }
         });
       }
@@ -7802,12 +7808,15 @@
           id: 'landcover-forest',
           type: 'fill',
           source: 'aop-landcover',
+          filter: ['==', ['geometry-type'], 'Polygon'],
           paint: { 'fill-color': LANDCOVER_FILL, 'fill-opacity': 0.9 }
         });
         map.addLayer({
           id: 'landcover-forest-outline',
           type: 'line',
           source: 'aop-landcover',
+          // Canopy edge only (role=outline LineString), not the fill-piece rings.
+          filter: ['==', ['geometry-type'], 'LineString'],
           paint: { 'line-color': LANDCOVER_OUTLINE, 'line-width': 0.8, 'line-opacity': 0.55 }
         });
       }

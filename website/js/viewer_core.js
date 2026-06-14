@@ -53,7 +53,7 @@
       version: 8,
       sources: {},
       layers: [
-        { id: 'background', type: 'background', paint: { 'background-color': '#efe7d5' } }
+        { id: 'background', type: 'background', paint: { 'background-color': '#e7ddc4' } }
       ]
     },
     // Open already at the PARK frame, not the region-wide z12. The center is the
@@ -79,9 +79,16 @@
   // replaces the constructor shim the band's old proof page used to fake.
   window.AOPViewer = { map, regionBounds: REGION_BOUNDS };
 
-  // Two-finger pinch zooms immediately; keep drag-to-tilt + right-click rotate
-  // for the 3D view (main.js:163).
+  // Pinch-zoom + one-finger pan stay; LOCK orientation so stray fingers can't
+  // tilt or spin the map. The user hit accidental pan/tilt on the 3D view
+  // ("maybe it's my fingers"), so pitch is button-only now: the 3D toggle eases
+  // to 60° and the zoom presets reset to flat west-up. Disable the gesture pitch
+  // (two-finger drag) + rotate (right-click / two-finger) paths. Programmatic
+  // camera moves (easeTo/flyTo) are unaffected. (Was: keep drag-to-tilt +
+  // right-click rotate — main.js:163.)
   map.touchZoomRotate.disableRotation();
+  if (map.touchPitch) map.touchPitch.disable();
+  map.dragRotate.disable();
 
   // Bottom-left ⓘ attribution (main.js:166). Two faces of the same version:
   //  - COLLAPSED: a small "v64" label sits beside the ⓘ (#appVersion, folded in
@@ -495,7 +502,10 @@
       },
       sliders: { landcover9Opacity: 55, sfwdaOpacity: 70, sfwdaMultiply: 0 },
       paints: {
-        background: { 'background-color': '#efe7d5' },
+        // No-tree-cover base = the warm tan Topo and Trace already share, so the
+        // areas the vegetation simplify dropped read as warm earth, not bright
+        // paper. (User: "update park to have this as the no tree cover color.")
+        background: { 'background-color': '#e7ddc4' },
         'landcover-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.9 },
         'landcover-forest-outline': { 'line-color': LANDCOVER_MUTED_OUTLINE, 'line-width': 0.8, 'line-opacity': 0.55 },
         'landcover-9patch-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.55 },
@@ -869,6 +879,14 @@
   const PULSE_LINE_WIDTH_RANGE = 9;
   const PULSE_POINT_RADIUS_MIN = 12;
   const PULSE_POINT_RADIUS_RANGE = 16;
+  // After the flash, the highlight SETTLES to this steady state and PERSISTS — it
+  // marks the current selection until the user picks something else (which
+  // re-pulses on the new feature). The user: a POId trail "highlight[s] and show[s]
+  // you where they are but do not persist ... these can be active for a bit then
+  // when a user selects something else it disappears."
+  const HIGHLIGHT_HOLD_OPACITY = 0.85;
+  const HIGHLIGHT_HOLD_WIDTH = 5;
+  const HIGHLIGHT_HOLD_RADIUS = 12;
   let pulseRAF = null;
   function pulseHighlight() {
     if (!map.getLayer('search-highlight-line')) return;
@@ -879,8 +897,16 @@
     function frame(now) {
       const t = (now - start) / PULSE_DURATION_MS;
       if (t >= 1) {
-        setLayerVisibility('search-highlight-line', false);
-        setLayerVisibility('search-highlight-point', false);
+        // Hold, don't hide: settle the highlight to a steady visible state so the
+        // selected feature stays marked until the next selection replaces it.
+        if (map.getLayer('search-highlight-line')) {
+          map.setPaintProperty('search-highlight-line', 'line-opacity', HIGHLIGHT_HOLD_OPACITY);
+          map.setPaintProperty('search-highlight-line', 'line-width', HIGHLIGHT_HOLD_WIDTH);
+        }
+        if (map.getLayer('search-highlight-point')) {
+          map.setPaintProperty('search-highlight-point', 'circle-radius', HIGHLIGHT_HOLD_RADIUS);
+          map.setPaintProperty('search-highlight-point', 'circle-stroke-opacity', HIGHLIGHT_HOLD_OPACITY);
+        }
         pulseRAF = null;
         return;
       }
@@ -1783,12 +1809,19 @@
       });
       map.addLayer({
         id: 'landcover-9patch-forest', type: 'fill', source: 'aop-landcover-9patch',
-        // main.js seeds this from the (editor-only) opacity slider; the clean
-        // core uses the Park-preset default 0.55 directly (applyPreset resets it).
+        // The vegetation fill ships as small grid-subdivided polygons (role=fill)
+        // so earcut renders it everywhere; the canopy edge is a separate LineString
+        // (role=outline), drawn by the -outline layer below. main.js seeds this
+        // from the (editor-only) opacity slider; the clean core uses the Park-preset
+        // default 0.55 directly (applyPreset resets it).
+        filter: ['==', ['geometry-type'], 'Polygon'],
         paint: { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.55 }
       });
       map.addLayer({
         id: 'landcover-9patch-forest-outline', type: 'line', source: 'aop-landcover-9patch',
+        // Trace only the dissolved canopy edge (role=outline LineString) — NOT the
+        // rings of every grid-subdivided fill piece, which would draw a grid.
+        filter: ['==', ['geometry-type'], 'LineString'],
         paint: { 'line-color': LANDCOVER_MUTED_OUTLINE, 'line-width': 0.6, 'line-opacity': 0.35 }
       });
     }
@@ -1802,10 +1835,13 @@
       });
       map.addLayer({
         id: 'landcover-forest', type: 'fill', source: 'aop-landcover',
+        filter: ['==', ['geometry-type'], 'Polygon'],
         paint: { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.9 }
       });
       map.addLayer({
         id: 'landcover-forest-outline', type: 'line', source: 'aop-landcover',
+        // Canopy edge only (role=outline LineString), not the fill-piece rings.
+        filter: ['==', ['geometry-type'], 'LineString'],
         paint: { 'line-color': LANDCOVER_MUTED_OUTLINE, 'line-width': 0.8, 'line-opacity': 0.55 }
       });
     }
@@ -2157,7 +2193,20 @@
         filter: ['to-boolean', ['get', 'name']],
         layout: {
           visibility: 'none', 'symbol-placement': 'line-center',
-          'text-field': ['to-string', ['get', 'name']], 'text-size': 12
+          // AOP labels trails by NUMBER first. A trail with a known name reads
+          // "1 Launchpad"; an unnamed trail (name is just the number) reads "15";
+          // the rare name-without-number falls back to the bare name. (User:
+          // "AOP uses numbers almost exclusively.")
+          'text-field': [
+            'case',
+            ['all', ['has', 'trail_number'],
+                    ['!=', ['to-string', ['get', 'name']], ['to-string', ['get', 'trail_number']]]],
+            ['concat', ['to-string', ['get', 'trail_number']], ' ', ['to-string', ['get', 'name']]],
+            ['has', 'trail_number'],
+            ['to-string', ['get', 'trail_number']],
+            ['to-string', ['get', 'name']]
+          ],
+          'text-size': 12
         },
         paint: { 'text-color': '#111', 'text-halo-color': '#fff', 'text-halo-width': 1.6 }
       });

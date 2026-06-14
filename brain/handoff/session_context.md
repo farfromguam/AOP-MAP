@@ -11,6 +11,76 @@ Short pointer for the next session. The durable record lives in the cards
 
 ## Latest (2026-06-14)
 
+- **v83 — five-item viewer review (concurrent session; coord claim
+  `handoff/coord/five-item-review.md`).** The user listed five fixes; all shipped and
+  **verified by observation** on `:8001` (fresh SW-cold context, 0 console errors):
+  (1) **Trail labels number-first** — `aop-trail-network-labels` `text-field` now reads
+  `"N Name"` for a known-name trail (`1 Launchpad`), the bare number when unnamed (`15`),
+  name-only for the rare unnumbered trail; AOP labels by number. (2) **POI/search
+  selection persists** — the highlight pulse now SETTLES to a steady visible state and
+  holds on the selected feature until the next selection re-pulses (was: 2.6 s pulse then
+  hide, and a trail's backing layer can be off in the active preset → nothing remained;
+  the user: "they highlight … but do not persist"). (3) **3D orientation locked** —
+  `touchPitch.disable()` + `dragRotate.disable()` (plus the existing
+  `touchZoomRotate.disableRotation()`) so stray fingers can't tilt/spin the 3D map
+  ("maybe it's my fingers"); pan + pinch/scroll zoom unchanged; the `3D` button still eases
+  to pitch 60 (verified). (4) **Park no-tree base = `#e7ddc4`** — the warm tan Topo/Trace
+  already share, per "update park to have this as the no tree cover color" (initial bg +
+  Park preset; Satellite keeps `#efe7d5`). (5) **Vegetation corners** — the v81 complexity
+  cap did NOT hold (the 3976-vert/47-hole single fill polygon still degenerated → whole
+  9-patch rendered as a central blob). Real fix: `simplify_landcover_vegetation.py` now
+  **grid-subdivides** the canopy into ~550 m cells for the fill (9-patch 1 giant → **324
+  pieces, worst 202 verts**; park unchanged) and emits the edge as a separate **LineString**
+  outline; fill layers filter to `geometry-type=Polygon`, `-outline` layers to `LineString`
+  (`viewer_core.js` + `main.js`). Both data files regenerated from the 5class cache. Now
+  renders in **all 4 quadrants / 354 features across the AOI** (`brain/output/v5_region.png`).
+  `playwright_verify_landcover.py` updated to the new contract → **23 PASS** (also fixed two
+  pre-existing Map-serialization hangs in it). `sw.js`/`#appVersion` **v82→v83**. **One
+  fork to flag for the user:** item 4 reads "this" as the Topo/Trace base `#e7ddc4` — trivial
+  to flip if a different no-tree tone was meant. Cards: `tasks/01_mvp/_done/landcover_layer.md`
+  (corner fix part 2), `research/viewer.md` (labels/persist/3D/base/landcover). **No
+  `.council-cleared`** (tree commingled with the illustrator session). UNCOMMITTED (git gate).
+- **Satellite 9-patch → Illustrator hand-trace export + round-trip (NEW).** The
+  user: *"export the satellite map 9 patch for illustrator hand tracing — include
+  gold trails / waypoints / buildings … the names need to be the layer names …
+  on re-import we use those."* Built the satellite/Illustrator sibling of the
+  paper-map extraction: `mvp/scripts/export_illustrator_trace.py` writes a 4-layer
+  SVG (`brain/output/illustrator_trace/aop_satellite_trace.svg`, 9.2 MB; backdrop
+  `satellite_9patch.jpg`) — **Satellite** (locked NAIP 2023 ortho) + **Buildings**
+  (5) + **Waypoints** (5) + **Gold Trails** (120, colour=difficulty). **Each feature
+  is ONE named geometry object** (`<path>`/`<circle>`, no wrapper group, NO drawn
+  text — the user's correction: "the Front office should be a polygon named as an
+  object name not a physical document object") carrying the name in all editor
+  channels (Illustrator `_xHH_` `id`, `inkscape:label`, `serif:id`, `<title>`).
+  Frame = the raster's own **UTM 16N** grid
+  (vectors land 1:1 on imagery, no resampling; lng/lat→UTM via a self-contained
+  TM series — no GDAL/pyproj/Docker on this box). `mvp/scripts/import_illustrator_trace.py`
+  reads it back (default → `aop_trail_network.geojson`; `--all` also waypoints/
+  buildings), then `export_gold_trail_network.py` re-stamps gold `_meta`.
+  **Verified by observation:** projection round-trips sub-mm + doc bbox inside the
+  raster; building footprints land on real rooftops (`_verify_buildings_3x.png`);
+  full export→import round-trip 120/120 trails, max vertex error **0.911 cm**,
+  names exact (100/120; 20 are genuinely unnamed → placeholder id), WP/bldg 5/5.
+  Card: `tasks/14_illustrator_trace/satellite_illustrator_export.md`; search-map
+  routed. **Next: the user edits in Illustrator, then we re-import** (the importer
+  is self-round-trip-verified but its real test is the first Illustrator-saved
+  SVG). **Council-cleared twice** (Witness · Quartermaster · Mason; receipt
+  `brain/output/council/illustrator_trace_export.md`). Round 1: Mason andon — the
+  importer rebuilt trail props from 5 keys, dropping gold provenance; **fixed** by
+  embedding `data-fid` and re-merging the full prior gold props by id→name (120/120
+  keep `maturity=gold`). Round 2 (after the user's no-text correction): re-cleared
+  by Witness + Mason — SVG now has **0 `<text>` objects**, each feature one named
+  `<path>`/`<circle>` (no wrapper groups); round-trip still 120/120 @ 0.91 cm.
+  **Warden andon, NOT on this work:** the working tree is commingled with a
+  **concurrent session's** unreviewed changes — `website/js/viewer_core.js`,
+  `main.js`, `index.html`, `sw.js`, `aop_landcover*.geojson`,
+  `simplify_landcover_vegetation.py` + `obs5_*`/`v5_*`/`observe_five.py`
+  ("five-item review"). The coord board has no claim posted for it. My 6 paths are
+  on-farm + gate-clean (served gold byte-identical to HEAD; importer never run on
+  real data). **No `.council-cleared` marker written** — its hash spans all of
+  `website/`+`mvp/`, so it would falsely certify the other session's code; the Stop
+  hook will keep nudging until the trees are separated/reviewed or committed.
+  UNCOMMITTED (user's git gate).
 - **Task-tree sweep (card hygiene, no code).** Reviewed every numbered-sprint root
   card. **Sprint 13 (viewer extraction) closed:** all 9 slice cards were `[x]` done +
   verified but had never moved — created `tasks/13_viewer_extraction/_done/` and moved
