@@ -74,7 +74,24 @@ corner marks. **36 tiles present, 0 console errors**, `node --check` clean. **Tr
 raster, same as the SFWDA map):** slight softness only when you pixel-peep zoom into a single word
 (`r_2d_title_zoom.png`); crisp at region/normal zoom. Higher per-tile bake res is a possible follow-up but
 the single bake canvas must stay ≤~4096² for iOS. Proof page only — `viewer_band.js` isn't in the
-production shell, so **no sw.js bump owed**. **UNCOMMITTED** (user's git gate). Council not yet run.
+production shell, so **no sw.js bump owed**.
+
+**REFINEMENT (same session, user feedback on the draped band):** *"I see draping! looking good… top is
+fine. left should be north/south lat long cumberland plateau. right should be rock warblers trail blazing
+invitational. bottom should be the same minus the year. the bird's nose is cut off top-right. the R is cut
+off bottom-left. roads and rivers appear on top of the border — the border should be the highest."* Four
+fixes in `viewer_band.js`: (1) **label content** (the picked set, keyed to the −90 default view: top=West=
+title, left=South=`35° 00′ North · Cumberland Plateau` (kept), right=North=`Rock Warblers Trail Blazing
+Invitational` (was `85° 36′ West · Trail Blazing Invitational`), bottom=East=`South Pittsburg · Marion
+County · Tennessee` (dropped `— MMXXVI`)); (2) **corner clipping** — the bake margin `artMx/artMy 0.075→
+0.12` so the whole rotated rw-mark box (cornOut 0.052 + ~0.05 reach) stays off the canvas edge; (3) same
+fix covers the bottom-left `R`; (4) **z-order** — `raiseBand` now fires on EVERY `map.on('idle')` (was
+`once`), since the core loads roads/rivers async and would otherwise sit on top. **Verified by
+observation:** `brain/output/f_full.png` (all four new labels), `f_cornerNW.png`/`f_cornerSE.png` (bird +
+`RW` whole, no clip), z-order assertion `bandAboveAll:true` (band starts at layer idx 52, last road/water
+at 31) + `f_zorder_edge.png` (clean border over the map). 0 console errors, `node --check` clean. (The
+banner is baked TEXT→PNG raster tiles, answering the user's "jpegs or text?" — it's images now, which is
+what lets it fold.) **UNCOMMITTED** (user's git gate). Council not yet run.
 
 -----
 
