@@ -9,8 +9,15 @@ verified by observation. **Council-cleared**
 on a concurrent session's commingled tree, not this work; receipt
 `brain/output/council/illustrator_trace_export.md`). Mason andon → fixed: the
 importer now carries full gold props forward (provenance-preserving re-merge).
-UNCOMMITTED — user's git gate; no `.council-cleared` marker written because the
-tree is commingled with another session's unreviewed `website/`+`mvp/` changes.
+GIT (observed 2026-06-14): the **user committed all the code** — `website/`+`mvp/`
+(importer, waypoints + facility-pin layers, Shower House merge, `v86` bump) is in HEAD
+as the user's own commit **`59e4686`** (`git diff HEAD -- website mvp` empty; no agent
+touched git; no attribution trailer). That commit is subject-titled "v84" though its
+content is `v86` and it commingles the trace/landcover/v83 sessions — the user's commit
++ message, left as-is. Only the brain records remain uncommitted. No `.claude/.council-cleared`
+marker needed now (the committed code shows an empty diff, so the Stop hook has nothing
+material to gate). Full council (incl. waypoints + facility-label increments) cleared —
+see `brain/output/council/illustrator_trace_import.md`.
 
 The user wants to hand-trace the AOP satellite over the real imagery in Adobe
 Illustrator, refining the gold trail network and placing waypoints/buildings, then
@@ -197,6 +204,20 @@ v83 data), and (2) the waypoints had **no layer**. Fixed:
   (6 buildings), 0 fatal console errors; `_verify_waypoints_live.png`. `node --check`
   clean on `viewer_core.js`.
 
+**Building name labels (2026-06-14, user: "the farmhouse office pavillion shower
+house need labels … maybe a pin on top of the polygons"):** a polygon can be labelled
+directly (a symbol layer drops the name at the centroid), but at park zoom a bare
+floating label is hard to tie to a small footprint — so a **pin + name** reads better.
+Added `aop-facilities` (a point source DERIVED in JS from each `aop_facility===true`
+building's `centroid_lng/lat` — a circle can't sit at a polygon centroid, it draws at
+every vertex) + `aop-facility-pin` (rust `#8a4b2a` marker, distinct from the blue camp
+waypoints) + `aop-facility-labels` (name, `text-allow-overlap` so the 4 key anchors
+never declutter away). Covers **Front Office, Farmhouse, Pavilion, Shower House**; the
+two private Ellis Cove houses stay as the dark presence boxes (their data says "private
+— presence only, not a destination"). No new data file (derived from the wired
+buildings). Cache bump `v85`→`v86`. **Verified on `:8001`:** 4/4 pins + 4/4 names
+render, 0 fatal errors, `node --check` clean (`_verify_facility_labels.png`).
+
 **Owed / next (left for the user's call):**
 - **10 new trails need names + difficulty** (currently grey / needs-review).
 - **Waypoints are a flat raw-zone marker layer** — richer POI-tab integration
@@ -204,7 +225,14 @@ v83 data), and (2) the waypoints had **no layer**. Fixed:
   `northstar/source_register.md`. The trace `permission` is still "SFWDA — TBD".
 - **Front Office** refined geometry from the trace not yet applied (cosmetic;
   existing FEMA footprint still renders).
-- **The `v84` bump + commit are the user's git gate** (uncommitted).
+- **Git state (observed):** the user **committed all the code** — `website/` + `mvp/`
+  (the importer, the waypoints + facility-pin layers, the Shower House merge, and the
+  `v86` bump) are in HEAD as the user's own commit **`59e4686`** (author Christopher
+  Fryman; `git diff HEAD -- website mvp` empty). No agent touched git. Note: that
+  commit's subject reads "v84" though its content is `v86`, and it commingles the
+  trace, landcover, and v83 sessions — the user's commit + message, left as-is (not the
+  agent's to rewrite). **Only the brain records remain uncommitted** (this card, the
+  handoff, the verifiers/screenshots) — the user commits those when they choose.
 - `AOP Pavilion` waypoint was deleted by the user (the Pavilion *building* stays).
 
 ## Open / next

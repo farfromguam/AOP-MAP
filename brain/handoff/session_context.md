@@ -34,10 +34,20 @@ Short pointer for the next session. The durable record lives in the cards
   (merge, not swap — keeps the 5 existing buildings' FEMA provenance), and bumped
   `v83`→`v84` (`sw.js` + `index.html`). Verified on `:8001`
   (`brain/output/verify_waypoints_layer.py` PASS — 26/26 waypoints render, Shower
-  House present, 0 fatal errors; `node --check` clean). **Owed:** name the 10 new
-  trails; richer POI-tab integration (blurbs/icons/search) for the waypoints; apply
-  Front Office's refined footprint. Card:
-  `tasks/14_illustrator_trace/satellite_illustrator_export.md`. UNCOMMITTED (git gate; the v84 bump + commit are the user's).
+  House present, 0 fatal errors; `node --check` clean). **Then building name labels**
+  (user: facilities "need labels … maybe a pin on top"): derived `aop-facilities`
+  point source from the 4 facility-building centroids → rust `aop-facility-pin` +
+  `aop-facility-labels` (allow-overlap) for Front Office/Farmhouse/Pavilion/Shower
+  House; private houses stay presence-boxes. `v85`→`v86`. Verified `:8001` (4/4 pins +
+  names, 0 errors). **Owed:** name the 10 new trails; richer POI-tab integration
+  (blurbs/icons/search) for the waypoints; apply Front Office's refined footprint;
+  camp area is getting dense (26 waypoints + 4 facility pins) → may want zoom-gated
+  declutter later. Card:
+  `tasks/14_illustrator_trace/satellite_illustrator_export.md`. **Git (observed): the
+  user committed all the code** (`website/`+`mvp/`, incl. `v86`) as their own commit
+  `59e4686` — `git diff HEAD -- website mvp` empty; no agent touched git. (That commit
+  is subject-titled "v84" but holds v86 and commingles the trace/landcover/v83 sessions
+  — the user's commit, left as-is.) Only the brain records remain uncommitted.
 
 - **Vegetation land cover → editable SVG round-trip (NEW).** The user: *"I need the
   landcover exported to a svg so I can edit it … some polygons … manually resolved …

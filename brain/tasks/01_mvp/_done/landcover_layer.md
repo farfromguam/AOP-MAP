@@ -549,3 +549,53 @@ at integration, expose ONE shared recovery (a `recover_frame(target)` both call)
 of `load_meta` re-implementing the raster fallback it currently `sys.exit`s on.
 **Council-reviewed:** this map-test delta cleared all four seats (Witness · Warden ·
 Mason · Quartermaster), 2026-06-14. **UNCOMMITTED** (git gate).
+
+### Update: INTEGRATED into the viewer — subdivided + `#D1D2B8` (2026-06-14)
+
+The user: *"integrate it, ship the subdivided form. make the green this color: D1D2B8."*
+
+- **Data baked.** `import_landcover_svg.py brain/import/trace_upload/aop_landcover_trace.svg
+  --target 9patch` recovered the Affinity-stripped frame and re-baked
+  `website/data/aop_landcover_9patch.geojson` → **318 features (317 fill + 1 outline)**,
+  `_meta.maturity = hand-resolved`, replacing the machine bake (was 325). The park layer
+  (`aop_landcover.geojson`) is **unchanged** — the user only hand-edited the 9-patch; the
+  crisp park canopy still draws on top of it in the park area (same green, so it reads as
+  one mass; a park-layer edit is a separate future ask).
+- **Shared frame recovery (Quartermaster's factor-forward, done).** `recover_frame(target)`
+  now lives once in `export_landcover_svg.py`; `import_landcover_svg.load_meta(root, target)`
+  calls it when the SVG metadata is stripped (new `--target` flag), and
+  `build_landcover_map_test.py` imports it instead of its own copy. No duplicate recovery.
+- **Colour.** All four landcover paint constants in `viewer_core.js`
+  (`LANDCOVER_{MUTED,RELIEF}_{FILL,OUTLINE}`) set to **`#D1D2B8`** — one light-sage green,
+  fill == outline so there's no contrasting border (the outline still bridges sub-pixel
+  grid slivers, invisibly). `node --check` clean.
+- **Opacity unchanged (a noted fork).** The viewer composites vegetation at its existing
+  per-preset opacity (9-patch 0.55 / park 0.9 in Park; 0.38 / 0.62 in Topo), so `#D1D2B8`
+  reads as a soft wash — fainter than the solid (opacity-1) map test the user approved.
+  Left as-is because the ask was data+colour, not opacity; flagged to the user to crank
+  solid if they want the test's punchier look.
+- **Version.** A concurrent session bumped the shared `sw.js`/`#appVersion` to **v86**
+  (its facility-label work) *after* these edits landed in the same files, so v86 ships the
+  landcover changes too — no separate bump.
+- **Verified by observation (`:8001`, SW-cold).** `getPaintProperty` → both landcover fills
+  `#D1D2B8`; the 9-patch fill renders across the full AOI (sage canopy, tan fields/clearings
+  cut out, no dropped corners — `brain/output/landcover_trace/_integrate_aoi.png`); **0
+  console errors**. The canonical `playwright_verify_landcover.py` has stale hard counts
+  (expects the old 324-piece bake) → owed a count refresh to 317.
+- **Commingled tree / git gate.** `viewer_core.js` + `sw.js` + `index.html` are shared with
+  the concurrent illustrator-trace/waypoints session; my landcover hunks were the colour
+  constants + the data file (`aop_landcover_9patch.geojson`) + the three scripts. The user
+  has since **committed** the whole `website/`+`mvp/` tree — the `#D1D2B8` constants landed
+  in **v84** (`59e4686`) and v86 carries them forward; `git status` for `website`/`mvp` is
+  clean. What is still **UNCOMMITTED** is this brain record (the card + `handoff/session_context.md`
+  + the `brain/output/landcover_trace/` PNGs) — the brain's own write, the user's git gate.
+- **No tessellation bug in the REAL viewer (the user's actual worry).** The earlier map
+  test was isolated/single-layer; the council Witness independently drove the real
+  two-layer viewer (`:8001`, SW-cold) and confirmed the high-vertex shape renders fully:
+  `querySourceFeatures('aop-landcover-9patch')` = 822 loaded, `queryRenderedFeatures`
+  non-zero in **every** quadrant + both tight corners, screenshots show sage to every
+  edge with clearings cut out — **no dropped corners/chunks**, 0 console errors. The
+  v83 empty-corner bug did **not** appear with the subdivided form in the live viewer.
+- **Council: all five seats clear** (Witness · Warden · Quartermaster · Mason · Scribe),
+  2026-06-14. Scribe pulled one andon — the card's earlier "UNCOMMITTED" line was false
+  (the tree was already committed as v84) — corrected in place (this block).
