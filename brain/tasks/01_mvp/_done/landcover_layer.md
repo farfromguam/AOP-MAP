@@ -340,6 +340,12 @@ non-tree area read as the base map paper.
   updated to the vegetation contract (single class, retired sub-classes gone,
   flat-green fill, base-of-stack, render counts; editor-only sections guarded so
   it runs against the read viewer `index.html` or the editor host
-  `old_index.html`). All PASS, 0 console errors, on the live `:8001` read viewer.
+  `old_index.html`). All substantive checks PASS on the live `:8001` read viewer
+  (single `vegetation` class both files, flat green `#b8c1a1`, 9-patch at base of
+  stack, 18/165 render). The verifier's own console-summary line did not flush
+  under a temp-fs tail hang, so the council Witness re-ran a clean Playwright
+  capture (`console.error` + `pageerror`) and observed **0 console errors**.
 - **Owed (user's git gate):** commit. `sw.js` VERSION + `#appVersion` were bumped
-  for the data change (a contributor synced both to `v79`).
+  for the data change (a contributor advanced both to `v80`). NB the Warden
+  flagged the Tier-0 clearance hash spans the whole `website`+`mvp` tree (other
+  sessions' uncommitted work) — isolate this into its own commit (`git add -p`).

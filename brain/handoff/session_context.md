@@ -11,11 +11,47 @@ Short pointer for the next session. The durable record lives in the cards
 
 ## Latest (2026-06-14)
 
-The recent thrust is **extracting the read viewer into a standalone shell**
+- **Task-tree sweep (card hygiene, no code).** Reviewed every numbered-sprint root
+  card. **Sprint 13 (viewer extraction) closed:** all 9 slice cards were `[x]` done +
+  verified but had never moved — created `tasks/13_viewer_extraction/_done/` and moved
+  them in; the slate-complete status is recorded in that sprint's `_readme.md`; the one
+  future item (on-tester edit FAB) was extracted to `tasks/20_deferred/tester_edit_fab.md`.
+  **`gold_slice6_backlog.md` closed:** its done bulk moved to
+  `tasks/06_going_gold/_done/`, its four still-open items (G_D destructive parity, G_B
+  finding 5, GAP B, G_F) extracted to `tasks/20_deferred/gold_slice6_remainder.md`.
+  **`universal_feature_layer.md`** banner updated to DONE (work shipped via the eight
+  Sprint-05 sub-cards; kept at root for its inbound links incl. the northstar). Done
+  spine cards the brain deliberately keeps at root (`gold_migration.md`,
+  `08_data_normalization/star_driven_poi_normalization.md`,
+  `09_editor_maturity/editor_completeness.md` + the two `shadow_*` cards,
+  `11_client_convergence/client_layer_registry.md`) were assessed + left in place (they
+  already carry DONE/status banners; their held remainders are tracked elsewhere).
+  `06_going_gold/schema_conformance_audit.md` is genuinely **unstarted** (Sprint 06's
+  guardrail slate) → left as open sprint work. `03_event_app/misc_3.md` left active per
+  the user's standing request. No code/version touched; nothing committed.
+
+The prior thrust is **extracting the read viewer into a standalone shell**
 (`website/viewer_core.js` + `viewer.css`, served as `SHELL_ASSETS`/SWR) and
 re-attaching the pieces that were severed in the split. Most recent landings,
 all **UNCOMMITTED** (user's git gate):
 
+- **v81 — Locate copy = bird-flies miles, drop drive time, and a VISIBLE failure
+  path.** Testing v80 on the phone (confirmed on v80), the user saw nothing off-park.
+  Root cause wasn't cache: the v80 high-accuracy read hit the error path on a
+  slow/blocked phone GPS and fell back to a *silent* `geolocate.trigger()` (no-op
+  off-park) — dead button again. Fix (`viewer_core.js` only): far notice now reads
+  *"You're &lt;dist&gt; away / from the park, as the bird flies"* (drive-time estimate
+  removed); a denied/failed fix now SHOWS *"Couldn't get your location / Turn on
+  Location access and try again"* instead of no-op'ing; and the branch read is coarse +
+  fast (`enableHighAccuracy:false`) so it doesn't stall on a GPS lock (the on-site dot
+  still uses the control's high accuracy). Verified by observation
+  (`verify_locate_travel.py`, now 4 cases incl. revoked-permission; screenshots add
+  `locate_travel_denied.png`). `sw.js`/`#appVersion` v80→v81. Card addendum (same
+  card, now under `_done/`). **Council cleared (Witness · Warden · Mason; receipts
+  `brain/output/council/v81_locate_followup.md`).** The Witness pulled one andon — not
+  on the feature but on an over-stated stability claim; the *verifier harness* was
+  hardened (nav-retry + gl/transient/real noise classifier), re-run reproducibly clean
+  (10/10 + 5/5, 0 real errors), and re-reviewed → clear. UNCOMMITTED (user's git gate).
 - **v80 — off-park Locate now shows travel-to-park, not a dead button.** The user:
   "the blue button does nothing if you are not on the park." Right — the camera is
   leashed to the printed sheet (`maxBounds`), so a real GPS fix from home lands
@@ -30,8 +66,10 @@ all **UNCOMMITTED** (user's git gate):
   (`brain/output/verify_locate_travel.py`, Playwright :8001 spoofed geolocation,
   3/3 PASS, 0 errors; screenshots `locate_travel_{chattanooga,nashville,atpark}.png`).
   `sw.js`/`#appVersion` v79→v80. Card addendum:
-  `tasks/13_viewer_extraction/viewer_locate_install_version.md`. **Council owed.**
-  UNCOMMITTED (user's git gate).
+  `tasks/13_viewer_extraction/_done/viewer_locate_install_version.md`. **Council cleared
+  (core three; receipts `brain/output/council/v80_locate_travel.md`).** **COMMITTED by
+  the user** as `cdcc918 v80` ("wanted to see it in the remote") — the user's own git
+  gate; no agent touched git.
 - **Ground cover simplified to one vegetation layer (data mutation).** The
   user's call: combine the two forest greens into a single `vegetation` layer
   and let every non-tree area read as the base map paper.
@@ -44,11 +82,15 @@ all **UNCOMMITTED** (user's git gate):
   carry the old `match`, falls through to the same green — cleanup owed on
   editor port). `playwright_verify_landcover.py` updated to the vegetation
   contract and re-run on the live read viewer: single class, retired sub-classes
-  gone, flat green, base-of-stack, 18/165 render — all PASS; rendered screenshots
-  show green vegetation on paper. Card addendum: `tasks/01_mvp/_done/landcover_layer.md`
-  ("Update: vegetation simplification"); `research/viewer.md` Land-Cover section
-  updated. `sw.js`/`#appVersion` rode the contributor v79 bump. **Council owed on
-  the diff.** UNCOMMITTED (user's git gate).
+  gone, flat green, base-of-stack, 18/165 render — substantive checks PASS
+  (console-summary line didn't flush under a temp-fs hang; council Witness re-ran
+  a clean capture → 0 console errors); screenshots show green vegetation on paper.
+  Card addendum: `tasks/01_mvp/_done/landcover_layer.md` ("Update: vegetation
+  simplification"); `research/viewer.md` Land-Cover section updated.
+  `sw.js`/`#appVersion` ride the contributor v80 bump. **Council reviewed
+  (2026-06-14): Witness·Warden·Quartermaster·Mason clear; Scribe andon →
+  records corrected (this).** UNCOMMITTED (user's git gate; Warden: isolate into
+  its own commit — the Tier-0 hash spans other sessions' work).
 - **v79 — all event copy rewritten from `brain/import/TBI.copy`** (the event lead's
   real copy). Council-cleared at v78 (core three: witness·warden·quartermaster, all
   `clear`; receipts in `brain/output/council/*_tbi_copy.md`); v79 is the one
@@ -92,9 +134,9 @@ all **UNCOMMITTED** (user's git gate):
   `VERSION` advance **v75 → v76** (comment-only delta; satisfies the shell-asset → bump
   discipline). Those deletions + the comment fix + the v76 bump + this card/handoff
   update are **UNCOMMITTED** (user's git gate). Card addendum on
-  `tasks/13_viewer_extraction/viewer_band_merge.md`.
+  `tasks/13_viewer_extraction/_done/viewer_band_merge.md`.
 - **Schedule loading spinner + single-number search review.** Card:
-  `tasks/13_viewer_extraction/viewer_schedule_loading.md`. (1) The Events tab's bare
+  `tasks/13_viewer_extraction/_done/viewer_schedule_loading.md`. (1) The Events tab's bare
   `Loading schedule...` text is now the designed **spinner row** from
   `calendar_placeholder_v2_spinner.html` ("V2"): ring + "Loading events… / Schedule
   arriving shortly", shown only while the schedule JSON loads (the existing
@@ -117,7 +159,7 @@ all **UNCOMMITTED** (user's git gate):
   `.util-ios-hint`). Verified by observation (Playwright `:8001`): the empty regions now
   return `canvas` `cur=grab`, every control still clicks. v71→v72 (`sw.js` + `#appVersion`).
   **UNCOMMITTED** (user's git gate). Addendum on
-  `tasks/13_viewer_extraction/viewer_drawer_schedule.md`.
+  `tasks/13_viewer_extraction/_done/viewer_drawer_schedule.md`.
 - **v71 — the off-edge band is merged into the clean read viewer.** The geolocated
   neat-line band (`viewer_band.js`, 38 layers: paper mask + keyline + 36 draped art
   tiles) now ships in `index.html`, not just the proof page. `viewer_core.js` grew
@@ -129,7 +171,7 @@ all **UNCOMMITTED** (user's git gate):
   idle-only. `sw.js` precaches `viewer_band.js` + `rw-mark.svg`; both bumped v70→v71.
   No CRUD crossed (read viewer stays read-only). Verified by observation (real Chrome
   / Playwright: 38 layers, z-order holds top, 8-point paper-perimeter PIL sample,
-  presets PASS). Card: `tasks/13_viewer_extraction/viewer_band_merge.md`. Council
+  presets PASS). Card: `tasks/13_viewer_extraction/_done/viewer_band_merge.md`. Council
   reviewed on the diff. **Owed (user's gate):** the commit. (The spent scaffolding —
   `viewer_banded.html`, `viewer_banded_compare.html`, `css/viewer_band.css` — was retired
   2026-06-14; see the v75 entry above.)
@@ -137,7 +179,7 @@ all **UNCOMMITTED** (user's git gate):
   stores `{search,hot,cal}` booleans, read on init / written on each tab click in
   `viewer_core.js`; clipboard drawer height (`aop_lr_card_height_v1`) verified
   end-to-end. 18/18 Playwright PASS (`verify_drawer_persist.py`), 0 errors. Card
-  addendum on `tasks/13_viewer_extraction/viewer_drawer_schedule.md`. Council not
+  addendum on `tasks/13_viewer_extraction/_done/viewer_drawer_schedule.md`. Council not
   yet run.
 - **v69 — tester mode = `?tester=1`** (not a `tester.html`; `editor_is_the_viewer`).
   Date offset stays `?clock=`; added a lat/long GPS offset that wraps

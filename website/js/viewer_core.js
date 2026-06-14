@@ -205,10 +205,13 @@
     // so a real GPS fix from off-park lands outside maxBounds — MapLibre can't pan to
     // it and the blue dot can't show, which made Locate look dead from home. So we
     // read the fix ONCE first: at/near the park, hand off to the normal blue-dot
-    // follow flow; far away, tell the visitor how far the park is and a rough drive.
-    // The estimate is offline-only (great-circle × road-circuity ÷ assumed speed) —
-    // no routing key, honest as an approximation. (In ?tester=1 the GPS shim above
-    // pins the fix to the park, so this always takes the near branch — by design.)
+    // follow flow; far away, show the straight-line ("as the bird flies") miles to
+    // the park; if the fix fails, SAY SO in the notice (never silently dead — that
+    // was the off-park "button does nothing" report). Coarse + fast
+    // (enableHighAccuracy:false) — we only need a rough distance to pick the branch,
+    // so don't wait on a slow high-accuracy GPS lock; the on-site dot uses the
+    // control's own high accuracy. (In ?tester=1 the GPS shim above pins the fix to
+    // the park, so this always takes the near branch — by design.)
     const NEAR_MI = 3; // inside this, you're effectively at the park → show the dot
     const milesToPark = (lng, lat) => {
       const R = 3958.8, toRad = (d) => d * Math.PI / 180;
@@ -217,20 +220,12 @@
         Math.cos(toRad(PARK_ANCHOR[1])) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
       return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     };
-    const fmtMiles = (mi) => mi < 1 ? 'Less than a mile' : (mi < 10 ? `${mi.toFixed(1)} mi` : `${Math.round(mi)} mi`);
-    const fmtDrive = (mi) => {
-      const roadMi = mi * 1.2;                 // straight-line → road distance
-      const mph = mi < 12 ? 32 : 55;           // local streets vs. mostly-highway
-      let mins = Math.round(roadMi / mph * 60 / 5) * 5; // round to 5 min
-      if (mins < 60) return `about a ${mins} min drive`;
-      const h = Math.floor(mins / 60), m = mins % 60;
-      return m === 0 ? `about a ${h} hr drive` : `about a ${h} hr ${m} min drive`;
-    };
+    const fmtMiles = (mi) => mi < 1 ? 'under a mile' : (mi < 10 ? `${mi.toFixed(1)} mi` : `${Math.round(mi)} mi`);
     const notice = document.getElementById('locateNotice');
     let noticeTimer = null;
-    const showTravel = (mi) => {
+    const showNotice = (strong, sub) => {
       if (!notice) return;
-      notice.innerHTML = `<strong>${fmtMiles(mi)} to the park</strong><span>${fmtDrive(mi)} — your live dot shows on-site</span>`;
+      notice.innerHTML = `<strong>${strong}</strong><span>${sub}</span>`;
       notice.hidden = false;
       if (noticeTimer) clearTimeout(noticeTimer);
       noticeTimer = setTimeout(() => { notice.hidden = true; }, 8000);
@@ -239,15 +234,18 @@
 
     locateBtn.addEventListener('click', () => {
       if (notice) notice.hidden = true;
-      if (!navigator.geolocation) { geolocate.trigger(); return; }
+      if (!navigator.geolocation) {
+        showNotice("Location isn't available", 'This device or browser blocks GPS');
+        return;
+      }
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const mi = milesToPark(pos.coords.longitude, pos.coords.latitude);
           if (mi <= NEAR_MI) geolocate.trigger(); // at the park → blue dot + follow
-          else showTravel(mi);                    // off-park → travel notice
+          else showNotice(`You're ${fmtMiles(mi)} away`, 'from the park, as the bird flies');
         },
-        () => geolocate.trigger(),                // denied/failed → let the control surface it
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+        () => showNotice("Couldn't get your location", 'Turn on Location access and try again'),
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
       );
     });
   }

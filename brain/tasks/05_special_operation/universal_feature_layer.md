@@ -1,9 +1,20 @@
 # Universal feature-layer interface — kill the `layerKey === 'X'` smear
 
-> **Active — opened 2026-06-06.** Root-cause work behind the user's "this is
-> slop / not universal / there should not be 7 of anything" review. The ★→POI
-> desync (`_done/editor_unified_tree.md` follow-up) was one symptom; this card
-> is the disease.
+> **✅ DONE — staged migration complete (2026-06-06; recorded 2026-06-14).** This is
+> the **founding/spine card** for Sprint 05 (`special_operation`). Its three staged
+> goals all shipped via the eight executable sub-cards now in `_done/`
+> (`01_delete_dead_inline_editor` … `08_dedup_fly_button_row_builder`), each
+> validated by observation and council-reviewed (see `_readme.md` "Sprint 05 status").
+> Stage 1 landed here directly; stages 2–3 are carried by sub-cards 01–08.
+> **Kept at root (not moved to `_done/`)** to preserve its inbound links — the eight
+> sub-cards, `_readme.md`, `04_edit/_readme.md`, and `northstar/editor_architecture_contracts.md`
+> all reference it by path; this banner + the per-stage DONE markers are the acceptance
+> record (same convention as Sprint 08's spine card). **Owed (user's git gate):** the
+> commit + the v52 bump (the sprint's standing owed item — `../../ai_rules/no_commits.md`).
+>
+> Root-cause work behind the user's "this is slop / not universal / there should not
+> be 7 of anything" review. The ★→POI desync (`_done/editor_unified_tree.md`
+> follow-up) was one symptom; this card is the disease.
 
 TL;DR:
 - The codebase has a **per-layer registry** (`FEATURE_LIST_LAYERS` +
@@ -63,18 +74,20 @@ slop risk. So: small, dispatch-preserving steps, DOM-verified.
    'editorPois'` branches. Verified: `editorPois` ★ toggle still propagates to
    both the left tab and the right ★ list in sync, zero console errors, file
    parses clean (`node -c`).
-2. **NEXT — property/action axis.** Push category-field, duplicate, delete,
-   property-persist, and the buildings status field into spec strategies
-   (`fields`, `actions`, `persistProperty`). Clears the remaining ~6 branches
-   (main.js:4096, 4168, 4215, 4328, 4427, 4583) + the loop guard at 7132.
-3. **NEXT — collapse the two list engines.** Replace `buildPoiGroups`' 7 blocks
-   with one `collectStarredDestinations()` that walks the registry's
-   destination layers, filters `highlight === true`, returns uniform rows.
-   `renderPoiTab` (left, grouped) and `renderVisitorListGroup` (right, flat)
-   both consume it. Register **trails** as a destination layer so they're
-   starrable like everything else. Brand logos leave the ★ axis
-   (`star_driven_poi_list.md` decision #3). POI tab then starts empty and is
-   exactly the starred set — `star_driven_poi_list.md` decisions #1/#2/#4.
+2. **DONE — property/action axis.** Shipped via `_done/02_spec_fields_actions_persist_axis.md`
+   (+ the dead `buildInlineEditor` deleted by `_done/01_delete_dead_inline_editor.md`
+   and the parallel config maps folded by `_done/03_collapse_parallel_config_maps.md`):
+   category-field, duplicate, delete, property-persist, and the buildings status field
+   moved into spec strategies (`fields`, `actions`, `persistProperty`); the per-layer
+   branches cleared. Validated 2026-06-06 (C1 region = 0 `layerKey === '…'` branches).
+3. **DONE — collapse the two list engines.** Shipped via
+   `_done/06_one_star_driven_collector.md` (+ `_done/05_register_trails_as_destination_layer.md`,
+   `_done/04_dedup_hotspot_spec_twins.md`, `_done/07_panel_create_defaults_and_host_bridge.md`,
+   `_done/08_dedup_fly_button_row_builder.md`): one `collectStarredDestinations()` walks the
+   registry's destination layers filtered to `highlight === true`; trails registered as a
+   destination layer; brand logos off the ★ axis. The POI-tab "starts empty / star-only"
+   flip was carried later by Sprint 08 (`../08_data_normalization/star_driven_poi_normalization.md`)
+   per `star_driven_poi_list.md` decisions #1/#2/#4.
 
 ## Related
 

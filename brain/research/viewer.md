@@ -831,13 +831,16 @@ Recorded 2026-05-21 (rebuilt the same day onto lidar + leaf-on imagery).
   pipeline — not banned limiting code (`ai_rules/no_limiting_code_mvp.md` defers
   the display call to the user).
 - Verified with `mvp/scripts/playwright_verify_landcover.py` (updated to the
-  vegetation contract) on 2026-06-14: PASS, 0 console errors — both layers carry
-  only `vegetation`, the retired forest/open sub-classes are gone, the fill is
-  one flat green, the 9-patch sits at the base of the stack, and both render.
-  (The script's editor-only sections — the layer checkboxes and 9-patch opacity
-  drawer — are guarded so it runs against either the read viewer `index.html` or
-  the editor host `old_index.html`.) `sw.js`/`#appVersion` bumped on the data
-  change.
+  vegetation contract) on 2026-06-14: all substantive checks PASS on the live
+  read viewer — both layers carry only `vegetation`, the retired forest/open
+  sub-classes are gone, the fill is one flat green, the 9-patch sits at the base
+  of the stack, and both render (18 / 165). The verifier's own console-summary
+  line did not flush under a temp-fs tail hang, so the council Witness re-ran a
+  clean Playwright capture and observed 0 console errors. (The script's
+  editor-only sections — the layer checkboxes and 9-patch opacity drawer — are
+  guarded so it runs against either the read viewer `index.html` or the editor
+  host `old_index.html`.) `sw.js`/`#appVersion` were advanced to `v80` for the
+  data change (user's git gate to commit).
 - Build card: `tasks/01_mvp/landcover_layer.md` ("Update: lidar canopy-height
   rebuild"; "Update: vegetation simplification").
 

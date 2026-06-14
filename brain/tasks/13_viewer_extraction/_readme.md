@@ -14,6 +14,36 @@ TL;DR:
 
 -----
 
+## ✅ Sprint 13 status — SLATE COMPLETE (2026-06-14)
+
+Every slice on the slate below shipped, was verified by observation, and is now in
+`_done/`:
+
+- **Slice 1 — core scaffold + presets/zoom/3D** → `_done/viewer_core_scaffold.md`
+- **Slice 2 — search** → `_done/viewer_search.md`
+- **Slice 3 — left-rail drawer + Calendar/Events** → `_done/viewer_drawer_schedule.md`
+- **Slice 4 — POI popups + ★-destinations directory** → `_done/viewer_poi.md`
+- **Slice 5 — Hot now (event + trails lanes)** → `_done/viewer_hot.md`
+- **Slice 6 — Locate / Install / version / PWA + `?tester=1`** → `_done/viewer_locate_install_version.md`
+  (carries the v80/v81 off-park travel notice; **council owed on the v81 follow-up diff**)
+- **Slice 7 — the swap (viewer becomes `index.html`, old parked as `old_index.html`) + blue Locate FAB** → `_done/viewer_swap.md`
+- **Slice 8 — off-edge decorative band merged into the read viewer** → `_done/viewer_band_merge.md`
+- **Schedule loading spinner + single-number search review** → `_done/viewer_schedule_loading.md`
+
+**Deferred (the one named future item):** the on-tester **edit FAB** waits on the
+editor being ported into the read core — extracted to
+`../20_deferred/tester_edit_fab.md` so it isn't lost.
+
+**Owed (the user's git gate):** the uncommitted viewer-extraction batch + its
+`sw.js`/`#appVersion` bumps (the working tree rode v66→v81 across these slices; `cdcc918`
+committed v80, the rest is uncommitted). The loop never commits or bumps
+(`../../ai_rules/no_commits.md`). The extraction's value still rides on the user's
+commit gate. The committed verifiers under `mvp/scripts/playwright_verify_*.py` should
+be re-pointed at `old_index.html` or rewritten as viewer verifiers (noted on
+`_done/viewer_swap.md` Follow-ups).
+
+-----
+
 ## Why extraction, not subtraction (the decision)
 
 Last turn the assistant proposed subtracting the editor out of `main.js` and keeping the rest. The user

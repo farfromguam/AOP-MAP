@@ -197,5 +197,57 @@ Rendered notice confirmed in `brain/output/locate_travel_{chattanooga,nashville,
 (styled blue card, bottom-right above the FAB).
 
 Shell assets changed (`viewer_core.js` + `viewer.css` + `index.html`) → bumped **v79 →
-v80** (`sw.js` `VERSION` + `#appVersion`). **UNCOMMITTED** (user's git gate). **Council
-owed on the diff.**
+v80** (`sw.js` `VERSION` + `#appVersion`).
+
+**Council cleared (core three, 2026-06-14):** Witness `clear` (re-ran the verifier
+live, 3/3 PASS, observed rendered DOM + screenshots), Quartermaster `clear` (reuse
+holds — the `PARK_ANCHOR` rename *reduces* coord duplication, GeolocateControl reused,
+`#locateNotice` is a genuinely new surface distinct from `#message`; C1/C2/C6 hold),
+Warden code finding `clear` (every hunk on-card, no deleted directive, no agent
+attribution). Receipts: `brain/output/council/v80_locate_travel.md`. **The user
+committed it themselves** as `cdcc918 v80` ("I wanted to see it in the remote") — the
+user's own git gate, exercised; no agent touched git. (The Warden's filed andon
+assumed an *agent* commit and recommended a `reset --soft`; the Steward declined that
+as an unsolicited destructive op against the user's own commit.) **COMMITTED by the
+user** (`cdcc918`).
+
+### Follow-up: v81 — bird-flies miles, drop drive time, visible failure path
+
+The user, testing v80 on the phone (confirmed on v80 via the version number), saw
+**nothing** off-park — not the popup, not the math. Root cause was **not** stale cache:
+the v80 read used `enableHighAccuracy: true` and, on a slow/blocked phone GPS, hit the
+error path — which fell back to a silent `geolocate.trigger()` (a no-op off-park). The
+button looked dead exactly as before. Three changes (`viewer_core.js` only; copy + behavior):
+- **Copy** per the user: the far notice now reads *"You're &lt;dist&gt; away / from the
+  park, as the bird flies"*. **Drive-time estimate dropped entirely** (`fmtDrive` removed) —
+  straight-line miles only.
+- **Failure is visible, never silent.** A denied/failed fix now shows the notice
+  *"Couldn't get your location / Turn on Location access and try again"* instead of the
+  no-op trigger; missing `navigator.geolocation` shows *"Location isn't available."* This
+  is the actual fix for the "button does nothing" report.
+- **Coarse + fast read.** The branch-deciding `getCurrentPosition` is now
+  `enableHighAccuracy: false, maximumAge: 60000` — we only need rough distance, so it
+  returns fast instead of waiting on a GPS lock; the on-site blue dot still uses the
+  GeolocateControl's own high accuracy.
+
+**Verified by observation** (`verify_locate_travel.py`, now 4 cases incl. a
+revoked-permission case): Chattanooga *"You're 25 mi away … as the bird flies"* (no
+"drive"), Nashville *"94 mi away …"*, park → notice hidden + dot engages, **permission
+revoked → "Couldn't get your location" visible**. Screenshots
+`locate_travel_{chattanooga,nashville,atpark,denied}.png`. `sw.js`/`#appVersion`
+**v80 → v81**.
+
+**Council cleared (Witness · Warden · Mason, 2026-06-14;** receipts
+`brain/output/council/v81_locate_followup.md`**).** Warden + Mason clear on the first
+pass (every hunk on the ask; git gate intact; no dead code — `fmtDrive` fully removed;
+no limiting code). Witness pulled one **andon** — not on the feature (observed-correct
+throughout) but on an over-stated "3 consecutive PASS, 0 errors" claim it couldn't
+reproduce (the Playwright harness flaked ~25% on nav `TargetClosedError` + an unrelated
+`publish.geojson` fetch under load). **Resolved by hardening the harness only** (feature
+code untouched): `load_at` retries the nav; a `classify()` splits console noise into
+gl / transient / real, failing only on `real` and printing the rest as visible `[note]`
+lines. Re-run reproducibly clean (Witness 10/10, Steward 5/5, 0 real errors); Witness
+re-reviewed → **clear**, additionally confirming the noise filter cannot mask a real
+locate-path failure (the handler signals only via `#locateNotice` DOM, a channel the
+filter never reads). UNCOMMITTED at clear time (user's git gate; the v81 bump + commit
+stay the user's).
