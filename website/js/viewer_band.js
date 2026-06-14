@@ -266,7 +266,6 @@
       art.width = art.height = 0;   // release the full bake canvas
       BAND_LAYERS = ['band-mask', 'band-keyline'].concat(tileLayerIds);
       raiseBand();
-      schedulePeek();
     }
 
     // Keep the band the highest layers, even while the core is still loading. The
@@ -305,51 +304,6 @@
     // the paper margin past the border. The old snapBack() re-centred the 9-patch on
     // every release, which made the camera leash imperceptible (you could never park
     // off-centre to see it) — removed at the user's call, 2026-06-13.
-
-    // ── auto-peek — one-time on-load reveal of the printed border ─────────────
-    // The proof page advertised the band with a manual "Show me" button (an over-pan
-    // that slid the lettered edge into view, then released). The user wants that
-    // greeting automatic on the real viewer: once the band + core have settled, ease
-    // the camera back so the whole neat-line + lettering shows, hold a beat, then ease
-    // back to the view the core framed — so a first-time visitor SEES the map is a
-    // printed sheet, not ragged data edges. Runs once per load; any REAL user gesture
-    // cancels it (checked via e.originalEvent, which the programmatic camera moves
-    // below never carry), so the peek can't yank the camera from someone already
-    // interacting. killPeek is armed from boot to catch a grab before the band loads.
-    var peekDone = false, peekKilled = false, peekScheduled = false;
-    function killPeek(e) { if (e && e.originalEvent) peekKilled = true; }
-    map.on('movestart', killPeek);
-    function autoPeek() {
-      if (peekDone) return;
-      if (peekKilled || !map.getSource('band-mask')) { map.off('movestart', killPeek); return; }
-      peekDone = true;
-      var home = { center: map.getCenter(), zoom: map.getZoom(),
-                   bearing: map.getBearing(), pitch: map.getPitch() };
-      // Pull back to frame the whole printed sheet with a clear paper margin all the
-      // way round, so the full neat-line + lettering + corner marks read at once. This
-      // is the proof page's frame=out recipe: fitBounds(region) with a fat padding.
-      map.fitBounds([[W, S], [E, N]],
-        { padding: 90, bearing: home.bearing, pitch: home.pitch, duration: 900 });
-      setTimeout(function () {
-        if (peekKilled) { map.off('movestart', killPeek); return; }
-        map.easeTo({ center: home.center, zoom: home.zoom,
-                     bearing: home.bearing, pitch: home.pitch, duration: 1100 });
-        map.once('moveend', function () { map.off('movestart', killPeek); });
-      }, 2000);   // 900ms reveal + ~1.1s hold, then ease home
-    }
-    // Wait out the core's initial framing (fitToDataBounds → applyPreset) so home is
-    // the resting view: the first idle after the band is added is that settled moment.
-    // But a cold load can stay busy (tiles + ~50 async layers) for many seconds, which
-    // would bury the greeting — so cap the wait at ~4.5s (the data-frame jump lands
-    // well before that), whichever comes first. fired guards the two paths from racing.
-    function schedulePeek() {
-      if (peekScheduled) return;
-      peekScheduled = true;
-      var fired = false;
-      function go() { if (fired) return; fired = true; setTimeout(autoPeek, 150); }
-      map.once('idle', go);
-      setTimeout(go, 4500);
-    }
 
     // ── boot the band once the core's style + layers are in ──────────────────
     function whenReady(tries) {

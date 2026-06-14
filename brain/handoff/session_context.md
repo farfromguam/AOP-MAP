@@ -9,13 +9,22 @@ Short pointer for the next session. The durable record lives in the cards
 
 -----
 
-## Latest (2026-06-13)
+## Latest (2026-06-14)
 
 The recent thrust is **extracting the read viewer into a standalone shell**
 (`website/viewer_core.js` + `viewer.css`, served as `SHELL_ASSETS`/SWR) and
 re-attaching the pieces that were severed in the split. Most recent landings,
 all **UNCOMMITTED** (user's git gate):
 
+- **v75 — auto-peek removed; index stays at park zoom on load.** The user reversed
+  the earlier "it needs to stay": the on-load park → region → park reveal animation
+  in `website/js/viewer_band.js` is gone (the whole self-contained `autoPeek` /
+  `schedulePeek` / `killPeek` block + its `schedulePeek()` call). The band itself is
+  untouched — only the camera jump is removed. Verified by observation (`:8001`,
+  `brain/output/verify_no_load_peek.py`): 44/44 zoom samples at z14 across the full
+  former peek window, spread 0, 0 console errors; band still renders (38 layers).
+  `#appVersion` + `sw.js` `VERSION` v74→v75. Card addendum on
+  `tasks/13_viewer_extraction/viewer_band_merge.md`. **UNCOMMITTED** (user's git gate).
 - **Schedule loading spinner + single-number search review.** Card:
   `tasks/13_viewer_extraction/viewer_schedule_loading.md`. (1) The Events tab's bare
   `Loading schedule...` text is now the designed **spinner row** from

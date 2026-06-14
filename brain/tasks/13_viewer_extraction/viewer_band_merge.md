@@ -182,3 +182,22 @@ live on `:8001` (both serve `v73`; `node --check` clean on `sw.js`).
 **Still owed (user's git gate):** the commit itself; retire the spent scaffolding (`viewer_banded.html` — now
 also half-broken, its peek button calls the removed `gaps()`; `viewer_banded_compare.html`;
 `css/viewer_band.css`).
+
+### Auto-peek removed — 2026-06-14 (the user reversed it again)
+
+The user reversed the restore above: *"the index page loads at park zoom then goes to region zoom then goes
+back to park zoom. it should stay at park zoom and not jump on load."* That park → region → park sequence
+**was** the auto-peek (`fitBounds(region)` reveal → hold → `easeTo(home)`). Removed the whole self-contained
+block from `website/js/viewer_band.js`: the `schedulePeek()` call after `raiseBand()`, plus the `peek*` state
+vars, `killPeek` + its `movestart` listener, `autoPeek`, and `schedulePeek`. Nothing else referenced them
+(`W,S,E,N` stay — they're the band's own region corners). The band itself is untouched — it still bakes and
+floats on top; only the on-load camera animation is gone.
+
+Verified by observation (real Chromium / Playwright, `:8001`,
+`brain/output/verify_no_load_peek.py`): zoom sampled every 150ms for 7s across the full former peek window —
+**44/44 samples at z14, spread 0, zero console errors**; the band still renders (38 band layers, `band-mask`
+source present); screenshot `brain/output/no_load_peek_settled.png` shows the park-framed view with the band
+border. `node --check` clean on `viewer_band.js`.
+
+**Version bumped — 2026-06-14:** `#appVersion` (`index.html:234`) and `sw.js` `VERSION` (`:35`) both **v74 →
+v75** so installed PWA users get the peek-free `viewer_band.js`. **Still owed (user's git gate):** the commit.
