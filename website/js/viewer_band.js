@@ -270,11 +270,35 @@
       raiseBand();
     }
 
-    // Keep the band on top if the core adds any layer after us.
+    // Keep the band the highest layers, even while the core is still loading. The
+    // real viewer adds ~50 layers asynchronously over several seconds AFTER the band
+    // is added, each landing on top — so an idle-only raise leaves the band sunk
+    // under the data for the whole load (the proof's tiny core settled instantly and
+    // hid this). raiseBand re-floats every band layer; bandIsOnTop() skips the work
+    // once they're already on top, which also stops the styledata that moveLayer
+    // itself fires from looping. queueRaise coalesces a burst of core addLayer calls
+    // into one raise per frame.
+    var raising = false;
+    function bandIsOnTop() {
+      var style = map.getStyle();
+      if (!style || !style.layers || !style.layers.length) return false;
+      var ls = style.layers, top = BAND_LAYERS[BAND_LAYERS.length - 1];
+      return ls[ls.length - 1].id === top;
+    }
     function raiseBand() {
+      if (raising || !map.getSource('band-mask') || bandIsOnTop()) return;
+      raising = true;
       for (var i = 0; i < BAND_LAYERS.length; i++) {
         if (map.getLayer(BAND_LAYERS[i])) map.moveLayer(BAND_LAYERS[i]);
       }
+      raising = false;
+    }
+    var raiseQueued = false;
+    function queueRaise() {
+      if (raiseQueued) return;
+      raiseQueued = true;
+      var raf = window.requestAnimationFrame || function (f) { return setTimeout(f, 16); };
+      raf(function () { raiseQueued = false; raiseBand(); });
     }
 
     // ── snapBack (camera rubber-band) — unchanged screen-space logic ─────────
@@ -328,9 +352,11 @@
           if (document.fonts && document.fonts.ready) document.fonts.ready.then(start, start);
           else start();
         }, 1200);
-        // Re-raise on EVERY idle: the core loads roads/rivers asynchronously and would
-        // otherwise sit on top of the band. The border must stay the highest layer.
-        map.on('idle', function () { if (map.getSource('band-mask')) raiseBand(); });
+        // Re-raise whenever the core mutates the style (each async addLayer, and on
+        // preset switches) plus on idle as a backstop, so the band stays the highest
+        // layer through the entire multi-second load and across preset changes.
+        map.on('styledata', queueRaise);
+        map.on('idle', queueRaise);
         return;
       }
       if ((tries || 0) < 200) return setTimeout(function () { whenReady((tries || 0) + 1); }, 150);

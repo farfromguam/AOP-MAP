@@ -32,7 +32,7 @@
 //   3. reconcile DATA_ASSETS below with `ls website/data/`
 // Shell HTML + copy JSON self-heal (stale-while-revalidate), so a missed bump is
 // less dangerous than before — but bulky GeoJSON only refreshes on a bump.
-const VERSION = 'v70'; // keep in sync with #appVersion in index.html
+const VERSION = 'v71'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
@@ -63,6 +63,11 @@ const SHELL_ASSETS = [
   // is offline-first.
   './css/viewer.css',
   './js/viewer_core.js',
+  // Off-edge decorative band — geolocated neat-line frame drawn on top of the
+  // core (loaded by index.html after viewer_core.js). Precached so the framed
+  // viewer is offline-first; the band fetches the corner mark below at runtime.
+  './js/viewer_band.js',
+  './assets/branding/rw-mark.svg',
   // The old all-in-one page is parked at old_index.html and still uses these
   // (main.js + the embedded panel); the standalone field editors load them too.
   // Kept in the precache shell so those pages also work offline.

@@ -217,7 +217,7 @@
          viewer_core.js folds it beside the collapsed bottom-left ⓘ ("ⓘ vNN",
          hidden when expanded) and also reads it into the expanded attribution body
          as "Made by Rock Warblers · vNN". Starts hidden; JS unhides on fold. -->
-    <span id="appVersion" hidden>v70</span>
+    <span id="appVersion" hidden>v71</span>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on iOS,
          where there is no programmatic install prompt). -->
@@ -260,6 +260,11 @@
        click popups, same module the live page + editors use. -->
   <script src="./js/feature_display.js"></script>
   <script src="./js/viewer_core.js"></script>
+  <!-- Off-edge decorative band — the "printed neat-line" frame (paper mask +
+       keyline + draped lettering + Rock Warblers corner marks), drawn as
+       geolocated map layers on top of the core. Reads window.AOPViewer exposed by
+       viewer_core.js; loads after it. No CSS — the band paints inline. -->
+  <script src="./js/viewer_band.js"></script>
 
   <!-- PWA: "Install app" button + iOS hint. Hidden by default; on Chromium it
        shows once beforeinstallprompt fires and triggers the native prompt on

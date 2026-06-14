@@ -104,6 +104,38 @@ def read(p):
     except Exception:
         return ""
 if read(cleared) == h:
+    # council cleared THIS exact diff — it is "happy". Before letting the turn
+    # end, do wrap-up hygiene: nudge ONCE to prune an oversized handoff, per the
+    # "Session note" in brain/handoff/session_context.md (this gate holds no rule
+    # content of its own). It never edits the file; pruning is judgment work.
+    try:
+        ho_thresh = int(os.environ.get("AOP_HANDOFF_MAX_LINES", "400"))
+    except Exception:
+        ho_thresh = 400
+    ho_block = os.environ.get("AOP_HANDOFF_BLOCKING", "1") == "1"
+    ho_file = os.path.join(root, "brain", "handoff", "session_context.md")
+    try:
+        ho_lines = sum(1 for _ in open(ho_file, encoding="utf-8", errors="ignore")) \
+                   if os.path.isfile(ho_file) else 0
+    except Exception:
+        ho_lines = 0
+    if ho_lines > ho_thresh:
+        ho_marker = os.path.join(root, ".claude", ".handoff-nudged")
+        bucket = str(ho_lines // 100)      # re-nudge only as it keeps growing
+        if read(ho_marker) != bucket:
+            try:
+                open(ho_marker, "w").write(bucket)
+            except Exception:
+                pass
+            sys.stderr.write(
+                f"Council cleared — but brain/handoff/session_context.md is {ho_lines} lines "
+                f"(> {ho_thresh}). Per its own \"Session note\": prune it back to a short pointer and "
+                "archive the changelog to brain/handoff/session_context_<YYYYMMDD>.md (add a one-line "
+                "entry to its Archive convention index) before declaring done. Keep the durable "
+                "sections; move the session-by-session blocks to the archive. Do not auto-edit "
+                "blindly — pruning is judgment work.\n"
+            )
+            sys.exit(2 if ho_block else 0)
     sys.exit(0)                            # council already cleared THIS diff
 if read(nudged) == h:
     sys.exit(0)                            # already nudged this exact diff — don't nag every turn

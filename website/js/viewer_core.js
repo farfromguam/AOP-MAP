@@ -26,8 +26,20 @@
   'use strict';
 
   // ── Bounds (main.js:9-18) ──────────────────────────────────────────────
-  // The 9-patch data-acquisition AOI doubles as the camera leash (maxBounds).
+  // The 9-patch data-acquisition AOI is the region the decorative band frames.
   const REGION_BOUNDS = [[-85.782935283, 35.067164188], [-85.717154097, 35.117928496]];
+  // Camera leash (maxBounds): the 9-patch padded outward by ~the band's art
+  // frame, so the leash is the EDGE OF THE PRINTED SHEET. The off-edge band
+  // (viewer_band.js) draws its neat-line + lettering to REGION_BOUNDS and its art
+  // reaches ~0.12 of the region beyond it; padding to 0.13 lets the whole frame
+  // seat and a gentle over-pull peek work, while still stopping the camera before
+  // it wanders into blank paper. (Was REGION_BOUNDS exactly, pre-band.)
+  const BAND_PAD = 0.13;
+  const REGION_MAXBOUNDS = (function (b, f) {
+    const w = b[0][0], s = b[0][1], e = b[1][0], n = b[1][1];
+    const dx = (e - w) * f, dy = (n - s) * f;
+    return [[w - dx, s - dy], [e + dx, n + dy]];
+  })(REGION_BOUNDS, BAND_PAD);
   // Tighter-than-region fallback for the Park camera preset, used until
   // publish.geojson's park parcel loads.
   const PARK_BOUNDS_FALLBACK = [[-85.761008221, 35.084085624], [-85.739081159, 35.10100706]];
@@ -45,12 +57,20 @@
     center: [-85.75, 35.0925],
     zoom: 12,
     bearing: -90,
-    maxBounds: REGION_BOUNDS,
+    maxBounds: REGION_MAXBOUNDS,
     attributionControl: false
   });
 
   // Catch style/glyph/source errors from construction onward (main.js:151).
   map.on('error', (e) => { console.error(e.error || e); });
+
+  // ── Band seam ──────────────────────────────────────────────────────────
+  // Expose the live map + the (tight) region the decorative band frames, so
+  // js/viewer_band.js can attach its geolocated neat-line layers on top. The
+  // band draws to regionBounds; the camera leash is the padded REGION_MAXBOUNDS
+  // above. This is the only thing the core leaks to window, on purpose — it
+  // replaces the constructor shim the viewer_banded.html proof page used to fake.
+  window.AOPViewer = { map, regionBounds: REGION_BOUNDS };
 
   // Two-finger pinch zooms immediately; keep drag-to-tilt + right-click rotate
   // for the 3D view (main.js:163).
@@ -372,12 +392,18 @@
       });
       return;
     }
-    // Region: fit the 9-patch inset ~15% per side.
+    // Region: frame the whole 9-patch with a paper margin so the decorative band
+    // (neat-line + lettering, drawn at the 9-patch boundary by viewer_band.js) seats
+    // fully in view. The old framing inset ~15% per side to fill the viewport with the
+    // data-rich centre — but that cropped the band off every edge. Now we OUTSET ~7%
+    // per side: the band lettering sits ~4% outside the boundary, and the camera leash
+    // (maxBounds) is +13%, so this reveals the whole frame while staying inside the
+    // leash. The button's label — "the full 9-patch region" — now matches what it shows.
     const [[rw, rs], [re, rn]] = REGION_BOUNDS;
-    const insetX = (re - rw) * 0.15;
-    const insetY = (rn - rs) * 0.15;
+    const outX = (re - rw) * 0.07;
+    const outY = (rn - rs) * 0.07;
     map.fitBounds(
-      [[rw + insetX, rs + insetY], [re - insetX, rn - insetY]],
+      [[rw - outX, rs - outY], [re + outX, rn + outY]],
       { padding: 20, bearing: VIEW_BEARING, pitch: VIEW_PITCH, duration: 1100 }
     );
   }

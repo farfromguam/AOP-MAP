@@ -16,6 +16,20 @@ The recent thrust is **extracting the read viewer into a standalone shell**
 re-attaching the pieces that were severed in the split. Most recent landings,
 all **UNCOMMITTED** (user's git gate):
 
+- **v71 — the off-edge band is merged into the clean read viewer.** The geolocated
+  neat-line band (`viewer_band.js`, 38 layers: paper mask + keyline + 36 draped art
+  tiles) now ships in `index.html`, not just the proof page. `viewer_core.js` grew
+  the seam: `window.AOPViewer = { map, regionBounds }` and a padded camera leash
+  (`BAND_PAD = 0.13` → `REGION_MAXBOUNDS`) so the whole printed sheet seats; the
+  Region preset now outsets ~7% (was inset ~15%) so the frame doesn't crop. One
+  robustness fix to the council-cleared band module: `raiseBand` re-floats on every
+  `styledata` (the core adds ~50 layers async over ~8 s, each landing on top), not
+  idle-only. `sw.js` precaches `viewer_band.js` + `rw-mark.svg`; both bumped v70→v71.
+  No CRUD crossed (read viewer stays read-only). Verified by observation (real Chrome
+  / Playwright: 38 layers, z-order holds top, 8-point paper-perimeter PIL sample,
+  presets PASS). Card: `tasks/13_viewer_extraction/viewer_band_merge.md`. Council
+  reviewed on the diff. **Owed (user's gate):** the commit + retire the spent
+  scaffolding (`viewer_banded.html`, `viewer_banded_compare.html`, `css/viewer_band.css`).
 - **v70 — left-rail drawer open/close now persists.** `aop_left_rail_drawer_v1`
   stores `{search,hot,cal}` booleans, read on init / written on each tab click in
   `viewer_core.js`; clipboard drawer height (`aop_lr_card_height_v1`) verified
@@ -29,10 +43,11 @@ all **UNCOMMITTED** (user's git gate):
   neighborhood walks the dot around the park. Rust "TESTER" chip + `.tester` class
   (future edit-FAB hook). Card: `viewer_locate_install_version.md`; `pages.md`
   updated. **Council core-three cleared**, but the `.council-cleared` marker was
-  **not** written — the Tier-0 hash spans all of `website/`, which still carries
-  unreviewed band (`viewer_band.js`) + data-editor (`data_editor_map.js`) work
-  from other sessions. The Stop hook will keep nudging until those are reviewed or
-  this work is committed apart from them.
+  **not** written — the Tier-0 hash spans all of `website/`. The band is now merged
+  and council-reviewed (see v71 above); the remaining unreviewed surface in the
+  hash is the data-editor (`data_editor_map.js`) work from other sessions. The
+  Stop hook will keep nudging until that is reviewed or this work is committed
+  apart from it.
 
 **Still future:** the on-tester **edit FAB** waits on the editor porting into the
 extracted read core (editor still lives in `panel.js` / `old_index.html`).
@@ -112,3 +127,9 @@ short pointer under **Latest** here. This file ballooned to 4,261 lines / 376 KB
 before the 2026-06-13 prune because ~17 days of session blocks were appended
 without archiving; keep it under a few hundred lines so the next session can read
 it whole. If it grows past that, archive and reset it as part of wrapping up.
+
+The council gate enforces this: `.claude/hooks/council-gate.sh`, **once the
+council has cleared the diff** (the genuine "work is done" moment — the assistant
+does not commit), nudges once (per 100-line bucket) to prune if this file passes
+**400 lines** — a thin pointer to this note; it never edits. Tune via
+`AOP_HANDOFF_MAX_LINES`; downgrade to advisory with `AOP_HANDOFF_BLOCKING=0`.
