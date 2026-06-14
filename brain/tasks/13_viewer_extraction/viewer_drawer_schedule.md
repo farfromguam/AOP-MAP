@@ -175,6 +175,40 @@ both survived** — Search stayed closed, Hot stayed open, Clipboard stayed open
 bumped **v69 → v70** (`sw.js` VERSION + `#appVersion`). **UNCOMMITTED** (the user's git gate). This closes
 the deferred "drawer persistence (polish)" item — open/close **and** height now persist.
 
+### Addendum — 2026-06-13 (left-controls overlay ate map drags over its empty regions)
+
+User: *"there is a draggable area where the user can pan and zoom the map. up top where the
+search/hot/clipboard would be if it was expanded is not draggable. the Hand in the main field turns to a
+pointer in the 'empty' area where it should still be handable."* Confirmed by observation, not reasoning.
+
+**Root cause.** `.left-controls` is a fixed **340px-wide** `position:absolute` grid floating over the map,
+and it (plus its grid gaps and the `.lr-drawer` row) had **default `pointer-events`** — so it intercepted
+map pan/zoom drags over every *empty* part of its box and showed the arrow cursor (`auto`) instead of the
+map's `grab` hand. Two empty regions in particular:
+- **Collapsed drawer:** `lrContentCol.hidden=true`, but the `.lr-drawer` grid item still **stretches to the
+  full 340px** while the visible icon column is only ~44px. The empty ~296px to the right of the icons was
+  caught by `div#lrDrawer` (`cur=auto`) — exactly the "where the drawer would be if expanded" dead zone.
+- **Pill-bar + grid gaps:** the 8px gaps between the three pills and the 8px grid gap between the pill-bar
+  and the drawer were caught by `.left-controls` / `.pill-bar`, not the map.
+
+Measured before the fix (Playwright `elementFromPoint` sweep over the box): only **29 / 986** probe points
+reached the map; the rest hit overlay containers, many visibly empty with `cur=auto`.
+
+**Fix (CSS only, `viewer.css`).** The standard MapLibre overlay pass-through: make the container
+click-through and re-arm only the visible interactive cards —
+`.left-controls { pointer-events:none }` + `pointer-events:auto` on `.pill`, `.lr-icon-col`,
+`.lr-content-col`, `.util-install`, `.util-ios-hint` (leaf controls inherit `auto` from those cards;
+search-results dropdown rides under `.lr-content-col`). The transparent gaps and the stretched-but-empty
+drawer row now fall through to the map; the cream cards stay solid (a drag on the calendar can't pan the
+map underneath). No JS, no markup, no `limiting code`.
+
+**Verified by observation** (Playwright `:8001`): collapsed — all six right-of-icon points (200,120)…
+(300,180) now return `canvas.maplibregl-canvas` `cur=grab`; expanded — pill-bar gaps (138,30)/(308,30) and
+the pill↔drawer grid gap (100,55) now reach the map with `grab`. Controls unbroken: zoom/preset/3D pills
+click, search input focuses, Events/POI/About tabs switch, the three drawer tabs toggle open/closed, and
+the icon card stays a solid control (no drag leak). **Shell bump:** `viewer.css` rides `sw.js`
+`SHELL_ASSETS` (SWR), bumped **v71 → v72** (`sw.js` VERSION + `#appVersion`). **UNCOMMITTED** (user's git gate).
+
 ## Notes
 
 Built alongside; no commits without the user's git gate; `viewer.html` not in `sw.js` → no `#appVersion`

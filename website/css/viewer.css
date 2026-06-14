@@ -81,6 +81,19 @@ html.ios-browser .screen-corner { display: block; }
 /* Left control stack — slice 1 carries only the pill-bar (app.css:124-125). */
 .left-controls { position: absolute; left: calc(12px + var(--sa-left)); top: calc(12px + var(--sa-top)); z-index: 3; width: 340px; max-width: calc(100vw - 392px - var(--sa-left) - var(--sa-right)); display: grid; gap: 8px; }
 .left-controls * { box-sizing: border-box; letter-spacing: 0; }
+/* Overlay pass-through. The left-controls stack floats over the map at a fixed
+   340px width, so its grid gaps, the pill-bar gaps, and — when the drawer is
+   collapsed — the full-width drawer row beside the narrow icon column all sit
+   over empty map. With default pointer-events those empty regions eat map
+   pan/zoom drags and show the arrow cursor instead of the grab-hand. Make the
+   container click-through and re-arm only the visible interactive cards, so a
+   drag reaches the map everywhere the chrome is actually empty. */
+.left-controls { pointer-events: none; }
+.left-controls .pill,
+.left-controls .lr-icon-col,
+.left-controls .lr-content-col,
+.left-controls .util-install,
+.left-controls .util-ios-hint { pointer-events: auto; }
 
 /* Pill bar: zoom / preset / 3D (app.css:301-308). */
 .pill-bar { display: grid; grid-template-columns: 3fr 4fr 1fr; gap: 8px; align-items: stretch; }

@@ -28,13 +28,14 @@
   // ── Bounds (main.js:9-18) ──────────────────────────────────────────────
   // The 9-patch data-acquisition AOI is the region the decorative band frames.
   const REGION_BOUNDS = [[-85.782935283, 35.067164188], [-85.717154097, 35.117928496]];
-  // Camera leash (maxBounds): the 9-patch padded outward by ~the band's art
-  // frame, so the leash is the EDGE OF THE PRINTED SHEET. The off-edge band
-  // (viewer_band.js) draws its neat-line + lettering to REGION_BOUNDS and its art
-  // reaches ~0.12 of the region beyond it; padding to 0.13 lets the whole frame
-  // seat and a gentle over-pull peek work, while still stopping the camera before
-  // it wanders into blank paper. (Was REGION_BOUNDS exactly, pre-band.)
-  const BAND_PAD = 0.13;
+  // Camera leash (maxBounds): the 9-patch padded outward so you can pull PAST the
+  // off-edge band. The band (viewer_band.js) draws its neat-line + lettering to
+  // REGION_BOUNDS and its art (lettering + corner marks) reaches ~0.12 of the region
+  // beyond it. At 0.13 the wall landed right on the border text/images — you couldn't
+  // pull past them. 0.22 leaves a strip of paper margin past the lettering so the
+  // over-pull peek clears the border, while still stopping before the camera wanders
+  // far into blank paper. (Was REGION_BOUNDS exactly pre-band, then 0.13.)
+  const BAND_PAD = 0.22;
   const REGION_MAXBOUNDS = (function (b, f) {
     const w = b[0][0], s = b[0][1], e = b[1][0], n = b[1][1];
     const dx = (e - w) * f, dy = (n - s) * f;

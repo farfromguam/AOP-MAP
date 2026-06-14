@@ -16,6 +16,17 @@ The recent thrust is **extracting the read viewer into a standalone shell**
 re-attaching the pieces that were severed in the split. Most recent landings,
 all **UNCOMMITTED** (user's git gate):
 
+- **v72 — left-controls overlay no longer eats map drags over its empty regions.**
+  CSS-only fix in `viewer.css`: `.left-controls` was a fixed 340px-wide overlay with
+  default `pointer-events`, so its grid gaps, the pill-bar gaps, and the full-width
+  `.lr-drawer` row beside the narrow icon column (when the drawer is collapsed) all
+  intercepted map pan/zoom and showed the arrow cursor instead of the grab-hand.
+  Standard pass-through: `.left-controls{pointer-events:none}` + `auto` re-armed on the
+  visible cards (`.pill`, `.lr-icon-col`, `.lr-content-col`, `.util-install`,
+  `.util-ios-hint`). Verified by observation (Playwright `:8001`): the empty regions now
+  return `canvas` `cur=grab`, every control still clicks. v71→v72 (`sw.js` + `#appVersion`).
+  **UNCOMMITTED** (user's git gate). Addendum on
+  `tasks/13_viewer_extraction/viewer_drawer_schedule.md`.
 - **v71 — the off-edge band is merged into the clean read viewer.** The geolocated
   neat-line band (`viewer_band.js`, 38 layers: paper mask + keyline + 36 draped art
   tiles) now ships in `index.html`, not just the proof page. `viewer_core.js` grew
