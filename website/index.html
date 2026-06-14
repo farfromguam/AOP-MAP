@@ -231,7 +231,7 @@
          viewer_core.js folds it beside the collapsed bottom-left ⓘ ("ⓘ vNN",
          hidden when expanded) and also reads it into the expanded attribution body
          as "Made by Rock Warblers · vNN". Starts hidden; JS unhides on fold. -->
-    <span id="appVersion" hidden>v79</span>
+    <span id="appVersion" hidden>v80</span>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on iOS,
          where there is no programmatic install prompt). -->
@@ -263,6 +263,10 @@
       <circle cx="11" cy="11" r="1.4" fill="currentColor" stroke="none"/>
     </svg>
   </button>
+  <!-- Travel notice — shown by viewer_core.js when Locate is tapped from off-park
+       (the camera is leashed to the printed sheet, so the blue dot can't show from
+       home). Tells the visitor roughly how far the park is. Tap to dismiss. -->
+  <div id="locateNotice" class="locate-notice" role="status" aria-live="polite" hidden></div>
 
   <div class="message" id="message">Loading publish layer...</div>
 

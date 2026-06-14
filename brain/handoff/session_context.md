@@ -16,6 +16,22 @@ The recent thrust is **extracting the read viewer into a standalone shell**
 re-attaching the pieces that were severed in the split. Most recent landings,
 all **UNCOMMITTED** (user's git gate):
 
+- **v80 — off-park Locate now shows travel-to-park, not a dead button.** The user:
+  "the blue button does nothing if you are not on the park." Right — the camera is
+  leashed to the printed sheet (`maxBounds`), so a real GPS fix from home lands
+  outside bounds and the blue dot can't show. The Locate FAB now reads the fix once
+  and branches on haversine distance to the park anchor: ≤3 mi → the normal blue-dot
+  flow (unchanged); >3 mi → a small blue notice above the FAB, *"&lt;dist&gt; to the
+  park — about a &lt;drive&gt; drive — your live dot shows on-site"*. Estimate is
+  **offline-only** (great-circle ×1.2 ÷ 32/55 mph; no routing key, per the offline-first
+  northstar). `TESTER_ANCHOR` renamed `PARK_ANCHOR` (one constant for both the tester
+  shim and the distance check). 3 files: `viewer_core.js` handler + `viewer.css`
+  `.locate-notice` + one `index.html` el. Verified by observation
+  (`brain/output/verify_locate_travel.py`, Playwright :8001 spoofed geolocation,
+  3/3 PASS, 0 errors; screenshots `locate_travel_{chattanooga,nashville,atpark}.png`).
+  `sw.js`/`#appVersion` v79→v80. Card addendum:
+  `tasks/13_viewer_extraction/viewer_locate_install_version.md`. **Council owed.**
+  UNCOMMITTED (user's git gate).
 - **Ground cover simplified to one vegetation layer (data mutation).** The
   user's call: combine the two forest greens into a single `vegetation` layer
   and let every non-tree area read as the base map paper.

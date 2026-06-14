@@ -204,6 +204,21 @@ html.ios-browser .screen-corner { display: block; }
   box-shadow: 0 8px 22px rgba(20,74,128,0.5), 0 0 0 4px rgba(255,253,245,0.82), inset 0 0 0 2px rgba(255,255,255,0.6);
 }
 
+/* Travel notice — shown beside the Locate FAB when the device is off-park (the
+   camera leash means the blue dot can't show from home). Anchored above the FAB
+   (bottom 18 + 56 + 10), capped width, tap to dismiss. */
+.locate-notice {
+  position: fixed; right: 12px; bottom: 84px; z-index: 6;
+  max-width: min(76vw, 280px);
+  background: var(--locate-blue); color: #f3f8ff;
+  padding: 10px 13px; border-radius: 12px; cursor: pointer;
+  box-shadow: 0 8px 22px rgba(20,74,128,0.42), 0 0 0 3px rgba(255,253,245,0.55);
+  font: 500 13px/1.35 "Inter", system-ui, sans-serif;
+}
+.locate-notice[hidden] { display: none; }
+.locate-notice strong { display: block; font-size: 14px; font-weight: 700; }
+.locate-notice span { display: block; margin-top: 2px; opacity: 0.85; font-size: 12px; }
+
 /* Tester chip — injected by viewer_core.js only on ?tester=1. A small top-center
    badge so a field tester on a phone can tell the test surface (shifted GPS/clock)
    from the live day-of viewer. Non-interactive; clears the safe-area notch. */

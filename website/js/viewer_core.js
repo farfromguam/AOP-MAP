@@ -142,7 +142,7 @@
   // untouched — it just receives shifted coordinates. Additive degree offset; the
   // small longitude-scale distortion between the tester's latitude and the park's
   // is immaterial for a walk-around field test.
-  const TESTER_ANCHOR = [-85.748268, 35.090703]; // park pavilion (= PAVILION_VIEW.center)
+  const PARK_ANCHOR = [-85.748268, 35.090703]; // park pavilion (= PAVILION_VIEW.center)
   if (TESTER && navigator.geolocation) {
     const geo = navigator.geolocation;
     const realGet = geo.getCurrentPosition.bind(geo);
@@ -150,7 +150,7 @@
     let offset = null; // [dLng, dLat], locked on the first real fix
     const shift = (pos) => {
       const c = pos.coords;
-      if (!offset) offset = [TESTER_ANCHOR[0] - c.longitude, TESTER_ANCHOR[1] - c.latitude];
+      if (!offset) offset = [PARK_ANCHOR[0] - c.longitude, PARK_ANCHOR[1] - c.latitude];
       return {
         timestamp: pos.timestamp,
         coords: {
@@ -195,12 +195,61 @@
   map.addControl(geolocate, 'top-right');
   const locateBtn = document.getElementById('locateBtn');
   if (locateBtn) {
-    locateBtn.addEventListener('click', () => geolocate.trigger());
     const lit = () => { locateBtn.classList.add('active'); locateBtn.setAttribute('aria-pressed', 'true'); };
     const dim = () => { locateBtn.classList.remove('active'); locateBtn.setAttribute('aria-pressed', 'false'); };
     geolocate.on('trackuserlocationstart', lit);
     geolocate.on('trackuserlocationend', dim);
     geolocate.on('error', dim);
+
+    // Travel notice. The camera is leashed to the printed sheet (REGION_MAXBOUNDS),
+    // so a real GPS fix from off-park lands outside maxBounds — MapLibre can't pan to
+    // it and the blue dot can't show, which made Locate look dead from home. So we
+    // read the fix ONCE first: at/near the park, hand off to the normal blue-dot
+    // follow flow; far away, tell the visitor how far the park is and a rough drive.
+    // The estimate is offline-only (great-circle × road-circuity ÷ assumed speed) —
+    // no routing key, honest as an approximation. (In ?tester=1 the GPS shim above
+    // pins the fix to the park, so this always takes the near branch — by design.)
+    const NEAR_MI = 3; // inside this, you're effectively at the park → show the dot
+    const milesToPark = (lng, lat) => {
+      const R = 3958.8, toRad = (d) => d * Math.PI / 180;
+      const dLat = toRad(lat - PARK_ANCHOR[1]), dLng = toRad(lng - PARK_ANCHOR[0]);
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(PARK_ANCHOR[1])) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
+    const fmtMiles = (mi) => mi < 1 ? 'Less than a mile' : (mi < 10 ? `${mi.toFixed(1)} mi` : `${Math.round(mi)} mi`);
+    const fmtDrive = (mi) => {
+      const roadMi = mi * 1.2;                 // straight-line → road distance
+      const mph = mi < 12 ? 32 : 55;           // local streets vs. mostly-highway
+      let mins = Math.round(roadMi / mph * 60 / 5) * 5; // round to 5 min
+      if (mins < 60) return `about a ${mins} min drive`;
+      const h = Math.floor(mins / 60), m = mins % 60;
+      return m === 0 ? `about a ${h} hr drive` : `about a ${h} hr ${m} min drive`;
+    };
+    const notice = document.getElementById('locateNotice');
+    let noticeTimer = null;
+    const showTravel = (mi) => {
+      if (!notice) return;
+      notice.innerHTML = `<strong>${fmtMiles(mi)} to the park</strong><span>${fmtDrive(mi)} — your live dot shows on-site</span>`;
+      notice.hidden = false;
+      if (noticeTimer) clearTimeout(noticeTimer);
+      noticeTimer = setTimeout(() => { notice.hidden = true; }, 8000);
+    };
+    if (notice) notice.addEventListener('click', () => { notice.hidden = true; });
+
+    locateBtn.addEventListener('click', () => {
+      if (notice) notice.hidden = true;
+      if (!navigator.geolocation) { geolocate.trigger(); return; }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const mi = milesToPark(pos.coords.longitude, pos.coords.latitude);
+          if (mi <= NEAR_MI) geolocate.trigger(); // at the park → blue dot + follow
+          else showTravel(mi);                    // off-park → travel notice
+        },
+        () => geolocate.trigger(),                // denied/failed → let the control surface it
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+      );
+    });
   }
 
   // ── Control DOM (the pill-bar shell in viewer.html) ────────────────────

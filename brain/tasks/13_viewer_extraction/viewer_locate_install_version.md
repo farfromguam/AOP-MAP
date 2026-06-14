@@ -154,3 +154,48 @@ gate).
 **Still future (not this addendum):** the on-tester **edit FAB** — the editor isn't ported into the extracted
 read core yet (it lives in `panel.js` / `old_index.html`), so "Locate + Edit side by side on tester" waits on
 that port. The `.tester` class + the reserved right:80px FAB slot are already in place for it.
+
+-----
+
+## Addendum: off-park travel notice (v80, 2026-06-14)
+
+**The gap the user called out:** "the blue button does nothing if you are not on
+the park." Correct — the map camera is leashed to the printed sheet
+(`maxBounds: REGION_MAXBOUNDS`, the 9-patch padded by `BAND_PAD = 0.60`, ~13×12 km).
+The Locate FAB just called `geolocate.trigger()`; a real GPS fix from off-park lands
+**outside** maxBounds, so MapLibre can't pan there and the blue dot can't show. From
+home the button looked dead. The user's ask: "get your location and say something
+about travel time to the park. only x miles… about x hours?"
+
+**Built (read viewer only, `viewer_core.js` + `viewer.css` + one `index.html` el):**
+- The FAB now reads the fix **once** (`navigator.geolocation.getCurrentPosition`) and
+  branches on great-circle distance to the park anchor (haversine to `PARK_ANCHOR =
+  [-85.748268, 35.090703]`, the renamed `TESTER_ANCHOR` — one constant now serves both
+  the tester GPS shim and this distance check, no duplicate coords):
+  - **≤ 3 mi (`NEAR_MI`)** → hand off to the existing `geolocate.trigger()` blue-dot +
+    follow flow, untouched. At the park nothing changed.
+  - **> 3 mi** → show `#locateNotice`, a small blue card above the FAB:
+    *"&lt;dist&gt; to the park — &lt;drive&gt; — your live dot shows on-site"*. Tap to
+    dismiss; auto-hides after 8 s.
+- **Estimate is offline-only** (per the northstar's offline-first promise; the user's
+  phrasing is casual): `roadMi = gc × 1.2`; speed `32 mph` under 12 mi else `55 mph`;
+  minutes rounded to 5. No routing key, no network — honest as an approximation, worded
+  as one ("about a … drive"). Distance: `<1 mi → "Less than a mile"`, `<10 → one
+  decimal`, else whole miles.
+- Geolocation **denied/failed** → falls back to `geolocate.trigger()` (lets the control
+  surface the real error), so the notice never hides a permission problem.
+- **In `?tester=1`** the GPS shim pins the fix to the pavilion (0 mi) → always the near
+  branch → the spoofed walk-around dot is unaffected. By design.
+
+**Verified by observation** (`brain/output/verify_locate_travel.py`, Playwright :8001
+with granted + `set_geolocation`, fresh load per case so the app's 30 s `maximumAge`
+cache can't bleed locations): **3/3 PASS, 0 non-GL console errors.**
+- Chattanooga (≈25 mi): notice *"25 mi to the park — about a 35 min drive"*, no dot.
+- Nashville (≈94 mi): notice *"94 mi to the park — about a 2 hr 5 min drive"*.
+- Park pavilion (0 mi): notice **stays hidden**, blue-dot path engages.
+Rendered notice confirmed in `brain/output/locate_travel_{chattanooga,nashville,atpark}.png`
+(styled blue card, bottom-right above the FAB).
+
+Shell assets changed (`viewer_core.js` + `viewer.css` + `index.html`) → bumped **v79 →
+v80** (`sw.js` `VERSION` + `#appVersion`). **UNCOMMITTED** (user's git gate). **Council
+owed on the diff.**
