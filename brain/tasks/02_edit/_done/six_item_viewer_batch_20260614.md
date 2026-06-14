@@ -80,6 +80,37 @@ shipped on **v87** and **verified by observation** on `:8001` (13/13 + alert PAS
 
 ## Git
 
-All UNCOMMITTED (user's git gate). Working tree was already at **v87** (in-flight
-landcover-solid edit); all six items ride on it — `sw.js` + `#appVersion` v86→v87
-covers the shell + data refresh. No agent touched git.
+The six items were **committed by the user as HEAD `91a017e` ("medallion rename")**
+(v87). No agent touched git.
+
+## Addendum — physical file rename + data-editor re-group (2026-06-14, v88)
+
+After committing the six items, the user asked to actually rename the files (the tier
+*values* were done; the *filenames* were not) and re-group the data editor page:
+*"rename and re-group. dont touch treecover."*
+
+- **Files renamed to `<tier>_<name>.geojson`** (25 files): `gold_aop_trail_network`,
+  `bronze_aop_cemeteries`, `silver_publish`, `delete_aop_synthetic_activity_*`, etc.
+  New `mvp/scripts/rename_data_medallion.py` (imports `stamp_maturity.MATURITY`)
+  renames + sweeps every runtime reference (viewer_core, main, panel, data_editor_map,
+  sw, old_index, `_schema.json`, `_data_manifest.json`). The brain's prior "physical
+  renames deferred — little gain" note (`research/data_maturity_tiers.md`) is overridden
+  by this user directive.
+- **Re-group:** `data_editor_map.js` groups the data-editor file picker into `<optgroup>`
+  Gold / Silver / Bronze / Delete (read from the filename prefix). This is "our data
+  editor page" — `data_editor.html` lists sources by filename, so the rename is what
+  surfaces the medallion there.
+- **Tree cover NOT touched** (per the directive) — the concurrent landcover session's
+  60% non-park opacity + `fill-antialias:false` are intact.
+- `sw.js`/`#appVersion` **v87→v88**.
+- **Verified by observation** (`:8001`, 0 console errors): `verify_label_border_persist_firepit.py`
+  13/13, `verify_production_tier_alert.py` PASS (alert + production viewer survive the
+  rename), `verify_data_editor_regroup.py` PASS (4 tier groups, prefixed files).
+- **Owed (pipeline consistency):** the ~50 `mvp/scripts` (importers/exporters/bakers +
+  ~30 verifiers) still use canonical names; `rename_data_medallion.py` is the documented
+  FINAL pipeline step — re-run after any bake (like `stamp_maturity.py`). Rewiring the
+  generators to emit prefixed names directly is Docker-gated, deferred.
+- **COMMINGLED + git gate:** working tree commingles this rename with the concurrent
+  landcover-opacity session (tree cover v88). Both UNCOMMITTED; the landcover session's
+  `.council-cleared` is now stale (my rename changed the diff). The user separates at the
+  gate. Coord: `handoff/coord/six-item-viewer-batch.md`.

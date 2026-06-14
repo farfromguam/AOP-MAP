@@ -622,10 +622,20 @@ After the committed `#D1D2B8` integration, the user iterated the compositing:
   70%, near-gone at 95%, absent at 100%). **Fix: `fill-antialias: false`** on the fill
   layers — pieces then tile seamlessly at any opacity (verified clean at 70% in the
   chooser). This must go into `viewer_core.js` when the non-park opacity drops below 100%.
-- **Pending the user's pick.** When the user names a non-park %, set
-  `landcover-9patch-forest` fill-opacity to it (park stays 1) + `fill-antialias:false` on
-  both landcover fills, in Park + Topo, bump version, verify. The live viewer (`:8001`)
-  currently shows the non-park **solid** (step 1) — the intermediate state until the pick.
+- **Applied: non-park 60% (user's pick, 2026-06-14).** *"lets go with 60% apply it and our
+  new tree cover now."* `viewer_core.js`: `landcover-9patch-forest` fill-opacity **0.6**
+  (Park + Topo presets + initial paint), `landcover-forest` (park) stays **1 (solid)**,
+  `landcover9Opacity` slider default **60**, and **`fill-antialias: false`** on BOTH
+  landcover fill layers (so the grid-subdivided pieces tile seamlessly at 0.6 — no grid
+  seams). The outline layers were already removed by the concurrent session, so the tree
+  cover is borderless: the **opacity step at the park edge is the only separator**. HEAD
+  (`91a017e` "medallion rename") committed everything prior at **v87**, so this shell-asset
+  change bumps `sw.js`/`#appVersion` **v87→v88**.
+  **Verified by observation (`:8001`, SW-cold):** `getPaintProperty` → non-park
+  fill-opacity 0.6 / antialias false, park 1 / antialias false, both `#D1D2B8`; renders
+  across the full AOI with the park denser than the receding context, **no grid seams, 0
+  console errors** (`brain/output/landcover_trace/_final60_aoi.png`). The hand-edited
+  9-patch tree cover (318-feature bake) is the data under it. `node --check` clean.
 - **Council (opacity delta, 2026-06-14): Witness · Mason · Scribe clear** (viewer renders
   solid `#D1D2B8` at opacity 1 both layers; chooser + `fill-antialias:false` seam-fix
   verified; record honest). **Warden andon — commingled tree:** the uncommitted
@@ -638,3 +648,10 @@ After the committed `#D1D2B8` integration, the user iterated the compositing:
   the rest belongs to the other session and should be committed separately (`git add -p`).
   **No `.council-cleared`** — the Tier-0 hash spans all of `website/`+`mvp/`, i.e. the
   commingled tree, so stamping it would falsely certify the other session's code.
+- **Council (60% application, 2026-06-14): Witness · Warden · Mason all clear.** Witness
+  observed the live 60% (pixel-measured opacity step, no seams, 0 real errors); Mason
+  confirmed the paint delta is clean; **Warden found the tree is no longer commingled** —
+  the user committed the concurrent session's work as HEAD `91a017e`, so the only
+  uncommitted `website/mvp` change is now this landcover 60% + the v88 bump. **`.council-cleared`
+  written** (the Tier-0 hash now spans ONLY this cleared single-task diff). **UNCOMMITTED**
+  (`viewer_core.js` + `sw.js` + `index.html` — a clean one-task diff for the user's gate).

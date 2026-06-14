@@ -587,7 +587,7 @@
   },
   "served": [
     {
-      "file": "aop_9_patch.geojson",
+      "file": "bronze_aop_9_patch.geojson",
       "bytes": 7303,
       "origin": "raw-pipeline",
       "origin_note": "9-patch data-acquisition AOI",
@@ -623,7 +623,7 @@
         "permission": "n/a \u2014 planning overlay",
         "status": "planning",
         "last_checked": "2026-05-20",
-        "source_file": "aop_9_patch.geojson",
+        "source_file": "bronze_aop_9_patch.geojson",
         "cell_code": "NW",
         "role": "raster_terrain_context",
         "generated_on": "2026-05-20",
@@ -631,7 +631,7 @@
       }
     },
     {
-      "file": "aop_activity_hotspots.geojson",
+      "file": "gold_aop_activity_hotspots.geojson",
       "bytes": 132878,
       "origin": "raw-pipeline",
       "origin_note": "activity hotspot build",
@@ -724,7 +724,7 @@
       }
     },
     {
-      "file": "aop_buildings.geojson",
+      "file": "gold_aop_buildings.geojson",
       "bytes": 10664,
       "origin": "core-backed",
       "origin_note": "core.features WHERE layer='buildings'",
@@ -810,7 +810,7 @@
         "aop_private": true,
         "description": null,
         "outbuilding": "",
-        "source_file": "aop_buildings.geojson",
+        "source_file": "gold_aop_buildings.geojson",
         "source_name": "ORNL",
         "centroid_lat": 35.08722305,
         "centroid_lng": -85.74561938,
@@ -833,7 +833,7 @@
       }
     },
     {
-      "file": "aop_cemeteries.geojson",
+      "file": "bronze_aop_cemeteries.geojson",
       "bytes": 12582,
       "origin": "core-backed",
       "origin_note": "core.features WHERE layer='cemeteries'",
@@ -896,7 +896,7 @@
         "confidence": "observed (county parcel)",
         "permission": "parcel: public; burial roster: USGenWeb non-commercial",
         "description": null,
-        "source_file": "aop_cemeteries.geojson",
+        "source_file": "bronze_aop_cemeteries.geojson",
         "burial_count": 0,
         "burial_terms": "",
         "last_checked": null,
@@ -912,7 +912,7 @@
       }
     },
     {
-      "file": "aop_contours.geojson",
+      "file": "gold_aop_contours.geojson",
       "bytes": 13219439,
       "origin": "raw-pipeline",
       "origin_note": "lidar/DEM contour pipeline",
@@ -940,7 +940,7 @@
       }
     },
     {
-      "file": "aop_editor_seed_pois.geojson",
+      "file": "bronze_aop_editor_seed_pois.geojson",
       "bytes": 1475,
       "origin": "sidecar",
       "origin_note": "seed POI installed on fresh/reset",
@@ -979,20 +979,20 @@
         "permission": "first-party",
         "status": "draft",
         "last_checked": null,
-        "source_file": "aop_editor_seed_pois.geojson",
+        "source_file": "bronze_aop_editor_seed_pois.geojson",
         "facets": {
           "category": "Pavilion"
         },
         "layer": "editor_poi",
         "category": "Pavilion",
-        "notes": "Confirmed pavilion; derived from aop_editor_seed_pois.geojson.",
+        "notes": "Confirmed pavilion; derived from bronze_aop_editor_seed_pois.geojson.",
         "highlight": true,
         "seed_tag": "#pavilion",
         "created": "2026-05-26T00:00:00Z"
       }
     },
     {
-      "file": "aop_landcover.geojson",
+      "file": "gold_aop_landcover.geojson",
       "bytes": 435715,
       "origin": "raw-pipeline",
       "origin_note": "landcover classification",
@@ -1014,7 +1014,7 @@
       }
     },
     {
-      "file": "aop_landcover_9patch.geojson",
+      "file": "gold_aop_landcover_9patch.geojson",
       "bytes": 4504381,
       "origin": "raw-pipeline",
       "origin_note": "landcover, 9-patch AOI",
@@ -1036,7 +1036,7 @@
       }
     },
     {
-      "file": "aop_lidar_tiles.geojson",
+      "file": "bronze_aop_lidar_tiles.geojson",
       "bytes": 27527,
       "origin": "raw-pipeline",
       "origin_note": "lidar tile index",
@@ -1078,7 +1078,7 @@
         "permission": "public domain (USGS)",
         "status": "raw context",
         "last_checked": "2018-09-25",
-        "source_file": "aop_lidar_tiles.geojson",
+        "source_file": "bronze_aop_lidar_tiles.geojson",
         "tile_code": "2024261NE",
         "title": "USGS Lidar Point Cloud TN 27County blk4 2015 2024261NE LAS 2018",
         "project": "USGS_LPC_TN_27County_blk4_2015_LAS_2018",
@@ -1092,7 +1092,7 @@
       }
     },
     {
-      "file": "aop_roads.geojson",
+      "file": "gold_aop_roads.geojson",
       "bytes": 127539,
       "origin": "raw-pipeline",
       "origin_note": "USGS roads import",
@@ -1132,7 +1132,7 @@
         "permission": "public domain (USGS)",
         "status": "raw context",
         "last_checked": null,
-        "source_file": "aop_roads.geojson",
+        "source_file": "gold_aop_roads.geojson",
         "mtfcc_code": "S1100",
         "tnmfrc": 1,
         "interstate": "24",
@@ -1144,7 +1144,7 @@
       }
     },
     {
-      "file": "aop_synthetic_activity_hotspots.geojson",
+      "file": "delete_aop_synthetic_activity_hotspots.geojson",
       "bytes": 70314,
       "origin": "raw-pipeline",
       "origin_note": "simulated Saturday activity",
@@ -1308,7 +1308,7 @@
       }
     },
     {
-      "file": "aop_synthetic_activity_tracks.geojson",
+      "file": "delete_aop_synthetic_activity_tracks.geojson",
       "bytes": 399761,
       "origin": "raw-pipeline",
       "origin_note": "simulated Saturday activity",
@@ -1369,7 +1369,7 @@
       }
     },
     {
-      "file": "aop_trail_network.geojson",
+      "file": "gold_aop_trail_network.geojson",
       "bytes": 130958,
       "origin": "core-backed",
       "origin_note": "core.features WHERE layer='trails'",
@@ -1412,7 +1412,7 @@
         "difficulty": "easy",
         "permission": "SFWDA paper map \u2014 permission TBD",
         "description": null,
-        "source_file": "aop_trail_network.geojson",
+        "source_file": "gold_aop_trail_network.geojson",
         "last_checked": null,
         "trail_number": 15,
         "review_status": "hand-edited; normalized from SVG",
@@ -1420,7 +1420,7 @@
       }
     },
     {
-      "file": "aop_user_features.geojson",
+      "file": "bronze_aop_user_features.geojson",
       "bytes": 518,
       "origin": "runtime-buffer",
       "origin_note": "editor working buffer",
@@ -1432,7 +1432,7 @@
       "sample": null
     },
     {
-      "file": "aop_visitor_context_callouts.geojson",
+      "file": "silver_aop_visitor_context_callouts.geojson",
       "bytes": 9197,
       "origin": "core-backed",
       "origin_note": "core.features WHERE layer='visitor'",
@@ -1485,13 +1485,13 @@
         "source_url": "https://adventureoffroadpark.com/",
         "attribution": "Adventure Off Road Park",
         "description": null,
-        "source_file": "aop_visitor_context_callouts.geojson",
+        "source_file": "silver_aop_visitor_context_callouts.geojson",
         "last_checked": null,
         "maturity": "silver"
       }
     },
     {
-      "file": "aop_water.geojson",
+      "file": "gold_aop_water.geojson",
       "bytes": 223485,
       "origin": "raw-pipeline",
       "origin_note": "USGS hydrography import",
@@ -1536,7 +1536,7 @@
         "permission": "public domain (USGS)",
         "status": "raw context",
         "last_checked": null,
-        "source_file": "aop_water.geojson",
+        "source_file": "gold_aop_water.geojson",
         "gnis_id": null,
         "fcode": 55800,
         "ftype": 558,
@@ -1551,7 +1551,7 @@
       }
     },
     {
-      "file": "osm_aop_9patch.geojson",
+      "file": "bronze_osm_aop_9patch.geojson",
       "bytes": 70237,
       "origin": "raw-pipeline",
       "origin_note": "OSM extract, 9-patch AOI",
@@ -1604,7 +1604,7 @@
         "permission": "ODbL",
         "status": "raw context",
         "last_checked": null,
-        "source_file": "osm_aop_9patch.geojson",
+        "source_file": "bronze_osm_aop_9patch.geojson",
         "ele": "204",
         "gnis:feature_id": "1314305",
         "place": "hamlet",
@@ -1613,7 +1613,7 @@
       }
     },
     {
-      "file": "osm_aop_named.geojson",
+      "file": "bronze_osm_aop_named.geojson",
       "bytes": 6614,
       "origin": "raw-pipeline",
       "origin_note": "OSM named features",
@@ -1656,7 +1656,7 @@
         "permission": "ODbL",
         "status": "raw context",
         "last_checked": null,
-        "source_file": "osm_aop_named.geojson",
+        "source_file": "bronze_osm_aop_named.geojson",
         "ele": "204",
         "gnis:feature_id": "1314305",
         "place": "hamlet",
@@ -1665,7 +1665,7 @@
       }
     },
     {
-      "file": "publish.geojson",
+      "file": "silver_publish.geojson",
       "bytes": 82329,
       "origin": "core-backed",
       "origin_note": "publish.features view (the one publish gate)",
@@ -1710,7 +1710,7 @@
       }
     },
     {
-      "file": "sfwda_numbered_trails.geojson",
+      "file": "bronze_sfwda_numbered_trails.geojson",
       "bytes": 69553,
       "origin": "raw-pipeline",
       "origin_note": "SFWDA paper-map trace",
@@ -1753,7 +1753,7 @@
         "permission": "SFWDA paper map \u2014 permission TBD",
         "status": "raster trace (2015 vintage); contiguous trail under hand-read markers; needs review before core/publish",
         "last_checked": null,
-        "source_file": "sfwda_numbered_trails.geojson",
+        "source_file": "bronze_sfwda_numbered_trails.geojson",
         "trail_number": 1,
         "difficulty": "easy",
         "edge_count": 30,
@@ -1767,7 +1767,7 @@
       }
     },
     {
-      "file": "sfwda_traced_markers.geojson",
+      "file": "bronze_sfwda_traced_markers.geojson",
       "bytes": 96299,
       "origin": "raw-pipeline",
       "origin_note": "SFWDA paper-map trace",
@@ -1808,7 +1808,7 @@
         "permission": "SFWDA paper map \u2014 permission TBD",
         "status": "raster marker; number hand-read, needs verify before core/publish",
         "last_checked": null,
-        "source_file": "sfwda_traced_markers.geojson",
+        "source_file": "bronze_sfwda_traced_markers.geojson",
         "marker_type": "circle",
         "difficulty": "easy",
         "trail_number": 3,
@@ -1823,7 +1823,7 @@
       }
     },
     {
-      "file": "sfwda_traced_trails.geojson",
+      "file": "delete_sfwda_traced_trails.geojson",
       "bytes": 286654,
       "origin": "raw-pipeline",
       "origin_note": "SFWDA paper-map trace",
@@ -1862,7 +1862,7 @@
         "permission": "SFWDA paper map \u2014 permission TBD",
         "status": "raster trace (2015 vintage); needs review before core/publish",
         "last_checked": null,
-        "source_file": "sfwda_traced_trails.geojson",
+        "source_file": "delete_sfwda_traced_trails.geojson",
         "edge_id": 0,
         "difficulty": "easy",
         "marker_count": 1,
@@ -1873,7 +1873,7 @@
       }
     },
     {
-      "file": "sfwda_trails_edited.geojson",
+      "file": "bronze_sfwda_trails_edited.geojson",
       "bytes": 120203,
       "origin": "raw-pipeline",
       "origin_note": "SFWDA paper-map trace, hand-edited",
@@ -1909,7 +1909,7 @@
         "permission": "SFWDA paper map \u2014 permission TBD",
         "status": "hand-edited; normalized from SVG",
         "last_checked": null,
-        "source_file": "sfwda_trails_edited.geojson",
+        "source_file": "bronze_sfwda_trails_edited.geojson",
         "trail_number": 15,
         "difficulty": "easy",
         "review_status": "hand-edited; normalized from SVG",

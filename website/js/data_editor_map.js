@@ -520,10 +520,26 @@
     let man;
     try { man = await (await fetch(MANIFEST, { cache: 'no-store' })).json(); }
     catch (e) { try { man = await (await fetch(MANIFEST)).json(); } catch (_) { $('grid').innerHTML = '<p class="hint">No data manifest. Run <code>python3 mvp/scripts/build_data_manifest.py</code>.</p>'; return; } }
-    const files = (man.served || []).filter(s => s.kind === 'geojson' && (s.feature_count || 0) > 0).sort((a, b) => a.file.localeCompare(b.file));
+    const files = (man.served || []).filter(s => s.kind === 'geojson' && (s.feature_count || 0) > 0);
     const selEl = $('fileSel'); selEl.innerHTML = '';
-    files.forEach(s => { const o = document.createElement('option'); o.value = s.file; o.textContent = `${s.file} (${s.feature_count})`; selEl.append(o); });
-    const def = files.find(s => s.file === 'publish.geojson') || files[0];
+    // Re-group the data sources by their MEDALLION tier (read from the filename
+    // prefix), so the picker reads Gold / Silver / Bronze / Delete instead of one
+    // flat alphabetical list. (User, 2026-06-14: "rename and re-group.")
+    const TIER_ORDER = [
+      ['gold', 'Gold — production'],
+      ['silver', 'Silver — pending review'],
+      ['bronze', 'Bronze — not yet promoted'],
+      ['delete', 'Delete — staged for removal']
+    ];
+    const tierOf = (f) => (f.match(/^(gold|silver|bronze|delete)_/) || [, 'bronze'])[1];
+    for (const [tier, label] of TIER_ORDER) {
+      const group = files.filter(s => tierOf(s.file) === tier).sort((a, b) => a.file.localeCompare(b.file));
+      if (!group.length) continue;
+      const og = document.createElement('optgroup'); og.label = label;
+      group.forEach(s => { const o = document.createElement('option'); o.value = s.file; o.textContent = `${s.file} (${s.feature_count})`; og.append(o); });
+      selEl.append(og);
+    }
+    const def = files.find(s => s.file === 'silver_publish.geojson') || files[0];
     selEl.value = def ? def.file : '';
     selEl.onchange = () => loadFile(selEl.value);
 

@@ -183,6 +183,14 @@ errors); shots `brain/output/playwright_maturity_{tree,standalone,embed}.png`.
   old keys. Stripping to a clean gold schema is gated on retiring `index.html`'s
   dependence on a layer's raw keys (the index→panel swap). Don't strip a file the
   live map still styles on. See [[common-feature-schema]] (save-path section).
-- **Physical file renames** to match group names — current names are already good
-  (`aop_trail_network.geojson` etc.); a rename touches `index.html`, `panel.js`
-  `MAP_DATA`, and the `sw.js` cache manifest for little gain. Not done.
+- ~~**Physical file renames**~~ — **DONE 2026-06-14 (v88), per explicit user direction**
+  ("rename all our data sources to bronze_* silver_* or gold_*"). Every served geojson
+  now carries its tier as a filename prefix (`gold_aop_trail_network.geojson`,
+  `bronze_aop_cemeteries.geojson`, `silver_publish.geojson`, `delete_*`). The rename +
+  runtime-reference sweep (viewer_core / main / panel / data_editor_map / sw / old_index /
+  `_schema.json` / `_data_manifest.json`) is `mvp/scripts/rename_data_medallion.py`
+  (imports `MATURITY` here — single source). It runs as a **FINAL pipeline step** (after
+  `stamp_maturity.py`): the bake/import generators still emit CANONICAL names, so re-run
+  the rename after any data bake to re-prefix. `data_editor_map.js` groups the data-editor
+  picker by the filename-prefix tier. **Owed:** the ~50 pipeline + verifier scripts still
+  reference canonical names (rewiring them to prefixed is Docker-gated, deferred).

@@ -11,7 +11,7 @@
     const REGION_BOUNDS = [[-85.782935283, 35.067164188], [-85.717154097, 35.117928496]];
 
     // Tighter-than-region fallback for the Park camera preset. The live park
-    // bounds come from publish.geojson's `park_boundaries` parcel
+    // bounds come from silver_publish.geojson's `park_boundaries` parcel
     // (parkViewBounds, derived on load); this is the static stand-in for when
     // that data hasn't loaded — same parcel envelope, so Park never collapses
     // back to the full-region zoom. Spans ~1/3 of REGION_BOUNDS per side.
@@ -35,7 +35,7 @@
     const FEATURE_VISIBILITY_KEY = 'aop_feature_visibility_v1';
     const FEATURE_TAG_KEY = 'aop_feature_tags_v1';
     // Retired 2026-05-26 with the editor-seed migration: the #pavilion
-    // binding now lives on the seeded POI in `aop_editor_seed_pois.geojson`,
+    // binding now lives on the seeded POI in `bronze_aop_editor_seed_pois.geojson`,
     // not on the 1010 building. The key itself stays in the Reset-viewer
     // wipe-list as a literal so existing installs that still carry the
     // sticky flag get it cleared.
@@ -1102,7 +1102,7 @@
     // a different store and only `drawn_pois` was star-gated) with a single walk
     // over the FEATURE_LIST_LAYERS registry's destination specs. STAR-ONLY
     // (2026-06-08): the two former wholesale unions — published `poi`
-    // (publish.geojson, bake-gated) and event anchors (aop_event_schedule.json,
+    // (silver_publish.geojson, bake-gated) and event anchors (aop_event_schedule.json,
     // a static non-DB file) — were removed. They bypassed the ★ gate and put
     // untraceable rows in the list; the POI tab is now exactly the registry's
     // ★-curated layers. A published destination or schedule place that belongs
@@ -2322,7 +2322,7 @@
         // Tag input on each row binds a #tag to the building so the event
         // schedule can resolve coords through this binding. The 1010
         // building's #pavilion binding moved to the seeded editor POI on
-        // 2026-05-26 — see `data/aop_editor_seed_pois.geojson` and
+        // 2026-05-26 — see `data/bronze_aop_editor_seed_pois.geojson` and
         // `maybeSeedEditorPois`. Users can still re-bind #pavilion to a
         // building manually; the seeder only strips conflicts on the
         // first-install/Reset pass.
@@ -2378,7 +2378,7 @@
         // click (shape preserved). Mirrors the visitor-context pattern: the
         // override commits to the unified positioned-features store (keyed
         // `buildings:<build_id>`) so it survives reload, and bakes back into
-        // website/data/aop_buildings.geojson via export_positioned_features.py.
+        // website/data/gold_aop_buildings.geojson via export_positioned_features.py.
         onMove: (feature, lngLat) => {
           if (!feature || !feature.geometry) return;
           const centroid = geometryBboxCenter(feature.geometry);
@@ -3057,7 +3057,7 @@
 
     // --- Brand-logos override store --------------------------------------
     // Mirrors the visitor-context pattern: the seed geometry ships in
-    // website/data/aop_visitor_context_callouts.geojson (the logos were merged
+    // website/data/silver_aop_visitor_context_callouts.geojson (the logos were merged
     // there as kind=brand_logo points, 2026-06-05), and each drag commits a new
     // Point to localStorage so the user's placement survives reload. Keyed
     // by `logo_id` (aop_badge, rock_warblers) — the on-disk file can be
@@ -7323,12 +7323,12 @@
     }
 
     // First-install + Reset-viewer seed for editorPois. The canonical seed
-    // lives at `website/data/aop_editor_seed_pois.geojson` and ships with
+    // lives at `website/data/bronze_aop_editor_seed_pois.geojson` and ships with
     // the repo; on a fresh viewer (or after Reset viewer clears
     // `aop_editor_pois_v1` outright) we fetch it and write its features
     // into storage as the user's starting set. Workflow to update the
     // seed: draw + Export GeoJSON, then commit the download as
-    // aop_editor_seed_pois.geojson. Every seeded feature is stamped
+    // bronze_aop_editor_seed_pois.geojson. Every seeded feature is stamped
     // `properties.source = aop_editor_seed_v1` so the source register can
     // tell seeded geometry apart from user-drawn geometry; the optional
     // `seed_tag` property writes a #tag into `aop_feature_tags_v1` for
@@ -7336,7 +7336,7 @@
     // layer (migration: 1010 building → seeded pavilion POI).
     async function maybeSeedEditorPois() {
       if (localStorage.getItem(POI_STORAGE_KEY) !== null) return;
-      const seed = await fetchJson('./data/aop_editor_seed_pois.geojson', 'editor POI seed');
+      const seed = await fetchJson('./data/bronze_aop_editor_seed_pois.geojson', 'editor POI seed');
       if (!seed || !Array.isArray(seed.features) || seed.features.length === 0) return;
       const seeded = [];
       for (const feature of seed.features) {
@@ -7467,7 +7467,7 @@
 
     // Single export path is clipboard GeoJSON — no file downloads. Copies the
     // whole drawn-POI set as a FeatureCollection ready to paste into
-    // website/data/aop_editor_seed_pois.geojson.
+    // website/data/bronze_aop_editor_seed_pois.geojson.
     async function exportEditorPois() {
       const fc = editorFeatureCollection();
       const text = JSON.stringify(fc, null, 2) + '\n';
@@ -7666,7 +7666,7 @@
 
     // Camera/zoom presets, separate from the layer presets (Park/Topo/Trace).
     // Region fits REGION_BOUNDS (the 9-patch, also the map's maxBounds); Park
-    // fits the live park boundary from publish.geojson; Pavilion is the 1010
+    // fits the live park boundary from silver_publish.geojson; Pavilion is the 1010
     // Ellis Cove Rd building. Each zoom shortcut returns to the intended flat
     // west-up read; layer presets preserve the current camera.
     const PAVILION_VIEW = { center: [-85.748268, 35.090703], zoom: 17 };
@@ -7685,7 +7685,7 @@
         // "same zoom"); padding:20 lands it ~1.0+ tighter (measured 14.75 vs
         // Region 13.74), a clearly visible step in. Fall back to the park-parcel
         // envelope (not REGION_BOUNDS) so Park is always tighter than Region
-        // even before publish.geojson loads.
+        // even before silver_publish.geojson loads.
         map.fitBounds(parkViewBounds || PARK_BOUNDS_FALLBACK, {
           padding: 20, bearing: VIEW_BEARING, pitch: VIEW_PITCH, duration: 1100, maxZoom: 15.5
         });
@@ -7714,24 +7714,24 @@
       // here but not awaited just warms unused; one awaited but not listed simply
       // fetches lazily). Pass the URL as the warn label so a failed warm names it.
       [
-        './data/aop_landcover_9patch.geojson',
-        './data/aop_landcover.geojson',
-        './data/aop_9_patch.geojson',
-        './data/aop_lidar_tiles.geojson',
-        './data/aop_contours.geojson',
-        './data/aop_activity_hotspots.geojson',
-        './data/aop_synthetic_activity_tracks.geojson',
-        './data/aop_synthetic_activity_hotspots.geojson',
+        './data/gold_aop_landcover_9patch.geojson',
+        './data/gold_aop_landcover.geojson',
+        './data/bronze_aop_9_patch.geojson',
+        './data/bronze_aop_lidar_tiles.geojson',
+        './data/gold_aop_contours.geojson',
+        './data/gold_aop_activity_hotspots.geojson',
+        './data/delete_aop_synthetic_activity_tracks.geojson',
+        './data/delete_aop_synthetic_activity_hotspots.geojson',
         './data/aop_event_schedule.json',
-        './data/aop_water.geojson',
-        './data/aop_roads.geojson',
-        './data/aop_visitor_context_callouts.geojson',
-        './data/aop_cemeteries.geojson',
-        './data/aop_buildings.geojson',
-        './data/osm_aop_9patch.geojson',
-        './data/osm_aop_named.geojson',
-        './data/sfwda_traced_trails.geojson',
-        './data/aop_trail_network.geojson',
+        './data/gold_aop_water.geojson',
+        './data/gold_aop_roads.geojson',
+        './data/silver_aop_visitor_context_callouts.geojson',
+        './data/bronze_aop_cemeteries.geojson',
+        './data/gold_aop_buildings.geojson',
+        './data/bronze_osm_aop_9patch.geojson',
+        './data/bronze_osm_aop_named.geojson',
+        './data/delete_sfwda_traced_trails.geojson',
+        './data/gold_aop_trail_network.geojson',
         './data/sfwda_raster_alignment.json',
       ].forEach((url) => { fetchJson(url, url); });
 
@@ -7764,7 +7764,7 @@
       // bottom of the stack; the crisp park-clipped layer draws on top of it.
       // Its opacity control fades this mass without touching the park layer,
       // so it reads as adjustable context for the non-park areas.
-      const landcover9Data = await fetchJson('./data/aop_landcover_9patch.geojson', '9-patch land cover missing');
+      const landcover9Data = await fetchJson('./data/gold_aop_landcover_9patch.geojson', '9-patch land cover missing');
       if (landcover9Data) {
         map.addSource('aop-landcover-9patch', {
           type: 'geojson',
@@ -7797,7 +7797,7 @@
       // field colours from 0.6 m leaf-on NAIP. Clipped to the AOP boundary.
       // Drawn just above the wide-area 9-patch layer, so every other layer
       // still draws on top of both.
-      const landcoverData = await fetchJson('./data/aop_landcover.geojson', 'Land cover missing');
+      const landcoverData = await fetchJson('./data/gold_aop_landcover.geojson', 'Land cover missing');
       if (landcoverData) {
         map.addSource('aop-landcover', {
           type: 'geojson',
@@ -7886,7 +7886,7 @@
         paint: { 'raster-opacity': 1 }
       });
 
-      const ninePatchData = await fetchJson('./data/aop_9_patch.geojson', '9-patch overlay missing');
+      const ninePatchData = await fetchJson('./data/bronze_aop_9_patch.geojson', '9-patch overlay missing');
 
       if (ninePatchData) {
         map.addSource('nine-patch', { type: 'geojson', data: ninePatchData });
@@ -7922,7 +7922,7 @@
         });
       }
 
-      const lidarTileData = await fetchJson('./data/aop_lidar_tiles.geojson', 'Lidar tile index missing');
+      const lidarTileData = await fetchJson('./data/bronze_aop_lidar_tiles.geojson', 'Lidar tile index missing');
 
       if (lidarTileData) {
         map.addSource('lidar-tiles', { type: 'geojson', data: lidarTileData });
@@ -7959,7 +7959,7 @@
       }
 
       // --- Lidar contours (USGS 3DEP 1m DEM) ------------------------------
-      const contourData = await fetchJson('./data/aop_contours.geojson', 'Contour layer missing');
+      const contourData = await fetchJson('./data/gold_aop_contours.geojson', 'Contour layer missing');
       if (contourData) {
         map.addSource('aop-contours', {
           type: 'geojson',
@@ -8023,7 +8023,7 @@
       }
 
       // --- Activity hotspots (timestamped GPX dwell) ----------------------
-      const activityData = await fetchJson('./data/aop_activity_hotspots.geojson', 'Activity hotspot layer missing');
+      const activityData = await fetchJson('./data/gold_aop_activity_hotspots.geojson', 'Activity hotspot layer missing');
       if (activityData) {
         // Hoist the collection so the Trails hot lane can bbox the densest
         // cells. See refreshHotButton.
@@ -8103,8 +8103,8 @@
       }
 
       // --- Simulated Saturday activity -----------------------------------
-      const syntheticTracksData = await fetchJson('./data/aop_synthetic_activity_tracks.geojson', 'Synthetic activity tracks missing');
-      const syntheticHotspotsData = await fetchJson('./data/aop_synthetic_activity_hotspots.geojson', 'Synthetic activity hotspots missing');
+      const syntheticTracksData = await fetchJson('./data/delete_aop_synthetic_activity_tracks.geojson', 'Synthetic activity tracks missing');
+      const syntheticHotspotsData = await fetchJson('./data/delete_aop_synthetic_activity_hotspots.geojson', 'Synthetic activity hotspots missing');
       if (syntheticTracksData || syntheticHotspotsData) {
         const syntheticVisibility = syntheticActivityToggle.checked ? 'visible' : 'none';
         if (syntheticTracksData) {
@@ -8348,7 +8348,7 @@
       }
 
       // --- USGS NHD hydrography (streams, waterbodies, springs) -----------
-      const waterData = await fetchJson('./data/aop_water.geojson', 'Water layer missing');
+      const waterData = await fetchJson('./data/gold_aop_water.geojson', 'Water layer missing');
       if (waterData) {
         map.addSource('usgs-water', {
           type: 'geojson',
@@ -8473,7 +8473,7 @@
       }
 
       // --- USGS National Map asphalt roads --------------------------------
-      const roadsData = await fetchJson('./data/aop_roads.geojson', 'Roads layer missing');
+      const roadsData = await fetchJson('./data/gold_aop_roads.geojson', 'Roads layer missing');
       if (roadsData) {
         map.addSource('usgs-roads', { type: 'geojson', data: roadsData });
 
@@ -8605,7 +8605,7 @@
       // (kind=brand_logo, merged 2026-06-05); take only the callout polygons
       // here so the fill/outline/label layers, search, and feature list never
       // see the logos. The brand block below renders the logos as icons.
-      const calloutsBundle = await fetchJson('./data/aop_visitor_context_callouts.geojson', 'Visitor context callouts missing');
+      const calloutsBundle = await fetchJson('./data/silver_aop_visitor_context_callouts.geojson', 'Visitor context callouts missing');
       visitorContextData = calloutsBundle
         ? Object.assign({}, calloutsBundle, {
             features: calloutsBundle.features.filter((f) => (f.properties || {}).kind !== 'brand_logo')
@@ -8683,7 +8683,7 @@
       // the hole in the park polygon. Each cemetery is a parcel polygon plus a
       // centroid marker; both carry the same properties (geom_role tells them
       // apart). Default off — search turns the layer on when it jumps here.
-      cemeteryData = await fetchJson('./data/aop_cemeteries.geojson', 'Cemetery layer missing');
+      cemeteryData = await fetchJson('./data/bronze_aop_cemeteries.geojson', 'Cemetery layer missing');
       if (cemeteryData) {
         applyPositionedFeatures('cemeteries', cemeteryData, { boot: true });
         map.addSource('cemeteries', {
@@ -8814,7 +8814,7 @@
       // drag-adjustable (FEMA's polygons sit a little off); applyPositionedFeatures
       // replays any baked/in-progress moves before the source is built so a
       // reload shows the corrected position.
-      buildingsData = await fetchJson('./data/aop_buildings.geojson', 'Building footprints missing');
+      buildingsData = await fetchJson('./data/gold_aop_buildings.geojson', 'Building footprints missing');
       if (buildingsData) {
         applyPositionedFeatures('buildings', buildingsData, { boot: true });
         map.addSource('fema-buildings', {
@@ -8925,7 +8925,7 @@
       }
 
       // --- Community OSM 9-patch vectors ---------------------------------
-      const osmData = await fetchJson('./data/osm_aop_9patch.geojson', 'OSM 9-patch missing');
+      const osmData = await fetchJson('./data/bronze_osm_aop_9patch.geojson', 'OSM 9-patch missing');
       if (osmData) {
         map.addSource('osm-9patch', { type: 'geojson', data: osmData });
         map.addLayer({
@@ -8960,7 +8960,7 @@
             : props.highway === 'service' ? osmServiceToggle : osmParkToggle);
       }
 
-      const osmNamedData = await fetchJson('./data/osm_aop_named.geojson', 'OSM named features missing');
+      const osmNamedData = await fetchJson('./data/bronze_osm_aop_named.geojson', 'OSM named features missing');
       if (osmNamedData) {
         map.addSource('osm-named', { type: 'geojson', data: osmNamedData });
         map.addLayer({
@@ -9000,7 +9000,7 @@
         'difficult', '#333333',
         '#b06a2c'  // mixed / unread difficulty
       ];
-      const sfwdaTraceTrailsData = await fetchJson('./data/sfwda_traced_trails.geojson', 'SFWDA traced trails missing');
+      const sfwdaTraceTrailsData = await fetchJson('./data/delete_sfwda_traced_trails.geojson', 'SFWDA traced trails missing');
       if (sfwdaTraceTrailsData) {
         map.addSource('sfwda-trace-trails', { type: 'geojson', data: sfwdaTraceTrailsData });
         map.addLayer({
@@ -9020,7 +9020,7 @@
       // --- AOP merged trail network (hand-cleaned SFWDA trails + OSM tracks) ----
       // The "new truth": one feature per trail edge, each coloured per-trail via the
       // baked-in `color` property so cut-at-intersection pieces read as one colour.
-      const aopTrailNetworkData = await fetchJson('./data/aop_trail_network.geojson', 'AOP trail network missing');
+      const aopTrailNetworkData = await fetchJson('./data/gold_aop_trail_network.geojson', 'AOP trail network missing');
       if (aopTrailNetworkData) {
         aopTrailNetworkCache = aopTrailNetworkData; // POI browser trails group joins against this
         map.addSource('aop-trail-network', { type: 'geojson', data: aopTrailNetworkData });
@@ -9543,7 +9543,7 @@
       let publishData;
 
       try {
-        const response = await fetch('./data/publish.geojson');
+        const response = await fetch('./data/silver_publish.geojson');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         publishData = await response.json();
       } catch (error) {
@@ -9591,7 +9591,7 @@
         paint: { 'circle-radius': 6, 'circle-color': '#6f8a5c', 'circle-stroke-color': '#f7f1e2', 'circle-stroke-width': 2 }
       });
 
-      // Baked destination POIs (publish.pois -> publish.geojson `poi` layer).
+      // Baked destination POIs (publish.pois -> silver_publish.geojson `poi` layer).
       map.addLayer({
         id: 'publish-pois',
         type: 'circle',
@@ -9603,7 +9603,7 @@
       updateLayerVisibility();
       fitToDataBounds(publishData);
 
-      // V3c: surface publish.geojson trailheads as feature-list rows so the
+      // V3c: surface silver_publish.geojson trailheads as feature-list rows so the
       // Point → Trailheads sub-group has rows to render. Filter publishData
       // down to just the trailhead features; `id` defaults to the index
       // when properties don't carry an idField match. Card:
@@ -9700,11 +9700,11 @@
       // seed file just moves the first-load coords; overrides win on next
       // load. Card: brain/tasks/02_edit/branding.md.
       //
-      // Source: the logos were merged into aop_visitor_context_callouts.geojson
+      // Source: the logos were merged into silver_aop_visitor_context_callouts.geojson
       // (2026-06-05) as kind=brand_logo points. Pull just those out here; the
       // dedicated brand-logos source + icon layer (and all the drag/resize/cap
       // machinery) are unchanged below.
-      const brandBundle = await fetchJson('./data/aop_visitor_context_callouts.geojson', 'Brand logos missing');
+      const brandBundle = await fetchJson('./data/silver_aop_visitor_context_callouts.geojson', 'Brand logos missing');
       brandLogosData = brandBundle
         ? Object.assign({}, brandBundle, {
             features: brandBundle.features.filter((f) => (f.properties || {}).kind === 'brand_logo')

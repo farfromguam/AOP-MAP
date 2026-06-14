@@ -43,7 +43,7 @@
     return [[w - dx, s - dy], [e + dx, n + dy]];
   })(REGION_BOUNDS, BAND_PAD);
   // Tighter-than-region fallback for the Park camera preset, used until
-  // publish.geojson's park parcel loads.
+  // silver_publish.geojson's park parcel loads.
   const PARK_BOUNDS_FALLBACK = [[-85.761008221, 35.084085624], [-85.739081159, 35.10100706]];
 
   // ── Map construction (main.js:123-166) ─────────────────────────────────
@@ -500,14 +500,14 @@
         showTrails: false, showAopTrailNetwork: true, showBoundaries: true, showTrailheads: true,
         showEditorPois: true
       },
-      sliders: { landcover9Opacity: 100, sfwdaOpacity: 70, sfwdaMultiply: 0 },
+      sliders: { landcover9Opacity: 60, sfwdaOpacity: 70, sfwdaMultiply: 0 },
       paints: {
         // No-tree-cover base = the warm tan Topo and Trace already share, so the
         // areas the vegetation simplify dropped read as warm earth, not bright
         // paper. (User: "update park to have this as the no tree cover color.")
         background: { 'background-color': '#e7ddc4' },
         'landcover-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 1 },
-        'landcover-9patch-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 1 },
+        'landcover-9patch-forest': { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.6 },
         'lidar-hillshade': {
           'hillshade-exaggeration': 0.6,
           'hillshade-shadow-color': '#3a2f22',
@@ -552,11 +552,11 @@
         showTrails: false, showAopTrailNetwork: true, showBoundaries: true, showTrailheads: true,
         showEditorPois: true
       },
-      sliders: { landcover9Opacity: 100, sfwdaOpacity: 60, sfwdaMultiply: 100 },
+      sliders: { landcover9Opacity: 60, sfwdaOpacity: 60, sfwdaMultiply: 100 },
       paints: {
         background: { 'background-color': '#e7ddc4' },
         'landcover-forest': { 'fill-color': LANDCOVER_RELIEF_FILL, 'fill-opacity': 1 },
-        'landcover-9patch-forest': { 'fill-color': LANDCOVER_RELIEF_FILL, 'fill-opacity': 1 },
+        'landcover-9patch-forest': { 'fill-color': LANDCOVER_RELIEF_FILL, 'fill-opacity': 0.6 },
         'lidar-hillshade': {
           'hillshade-exaggeration': 0.45,
           'hillshade-shadow-color': '#7a6a52',
@@ -1883,7 +1883,7 @@
   // so the layer z-order is preserved.
   map.on('load', async () => {
     // --- Land cover, 9-patch (NAIP 2023 + lidar) — base of the stack (main.js:7767) ---
-    const landcover9Data = await fetchJson('./data/aop_landcover_9patch.geojson', '9-patch land cover missing');
+    const landcover9Data = await fetchJson('./data/gold_aop_landcover_9patch.geojson', '9-patch land cover missing');
     if (landcover9Data) {
       map.addSource('aop-landcover-9patch', {
         type: 'geojson', data: landcover9Data,
@@ -1894,15 +1894,19 @@
         // The vegetation fill ships as small grid-subdivided polygons (role=fill)
         // so earcut renders it everywhere. NO canopy-edge outline: the user wanted
         // the tree cover borderless ("remove borders" — the edge line read as a
-        // sage border on the tan base and exposed the grid patching). Solid fill,
-        // no stroke. (The LineString edge feature is left unrendered.)
+        // sage border on the tan base and exposed the grid patching). The non-park
+        // context draws at 0.6 opacity (user's pick) so it recedes from the solid
+        // park area — the opacity step IS the park/context separator, no border.
+        // fill-antialias:false so the grid-subdivided pieces tile seamlessly at <1
+        // opacity (antialiased shared edges would otherwise double up into a faint
+        // grid). The LineString edge feature is left unrendered.
         filter: ['==', ['geometry-type'], 'Polygon'],
-        paint: { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 1 }
+        paint: { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 0.6, 'fill-antialias': false }
       });
     }
 
     // --- Land cover, park-clipped (main.js:7794) ---
-    const landcoverData = await fetchJson('./data/aop_landcover.geojson', 'Land cover missing');
+    const landcoverData = await fetchJson('./data/gold_aop_landcover.geojson', 'Land cover missing');
     if (landcoverData) {
       map.addSource('aop-landcover', {
         type: 'geojson', data: landcoverData,
@@ -1910,9 +1914,11 @@
       });
       map.addLayer({
         id: 'landcover-forest', type: 'fill', source: 'aop-landcover',
-        // Solid, borderless tree cover — see the 9-patch fill above.
+        // The PARK tree cover: solid (opacity 1), borderless. Drawn on top of the
+        // 0.6 non-park 9-patch, so the park area reads denser — the step is the
+        // separator. fill-antialias:false to match the 9-patch (seamless pieces).
         filter: ['==', ['geometry-type'], 'Polygon'],
-        paint: { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 1 }
+        paint: { 'fill-color': LANDCOVER_MUTED_FILL, 'fill-opacity': 1, 'fill-antialias': false }
       });
     }
 
@@ -1949,7 +1955,7 @@
     });
 
     // --- Lidar contours (Topo preset) (main.js:7952) ---
-    const contourData = await fetchJson('./data/aop_contours.geojson', 'Contour layer missing');
+    const contourData = await fetchJson('./data/gold_aop_contours.geojson', 'Contour layer missing');
     if (contourData) {
       map.addSource('aop-contours', {
         type: 'geojson', data: contourData,
@@ -1997,7 +2003,7 @@
     // --- Activity hotspots (GPX dwell) — "where the cool spots are" (main.js:8017) ---
     // THE discovery layer: time-weighted from first-party timestamped GPX. Default
     // OFF; the Hot Trails lane toggles it on and flies to the densest cluster.
-    const activityData = await fetchJson('./data/aop_activity_hotspots.geojson', 'Activity hotspot layer missing');
+    const activityData = await fetchJson('./data/gold_aop_activity_hotspots.geojson', 'Activity hotspot layer missing');
     if (activityData) {
       aopActivityHotspotsData = activityData;
       map.addSource('activity-hotspots', {
@@ -2048,7 +2054,7 @@
     }
 
     // --- USGS NHD hydrography: streams, waterbodies, springs (main.js:8342) ---
-    const waterData = await fetchJson('./data/aop_water.geojson', 'Water layer missing');
+    const waterData = await fetchJson('./data/gold_aop_water.geojson', 'Water layer missing');
     if (waterData) {
       map.addSource('usgs-water', {
         type: 'geojson', data: waterData,
@@ -2123,7 +2129,7 @@
     }
 
     // --- USGS National Map asphalt roads (main.js:8467) ---
-    const roadsData = await fetchJson('./data/aop_roads.geojson', 'Roads layer missing');
+    const roadsData = await fetchJson('./data/gold_aop_roads.geojson', 'Roads layer missing');
     if (roadsData) {
       map.addSource('usgs-roads', { type: 'geojson', data: roadsData });
       const lineWidth = (light, mid, heavy) => ['interpolate', ['linear'], ['zoom'], 10, light, 14, mid, 17, heavy];
@@ -2153,11 +2159,11 @@
     }
 
     // --- Visitor context callouts + brand logos (one file, split by kind) ---
-    // main.js:8599 / 9698 both read aop_visitor_context_callouts.geojson; fetchJson
+    // main.js:8599 / 9698 both read silver_aop_visitor_context_callouts.geojson; fetchJson
     // memoizes so this is one request split two ways. The drag-to-move override
     // replay (applyPositionedFeatures) is editor machinery — not carried; the read
     // core draws the served (baked) geometry.
-    const calloutsBundle = await fetchJson('./data/aop_visitor_context_callouts.geojson', 'Visitor context callouts missing');
+    const calloutsBundle = await fetchJson('./data/silver_aop_visitor_context_callouts.geojson', 'Visitor context callouts missing');
     const visitorContextData = calloutsBundle
       ? Object.assign({}, calloutsBundle, { features: calloutsBundle.features.filter((f) => (f.properties || {}).kind !== 'brand_logo') })
       : null;
@@ -2194,7 +2200,7 @@
     }
 
     // --- FEMA building footprints (main.js:8808) ---
-    const buildingsData = await fetchJson('./data/aop_buildings.geojson', 'Building footprints missing');
+    const buildingsData = await fetchJson('./data/gold_aop_buildings.geojson', 'Building footprints missing');
     poiBuildingsData = buildingsData;
     if (buildingsData) {
       map.addSource('fema-buildings', {
@@ -2287,7 +2293,7 @@
     }
 
     // --- AOP merged trail network (the gold trail truth) (main.js:9014) ---
-    const aopTrailNetworkData = await fetchJson('./data/aop_trail_network.geojson', 'AOP trail network missing');
+    const aopTrailNetworkData = await fetchJson('./data/gold_aop_trail_network.geojson', 'AOP trail network missing');
     if (aopTrailNetworkData) {
       // Stamp the number-first display name onto every trail (in-memory only) so
       // the label layer and the search index share one source — see trailDisplayName.
@@ -2335,9 +2341,9 @@
 
     // --- Hand-traced camp POIs / waypoints (Affinity satellite trace) ---
     // RV sites, cabins, firepit, entrances, etc. placed over the satellite and
-    // re-imported (aop_waypoints_traced.geojson, raw zone). Named point markers,
+    // re-imported (gold_aop_waypoints_traced.geojson, raw zone). Named point markers,
     // shown in every preset so the camp infrastructure always reads.
-    const aopWaypointsData = await fetchJson('./data/aop_waypoints_traced.geojson', 'Camp waypoints');
+    const aopWaypointsData = await fetchJson('./data/gold_aop_waypoints_traced.geojson', 'Camp waypoints');
     if (aopWaypointsData && aopWaypointsData.features && aopWaypointsData.features.length) {
       map.addSource('aop-waypoints', { type: 'geojson', data: aopWaypointsData });
       map.addLayer({
@@ -2364,7 +2370,7 @@
     // not carried here.
     let publishData;
     try {
-      const response = await fetch('./data/publish.geojson');
+      const response = await fetch('./data/silver_publish.geojson');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       publishData = await response.json();
     } catch (error) {

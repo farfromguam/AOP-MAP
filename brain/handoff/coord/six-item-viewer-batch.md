@@ -28,6 +28,35 @@ kept their fill-opacity=1). The two sessions edit different functions of
 viewer_core.js, so `git add -p` separates them cleanly. I did NOT touch their
 landcover_layer.md / mockups / pngs.
 
-DONE → next: name the 10 new traced trails; editor (`panel.js`) medallion re-group
-(deferred — chip learns bronze, tree layout owed). Card:
-`tasks/02_edit/_done/six_item_viewer_batch_20260614.md`. UNCOMMITTED (git gate).
+DONE → next: name the 10 new traced trails. Card:
+`tasks/02_edit/_done/six_item_viewer_batch_20260614.md`.
+
+## Addendum — physical file rename + data-editor re-group (2026-06-14, v88)
+
+The six-item batch above was **committed by the user as HEAD `91a017e` ("medallion
+rename")**. The user then asked to actually RENAME the files (not just the tier
+values) + re-group the data editor page ("rename and re-group. dont touch treecover").
+
+- **File rename:** every served geojson now carries its medallion tier as a filename
+  prefix — `gold_aop_trail_network.geojson`, `bronze_aop_cemeteries.geojson`,
+  `silver_publish.geojson`, `delete_aop_synthetic_activity_*.geojson` (25 files).
+  New `mvp/scripts/rename_data_medallion.py` (imports `stamp_maturity.MATURITY` — no
+  dup) renames + sweeps the runtime refs (viewer_core 14, main 51, panel 29,
+  data_editor_map 1, sw 24, old_index 1, `_schema.json` 25, `_data_manifest.json` 39).
+- **Re-group:** `data_editor_map.js` now groups the file picker into `<optgroup>`
+  Gold / Silver / Bronze / Delete (derived from the filename prefix).
+- **`sw.js`/`#appVersion` v87→v88.** **Tree cover NOT touched** — my sweep only changed
+  filename strings; the landcover session's 60% non-park opacity + `fill-antialias:false`
+  are intact.
+- **Verified by observation** (`:8001`): `verify_label_border_persist_firepit.py` 13/13,
+  `verify_production_tier_alert.py` PASS, `verify_data_editor_regroup.py` PASS — all 0
+  console errors (production viewer loads every prefixed file; the data-editor picker
+  shows the 4 tier groups).
+- **COMMINGLED with the concurrent landcover-opacity session** (tree cover v88, its own
+  `.council-cleared` = c91d81a, now STALE because my rename changed the diff). Both are
+  uncommitted; the user separates at the git gate. Did NOT touch the landcover session's
+  files (`landcover_layer.md`, mockups, pngs).
+- **Owed (pipeline consistency):** the ~50 `mvp/scripts` (importers/exporters/bakers +
+  ~30 verifiers) still read/write CANONICAL names; `rename_data_medallion.py` is the
+  documented FINAL step — re-run it after any data bake (like `stamp_maturity.py`).
+  A deeper pass to make the generators emit prefixed names is Docker-gated (deferred).

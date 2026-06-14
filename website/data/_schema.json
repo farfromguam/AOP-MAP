@@ -92,10 +92,10 @@
     "raw_archive": "website/data/raw/ (pristine pre-rebake originals)",
     "machine_layers": "id + kind per feature (name/status crosswalked where a physical key exists); provenance is layer-level (below)",
     "sidecar_joins": "trail catalog + poi-index folded into name/description/facets at bake time (read live from website/data/, not raw/)",
-    "not_owned": "publish.geojson is DB-baked by export_publish_geojson.sh and intentionally not re-baked here"
+    "not_owned": "silver_publish.geojson is DB-baked by export_publish_geojson.sh and intentionally not re-baked here"
   },
   "layers": {
-    "aop_9_patch.geojson": {
+    "bronze_aop_9_patch.geojson": {
       "features": 9,
       "kind": "acquisition_aoi_cell",
       "machine": false,
@@ -113,7 +113,7 @@
         "name": "aop_9_patch_data_bounds"
       }
     },
-    "aop_editor_seed_pois.geojson": {
+    "bronze_aop_editor_seed_pois.geojson": {
       "features": 1,
       "kind": "(per-feature)",
       "machine": false,
@@ -132,7 +132,7 @@
         "note": "Default editorPois loaded into aop_editor_pois_v1 on a fresh install or Reset viewer. Update workflow: draw → Export GeoJSON in the Map editor section → replace this file with the downloaded aop_editor_features.geojson → commit. Every feature gains properties.source = aop_editor_seed_v1 at load time. The optional seed_tag property writes a #tag binding into aop_feature_tags_v1 for the matching feature id; existing bindings on other layers carrying the same tag are stripped (the seed wins)."
       }
     },
-    "aop_lidar_tiles.geojson": {
+    "bronze_aop_lidar_tiles.geojson": {
       "features": 24,
       "kind": "lidar_tile",
       "machine": false,
@@ -161,7 +161,7 @@
         "total_size_bytes": 2788061014
       }
     },
-    "aop_roads.geojson": {
+    "gold_aop_roads.geojson": {
       "features": 114,
       "kind": "road",
       "machine": false,
@@ -176,7 +176,7 @@
         "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
       }
     },
-    "aop_water.geojson": {
+    "gold_aop_water.geojson": {
       "features": 94,
       "kind": "water",
       "machine": false,
@@ -191,7 +191,7 @@
         "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
       }
     },
-    "osm_aop_9patch.geojson": {
+    "bronze_osm_aop_9patch.geojson": {
       "features": 71,
       "kind": "(per-feature)",
       "machine": false,
@@ -221,7 +221,7 @@
         }
       }
     },
-    "osm_aop_named.geojson": {
+    "bronze_osm_aop_named.geojson": {
       "features": 5,
       "kind": "(per-feature)",
       "machine": false,
@@ -237,14 +237,14 @@
       },
       "collection_meta": {
         "metadata": {
-          "source": "Derived from osm_aop_9patch.geojson",
+          "source": "Derived from bronze_osm_aop_9patch.geojson",
           "filter": "features with a 'name' tag",
           "license": "ODbL — © OpenStreetMap contributors",
           "retrieved_on": "2026-05-20"
         }
       }
     },
-    "sfwda_traced_trails.geojson": {
+    "delete_sfwda_traced_trails.geojson": {
       "features": 382,
       "kind": "trail",
       "machine": false,
@@ -262,7 +262,7 @@
         "name": "sfwda_paper_trails"
       }
     },
-    "sfwda_traced_markers.geojson": {
+    "bronze_sfwda_traced_markers.geojson": {
       "features": 124,
       "kind": "trail_marker",
       "machine": false,
@@ -292,7 +292,7 @@
         }
       }
     },
-    "sfwda_numbered_trails.geojson": {
+    "bronze_sfwda_numbered_trails.geojson": {
       "features": 67,
       "kind": "trail",
       "machine": false,
@@ -312,7 +312,7 @@
         "name": "sfwda_numbered_trails"
       }
     },
-    "sfwda_trails_edited.geojson": {
+    "bronze_sfwda_trails_edited.geojson": {
       "features": 120,
       "kind": "trail",
       "machine": false,
@@ -330,7 +330,7 @@
         "name": "sfwda_trails_edited"
       }
     },
-    "aop_landcover.geojson": {
+    "gold_aop_landcover.geojson": {
       "features": 154,
       "kind": "landcover",
       "machine": true,
@@ -356,7 +356,7 @@
         "xy_coordinate_resolution": 1e-06
       }
     },
-    "aop_landcover_9patch.geojson": {
+    "gold_aop_landcover_9patch.geojson": {
       "features": 3430,
       "kind": "landcover",
       "machine": true,
@@ -383,7 +383,7 @@
         "xy_coordinate_resolution": 1e-06
       }
     },
-    "aop_contours.geojson": {
+    "gold_aop_contours.geojson": {
       "features": 2831,
       "kind": "contour",
       "machine": true,
@@ -415,7 +415,7 @@
         "xy_coordinate_resolution": 1e-06
       }
     },
-    "aop_activity_hotspots.geojson": {
+    "gold_aop_activity_hotspots.geojson": {
       "features": 130,
       "kind": "activity_hotspot",
       "machine": true,
@@ -468,7 +468,7 @@
         }
       }
     },
-    "aop_synthetic_activity_hotspots.geojson": {
+    "delete_aop_synthetic_activity_hotspots.geojson": {
       "features": 36,
       "kind": "synthetic_activity_hotspot",
       "machine": true,
@@ -521,7 +521,7 @@
         }
       }
     },
-    "aop_synthetic_activity_tracks.geojson": {
+    "delete_aop_synthetic_activity_tracks.geojson": {
       "features": 72,
       "kind": "synthetic_activity_track",
       "machine": true,
@@ -552,7 +552,7 @@
           "saturday_date": "2026-05-23",
           "scenario": "Many RC users start at the pavilion, follow observed trail evidence, crawl technical spots, dwell/socialize, and overlap existing raw GPX hotspots.",
           "osm_route_index": {
-            "input": "/Users/christopherfryman/Documents/code/AOP MAP/website/data/osm_aop_9patch.geojson",
+            "input": "/Users/christopherfryman/Documents/code/AOP MAP/website/data/bronze_osm_aop_9patch.geojson",
             "feature_count": 51,
             "track_feature_count": 47,
             "service_feature_count": 4,
@@ -565,7 +565,7 @@
         }
       }
     },
-    "aop_buildings.geojson": {
+    "gold_aop_buildings.geojson": {
       "features": 5,
       "kind": "building",
       "machine": false,
@@ -611,7 +611,7 @@
       "locked": true,
       "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
     },
-    "aop_cemeteries.geojson": {
+    "bronze_aop_cemeteries.geojson": {
       "features": 8,
       "kind": "cemetery",
       "machine": false,
@@ -630,7 +630,7 @@
       "locked": false,
       "maturity_note": "bronze — raw / inspection / not yet promoted to production; unlocked"
     },
-    "aop_trail_network.geojson": {
+    "gold_aop_trail_network.geojson": {
       "features": 120,
       "kind": "trail",
       "machine": false,
@@ -687,7 +687,7 @@
       "locked": true,
       "maturity_note": "gold — verified first-party, accepted in production; locked, unlock to edit"
     },
-    "aop_visitor_context_callouts.geojson": {
+    "silver_aop_visitor_context_callouts.geojson": {
       "features": 4,
       "kind": "(per-feature)",
       "machine": false,
@@ -744,7 +744,7 @@
       "locked": true,
       "maturity_note": "silver — pending review; locked, unlock to edit"
     },
-    "publish.geojson": {
+    "silver_publish.geojson": {
       "features": 6,
       "kind": "(per-feature)",
       "machine": false,

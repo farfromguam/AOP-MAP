@@ -32,7 +32,7 @@
 //   3. reconcile DATA_ASSETS below with `ls website/data/`
 // Shell HTML + copy JSON self-heal (stale-while-revalidate), so a missed bump is
 // less dangerous than before — but bulky GeoJSON only refreshes on a bump.
-const VERSION = 'v87'; // keep in sync with #appVersion in index.html
+const VERSION = 'v88'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
@@ -85,43 +85,43 @@ const SHELL_ASSETS = [
 // so these are fetched with allSettled rather than addAll. Whatever isn't here
 // (or fails) still gets cached the first time the app fetches it online.
 const DATA_ASSETS = [
-  './data/publish.geojson',
+  './data/silver_publish.geojson',
   './data/aop_poi_index.json',
   './data/aop_trail_catalog.json',
-  './data/aop_trail_network.geojson',
-  './data/aop_roads.geojson',
-  './data/aop_water.geojson',
-  './data/aop_buildings.geojson',
-  './data/aop_waypoints_traced.geojson',
-  './data/aop_cemeteries.geojson',
-  './data/aop_landcover.geojson',
-  './data/aop_landcover_9patch.geojson',
-  './data/aop_9_patch.geojson',
-  './data/aop_lidar_tiles.geojson',
-  './data/aop_activity_hotspots.geojson',
-  './data/aop_synthetic_activity_hotspots.geojson',
-  './data/aop_visitor_context_callouts.geojson',
-  // Deliberately NOT precached (M13): aop_contours.geojson (~14 MB) and
-  // aop_synthetic_activity_tracks.geojson (~1 MB) are the two heaviest layers and
+  './data/gold_aop_trail_network.geojson',
+  './data/gold_aop_roads.geojson',
+  './data/gold_aop_water.geojson',
+  './data/gold_aop_buildings.geojson',
+  './data/gold_aop_waypoints_traced.geojson',
+  './data/bronze_aop_cemeteries.geojson',
+  './data/gold_aop_landcover.geojson',
+  './data/gold_aop_landcover_9patch.geojson',
+  './data/bronze_aop_9_patch.geojson',
+  './data/bronze_aop_lidar_tiles.geojson',
+  './data/gold_aop_activity_hotspots.geojson',
+  './data/delete_aop_synthetic_activity_hotspots.geojson',
+  './data/silver_aop_visitor_context_callouts.geojson',
+  // Deliberately NOT precached (M13): gold_aop_contours.geojson (~14 MB) and
+  // delete_aop_synthetic_activity_tracks.geojson (~1 MB) are the two heaviest layers and
   // both default OFF (showContours / showSyntheticActivity unchecked). Precaching
   // them forced a ~15 MB background download the moment a phone installs — bad on
   // weak field signal, for layers most installs never turn on. The cache-first
   // `/data/` fetch handler still caches each the first time it IS viewed online,
   // so "offline-after-once" holds for whoever actually enables them.
-  // (brand logos merged into aop_visitor_context_callouts.geojson, 2026-06-05)
-  './data/aop_editor_seed_pois.geojson',
+  // (brand logos merged into silver_aop_visitor_context_callouts.geojson, 2026-06-05)
+  './data/bronze_aop_editor_seed_pois.geojson',
   './data/aop_event_schedule.json',
   './data/aop_about.json',
   './data/aop_ui_strings.json',
   './data/aop_copy_registry.json',
-  './data/osm_aop_9patch.geojson',
-  './data/osm_aop_named.geojson',
+  './data/bronze_osm_aop_9patch.geojson',
+  './data/bronze_osm_aop_named.geojson',
   './data/sfwda_aop_trail_map.webp',
   './data/sfwda_raster_alignment.json',
-  './data/sfwda_traced_trails.geojson',
+  './data/delete_sfwda_traced_trails.geojson',
   // Removed as of v21 (unreferenced by index.html — present on disk only):
-  // aop_synthetic_activity_report.json, sfwda_traced_markers.geojson,
-  // sfwda_numbered_trails.geojson, sfwda_trails_edited.geojson. Re-add here if
+  // aop_synthetic_activity_report.json, bronze_sfwda_traced_markers.geojson,
+  // bronze_sfwda_numbered_trails.geojson, bronze_sfwda_trails_edited.geojson. Re-add here if
   // any gets wired into the viewer.
 ];
 

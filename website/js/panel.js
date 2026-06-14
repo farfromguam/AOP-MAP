@@ -91,7 +91,7 @@
   const EDITABLE_SERVED_KEYS = ['name', 'description', 'difficulty', 'notes', 'category', 'tag', 'highlight'];
   // Where drawn (user-created) features bake to. Its own file so the canonical
   // re-bake (which reads data/raw/) never touches it and never clobbers a draw.
-  const USER_FEATURES_FILE = 'aop_user_features.geojson';
+  const USER_FEATURES_FILE = 'bronze_aop_user_features.geojson';
 
   function blankStore() { return { schema: 'aop-panel-overrides-v1', edits: {}, created: [], deleted: [] }; }
   let OVERRIDES = blankStore();
@@ -123,7 +123,7 @@
   // Created features are authored whole. A draw can now land in ANY editable
   // layer's source (not just userFeatures) — a created building lives in the
   // fema-buildings collection so it paints as a building and bakes back to
-  // aop_buildings.geojson. Every locally-created feature carries `_id` (local,
+  // gold_aop_buildings.geojson. Every locally-created feature carries `_id` (local,
   // pre-bake) and `_src` (its target source), so the snapshot is just "every
   // feature in any loaded collection that still carries an `_id`."
   function syncCreated() {
@@ -367,9 +367,9 @@
   //   image     — a single georeferenced image (4 corner coords)
   //   images    — bitmap icons to addImage() before the layers are added
   const MAP_DATA = [
-    // ---- Publishable (publish.geojson: boundaries + trails + trailheads) ----
+    // ---- Publishable (silver_publish.geojson: boundaries + trails + trailheads) ----
     {
-      source: 'publish-data', url: './data/publish.geojson',
+      source: 'publish-data', url: './data/silver_publish.geojson',
       layers: [
         { id: 'publish-boundary-fill', type: 'fill', filter: ['==', ['get', 'layer'], 'park_boundaries'], paint: { 'fill-color': '#d8c8a2', 'fill-opacity': 0.10 } },
         { id: 'publish-boundaries', type: 'line', filter: ['==', ['get', 'layer'], 'park_boundaries'], paint: { 'line-color': '#6e5a3c', 'line-width': 2.5 } },
@@ -379,7 +379,7 @@
     },
     // ---- Source layers ----
     {
-      source: 'nine-patch', url: './data/aop_9_patch.geojson',
+      source: 'nine-patch', url: './data/bronze_aop_9_patch.geojson',
       layers: [
         { id: 'nine-patch-fill', type: 'fill', paint: { 'fill-color': '#c7a85e', 'fill-opacity': 0.10 } },
         { id: 'nine-patch-outline', type: 'line', paint: { 'line-color': '#a88246', 'line-width': 1.5, 'line-dasharray': [2, 2] } },
@@ -395,7 +395,7 @@
       layers: [{ id: 'usda-naip-satellite', type: 'raster', layout: { visibility: 'none' }, paint: { 'raster-opacity': 1 } }]
     },
     {
-      source: 'lidar-tiles', url: './data/aop_lidar_tiles.geojson',
+      source: 'lidar-tiles', url: './data/bronze_aop_lidar_tiles.geojson',
       layers: [
         { id: 'lidar-tiles-fill', type: 'fill', paint: { 'fill-color': '#9a7d96', 'fill-opacity': 0.16 } },
         { id: 'lidar-tiles-outline', type: 'line', paint: { 'line-color': '#8a6f86', 'line-width': 2.5, 'line-dasharray': [4, 2] } },
@@ -403,7 +403,7 @@
       ]
     },
     {
-      source: 'cemeteries', url: './data/aop_cemeteries.geojson',
+      source: 'cemeteries', url: './data/bronze_aop_cemeteries.geojson',
       layers: [
         { id: 'cemetery-fill', type: 'fill', filter: ['==', ['get', 'geom_role'], 'parcel'], paint: { 'fill-color': '#a99aa0', 'fill-opacity': 0.4 } },
         { id: 'cemetery-outline', type: 'line', filter: ['==', ['get', 'geom_role'], 'parcel'], paint: { 'line-color': '#7d6e74', 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 1, 17, 3] } },
@@ -413,14 +413,14 @@
     },
     // ---- Derived layers ----
     {
-      source: 'aop-landcover-9patch', url: './data/aop_landcover_9patch.geojson',
+      source: 'aop-landcover-9patch', url: './data/gold_aop_landcover_9patch.geojson',
       layers: [
         { id: 'landcover-9patch-forest', type: 'fill', paint: { 'fill-color': LANDCOVER_FILL, 'fill-opacity': 0.55 } },
         { id: 'landcover-9patch-forest-outline', type: 'line', paint: { 'line-color': LANDCOVER_OUTLINE, 'line-width': 0.6, 'line-opacity': 0.35 } }
       ]
     },
     {
-      source: 'aop-landcover', url: './data/aop_landcover.geojson',
+      source: 'aop-landcover', url: './data/gold_aop_landcover.geojson',
       layers: [
         { id: 'landcover-forest', type: 'fill', paint: { 'fill-color': LANDCOVER_FILL, 'fill-opacity': 0.9 } },
         { id: 'landcover-forest-outline', type: 'line', paint: { 'line-color': LANDCOVER_OUTLINE, 'line-width': 0.8, 'line-opacity': 0.55 } }
@@ -431,7 +431,7 @@
       layers: [{ id: 'lidar-hillshade', type: 'hillshade', layout: { visibility: 'none' }, paint: { 'hillshade-exaggeration': 0.6, 'hillshade-shadow-color': '#3a2f22', 'hillshade-highlight-color': '#fbf4e2', 'hillshade-accent-color': '#6b5640' } }]
     },
     {
-      source: 'aop-contours', url: './data/aop_contours.geojson',
+      source: 'aop-contours', url: './data/gold_aop_contours.geojson',
       layers: [
         { id: 'contours-minor', type: 'line', filter: ['==', ['get', 'idx'], 0], layout: { 'line-join': 'round' }, paint: { 'line-color': '#c7b48f', 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 16, 1.4], 'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0, 17.5, 0.75] } },
         { id: 'contours-index', type: 'line', filter: ['==', ['get', 'idx'], 1], layout: { 'line-join': 'round' }, paint: { 'line-color': '#a8906a', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 16, 2.8], 'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 0.95, 0], 16, 0.95] } },
@@ -439,7 +439,7 @@
       ]
     },
     {
-      source: 'fema-buildings', url: './data/aop_buildings.geojson',
+      source: 'fema-buildings', url: './data/gold_aop_buildings.geojson',
       layers: [
         { id: 'building-footprint-fill', type: 'fill', filter: ['!=', ['get', 'aop_structure_box'], true], paint: { 'fill-color': ['match', ['get', 'occupancy_class'], 'Residential', '#c1a386', 'Agriculture', '#b7a36f', 'Assembly', '#b78f6f', 'Government', '#9da4a6', 'Unclassified', '#aaa397', '#ad987f'], 'fill-opacity': ['case', ['==', ['get', 'inside_aop_boundary'], true], 0.56, 0.34] } },
         { id: 'building-footprint-outline', type: 'line', filter: ['!=', ['get', 'aop_structure_box'], true], paint: { 'line-color': ['case', ['==', ['get', 'inside_aop_boundary'], true], '#8e5f37', '#776f61'], 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.5, 16, 1.8], 'line-opacity': 0.9 } },
@@ -447,20 +447,20 @@
       ]
     },
     {
-      source: 'aop-trail-network', url: './data/aop_trail_network.geojson',
+      source: 'aop-trail-network', url: './data/gold_aop_trail_network.geojson',
       layers: [
         { id: 'aop-trail-network', type: 'line', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['coalesce', ['get', 'color'], '#888888'], 'line-width': 3, 'line-opacity': 0.92 } },
         { id: 'aop-trail-network-labels', type: 'symbol', filter: ['to-boolean', ['get', 'name']], layout: { 'symbol-placement': 'line-center', 'text-field': ['to-string', ['get', 'name']], 'text-size': 12 }, paint: { 'text-color': '#111', 'text-halo-color': '#fff', 'text-halo-width': 1.6 } }
       ]
     },
     {
-      source: 'synthetic-activity-tracks', url: './data/aop_synthetic_activity_tracks.geojson',
+      source: 'synthetic-activity-tracks', url: './data/delete_aop_synthetic_activity_tracks.geojson',
       layers: [
         { id: 'synthetic-activity-tracks', type: 'line', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['match', ['get', 'persona'], 'north_crawl', '#254d5b', 'checkpoint_loop', '#477c82', 'photo_short', '#6fa793', 'proving_ground', '#9a7d96', 'trailhead_social', '#9a5a32', '#5f9183'], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.7, 16, 1.8], 'line-opacity': 0.36 } }
       ]
     },
     {
-      source: 'synthetic-activity-hotspots', url: './data/aop_synthetic_activity_hotspots.geojson',
+      source: 'synthetic-activity-hotspots', url: './data/delete_aop_synthetic_activity_hotspots.geojson',
       layers: [
         { id: 'synthetic-activity-hotspots-heat', type: 'heatmap', filter: ['==', ['geometry-type'], 'Point'], paint: { 'heatmap-weight': ['interpolate', ['linear'], ['get', 'intensity_norm'], 0, 0.18, 1, 1], 'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 11, 0.35, 16, 1.45], 'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 11, 16, 16, 42], 'heatmap-opacity': 0.58, 'heatmap-color': ['interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(183, 210, 189, 0)', 0.24, 'rgba(183, 210, 189, 0.5)', 0.48, 'rgba(111, 167, 147, 0.64)', 0.74, 'rgba(71, 124, 130, 0.78)', 1, 'rgba(37, 77, 91, 0.92)'] } },
         { id: 'synthetic-activity-hotspots-fill', type: 'fill', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': SYNTHETIC_HOTSPOT_FILL, 'fill-opacity': SYNTHETIC_HOTSPOT_OPACITY } },
@@ -470,7 +470,7 @@
     },
     // ---- External reference ----
     {
-      source: 'usgs-water', url: './data/aop_water.geojson',
+      source: 'usgs-water', url: './data/gold_aop_water.geojson',
       layers: [
         { id: 'water-area-fill', type: 'fill', filter: ['==', ['get', 'water_kind'], 'water_area'], paint: { 'fill-color': '#a8c5c9', 'fill-opacity': 0.55 } },
         { id: 'waterbody-fill', type: 'fill', filter: ['==', ['get', 'water_kind'], 'waterbody'], paint: { 'fill-color': '#9fbfc4', 'fill-opacity': 0.5 } },
@@ -482,7 +482,7 @@
       ]
     },
     {
-      source: 'usgs-roads', url: './data/aop_roads.geojson',
+      source: 'usgs-roads', url: './data/gold_aop_roads.geojson',
       layers: [
         { id: 'roads-local-casing', type: 'line', filter: ['==', ['get', 'road_class'], 'local'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#f3ecda', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.8, 14, 2.2, 17, 6], 'line-opacity': 0.9 } },
         { id: 'roads-local', type: 'line', filter: ['==', ['get', 'road_class'], 'local'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#b0a68c', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.4, 14, 1.2, 17, 3.2] } },
@@ -498,7 +498,7 @@
       ]
     },
     {
-      source: 'osm-9patch', url: './data/osm_aop_9patch.geojson',
+      source: 'osm-9patch', url: './data/bronze_osm_aop_9patch.geojson',
       layers: [
         { id: 'osm-park-outline', type: 'line', filter: ['==', ['get', 'leisure'], 'park'], paint: { 'line-color': '#8a9a6a', 'line-width': 2, 'line-dasharray': [3, 2] } },
         { id: 'osm-tracks', type: 'line', filter: ['==', ['get', 'highway'], 'track'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#9a5a32', 'line-width': 2, 'line-opacity': 0.95 } },
@@ -506,7 +506,7 @@
       ]
     },
     {
-      source: 'osm-named', url: './data/osm_aop_named.geojson',
+      source: 'osm-named', url: './data/bronze_osm_aop_named.geojson',
       layers: [
         { id: 'osm-named-points', type: 'circle', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 5, 'circle-color': '#c7a85e', 'circle-stroke-color': '#6a5836', 'circle-stroke-width': 1.5 } },
         { id: 'osm-named-labels', type: 'symbol', layout: { 'text-field': ['get', 'name'], 'text-size': 12, 'text-offset': [0, 1.1], 'text-anchor': 'top' }, paint: { 'text-color': '#4a3c2a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.5 } }
@@ -518,7 +518,7 @@
       layers: [{ id: 'sfwda-paper', type: 'raster', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.7, 'raster-fade-duration': 0 } }]
     },
     {
-      source: 'sfwda-trace-trails', url: './data/sfwda_traced_trails.geojson',
+      source: 'sfwda-trace-trails', url: './data/delete_sfwda_traced_trails.geojson',
       layers: [
         { id: 'sfwda-trace-trails', type: 'line', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['match', ['get', 'difficulty'], 'easy', '#2e8b57', 'moderate', '#2f6fb0', 'difficult', '#333333', '#b06a2c'], 'line-width': 2.5, 'line-opacity': 0.9 } }
       ]
@@ -537,7 +537,7 @@
       // Callout polygons + brand-logo points share one file (logos merged
       // 2026-06-05). This source takes only the callouts; the brand-logos
       // source below takes only the logos. Same split as host main.js.
-      source: 'visitor-context', url: './data/aop_visitor_context_callouts.geojson',
+      source: 'visitor-context', url: './data/silver_aop_visitor_context_callouts.geojson',
       transform: (fc) => Object.assign({}, fc, { features: (fc.features || []).filter((f) => (f.properties || {}).kind !== 'brand_logo') }),
       layers: [
         { id: 'visitor-context-fill', type: 'fill', paint: { 'fill-color': '#d8b173', 'fill-opacity': 0.18 } },
@@ -546,9 +546,9 @@
       ]
     },
     {
-      // Brand logos now live in aop_visitor_context_callouts.geojson as
+      // Brand logos now live in silver_aop_visitor_context_callouts.geojson as
       // kind=brand_logo points; pull just those into this icon source.
-      source: 'brand-logos', url: './data/aop_visitor_context_callouts.geojson',
+      source: 'brand-logos', url: './data/silver_aop_visitor_context_callouts.geojson',
       transform: (fc) => Object.assign({}, fc, { features: (fc.features || []).filter((f) => (f.properties || {}).kind === 'brand_logo') }),
       images: [{ name: 'brand-aop-badge', url: './assets/branding/aop-badge.png' }, { name: 'brand-rock-warblers', url: './assets/branding/rock-warblers.jpg' }],
       layers: [
@@ -556,7 +556,7 @@
       ]
     },
     {
-      source: 'editor-poi', url: './data/aop_editor_seed_pois.geojson',
+      source: 'editor-poi', url: './data/bronze_aop_editor_seed_pois.geojson',
       layers: [
         { id: 'editor-poi-fill', type: 'fill', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': POI_COLOR, 'fill-opacity': 0.3 } },
         { id: 'editor-poi-outline', type: 'line', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'line-color': POI_COLOR, 'line-width': 2.5 } },
@@ -568,7 +568,7 @@
       ]
     },
     {
-      source: 'activity-hotspots', url: './data/aop_activity_hotspots.geojson',
+      source: 'activity-hotspots', url: './data/gold_aop_activity_hotspots.geojson',
       layers: [
         { id: 'activity-hotspots-heat', type: 'heatmap', filter: ['==', ['geometry-type'], 'Point'], paint: { 'heatmap-weight': ['interpolate', ['linear'], ['get', 'intensity_norm'], 0, 0.18, 1, 1], 'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 11, 0.45, 16, 1.65], 'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 11, 18, 16, 44], 'heatmap-opacity': 0.68, 'heatmap-color': ['interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(230, 200, 111, 0)', 0.22, 'rgba(230, 200, 111, 0.55)', 0.45, 'rgba(217, 144, 61, 0.65)', 0.72, 'rgba(191, 90, 54, 0.76)', 1, 'rgba(127, 47, 39, 0.9)'] } },
         { id: 'activity-hotspots-fill', type: 'fill', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': ACTIVITY_HOTSPOT_FILL, 'fill-opacity': ACTIVITY_HOTSPOT_OPACITY } },
@@ -580,7 +580,7 @@
       // User-entered features. Loads from its own served file (empty until the
       // first draw is baked); grows in-session as the user creates features, and
       // baked draws come back from disk here on reload.
-      source: USER_FEATURES_SOURCE, url: './data/aop_user_features.geojson',
+      source: USER_FEATURES_SOURCE, url: './data/bronze_aop_user_features.geojson',
       layers: [
         { id: 'user-feature-polys', type: 'fill', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': '#b4561f', 'fill-opacity': 0.25 } },
         { id: 'user-feature-polys-outline', type: 'line', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'line-color': '#b4561f', 'line-width': 1.5 } },
@@ -608,7 +608,7 @@
     title: 'AOP edit panel',
     sections: [
       // GOLD — reviewed first-party, final. Locked (unlock to edit). The group
-      // maps to its served file (aop_trail_network.geojson); maturity mirrors the
+      // maps to its served file (gold_aop_trail_network.geojson); maturity mirrors the
       // file's `_meta.maturity` stamped by mvp/scripts/stamp_maturity.py. See
       // brain/research/data_maturity_tiers.md.
       {
@@ -702,7 +702,7 @@
           { id: 'eventSchedule', kind: 'layer', label: 'Event schedule POIs', maturity: 'silver', visible: false, mapLayers: ['event-session-routes', 'event-route-labels', 'event-anchor-points', 'event-anchor-labels'] },
           {
             // Brand logos (AOP badge + Rock Warblers) live in the silver
-            // aop_visitor_context_callouts.geojson as kind=brand_logo points.
+            // silver_aop_visitor_context_callouts.geojson as kind=brand_logo points.
             // Moved into the Silver group 2026-06-05 (was Map editor; that group
             // retired). The chip now reads Silver, matching the file it lives in.
             id: 'brandLogos', kind: 'layer', label: 'Brand logos (AOP & Rock Warblers)', maturity: 'silver', visible: true, expanded: false, geom: 'Point',
@@ -803,8 +803,8 @@
       // members (SFWDA traced trails, the two simulated-Saturday files) are also
       // stamped maturity:'delete' in mvp/scripts/stamp_maturity.py. Sub-layer
       // members are panel-only moves until their file is split: springs is part
-      // of aop_water.geojson (the Streams node keeps it); OSM park polygon is part
-      // of osm_aop_9patch.geojson (OSM tracks/service keep it). See
+      // of gold_aop_water.geojson (the Streams node keeps it); OSM park polygon is part
+      // of bronze_osm_aop_9patch.geojson (OSM tracks/service keep it). See
       // brain/research/data_maturity_tiers.md.
       {
         id: 'delete', label: 'Delete — staged for removal', collapsed: false,
