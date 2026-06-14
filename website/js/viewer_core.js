@@ -32,10 +32,11 @@
   // off-edge band. The band (viewer_band.js) draws its neat-line + lettering to
   // REGION_BOUNDS and its art (lettering + corner marks) reaches ~0.12 of the region
   // beyond it. At 0.13 the wall landed right on the border text/images — you couldn't
-  // pull past them. 0.22 leaves a strip of paper margin past the lettering so the
-  // over-pull peek clears the border, while still stopping before the camera wanders
-  // far into blank paper. (Was REGION_BOUNDS exactly pre-band, then 0.13.)
-  const BAND_PAD = 0.22;
+  // pull past them. 0.60 leaves a wide band of paper past the lettering so the
+  // over-pull peek clears the whole border with plenty of room, while still stopping
+  // before the camera wanders far into blank paper. (Was REGION_BOUNDS exactly
+  // pre-band, then 0.13 → 0.22 → 0.40 → 0.45 → 0.60 as the user dialed the feel.)
+  const BAND_PAD = 0.60;
   const REGION_MAXBOUNDS = (function (b, f) {
     const w = b[0][0], s = b[0][1], e = b[1][0], n = b[1][1];
     const dx = (e - w) * f, dy = (n - s) * f;
@@ -398,8 +399,9 @@
     // fully in view. The old framing inset ~15% per side to fill the viewport with the
     // data-rich centre — but that cropped the band off every edge. Now we OUTSET ~7%
     // per side: the band lettering sits ~4% outside the boundary, and the camera leash
-    // (maxBounds) is +13%, so this reveals the whole frame while staying inside the
-    // leash. The button's label — "the full 9-patch region" — now matches what it shows.
+    // (maxBounds = REGION_BOUNDS padded by BAND_PAD, currently 0.60) is wider still, so
+    // this reveals the whole frame while staying inside the leash. The button's label —
+    // "the full 9-patch region" — now matches what it shows.
     const [[rw, rs], [re, rn]] = REGION_BOUNDS;
     const outX = (re - rw) * 0.07;
     const outY = (rn - rs) * 0.07;
@@ -2579,9 +2581,22 @@
       .addTo(map);
     map.once('moveend', () => panPopupIntoView(popup));
   });
+  // Hover cursor: pointer over a clickable feature, the map's grab hand elsewhere.
+  // queryRenderedFeatures over the interactive layer set is the per-hover cost, and
+  // raw mousemove fires it dozens of times a second — including DURING a pan/zoom,
+  // where the read is pointless and competes with the camera move + the band
+  // re-raise for the main thread. Throttle to one query per animation frame and
+  // skip while the camera is moving, so sweeping the mouse over the trails can't peg
+  // the main thread. (Read behavior is unchanged: pointer over a feature, grab off.)
+  let hoverQueryRaf = 0, hoverPoint = null;
   map.on('mousemove', (e) => {
-    const layers = interactivePopupLayers();
-    if (!layers.length) return;
-    map.getCanvas().style.cursor = map.queryRenderedFeatures(e.point, { layers }).length ? 'pointer' : '';
+    hoverPoint = e.point;
+    if (hoverQueryRaf || map.isMoving()) return;
+    hoverQueryRaf = requestAnimationFrame(() => {
+      hoverQueryRaf = 0;
+      const layers = interactivePopupLayers();
+      if (!layers.length) return;
+      map.getCanvas().style.cursor = map.queryRenderedFeatures(hoverPoint, { layers }).length ? 'pointer' : '';
+    });
   });
 })();

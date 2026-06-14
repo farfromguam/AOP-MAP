@@ -41,6 +41,45 @@ same page is eaten by leftover popup/search state; a test artifact, not a viewer
 **Reuse:** `feature_display.js` is loaded as a `<script>` (not re-ported), same as the schedule resolver;
 the popup positioning reuses the schedule slice's `closeAllMapPopups`/`visibleMapRect`/`panPopupIntoView`.
 
+### Addendum — 2026-06-13 (hover-cursor throttle — user reported a beachball over the trails)
+
+User: *"there also seems to be a beachball when hovering over the trails."* The 4a hover-cursor was a bare
+`map.on('mousemove')` that ran `queryRenderedFeatures` over all ~12 `INTERACTIVE_POPUP_LAYERS` on **every
+raw mousemove** — including during a pan (where the read is pointless and competes with the camera move +
+the band's `raiseBand` for the main thread). That per-mousemove query is the one plausible per-hover cost
+and the prime suspect for the beachball.
+
+**Could NOT reproduce the beachball in headless** (verify_by_observation, honest): Playwright over `:8001`,
+750 hover moves across region/park/pavilion → **0 long-tasks, 0 re-renders**, `queryRenderedFeatures`
+avg **0.57 ms** (max 4.7), trail GeoJSON only 130 KB, `getStyle()` 0.1–0.3 ms. So in headless Chromium it
+is not heavy — the beachball is likely environment-specific (real Safari/Retina, where
+`queryRenderedFeatures` can be markedly slower). It is **not** related to the v72 left-controls
+pointer-events fix: that hover handler fired over the trails (open map field) before that CSS change too.
+
+**Fix (defensive, `viewer_core.js`):** throttle the hover query to **one `queryRenderedFeatures` per
+animation frame** and **skip while `map.isMoving()`**. Cursor *logic* is unchanged (pointer over a feature,
+grab off it); only *when* it runs changes. Verified: `node --check` clean; **120 synthetic mousemoves →
+1 query** (rAF-coalesced); cursor still resolves to `pointer` over a real feature off the overlay, and the
+"pointer everywhere in the park" is the pre-existing big-`visitor-context-fill` behavior, unchanged.
+**Honest status:** removes the per-mousemove query storm; **not confirmed** to be the beachball cure since
+it could not be reproduced here — owed: user confirmation on the real device. **UNCOMMITTED**, and it landed
+in `viewer_core.js` alongside the user's live `BAND_PAD` border tuning (separate, the user's work).
+
+**Follow-up (2026-06-13) — user narrowed it: "safari hover only, center area."** Reproduced Safari's engine
+with Playwright **WebKit** (Version/26.4, real WebCore/JSC) and measured:
+- hover `queryRenderedFeatures` over the center is cheap — avg **1 ms** (max 11), **0 long-tasks** across a
+  10 s continuous center-hover burst;
+- hovering triggers **0 map re-renders**; frame pacing holds a steady **16.7 ms / 60 fps**;
+- removing all **38 band layers** changes center-hover frame pacing by **0.0 ms** (band not implicated).
+
+So JS, re-renders, and the band are **ruled out by observation in both engines** — the throttle is good
+hygiene but is **not** the cure. Headless WebKit renders in *software*, so it cannot exercise the remaining
+suspect: **real Safari's GPU compositor** on the dense center layer stack. That needs the user's real Safari
+(real GPU) — handed off: (1) Safari Web-Inspector **Timeline** recording while hovering the center
+(Scripting vs Rendering/Compositing settles it); (2) live band A/B via
+`AOPViewerBand.bandLayers().forEach(id=>AOPViewer.map.getLayer(id)&&AOPViewer.map.removeLayer(id))`. Awaiting
+the user's real-device signal before any further fix.
+
 ## 4b — POI-tab directory (shipped, index-driven)
 
 **The andon that shaped this.** `main.js`'s `buildPoiGroups` → `collectStarredDestinations` builds the POI

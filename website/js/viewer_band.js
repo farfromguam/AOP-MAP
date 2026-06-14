@@ -27,20 +27,18 @@
 //   4. corner marks— the Rock Warblers mark stamped at each boundary corner, laid
 //      flat on the ground (icon rotation + pitch aligned to the map).
 //
-// Camera behaviour is unchanged from the rubber-band era: the map's own maxBounds
-// is the hard backstop, and on RELEASE after a drag past the edge snapBack() eases
-// the 9-patch back into frame. That logic is screen-space (it just pulls the
-// camera) and is kept verbatim; only the VISUAL band moved onto the map.
+// Camera behaviour: the map's own maxBounds (padded by BAND_PAD in viewer_core.js)
+// is the hard backstop. A drag pans the map and stops at that wall, so you can pull
+// the 9-patch out and rest it on the paper margin past the border. (The old
+// rubber-band snapBack that re-centred on release was removed — it made the leash
+// imperceptible.)
 (function () {
   'use strict';
 
-  var SNAP_MS = 520;   // ms — release rubber-band duration.
   var ZREF = 13;       // zoom at which the px sizes below are measured; ground-lock
                        // doubles them per zoom level (exponential base 2).
 
   var PAPER = '#e3d7bb', INK = '#3a2c1a', TITLE_INK = '#2a1f12', SUB_INK = '#5a4828';
-
-  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
   function boot(tries) {
     var V = window.AOPViewer;
@@ -268,6 +266,7 @@
       art.width = art.height = 0;   // release the full bake canvas
       BAND_LAYERS = ['band-mask', 'band-keyline'].concat(tileLayerIds);
       raiseBand();
+      schedulePeek();
     }
 
     // Keep the band the highest layers, even while the core is still loading. The
@@ -301,44 +300,56 @@
       raf(function () { raiseQueued = false; raiseBand(); });
     }
 
-    // ── snapBack (camera rubber-band) — unchanged screen-space logic ─────────
-    // Screen-space bbox of the 9-patch (axis-aligned extent of the four projected
-    // corners). Only used to decide how far to pull the camera back on release.
-    function regionRect() {
-      var pts = [map.project([W, S]), map.project([W, N]), map.project([E, S]), map.project([E, N])];
-      var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      for (var i = 0; i < pts.length; i++) {
-        var p = pts[i];
-        if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
-        if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
-      }
-      return { minX: minX, minY: minY, maxX: maxX, maxY: maxY };
+    // No rubber-band: dragging the map just pans and stops at the padded maxBounds
+    // wall (BAND_PAD in viewer_core.js), so you can pull the map out and REST it on
+    // the paper margin past the border. The old snapBack() re-centred the 9-patch on
+    // every release, which made the camera leash imperceptible (you could never park
+    // off-centre to see it) — removed at the user's call, 2026-06-13.
+
+    // ── auto-peek — one-time on-load reveal of the printed border ─────────────
+    // The proof page advertised the band with a manual "Show me" button (an over-pan
+    // that slid the lettered edge into view, then released). The user wants that
+    // greeting automatic on the real viewer: once the band + core have settled, ease
+    // the camera back so the whole neat-line + lettering shows, hold a beat, then ease
+    // back to the view the core framed — so a first-time visitor SEES the map is a
+    // printed sheet, not ragged data edges. Runs once per load; any REAL user gesture
+    // cancels it (checked via e.originalEvent, which the programmatic camera moves
+    // below never carry), so the peek can't yank the camera from someone already
+    // interacting. killPeek is armed from boot to catch a grab before the band loads.
+    var peekDone = false, peekKilled = false, peekScheduled = false;
+    function killPeek(e) { if (e && e.originalEvent) peekKilled = true; }
+    map.on('movestart', killPeek);
+    function autoPeek() {
+      if (peekDone) return;
+      if (peekKilled || !map.getSource('band-mask')) { map.off('movestart', killPeek); return; }
+      peekDone = true;
+      var home = { center: map.getCenter(), zoom: map.getZoom(),
+                   bearing: map.getBearing(), pitch: map.getPitch() };
+      // Pull back to frame the whole printed sheet with a clear paper margin all the
+      // way round, so the full neat-line + lettering + corner marks read at once. This
+      // is the proof page's frame=out recipe: fitBounds(region) with a fat padding.
+      map.fitBounds([[W, S], [E, N]],
+        { padding: 90, bearing: home.bearing, pitch: home.pitch, duration: 900 });
+      setTimeout(function () {
+        if (peekKilled) { map.off('movestart', killPeek); return; }
+        map.easeTo({ center: home.center, zoom: home.zoom,
+                     bearing: home.bearing, pitch: home.pitch, duration: 1100 });
+        map.once('moveend', function () { map.off('movestart', killPeek); });
+      }, 2000);   // 900ms reveal + ~1.1s hold, then ease home
     }
-    function rawGaps() {
-      var c = map.getContainer();
-      var r = regionRect();
-      return { l: r.minX, r: c.clientWidth - r.maxX, t: r.minY, b: c.clientHeight - r.maxY };
+    // Wait out the core's initial framing (fitToDataBounds → applyPreset) so home is
+    // the resting view: the first idle after the band is added is that settled moment.
+    // But a cold load can stay busy (tiles + ~50 async layers) for many seconds, which
+    // would bury the greeting — so cap the wait at ~4.5s (the data-frame jump lands
+    // well before that), whichever comes first. fired guards the two paths from racing.
+    function schedulePeek() {
+      if (peekScheduled) return;
+      peekScheduled = true;
+      var fired = false;
+      function go() { if (fired) return; fired = true; setTimeout(autoPeek, 150); }
+      map.once('idle', go);
+      setTimeout(go, 4500);
     }
-    function gaps() {
-      var g = rawGaps();
-      return { l: Math.max(0, g.l), r: Math.max(0, g.r), t: Math.max(0, g.t), b: Math.max(0, g.b) };
-    }
-    var snapping = false, userDragged = false;
-    function snapBack() {
-      var g = gaps();
-      var dx = g.l - g.r, dy = g.t - g.b;
-      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
-        snapping = true;
-        map.panBy([dx, dy], { duration: SNAP_MS, easing: easeOutCubic });
-      }
-    }
-    map.on('dragstart', function () { userDragged = true; });
-    map.on('moveend', function () {
-      if (snapping) { snapping = false; return; }
-      if (!userDragged) return;
-      userDragged = false;
-      snapBack();
-    });
 
     // ── boot the band once the core's style + layers are in ──────────────────
     function whenReady(tries) {
@@ -364,10 +375,9 @@
     }
     whenReady(0);
 
-    // Verify hook for the proof's Playwright checks + the "Show me" button.
+    // Verify hook for the Playwright checks.
     window.AOPViewerBand = {
-      addBand: addBand, raiseBand: raiseBand,
-      gaps: gaps, rawGaps: rawGaps, snapBack: snapBack, region: region,
+      addBand: addBand, raiseBand: raiseBand, region: region,
       bandLayers: function () { return BAND_LAYERS; }
     };
   }

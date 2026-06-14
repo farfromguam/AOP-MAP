@@ -137,3 +137,48 @@ The merge shipped on the user's "give it a shot." Files changed (all uncommitted
 **Still owed (the user's call):** the git commit + version bump are the user's gate. Retire the spent
 scaffolding when ready: `viewer_banded.html`, `viewer_banded_compare.html`, `css/viewer_band.css`
 (+ adjacent `old_index.html`). Council review on the diff before "done".
+
+### Leash re-tune — 2026-06-13 (the user's feel-iteration)
+
+The initial `BAND_PAD = 0.13` put the camera wall right on the border text/images — the user couldn't pull
+past them. Dialed up by feel over two passes at the user's direction ("a bit more", then "a little less than
+double"): **0.13 → 0.22 → 0.40**. At 0.40 the over-pull peek clears the whole border with a comfortable band
+of paper margin beyond the lettering before the wall. Each value verified by observation (Playwright: live
+`getMaxBounds()` confirms the pad fraction; a programmatic pan to the SW wall screenshots the held position —
+at 0.40 the title / "Cumberland Plateau" / corner mark sit well inside the viewport with paper beyond, band
+still 38 layers on top). `node --check` clean. Only `website/js/viewer_core.js` changed (the one constant +
+its comment). Final amount is the user's eye — easy to re-dial.
+
+### Auto-peek restored — 2026-06-13 (the user reversed the omission)
+
+This card's "What does NOT cross" list deliberately left the proof page's **"Show me (auto-peek)"** out of
+the merge (proof scaffolding). The user reversed that: *"the auto peek needs to go back… it needs to stay."*
+It is now an **automatic on-load reveal** in `website/js/viewer_band.js` (not a button — the read viewer has
+no proof HUD):
+
+- After the band is added and the core's initial framing has settled (first `idle`, or a ~4.5s cap so a slow
+  cold load can't bury it), `autoPeek` captures the resting view, eases the camera back to frame the whole
+  printed sheet (`fitBounds(REGION_BOUNDS, { padding: 90 })` — the proof's `frame=out` recipe, so all four
+  edge legends + corner marks read at once), holds ~1.1s, then eases home. Runs **once per load**.
+- **Self-contained:** the proof button drove `AOPViewerBand.gaps()` / `snapBack()`, both removed in the band
+  rewrite. The new peek depends on neither — it captures `getCenter/Zoom/Bearing/Pitch` and returns to them.
+- **Cancelable:** a `movestart` listener armed from boot sets `peekKilled` on any *real* user gesture (checked
+  via `e.originalEvent`, which the programmatic camera moves don't carry), so the peek never yanks the camera
+  from someone already dragging/zooming; the listener is unbound once the peek ends.
+
+Verified by observation (real Chromium / Playwright on the clean `index.html`, `:8001`): camera rests at the
+core's park frame (z14), pulls back to ~z12.8–12.9 showing the full lettered border (screenshot: title top, the two
+side legends, "South Pittsburg · Marion County · Tennessee" bottom, neat-line + corner marks), then returns to
+z14 — 38 band layers throughout, **zero console errors**; a scripted user drag during load suppresses the peek
+(zoom stays flat). `node --check` clean on `viewer_band.js` + `viewer_core.js`. Also fixed a stale comment in
+`viewer_core.js` (the Region-preset note said the leash was "+13%" from the `BAND_PAD = 0.13` era; now reads
+`BAND_PAD`-relative). **Knobs the user may want to dial** (like the leash): the ~4.5s trigger cap, the 900ms
+reveal / 1.1s hold / 1.1s return timings, and the `padding: 90` reveal tightness.
+
+**Version bumped — 2026-06-13:** at the user's "sure bump the version", `#appVersion` (`index.html:220`) and
+`sw.js` `VERSION` (`:35`) both went **v72 → v73** so installed PWA users get the new `viewer_band.js`. Verified
+live on `:8001` (both serve `v73`; `node --check` clean on `sw.js`).
+
+**Still owed (user's git gate):** the commit itself; retire the spent scaffolding (`viewer_banded.html` — now
+also half-broken, its peek button calls the removed `gaps()`; `viewer_banded_compare.html`;
+`css/viewer_band.css`).
