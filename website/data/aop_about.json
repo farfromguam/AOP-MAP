@@ -1,29 +1,47 @@
 {
   "schema": "aop-about-v1",
-  "updated_at": "2026-05-31",
-  "purpose": "Copy for the left-panel About tab. The viewer renders #aboutInfoPanel from this file (renderAbout in index.html) so the wording lives here as reviewable data instead of as inline HTML. Edit the text here, not in index.html.",
+  "updated_at": "2026-06-14",
+  "purpose": "Copy for the left-panel About tab. The viewer renders #aboutInfoPanel from this file (renderAbout in viewer_core.js) so the wording lives here as reviewable data instead of as inline HTML. Edit the text here, not in index.html. Source copy: brain/import/TBI.copy.",
   "heading": "About the Rock Warblers",
   "intro": {
-    "lead": "Friday, June 19, 2026 we host the ",
+    "lead": "Welcome to the first event hosted by the Rock Warblers, our ",
     "link": {
       "text": "Trail Blazing Invitational",
       "url": "https://www.facebook.com/events/adventure-offroad-park-nature-center/rock-warblers-trail-blazing-invitational/4541595172728436/"
     },
-    "tail": " at Adventure Off Road Park. Come crawl scale rigs on real Tennessee ridge with us. Gated stages by day, then a run to the campfire after dark."
+    "tail": " at Adventure Off Road Park, Friday, June 19 through Sunday, June 21. Come join us for a weekend of fun, scaled adventure."
   },
   "items": [
-    { "label": "Format", "text": "Three numbered stages, time-run. Gate touches, rolls, and driver assists cost you. Winching is free." },
-    { "label": "Mandatory skills", "text": "Water, a grade pull, and a taco-stand inside every stage." },
-    { "label": "Trail buddies", "text": "Required. Walk, mark, swap. Penalty winch travels with whoever isn’t carrying one." },
-    { "label": "Rigs", "text": "1/10 electric scale. 1.9″ and 1.55″ wheel classes. No dig, no rear steer. Five scale accessories minimum." },
-    { "label": "Night crawl", "text": "Lights on after dusk. Leaves the pavilion, finishes at the fire." },
-    { "label": "The park", "text": "Adventure Off Road Park & Nature Center, South Pittsburg, TN. Six hundred acres of private ridge. Pavilion is base camp: registration, driver meeting, awards, and the fire pit. Camping on-site, first come." },
-    { "label": "The map", "text": "On-day reference, built from real terrain data and our own rides. Use it at the pavilion and out on a stage. Every line traces back to where it came from." },
-    { "label": "The crew", "text": "Rock Warblers. We build the trucks and put on the weekend. Find us at the pavilion, or out walking a stage." }
+    { "label": "Mandatory skills", "text": "Good attitude." },
+    { "label": "Rigs", "text": "1/10 electric scale. 1.55″, 1.9″, and 2.2″ wheel classes. No dig, no rear steer. Five scale accessories minimum. No bashers." },
+    { "label": "The park", "text": "Adventure Off Road Park, South Pittsburg, TN — six hundred acres of private ridge. The pavilion is base camp: registration, driver meeting, hot dog dinner, awards, the 50/50 raffle, and the fire pit. Camping on-site, first come, first served." },
+    { "label": "The map", "text": "On-day reference built from GPS data and real terrain — the high-traffic hot spots and areas of interest around the park. Use it at the pavilion and out on each stage. Every line traces back to where it came from." },
+    { "label": "The crew", "text": "Rock Warblers — caw-craaawl! Kin to the Diamond-Billed Rock Pecker found only in Moab, Utah. Known for our bright blue shirts and ultimate scale builds. You'll find us mostly east of the Mississippi, with sightings in Canada, Pennsylvania, West Virginia, Michigan, and North Carolina. A rare breed has been spotted migrating between Europe and North America." }
   ],
+  "driver_meeting": {
+    "heading": "Driver's Meeting",
+    "paragraphs": [
+      "Welcome, everyone, to the first event hosted by the Rock Warblers. You'll find us in the bright blue shirts, and we're so excited to have you here. The pavilion is home base for all the activities, and we meet there before each event. Several trails run off to the right of the pavilion, by the buggy entrance. Feel free to explore the Jeep entrance too, and document any fun trails on that side of the park. We'd love for everyone to run a GPS tracking app and share the areas you explored. We'll keep updating the map to show the hot spots and areas of interest around the park.",
+      "The C.O.W. is available throughout the day for your convenience. We've got batteries and basic necessities.",
+      "Trails are open to full-scale crawlers and bouncers this weekend, so keep your eyes and ears open and yield to the larger vehicles.",
+      "We're hosting a 50/50 raffle. Half goes to one lucky winner, and the other half goes to Appalachian RC for Kids. If you're not familiar with them, they're a West Virginia program that gives RC vehicles to kids under 12 who don't have one of their own. They're always at the BTC supporting the kids and helping fix RC cars that break down. Tickets are 5 for $10.",
+      "To kick things off, we'll set up the show and shine right out in front of the pavilion. After the show and shine, exploration begins. We've got a few challenges planned for today and tomorrow: the Warbler Peck and Pop Challenge, the Gravity Gauntlet, and PRO Line Before the Fire.",
+      "This evening, head back to the pavilion at 6pm for a hot dog dinner. Two hot dogs, chips, and a drink for $10. After dinner we'll run the PRO Line Before the Fire obstacle driving challenge, then head to the fire pit for s'mores.",
+      "On Sunday, we'll try our hand at GPS drawing during the Driver Doodles Sketchy Driving Challenge. At noon we wrap up with the awards ceremony, and then we clean, wrap, pack up, and head home."
+    ],
+    "rules": {
+      "lead": "Throughout the weekend, just remember:",
+      "items": [
+        "Scale recovery is highly encouraged.",
+        "Penalty points for gate touches, rollovers, and hogging.",
+        "Winching is free.",
+        "Trail repairs and cleanup earn karma points that cancel penalties.",
+        "And most importantly, have some fun."
+      ]
+    }
+  },
   "note": "Made by the Rock Warblers. See you at the pavilion.",
   "owed_work": [
-    "Confirm the six-hundred-acre figure against the parcel envelope (open MVP data-integrity item).",
-    "Confirm final format / mandatory-skills / class rules with the event lead before this reads as official."
+    "Confirm the six-hundred-acre figure against the parcel envelope (open MVP data-integrity item)."
   ]
 }

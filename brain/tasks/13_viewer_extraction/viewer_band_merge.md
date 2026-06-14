@@ -179,9 +179,9 @@ reveal / 1.1s hold / 1.1s return timings, and the `padding: 90` reveal tightness
 `sw.js` `VERSION` (`:35`) both went **v72 → v73** so installed PWA users get the new `viewer_band.js`. Verified
 live on `:8001` (both serve `v73`; `node --check` clean on `sw.js`).
 
-**Still owed (user's git gate):** the commit itself; retire the spent scaffolding (`viewer_banded.html` — now
-also half-broken, its peek button calls the removed `gaps()`; `viewer_banded_compare.html`;
-`css/viewer_band.css`).
+**Still owed (user's git gate):** the commit itself. ~~retire the spent scaffolding~~ — **done 2026-06-14**
+(see the auto-peek-removed addendum below: `viewer_banded.html`, `viewer_banded_compare.html`, and
+`css/viewer_band.css` were `rm`'d from the working tree; deletions staged, restorable, commit owed).
 
 ### Auto-peek removed — 2026-06-14 (the user reversed it again)
 
@@ -193,11 +193,49 @@ vars, `killPeek` + its `movestart` listener, `autoPeek`, and `schedulePeek`. Not
 (`W,S,E,N` stay — they're the band's own region corners). The band itself is untouched — it still bakes and
 floats on top; only the on-load camera animation is gone.
 
-Verified by observation (real Chromium / Playwright, `:8001`,
-`brain/output/verify_no_load_peek.py`): zoom sampled every 150ms for 7s across the full former peek window —
-**44/44 samples at z14, spread 0, zero console errors**; the band still renders (38 band layers, `band-mask`
-source present); screenshot `brain/output/no_load_peek_settled.png` shows the park-framed view with the band
-border. `node --check` clean on `viewer_band.js`.
+Verified by observation that the peek tokens are gone: `c157acc:website/js/viewer_band.js` and the working
+tree both grep **0** `autoPeek`/`schedulePeek`/`killPeek`; the band still renders (38 layers); `node --check`
+clean. **But the "no jump on load" claim was initially under-verified** — see the residual-jump fix below.
 
 **Version bumped — 2026-06-14:** `#appVersion` (`index.html:234`) and `sw.js` `VERSION` (`:35`) both **v74 →
-v75** so installed PWA users get the peek-free `viewer_band.js`. **Still owed (user's git gate):** the commit.
+v75** so installed PWA users get the peek-free `viewer_band.js`.
+
+**Spent scaffolding retired — 2026-06-14:** with the band shipped into `index.html` (v71) and the auto-peek
+now gone (v75), the proof pages were fully spent and unreferenced by the shipped viewer — `rm`'d from the
+working tree: `viewer_banded.html` (its "Show me (auto-peek)" button called the removed `gaps()`),
+`viewer_banded_compare.html` (4-iframe compare of it), and `css/viewer_band.css` (its proof-HUD CSS). All
+three git-tracked, so the deletions are restorable. One dangling shipped reference cleaned: the
+`viewer_core.js` band-seam comment that named `viewer_banded.html` now reads "the band's old proof page."
+No shipped file loaded any of them; `sw.js` never precached them, so no asset-list edit was needed. The
+comment touch to `viewer_core.js` (a precached shell asset) means the working-tree shell diverges from the
+committed v75 shell, so `#appVersion` + `sw.js` `VERSION` advance **v75 → v76** to keep the cache key honest
+(comment-only runtime delta, but the repo's shell-asset-changed → bump discipline is hook-enforced).
+
+### Residual on-load jump fixed — 2026-06-14 (council Witness andon)
+
+The council Witness re-ran the verifier 7× and caught it flapping PASS/FAIL: the old `verify_no_load_peek.py`
+gated sampling on `getZoom() > 12.5`, which **raced the data load**. Removing the auto-peek killed the
+park → region → park reveal, but a **second, pre-existing** on-load jump remained: `viewer_core.js`
+constructed the map at `zoom: 12` (the band's `maxBounds` clamps that up to **z12.5**), and the camera **held
+that region-wide view for ~4.4 s** until `publishData` loaded and `fitToDataBounds` snapped it to **z14**
+(park) — same center, +1.5 zoom. Instrumenting the camera from the first frame (init-script rAF sampler, no
+gate) showed it deterministically: `z0=12.509 … (4364 ms) … z14`, span 1.491. That is still "a jump on load."
+
+Fix (the source, not the symptom): construct already at the park frame — `zoom: 12 → 14` in
+`website/js/viewer_core.js` (center was already park `[-85.75, 35.0925]`; z14 is where `fitToDataBounds`
+settles, so the data-load fit is now a visual no-op). And the verifier was rewritten to sample from t=0 with
+**no zoom gate**, so it can't race the load. Verified by observation (`:8001`): **5/5 runs `z0=14`, span 0,
+STABLE**; consolidated verifier **3/3 PASS** (`z0=14`, span 0, 38 band layers, 0 console errors). The racy
+`>12.5` gate is gone; the throwaway `diag_load_camera.py` was folded into `verify_no_load_peek.py` and
+removed.
+
+**Verifier flake fixed — 2026-06-14 (Witness re-review):** the re-witness confirmed the camera fix is solid
+(z0=14, span 0 on 13/13 runs) but caught the *verifier* still flapping PASS/FAIL — the new `len(errors)==0`
+gate tripped on an intermittent **headless-Chromium GL artifact** ("Could not compile fragment shader:",
+empty message, software-GL path under load), not a page error (band still 38 layers, camera flat on those
+runs). Fixed by filtering ONLY that GL noise (`GL_NOISE` list) from the fatal-error gate; any real page error
+still fails. Now **8/8 PASS** including the 4 runs where the GL flake fired (`fatal=0, filtered=1`). The shell
+version rode v75 → v76 → **v77** (a parallel session advanced it past mine to cover other in-flight work);
+my no-load-jump change is part of that uncommitted shell batch.
+
+**Still owed (user's git gate):** the commit (scaffolding deletions + `viewer_core.js` comment + v76 bump).

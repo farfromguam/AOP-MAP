@@ -304,3 +304,42 @@ compare against. The layer was rebuilt around that workflow.
   not absolute crop ID.
 - Tunables at the top of `classify_landcover.py`: `CANOPY_HEIGHT_M`,
   `CLOSE_RADIUS`, `OPEN_RADIUS`, plus the stage-2 radii and k-means settings.
+
+-----
+
+## Update: vegetation simplification (2026-06-14)
+
+The user's call: the five-class ground cover (two greens, three browns) is too
+busy. Combine the two greens into one **vegetation** layer and let every
+non-tree area read as the base map paper.
+
+- **Data mutation, not a paint trick.** `mvp/scripts/simplify_landcover_vegetation.py`
+  reads the 5-class GeoJSON, keeps the two forest classes, dissolves them with a
+  shapely `unary_union` (touching deciduous/evergreen merge into one shape),
+  explodes the union back to polygons, re-tags every feature `class=vegetation`,
+  and drops the three open classes. Top-level `name`/`_meta` preserved (group
+  label kept so the panel grouping + data manifest are unaffected; maturity stays
+  `derived`). Idempotent guard: refuses to write if no forest features are present.
+- **Result.** Park `aop_landcover.geojson`: 154 → 18 features (435 KB → 105 KB).
+  9-patch `aop_landcover_9patch.geojson`: 3430 → 165 features (4.5 MB → 891 KB).
+  Both carry only `class=vegetation`.
+- **Pipeline wired.** The simplify is the final step of `build_landcover.sh` and
+  `build_landcover_9patch.sh`; the 5-class export is kept in the gitignored cache
+  (`mvp/cache/landcover/*.5class.geojson`), so a rebuild stays simplified instead
+  of reverting. The 5-class source is recoverable from git + the cache + the
+  pipeline.
+- **Viewer.** `viewer_core.js` land-cover paint collapsed from a 5-class
+  `match` on `class` to a flat vegetation green per preset (`#b8c1a1` Park /
+  `#c0c6ad` Topo; outlines `#a6af8d` / `#aeb499`). `main.js` / `panel.js` (editor
+  host, mid-port) still carry the old `match`; with single-class data it falls
+  through to the same green — cleanup owed when the editor ports into the read core.
+- **Not limiting code.** This is a directed simplification of a *derived* layer.
+  `ai_rules/no_limiting_code_mvp.md` defers the display call to the user ("we want
+  everything to display for now" was *their* call; dropping non-tree here is too).
+- **Verified by observation (2026-06-14).** `playwright_verify_landcover.py`
+  updated to the vegetation contract (single class, retired sub-classes gone,
+  flat-green fill, base-of-stack, render counts; editor-only sections guarded so
+  it runs against the read viewer `index.html` or the editor host
+  `old_index.html`). All PASS, 0 console errors, on the live `:8001` read viewer.
+- **Owed (user's git gate):** commit. `sw.js` VERSION + `#appVersion` were bumped
+  for the data change (a contributor synced both to `v79`).

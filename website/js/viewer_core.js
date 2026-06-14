@@ -56,8 +56,13 @@
         { id: 'background', type: 'background', paint: { 'background-color': '#efe7d5' } }
       ]
     },
+    // Open already at the PARK frame, not the region-wide z12. The center is the
+    // park; z14 matches where fitToDataBounds(publishData) settles (its maxZoom),
+    // so the data-load fit is a visual no-op instead of a 4 s hold at z12.5 that
+    // then climbs to park — the on-load "jump" the user called out. (main.js opened
+    // at z12; the band's maxBounds clamps that up to ~12.5, which is what showed.)
     center: [-85.75, 35.0925],
-    zoom: 12,
+    zoom: 14,
     bearing: -90,
     maxBounds: REGION_MAXBOUNDS,
     attributionControl: false
@@ -71,7 +76,7 @@
   // js/viewer_band.js can attach its geolocated neat-line layers on top. The
   // band draws to regionBounds; the camera leash is the padded REGION_MAXBOUNDS
   // above. This is the only thing the core leaks to window, on purpose — it
-  // replaces the constructor shim the viewer_banded.html proof page used to fake.
+  // replaces the constructor shim the band's old proof page used to fake.
   window.AOPViewer = { map, regionBounds: REGION_BOUNDS };
 
   // Two-finger pinch zooms immediately; keep drag-to-tilt + right-click rotate
@@ -252,34 +257,13 @@
   };
   // Land-cover fill/outline families: muted (Park) and relief (Topo). Also the
   // base paint for the land-cover layers below, so one definition serves both.
-  const LANDCOVER_MUTED_FILL = ['match', ['get', 'class'],
-    'forest_deciduous', '#b8c1a1',
-    'forest_evergreen', '#a8b18f',
-    'open_grass',       '#ddd2ad',
-    'open_meadow',      '#d4c79f',
-    'open_bare',        '#c7b890',
-    '#b8c1a1'];
-  const LANDCOVER_MUTED_OUTLINE = ['match', ['get', 'class'],
-    'forest_deciduous', '#a6af8d',
-    'forest_evergreen', '#969f7c',
-    'open_grass',       '#cdc29c',
-    'open_meadow',      '#c4b78d',
-    'open_bare',        '#b7a87f',
-    '#a6af8d'];
-  const LANDCOVER_RELIEF_FILL = ['match', ['get', 'class'],
-    'forest_deciduous', '#c0c6ad',
-    'forest_evergreen', '#b1b89b',
-    'open_grass',       '#e5dcbc',
-    'open_meadow',      '#ddd2ae',
-    'open_bare',        '#d1c5a0',
-    '#c0c6ad'];
-  const LANDCOVER_RELIEF_OUTLINE = ['match', ['get', 'class'],
-    'forest_deciduous', '#aeb499',
-    'forest_evergreen', '#9fa687',
-    'open_grass',       '#d3caa8',
-    'open_meadow',      '#cbc09b',
-    'open_bare',        '#bfb28c',
-    '#aeb499'];
+  // The land cover ships a single dissolved `vegetation` class (forest greens
+  // merged, non-tree dropped to the base map — simplify_landcover_vegetation.py),
+  // so these are flat vegetation colours: the former forest tone for each preset.
+  const LANDCOVER_MUTED_FILL = '#b8c1a1';
+  const LANDCOVER_MUTED_OUTLINE = '#a6af8d';
+  const LANDCOVER_RELIEF_FILL = '#c0c6ad';
+  const LANDCOVER_RELIEF_OUTLINE = '#aeb499';
   // Activity-hotspot opacity is referenced by the Park/Topo preset paints. The
   // activity-hotspots layer itself is dev-reference and not carried, so those
   // paint entries no-op (setPaint guards on getLayer) — the const stays so the
@@ -1337,6 +1321,39 @@
       });
       panel.append(ul);
     }
+    const dm = about.driver_meeting;
+    if (dm) {
+      if (dm.heading) {
+        const h = document.createElement('h3');
+        h.className = 'info-subhead';
+        h.textContent = dm.heading;
+        panel.append(h);
+      }
+      (Array.isArray(dm.paragraphs) ? dm.paragraphs : []).forEach((text) => {
+        const p = document.createElement('p');
+        p.className = 'info-copy';
+        p.textContent = text;
+        panel.append(p);
+      });
+      if (dm.rules) {
+        if (dm.rules.lead) {
+          const lead = document.createElement('p');
+          lead.className = 'info-copy';
+          lead.textContent = dm.rules.lead;
+          panel.append(lead);
+        }
+        if (Array.isArray(dm.rules.items) && dm.rules.items.length) {
+          const rules = document.createElement('ul');
+          rules.className = 'info-rules';
+          dm.rules.items.forEach((text) => {
+            const li = document.createElement('li');
+            li.textContent = text;
+            rules.append(li);
+          });
+          panel.append(rules);
+        }
+      }
+    }
     if (about.note) {
       const note = document.createElement('p');
       note.className = 'info-note';
@@ -2213,7 +2230,7 @@
       renderEventSchedule(eventScheduleConfig, eventScheduleData);
       map.addSource('event-schedule', {
         type: 'geojson', data: eventScheduleData,
-        attribution: 'Event schedule: proposed from sister-event references'
+        attribution: 'Event schedule: Rock Warblers Trail Blazing Invitational'
       });
       map.addLayer({
         id: 'event-session-routes', type: 'line', source: 'event-schedule',

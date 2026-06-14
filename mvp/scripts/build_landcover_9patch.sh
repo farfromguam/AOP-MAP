@@ -133,9 +133,15 @@ ogr2ogr -f GeoJSON \
 
 # 4. Copy outputs back into the repo ----------------------------------------
 echo "==> Writing outputs"
-cp "$WORK/aop_landcover_9patch.geojson" "$OUT_GEOJSON"
+cp "$WORK/aop_landcover_9patch.geojson" "$LC_CACHE/aop_landcover_9patch.5class.geojson"
 cp "$WORK/class.tif" "$LC_CACHE/class_9patch.tif"
 cp "$WORK/preview.png" "$LC_CACHE/preview_9patch.png"
+
+# Simplify to a single dissolved vegetation layer (drop non-tree -> base map).
+# The 5-class output is kept in the gitignored cache above; only the simplified
+# vegetation layer ships. See simplify_landcover_vegetation.py.
+python3 "$SCRIPT_DIR/simplify_landcover_vegetation.py" \
+  "$LC_CACHE/aop_landcover_9patch.5class.geojson" "$OUT_GEOJSON"
 
 FEATURES="$(node -e 'const d=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));const c={};for(const f of d.features){const k=f.properties.class;c[k]=(c[k]||0)+1;}console.log(d.features.length+" features "+JSON.stringify(c))' "$OUT_GEOJSON")"
 echo "==> Done"

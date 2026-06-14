@@ -1,6 +1,6 @@
 {
   "schema": "aop-copy-registry-v1",
-  "updated_at": "2026-05-31",
+  "updated_at": "2026-06-14",
   "purpose": "Master index of every copy-bearing 'thing' in the AOP app. copy_review.html reads this file, then loads each kind's root file(s) and renders the actual text in one printable page. Each entry names the root file(s) (repo-relative — the filesystem location), where the copy surfaces in the app, its review status, and whether the copy lives in a data file ('data') or is still embedded in markup/JS ('in_code'). For in_code kinds, the literal copy is mirrored here under `copy` so the review page can show it without parsing index.html.",
   "status_legend": {
     "live": "Wording is in use and considered settled enough to print.",
@@ -19,10 +19,11 @@
       "surfaces": ["Left panel → About tab"],
       "root_files": ["website/data/aop_about.json"],
       "renderer": "about",
-      "status": "proposed",
+      "status": "live",
       "extraction": "data",
       "gaps_field": "owed_work",
-      "review_priority": "high"
+      "review_priority": "high",
+      "note": "Rewritten 2026-06-14 from the event lead's real copy (brain/import/TBI.copy). Added a driver_meeting prose block (the welcome / 'what to expect' script + the weekend rules); dropped the placeholder Format / Trail buddies / Night crawl items. owed_work tracks the 600-acre reconcile and the unfilled Rock Warbler call."
     },
     {
       "id": "event_schedule",
@@ -31,10 +32,11 @@
       "surfaces": ["Left panel → Events tab", "calendar header", "map event-anchor / route layers", "hot button"],
       "root_files": ["website/data/aop_event_schedule.json"],
       "renderer": "event_schedule",
-      "status": "proposed",
+      "status": "live",
       "extraction": "data",
-      "gaps_field": "event.caveat",
-      "review_priority": "high"
+      "gaps_field": null,
+      "review_priority": "high",
+      "note": "Replaced 2026-06-14 with the real Fri/Sat/Sun timetable from brain/import/TBI.copy (Rock Hard Adventure Tour, Show & Shine, Warbler Peck and Pop, Gravity Gauntlet, Hot Dog Dinner, PRO Line Before the Fire, Driver Doodles, High Noon Awards). Dropped the sister-event placeholder sessions, their inspired_by arrays, and the hedge caveat. Only #pavilion carries coordinates (the one real map pin); #trails and #camping-field are named but coordinate-less so the calendar reads honestly without dropping fabricated pins."
     },
     {
       "id": "poi_index",

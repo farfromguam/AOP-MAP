@@ -16,15 +16,67 @@ The recent thrust is **extracting the read viewer into a standalone shell**
 re-attaching the pieces that were severed in the split. Most recent landings,
 all **UNCOMMITTED** (user's git gate):
 
-- **v75 — auto-peek removed; index stays at park zoom on load.** The user reversed
-  the earlier "it needs to stay": the on-load park → region → park reveal animation
-  in `website/js/viewer_band.js` is gone (the whole self-contained `autoPeek` /
-  `schedulePeek` / `killPeek` block + its `schedulePeek()` call). The band itself is
-  untouched — only the camera jump is removed. Verified by observation (`:8001`,
-  `brain/output/verify_no_load_peek.py`): 44/44 zoom samples at z14 across the full
-  former peek window, spread 0, 0 console errors; band still renders (38 layers).
-  `#appVersion` + `sw.js` `VERSION` v74→v75. Card addendum on
-  `tasks/13_viewer_extraction/viewer_band_merge.md`. **UNCOMMITTED** (user's git gate).
+- **Ground cover simplified to one vegetation layer (data mutation).** The
+  user's call: combine the two forest greens into a single `vegetation` layer
+  and let every non-tree area read as the base map paper.
+  `mvp/scripts/simplify_landcover_vegetation.py` dissolves the two forest
+  classes (shapely unary union) and drops the three open classes; wired as the
+  final step of `build_landcover.sh` / `build_landcover_9patch.sh` with the
+  5-class export kept in the gitignored cache. Park 154→18 features, 9-patch
+  3430→165; `viewer_core.js` land-cover paint collapsed from a 5-class `match`
+  to a flat vegetation green per preset (`main.js`/`panel.js` editor host still
+  carry the old `match`, falls through to the same green — cleanup owed on
+  editor port). `playwright_verify_landcover.py` updated to the vegetation
+  contract and re-run on the live read viewer: single class, retired sub-classes
+  gone, flat green, base-of-stack, 18/165 render — all PASS; rendered screenshots
+  show green vegetation on paper. Card addendum: `tasks/01_mvp/_done/landcover_layer.md`
+  ("Update: vegetation simplification"); `research/viewer.md` Land-Cover section
+  updated. `sw.js`/`#appVersion` rode the contributor v79 bump. **Council owed on
+  the diff.** UNCOMMITTED (user's git gate).
+- **v79 — all event copy rewritten from `brain/import/TBI.copy`** (the event lead's
+  real copy). Council-cleared at v78 (core three: witness·warden·quartermaster, all
+  `clear`; receipts in `brain/output/council/*_tbi_copy.md`); v79 is the one
+  follow-up word the user chose — The Crew's Rock Warbler call is now "caw-craaawl!"
+  (Steward tier: copy-only, re-cleared at Tier-0). Closes the
+  long-deferred content audit
+  (`tasks/20_deferred/_done/rock_warblers_content_audit.md`). About tab
+  (`aop_about.json`): new intro, five real reference items (Mandatory skills = "Good
+  attitude"; Rigs +2.2″ +"No bashers"; park/map/crew rewritten), placeholder
+  Format/Trail-buddies/Night-crawl dropped, and a **new Driver's Meeting prose
+  section** (welcome script + weekend rules — small `renderAbout` add in
+  `viewer_core.js` + `info-subhead`/`info-rules` CSS in `viewer.css`). Schedule
+  (`aop_event_schedule.json`): real 18-session Fri/Sat/Sun timetable, `status:
+  live`; **fork decision — keep the pavilion pin, drop the rest** (only `#pavilion`
+  has coordinates; `#trails`/`#camping-field` are named but coordinate-less → no
+  fabricated pins). Stale provenance copy fixed (map attribution + editor `<small>`
+  no longer says "proposed / sister-event"). Registry flipped About + schedule
+  `proposed → live`. Verified by observation (`brain/output/verify_tbi_copy.py`
+  30/30; About DOM + GL-independent `eventScheduleToGeojson` transform; Events
+  screenshot shows live calendar + "Gates open in 5d 15h"; `tbi_about.png`,
+  `tbi_events.png`). `#appVersion` + `sw.js` v76→v79. **UNCOMMITTED** (user's git
+  gate). Owed: the 600-acre parcel reconcile (the Rock Warbler call is now filled).
+- **v76 — index opens at park zoom and holds; no on-load jump.** The user reversed
+  the earlier "it needs to stay": removed the on-load park → region → park reveal
+  animation (the self-contained `autoPeek` / `schedulePeek` / `killPeek` block in
+  `website/js/viewer_band.js`, committed `c157acc v75`). The council Witness then
+  caught a **second, pre-existing** jump: `viewer_core.js` built the map at `zoom: 12`
+  (clamped to ~12.5 by the band's maxBounds), held that region-wide view ~4.4 s, then
+  snapped to park z14 when data loaded. Fixed at the source — construct at `zoom: 14`
+  (center was already park). The verifier's racy `>12.5` sample gate (which flapped
+  PASS/FAIL) was rewritten to sample from t=0 with no gate. Verified by observation
+  (`:8001`, `brain/output/verify_no_load_peek.py`): 5/5 runs open at z14, span 0,
+  deterministic; 3/3 PASS; band still renders (38 layers), 0 console errors.
+  `#appVersion` + `sw.js` `VERSION` v74→v75. **The peek removal + version bump are
+  COMMITTED** as `c157acc v75` (user committed mid-task). A follow-up pass then
+  **retired the now-spent band proof scaffolding** (unreferenced by the shipped viewer):
+  `rm`'d `viewer_banded.html`, `viewer_banded_compare.html`, `css/viewer_band.css`, and
+  cleaned the one dangling `viewer_core.js` comment that named the proof page — this
+  clears the long-standing "retire the spent scaffolding" owed item. Because the
+  `viewer_core.js` comment touch is a precached shell asset, `#appVersion` + `sw.js`
+  `VERSION` advance **v75 → v76** (comment-only delta; satisfies the shell-asset → bump
+  discipline). Those deletions + the comment fix + the v76 bump + this card/handoff
+  update are **UNCOMMITTED** (user's git gate). Card addendum on
+  `tasks/13_viewer_extraction/viewer_band_merge.md`.
 - **Schedule loading spinner + single-number search review.** Card:
   `tasks/13_viewer_extraction/viewer_schedule_loading.md`. (1) The Events tab's bare
   `Loading schedule...` text is now the designed **spinner row** from
@@ -62,8 +114,9 @@ all **UNCOMMITTED** (user's git gate):
   No CRUD crossed (read viewer stays read-only). Verified by observation (real Chrome
   / Playwright: 38 layers, z-order holds top, 8-point paper-perimeter PIL sample,
   presets PASS). Card: `tasks/13_viewer_extraction/viewer_band_merge.md`. Council
-  reviewed on the diff. **Owed (user's gate):** the commit + retire the spent
-  scaffolding (`viewer_banded.html`, `viewer_banded_compare.html`, `css/viewer_band.css`).
+  reviewed on the diff. **Owed (user's gate):** the commit. (The spent scaffolding —
+  `viewer_banded.html`, `viewer_banded_compare.html`, `css/viewer_band.css` — was retired
+  2026-06-14; see the v75 entry above.)
 - **v70 — left-rail drawer open/close now persists.** `aop_left_rail_drawer_v1`
   stores `{search,hot,cal}` booleans, read on init / written on each tab click in
   `viewer_core.js`; clipboard drawer height (`aop_lr_card_height_v1`) verified

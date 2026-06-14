@@ -8215,7 +8215,7 @@
         map.addSource('event-schedule', {
           type: 'geojson',
           data: eventScheduleData,
-          attribution: 'Event schedule: proposed from sister-event references'
+          attribution: 'Event schedule: Rock Warblers Trail Blazing Invitational'
         });
         const eventVisibility = eventScheduleToggle.checked ? 'visible' : 'none';
         map.addLayer({

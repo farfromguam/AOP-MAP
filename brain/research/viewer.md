@@ -747,11 +747,16 @@ Recorded on 2026-05-21:
 ### Land-Cover Layer
 
 Recorded 2026-05-21 (rebuilt the same day onto lidar + leaf-on imagery).
+**Simplified 2026-06-14** to a single dissolved vegetation layer (see the
+"Vegetation simplification" bullet at the end of this section).
 
-- `website/data/aop_landcover.geojson` is the viewer's base ground cover -- a
-  five-class vector land-cover *coverage*: every valid pixel is one of
-  `forest_deciduous`, `forest_evergreen`, `open_grass`, `open_meadow`,
-  `open_bare`. Clipped to the AOP boundary, ~154 polygons.
+- `website/data/aop_landcover.geojson` is the viewer's base ground cover.
+  It is **classified** into a five-class coverage (`forest_deciduous`,
+  `forest_evergreen`, `open_grass`, `open_meadow`, `open_bare`) but **ships**
+  as one dissolved `vegetation` class: the two forest greens are merged and the
+  three open/non-tree classes are dropped so non-tree ground reads as the base
+  map paper. ~18 vegetation polygons (down from ~154 five-class). The five-class
+  build below is the intermediate; the simplify step is the last pipeline stage.
 - Two data sources, each used for what it is good at:
   - **USGS 3DEP lidar** -> a canopy-height model. Forest vs open is a height
     threshold, so the forest edge is crisp and per-pixel. Imagery alone cannot
@@ -786,10 +791,12 @@ Recorded 2026-05-21 (rebuilt the same day onto lidar + leaf-on imagery).
 - Water is deliberately not classified -- the USGS NHD layer already carries
   hydrography.
 - Viewer: layers `landcover-forest` (fill) + `landcover-forest-outline`,
-  toggle `Land cover (NAIP)`, default ON. The fill colour is a MapLibre
-  `match` on `class`; each class also gets a thin same-family outline that
-  bridges the sub-pixel slivers independent vertex-simplify can leave between
-  adjacent classes.
+  toggle `Land cover (NAIP)`, default ON. Since the layer now ships one
+  `vegetation` class, the fill is a flat green (`#b8c1a1` Park / `#c0c6ad`
+  Topo) with a same-family outline — the former MapLibre `match` on `class`
+  collapsed to a flat colour in `viewer_core.js` when the data was simplified.
+  (`main.js`/`panel.js` still carry the old five-class `match`; with single-class
+  data it falls through to the same green — cleanup owed when the editor ports.)
 - 9-patch extension (`aop_landcover_9patch.geojson`): the same pipeline over
   the full 3x3 acquisition AOI, so the viewer has land-cover context around the
   park, not only inside it. The NAIP ImageServer caps an export at 4000 px and
@@ -810,11 +817,29 @@ Recorded 2026-05-21 (rebuilt the same day onto lidar + leaf-on imagery).
   colour split is a relative ranking, not crop identification.
 - Raw-zone context -- attach a `source_register.sources` row (NAIP = USDA
   public domain; 3DEP lidar = USGS public domain) before any promotion.
-- Verified with `mvp/scripts/playwright_verify_landcover.py` on 2026-05-21:
-  PASS, 0 console errors -- the script covers both layers, the five classes in
-  each GeoJSON, base-of-stack order, and the drawer opacity control.
+- **Vegetation simplification (2026-06-14).** The user's call: combine the two
+  greens into one vegetation layer and let every non-tree area read as the base
+  map. `mvp/scripts/simplify_landcover_vegetation.py` keeps the two forest
+  classes, dissolves them with a unary union (touching deciduous/evergreen merge
+  into one shape), explodes the union to polygons, re-tags every feature
+  `class=vegetation`, and drops the three open classes. Park: 154→18 features
+  (435 KB→105 KB); 9-patch: 3430→165 (4.5 MB→891 KB). It is wired as the final
+  step of both `build_landcover.sh` and `build_landcover_9patch.sh` (the 5-class
+  export is kept in the gitignored cache `mvp/cache/landcover/*.5class.geojson`),
+  so a pipeline rebuild stays simplified. This is a directed simplification of a
+  *derived* layer — the 5-class source is recoverable from git + the cache + the
+  pipeline — not banned limiting code (`ai_rules/no_limiting_code_mvp.md` defers
+  the display call to the user).
+- Verified with `mvp/scripts/playwright_verify_landcover.py` (updated to the
+  vegetation contract) on 2026-06-14: PASS, 0 console errors — both layers carry
+  only `vegetation`, the retired forest/open sub-classes are gone, the fill is
+  one flat green, the 9-patch sits at the base of the stack, and both render.
+  (The script's editor-only sections — the layer checkboxes and 9-patch opacity
+  drawer — are guarded so it runs against either the read viewer `index.html` or
+  the editor host `old_index.html`.) `sw.js`/`#appVersion` bumped on the data
+  change.
 - Build card: `tasks/01_mvp/landcover_layer.md` ("Update: lidar canopy-height
-  rebuild").
+  rebuild"; "Update: vegetation simplification").
 
 ### Cartographic palette (Muted Earth)
 

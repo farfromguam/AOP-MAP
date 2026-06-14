@@ -44,6 +44,17 @@ Interpretation:
 - It is a candidate AOP working envelope with medium confidence.
 - It gets close to the official 600+ acre AOP claim but does not fully reconcile it.
 
+Independent geometry check (2026-06-14): the published `park_boundaries` MultiPolygon
+in `website/data/publish.geojson` measures **~584 acres** (geodesic area off the two
+shipped polygons, cemetery inholding subtracted). That sits between the Comptroller
+deed total (573.5) and calculated total (592.3) — consistent, so the mapped boundary
+is sound. The visitor-facing "six hundred acres" (About tab, `northstar/whats_this_for.md`)
+is the rounded figure / AOP's own official 600+ claim, within ~3% of the ~584 measured —
+defensible as a round number, kept as written. What stays unreconciled is AOP's official
+**600+** vs the ~574–592 the two mapped parcels actually carry (the gap could be
+additional parcels, changed holdings, or marketing acreage); that is the GIS task in
+MVP backlog item 8 (`tasks/01_mvp/_readme.md`), not a copy fix.
+
 ## Center Cell Bbox
 
 Use the exported boundary bbox as the center cell for data acquisition planning.

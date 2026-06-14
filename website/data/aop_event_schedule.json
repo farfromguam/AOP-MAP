@@ -1,372 +1,198 @@
 {
   "schema": "aop-event-schedule-v1",
-  "updated_at": "2026-05-27",
-  "status": "proposed",
+  "updated_at": "2026-06-14",
+  "status": "live",
   "event": {
     "id": "rock_warblers_trail_blazing_invitational_2026",
     "label": "Rock Warblers Trail Blazing Invitational",
     "date_range_label": "Friday, June 19, 2026",
     "end_date_label": "Sunday, June 21, 2026",
-    "source_context": "brain/handoff/event_schedule_context_20260522.json",
-    "source_summary": "Sister-event schedule vocabulary reviewed from Pro-Line By The Fire, RECON G6 / RG6, and AxialFest references.",
-    "caveat": "Proposed planning context only; confirm final schedule, locations, staffing, facilities, and AOP permission before publishing as official."
+    "source_context": "brain/import/TBI.copy"
   },
   "locations": {
-    "#photo-waypoint": {
-      "role": "event_photo_waypoint",
-      "label": "Short-loop photo waypoint candidate",
-      "caveat": "Use as a proposed photo/scavenge waypoint only after review.",
-      "source": "Nearby activity hotspots #8 and #9 around the pavilion approach.",
-      "map_label": "Photo Waypoint",
-      "confidence": "raw_evidence",
-      "coordinates": [
-        -85.74876,
-        35.09156
-      ]
-    },
-    "#observed-finish": {
-      "role": "route_finish",
-      "label": "Observed trail finish near pavilion",
-      "caveat": "Observed trail evidence, not official AOP trail authority.",
-      "source": "End point of observed Saturday Afternoon Activity segment 2 in publish.geojson.",
-      "map_label": "Finish",
-      "confidence": "medium",
-      "coordinates": [
-        -85.748163,
-        35.090376
-      ]
-    },
-    "#proving-grounds": {
-      "role": "event_proving_ground",
-      "label": "Proving Grounds candidate",
-      "caveat": "Potential staging / operations reference only until AOP confirms use.",
-      "source": "Inside-AOP FEMA USA Structures footprint at 665 Ellis Cove Road; nearby clearing candidate.",
-      "map_label": "Proving Grounds",
-      "confidence": "proposed",
-      "coordinates": [
-        -85.74561938,
-        35.08722305
-      ]
-    },
     "#pavilion": {
       "role": "pavilion",
-      "label": "AOP Pavilion / G-Central",
-      "caveat": "FEMA footprint remains raw context; facility use should be confirmed by AOP.",
-      "source": "User-confirmed pavilion; FEMA USA Structures footprint at 1010 Ellis Cove Road. Coordinates resolved at runtime through the #pavilion tag bound to the 1010 building in the viewer's feature list panel.",
-      "map_label": "G-Central",
-      "confidence": "medium",
+      "label": "Pavilion (base camp)",
+      "source": "User-confirmed pavilion; FEMA USA Structures footprint at 1010 Ellis Cove Road.",
+      "map_label": "Pavilion",
+      "confidence": "high",
       "coordinates": [
         -85.7482512,
         35.0907264
       ]
     },
-    "#observed-trailhead": {
+    "#trails": {
       "role": "event_stage_start",
-      "label": "Observed Trailhead — segment 2",
-      "caveat": "Observed trail evidence, not official AOP trail authority.",
-      "source": "Start point of observed Saturday Afternoon Activity segment 2 in publish.geojson.",
-      "map_label": "Trailhead",
+      "label": "Park trails",
+      "map_label": "Trails",
       "confidence": "medium",
-      "coordinates": [
-        -85.751478,
-        35.091933
-      ]
+      "note": "No coordinates on purpose — trails span the park, so this names the place in the schedule without dropping a single pin."
     },
-    "#north-technical": {
-      "role": "event_checkpoint",
-      "label": "North Technical Hotspot",
-      "caveat": "Hotspots are prompts for review, not trail or obstacle authority.",
-      "source": "Activity hotspot #3 from first-party GPX dwell layer.",
-      "map_label": "North Tech",
-      "confidence": "raw_evidence",
-      "coordinates": [
-        -85.7439989,
-        35.0979524
-      ]
-    },
-    "#night-checkpoint": {
-      "role": "event_checkpoint",
-      "label": "Night route checkpoint candidate",
-      "caveat": "Hotspots are prompts for review, not trail or obstacle authority.",
-      "source": "Activity hotspot #6 from first-party GPX dwell layer.",
-      "map_label": "Night Check",
-      "confidence": "raw_evidence",
-      "coordinates": [
-        -85.7469876,
-        35.0923056
-      ]
+    "#camping-field": {
+      "role": "event_location",
+      "label": "Camping Field",
+      "map_label": "Camping Field",
+      "confidence": "medium",
+      "note": "No coordinates yet — named for the schedule; add a point when the field is located."
     }
   },
   "sessions": [
     {
-      "id": "fri-registration",
-      "title": "Registration + wristband check",
-      "status": "proposed",
-      "activity": {
-        "key": "registration",
-        "kind": "activity",
-        "name": "Registration + wristband check"
-      },
+      "id": "fri-arrive",
+      "title": "Arrive + camp setup",
       "date_label": "Friday",
       "sort_order": 10,
+      "time_label": "Anytime Friday",
+      "location_tag": "#camping-field"
+    },
+    {
+      "id": "fri-registration",
+      "title": "Registration + 50/50 raffle tickets",
+      "date_label": "Friday",
+      "sort_order": 20,
       "time_label": "Evening",
-      "inspired_by": [
-        "Pro-Line By The Fire check-in",
-        "RG6 driver check-in / registration",
-        "AxialFest Base Camp registration"
-      ],
       "start_local": "17:00",
       "location_tag": "#pavilion"
     },
     {
-      "id": "fri-driver-meeting",
-      "title": "Driver meeting + map review",
-      "status": "proposed",
-      "activity": {
-        "key": "driver_meeting",
-        "kind": "activity",
-        "name": "Driver meeting + map review"
-      },
+      "id": "fri-exploration",
+      "title": "Trail exploration",
       "date_label": "Friday",
-      "sort_order": 20,
-      "time_label": "Evening",
-      "inspired_by": [
-        "Pro-Line By The Fire welcome party / driver meeting",
-        "AxialFest Base Camp map review"
-      ],
-      "start_local": "18:30",
+      "sort_order": 30,
+      "time_label": "Open",
+      "location_tag": "#trails"
+    },
+    {
+      "id": "fri-adventure-tour",
+      "title": "Rock Hard Adventure Tour",
+      "date_label": "Friday",
+      "sort_order": 40,
+      "time_label": "Evening — meet at the pavilion",
+      "start_local": "19:00",
       "location_tag": "#pavilion"
     },
     {
-      "id": "fri-night-crawl",
-      "title": "Poker Run / Campfire Story Night Crawl",
-      "status": "proposed",
-      "activity": {
-        "key": "night_crawl",
-        "kind": "activity",
-        "name": "Night Crawl"
-      },
+      "id": "fri-fire",
+      "title": "Fire + s'mores",
       "date_label": "Friday",
-      "route_tags": [
-        "#observed-trailhead",
-        "#pavilion"
-      ],
-      "sort_order": 30,
+      "sort_order": 50,
       "time_label": "Night",
-      "inspired_by": [
-        "Pro-Line By The Fire Poker Run Night Crawl",
-        "RG6 campfire story night run",
-        "AxialFest Light Up the Night Crawl"
-      ],
-      "start_local": "20:30",
-      "location_tag": "#observed-trailhead"
+      "start_local": "20:00",
+      "location_tag": "#pavilion"
     },
     {
-      "id": "sat-late-registration",
-      "title": "Late registration + tech check",
-      "status": "proposed",
-      "activity": {
-        "key": "late_registration",
-        "kind": "activity",
-        "name": "Late registration + tech check"
-      },
+      "id": "sat-exploration",
+      "title": "Open exploration",
       "date_label": "Saturday",
       "sort_order": 110,
-      "time_label": "Morning",
-      "inspired_by": [
-        "RG6 Saturday check-in",
-        "AxialFest registration / tech"
-      ],
+      "time_label": "All day",
+      "location_tag": "#trails"
+    },
+    {
+      "id": "sat-registration",
+      "title": "Registration + 50/50 raffle tickets",
+      "date_label": "Saturday",
+      "sort_order": 120,
+      "time_label": "8–10 AM",
       "start_local": "08:00",
       "location_tag": "#pavilion"
     },
     {
-      "id": "sat-show-and-shine",
-      "title": "Show & Shine: The Advance Party",
-      "status": "proposed",
-      "activity": {
-        "key": "show_and_shine",
-        "kind": "activity",
-        "name": "Show & Shine: The Advance Party"
-      },
+      "id": "sat-driver-meeting",
+      "title": "Driver meeting",
       "date_label": "Saturday",
-      "sort_order": 115,
+      "sort_order": 130,
       "time_label": "Morning",
-      "inspired_by": [
-        "Trail Blazing show & shine northstar",
-        "AxialFest concours",
-        "Pro-Line By The Fire concourse"
-      ],
-      "start_local": "08:30",
+      "start_local": "09:00",
       "location_tag": "#pavilion"
     },
     {
-      "id": "sat-g6-cove-rally",
-      "title": "G6 Cove Rally stages",
-      "status": "proposed",
-      "activity": {
-        "key": "g6_cove_rally",
-        "kind": "activity",
-        "name": "G6 Cove Rally stages"
-      },
-      "date_label": "Saturday",
-      "route_tags": [
-        "#observed-trailhead",
-        "#north-technical"
-      ],
-      "sort_order": 120,
-      "time_label": "Morning to mid-day",
-      "inspired_by": [
-        "Recon G6 stage rally",
-        "RG6 stages open",
-        "AxialFest RECON G6 trail"
-      ],
-      "start_local": "09:00",
-      "location_tag": "#observed-trailhead"
-    },
-    {
-      "id": "sat-proving-grounds",
-      "title": "Proving Grounds / comp gates",
-      "status": "proposed",
-      "activity": {
-        "key": "proving_grounds",
-        "kind": "activity",
-        "name": "Proving Grounds / comp gates"
-      },
-      "date_label": "Saturday",
-      "sort_order": 130,
-      "time_label": "Afternoon",
-      "inspired_by": [
-        "Pro-Line By The Fire Proving Grounds",
-        "Pro-Line By The Fire Comp Crawl",
-        "Comp-class gate courses"
-      ],
-      "start_local": "13:30",
-      "location_tag": "#proving-grounds"
-    },
-    {
-      "id": "sat-king-of-hill",
-      "title": "King of the Hill / technical crawl",
-      "status": "proposed",
-      "activity": {
-        "key": "king_of_the_hill",
-        "kind": "activity",
-        "name": "King of the Hill / technical crawl"
-      },
+      "id": "sat-show-shine",
+      "title": "Show & Shine staging + judging",
       "date_label": "Saturday",
       "sort_order": 140,
-      "time_label": "Afternoon",
-      "inspired_by": [
-        "Pro-Line By The Fire King of the Hill",
-        "AxialFest rock racing / rock bouncing"
-      ],
-      "start_local": "15:00",
-      "location_tag": "#north-technical"
+      "time_label": "Morning",
+      "start_local": "09:30",
+      "location_tag": "#pavilion"
     },
     {
-      "id": "sat-awards",
-      "title": "Awards + raffle + food",
-      "status": "proposed",
-      "activity": {
-        "key": "awards",
-        "kind": "activity",
-        "name": "Awards + raffle + food"
-      },
+      "id": "sat-peck-pop",
+      "title": "Warbler Peck and Pop Challenge",
       "date_label": "Saturday",
       "sort_order": 150,
+      "time_label": "Midday",
+      "start_local": "12:00",
+      "location_tag": "#trails"
+    },
+    {
+      "id": "sat-gravity-gauntlet",
+      "title": "The Gravity Gauntlet",
+      "date_label": "Saturday",
+      "sort_order": 160,
+      "time_label": "Afternoon",
+      "start_local": "15:00",
+      "location_tag": "#trails"
+    },
+    {
+      "id": "sat-hot-dog",
+      "title": "Hot dog dinner",
+      "date_label": "Saturday",
+      "sort_order": 170,
       "time_label": "Evening",
-      "inspired_by": [
-        "Pro-Line By The Fire awards / raffle",
-        "RG6 BBQ awards",
-        "AxialFest nightly awards / raffle"
-      ],
       "start_local": "18:00",
       "location_tag": "#pavilion"
     },
     {
-      "id": "sat-night-crawl",
-      "title": "Into the Night Crawl",
-      "status": "proposed",
-      "activity": {
-        "key": "night_crawl",
-        "kind": "activity",
-        "name": "Night Crawl"
-      },
+      "id": "sat-proline-fire",
+      "title": "PRO Line Before the Fire obstacle course race",
       "date_label": "Saturday",
-      "route_tags": [
-        "#observed-trailhead",
-        "#night-checkpoint"
-      ],
-      "sort_order": 160,
-      "time_label": "Night",
-      "inspired_by": [
-        "Pro-Line By The Fire Into the Night Crawl",
-        "RG6 night tour"
-      ],
-      "start_local": "20:30",
-      "location_tag": "#observed-trailhead"
-    },
-    {
-      "id": "sun-feedback-board",
-      "title": "Coffee, cleanup, map feedback board",
-      "status": "proposed",
-      "activity": {
-        "key": "feedback_board",
-        "kind": "activity",
-        "name": "Coffee, cleanup, map feedback board"
-      },
-      "date_label": "Sunday",
-      "sort_order": 210,
-      "time_label": "Morning",
-      "inspired_by": [
-        "Pro-Line By The Fire Sunday cleanup",
-        "AxialFest Sunday cleanup",
-        "AOP whiteboard validation loop"
-      ],
-      "start_local": "08:00",
+      "sort_order": 180,
+      "time_label": "Evening",
+      "start_local": "19:00",
       "location_tag": "#pavilion"
     },
     {
-      "id": "sun-short-loop-photo",
-      "title": "Sunday Funday short loop / photo scavenge",
-      "status": "proposed",
-      "activity": {
-        "key": "short_loop_photo",
-        "kind": "activity",
-        "name": "Sunday Funday short loop / photo scavenge"
-      },
+      "id": "sat-fire",
+      "title": "Fire + s'mores",
+      "date_label": "Saturday",
+      "sort_order": 190,
+      "time_label": "Night",
+      "start_local": "20:00",
+      "location_tag": "#pavilion"
+    },
+    {
+      "id": "sun-exploration",
+      "title": "Open exploration",
       "date_label": "Sunday",
-      "route_tags": [
-        "#pavilion",
-        "#photo-waypoint"
-      ],
+      "sort_order": 210,
+      "time_label": "All day",
+      "location_tag": "#trails"
+    },
+    {
+      "id": "sun-doodles",
+      "title": "Driver Doodles: Sketchy Driving Challenge",
+      "date_label": "Sunday",
       "sort_order": 220,
-      "time_label": "Morning to mid-day",
-      "inspired_by": [
-        "AxialFest Sunday Funday",
-        "Pro-Line By The Fire Photo Scavenge",
-        "Pro-Line By The Fire GPS Treasure"
-      ],
+      "time_label": "Morning",
       "start_local": "10:00",
+      "location_tag": "#camping-field"
+    },
+    {
+      "id": "sun-awards",
+      "title": "High Noon awards + 50/50 drawing",
+      "date_label": "Sunday",
+      "sort_order": 230,
+      "time_label": "Midday",
+      "start_local": "12:00",
       "location_tag": "#pavilion"
     },
     {
       "id": "sun-checkout",
-      "title": "Final check-out",
-      "status": "proposed",
-      "activity": {
-        "key": "checkout",
-        "kind": "activity",
-        "name": "Final check-out"
-      },
+      "title": "Clean, wrap, pack up, head home",
       "date_label": "Sunday",
-      "sort_order": 230,
-      "time_label": "Late afternoon",
-      "inspired_by": [
-        "Pro-Line By The Fire Sunday departure",
-        "AxialFest Sunday travel-home block"
-      ],
-      "start_local": "17:00",
+      "sort_order": 240,
+      "time_label": "Afternoon",
+      "start_local": "14:00",
       "location_tag": "#pavilion"
     }
   ]
