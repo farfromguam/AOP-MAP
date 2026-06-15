@@ -26,6 +26,12 @@ trail the user draws fresh, with no match, gets thin "needs review" provenance).
 The top-level `_meta` is left a thin stub for export_gold_trail_network.py to
 re-stamp as the next step.
 
+Waypoints carry provenance the same way (by name): a re-imported camp POI keeps its
+authored `highlight` (the ★), `description`, `location_tag`, and tags from the prior
+gold. And a ★-starred or `#tag`-bound POI that lives in gold but is NOT in the trace
+SVG (e.g. a GPX-sourced pin like Gravity Gauntlet) is PRESERVED, so a curated
+destination survives a re-import; delete such a POI from the gold file directly.
+
 Usage:  python3 mvp/scripts/import_illustrator_trace.py [edited.svg] [--all]
 Output: website/data/aop_trail_network.geojson  (geometry+name updated, props
         carried; run export_gold_trail_network.py next to re-stamp _meta)
@@ -132,6 +138,15 @@ def _lead_num(name):
     return int(m.group(1)) if m else None
 
 
+def _is_dropped_cemetery(nm):
+    """Off-park cemeteries are dropped on import — they live in the bronze cemeteries
+    dataset, not gold waypoints, and a re-upload must never re-promote them. Match on
+    NAME (Affinity strips data-* so the kind tag is unreliable); Ellis (the in-park
+    inholding the map shows) is kept. (User, 2026-06-14.)"""
+    nm = (nm or "").strip()
+    return nm.lower().endswith("cemetery") and nm != "Ellis Cemetery"
+
+
 def collect_layer(root, label):
     """Find a category layer by any name channel an editor may have kept. Affinity
     renames the id ("Gold Trails" -> id="Gold-Trails") but preserves serif:id, and
@@ -203,18 +218,58 @@ def import_trails(meta, layer, prior_by_id=None, prior_by_name=None, prior_by_tn
     return feats
 
 
-def import_points(meta, layer):
-    feats = []
+def import_points(meta, layer, prior_by_name=None):
+    """Re-import a layer's point POIs. PROVENANCE-PRESERVING (mirrors import_trails):
+    a waypoint's EDITED geometry + name are the new truth, but its authored gold props
+    — `highlight` (the ★), `description`, `location_tag`, `notes`, `tags`, … — are
+    carried forward from the matching prior gold waypoint (by name), so a round-trip
+    does NOT strip the star or the curated copy. The SVG `data-kind` wins when present
+    (Affinity strips data-*; then the authored kind is kept). A point with no prior
+    match is a new POI with thin props. Returns (features, matched_names_lowercased)
+    so main() can preserve prior ★/#tag POIs that the SVG didn't carry."""
+    prior_by_name = prior_by_name or {}
+    feats, matched = [], set()
     for el, m, inh in walk_layer(layer):
         if not el.tag.endswith("circle"):
             continue
         x, y = apply(m, float(el.get("cx", 0)), float(el.get("cy", 0)))
         lon, lat = frame_to_lnglat(meta, [x], [y])
-        feats.append({"type": "Feature",
-                      "properties": {"name": feature_name(el) or inh, "kind": el.get("data-kind") or "poi"},
+        name = feature_name(el) or inh
+        prior = prior_by_name.get(name.lower()) if name else None
+        if prior is not None:                                  # carry authored gold props
+            props = copy.deepcopy(prior.get("properties", {}))
+            svg_kind = el.get("data-kind")
+            if svg_kind:
+                props["kind"] = svg_kind
+            props.setdefault("kind", "poi")
+            props["name"] = name                               # edited name wins
+            props["review_status"] = "re-imported from trace SVG (geometry/name updated; authored props carried)"
+            if name:
+                matched.add(name.lower())
+        else:                                                  # new POI, thin props
+            props = {"name": name, "kind": el.get("data-kind") or "poi"}
+        feats.append({"type": "Feature", "properties": props,
                       "geometry": {"type": "Point",
                                    "coordinates": [round(float(lon[0]), 7), round(float(lat[0]), 7)]}})
-    return feats
+    return feats, matched
+
+
+def preserve_unmatched_authored(prior_features, matched_names, is_dropped):
+    """Keep prior gold waypoints that carry authored INTENT — a ★ (`highlight: true`)
+    or a `#location_tag` — but were NOT re-imported from the SVG. A curated destination
+    (e.g. a GPX-sourced pin like Gravity Gauntlet, added straight to gold and never in
+    the Affinity master) must survive a re-import. To DELETE such a POI, remove it from
+    the gold file directly — the trace master is not authoritative over hand-curated
+    pins. Dropped cemeteries are never resurrected."""
+    kept = []
+    for f in prior_features:
+        p = f.get("properties", {})
+        nm = (p.get("name") or "")
+        if not nm or nm.lower() in matched_names or is_dropped(nm):
+            continue
+        if p.get("highlight") is True or p.get("location_tag"):
+            kept.append(copy.deepcopy(f))
+    return kept
 
 
 def import_polys(meta, layer):
@@ -282,23 +337,28 @@ def main():
         # A POI drawn into the wrong layer (e.g. an entrance dropped in Gold Trails)
         # is still a named point — ingest it, don't silently drop it.
         #
-        # Cemeteries are dropped: they are not camp waypoints (they live in the
-        # bronze cemeteries dataset), and a re-upload of the master must never
-        # re-promote them to gold. Match on NAME, not data-kind — Affinity strips
-        # data-* on export, so the kind tag is unreliable. Ellis (the in-park
-        # inholding the map shows) is kept. (User, 2026-06-14: "remove it from the
-        # export and the import ... I dont want it. ... edit the master ai sheet
-        # and re-upload as needed.")
-        def _is_dropped_cemetery(nm):
-            nm = (nm or "").strip()
-            return nm.lower().endswith("cemetery") and nm != "Ellis Cemetery"
+        # Off-park cemeteries are dropped on import via the module-level
+        # _is_dropped_cemetery (they belong to the bronze cemeteries dataset; a
+        # re-upload must never re-promote them; Ellis, the in-park inholding, is kept).
 
-        wf, strays, dropped = [], [], []
+        # Index the prior gold waypoints so authored props (★ highlight, description,
+        # location_tag, …) carry forward — the same provenance-preservation as trails.
+        wp_dest = DATA / "gold_aop_waypoints_traced.geojson"
+        prior_wp = json.loads(wp_dest.read_text()) if wp_dest.exists() else {"features": []}
+        wp_by_name = {}
+        for f in prior_wp.get("features", []):
+            nm = (f.get("properties", {}).get("name") or "").lower()
+            if nm:
+                wp_by_name[nm] = f
+
+        wf, strays, dropped, matched = [], [], [], set()
         for lname in ("Waypoints", "Gold Trails", "Buildings"):
             lay = collect_layer(root, lname)
             if lay is None:
                 continue
-            for feat in import_points(meta, lay):
+            pts, m = import_points(meta, lay, wp_by_name)
+            matched |= m
+            for feat in pts:
                 nm = feat["properties"].get("name")
                 if _is_dropped_cemetery(nm):
                     dropped.append(nm)
@@ -306,10 +366,19 @@ def main():
                 wf.append(feat)
                 if lname != "Waypoints":
                     strays.append((nm, lname))
-        (DATA / "gold_aop_waypoints_traced.geojson").write_text(json.dumps(
+        # Preserve ★/#tag POIs that live in gold but aren't in the trace SVG (e.g.
+        # Gravity Gauntlet from a GPX): a curated destination survives a re-import.
+        preserved_feats = preserve_unmatched_authored(prior_wp.get("features", []), matched, _is_dropped_cemetery)
+        wf.extend(preserved_feats)
+        preserved = [f["properties"].get("name") for f in preserved_feats]
+        carried = sum(1 for f in wf if f["properties"].get("highlight") is True)
+        wp_dest.write_text(json.dumps(
             {"type": "FeatureCollection", "name": "aop_waypoints_traced", "features": wf}, indent=1))
-        print(f"waypoints: {len(wf)} -> website/data/gold_aop_waypoints_traced.geojson"
+        print(f"waypoints: {len(wf)} -> website/data/gold_aop_waypoints_traced.geojson  "
+              f"({carried} ★ carried)"
               + (f"  (dropped {len(dropped)} off-park cemeteries: {', '.join(dropped)})" if dropped else ""))
+        if preserved:
+            print(f"  preserved {len(preserved)} curated ★/#tag POI(s) not in the SVG: {', '.join(preserved)}")
         if strays:
             print(f"  swept {len(strays)} stray point POI(s) from non-Waypoints layers: "
                   + ", ".join(f"{n!r}<-{l}" for n, l in strays))

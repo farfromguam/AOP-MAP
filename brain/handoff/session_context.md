@@ -11,6 +11,23 @@ Short pointer for the next session. The durable record lives in the cards
 
 ## Latest (2026-06-14)
 
+**Waypoint ★ durability CLOSED — re-import now carries authored fields (UNCOMMITTED).**
+User: *"fix the star durability … survive a db export or a re-import. save it to the gold
+data directly. no shortcuts."* (1) DB export = non-threat: `gold_aop_waypoints_traced.geojson`
+is file-based, no DB/canonical bake regenerates it (`bake_poi_stars` doesn't cover waypoints).
+(2) Real threat was `import_illustrator_trace.py` `import_points()` rebuilding waypoints as
+bare `{name,kind}`. Fix: `import_points()` is now provenance-preserving (mirrors
+`import_trails` — carries `highlight`/`description`/`location_tag`/tags from prior gold by
+name; edited geometry+name win), plus `preserve_unmatched_authored()` keeps ★/`#tag` POIs not
+in the SVG (so the GPX-sourced Gravity Gauntlet survives). `_is_dropped_cemetery` lifted to
+module scope (reused, never resurrects dropped cemeteries). **Build-pipeline only — no served
+change, no `vNN` bump owed** (v93 already covers the star data). Verified —
+`brain/output/verify_waypoint_star_durability.py` **14/14 PASS** (real code path, synthetic
+edited SVG vs the actual gold; live gold untouched). Caveat: not run against the user's real
+Affinity master (binary; in-repo SVG is a stale stub — always re-import from the complete
+master). Council: `brain/output/council/waypoint_star_durability_20260614.md`. Addendum on
+`tasks/14_illustrator_trace/satellite_illustrator_export.md`.
+
 **v92→v93 bump PERFORMED (UNCOMMITTED).** All the v92-era uncommitted work below (About
 rework, schedule #tag, POI kind/status/source, Hot Rocks + Gravity Gauntlet stars, contours
 lazy-load, contours gold/silver split) shipped on committed v92 with no cache key change, so a

@@ -327,3 +327,54 @@ shape.
 
 Sources/voice: `northstar/source_register.md`, `research/aop_data_bounds.md`,
 `tasks/20_deferred/paper_map_trail_extraction.md`.
+
+## Addendum 2026-06-14 — waypoint ★/authored-field durability (re-import carry-forward)
+
+The "Owed" durability gap (a re-import strips authored waypoint fields) is **closed**.
+User: *"fix the star durability … it needs to survive a db export or a re-import. save
+it to the gold data directly. no shortcuts."*
+
+Findings: (1) **DB export is a non-threat** — `gold_aop_waypoints_traced.geojson` is a
+FILE-based gold layer; no DB/canonical bake regenerates it (only `publish.geojson` is
+PostGIS-exported, and `bake_poi_stars.py` doesn't cover waypoints). So a DB export can't
+strip the waypoint ★. (2) The real threat was `import_illustrator_trace.py`'s
+`import_points()`, which rebuilt every waypoint from the SVG as bare `{name, kind}` —
+stripping `highlight`/`description`/`location_tag` on a re-import (unlike trails, which
+already carry provenance).
+
+Fix (no shortcut — the ★ stays ON the gold feature; the pipeline preserves it):
+- **`import_points()` is now provenance-preserving** (mirrors `import_trails`): a
+  waypoint's edited geometry + name are the new truth, but its authored gold props
+  (`highlight`, `description`, `location_tag`, tags, …) carry forward from the prior gold
+  by name; SVG `data-kind` wins when present, else the authored kind is kept; an unmatched
+  point is a thin new POI.
+- **`preserve_unmatched_authored()`** keeps prior ★(`highlight:true`)/`#location_tag` POIs
+  that AREN'T in the SVG — so a GPX-sourced pin added straight to gold (Gravity Gauntlet)
+  survives a re-import. To DELETE such a POI, remove it from the gold file directly (the
+  trace master isn't authoritative over hand-curated pins). Dropped cemeteries are never
+  resurrected (`_is_dropped_cemetery` lifted to module scope + reused here).
+- The export side is unchanged: the ★ is re-merged from prior gold on import, not stored
+  in the SVG.
+
+**No served-data / app change** — this is a build-pipeline script, so no `vNN` bump is
+owed for it (the v93 bump already covers the served star data). Verified by observation —
+`brain/output/verify_waypoint_star_durability.py` **14/14 PASS**: drives the REAL
+`import_points` + `preserve_unmatched_authored` with a synthetic edited Waypoints SVG
+against the actual current gold as prior — Hot Rocks keeps its ★ + description (geometry
+updated), Gravity Gauntlet + the Firepit anchor are preserved, a brand-new POI stays
+thin, a non-authored absent waypoint (RV Site 1) is NOT resurrected, and the live gold
+file is untouched (read-only test). **Caveat (honest):** not run against the user's real
+Affinity master (a binary; the in-repo `aop_satellite_trace.svg` is a stale 1-waypoint
+stub that a real `--all` run would gut — the import is authoritative on existence for
+non-curated points, so always re-import from the COMPLETE master).
+
+Council-cleared core-three + Mason: `brain/output/council/waypoint_star_durability_20260614.md`.
+Two NEXT notes from the council (neither blocking):
+- **Real-Affinity round-trip not yet observed (Witness).** The carry-forward LOGIC is
+  verified against the real gold via a synthetic edited SVG, but a genuine Affinity
+  export→edit→`import --all` against a COPY of gold (exercising metadata-frame recovery +
+  Affinity's wrapper-`<g>`/`data-*` stripping on the real POI set) is owed before treating
+  end-to-end durability as fully observed.
+- **Name-collision (Mason).** The by-name prior index is case-insensitive, so two distinct
+  gold POIs sharing a lowercased name would both survive `preserve_unmatched_authored`. A
+  pre-existing index property — a data-integrity note, not enforced.
