@@ -306,6 +306,7 @@
   let poiBuildingsData = null;
   let poiVisitorData = null;
   let poiPublishData = null;
+  let poiWaypointsData = null; // hand-traced camp POIs (gold_aop_waypoints_traced) — ★-gated into the POI list
 
   // ── Palette consts referenced by BUILT_IN_PRESETS (main.js:1556-1611) ───
   const SKY_ATMOSPHERE = {
@@ -776,9 +777,79 @@
       setLayerVisibility(id, pinsOn);
     }
     applyPaintState(preset.paints);
+    // Lazy contours: the generic loop above can't show the contour layers until
+    // their (~13 MB) source has been fetched + added, which now happens on the
+    // first preset that turns them on (Topo) rather than during map load. Kick the
+    // load, then apply the THEN-current contour visibility + paints — reading the
+    // live preset at resolve time so a quick Topo→Park toggle leaves them hidden.
+    if (preset.toggles.showContours) {
+      ensureContours().then(() => {
+        const cur = BUILT_IN_PRESETS[activePresetId];
+        if (!cur) return;
+        const on = Boolean(cur.toggles.showContours);
+        for (const id of PRESET_LAYERS.showContours) setLayerVisibility(id, on);
+        applyPaintState(cur.paints);
+      });
+    }
     presetButtons.forEach((button) => {
       button.classList.toggle('active', button.dataset.preset === presetId);
     });
+  }
+
+  // Lazy-load the lidar contours: fetch the ~13 MB GeoJSON + add its source/layers
+  // ONCE, the first time a preset turns contours on (applyPreset). Keeping it off
+  // the map-load path is the big phone-load win — the default Park view never
+  // pulls it. Idempotent: the in-flight promise is reused; layers start hidden and
+  // applyPreset flips them visible when ready.
+  let contoursReady = null;
+  function ensureContours() {
+    if (contoursReady) return contoursReady;
+    contoursReady = (async () => {
+      const contourData = await fetchJson('./data/gold_aop_contours.geojson', 'Contour layer missing');
+      if (!contourData || map.getSource('aop-contours')) return;
+      map.addSource('aop-contours', {
+        type: 'geojson', data: contourData,
+        attribution: 'Contours: USGS 3DEP 1m DEM (lidar-derived)'
+      });
+      map.addLayer({
+        id: 'contours-minor', type: 'line', source: 'aop-contours',
+        filter: ['==', ['get', 'idx'], 0],
+        layout: { visibility: 'none', 'line-join': 'round' },
+        paint: {
+          'line-color': '#c7b48f',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 16, 1.4],
+          'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0, 17.5, 0.75]
+        }
+      });
+      map.addLayer({
+        id: 'contours-index', type: 'line', source: 'aop-contours',
+        filter: ['==', ['get', 'idx'], 1],
+        layout: { visibility: 'none', 'line-join': 'round' },
+        paint: {
+          'line-color': '#a8906a',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 16, 2.8],
+          'line-opacity': ['interpolate', ['linear'], ['zoom'],
+            15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 0.95, 0],
+            16, 0.95]
+        }
+      });
+      map.addLayer({
+        id: 'contours-labels', type: 'symbol', source: 'aop-contours',
+        filter: ['==', ['get', 'idx'], 1],
+        layout: {
+          visibility: 'none', 'symbol-placement': 'line',
+          'text-field': ['concat', ['to-string', ['get', 'elev_ft']], ' ft'],
+          'text-size': 11, 'symbol-spacing': 320
+        },
+        paint: {
+          'text-color': '#7d6a4a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8,
+          'text-opacity': ['interpolate', ['linear'], ['zoom'],
+            15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 1, 0],
+            16, 1]
+        }
+      });
+    })();
+    return contoursReady;
   }
 
   // ── Feature search (ported from main.js:9977-10350) ────────────────────
@@ -1804,6 +1875,7 @@
   // until those layers are carried.
   const STAR_GROUPS = [
     { id: 'buildings', label: 'Buildings in the park', data: () => poiBuildingsData },
+    { id: 'waypoints', label: 'Camp POIs', data: () => poiWaypointsData },
     { id: 'trails', label: 'Trails', data: () => poiPublishData, pred: (p) => p.layer === 'trail_centerlines' },
     { id: 'visitor_support', label: 'Visitor support (off-park)', data: () => poiVisitorData }
   ];
@@ -2102,51 +2174,13 @@
       }
     })();
 
-    // --- Lidar contours (Topo preset) (main.js:7952) ---
-    const contourData = await fetchJson('./data/gold_aop_contours.geojson', 'Contour layer missing');
-    if (contourData) {
-      map.addSource('aop-contours', {
-        type: 'geojson', data: contourData,
-        attribution: 'Contours: USGS 3DEP 1m DEM (lidar-derived)'
-      });
-      map.addLayer({
-        id: 'contours-minor', type: 'line', source: 'aop-contours',
-        filter: ['==', ['get', 'idx'], 0],
-        layout: { visibility: 'none', 'line-join': 'round' },
-        paint: {
-          'line-color': '#c7b48f',
-          'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 16, 1.4],
-          'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0, 17.5, 0.75]
-        }
-      });
-      map.addLayer({
-        id: 'contours-index', type: 'line', source: 'aop-contours',
-        filter: ['==', ['get', 'idx'], 1],
-        layout: { visibility: 'none', 'line-join': 'round' },
-        paint: {
-          'line-color': '#a8906a',
-          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 16, 2.8],
-          'line-opacity': ['interpolate', ['linear'], ['zoom'],
-            15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 0.95, 0],
-            16, 0.95]
-        }
-      });
-      map.addLayer({
-        id: 'contours-labels', type: 'symbol', source: 'aop-contours',
-        filter: ['==', ['get', 'idx'], 1],
-        layout: {
-          visibility: 'none', 'symbol-placement': 'line',
-          'text-field': ['concat', ['to-string', ['get', 'elev_ft']], ' ft'],
-          'text-size': 11, 'symbol-spacing': 320
-        },
-        paint: {
-          'text-color': '#7d6a4a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8,
-          'text-opacity': ['interpolate', ['linear'], ['zoom'],
-            15, ['case', ['==', ['%', ['get', 'elev_ft'], 50], 0], 1, 0],
-            16, 1]
-        }
-      });
-    }
+    // --- Lidar contours (Topo preset) — LAZY-LOADED (perf, 2026-06-14) ---
+    // The contour GeoJSON is ~13 MB and contours are OFF in every preset except
+    // Topo, so fetching it here made the default Park load BLOCK on a 13 MB
+    // download (sequential await) + parse it never displays. It now loads on the
+    // first Topo press — see `ensureContours()`, called from `applyPreset`. The SW
+    // already excludes it from precache for the same reason; the cache-first /data/
+    // handler caches it after the first online view ("offline-after-once").
 
     // --- Activity hotspots (GPX dwell) — "where the cool spots are" (main.js:8017) ---
     // THE discovery layer: time-weighted from first-party timestamped GPX. Default
@@ -2493,6 +2527,7 @@
     // re-imported (gold_aop_waypoints_traced.geojson, raw zone). Named point markers,
     // shown in Park + Topo (gated out of Trace/Satellite — see applyPreset).
     const aopWaypointsData = await fetchJson('./data/gold_aop_waypoints_traced.geojson', 'Camp waypoints');
+    poiWaypointsData = aopWaypointsData; // expose the camp POIs to the ★-gated POI directory (buildPoiGroups)
     if (aopWaypointsData && aopWaypointsData.features && aopWaypointsData.features.length) {
       map.addSource('aop-waypoints', { type: 'geojson', data: aopWaypointsData });
       map.addLayer({

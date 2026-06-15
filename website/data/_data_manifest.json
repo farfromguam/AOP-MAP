@@ -913,9 +913,38 @@
     },
     {
       "file": "gold_aop_contours.geojson",
-      "bytes": 13219439,
+      "bytes": 3908151,
       "origin": "raw-pipeline",
-      "origin_note": "lidar/DEM contour pipeline",
+      "origin_note": "lidar/DEM contour pipeline; curated served subset — all index (idx==1) lines across the 9-patch + minor (idx==0) lines clipped to the park center cell. Full set = silver_aop_contours.geojson. Regen: mvp/scripts/curate_contours_gold.py",
+      "client_layer": null,
+      "kind": "geojson",
+      "feature_count": 911,
+      "geometry_types": {
+        "LineString": 861,
+        "MultiLineString": 50
+      },
+      "property_keys": [
+        "id",
+        "kind",
+        "ID",
+        "elev_m",
+        "elev_ft",
+        "idx"
+      ],
+      "sample": {
+        "id": 0,
+        "kind": "contour",
+        "ID": 0,
+        "elev_m": 283.464,
+        "elev_ft": 930,
+        "idx": 0
+      }
+    },
+    {
+      "file": "silver_aop_contours.geojson",
+      "bytes": 13219650,
+      "origin": "raw-pipeline",
+      "origin_note": "lidar/DEM contour pipeline — full-detail, full-extent contour set (smoothed + crossing-repaired). The promote-from source; served layer is the curated gold_aop_contours.geojson. NOT fetched/precached.",
       "client_layer": null,
       "kind": "geojson",
       "feature_count": 2831,

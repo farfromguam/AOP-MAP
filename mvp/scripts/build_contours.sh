@@ -41,7 +41,11 @@ SIMPLIFY_M="0.5"             # Douglas-Peucker tolerance (light, keeps crossings
 DEM_NODATA="-999999"
 
 WORK="/private/tmp/aop_gdal"
-OUT_GEOJSON="$REPO_DIR/website/data/aop_contours.geojson"
+# The full repaired contour set is the SILVER layer (medallion rename + curation,
+# 2026-06-14); the served GOLD is the lean subset produced by curate_contours_gold.py
+# below (all index lines 9-patch-wide + minor lines clipped to the park cell).
+OUT_GEOJSON="$REPO_DIR/website/data/silver_aop_contours.geojson"
+OUT_GOLD="$REPO_DIR/website/data/gold_aop_contours.geojson"
 OUT_GPKG="$CONTOUR_CACHE/aop_contours.gpkg"
 OUT_CLIP_DEM="$REPO_DIR/mvp/cache/dem/dem_9patch.tif"
 OUT_SMOOTH_DEM="$REPO_DIR/mvp/cache/dem/dem_9patch_smooth.tif"
@@ -117,12 +121,21 @@ python3 /data/repair_crossings.py \
 
 # 4. Copy outputs back into the repo ----------------------------------------
 echo "==> Writing outputs"
-cp "$WORK/aop_contours.geojson" "$OUT_GEOJSON"
+cp "$WORK/aop_contours.geojson" "$OUT_GEOJSON"   # full set -> SILVER
 cp "$WORK/aop_contours.gpkg" "$OUT_GPKG"
 cp "$WORK/dem_9patch.tif" "$OUT_CLIP_DEM"
 cp "$WORK/dem_smooth.tif" "$OUT_SMOOTH_DEM"
 
+# Curate the lean served GOLD from the full SILVER set: all index lines across the
+# 9-patch + minor lines clipped to the park center cell (~13 MB -> ~4 MB). Pure
+# Python (shapely), no GDAL — this step runs on any machine even when the GDAL
+# build above is skipped, as long as silver_aop_contours.geojson exists.
+echo "==> Curating served gold (curate_contours_gold.py)"
+python3 "$REPO_DIR/mvp/scripts/curate_contours_gold.py" --in "$OUT_GEOJSON" --out "$OUT_GOLD"
+
 FEATURES="$(node -e 'const fs=require("fs");const d=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));console.log(d.features.length)' "$OUT_GEOJSON")"
+GOLD_FEATURES="$(node -e 'const fs=require("fs");const d=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));console.log(d.features.length)' "$OUT_GOLD")"
 echo "==> Done"
-echo "    GeoJSON : $OUT_GEOJSON ($(du -h "$OUT_GEOJSON" | cut -f1), $FEATURES features)"
+echo "    Silver (full)   : $OUT_GEOJSON ($(du -h "$OUT_GEOJSON" | cut -f1), $FEATURES features)"
+echo "    Gold (served)   : $OUT_GOLD ($(du -h "$OUT_GOLD" | cut -f1), $GOLD_FEATURES features)"
 echo "    GeoPackage (full-res, gitignored cache): $OUT_GPKG"

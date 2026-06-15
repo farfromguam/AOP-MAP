@@ -180,3 +180,11 @@ docker compose logs db
 This is the initial scaffold set. The MVP has grown well past it; see
 `mvp/README.md`, `mvp/scripts/README.md`, and `website/README.md` for the
 current files, scripts, and viewer layers.
+
+
+# Note on the development:
+Thanks for reading the documentation. 
+
+This repo and project is specifically designed as a AI agent first and only coding experiment so any patterns here, I may not recommend you follow.
+
+If you want to see more about the context harness, see the brain. Coding done May & June 2006 with techniques at the time.

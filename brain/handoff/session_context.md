@@ -11,6 +11,91 @@ Short pointer for the next session. The durable record lives in the cards
 
 ## Latest (2026-06-14)
 
+**v92→v93 bump PERFORMED (UNCOMMITTED).** All the v92-era uncommitted work below (About
+rework, schedule #tag, POI kind/status/source, Hot Rocks + Gravity Gauntlet stars, contours
+lazy-load, contours gold/silver split) shipped on committed v92 with no cache key change, so a
+returning PWA browser kept serving stale v92 caches (the user couldn't see the changes on
+`:8000` — code self-heals via SWR but `/data/` is cache-first). Bumped `sw.js VERSION` +
+`index.html #appVersion` **v92→v93** to re-key SHELL_CACHE + DATA_CACHE. **The commit remains
+the user's** (`no_commits`) — only the version strings were edited. The "owes v93" notes in the
+entries below are now satisfied by this bump (commit still owed).
+
+**Contours curated: GOLD lean (~3.9 MB), full set demoted to SILVER (UNCOMMITTED, owes
+v93).** Measured the 13 MB contour layer: 560k vertices, **88% are the dense minor lines
+in the outer 8 patches** (coords already 6dp — precision wasn't the lever). User: *"the
+major lines for the whole 9 patch and the minor lines for just the park bounds … current
+data demoted to silver and this new bit our gold dataset."* Built the medallion lineage
+**raw → silver (full) → gold (served lean)**: `silver_aop_contours.geojson` (~12.9 MB,
+2,831 feats, maturity silver, NOT served) = full set; `gold_aop_contours.geojson` (**~3.9
+MB**, 911 feats, maturity gold) = ALL 501 index lines whole across the 9-patch + 410 minor
+lines clipped to the park center cell (the `aop_data_bounds.md` working-envelope bbox); 1,920
+outer minor lines dropped (~70% cut). New `mvp/scripts/curate_contours_gold.py` (shapely, no
+GDAL), wired into `build_contours.sh` (full→silver→curate→gold; also fixed its stale
+un-prefixed output path — GDAL portion unverified here). **No JS change** (viewer reads gold,
+filters by idx). `_data_manifest.json` re-stamped + silver entry added. Verified on `:8001` —
+`brain/output/verify_contours_curated_gold.py` **13/13 PASS**, 0 errors (minor all in park;
+index reaches outside + inside; Topo loads 911 feats, both layers visible). Council
+cleared 5/5 (witness·warden·quartermaster·mason·scribe):
+`brain/output/council/contours_gold_silver_split_20260614.md`. Rides the same owed **v92→v93
+bump** (served-data change). Addendum on `tasks/01_mvp/_done/lidar_contour_pipeline.md`.
+
+**Contours lazy-load — phone-load fix (UNCOMMITTED, owes v93).** User: viewer *"takes a
+long time to load on phones."* Cause: `viewer_core.js` fetched the **~13 MB**
+`gold_aop_contours.geojson` with a **blocking `await` in `map.on('load')`**, though
+contours are `visibility:none` in every preset but **Topo** (default Park) — and the load
+handler is a sequential await chain, so **all park content (water/roads/buildings/trails/
+waypoints/parcel/schedule) was serialized BEHIND** that 13 MB download+parse. Fix: removed
+the eager fetch; added idempotent `ensureContours()` that `applyPreset` calls only when a
+preset turns contours on (Topo), reading live `activePresetId` at resolve. No data/pipeline
+change. Verified on `:8001` — `brain/output/verify_contours_lazy_load.py` **9/9 PASS**, 0
+errors (PARK: no contour fetch, no source, but waypoints+buildings present; TOPO: fetched
+once, source added, contours-index visible). Council: `brain/output/council/
+contours_lazy_load_20260614.md`. Addendum on `tasks/01_mvp/_done/lidar_contour_pipeline.md`.
+**Also flagged (NOT load-critical — deploy junk, not fetched/precached, user's call):**
+`website/data/raw/` (~20 MB raw zone), `website/compare_data/` (~3.5 MB), **`website/brain/`
+(an untracked COPY of the brain inside the served dir — shipped publicly if deployed)**,
+and `old_index.html` + `leftrail_*.html`/`icon_master.html` mockup pages. (NOT junk, don't
+delete: two `data/delete_*.geojson` are misnamed but **precached + active** in `sw.js` —
+`delete_aop_synthetic_activity_hotspots.geojson`, `delete_sfwda_traced_trails.geojson`;
+only `delete_aop_synthetic_activity_tracks.geojson` is genuinely unused.)
+
+**Gravity Gauntlet starred into the POI list as a pin — data-only, rides v92 (UNCOMMITTED).**
+User: *"add this to the map as a pin and star it to make it into the poi list as
+#gravity-gauntlet make sure it ends up in the correct gold data source
+`Wpt_5-16-26-144753_race_driver_position.gpx` in import dir."* The GaiaGPS waypoint (import
+dir, lat 35.091910 / lon -85.751500) flows into the gold source
+`gold_aop_waypoints_traced.geojson` as one feature: `name:"Gravity Gauntlet"`,
+`location_tag:"#gravity-gauntlet"`, `highlight:true`, blurb from `TBI.copy`. **No JS change** —
+the `aop-waypoints` pin layer + Camp POIs ★-group already exist (Hot Rocks pass), so it renders
+as a pin and lands in the reader POI list (Camp POIs now holds **2** pads). Verified on `:8001`
+— `brain/output/verify_gravity_gauntlet_in_poi_list.py` **16/16 PASS**, 0 console errors. **Owed:**
+rides the same already-flagged v92→v93 bump + waypoint-round-trip durability gap as Hot Rocks
+(not re-flagged). **Follow-up (user: *"make sure the schedule links to the proper point. there
+should be examples"*) — DONE:** mirrored the `#firepit` example in `aop_event_schedule.json` —
+added a `locations["#gravity-gauntlet"]` with `coordinates` identical to the waypoint and retagged
+the `sat-gravity-gauntlet` session `#trails`→`#gravity-gauntlet`, so clicking that calendar row now
+flies to the GG point + opens its popup, and the schedule anchor renders on the pin. Data-only, no
+JS. Verified — `brain/output/verify_gravity_gauntlet_schedule_link.py` **15/15 PASS**, 0 errors.
+Addendum on `tasks/13_viewer_extraction/_done/viewer_poi.md`.
+
+**Hot Rocks Comp Pad starred into the POI list — rides v92 (UNCOMMITTED).** User:
+*"Hot rock comp pad needs to be starred and show up in poi list."* The pad is a camp
+**waypoint** (`gold_aop_waypoints_traced.geojson`), but the reader POI directory's
+`STAR_GROUPS` sourced only buildings/trails/visitor-support — no waypoints group. Two
+parts: (1) data — Hot Rocks Comp Pad gets `highlight:true` (only highlighted waypoint,
+so only it appears); (2) `viewer_core.js` — exposed the loaded waypoints as
+module-scoped `poiWaypointsData` + added a `{ id:'waypoints', label:'Camp POIs' }`
+`STAR_GROUP` (same `buildPoiGroups`/`renderPoiTab`, one more source). Verified on `:8001`
+— `brain/output/verify_hot_rocks_in_poi_list.py` **11/11 PASS**, 0 errors. **NOTE:** the
+user committed v92 mid-session (HEAD `813d4c9` "schedule tweaks"), so this is uncommitted
+*on top of* committed v92 with no bump — **owed a v92→v93 bump (user's git gate)** for the
+shell-asset (`viewer_core.js`) + data change to reach cached PWA clients. **Owed (data):**
+★ is authored-on-served (the waypoint round-trip strips authored fields; `bake_poi_stars`
+doesn't cover this trace file); editor POI list (`main.js` `FEATURE_LIST_LAYERS`) has no
+waypoints layer, so it's reader-only. Council core-three clear:
+`brain/output/council/hot_rocks_in_poi_list_20260614.md`. Addendum on
+`tasks/13_viewer_extraction/_done/viewer_poi.md`.
+
 **Kind/Status/Source off the user-facing POI surfaces — rides v92 (UNCOMMITTED).**
 User: *"we have kind and status as visible. we dont need those in the poi list. we
 dont even need them in the world popovers. in the world there is a third source. that

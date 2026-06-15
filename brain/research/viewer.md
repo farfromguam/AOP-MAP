@@ -533,7 +533,15 @@ Recorded on 2026-05-20:
 
 ### Lidar Contour Layer
 
-Recorded on 2026-05-20; updated 2026-05-21:
+Recorded on 2026-05-20; updated 2026-05-21; **gold/silver split + lazy-load 2026-06-14:**
+
+- **Served file is `gold_aop_contours.geojson` (~3.9 MB, lazy-loaded on the Topo
+  preset, not at map load).** Curated subset: all index (major, labelled) lines across
+  the 9-patch + minor lines clipped to the park center cell. The full set is
+  `silver_aop_contours.geojson` (~12.9 MB, not served). Curate via
+  `mvp/scripts/curate_contours_gold.py`; fetched lazily by `viewer_core.js`
+  `ensureContours()` on first Topo. Detail in the "GOLD curated…" + lazy-load updates
+  on `tasks/01_mvp/_done/lidar_contour_pipeline.md`.
 
 - The viewer has lidar-grade contour lines at `website/data/aop_contours.geojson`,
   generated from the USGS 3DEP 1-meter DEM (lidar-derived bare-earth elevation).

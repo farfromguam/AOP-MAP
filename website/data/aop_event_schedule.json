@@ -32,6 +32,17 @@
         35.090492
       ]
     },
+    "#gravity-gauntlet": {
+      "role": "event_stage_start",
+      "label": "Gravity Gauntlet",
+      "source": "GaiaGPS race-driver-position waypoint (brain/import/Wpt_5-16-26-144753_race_driver_position.gpx) — Gravity Gauntlet waypoint in gold_aop_waypoints_traced.geojson.",
+      "map_label": "Gravity Gauntlet",
+      "confidence": "high",
+      "coordinates": [
+        -85.7515,
+        35.09191
+      ]
+    },
     "#trails": {
       "role": "event_stage_start",
       "label": "Park trails",
@@ -141,7 +152,7 @@
       "sort_order": 160,
       "time_label": "Afternoon",
       "start_local": "15:00",
-      "location_tag": "#trails"
+      "location_tag": "#pavilion"
     },
     {
       "id": "sat-hot-dog",

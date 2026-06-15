@@ -144,3 +144,72 @@ Current shipped file: `website/data/aop_contours.geojson` -- 2,831 LineStrings,
 ~25 MB threshold. The viewer schema (`elev_m` / `elev_ft` / `idx`) did not change.
 Full detail in `brain/research/viewer.md` ("Lidar Contour Layer") and
 `brain/handoff/session_context.md`.
+
+## Update: contours LAZY-LOAD in the reader (2026-06-14 — phone load fix)
+
+User: the viewer *"takes a long time to load on phones."* Cause: `viewer_core.js`
+fetched `gold_aop_contours.geojson` (~12.9 MB served) with a **blocking `await`
+inside `map.on('load')`**, even though the contour layers are `visibility:'none'`
+in every preset except **Topo** (default is **Park**). Worse, the load handler is a
+sequential await chain, so **every layer after contours** — water, roads, buildings,
+trails, waypoints, the publish parcel, the schedule — waited *behind* that 13 MB
+download + parse. On a phone over cellular that's the dominant stall.
+
+Fix (`viewer_core.js`, no data/pipeline change): removed the eager fetch from the
+load handler; added an idempotent **`ensureContours()`** (fetch + `addSource` +
+the three `addLayer`s, layers start hidden) that `applyPreset` calls **only when a
+preset turns contours on** (Topo). It reads the live `activePresetId` at resolve
+time, so a quick Topo→Park toggle leaves them hidden. The SW already excluded
+contours from precache for the same reason; the cache-first `/data/` handler still
+caches the file after the first Topo view ("offline-after-once"). The default Park
+load now pulls **~13 MB less**.
+
+Verified by observation on `:8001` — `brain/output/verify_contours_lazy_load.py`
+**9/9 PASS**, 0 console errors: PARK = no contour request, no `aop-contours` source,
+but waypoints + buildings present (no longer blocked); TOPO = contours fetched
+exactly once, source added, `contours-index` visible. **Owed:** shell-asset change
+on top of committed v92 → rides the same **v92→v93 bump** (user's git gate) already
+flagged for the Hot Rocks change.
+
+Side effect (harmless, noted for honesty): `auditProductionTiers()` runs at load and
+iterates `aop-contours`; since the source no longer exists until first Topo, it now
+**skips** the contour tier check (guarded `if (!src) continue`) — a dev-only `console.warn`
+on gold-tier data, no user-facing change. Council-cleared core-three + Mason:
+`brain/output/council/contours_lazy_load_20260614.md`.
+
+## Update: GOLD curated to a lean served subset; full set demoted to SILVER (2026-06-14)
+
+Measured the 13 MB: **560,659 vertices** across 2,831 lines; coords already at 6
+decimals (precision isn't the lever), but **88% of vertices are the dense MINOR
+(idx==0) lines out in the 8 surrounding patches** — county hillside nobody reads on
+an RC-park map. The INDEX (idx==1, labelled, every 50 ft) lines are useful context
+across the whole 9-patch. User's call: *"the major lines for the whole 9 patch and
+the minor lines for just the park bounds … current data demoted to silver and this
+new bit our gold dataset."*
+
+Medallion lineage now: **raw → silver (full) → gold (served lean)**.
+- **`silver_aop_contours.geojson`** (`_meta.maturity: silver`, ~12.9 MB, 2,831 feats)
+  = the full-detail, full-extent smoothed+repaired set. The promote-from source.
+  **Not fetched/precached** (archive).
+- **`gold_aop_contours.geojson`** (`_meta.maturity: gold`, **~3.9 MB**, 911 feats) =
+  served production: **ALL 501 index lines kept WHOLE across the 9-patch** + **410
+  minor lines CLIPPED to the park center cell** (the working-envelope bbox from
+  `research/aop_data_bounds.md`); the 1,920 outer-patch minor lines dropped. ~70% cut.
+- **Curation script:** `mvp/scripts/curate_contours_gold.py` (pure Python / shapely —
+  no GDAL; clips idx==0 to the center cell, keeps idx==1 whole, rounds to 6 dp).
+  Wired into `build_contours.sh` as the post-bake step (full set → silver → curate →
+  gold), which also fixed the stale medallion output path (was writing the un-prefixed
+  `aop_contours.geojson`). **NOTE:** the GDAL portion of `build_contours.sh` is
+  unverified on this machine (no GDAL); the curate step is what was run + verified here.
+
+**No JS change** — the viewer reads `gold_aop_contours.geojson` and filters by `idx`,
+so `contours-index` still draws everywhere and `contours-minor` now only has park data.
+`_data_manifest.json` updated (gold entry re-stamped + silver entry added).
+
+Verified by observation on `:8001` — `brain/output/verify_contours_curated_gold.py`
+**13/13 PASS**, 0 console errors: silver = full 2,831 / maturity silver; gold maturity
+gold; gold minor lines ALL inside the park cell; gold index lines reach outside (9-patch
+context) AND inside (park labels); gold ≤40% of silver; PARK no contour fetch (lazy holds);
+TOPO loads the curated gold (911 feats: 501 index + 410 minor), both layers visible.
+**Owed:** served-data change → rides the same already-flagged **v92→v93 bump** (user's
+git gate). DB/core not touched (contours are a raw-pipeline layer, no DB sink).

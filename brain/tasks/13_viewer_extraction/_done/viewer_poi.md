@@ -181,3 +181,127 @@ cemeteries layer (now ★-baked in the data) to fill the directory's cemeteries 
 
 UNCOMMITTED (the user's gate). `viewer.html` still not in `sw.js` → no `#appVersion` bump owed. Remaining
 slate after 4b: Locate / Install / version (slice 6), the swap to `index.html` (slice 7).
+
+## Addendum 2026-06-14 — Camp POIs group + Hot Rocks Comp Pad starred (rides v92)
+
+User: *"Hot rock comp pad needs to be starred and show up in poi list."* The pad is a
+camp **waypoint** (`gold_aop_waypoints_traced.geojson`), but the reader POI directory's
+`STAR_GROUPS` only sourced buildings / trails / visitor-support — there was **no camp-
+waypoints group**, so starring the feature alone wouldn't surface it. Two parts:
+
+- **Data (★ curation):** Hot Rocks Comp Pad gets `highlight:true` in
+  `gold_aop_waypoints_traced.geojson` (the ★ gate `buildPoiGroups` reads). It's the only
+  highlighted waypoint, so only it appears — RV sites / cabins / firepit stay out.
+- **Viewer:** exposed the loaded waypoints as module-scoped `poiWaypointsData`
+  (`viewer_core.js`, assigned right after the `gold_aop_waypoints_traced.geojson` fetch)
+  and added a `{ id:'waypoints', label:'Camp POIs', data:()=>poiWaypointsData }` entry to
+  `STAR_GROUPS` (after Buildings). No new list engine — same `buildPoiGroups`/`renderPoiTab`
+  path, one more source. The row renders name + blurb with no kind/status chips (consistent
+  with the 2026-06-14 metadata-removal change).
+
+**Owed — user's git gate (v92→v93 bump):** v92 is now **committed** (HEAD `813d4c9`
+"schedule tweaks"; `sw.js VERSION`/`#appVersion` = v92, which shipped the about-rework +
+schedule-#tag + POI-metadata work). This change is a shell-asset (`viewer_core.js`) + data
+edit *on top of* committed v92 with **no version bump**, so a returning PWA client holding
+the v92 caches won't pick it up until `VERSION`/`#appVersion` bump **v92→v93** (re-keys
+SHELL_CACHE + DATA_CACHE). Per `no_commits` the bump **and** the commit stay the user's —
+flagged here, not performed. (Fresh loads have no stale cache, so the verifier passes; the
+bump is what reaches already-cached clients.)
+
+Verified by observation on `:8001` — `brain/output/verify_hot_rocks_in_poi_list.py`
+**11/11 PASS**, 0 console errors: live source has exactly `['Hot Rocks Comp Pad']`
+highlighted; the "Camp POIs" group renders with count 1 and that single row; clicking it
+opens the world popover titled "Hot Rocks Comp Pad" with its description and no
+Kind/Status/Source.
+
+**Owed / known gaps (flagged, user's call):**
+- **Durability:** the ★ lives on the served gold file (like the Shower House star), not a
+  bake. The Affinity waypoint round-trip (`import_illustrator_trace.py`) already strips
+  authored waypoint fields (descriptions/kind/tags — see handoff "Owed"), so a re-import
+  would strip this `highlight` too. `bake_poi_stars.py` curates the publish/reference POIs
+  via `aop_poi_index.json`, not this trace file — so the star is authored-on-served until
+  the waypoint round-trip carries authored fields.
+- **Editor parity:** the editor POI list (`main.js` `collectStarredDestinations` over
+  `FEATURE_LIST_LAYERS`) has no camp-waypoints layer, so Hot Rocks shows in the **reader**
+  POI tab only. Adding it to the editor would need a new `FEATURE_LIST_LAYERS` waypoints
+  spec (bigger change, not requested). The two lists already source different sets.
+
+## Addendum 2026-06-14 — Gravity Gauntlet starred (rides the same wiring; data-only)
+
+User: *"add this to the map as a pin and star it to make it into the poi list as
+#gravity-gauntlet make sure it ends up in the correct gold data source
+`Wpt_5-16-26-144753_race_driver_position.gpx` in import dir."* The GaiaGPS export
+(`brain/import/Wpt_5-16-26-144753_race_driver_position.gpx`, a single `red-pin-down`
+waypoint at lat `35.091910` / lon `-85.751500`, named "race driver position") is the
+**raw input**; the **gold data source** it flows into is
+`gold_aop_waypoints_traced.geojson`.
+
+Because the Camp POIs `STAR_GROUP` + the `aop-waypoints` pin layer already exist (the Hot
+Rocks addendum above), this is **data-only — no JS change**. Added one feature to the gold
+waypoints file:
+
+```json
+{"name":"Gravity Gauntlet","kind":"comp pad","location_tag":"#gravity-gauntlet",
+ "description":"The Gravity Gauntlet — one of Saturday afternoon's scale RC driving challenges at the park.",
+ "highlight":true}  // geometry [-85.7515, 35.09191]
+```
+
+- **Pin:** all waypoints draw on `aop-waypoints` (Park/Topo only), so the feature renders
+  as a pin with no wiring.
+- **★ into the POI list:** `highlight:true` lands it in the reader's "Camp POIs" group —
+  now holds **two** starred pads (Hot Rocks + Gravity Gauntlet).
+- **`#gravity-gauntlet`:** carried as `location_tag` (same field as Firepit's `#firepit`),
+  honoring the user's literal tag and making it a real schedule join-target. Blurb is
+  source-honest from `brain/import/TBI.copy` (a Saturday-afternoon RC driving challenge);
+  `kind:"comp pad"` matches its sibling competition feature and is not visitor-facing.
+
+Verified by observation on `:8001` — `brain/output/verify_gravity_gauntlet_in_poi_list.py`
+**16/16 PASS**, 0 console errors: live source has exactly `['Hot Rocks Comp Pad','Gravity
+Gauntlet']` highlighted; GG carries `#gravity-gauntlet` + highlight at the GPX coords;
+renders as a pin on the Park preset; the "Camp POIs" group reads count 2 with both rows;
+clicking the row opens the world popover titled "Gravity Gauntlet" with its blurb and no
+Kind/Status/Source.
+
+**Owed:** same gaps as the Hot Rocks addendum — (1) the v92→v93 bump already flagged above
+now also covers this data edit (still **not performed**, user's git gate); (2) durability —
+the ★ + authored fields live on the served gold file, so the Affinity waypoint round-trip
+would strip them; (3) editor-list parity (reader-only). Not re-flagged separately; this
+change adds nothing new to the owed list beyond riding it.
+
+**Council (POI/pin pass):** cleared **5/5** (full six — publish-zone gold data) over the
+scoped GG hunk — witness (re-ran the verifier, 16/16) · warden (git gate untouched, schedule
+genuinely unedited) · quartermaster (data-only, 100% wiring reuse) · mason (well-formed,
+non-limiting, coords correct) · scribe (recorded + honest). Receipt:
+`brain/output/council/gravity_gauntlet_in_poi_list_20260614.md`.
+
+### Follow-up 2026-06-14 — schedule session linked to the point (was "not done", user asked for it)
+
+User: *"make sure the schedule links to the proper point. there should be examples."* The
+`sat-gravity-gauntlet` session ("The Gravity Gauntlet") was tagged `location_tag:"#trails"` —
+and `#trails` is **coordinate-less on purpose** (it spans the park), so the schedule join
+(`event_schedule_geojson.js`) gave the session a **null geometry**: clicking its calendar row
+flew nowhere and opened no popup. The **example** to follow is `#firepit` in
+`aop_event_schedule.json` `locations`: a tag whose baked `coordinates` match a waypoint, so its
+sessions land on that point. Mirrored it — **data-only, no JS**:
+
+- **`aop_event_schedule.json` `locations`:** added `"#gravity-gauntlet"` (modeled on `#firepit`)
+  with `coordinates:[-85.7515,35.09191]` — **identical to the gold waypoint** — `confidence:"high"`,
+  `role:"event_stage_start"` (same role `#trails` carried), and a `source` line naming the GPX.
+- **The session:** `sat-gravity-gauntlet` `location_tag` `#trails` → `#gravity-gauntlet` (the other
+  four `#trails` sessions are untouched).
+
+The transform now emits an `event_anchor` Point at the GG coords and a Point geometry for the
+session there, so `gotoEventSession` (`viewer_core.js:1517`) flies to the point and opens the
+session popup at it — exactly like Firepit. Verified by observation on `:8001` —
+`brain/output/verify_gravity_gauntlet_schedule_link.py` **15/15 PASS**, 0 console errors:
+the live join has the anchor + session Point both at `[-85.7515, 35.09191]`; clicking the
+"The Gravity Gauntlet" calendar row opens the popup (title "The Gravity Gauntlet", Location
+"Gravity Gauntlet", Tag "#gravity-gauntlet"), turns the event-anchor layer on, flies the camera,
+and the schedule **anchor renders at the SAME projected point as the waypoint pin** (both
+queried at the GG point). Rides the same uncommitted v92→v93 bump; git gate still the user's.
+
+**Council (schedule-link pass):** cleared **5/5** (full six — published event data) — witness
+(re-ran the verifier, 15/15) · warden (2 hunks only, other #trails sessions untouched, git gate
+intact) · quartermaster (data-only, schedule-join path 100% reuse, mirrors #firepit) · mason
+(valid JSON, coords = gold waypoint, role permissive) · scribe (recorded + honest, #firepit is the
+real mirrored example). Receipt: `brain/output/council/gravity_gauntlet_schedule_link_20260614.md`.
