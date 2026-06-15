@@ -11,6 +11,23 @@ Short pointer for the next session. The durable record lives in the cards
 
 ## Latest (2026-06-14)
 
+**Load pipeline PARALLELIZED — v94 bump PERFORMED (UNCOMMITTED).** User: *"take a look
+at the loading pipeline … what makes it take so long. can we speed it up?"* Found
+`map.on('load')` in `viewer_core.js` was a **serial `await` chain** — the ~13 remaining
+served files downloaded one-at-a-time (the lazy-contours fix had only removed the 13 MB
+blocker, not the chain shape). Bytes are small (~1.4 MB) so it's invisible on wifi, but
+on a phone every round-trip pays full RTT with the connection idle between. Fix: a
+**parallel kickoff** at the top fires all independent fetches at once; `fetchJson`
+memoizes so the existing downstream awaits resolve in-flight requests — **`addLayer`
+stacking unchanged**. `gold_publish` started up-front (kept its raw fetch for
+error-surfacing); Trace `.webp` + brand logos cache-warmed. **Verified by observation**
+(`brain/output/verify_load_pipeline_parallel.py`, SW blocked, 120 ms RTT): **max
+concurrency 2→13, data span 4,113 ms→~400 ms (~10×)**, 14/14 PASS, 0 errors ×3 runs;
+Park screenshot paints all layers; SFWDA overlay (36 tiles) + lazy contours intact.
+viewer_core.js is a shell asset → **v93→v94 bump performed** (`sw.js` + `#appVersion`);
+**commit remains the user's**. Addendum on `tasks/01_mvp/_done/lidar_contour_pipeline.md`
+(sibling to the lazy-contours update — same handler).
+
 **Waypoint ★ durability CLOSED — re-import now carries authored fields (UNCOMMITTED).**
 User: *"fix the star durability … survive a db export or a re-import. save it to the gold
 data directly. no shortcuts."* (1) DB export = non-threat: `gold_aop_waypoints_traced.geojson`

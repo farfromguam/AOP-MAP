@@ -213,3 +213,37 @@ context) AND inside (park labels); gold ≤40% of silver; PARK no contour fetch 
 TOPO loads the curated gold (911 feats: 501 index + 410 minor), both layers visible.
 **Owed:** served-data change → rides the same already-flagged **v92→v93 bump** (user's
 git gate). DB/core not touched (contours are a raw-pipeline layer, no DB sink).
+
+## Update: rest of the load chain PARALLELIZED — v94 (2026-06-14, phone load fix #2)
+
+The lazy-contours update above pulled the 13 MB blocker off the default load, but
+left the underlying shape: **`map.on('load')` is a serial `await` chain**, so the
+~13 remaining served files (landcover ×2, SFWDA alignment, activity hotspots, water,
+roads, callouts, buildings, trail network, waypoints, publish, schedule) still
+downloaded **one at a time** — each request waiting for the previous to finish before
+even opening. Bytes are modest (~1.4 MB total), so it's invisible on wifi/localhost,
+but on a phone every round-trip pays full RTT and the connection sits **idle** between
+them. **Measured** (`brain/output/verify_load_pipeline_parallel.py`, SW blocked =
+worst-case first online load, 120 ms simulated RTT): **max concurrency 2, data span
+4,113 ms**. (That baseline was observed live against pre-fix HEAD during the session —
+it is not reproducible from the current tree without reverting the fix, since the
+serial chain is gone; the verifier now measures the *after* state.)
+
+Fix (`viewer_core.js`, no data change): a **parallel kickoff** at the top of the load
+handler fires every independent fetch at once (the files are independent — none needs
+another's parsed result). `fetchJson` already memoizes, so the existing downstream
+`await fetchJson(...)` lines resolve the **already-in-flight** request instead of
+opening a fresh round-trip — **`addLayer` stacking order is untouched** (each section
+still awaits its own data before drawing). `gold_publish.geojson` keeps its raw fetch
+(a failure must surface in the message bar) but is started up-front into `publishFetch`
+and awaited in place. The Trace overlay `.webp` + the two brand logos are
+cache-warmed in the same block so their `<img>` loads stop waiting a fresh round-trip
+after their await points.
+
+Verified by observation on `:8001` (same verifier): **max concurrency 2 → 13, data
+span 4,113 ms → ~400 ms** (~10×), **14/14 checks PASS**, 0 console errors across 3
+runs; Park screenshot (`brain/output/load_pipeline_parallel_park.png`) paints every
+layer; SFWDA Trace overlay still builds (36 tiles) and lazy contours still load only
+on the first Topo press. **Owed:** shell-asset change → performed the **v93→v94 bump**
+(`sw.js VERSION` + `index.html #appVersion`); the commit remains the user's (git gate).
+Sibling to the lazy-contours update above — same handler, same phone-load symptom.

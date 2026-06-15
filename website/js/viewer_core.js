@@ -2059,6 +2059,42 @@
   // carried — none are reached by presets / zoom / 3D. Add order matches main.js
   // so the layer z-order is preserved.
   map.on('load', async () => {
+    // --- Parallel data kickoff (perf, 2026-06-14) --------------------------
+    // The body below adds layers in a fixed STACK order, so it `await`s each
+    // file one at a time. Left alone, that serializes ~13 network round-trips —
+    // measured at a 4.1 s data span on a 120 ms-RTT link with the SW cold
+    // (brain/output/verify_load_pipeline_parallel.py). The fetches are
+    // independent (no file needs another's parsed result), so fire them ALL
+    // here first: fetchJson memoizes, so each `await fetchJson(...)` downstream
+    // resolves an already-in-flight request instead of opening a fresh
+    // round-trip. addLayer ordering is unchanged (every section still awaits
+    // its own data before drawing), so the stack is identical — only the
+    // network wait collapses from sum-of-round-trips to the slowest single one.
+    // (Contours stay lazy — first Topo press only, see ensureContours.)
+    [
+      ['./data/gold_aop_landcover_9patch.geojson', '9-patch land cover missing'],
+      ['./data/gold_aop_landcover.geojson', 'Land cover missing'],
+      ['./data/sfwda_raster_alignment.json', 'SFWDA alignment missing'],
+      ['./data/gold_aop_activity_hotspots.geojson', 'Activity hotspot layer missing'],
+      ['./data/gold_aop_water.geojson', 'Water layer missing'],
+      ['./data/gold_aop_roads.geojson', 'Roads layer missing'],
+      ['./data/gold_aop_visitor_context_callouts.geojson', 'Visitor context callouts missing'],
+      ['./data/gold_aop_buildings.geojson', 'Building footprints missing'],
+      ['./data/gold_aop_trail_network.geojson', 'AOP trail network missing'],
+      ['./data/gold_aop_waypoints_traced.geojson', 'Camp waypoints'],
+      ['./data/aop_event_schedule.json', 'Event schedule missing'],
+    ].forEach(([url, label]) => fetchJson(url, label));
+    // publish.geojson uses a raw fetch (a failure must surface in the message
+    // bar — see below); start it now, await it in place.
+    const publishFetch = fetch('./data/gold_publish.geojson');
+    // Warm the cache for the Trace overlay image + brand logos so their <img>
+    // loads (mid-chain SFWDA build, end-of-chain logos) come from cache rather
+    // than each waiting a fresh round-trip after its own await point.
+    ['./data/sfwda_aop_trail_map_no_trails.webp',
+     './assets/branding/aop-badge.png',
+     './assets/branding/rock-warblers.jpg'
+    ].forEach((u) => { fetch(u).then((r) => r.ok && r.arrayBuffer()).catch(() => {}); });
+
     // --- Land cover, 9-patch (NAIP 2023 + lidar) — base of the stack (main.js:7767) ---
     const landcover9Data = await fetchJson('./data/gold_aop_landcover_9patch.geojson', '9-patch land cover missing');
     if (landcover9Data) {
@@ -2562,7 +2598,7 @@
     // not carried here.
     let publishData;
     try {
-      const response = await fetch('./data/gold_publish.geojson');
+      const response = await publishFetch; // started up-front in the parallel kickoff
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       publishData = await response.json();
     } catch (error) {
