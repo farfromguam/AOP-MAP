@@ -20,7 +20,7 @@ brain/
 ├── northstar/      what is locked for the AOP map
 ├── research/       source briefs, evidence, current facts
 ├── import/         raw zone for community-sourced trail material
-├── tasks/          work cards and execution notes
+├── tasks/          work cards and execution notes (fully-done sprints archived under tasks/_done/ — see tasks/_readme.md)
 ├── practices/      portable methods from the Soka brain
 ├── flows/          reusable work flows
 ├── spinup/         local startup, runbooks, and troubleshooting

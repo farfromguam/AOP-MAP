@@ -83,7 +83,7 @@ object name to rename.
 | Satellite | `mvp/cache/imagery/naip_2023_9patch.tif` | NAIP 2023, 4-band, **EPSG:26916** (NAD83/UTM 16N), 3996×3742 px @ 1.525 m/px. Gitignored cache. |
 | Gold Trails | `website/data/aop_trail_network.geojson` | 120 LineStrings, `maturity:gold`, `color`+`difficulty`+`name`/`trail_number`. |
 | Buildings | `website/data/aop_buildings.geojson` | 5 in-park footprints (665, 889 Ellis Cove, Front Office, Farmhouse, Pavilion). |
-| Waypoints | `silver_publish.geojson` POIs + `bronze_aop_editor_seed_pois.geojson` | deduped by name → AOP Pavilion, Ellis Cemetery. **Cemeteries dropped 2026-06-14** (`aop_cemeteries.geojson` no longer a source); Ellis survives as a publish POI. Off-park Tate/Bible/Gilliam are bronze-only (`bronze_aop_cemeteries.geojson`). |
+| Waypoints | `gold_aop_waypoints_traced.geojson` (the SERVED set) | **Re-sourced 2026-06-14** — was `silver/gold_publish` POIs + `bronze_aop_editor_seed_pois` (pre-trace stubs holding only the user-deleted "AOP Pavilion"). The export now sources the same served gold the viewer draws and the import writes, so the round-trip is faithful (24 waypoints incl. RV sites/cabins/comp pads/entrances/★ POIs). Ellis kept; off-park Tate/Bible/Gilliam are bronze-only and stay out. |
 
 ## Frame / projection (the load-bearing part)
 
@@ -246,6 +246,16 @@ returns cemetery-kind == `['Ellis Cemetery']`, zero stray Tate/Bible/Gilliam lab
 able to edit the master ai sheet and re-upload as needed"):** the served-only fix
 above would have been undone by the next re-import (the trace SOURCE still carried all
 four). Now the pipeline itself is cemetery-free:
+
+> **SUPERSEDED 2026-06-14** (see the "round-trip review + two bakes" addendum below):
+> the waypoint export source described in the next bullet — `silver/gold_publish` POIs +
+> `bronze_aop_editor_seed_pois` (Ellis seeding via publish, the `gold_publish` cross-session
+> rename obligation) — **no longer applies.** The export now sources the served
+> `gold_aop_waypoints_traced.geojson` (which already carries Ellis-only and excludes the
+> off-park three), so there is no publish/editor-seed waypoint path and no `load()` path
+> left to move. The cemetery-DROP-on-import (next-but-one bullet) is unchanged and still
+> in force. History kept; read the bullet as of-its-date, not current.
+
 - **`export_illustrator_trace.py`** — dropped `aop_cemeteries.geojson` as a waypoint
   source entirely. Ellis still seeds in because it is *also* a publish POI
   (`silver_publish.geojson`, `kind="poi"`, name "Ellis Cemetery"); Tate/Bible/Gilliam
@@ -378,3 +388,96 @@ Two NEXT notes from the council (neither blocking):
 - **Name-collision (Mason).** The by-name prior index is case-insensitive, so two distinct
   gold POIs sharing a lowercased name would both survive `preserve_unmatched_authored`. A
   pre-existing index property — a data-integrity note, not enforced.
+
+## Addendum 2026-06-14 — round-trip review + two bakes before the next re-edit
+
+User: *"review the trail point polygon export process. we have some data updates that
+need to be baked into the gold data before I edit the sheet again and re-upload for
+processing."* Reviewed all three geometry layers by observation; found the export was
+out of sync with the served gold on two counts and baked the fixes. **Build-pipeline
+only (export/import scripts) + one served-JS comment — no served-data change, no `vNN`
+bump owed for the data; the comment edit is non-behavioral.**
+
+Three-layer health at the start (verified, not narrated):
+
+| Layer | Export reads | Import writes | State |
+| --- | --- | --- | --- |
+| **Trails** | `gold_aop_trail_network` ✓ | `gold_aop_trail_network` ✓ (provenance carried) | healthy |
+| **Waypoints** | publish POIs + editor-seed = **1 stub** (AOP Pavilion, deleted) ✗ | `gold_aop_waypoints_traced` ✓ (★/desc/tag carried + unmatched preserved) | **export broken** |
+| **Buildings** | `gold_aop_buildings` ✓ | `bronze_aop_buildings_traced` (**dead file the viewer ignores**, thin props, no provenance) ✗ | **import broken** |
+
+**The waypoint danger:** a re-export gave a Waypoints layer with **1** circle, not the
+**24** the viewer actually draws/`gold_aop_waypoints_traced` holds. Editing that sheet
+and re-uploading would have dropped ~18 authored waypoints (RV sites, cabins, racetrack,
+playground, entrances, Ellis) — only the ★/`#tag` ones (Hot Rocks, Gravity Gauntlet,
+Firepit) survive via `preserve_unmatched_authored`.
+
+**Bake 1 — export Waypoints now source `gold_aop_waypoints_traced.geojson`**
+(`export_illustrator_trace.py`). Export + import now share ONE waypoint truth; the
+pre-trace publish/editor-seed stubs are dropped (they only held the user-deleted "AOP
+Pavilion" — not resurrected). Fresh export emits **Waypoints 24**.
+
+**Bake 2 — import no longer strips the baked "<number> <name>"**
+(`import_illustrator_trace.py`). The stored convention is now `1 Launchpad` (Goal.md:
+*"make the proper fix so its Number Name"*; 80 trails store the number in the name). The
+old strip would silently revert `1 Launchpad`→`Launchpad` on every round-trip. Removed
+it; the edited name is authoritative verbatim. The now-false `viewer_core.js`
+`trailDisplayName` comment (claimed the name stays "clean" + the import strips) was
+corrected to match — comment-only, no behavior change.
+
+**Bake 3 — buildings (polygon) round-trip wired into the served gold (DONE — the full
+loop now works for all three geometry types).** User: *"I think we need the full loop
+working for all types. right now you say polygons are broken. this is not ideal long
+term."* The import wrote `bronze_aop_buildings_traced.geojson` — a file the viewer never
+read — with thin `{name, kind}` (no FEMA/ORNL provenance), so polygon edits were silently
+discarded. `import_polys` is now provenance-preserving and writes the served
+`gold_aop_buildings.geojson` (carrying its top-level `_meta` maturity stamp + FEMA source
+lineage). Design (mirrors trails/waypoints, plus a buildings-specific carry-unchanged
+rule):
+- **Provenance carried by name** — FEMA/ORNL address, occupancy, source, permission,
+  `aop_facility`, the ★ `highlight` all carry from prior gold; the trace is authoritative
+  on geometry, not on the source record.
+- **Unchanged footprint → carried VERBATIM** (`_ring_unchanged`, 0.5 m tol). A re-import is
+  a TRUE no-op for buildings the user didn't touch: geometry + `centroid_lng/lat` +
+  `area_sqm/sqft` preserved EXACTLY. This is load-bearing — FEMA's source area is
+  authoritative and the equirect re-measure differs from it by up to **11%** (665 Ellis
+  123.49→109.82 m²), and the facility pin reads the stored centroid (`viewer_core.js`
+  ~2485), so neither may be silently overwritten on an untouched building.
+- **Edited / new footprint → recompute** centroid + area from the traced ring (reusing
+  `import_fema_buildings.ring_centroid` / `signed_ring_area`, the SAME convention the
+  served centroids were built with), so the pin and the editor Area row (`main.js` ~8893)
+  track the edit.
+- **Unmatched-preserve** — a curated building absent from the SVG survives (delete from
+  the gold file directly, same rule as waypoints).
+- **`_clean_ring`** — the export emits a polygon as the closing vertex explicitly PLUS a
+  `Z`, so a round-trip double-closes (a 5-vertex footprint returns as 6); de-duping keeps
+  the vertex-average centroid faithful (without it, unchanged buildings skewed up to
+  ~3 m).
+`bronze_aop_buildings_traced.geojson` is now ORPHANED (nothing reads or writes it) — a
+cleanup candidate, left for the user (the agent didn't create it).
+
+**Verified by observation:** `brain/output/verify_buildings_roundtrip.py` **22/22 PASS**
+(read-only: 6 buildings carried with FEMA provenance; all 6 centroids/areas/geometries
+preserved EXACTLY on the unchanged round-trip; a synthetic +50 m footprint edit moves the
+centroid ~50 m and recomputes the area while keeping provenance; a building dropped from
+the SVG is preserved; served gold untouched). Plus a REAL `import --all` on the fresh
+export (backup/restore): `trails: 130 · buildings: 6 (4 facilities) · waypoints: 24` all
+written to served gold, `_meta.maturity=gold` + FEMA address preserved, then restored —
+`git diff -- website/data` clean. Regression: `verify_trace_roundtrip_baked.py` 24/24 +
+`verify_waypoint_star_durability.py` still PASS. `py_compile` clean. **When the user runs
+a real re-upload, all three served gold files change → owes the user's `vNN` bump then
+(not now — the scripts don't change served data).**
+
+**Verified by observation:** `brain/output/verify_trace_roundtrip_baked.py` **24/24
+PASS** (read-only: drives the real export/import against the served gold as prior —
+24 waypoints exported & round-tripped with nothing dropped, both ★ + descriptions +
+kinds + `#tags` carried, AOP Pavilion not resurrected, off-park cemeteries out,
+`1 Launchpad` survives verbatim, 80 number-name trails + 120 gold provenance preserved,
+served gold untouched). Regression: `verify_waypoint_star_durability.py` still PASS.
+`py_compile` both scripts + `node --check viewer_core.js` clean. Fresh faithful export
+written to `brain/output/illustrator_trace/aop_satellite_trace.svg` (Gold Trails 130 |
+Waypoints 24 | Buildings 6) — that is the sheet to open in Affinity for the next edit.
+**Caveat:** the generated-export round-trip keeps `data-*`; the real Affinity master
+strips them — that stripped-attr path is covered by `verify_waypoint_star_durability.py`,
+and a genuine Affinity export→edit→`import --all` on a COPY of gold is still the owed
+end-to-end observation (Witness note above).

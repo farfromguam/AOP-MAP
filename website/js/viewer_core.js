@@ -906,9 +906,11 @@
   // the number) reads "15", the rare name-without-number falls back to the bare
   // name. Computed once onto each feature's `display_name` at load so the map
   // label AND the search index read the same string (the v83 label-only `concat`
-  // expression left search showing just "Launchpad"). NOT baked back to the file:
-  // the trail name stays clean (`name`+`trail_number` separate) so the Affinity
-  // trace re-import — which strips leading numbers from labels — round-trips.
+  // expression left search showing just "Launchpad"). The name is now BAKED as
+  // "<number> <name>" in the data ("1 Launchpad", per the user's Number-Name
+  // directive), so this guard returns it as-is when it already leads with the
+  // number; the Affinity trace re-import no longer strips leading numbers, so the
+  // baked name round-trips verbatim.
   function trailDisplayName(props) {
     const num = props.trail_number;
     const hasNum = num != null && String(num).trim() !== '';

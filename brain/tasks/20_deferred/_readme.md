@@ -22,7 +22,7 @@ Nothing in here is abandoned. Each card carries a "Deferred because" section so 
 
 ## Current contents
 
-- `offline_pwa.md` — deferred from `../02_edit/_readme.md` Bucket I. Waits for a stable layer set so the measurement isn't against a moving target.
+- `offline_pwa.md` — deferred from `../_done/02_edit/_readme.md` Bucket I. Waits for a stable layer set so the measurement isn't against a moving target.
 
 ### From Sprint 04 triage (2026-05-30)
 
@@ -39,7 +39,7 @@ its own "Deferred because" header. Reasons in brief:
 - `star_driven_poi_list.md` — **design + council record only now.** The 2026-06-08
   full-six consult resolved the forks (storage closed by gold; user picked "build
   the ★ path first, then flip"); the executable plan moved to **Sprint 08**
-  (`../08_data_normalization/star_driven_poi_normalization.md`). This card stays
+  (`../_done/08_data_normalization/star_driven_poi_normalization.md`). This card stays
   here as the why.
 - `dev_db_snapshot_reseed.md` — POI dev-fixture shipped (in the same `_done`
   slice card); the full DB dump/restore mechanism is unbuilt, wants a stable
@@ -100,7 +100,7 @@ then the pending tasks need to be extracted to deferred and the card updated and
 moved to _done"*). Two cards' remainders were extracted here so their parents could close:
 
 - `tester_edit_fab.md` — the one named **future** item from Sprint 13 (viewer
-  extraction), whose slate otherwise closed to `../13_viewer_extraction/_done/`. The
+  extraction), whose slate otherwise closed to `../_done/13_viewer_extraction/_done/`. The
   on-tester edit FAB waits on the editor being ported into the read core.
 - `gold_slice6_remainder.md` — the four still-open items (G_D fresh-volume parity
   [destructive], G_B finding 5 [visibility], GAP B [reference-geometry DB door], G_F
@@ -109,7 +109,7 @@ moved to _done"*). Two cards' remainders were extracted here so their parents co
 
 ## Promoted out
 
-- `poi_editor_v2.md` → `../02_edit/poi_editor_v2.md` (2026-05-23). Scoped by user: POI list on the right, select to find, drag to move; shared positioning primitive reused by region callouts and (later) logos.
+- `poi_editor_v2.md` → `../_done/02_edit/_done/poi_editor_v2.md` (2026-05-23). Scoped by user: POI list on the right, select to find, drag to move; shared positioning primitive reused by region callouts and (later) logos.
 
 ## Lifecycle
 

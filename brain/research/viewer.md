@@ -86,7 +86,7 @@ contributor-shaped layers (submitted trails, activity hotspots).
 | OSM service roads | `osm_aop_9patch.geojson` | off | `tasks/01_mvp/community_trails_import.md` |
 | OSM named landmarks | `osm_aop_named.geojson` | off | `tasks/01_mvp/community_trails_import.md` |
 | SFWDA paper trail map | `sfwda_aop_trail_map.webp` + `sfwda_raster_alignment.json` | off | `tasks/01_mvp/community_trails_import.md` |
-| SFWDA paper map — trails removed (Trace overlay) | `sfwda_aop_trail_map_no_trails.webp` + `sfwda_raster_alignment.json` | on (Trace) | `tasks/01_mvp/poi_search_click_links.md` |
+| SFWDA paper map — trails removed (Trace overlay) | `sfwda_aop_trail_map_no_trails.webp` + `sfwda_raster_alignment.json` | on (Trace) | `tasks/01_mvp/_done/poi_search_click_links.md` |
 | SFWDA traced trails (extracted) | `sfwda_traced_trails.geojson` | off | `tasks/04_event_app/paper_map_trail_extraction.md` |
 | SFWDA traced markers (difficulty) | `sfwda_traced_markers.geojson` | off | `tasks/04_event_app/paper_map_trail_extraction.md` |
 
@@ -224,7 +224,7 @@ selects the live/imminent/next scheduled session and reuses the calendar
 `gotoEventSession` popup path. The Trails lane (`#hotTrailButton`) turns on the
 activity-hotspots layer and fits the hotspot target, so trail-first users do not
 have to wait for the schedule to be empty. Card:
-`tasks/02_edit/hot_control_two_lane.md`.
+`tasks/_done/02_edit/_done/hot_control_two_lane.md`.
 
 The bottom of the left stack is a two-column left-rail drawer wrapping Search,
 Hot now, and `#calendarCard`. The 44 px icon column opens/closes each card; the
@@ -313,7 +313,7 @@ already-loaded GeoJSON -- so it works offline.
   GPX-imported trail collapses to one result. Real named AOP trails become
   searchable automatically once they land in `publish.geojson`.
 - Camp POIs / waypoints (`aop-waypoints`, the Affinity satellite trace) are
-  searchable + clickable as of v89 (`tasks/01_mvp/poi_search_click_links.md`):
+  searchable + clickable as of v89 (`tasks/01_mvp/_done/poi_search_click_links.md`):
   `indexFeatures` registers them with their per-feature `kind` (comp pad / cabin /
   rv site / cemetery / entrance …), and `aop-waypoints` is in
   `INTERACTIVE_POPUP_LAYERS` so a click opens the normalized `AOPFeatureDisplay`
@@ -340,14 +340,14 @@ already-loaded GeoJSON -- so it works offline.
   anchors pass their `location_tag` (e.g. `#pavilion`, `#registration`)
   through it, so a tag query lands on the right anchor. A leading `#` flips
   the matcher into alias-only mode -- a `#tag` query no longer surfaces every
-  session that happens to mention the tag. Card: `tasks/02_edit/search_tags.md`.
+  session that happens to mention the tag. Card: `tasks/_done/02_edit/_done/search_tags.md`.
 - Stale-anchor refresh (added 2026-05-23, Sprint 02 Bucket D): when a
   feature-tag binding moves and the schedule re-resolves,
   `refreshEventScheduleSearchIndex` strips the prior event-schedule entries
   from `searchIndex` and re-indexes the fresh anchors before calling
   `buildSearchGroups`. So a newly-resolvable `#pavilion` anchor is
   searchable immediately, no reload needed. Card:
-  `tasks/02_edit/named_feature_tagging.md`.
+  `tasks/_done/02_edit/_done/named_feature_tagging.md`.
 - Verified: `mvp/scripts/playwright_verify_search.py` -- 12/12 PASS on
   2026-05-20; 2026-05-23 extension adds 11 tag-search assertions, all PASS,
   0 console errors. The two pre-existing FAILs ("multi-segment trail
@@ -430,7 +430,7 @@ Recorded on 2026-05-21:
   planning estimates, not routed/live traffic data.
 - Verified with `mvp/scripts/playwright_verify_visitor_context.py`.
 - Drag-to-move: as of 2026-05-23 the callouts are repositionable through the
-  shared feature list panel (`brain/tasks/02_edit/poi_editor_v2.md`). Opening
+  shared feature list panel (`brain/tasks/_done/02_edit/_done/poi_editor_v2.md`). Opening
   the Visitor context callouts drawer surfaces a 2-row list with a ✋ move
   button; clicking ✋ then clicking the map translates the polygon so its
   centroid lands at the click. The new geometry is keyed by `name` in
@@ -698,7 +698,7 @@ Recorded on 2026-05-22:
   `#pavilion` → the 1010 Ellis Cove Rd building on first load
   (`aop_feature_tags_v1` localStorage; one-time `aop_feature_tags_seeded_v1`
   flag). Aliases inherit through the same path — `#registration` resolves
-  through `#pavilion`. Card: `tasks/02_edit/named_feature_tagging.md`.
+  through `#pavilion`. Card: `tasks/_done/02_edit/_done/named_feature_tagging.md`.
 - Verification: `mvp/scripts/playwright_verify_event_schedule.py` -- 14 new
   Bucket D assertions cover the seed, the lookup, the live re-bind, the
   per-row tag input rendering, and the camera flight to the resolved

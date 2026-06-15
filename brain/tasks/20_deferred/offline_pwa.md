@@ -6,11 +6,11 @@ Reduce site weight, cache aggressively, and turn the static viewer into an insta
 
 ## Deferred because
 
-The active sprint (`../02_edit/_readme.md`) is going to add tagged POIs, possibly more named-feature layers, and shift several layers from default-off to default-on. Each of those changes the bytes-on-first-load number. One measurement against a stable surface beats one measurement per layer added.
+The active sprint (`../_done/02_edit/_readme.md`) is going to add tagged POIs, possibly more named-feature layers, and shift several layers from default-off to default-on. Each of those changes the bytes-on-first-load number. One measurement against a stable surface beats one measurement per layer added.
 
 ## Source
 
-- `../02_edit/tasks.md` items: "figure out how much data the site takes" through "progressive web app???"
+- `../_done/02_edit/tasks.md` items: "figure out how much data the site takes" through "progressive web app???"
 - `../../northstar/map_northstar.md` — offline / field-use promise.
 - Standing constraint: prefer pre-baked static assets (GeoJSON, PMTiles, locally cached raster tiles) over live tile/feature services. The satellite basemap (TNMap) and hillshade / 3D terrain (AWS Terrarium) are still live-network and do not yet satisfy offline — caching or baking those rasters is part of the scope below.
 

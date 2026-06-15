@@ -21,7 +21,7 @@ visible.
 
 - `../03_event_app/_done/sprint_02_critique_followups.md`
 - `../03_event_app/misc_3.md` (item 18, 2026-05-27 triage)
-- `../02_edit/_done/branding.md`
+- `../_done/02_edit/_done/branding.md`
 - `../../spinup/add_image_to_viewer.md`
 
 ## Work

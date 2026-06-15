@@ -78,7 +78,7 @@ This is a v1 nicety, not a blocker.
 The website stays the **read-only viewer** the northstar promised. Curation/editing moves here, to QGIS
 on the live DB — the intended design. Once you've confirmed QGIS gives you the grip you wanted, the
 ~3,000-line in-browser editor (`website/js/panel.js` + the editor regions of `main.js`) can be deleted
-rather than maintained. See `tasks/11_client_convergence/client_layer_registry.md`.
+rather than maintained. See `tasks/_done/11_client_convergence/client_layer_registry.md`.
 
 ## Verification (reproducible)
 

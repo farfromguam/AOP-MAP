@@ -281,14 +281,19 @@ def main():
         bldg_els.append(f'<path {attrs} class="building" d="{d}">{title}</path>')
 
     # Waypoints -- each POI is ONE named <circle> (deduped by name) ------------
-    # Cemeteries are NOT a waypoint source: they live in their own (bronze)
-    # cemeteries dataset, not the camp-infrastructure trace. Ellis still appears
-    # here because it is a publish POI (gold_publish.geojson, kind="poi"); the
-    # off-park three (Tate/Bible/Gilliam) were cemetery-only, so dropping the
-    # cemeteries source removes them from the template. (User, 2026-06-14: "remove
-    # it from the export and the import ... I dont want it.")
-    wp_sources = [(load("gold_publish.geojson"), lambda pr: pr.get("kind") == "poi"),
-                  (load("bronze_aop_editor_seed_pois.geojson"), lambda pr: True)]
+    # Source: the SERVED waypoint gold (gold_aop_waypoints_traced.geojson) — the
+    # exact set the viewer draws AND the set import_illustrator_trace writes back.
+    # Export and import now share ONE waypoint truth, so a re-export -> edit ->
+    # re-upload round-trips the full authored set (RV sites, cabins, comp pads,
+    # entrances, the ★-starred POIs) with nothing dropped. (Earlier the export
+    # sourced gold_publish POIs + bronze_aop_editor_seed_pois — pre-trace stubs
+    # that held only "AOP Pavilion", a waypoint the user later deleted; sourcing
+    # the served gold supersedes them and never resurrects it.)
+    # Cemeteries: the served gold already carries only Ellis (the in-park
+    # inholding); the off-park three live in bronze_aop_cemeteries and are dropped
+    # on import. The ★ (highlight) / description / location_tag are NOT written to
+    # the SVG — the importer re-merges them from prior gold by name.
+    wp_sources = [(load("gold_aop_waypoints_traced.geojson"), lambda pr: True)]
     seen = set(); wp_els = []
     for fc, keep in wp_sources:
         for f in fc["features"]:

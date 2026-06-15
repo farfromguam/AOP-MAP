@@ -9,7 +9,102 @@ Short pointer for the next session. The durable record lives in the cards
 
 -----
 
+## Latest (2026-06-15)
+
+**Mockup HTML cleanup + new contour-styling compare page (UNCOMMITTED).** User:
+*"we have a few mockup html pages that are no longer needed. find them and remove them.
+Create a new mockup for CSS styling of major and minor topography contour lines. I want
+to see a few variations we can barely see the minor lines."* (1) **16 dead mockups
+removed** from `website/` — the brain-flagged junk set (`old_index.html`, the 12
+`leftrail_*.html`, `icon_master.html`) plus two more orphans with no live refs
+(`load_animations.html`, `calendar_placeholder_v2_spinner.html`; the spinner already
+shipped into `index.html`). Confirmed first that all references were comments/doc-pointers,
+not runtime links, and that `sw.js` does **not** precache any of them. The 6 surviving
+HTML are all live tools (`index.html`, the standalone field editors `data_editor.html` /
+`schedule_editor.html` / `right_panel.html`, `copy_review.html`, `data_sources.html`).
+Dangling comments in `index.html` (×3) + `sw.js` (×1) that pointed at deleted files were
+corrected — **comment-only, no functional shell change → no `vNN` bump owed.** (2) **New
+`website/contour_styling_mockup.html`** (dev-only, not served/precached): 5 synced
+MapLibre panels rendering the **real** `gold_aop_contours.geojson` over the real lidar
+hillshade, major (index) lines held constant while the minor line steps from the current
+Topo style down to barely-visible across three levers — opacity (Faint / Ghost), width
+(Hairline), hue (Tonal blend). Each panel prints its exact paint values to lift straight
+into `viewer_core.js` (`contours-minor`/`contours-index` + Topo preset overrides).
+**Verified by observation** (`brain/output/verify_contour_styling_mockup.py`, served
+:8001): all 5 canvases paint, **0 console errors**; close-ups
+(`brain/output/contour_closeup_*.png`) confirm the minor-line faintness gradient is real.
+Awaiting the user's pick of a variation. **Brain/dev artifacts only — no served product
+change; the commit is the user's git gate.**
+
 ## Latest (2026-06-14)
+
+**Trail PERMISSION blocker resolved → trails are publish-clean gold — v94→v95 (UNCOMMITTED).**
+User: *"these guys give permission for people to put the map up on the internet, and we are
+tracing the unmapped trails manually. the trails should be rendering and gold for all intensive
+purposes."* The `"SFWDA paper map — permission TBD"` on the trail network was **stale** — AOP (the
+landowner) grants public web publishing, and the trails are first-party manual traces. Set all
+**130** trails in `gold_aop_trail_network.geojson` to `permission:"publish"` (the
+`publish.features` gate value; was 120×TBD + 10×missing), and made it durable: the
+`import_illustrator_trace.py` new-trail default now sets `permission:"publish"` so a re-import of
+the Affinity master keeps the clean posture. Verified by observation
+(`brain/output/verify_trails_gold_publish_permission.py` **4/4 PASS**, 0 errors: trails visible on
+Park, 136 rendered fragments = 130 source trails across tiles, live source reads publish×130, no
+TBD; screenshot beside it). Served-data
+change → **v94→v95** bump performed (`sw.js`+`#appVersion`); **commit remains the user's**.
+**Still owed (not permission):** name the 109 numbered trails (content, in progress); DB carries
+old permission — when Docker returns set `permission='publish'`+`publish_status='publish'` so the
+formal publish view (`gold_publish.geojson`, 0 trails today) regenerates with the network.
+Addendum: `tasks/20_deferred/data_integrity_publishability.md`.
+
+**Task-tree swept: done cards + fully-done sprints archived (UNCOMMITTED).** User:
+*"if there are done items not in the _done dir of the sprint it needs to be moved. if the
+whole sprint is done, then that sprint can be moved to the _task done."* (1) The two done
+`01_mvp` feature cards (`gold_promotion_pins_curation_v90.md` v90, `poi_search_click_links.md`
+v89) moved into `tasks/01_mvp/_done/`. (2) **Eight fully-done sprints relocated whole** to
+`tasks/_done/`: `02_edit`, `04_edit`, `05_special_operation`, `07_tables`,
+`08_data_normalization`, `11_client_convergence`, `12_field_schedule_editor`,
+`13_viewer_extraction`. Active/open sprints stay at the `tasks/` top level (`01_mvp`,
+`03_event_app`, `06_going_gold`, `09_editor_maturity`, `14_illustrator_trace`, `20_deferred`,
+`backlog`). **Refs rewritten deterministically** (`output/relink_done_sprints_20260614.py` — recomputes
+each link from its new location; 99 rewrites across 30 active files incl.
+`northstar/editor_architecture_contracts.md`, `search_map.md`, `research/viewer.md`);
+point-in-time records (`output/` council receipts, dated handoff archives) left pointing at old
+paths as history (user's call). Verified by `output/verify_brain_links_20260614.py`: **0 active
+references to a moved sprint left broken** (pre-existing
+debt — stale `04_event_app`/`10_deferred` names, etc. — untouched). Convention recorded in
+`tasks/_readme.md` (two move rules; spine cards stay at sprint root). **Brain reorg only — no
+product code/data touched, no `vNN` bump owed; the commit is the user's git gate.**
+
+**Trace round-trip reviewed + 2 bakes before the next re-edit (UNCOMMITTED).** User:
+*"review the trail point polygon export process. we have some data updates that need to be
+baked into the gold data before I edit the sheet again and re-upload."* Reviewed all three
+layers by observation; export was out of sync with served gold. **(1) Waypoints export
+re-sourced** — `export_illustrator_trace.py` now reads `gold_aop_waypoints_traced.geojson`
+(the 24 served waypoints) instead of the pre-trace publish/editor-seed stubs (which held
+only the user-deleted "AOP Pavilion" = 1 circle); a re-export+re-upload would have dropped
+~18 authored waypoints. **(2) Import stops stripping the baked number-name** —
+`import_illustrator_trace.py` no longer reverts `1 Launchpad`→`Launchpad` (stored
+convention is now Number-Name; 80 trails); stale `viewer_core.js trailDisplayName` comment
+corrected (comment-only). **Build-pipeline + 1 JS comment — no served-data change, no `vNN`
+bump owed.** Verified `brain/output/verify_trace_roundtrip_baked.py` **24/24 PASS** (read-
+only; star-durability regression still PASS). Fresh faithful export at
+`brain/output/illustrator_trace/aop_satellite_trace.svg` (Trails 130 | Waypoints 24 |
+Buildings 6) = the sheet to open in Affinity next. **(3) Buildings (polygon) round-trip
+wired** (user: *"we need the full loop working for all types … polygons … not ideal long
+term"*) — `import_polys` now provenance-preserving + writes the SERVED
+`gold_aop_buildings.geojson` (was the dead `bronze_aop_buildings_traced.geojson`): FEMA
+provenance carried by name, an unchanged footprint carried VERBATIM (centroid/area/geometry
+exact — FEMA area must not be overwritten; equirect re-measure is up to 11% off), an edited
+footprint recomputes centroid+area (pin + editor Area track it via
+`import_fema_buildings.ring_centroid/signed_ring_area`), unmatched-preserve, and
+`_clean_ring` fixes the export's explicit-close-plus-`Z` double-close. **The full loop now
+works for trails (line) · waypoints (point) · buildings (polygon).** Verified
+`brain/output/verify_buildings_roundtrip.py` **22/22 PASS** + a real `import --all`
+backup/restore (130 trails · 6 buildings · 24 waypoints to served gold, `_meta` preserved,
+tree restored clean) + trail/waypoint regressions still PASS. `bronze_aop_buildings_traced.geojson`
+now orphaned (cleanup candidate). Build-pipeline only — no served-data change now; a real
+re-upload changes all 3 gold files → owes the user's `vNN` bump THEN. Council re-run owed
+over the larger diff. Addendum on `tasks/14_illustrator_trace/satellite_illustrator_export.md`.
 
 **Load pipeline PARALLELIZED — v94 bump PERFORMED (UNCOMMITTED).** User: *"take a look
 at the loading pipeline … what makes it take so long. can we speed it up?"* Found
@@ -110,7 +205,7 @@ added a `locations["#gravity-gauntlet"]` with `coordinates` identical to the way
 the `sat-gravity-gauntlet` session `#trails`→`#gravity-gauntlet`, so clicking that calendar row now
 flies to the GG point + opens its popup, and the schedule anchor renders on the pin. Data-only, no
 JS. Verified — `brain/output/verify_gravity_gauntlet_schedule_link.py` **15/15 PASS**, 0 errors.
-Addendum on `tasks/13_viewer_extraction/_done/viewer_poi.md`.
+Addendum on `tasks/_done/13_viewer_extraction/_done/viewer_poi.md`.
 
 **Hot Rocks Comp Pad starred into the POI list — rides v92 (UNCOMMITTED).** User:
 *"Hot rock comp pad needs to be starred and show up in poi list."* The pad is a camp
@@ -128,7 +223,7 @@ shell-asset (`viewer_core.js`) + data change to reach cached PWA clients. **Owed
 doesn't cover this trace file); editor POI list (`main.js` `FEATURE_LIST_LAYERS`) has no
 waypoints layer, so it's reader-only. Council core-three clear:
 `brain/output/council/hot_rocks_in_poi_list_20260614.md`. Addendum on
-`tasks/13_viewer_extraction/_done/viewer_poi.md`.
+`tasks/_done/13_viewer_extraction/_done/viewer_poi.md`.
 
 **Kind/Status/Source off the user-facing POI surfaces — rides v92 (UNCOMMITTED).**
 User: *"we have kind and status as visible. we dont need those in the poi list. we
@@ -143,7 +238,7 @@ chip. `featureDisplay()` still returns the fields — the editor's identify dock
 them for editing; only the visitor popover/list stop showing them. Rides the existing
 v90→v92 shell bump (no second bump). Verified by observation on `:8001` —
 `brain/output/verify_poi_no_kind_status_source.py` **9/9 PASS**, 0 console errors.
-Addendum on `tasks/12_field_schedule_editor/_done/normalize_feature_display.md`.
+Addendum on `tasks/_done/12_field_schedule_editor/_done/normalize_feature_display.md`.
 
 **About tab reworked into web copy — v92 (UNCOMMITTED).** The user found the About
 tab "mixed up": the v78 TBI pass had stapled the spoken Driver's Meeting transcript
@@ -184,7 +279,7 @@ as well."* New `clearActiveSelection()` in `viewer_core.js` (cancels the pulse, 
 wired into both clear paths — the `input` listener when the field goes empty, and `Escape`.
 Verified by observation (`brain/output/verify_search_clear_dethrone.py` 8/8, 0 errors;
 regression `verify_label_border_persist_firepit.py` still 13/13). `sw.js`/`#appVersion`
-v90→v91. Addendum on `tasks/02_edit/_done/six_item_viewer_batch_20260614.md`.
+v90→v91. Addendum on `tasks/_done/02_edit/_done/six_item_viewer_batch_20260614.md`.
 
 **S'mores moved to the firepit — rides v91 (UNCOMMITTED, separate session).** The v87
 batch tagged the PRO Line *race* to `#firepit` but left both "Fire + s'mores" sessions
@@ -195,7 +290,7 @@ sessions retagged `#pavilion`→`#firepit` in `aop_event_schedule.json` (data-on
 Rides the concurrent session's v90→v91 bump (re-keys `DATA_CACHE`; no second bump).
 Verified by observation on `:8001` — `brain/output/verify_smores_at_firepit.py` **12/12
 PASS**, 0 errors. Coord: `handoff/coord/smores-at-firepit.md`. Addendum (item 6) on
-`tasks/02_edit/_done/six_item_viewer_batch_20260614.md`.
+`tasks/_done/02_edit/_done/six_item_viewer_batch_20260614.md`.
 
 **Council made task-scoped (durable rule fix).** Multi-agent commingling was causing the
 council to be deferred / its clearance to go stale (`coord/five-item-review.md` +
@@ -235,7 +330,7 @@ The 2026-06-14 session-by-session changelog is archived →
   + card all agree on Park+Topo; re-verified by observation 20/20 (the only flake is the
   external `tnmap.tn.gov` satellite tile in headless). Pin-flip cleared by a core-three
   council (`brain/output/council/pins_topo_not_satellite_20260614.md`). Card:
-  `tasks/01_mvp/gold_promotion_pins_curation_v90.md` (RESOLVED → SHIPPED). **Durability gap:**
+  `tasks/01_mvp/_done/gold_promotion_pins_curation_v90.md` (RESOLVED → SHIPPED). **Durability gap:**
   `raw/publish.geojson` + PostGIS `publish` view still carry the removed Saturday
   segments + Ellis POI and lack Jackson Point (served-only curation; DB owed).
 
@@ -271,7 +366,7 @@ The 2026-06-14 session-by-session changelog is archived →
   `raw/`; only a generic link renderer in `feature_display.js`. Verified
   (`/tmp/verify_poi_batch.py`, all PASS, 0 console errors). Diff: `viewer_core.js`,
   `feature_display.js`, `viewer.css`, `sw.js`, `index.html` + the data files. Card:
-  `tasks/01_mvp/poi_search_click_links.md`. The "no-trails" SFWDA paper overlay
+  `tasks/01_mvp/_done/poi_search_click_links.md`. The "no-trails" SFWDA paper overlay
   for Trace is **also done** — the user supplied a clean trail-free sheet
   (`sfwda_aop_trail_map_no_trails.webp`), wired as a 6x6 warp-mesh of
   `sfwda-notrails-tile-r-c` image sources (the old page's bake), default-on in Trace
@@ -305,7 +400,7 @@ are closed. Sprint 03's reviewed cards live in `tasks/03_event_app/_done/`.
 `tasks/03_event_app/misc_3.md` was left active by request. Sprint 04 starts at
 `tasks/04_event_app/_readme.md`; it was triaged 2026-05-30 to `_done/` or
 `tasks/10_deferred/`. The current active lane is the viewer extraction at
-`tasks/13_viewer_extraction/` (slate closed-done; landcover lives under
+`tasks/_done/13_viewer_extraction/` (slate closed-done; landcover lives under
 `tasks/01_mvp/_done/landcover_layer.md`).
 
 The Sprint 02 carryover router is archived at
@@ -354,7 +449,7 @@ Each session pruned out of here lands at `session_context_<YYYYMMDD>.md`:
 - `session_context_202605241228.md` — CWC dump after Sprint 03 carryover lanes 1–5 shipped.
 - `session_context_20260525.md` — left-rail manilla-tab design exploration; five HTML mockup variants checked in under `website/leftrail_v*.html`. Build card: `tasks/03_event_app/_done/left_rail_collapse_tabs.md`. No `website/index.html` changes.
 - `session_context_20260527.md` — misc_4 items 1–5 shipped, plus the POI/About empty-space CSS fix and the tab-restore fix. All in the working tree (uncommitted). See `tasks/04_event_app/misc_4.md` "What shipped (2026-05-27)" block for the full close-out and the trail-lane verifier residue routed to `viewer_polish_followups.md`.
-- `session_context_20260613.md` — the 2026‑05‑27 → 2026‑06‑13 stretch: PWA QA swarms (`pwa_qa.md`, `pwa_qa_2.md`) + data-bakes, icon master sheet, editor unified-tree → three-bucket V3c, the Going-Gold ralph loop (slices 1–5 + Retirement, committed `ce920bd`/`737fc26`), trail-research integration, the viewer extraction into `viewer_core.js`/`viewer.css` (`tasks/13_viewer_extraction/`), banded-map draping (`viewer_band.js`), the `?tester=1` GPS offset, and the left-rail drawer persistence through v70.
+- `session_context_20260613.md` — the 2026‑05‑27 → 2026‑06‑13 stretch: PWA QA swarms (`pwa_qa.md`, `pwa_qa_2.md`) + data-bakes, icon master sheet, editor unified-tree → three-bucket V3c, the Going-Gold ralph loop (slices 1–5 + Retirement, committed `ce920bd`/`737fc26`), trail-research integration, the viewer extraction into `viewer_core.js`/`viewer.css` (`tasks/_done/13_viewer_extraction/`), banded-map draping (`viewer_band.js`), the `?tester=1` GPS offset, and the left-rail drawer persistence through v70.
 - `session_context_20260614.md` — the v71→v88 stretch: the six-item viewer batch (v87), the first Affinity satellite-trace ingest + waypoint/facility wiring, the vegetation editable-SVG round-trip → integrated `#D1D2B8` tree cover (60% non-park, `fill-antialias` seam fix), the v83 five-item review, the Illustrator trace export, and the v69–v82 viewer-extraction landings (Locate travel-to-park, schedule spinner, band merge, drawer persistence, tester mode).
 
 Read an archive only if you need to retrace why something was built. The durable record for each feature lives in its `tasks/*/_done/<feature>.md` build card, `research/viewer.md`, `search_map.md`, or `spinup/mvp_runbook.md`.

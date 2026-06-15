@@ -78,3 +78,52 @@ The Sprint 03 POI tab shipped with `info needed - revisit` placeholders.
 - [ ] Terrain source posture is either upgraded or explicitly deferred with reason.
 - [ ] POI placeholder count is reduced or each remaining placeholder has a named owner/source path.
 - [ ] Activity-hotspot UI cannot be mistaken for live or real-user data when the source is synthetic.
+
+-----
+
+## Addendum 2026-06-14 — trail PERMISSION blocker resolved (user directive)
+
+User (verbatim): *"these guys give permission for people to put the map up on the
+internet, and we are tracing the unmapped trails manually. the trails should be
+rendering and gold for all intensive purposes."*
+
+This resolves the **permission** half of "Real Trails + Trailheads" above. Two
+facts the prior assessment lacked: (1) **AOP (the landowner) grants public web
+publishing** of the map — so the `"SFWDA paper map — permission TBD"` string on the
+trail network was **stale**, not a real blocker; (2) the trails are **first-party
+manual traces** (the satellite/Affinity round-trip), legitimately gold-tier
+provenance, not a copy of SFWDA's paper map.
+
+**Done:**
+- `website/data/gold_aop_trail_network.geojson` — all **130** trails set to
+  `permission: "publish"` (was 120 × `"SFWDA paper map — permission TBD"` + 10 ×
+  missing key). `"publish"` is the project's own publish-gate value
+  (`publish.features WHERE permission='publish' AND publish_status='publish'`;
+  matches the boundary/POI convention already in `gold_publish.geojson`).
+- `mvp/scripts/import_illustrator_trace.py` `import_trails()` new-trail default now
+  sets `permission: "publish"` — so a re-import of the Affinity master carries the
+  clean posture forward (matched trails carry it by name already; freshly-traced
+  unmapped trails come in publish-clean, not thin/`TBD`). **Durable across the
+  round-trip.**
+- Verified by observation on `:8001` —
+  `brain/output/verify_trails_gold_publish_permission.py` **4/4 PASS**, 0 console
+  errors: trail layer visible on Park default, 136 rendered paint-fragments (the
+  130 source trails fanned across tiles), the LIVE viewer's loaded source reads
+  `permission=publish` on all 130 source features, no `TBD` left.
+  Screenshot `brain/output/trails_gold_publish_permission.png` shows the network
+  rendering. Served-data change → **v94→v95** bump performed (`sw.js` + `#appVersion`);
+  **commit remains the user's**.
+
+**Still owed (NOT permission — these are real, and smaller now):**
+- **Names** — 109 of 130 trails are bare numbers (21 named). Content gap the user
+  is actively closing via tracing; not a publish blocker (a numbered candidate can
+  publish).
+- **Confidence stays honest** — `confidence` left as `"merged truth (traced)"`
+  (traced from current imagery), NOT inflated to field-verified. Field GPX would
+  upgrade it; the trace is the current basis.
+- **Core/DB sync (durability gap, recurring)** — `core.features` trails still carry
+  the old permission; when Docker returns, set `permission='publish'` AND
+  `publish_status='publish'` so the **formal publish view** (`gold_publish.geojson`,
+  currently 4 features, 0 trails — DB-baked, not hand-edited) regenerates with the
+  trail network. The read viewer already draws trails from
+  `gold_aop_trail_network.geojson` directly, so rendering does not wait on this.

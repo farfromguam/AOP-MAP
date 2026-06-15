@@ -17,7 +17,7 @@ using the AOP / Rock Warblers brand logos as the current pattern.
 1. Save the source image in the appropriate raw asset folder under `brain/`.
    Record source URL, dimensions, byte size, hash, permission, and publish
    status beside it. For branding assets, use
-   `brain/tasks/02_edit/assets/branding/README.md`.
+   `brain/tasks/_done/02_edit/assets/branding/README.md`.
 2. Copy the viewer-served image into `website/assets/<topic>/`. Keep the file
    name stable if existing GeoJSON already references it.
 3. Add or update a Point feature in `website/data/<layer>.geojson`. The feature

@@ -85,7 +85,7 @@ call sites dispatch and name no layerKey. Defaults are safe and never throw.
 
 ## Related
 
-- `../tasks/05_special_operation/_readme.md` — the sprint executing these.
-- `../tasks/05_special_operation/universal_feature_layer.md` — the root-cause refactor + stages.
+- `../tasks/_done/05_special_operation/_readme.md` — the sprint executing these.
+- `../tasks/_done/05_special_operation/universal_feature_layer.md` — the root-cause refactor + stages.
 - `../tasks/10_deferred/star_driven_poi_list.md` — the product design (one pipeline; star governs all destinations).
 - `../ai_rules/no_limiting_code_mvp.md`, `../ai_rules/editor_is_the_viewer.md`, `../ai_rules/verify_by_observation.md`.

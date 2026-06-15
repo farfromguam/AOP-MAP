@@ -7,7 +7,7 @@
   <!-- AOP viewer — the front-end read view (Sprint 13 viewer extraction). Rebuilt
        clean ALONGSIDE the old all-in-one page, then promoted to index.html at the
        swap (slice 7, brain/tasks/13_viewer_extraction/viewer_swap.md). The old
-       tangled page is parked at old_index.html; the editor lives in panel.js + the
+       all-in-one page has been retired; the editor lives in panel.js + the
        standalone field tools (schedule_editor.html, data_editor.html) + QGIS.
        Carries the map, the pill-bar (zoom / preset / 3D), the left-rail drawer
        (Search / Hot / Calendar→Events/POI/About), the blue Locate FAB, and Install.
@@ -174,7 +174,7 @@
                     <span class="calendar-countdown-value" id="calendarCountdownValue">--</span>
                   </div>
                   <ol class="calendar-days" id="calendarDays">
-                    <!-- Spinner loading row (calendar_placeholder_v2_spinner.html, "V2").
+                    <!-- Spinner loading row.
                          viewer_core.js replaces calendarDays.innerHTML with the real
                          session rows the moment the event-schedule JSON resolves, so
                          this shows only while the schedule is actually loading. -->
@@ -195,8 +195,8 @@
                      The three card handles drive one shared --lr-card-body-height var
                      on .lr-content-col (viewer_core.js initLrCardResize), so the
                      Events / POI / About bodies stay the same height across tab
-                     switches. Restored from old_index.html (the per-card resize
-                     handles deferred at the viewer swap). -->
+                     switches. (The per-card resize handles were deferred at the
+                     viewer swap, then restored.) -->
                 <div id="calendarResizeHandle" class="lr-resize-handle" role="separator" aria-label="Resize calendar" aria-orientation="horizontal" aria-controls="calendarBody" aria-valuenow="240" tabindex="0"></div>
               </div>
               <div id="poiTabPanel" class="left-tab-panel" role="tabpanel" aria-labelledby="leftTabPoi" hidden>
@@ -231,7 +231,7 @@
          viewer_core.js folds it beside the collapsed bottom-left ⓘ ("ⓘ vNN",
          hidden when expanded) and also reads it into the expanded attribution body
          as "Made by Rock Warblers · vNN". Starts hidden; JS unhides on fold. -->
-    <span id="appVersion" hidden>v94</span>
+    <span id="appVersion" hidden>v95</span>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on iOS,
          where there is no programmatic install prompt). -->

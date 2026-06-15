@@ -46,6 +46,10 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from import_trace_svg import path_points, parse_transform, apply  # reuse parsers
 from export_illustrator_trace import utm_to_geodetic, ai_escape   # reuse projection
+from import_fema_buildings import ring_centroid, signed_ring_area  # reuse the FEMA
+# building-geometry convention (vertex-avg centroid + equirect shoelace area) so a
+# re-imported footprint's centroid/area are computed the SAME way the served gold's
+# were — an unchanged building keeps its facility pin, an edited one tracks the edit.
 
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_SVG = REPO / "brain/output/illustrator_trace/aop_satellite_trace.svg"
@@ -166,6 +170,23 @@ def _ring(meta, m, poly):
     return [[round(float(a), 7), round(float(b), 7)] for a, b in zip(lon, lat)]
 
 
+def _clean_ring(ring, eps=1e-9):
+    """Drop consecutive duplicate vertices and close the ring exactly once. The
+    export emits a polygon as the closing vertex EXPLICITLY plus a `Z`, so a
+    round-trip double-closes (a 5-vertex footprint comes back as 6 with the first
+    vertex repeated) — which skews the vertex-average centroid. Collapsing the
+    duplicate keeps the centroid/area faithful to the prior gold."""
+    out = []
+    for pt in ring:
+        if not out or abs(pt[0] - out[-1][0]) > eps or abs(pt[1] - out[-1][1]) > eps:
+            out.append(pt)
+    if len(out) > 1 and abs(out[0][0] - out[-1][0]) <= eps and abs(out[0][1] - out[-1][1]) <= eps:
+        out = out[:-1]                       # strip the closing dup before re-closing once
+    if len(out) >= 3:
+        out.append([out[0][0], out[0][1]])
+    return out
+
+
 def import_trails(meta, layer, prior_by_id=None, prior_by_name=None, prior_by_tn=None):
     """Re-import the Gold Trails layer. Each trail is ONE named <path> object (the
     name may sit on the path or on an editor wrapper <g> above it). Its edited
@@ -199,21 +220,25 @@ def import_trails(meta, layer, prior_by_id=None, prior_by_name=None, prior_by_tn
             props = copy.deepcopy(prior["properties"])
             props["review_status"] = "re-imported from Illustrator SVG (geometry/name updated)"
         else:                                       # user-drawn new trail
+            # First-party manual trace of an unmapped trail, on land where AOP
+            # (the landowner) grants public web publishing — so a fresh trace is
+            # permission-clean ('publish', the publish.features gate value), not
+            # 'TBD'. A name/review is still owed (review_status), but permission is
+            # not the open question. (User, 2026-06-14.)
             props = {"trail_number": int(tn) if tn and tn.isdigit() else None,
                      "difficulty": el.get("data-difficulty") or None,
                      "source": "illustrator_trace_new",
+                     "permission": "publish",
                      "review_status": "new trail from Illustrator SVG; needs review"}
-        # The export writes a named trail's object as just its name ("Launchpad").
-        # A user may re-prefix the trail number for legibility while tracing
-        # ("Launchpad" -> "1 Launchpad"); the viewer label already composes
-        # "<number> <name>", so strip a leading "<trail_number> " to avoid a doubled
-        # "1 1 Launchpad" (round-trips stably: export name -> edit -> import strips).
-        tnum = props.get("trail_number")
-        if name and tnum is not None:
-            mm = re.match(r"\s*(\d+)\s+(.+)$", name)
-            if mm and int(mm.group(1)) == tnum:
-                name = mm.group(2).strip()
-        props["name"] = name                        # the edited name wins
+        # The stored convention is "<number> <name>" baked INTO the name itself
+        # ("1 Launchpad"), per the user's directive (Goal.md: "make the proper fix
+        # so its Number Name") — not a runtime-composed prefix. The export writes
+        # that full name onto the object, so the edited name is authoritative as-is.
+        # Do NOT strip the leading number: that was the old "clean name" shortcut,
+        # and stripping would silently revert "1 Launchpad" -> "Launchpad" on every
+        # round-trip, undoing the baked convention. (The viewer's trailDisplayName
+        # already guards against a doubled "1 1 Launchpad".)
+        props["name"] = name                        # the edited name wins, verbatim
         feats.append({"type": "Feature", "properties": props, "geometry": geom})
     return feats
 
@@ -272,8 +297,44 @@ def preserve_unmatched_authored(prior_features, matched_names, is_dropped):
     return kept
 
 
-def import_polys(meta, layer):
-    feats = []
+def _ring_unchanged(rt_ring, prior_ring, tol_m=0.5):
+    """True if a re-imported footprint matches the prior gold footprint within tol.
+    An UNCHANGED building is carried verbatim (its FEMA-sourced geometry + centroid
+    + area preserved exactly — see import_polys), so a re-import never overwrites
+    authoritative source values with round-trip-derived ones. Both rings are
+    de-duped first so the export's explicit-close-plus-Z double-close doesn't read
+    as an edit."""
+    a = _clean_ring([list(p) for p in rt_ring])
+    b = _clean_ring([list(p) for p in prior_ring])
+    if len(a) != len(b):
+        return False
+    for (x1, y1), (x2, y2) in zip(a, b):
+        dx = (x1 - x2) * 111320.0 * float(np.cos(np.radians(y2)))
+        dy = (y1 - y2) * 110574.0
+        if (dx * dx + dy * dy) ** 0.5 > tol_m:
+            return False
+    return True
+
+
+def import_polys(meta, layer, prior_by_name=None):
+    """Re-import a layer's building polygons. PROVENANCE-PRESERVING (mirrors
+    import_trails / import_points): a building's authored gold props — FEMA/ORNL
+    address, occupancy, source, permission, `aop_facility`, the ★ `highlight`, … —
+    carry forward from the matching prior gold building (by name).
+
+    An UNCHANGED footprint (matches prior within tol) is carried VERBATIM — prior
+    geometry + `centroid_lng/lat` + `area_sqm/sqft` preserved exactly, so a re-import
+    is a true no-op for buildings the user didn't touch (FEMA's source area is
+    authoritative and must not be overwritten by the equirect re-measure; the
+    facility pin, read from the stored centroid in viewer_core.js ~2485, must not
+    drift). An EDITED footprint takes the new geometry and recomputes the
+    geometry-derived props (centroid + area via the FEMA ingest's own vertex-avg /
+    equirect shoelace, so the pin and the editor Area row — main.js ~8893 — track
+    the edit). A polygon with no prior match is a thin new building. Returns
+    (features, matched_names_lc) so main() can preserve prior buildings the SVG
+    didn't carry."""
+    prior_by_name = prior_by_name or {}
+    feats, matched = [], set()
     for el, m, inh in walk_layer(layer):
         if not el.tag.endswith("path"):
             continue
@@ -281,15 +342,44 @@ def import_polys(meta, layer):
         for poly in path_points(el.get("d", "")):
             if len(poly) < 3:
                 continue
-            ring = _ring(meta, m, poly)
-            if ring[0] != ring[-1]:
-                ring.append(ring[0])
-            rings.append(ring)
-        if rings:
-            feats.append({"type": "Feature",
-                          "properties": {"name": feature_name(el) or inh, "kind": "building"},
-                          "geometry": {"type": "Polygon", "coordinates": rings}})
-    return feats
+            ring = _clean_ring(_ring(meta, m, poly))
+            if len(ring) >= 4:               # 3 unique vertices + the closing repeat
+                rings.append(ring)
+        if not rings:
+            continue
+        name = feature_name(el) or inh
+        prior = prior_by_name.get(name.lower()) if name else None
+        if prior is not None:
+            if name:
+                matched.add(name.lower())
+            prior_rings = prior.get("geometry", {}).get("coordinates", [])
+            prior_outer = prior_rings[0] if prior_rings else None
+            if prior_outer and _ring_unchanged(rings[0], prior_outer):
+                # unchanged footprint -> carry the prior feature VERBATIM (geometry +
+                # FEMA centroid/area exact); only an edited name is allowed to win.
+                feat = copy.deepcopy(prior)
+                feat["properties"]["name"] = name
+                feat["properties"]["review_status"] = "re-imported from trace SVG (footprint unchanged; carried verbatim)"
+                feats.append(feat)
+                continue
+            props = copy.deepcopy(prior.get("properties", {}))   # edited footprint
+            props["name"] = name
+            props["review_status"] = "re-imported from trace SVG (footprint edited; centroid/area recomputed)"
+        else:                                                    # new building, thin props
+            props = {"name": name, "source": "illustrator_trace_new",
+                     "review_status": "new building from trace SVG; needs review"}
+        props.setdefault("kind", "building")
+        # edited/new: geometry-derived props track the traced footprint (outer ring)
+        outer = rings[0]
+        c = ring_centroid(outer)
+        props["centroid_lng"] = round(c[0], 8)
+        props["centroid_lat"] = round(c[1], 8)
+        area_sqm = abs(signed_ring_area(outer))
+        props["area_sqm"] = round(area_sqm, 2)
+        props["area_sqft"] = round(area_sqm * 10.7639104, 1)
+        feats.append({"type": "Feature", "properties": props,
+                      "geometry": {"type": "Polygon", "coordinates": rings}})
+    return feats, matched
 
 
 def main():
@@ -327,11 +417,36 @@ def main():
           f"({carried} carried full gold props, {newt} user-drawn new)")
 
     if want_all:
+        # Buildings: provenance-preserving re-import into the SERVED gold (was a
+        # dead bronze_aop_buildings_traced.geojson the viewer ignored). Edited
+        # geometry wins; FEMA/ORNL provenance + aop_facility + ★ carry by name;
+        # centroid/area recomputed from the footprint (pins + editor Area). The
+        # prior file's top-level keys (_meta maturity stamp, FEMA source lineage)
+        # are carried so the served file keeps its medallion. (bronze_aop_buildings_traced
+        # .geojson is now orphaned — nothing reads or writes it.)
+        bldg_dest = DATA / "gold_aop_buildings.geojson"
+        prior_b = json.loads(bldg_dest.read_text()) if bldg_dest.exists() else {"features": []}
+        bldg_by_name = {}
+        for f in prior_b.get("features", []):
+            nm = (f.get("properties", {}).get("name") or "").lower()
+            if nm:
+                bldg_by_name[nm] = f
         blay = collect_layer(root, "Buildings")
-        bf = import_polys(meta, blay) if blay is not None else []
-        (DATA / "bronze_aop_buildings_traced.geojson").write_text(json.dumps(
-            {"type": "FeatureCollection", "name": "aop_buildings_traced", "features": bf}, indent=1))
-        print(f"buildings: {len(bf)} -> website/data/bronze_aop_buildings_traced.geojson")
+        bf, b_matched = (import_polys(meta, blay, bldg_by_name) if blay is not None else ([], set()))
+        # Preserve prior gold buildings the SVG didn't carry (all are authored gold;
+        # to delete one, remove it from the gold file directly — the trace master is
+        # not authoritative over curated footprints, same rule as the waypoints).
+        b_preserved = [copy.deepcopy(f) for f in prior_b.get("features", [])
+                       if (f.get("properties", {}).get("name") or "").lower() not in b_matched]
+        bf.extend(b_preserved)
+        b_fac = sum(1 for f in bf if f["properties"].get("aop_facility") is True)
+        out_b = {k: v for k, v in prior_b.items() if k != "features"}  # keep _meta + lineage
+        out_b.setdefault("type", "FeatureCollection")
+        out_b["features"] = bf
+        bldg_dest.write_text(json.dumps(out_b, indent=1))
+        print(f"buildings: {len(bf)} -> website/data/gold_aop_buildings.geojson  "
+              f"({b_fac} facilities)"
+              + (f"  (preserved {len(b_preserved)} not in SVG)" if b_preserved else ""))
 
         # Waypoints: sweep <circle>s from EVERY editable layer, not just Waypoints.
         # A POI drawn into the wrong layer (e.g. an entrance dropped in Gold Trails)

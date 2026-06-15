@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contour styling mockup — major vs. minor lines</title>
+  <!-- DEV MOCKUP (not part of the served app, not precached in sw.js).
+       Purpose: pick how the MINOR (intermediate) topo contour lines should read
+       relative to the MAJOR (index) lines. The brief: "we can barely see the minor
+       lines." Each panel renders the REAL gold_aop_contours.geojson over the real
+       lidar hillshade, so the comparison is grounded, not an analogy.
+
+       The MAJOR (index, idx==1, every 50 ft) treatment is held CONSTANT across all
+       panels so the minor treatment is the only variable. Three levers are explored:
+       OPACITY (transparency), WIDTH (hairline), and HUE (blend into the backdrop).
+
+       Values here are FLAT (no zoom interpolation) so each variation is one concrete
+       number set. To land a pick in js/viewer_core.js, use the minor opacity/width
+       as the high-zoom endpoint of the existing zoom-fade interpolations
+       (contours-minor 'line-opacity' / 'line-width', and the Topo preset overrides). -->
+  <link rel="stylesheet" href="./vendor/maplibre-gl.css" />
+  <style>
+    :root {
+      --ink: #2b2419;
+      --paper: #efe7d3;     /* warm parchment backdrop, near the Topo landcover feel */
+      --panel-bg: #fbf7ee;
+      --line: #d9cdb2;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--ink);
+      background: #e7dec8;
+      padding: 18px 18px 40px;
+    }
+    header { max-width: 1180px; margin: 0 auto 14px; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    header p { margin: 4px 0; color: #5a503d; max-width: 70ch; }
+    .controls {
+      max-width: 1180px; margin: 0 auto 16px;
+      display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center;
+      background: var(--panel-bg); border: 1px solid var(--line);
+      border-radius: 10px; padding: 10px 14px;
+    }
+    .controls label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+    .controls .hint { color: #7a6f59; margin-left: auto; font-size: 12.5px; }
+    .legend-levers { display: flex; gap: 10px; flex-wrap: wrap; }
+    .lever-chip {
+      font-size: 12px; padding: 2px 8px; border-radius: 999px;
+      border: 1px solid var(--line); background: #fff;
+    }
+    .lever-chip b { font-weight: 700; }
+
+    .grid {
+      max-width: 1180px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+      gap: 16px;
+    }
+    .panel {
+      background: var(--panel-bg); border: 1px solid var(--line);
+      border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      display: flex; flex-direction: column;
+    }
+    .panel .map { width: 100%; height: 300px; background: var(--paper); }
+    .panel .caption { padding: 10px 12px 12px; }
+    .panel .caption h2 { font-size: 15px; margin: 0 0 2px; display: flex; align-items: baseline; gap: 8px; }
+    .panel .caption .lever {
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+      color: #8a5a2b; background: #f3e6d2; border: 1px solid #e3cda8;
+      padding: 1px 7px; border-radius: 999px;
+    }
+    .panel .caption p { margin: 4px 0 8px; color: #5a503d; font-size: 12.8px; }
+    .specs { font: 11.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: #46402f; }
+    .specs .row { display: flex; gap: 8px; }
+    .specs .k { width: 52px; color: #8a7f66; }
+    .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 2px; border: 1px solid rgba(0,0,0,.2); vertical-align: -1px; margin-right: 4px; }
+    .baseline { outline: 2px solid #b98a4e; }
+    .baseline .caption h2::after { content: "reference"; font-size: 10px; font-weight: 600; color: #b98a4e; text-transform: uppercase; letter-spacing: .05em; }
+    footer { max-width: 1180px; margin: 22px auto 0; color: #6f6753; font-size: 12.5px; }
+    code { background: #fff; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Contour styling — major vs. minor lines</h1>
+    <p>Each panel draws the <strong>real</strong> 9-patch lidar contours
+      (<code>gold_aop_contours.geojson</code>, 501 major / 410 minor lines) over the
+      real lidar hillshade. The <strong>major</strong> (index) lines are identical in
+      every panel; only the <strong>minor</strong> lines change, so you can pick how
+      faint they should read. All maps are <strong>synced</strong> — pan or zoom one
+      and the rest follow.</p>
+    <div class="legend-levers">
+      <span class="lever-chip"><b>Opacity</b> — fade by transparency</span>
+      <span class="lever-chip"><b>Width</b> — fade by going threadlike</span>
+      <span class="lever-chip"><b>Hue</b> — fade by blending into the paper</span>
+    </div>
+  </header>
+
+  <div class="controls">
+    <label><input type="checkbox" id="toggleHillshade" checked /> Lidar hillshade backdrop</label>
+    <label><input type="checkbox" id="toggleLabels" /> Major-line elevation labels</label>
+    <label><input type="checkbox" id="toggleMinor" checked /> Show minor lines</label>
+    <span class="hint">Drag / scroll any map — all panels stay locked to the same view.</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    Mockup only — not served, not precached. The live layers live in
+    <code>js/viewer_core.js</code> (<code>contours-minor</code> / <code>contours-index</code>
+    and the Topo preset paint overrides). The flat opacity/width below map onto the
+    high-zoom endpoint of those <code>line-opacity</code> / <code>line-width</code>
+    zoom-fades.
+  </footer>
+
+  <script src="./vendor/maplibre-gl.js"></script>
+  <script>
+    // Fixed view: a reading zoom over the park center (pavilion), west-up.
+    const VIEW = { center: [-85.748268, 35.090703], zoom: 16.7, bearing: 0, pitch: 0 };
+
+    // Major (index) line — CONSTANT across every panel (the structural reference).
+    const MAJOR = { color: '#a8855b', opacity: 0.92, width: 2.4 };
+
+    // Minor (intermediate) line — the variable. Flat values at the fixed view.
+    const VARIATIONS = [
+      {
+        id: 'baseline', name: 'Current Topo', lever: 'opacity', baseline: true,
+        desc: 'What ships today, at full fade-in. The starting point for comparison.',
+        minor: { color: '#c6ad84', opacity: 0.28, width: 1.4 }
+      },
+      {
+        id: 'faint', name: 'Faint', lever: 'opacity',
+        desc: 'Same warm tone dropped to ~16%. Recedes behind the majors but still traceable.',
+        minor: { color: '#c6ad84', opacity: 0.16, width: 1.1 }
+      },
+      {
+        id: 'ghost', name: 'Ghost', lever: 'opacity + hue',
+        desc: 'Lighter tone at 10%. Reads only when you go looking for it — the faintest opacity option.',
+        minor: { color: '#d0bf9c', opacity: 0.10, width: 0.9 }
+      },
+      {
+        id: 'hairline', name: 'Hairline', lever: 'width',
+        desc: 'Threadlike but crisp: barely-there via thinness, not transparency, so it stays sharp as you zoom.',
+        minor: { color: '#b2966a', opacity: 0.40, width: 0.45 }
+      },
+      {
+        id: 'tonal', name: 'Tonal blend', lever: 'hue',
+        desc: 'Colored close to the parchment so it melts into the backdrop — barely separable by hue, not by transparency.',
+        minor: { color: '#cdbfa6', opacity: 0.50, width: 0.8 }
+      }
+    ];
+
+    const grid = document.getElementById('grid');
+    const maps = [];
+    let syncing = false; // re-entrancy guard for the view sync
+
+    const sw = c => `<span class="swatch" style="background:${c}"></span>`;
+
+    // Build the panels first (so the map containers exist), then boot the maps once
+    // the shared contour GeoJSON has loaded.
+    VARIATIONS.forEach(v => {
+      const panel = document.createElement('div');
+      panel.className = 'panel' + (v.baseline ? ' baseline' : '');
+      panel.innerHTML = `
+        <div class="map" id="map-${v.id}"></div>
+        <div class="caption">
+          <h2>${v.name} <span class="lever">${v.lever}</span></h2>
+          <p>${v.desc}</p>
+          <div class="specs">
+            <div class="row"><span class="k">minor</span><span>${sw(v.minor.color)}${v.minor.color} · op ${v.minor.opacity} · w ${v.minor.width}</span></div>
+            <div class="row"><span class="k">major</span><span>${sw(MAJOR.color)}${MAJOR.color} · op ${MAJOR.opacity} · w ${MAJOR.width}</span></div>
+          </div>
+        </div>`;
+      grid.appendChild(panel);
+    });
+
+    function styleFor(v) {
+      return {
+        version: 8,
+        glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
+        sources: {
+          dem: {
+            type: 'raster-dem',
+            tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+            tileSize: 256, encoding: 'terrarium', minzoom: 0, maxzoom: 15,
+            attribution: 'Terrain: AWS Terrain Tiles (USGS 3DEP)'
+          },
+          contours: { type: 'geojson', data: window.__CONTOURS }
+        },
+        layers: [
+          { id: 'bg', type: 'background', paint: { 'background-color': '#efe7d3' } },
+          { id: 'hillshade', type: 'hillshade', source: 'dem', paint: {
+            'hillshade-exaggeration': 0.6,
+            'hillshade-shadow-color': '#3a2f22',
+            'hillshade-highlight-color': '#fbf4e2',
+            'hillshade-accent-color': '#6b5640'
+          } },
+          { id: 'contours-minor', type: 'line', source: 'contours',
+            filter: ['==', ['get', 'idx'], 0],
+            layout: { 'line-join': 'round' },
+            paint: { 'line-color': v.minor.color, 'line-width': v.minor.width, 'line-opacity': v.minor.opacity } },
+          { id: 'contours-index', type: 'line', source: 'contours',
+            filter: ['==', ['get', 'idx'], 1],
+            layout: { 'line-join': 'round' },
+            paint: { 'line-color': MAJOR.color, 'line-width': MAJOR.width, 'line-opacity': MAJOR.opacity } },
+          { id: 'contours-labels', type: 'symbol', source: 'contours',
+            filter: ['==', ['get', 'idx'], 1],
+            layout: {
+              visibility: 'none', 'symbol-placement': 'line',
+              'text-field': ['concat', ['to-string', ['get', 'elev_ft']], ' ft'],
+              'text-size': 11, 'symbol-spacing': 320
+            },
+            paint: { 'text-color': '#7d6a4a', 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.8 } }
+        ]
+      };
+    }
+
+    function syncViews(src) {
+      if (syncing) return;
+      syncing = true;
+      const c = src.getCenter(), z = src.getZoom(), b = src.getBearing(), p = src.getPitch();
+      maps.forEach(m => { if (m !== src) m.jumpTo({ center: c, zoom: z, bearing: b, pitch: p }); });
+      syncing = false;
+    }
+
+    function bootMaps() {
+      VARIATIONS.forEach(v => {
+        const map = new maplibregl.Map({
+          container: 'map-' + v.id,
+          style: styleFor(v),
+          center: VIEW.center, zoom: VIEW.zoom, bearing: VIEW.bearing, pitch: VIEW.pitch,
+          attributionControl: false, dragRotate: false, pitchWithRotate: false
+        });
+        map.on('move', () => syncViews(map));
+        maps.push(map);
+      });
+      wireControls();
+    }
+
+    function wireControls() {
+      const setAll = (fn) => maps.forEach(m => { if (m.isStyleLoaded()) fn(m); else m.once('idle', () => fn(m)); });
+      document.getElementById('toggleHillshade').addEventListener('change', e =>
+        setAll(m => m.setLayoutProperty('hillshade', 'visibility', e.target.checked ? 'visible' : 'none')));
+      document.getElementById('toggleLabels').addEventListener('change', e =>
+        setAll(m => m.setLayoutProperty('contours-labels', 'visibility', e.target.checked ? 'visible' : 'none')));
+      document.getElementById('toggleMinor').addEventListener('change', e =>
+        setAll(m => m.setLayoutProperty('contours-minor', 'visibility', e.target.checked ? 'visible' : 'none')));
+    }
+
+    fetch('./data/gold_aop_contours.geojson')
+      .then(r => { if (!r.ok) throw new Error('contours ' + r.status); return r.json(); })
+      .then(json => { window.__CONTOURS = json; bootMaps(); })
+      .catch(err => {
+        grid.innerHTML = '<p style="color:#a33">Could not load contours: ' + err.message +
+          '. Serve from <code>website/</code> (python3 -m http.server) and open this page over http.</p>';
+      });
+  </script>
+</body>
+</html>

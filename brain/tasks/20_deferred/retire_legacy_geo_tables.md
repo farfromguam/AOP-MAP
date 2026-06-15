@@ -24,7 +24,7 @@
 >   on a fresh volume.
 > - **Final shape (the honest minimum):** `core.features` + `core.events` + `core.activities` +
 >   `source_register.sources`/`feature_sources` + `raw.gpx_captures`/`arcgis_feature_captures` +
->   `publish.features` = 7 tables + 1 view. See `../07_tables/_done/tables_diagram.md`.
+>   `publish.features` = 7 tables + 1 view. See `../_done/07_tables/_done/tables_diagram.md`.
 > - **Owed (the user's git gate):** the commit. **Flagged (pre-existing, NOT this card):** the served
 >   `publish.geojson` carries a served-only park_boundary ("Ellis Cemetery (inholding parcel)") that no
 >   table holds, so the bake drops it on next deploy — the gold "served-only hand-curated row" gap,

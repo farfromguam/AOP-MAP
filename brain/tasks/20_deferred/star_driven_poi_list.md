@@ -1,7 +1,7 @@
 # Star-driven POI list — one authoring pipeline, not file reconciliation
 
 > **Deferred — Sprint 04 triage (2026-05-30).** The bake-first SERVE slice
-> shipped and was split to `../04_edit/_done/bake_first_poi_serve_slice.md`.
+> shipped and was split to `../_done/04_edit/_done/bake_first_poi_serve_slice.md`.
 > What remains here is **deferred because** it needs a user decision: the AUTHOR
 > half (who writes the POI rows — web editor vs QGIS vs both) and the open
 > pipeline forks (localStorage's role, bake artifact shape, dev-time-only vs
@@ -17,7 +17,7 @@
 >   `apply_panel_overrides_to_core.py` → `core.features` → bake), bake artifact
 >   shape (one `publish.geojson`), dev-time-only write, the **structural**
 >   two-engines→one-collector convergence (shipped as
->   `../05_special_operation/_done/06_one_star_driven_collector.md`), and the
+>   `../_done/05_special_operation/_done/06_one_star_driven_collector.md`), and the
 >   store of record (`core.features`; `core.pois`/`publish.pois` dropped) ALL
 >   shipped. The "Open forks — the real ones now" section near the bottom is no
 >   longer a fork list — see the annotation there.
@@ -45,7 +45,7 @@
 >   ★ path first, then flip** (decisions #1 + #5 both met before any visible change).
 >   See `../../output/council/star_driven_poi_list_consult_20260608.md`.
 > - **The executable plan now lives in Sprint 08** —
->   `../08_data_normalization/star_driven_poi_normalization.md`. This card stays the
+>   `../_done/08_data_normalization/star_driven_poi_normalization.md`. This card stays the
 >   design + council record; do NOT un-defer it whole (Quartermaster: its
 >   engine/storage halves duplicate shipped work) and do NOT execute the flip
 >   autonomously (user-visible end) — run it via the Sprint 08 loop contract.
@@ -217,7 +217,7 @@ What's missing is specifically the ★/destination POI set:
 > `../06_going_gold/gold_migration.md`) collapsed POIs into `core.features`
 > (`layer='poi'`) and **dropped** `core.pois` + `publish.pois`; the column `blurb`
 > was renamed to `description` (2026-06-08,
-> `../07_tables/_done/description_blurb_convergence.md`, committed `5b5fcdd`). Read the
+> `../_done/07_tables/_done/description_blurb_convergence.md`, committed `5b5fcdd`). Read the
 > nouns here as: `core.features WHERE layer='poi'`, gate `publish.features`, copy
 > field `description`. The SERVE behavior this block shipped is intact.
 
@@ -334,9 +334,9 @@ resolved it, and it de-risks the authoring fork above:
 
 > The user picked **"build the ★ path first, then flip"** (decisions #1 + #5 both met
 > before any visible change) and asked for the plan in an active sprint. The executable
-> 3-slice plan now lives at **`../08_data_normalization/star_driven_poi_normalization.md`**
+> 3-slice plan now lives at **`../_done/08_data_normalization/star_driven_poi_normalization.md`**
 > (spine of Sprint 08 — "Data Normalization"), with the sprint framing in
-> `../08_data_normalization/_readme.md`. This card stays the **design + council record**;
+> `../_done/08_data_normalization/_readme.md`. This card stays the **design + council record**;
 > that card is the **how-to-run**. Sprint 08 executes the curation-axis slice of gold
 > slice 6 (HELD, `../06_going_gold/gold_migration.md`).
 
