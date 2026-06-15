@@ -19,7 +19,7 @@ and final on-device/visual confirm is owed where noted.
 | 4 | bake region callouts to geojson | → `pwa_qa_data_bakes.md` |
 | 5 | logo max size + slider + export | **SHIPPED** (zoom-clamped icon-size cap, `#brandLogoCapSlider` + ⧉ export; verified region/park ratio 0.18). Tune-and-return open |
 | 6 | bake in-park / exclude region buildings from search | → `pwa_qa_data_bakes.md` |
-| 7 | two-finger pinch responsiveness | **SHIPPED** (`touchZoomRotate.disableRotation()`); on-device pinch confirm owed |
+| 7 | two-finger pinch responsiveness | **SHIPPED then REVERSED.** Originally shipped `touchZoomRotate.disableRotation()` (+ `dragRotate.disable()`) so a two-finger touch starts pinch-zoom without disambiguating against twist-rotate. **Reversed 2026-06-15 by user directive** (*"we used to be able to spin it around while it was tilted … we want to enable it"*): rotate is back on — two-finger twist + desktop right-click now spin the bearing, so the tilted 3D view orbits again. Pitch stays button-only (`touchPitch.disable()` kept + `pitchWithRotate:false`), so stray fingers still can't tilt. **Trade-off to confirm on-device:** the pinch-start responsiveness this row fixed may regress, since the two-finger handler must again disambiguate pinch-zoom vs twist. v95→v96; `brain/output/verify_spin_while_tilted.py` 7/7. |
 | 8 | "X published features" — drop it | ALREADY DONE (`.message{display:none}`, the V5 drop) |
 | 9 | remove trail dots | **SHIPPED** (`sfwda-trace-markers` circle layer removed; numbered labels kept) |
 | 10 | "1X" in a search for trail "1" | **SHIPPED** (verified: trail 1 top, 1X surfaced, buildings demoted) |

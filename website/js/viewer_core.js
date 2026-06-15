@@ -65,6 +65,10 @@
     zoom: 14,
     bearing: -90,
     maxBounds: REGION_MAXBOUNDS,
+    // Spin is wanted back, but pitch stays button-only: false stops the rotate
+    // gesture (two-finger twist / right-click drag) from also tilting, so the
+    // only way to pitch is the 3D toggle. (See the handler block below.)
+    pitchWithRotate: false,
     attributionControl: false
   });
 
@@ -79,16 +83,17 @@
   // replaces the constructor shim the band's old proof page used to fake.
   window.AOPViewer = { map, regionBounds: REGION_BOUNDS };
 
-  // Pinch-zoom + one-finger pan stay; LOCK orientation so stray fingers can't
-  // tilt or spin the map. The user hit accidental pan/tilt on the 3D view
-  // ("maybe it's my fingers"), so pitch is button-only now: the 3D toggle eases
-  // to 60° and the zoom presets reset to flat west-up. Disable the gesture pitch
-  // (two-finger drag) + rotate (right-click / two-finger) paths. Programmatic
-  // camera moves (easeTo/flyTo) are unaffected. (Was: keep drag-to-tilt +
-  // right-click rotate — main.js:163.)
-  map.touchZoomRotate.disableRotation();
+  // Pinch-zoom + one-finger pan stay. SPIN is back on (user: "we used to be able
+  // to spin it around while it was tilted … we want to enable it"): two-finger
+  // twist on touch and right-click / ctrl-drag on desktop now rotate the bearing,
+  // so the tilted 3D view can be orbited. PITCH stays BUTTON-only — the 3D toggle
+  // eases to 60° and the zoom presets reset flat west-up — so stray fingers still
+  // can't accidentally tilt: the two-finger vertical-drag pitch gesture is
+  // disabled here, and `pitchWithRotate:false` (constructor) keeps the rotate
+  // gesture from sneaking in pitch. (rotate/zoom-rotate + dragRotate are left at
+  // their enabled defaults; earlier this block also killed rotate after a "maybe
+  // it's my fingers" accidental-tilt report — main.js:163 — now wanted back.)
   if (map.touchPitch) map.touchPitch.disable();
-  map.dragRotate.disable();
 
   // Bottom-left ⓘ attribution (main.js:166). Two faces of the same version:
   //  - COLLAPSED: a small "v64" label sits beside the ⓘ (#appVersion, folded in
@@ -615,7 +620,7 @@
         'visitor-context-outline': { 'line-color': '#8b5f38', 'line-width': 2.2, 'line-opacity': 0.9 },
         'visitor-context-labels': { 'text-color': '#4a3c2a', 'text-opacity': 1, 'text-halo-color': '#f7f1e2', 'text-halo-width': 1.6 },
         'publish-boundary-fill': { 'fill-color': '#d8c8a2', 'fill-opacity': 0.1 },
-        'publish-boundaries': { 'line-color': '#6e5a3c', 'line-width': 2.5, 'line-opacity': 1 },
+        'publish-boundaries': { 'line-color': '#c4b48c', 'line-width': 1.5, 'line-opacity': 0.5 },
         'publish-trails': { 'line-color': '#9a5a32', 'line-width': 3.5, 'line-opacity': 1 },
         'aop-trail-network': { 'line-color': ['coalesce', ['get', 'color'], '#888888'], 'line-width': 3, 'line-opacity': 0.92 },
         'publish-trailheads': { 'circle-color': '#6f8a5c', 'circle-radius': 6, 'circle-opacity': 1 },
@@ -661,7 +666,7 @@
         'waterbody-fill': { 'fill-color': '#83aeb6', 'fill-opacity': 0.58 },
         'waterbody-outline': { 'line-color': '#44747d', 'line-width': 1.5 },
         'publish-boundary-fill': { 'fill-color': '#e7c982', 'fill-opacity': 0.08 },
-        'publish-boundaries': { 'line-color': '#4d3928', 'line-width': 3, 'line-opacity': 1 },
+        'publish-boundaries': { 'line-color': '#d4b974', 'line-width': 1.5, 'line-opacity': 0.5 },
         'publish-trails': { 'line-color': '#7d4328', 'line-width': 3.8, 'line-opacity': 1 },
         'aop-trail-network': { 'line-color': '#ff5a14', 'line-width': 3.8, 'line-opacity': 1 },
         'publish-trailheads': { 'circle-color': '#546f4b', 'circle-radius': 6.5, 'circle-opacity': 1 },
@@ -2619,7 +2624,10 @@
     map.addLayer({
       id: 'publish-boundaries', type: 'line', source: 'publish-data',
       filter: ['==', ['get', 'layer'], 'park_boundaries'],
-      paint: { 'line-color': '#6e5a3c', 'line-width': 2.5 }
+      // Kept as a thin click target (INTERACTIVE_POPUP_LAYERS), not a drawn edge:
+      // a faint tan just a tad darker than the publish-boundary-fill tint, so the
+      // fill's opacity step is what separates park from off-park. Presets override.
+      paint: { 'line-color': '#c4b48c', 'line-width': 1.5, 'line-opacity': 0.5 }
     });
     map.addLayer({
       id: 'publish-trails', type: 'line', source: 'publish-data',

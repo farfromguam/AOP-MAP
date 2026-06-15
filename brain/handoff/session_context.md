@@ -11,6 +11,25 @@ Short pointer for the next session. The durable record lives in the cards
 
 ## Latest (2026-06-15)
 
+**3D map spin RE-ENABLED while tilted — v95→v96 (UNCOMMITTED).** User: *"review the
+3d map. we used to be able to spin it around while it was tilted. now it seems to be
+disabled. we want to enable it."* `viewer_core.js` had locked all orientation gestures
+(`touchZoomRotate.disableRotation()` + `dragRotate.disable()` + `touchPitch.disable()`)
+after the `pwa_qa.md` item-7 pinch-responsiveness fix + a "maybe it's my fingers"
+accidental-tilt report. Removed the two rotate-killing calls so **spin is back** — two-finger
+twist (touch) and right-click/ctrl-drag (desktop) now rotate the bearing, so the tilted 3D
+view orbits again. **Pitch stays BUTTON-only:** kept `touchPitch.disable()` and added
+`pitchWithRotate:false` to the map constructor, so the rotate gesture can't sneak in a tilt
+and stray fingers still can't accidentally pitch (3D toggle eases to 60°; zoom presets reset
+flat west-up — unchanged). `viewer_core.js` is a precached shell asset → **v95→v96** bump
+performed (`sw.js`+`#appVersion`); **commit remains the user's.** Verified by observation —
+`brain/output/verify_spin_while_tilted.py` **7/7 PASS**, 0 errors: live handlers read
+dragRotate=on / touchZoomRotate=on / touchPitch=off, and a **real right-drag spun the bearing
+16° (-90→-106) while pitch held at 58° (Δ0.0°)**. **Trade-off owed (on-device):** re-enabling
+the two-finger twist may regress the item-7 pinch-zoom-start responsiveness (the handler again
+disambiguates pinch vs twist) — confirm on the phone. Addendum on
+`tasks/_done/04_edit/_done/pwa_qa.md` item 7.
+
 **Mockup HTML cleanup + new contour-styling compare page (UNCOMMITTED).** User:
 *"we have a few mockup html pages that are no longer needed. find them and remove them.
 Create a new mockup for CSS styling of major and minor topography contour lines. I want
@@ -22,8 +41,11 @@ shipped into `index.html`). Confirmed first that all references were comments/do
 not runtime links, and that `sw.js` does **not** precache any of them. The 6 surviving
 HTML are all live tools (`index.html`, the standalone field editors `data_editor.html` /
 `schedule_editor.html` / `right_panel.html`, `copy_review.html`, `data_sources.html`).
-Dangling comments in `index.html` (×3) + `sw.js` (×1) that pointed at deleted files were
-corrected — **comment-only, no functional shell change → no `vNN` bump owed.** (2) **New
+Dangling comments in `index.html` (×3) + `sw.js` (×1) + `css/viewer.css` (×1) that pointed
+at deleted files were corrected — **comment-only, no functional shell change → no `vNN`
+bump owed.** Council core-three cleared 3/3 (witness·warden·quartermaster); the
+`viewer.css` comment was the warden/quartermaster advisory, now fixed
+(`brain/output/council/contour_mockup_cleanup_20260615.md`). (2) **New
 `website/contour_styling_mockup.html`** (dev-only, not served/precached): 5 synced
 MapLibre panels rendering the **real** `gold_aop_contours.geojson` over the real lidar
 hillshade, major (index) lines held constant while the minor line steps from the current
