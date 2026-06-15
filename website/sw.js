@@ -28,11 +28,22 @@
  */
 
 // RELEASE CHECKLIST when app code or data changes:
-//   1. bump VERSION here   2. bump #appVersion in index.html (~line 1063)
+//   1. bump VERSION here
+//   2. in index.html: bump #appVersion (~line 236) AND the ?v=<VERSION> query on
+//      the three viewer assets (viewer.css, viewer_core.js, viewer_band.js) — they
+//      must all read the same vNN. The SHELL_ASSETS copies below pull ?v=${VERSION}
+//      automatically, so only this one const drives the SW side.
 //   3. reconcile DATA_ASSETS below with `ls website/data/`
-// Shell HTML + copy JSON self-heal (stale-while-revalidate), so a missed bump is
-// less dangerous than before — but bulky GeoJSON only refreshes on a bump.
-const VERSION = 'v96'; // keep in sync with #appVersion in index.html
+// Why the ?v= stamp: GitHub Pages serves every file (sw.js included) with
+// Cache-Control: max-age=600 on a STABLE url, so a stable-url asset can sit up to
+// 10 min stale in the browser/Fastly cache even after the deploy is live. A
+// changing ?v=<VERSION> url is one the browser, the CDN, and this SW cache have
+// never seen, so fresh bytes can't be shadowed by an old cache entry. The HTML
+// shell + copy/data JSON can't be fingerprinted (the HTML is the navigation entry),
+// so they self-heal via stale-while-revalidate whose refresh uses cache:'reload' to
+// bypass the browser HTTP cache; the ~600s Fastly edge TTL on the HTML is the one
+// floor we can't lower on GitHub Pages.
+const VERSION = 'v97'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note
@@ -60,13 +71,15 @@ const SHELL_ASSETS = [
   './js/feature_display.js',
   // Front-end read view (Sprint 13 viewer extraction, slice 7 swap): index.html
   // is now the clean viewer, which loads these two. Precached so the front end
-  // is offline-first.
-  './css/viewer.css',
-  './js/viewer_core.js',
+  // is offline-first. URL-fingerprinted with ?v=${VERSION}: index.html requests
+  // the same ?v= string, so a new release is a never-before-seen url that no
+  // browser/Fastly/SW cache can shadow with stale bytes (see header).
+  `./css/viewer.css?v=${VERSION}`,
+  `./js/viewer_core.js?v=${VERSION}`,
   // Off-edge decorative band — geolocated neat-line frame drawn on top of the
   // core (loaded by index.html after viewer_core.js). Precached so the framed
   // viewer is offline-first; the band fetches the corner mark below at runtime.
-  './js/viewer_band.js',
+  `./js/viewer_band.js?v=${VERSION}`, // fingerprinted (see viewer.css note above)
   './assets/branding/rw-mark.svg',
   // The standalone field editors (data_editor.html / schedule_editor.html /
   // right_panel.html) load main.js + the embedded panel, so they are kept in the
@@ -145,7 +158,15 @@ const TILE_HOSTS = [
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const shell = await caches.open(SHELL_CACHE);
-    await shell.addAll(SHELL_ASSETS); // fail-hard: shell must be complete
+    // fail-hard: shell must be complete. fetch with cache:'reload' so a fresh
+    // install pulls past the browser HTTP cache — otherwise GitHub Pages'
+    // max-age=600 could seed this NEW shell cache with up-to-10-min-stale bytes,
+    // so a VERSION bump would activate but still serve the old code/styles.
+    await Promise.all(SHELL_ASSETS.map(async (url) => {
+      const res = await fetch(url, { cache: 'reload' });
+      if (!res.ok) throw new Error(`shell precache failed: ${url} (${res.status})`);
+      await shell.put(url, res.clone());
+    }));
 
     // Best-effort warm the data cache. Never throws, so install always succeeds.
     const data = await caches.open(DATA_CACHE);
@@ -184,7 +205,9 @@ async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   const hit = await cache.match(request);
   if (hit) return hit;
-  const res = await fetch(request);
+  // cache:'reload' — only fires on a SW-cache miss (e.g. a VERSION bump renamed the
+  // cache), so bypass the browser HTTP cache to avoid re-seeding with stale bytes.
+  const res = await fetch(request, { cache: 'reload' });
   // status===200, not res.ok: a 206 Partial Content passes res.ok but throws on
   // Cache.put. No ranged request reaches here today, but guard against it.
   if (res && res.status === 200) cache.put(request, res.clone());
@@ -209,7 +232,10 @@ async function cacheFirstTile(request) {
 async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
   const hit = await cache.match(request);
-  const network = fetch(request)
+  // cache:'reload' so the background refresh actually reaches the origin instead of
+  // being answered by the browser's still-fresh HTTP cache (max-age=600) — without
+  // it, SWR can keep re-caching the same stale bytes between VERSION bumps.
+  const network = fetch(request, { cache: 'reload' })
     .then((res) => {
       if (res && res.status === 200) cache.put(request, res.clone());
       return res;
@@ -229,7 +255,7 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
       try {
-        const res = await fetch(request);
+        const res = await fetch(request, { cache: 'reload' });
         // Refresh the cached shell so the offline fallback isn't frozen at the
         // last VERSION bump (stale-while-revalidate for the app shell).
         if (res && res.status === 200) {

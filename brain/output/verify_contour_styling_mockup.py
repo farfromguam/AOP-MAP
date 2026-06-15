@@ -45,8 +45,11 @@ def main():
         n_panels = page.eval_on_selector_all(".panel", "els => els.length")
         checks.append(("five panels in DOM", n_panels == 5))
 
-        # 3) the grid did not fall back to the load-error message
-        has_error_msg = page.query_selector(".grid p") is not None
+        # 3) the grid did not fall back to the load-error message. The fallback
+        # replaces grid.innerHTML with a single DIRECT-child <p> ("Could not load
+        # contours…"), so match `.grid > p` — a bare `.grid p` descendant selector
+        # also catches each panel's `.caption` <p> blurb (5 of them) and false-fails.
+        has_error_msg = page.query_selector(".grid > p") is not None
         checks.append(("no contour load-error fallback", not has_error_msg))
 
         # 4) baseline panel is flagged as the reference

@@ -46,7 +46,11 @@
       blurb: pick(props, ['description', 'notes', 'services', 'blurb']),
       status: pick(props, ['status', 'confidence']),
       source: pick(props, ['source', '_src', 'footprint_source']),
-      caveat: pick(props, ['caveat', 'drive_time_note']),
+      // Only an explicit author `caveat` surfaces. The region callouts' planning
+      // `drive_time_note` ("approximate, check live routing…") is NO LONGER shown
+      // (user, 2026-06-15: "get rid of caveat — people understand what they are
+      // getting"). drive_time_note stays on the data as author provenance.
+      caveat: pick(props, ['caveat']),
       revisit: pick(props, ['revisit_note', 'revisitNote']) || pick(facets, ['revisit_note']),
       // Optional final outbound link, data-driven (e.g. a region callout's
       // tourism page, a brand logo's official site). A feature opts in by

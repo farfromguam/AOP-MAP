@@ -127,3 +127,74 @@ provenance, not a copy of SFWDA's paper map.
   currently 4 features, 0 trails — DB-baked, not hand-edited) regenerates with the
   trail network. The read viewer already draws trails from
   `gold_aop_trail_network.geojson` directly, so rendering does not wait on this.
+  **⚠️ See the 2026-06-15 addendum below — this instruction can't be run as written;
+  the export pipeline diverged from the served filenames and the DB trails are stale
+  vs the file.**
+
+-----
+
+## Addendum 2026-06-15 — Docker came back; DB↔served reproducibility is BROKEN (diagnosed, no DB change by user direction)
+
+User: *"docker is up now"* (after the prior session flagged "core.features owed when
+Docker returns"). Brought PostGIS up (`mvp-db-1` on `:55432`), inspected the converged
+spine by observation (`core.features` 160 rows, `publish.features` view 6 rows — the old
+per-layer `core.park_boundaries` etc. that `./cwc` still checks were folded into
+`core.features` on 2026-06-07, so `./cwc`'s "missing" lines are a stale check, not a real
+gap). Before mutating the canonical DB I traced the bake pipeline end-to-end and found the
+owed instructions **rest on an assumption that is no longer true.** Offered the user
+full-reconcile / scrubs-only / diagnose-only; **user chose DIAGNOSE ONLY — no DB changes
+made this session** (the DB is byte-for-byte as found: 160/6). This addendum is the record.
+
+**THE ROOT FINDING — the GeoJSON export pipeline silently diverged from the served files
+at the medallion `gold_` rename (commit `91a017e`).** `mvp/scripts/export_publish_geojson.sh`
+still writes `publish.geojson` + `aop_{buildings,cemeteries,visitor_context_callouts,trail_network}.geojson`
+(its `OUTPUT_FILE` + `REFERENCE_LAYERS`), **none of which exist on disk** — the viewer reads
+`gold_publish.geojson` + `gold_aop_*.geojson`. So running the export today **creates orphan
+old-named files; it does NOT regenerate the served gold.** Consequence: **the served gold
+GeoJSON layers are currently NOT reproducible from the DB** — they have become file-maintained,
+which breaks the going-gold slice-6 "served = pure function of the DB + the script" guarantee
+(`06_going_gold/gold_migration.md`). The medallion rename updated the served files and the
+trace round-trip scripts (per the 2026-06-14 handoff) but never touched `export_publish_geojson.sh`
+or the `_schema.json` store-of-record keys. **The schedule arm is the exception — it bakes to
+`aop_event_schedule.json` (NOT renamed), so that pipeline + `core.events`/`core.event_meta` are
+still connected.**
+
+**Stale-DB inventory (DB vs the curated served gold — observed, not the prior session's notes):**
+- **G-Central still in `core.features`** — poi id 139 (`AOP Pavilion`) `attrs.event_location`
+  carries `label:"AOP Pavilion / G-Central"`, `map_label:"G-Central"`, `confidence:"medium"`;
+  building id 2 (`Pavilion`) `description` starts `"G-Central. The on-site building…"`. Served is
+  fully clean (`grep -ri g-central website/data` → none). Exact served targets staged: schedule
+  `#pavilion` → `label:"Pavilion (base camp)"`, `map_label:"Pavilion"`, `confidence:"high"`; building
+  → `"AOP Pavilion. The on-site building that hosts registration, awards, and the campfire. Footprint
+  from FEMA structures data; AOP confirms it's the pavilion."` (G-Central → AOP Pavilion is the only
+  delta). This scrub matters even with the GeoJSON pipeline broken, because the **schedule** arm is
+  connected — a schedule re-bake would otherwise regress G-Central back into `aop_event_schedule.json`.
+- **Monteagle callout** `description` = the old `"Plateau services, ~30 min northwest via I-24…"`;
+  served has the new `"The plateau cluster up the mountain…"` copy (shipped this week).
+- **Trail data-model FORK** — `core.features` has **120 stale `trails`-layer rows** (all
+  `permission='SFWDA paper map — permission TBD'`, `publish_status` NULL); the served
+  `gold_aop_trail_network.geojson` has **130 file-based traces** (the Illustrator round-trip is the
+  live authority). The owed "set the 120 to publish" would publish a **stale, incomplete** set, AND
+  bakes to the orphan `aop_trail_network.geojson` anyway. Real options: (a) re-import the 130 traces
+  into `core.features` so the DB is the store-of-record, or (b) keep trails file-based and retire the
+  DB's stale 120 from the publishable set. Not a mechanical UPDATE.
+- **Saturday-Activity segments still pass the publish gate** in the DB (`publish.features` shows
+  `trail_centerlines | Saturday Afternoon Activity (segment 1/2)` + `field_tracks` twins
+  `reference_publish`); served `gold_publish.geojson` already dropped them (served-only curation).
+- **Cemeteries are already correct in the DB** — only Ellis is published (`permission/publish_status
+  = publish`); Bible/Gilliam/Tate sit unpublished (empty gate) = bronze reference, matching the served
+  posture. Less owed than the prior note implied.
+
+**Recommended path when the user greenlights (I have the exact served copy staged to execute fast):**
+1. `pg_dump` `core.features` first (reversibility; runbook "do not lose local data").
+2. Reconcile DB content to the curated served truth: G-Central→Pavilion, new Monteagle copy, Saturday
+   segments out of the publish gate.
+3. Decide the trail fork (recommend: re-import the 130 traces so the DB reproduces the network).
+4. **Repair the pipeline** — apply the `gold_` rename to `export_publish_geojson.sh`
+   (`OUTPUT_FILE` + `REFERENCE_LAYERS`) and the `_schema.json` store-of-record keys.
+5. Prove with `export_publish_geojson.sh --check` (NON-WRITING — bakes to `.check` side-paths and
+   byte-compares) that the served gold reproduces from the DB before any real write. Only then run it
+   for real.
+
+**No fire:** the served viewer is unaffected — the GeoJSON layers are file-maintained and correct;
+this is about restoring DB→served reproducibility (the source-led promise), not a visible bug.

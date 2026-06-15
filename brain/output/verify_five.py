@@ -63,7 +63,7 @@ def main():
         ck("9-patch veg fill renders in ALL four quadrants (corners no longer empty)",
            all(q[k] >= 2 for k in q), f"hits per quadrant {q}")
         # fill-piece count regression guard via the served file
-        d9 = pg.evaluate("""async()=>{const r=await fetch('./data/aop_landcover_9patch.geojson');const d=await r.json();
+        d9 = pg.evaluate("""async()=>{const r=await fetch('./data/gold_aop_landcover_9patch.geojson');const d=await r.json();
           const f=d.features||[];const poly=f.filter(x=>/Polygon/.test(x.geometry.type));
           const line=f.filter(x=>/LineString/.test(x.geometry.type));
           const v=g=>{const rs=g.type==='Polygon'?g.coordinates:g.type==='MultiPolygon'?g.coordinates.flat():[];return rs.reduce((s,r)=>s+r.length,0);};
@@ -77,27 +77,27 @@ def main():
         pg.evaluate("()=>{const b=document.getElementById('zoomPark'); if(b)b.click();}")
         pg.wait_for_timeout(2200)
         tf = pg.evaluate("()=>JSON.stringify(window.map.getLayoutProperty('aop-trail-network-labels','text-field'))")
-        ck("label text-field uses trail_number expression",
-           "trail_number" in (tf or ""), (tf or "")[:80])
-        # resolve the labels my expression would produce for the source features
+        # The label renders the BAKED `display_name` field (v87): the number-first
+        # name is precomputed onto the data, not derived at runtime from a
+        # `trail_number` expression. Observe display_name directly — do NOT re-derive
+        # it from trail_number+name (re-deriving on top of an already-prefixed name
+        # produced a bogus "1 1 Launchpad"; that was the verifier re-implementing the
+        # old, since-replaced formula instead of reading the running system).
+        ck("label text-field reads the baked display_name field",
+           "display_name" in (tf or ""), (tf or "")[:80])
         labels = pg.evaluate("""()=>{
           const src = window.map.getSource('aop-trail-network');
-          // read raw data via the source's _data if present, else querySourceFeatures
-          const feats = window.map.querySourceFeatures('aop-trail-network');
-          const out = [];
-          const seen = new Set();
+          const data = src && src.serialize ? src.serialize().data : null;
+          const feats = (data && data.features) || [];
+          const out = [], seen = new Set();
           for(const f of feats){
-            const p=f.properties||{}; const tn=p.trail_number; const nm=p.name;
-            let lab;
-            if(tn!=null && String(nm)!==String(tn)) lab=String(tn)+' '+String(nm);
-            else if(tn!=null) lab=String(tn);
-            else lab=nm==null?null:String(nm);
-            if(lab && !seen.has(lab)){seen.add(lab); out.push(lab);}
+            const lab = (f.properties||{}).display_name;
+            if(lab && !seen.has(lab)){seen.add(lab); out.push(String(lab));}
           }
           return out.sort();
         }""")
         named = [l for l in labels if " " in l]
-        print("   sample resolved labels:", named[:6], "… numeric:", [l for l in labels if l.isdigit()][:6])
+        print("   sample display_name labels:", named[:6], "… numeric:", [l for l in labels if l.isdigit()][:6])
         ck("named trails read 'N Name' (e.g. '1 Launchpad')",
            any(l.split(" ", 1)[0].isdigit() and not l.split(" ", 1)[1].isdigit() for l in named),
            f"{len(named)} named-with-number labels")
@@ -108,8 +108,11 @@ def main():
         pg.wait_for_timeout(1200)
         pg.evaluate("()=>{const t=document.querySelector('.left-tab[data-left-tab=\"poi\"]'); if(t)t.click();}")
         pg.wait_for_timeout(500)
-        first = pg.evaluate("""()=>{const list=document.getElementById('poiList');const gs=[...list.querySelectorAll('.poi-list-group')];
-          for(const g of gs){const h=g.querySelector('.poi-list-group-head span')?.textContent||'';if(/trail/i.test(h)){const btn=g.querySelector('button.poi-row');if(btn){btn.click();return btn.querySelector('.poi-row-name')?.textContent;}}}return null;}""")
+        # The reader POI directory renders a group only for STARRED features; no
+        # trail is starred today, so there is no "trail" group — select the first
+        # real POI row that exists (a building) instead of assuming a trail group.
+        first = pg.evaluate("""()=>{const btn=document.querySelector('#poiList button.poi-row');
+          if(!btn) return null; btn.click(); return (btn.querySelector('.poi-row-name')||{}).textContent;}""")
         print("   selected:", first)
         pg.wait_for_timeout(3400)  # past the ~2.6s pulse
         hold = pg.evaluate("""()=>({vis:window.map.getLayoutProperty('search-highlight-line','visibility'),
@@ -119,15 +122,19 @@ def main():
         pg.screenshot(path=str(OUT / "v5_poi_persist.png"))
         # selecting another feature moves the highlight (source data replaced)
         n_before = pg.evaluate("""()=>{const s=window.map.getSource('search-highlight');return s&&s._data?(s._data.features||[]).length:-1;}""")
-        pg.evaluate("""()=>{const list=document.getElementById('poiList');const btns=[...list.querySelectorAll('button.poi-row')];
-          // click a DIFFERENT row (a building) to move the selection
-          for(const btn of btns){const n=btn.querySelector('.poi-row-name')?.textContent||'';if(!/saturday/i.test(n)){btn.click();return;}}}""")
+        pg.evaluate("""(firstName)=>{const btns=[...document.querySelectorAll('#poiList button.poi-row')];
+          // click a row DIFFERENT from the first selection, to MOVE the highlight
+          for(const btn of btns){const n=(btn.querySelector('.poi-row-name')||{}).textContent||'';if(n!==firstName){btn.click();return;}}}""", first)
         pg.wait_for_timeout(800)
         moved_vis = pg.evaluate("()=>window.map.getLayoutProperty('search-highlight-line','visibility')")
         ck("a new selection re-pulses (highlight still active, on new feature)",
            moved_vis == "visible", f"vis={moved_vis}")
 
-        print("\n== item 3: 3D pitch/rotate locked; pan+zoom keep; button still tilts ==")
+        # Contract updated 2026-06-15 (v96): SPIN re-enabled by user directive
+        # ("we used to be able to spin it around while it was tilted … enable it").
+        # Pitch stays BUTTON-only (touchPitch off + pitchWithRotate:false), but
+        # drag-rotate is now ON. See brain/output/verify_spin_while_tilted.py.
+        print("\n== item 3: pitch button-only; SPIN re-enabled; pan+zoom keep; button still tilts ==")
         # Fresh load so we test the real path (open app at the park view → tap 3D),
         # not item 2's zoomed-in POI state where maxBounds clamps pitch.
         pg.goto(URL, wait_until="load")
@@ -138,7 +145,7 @@ def main():
           dragRotate: window.map.dragRotate.isEnabled(), dragPan: window.map.dragPan.isEnabled(),
           scrollZoom: window.map.scrollZoom.isEnabled()})""")
         ck("touch pitch (finger-tilt) disabled", gestures_2d["touchPitch"] in (False, "n/a"), str(gestures_2d["touchPitch"]))
-        ck("drag-rotate disabled", gestures_2d["dragRotate"] is False)
+        ck("drag-rotate ENABLED (spin re-enabled v96)", gestures_2d["dragRotate"] is True, str(gestures_2d["dragRotate"]))
         ck("pan still enabled", gestures_2d["dragPan"] is True)
         ck("zoom still enabled", gestures_2d["scrollZoom"] is True)
         pg.evaluate("()=>{const b=document.getElementById('terrainButton'); if(b)b.click();}")

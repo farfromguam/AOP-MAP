@@ -8664,7 +8664,11 @@
             ['Services', props.services || ''],
             ['Examples', props.examples || ''],
             ['Distance', props.distance_note || ''],
-            ['Drive time', props.drive_time_note || ''],
+            // 'Drive time' row dropped (user, 2026-06-15: "get rid of caveat —
+            // people understand what they are getting"). It surfaced the planning
+            // caveat drive_time_note ("approximate, check live routing…"), matching
+            // the same field dropped from the shared feature_display.js popover.
+            // drive_time_note stays on the data as author provenance.
             ['Sources', props.source_summary || '']
           ],
           (props) => visitorContextLinksHtml(props));
