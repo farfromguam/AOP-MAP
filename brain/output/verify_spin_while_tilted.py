@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
-"""Observe that the 3D viewer can be SPUN (bearing rotated) while TILTED, and that
-the pitch GESTURE stays disabled (pitch is button-only) — verify_by_observation
-for the viewer_core.js rotate re-enable.
+"""Observe the FULL 3D camera in the viewer (viewer_core.js v98): the user asked to
+"enable the 3d features" after only being able to pivot (rotate) around a center
+point. So pitch is no longer button-only — every camera gesture is live:
 
-Reads the LIVE MapLibre handler states (not re-derived):
-  * dragRotate.isEnabled()        -> True  (right-click / ctrl-drag spins)
-  * touchZoomRotate rotation       -> True  (two-finger twist spins)
-  * touchPitch.isEnabled()         -> False (no accidental finger-tilt)
+  * dragRotate.isEnabled()        -> True  (right-click / ctrl-drag)
+  * touchZoomRotate.isEnabled()   -> True  (two-finger pinch + twist)
+  * touchPitch.isEnabled()        -> True  (two-finger vertical-drag tilts) -- CHANGED
+  * map.getMaxPitch()             -> 60    (MapLibre default; tilt ceiling unchanged)
+  * pitchWithRotate (constructor) -> a VERTICAL right-drag now changes pitch -- NEW
 
-Then drives a REAL right-button mouse drag across the canvas with the camera
-pitched, and observes the bearing actually change while the pitch is preserved
-(pitchWithRotate:false held — the spin did not also tilt).
+Then drives REAL right-button drags across the canvas and observes, by reading the
+live camera, that a horizontal drag rotates the bearing and a vertical drag UP tilts
+the pitch UPWARD toward the ceiling (pitchWithRotate). Driving up (not down) proves
+the headline — that you can now tilt INTO the 3D view by gesture — rather than just
+nudging pitch toward the 0 floor. This is verify_by_observation, not re-derived math.
 
 Run the AOP Playwright server first:  cd website && python3 -m http.server 8001
 Usage: python3 brain/output/verify_spin_while_tilted.py
@@ -36,7 +39,6 @@ def main():
         page.on("pageerror", lambda e: errors.append(str(e)))
 
         page.goto(URL, wait_until="load")
-        # Wait for the viewer to expose the map and finish first style load.
         page.wait_for_function("() => window.AOPViewer && window.AOPViewer.map", timeout=15000)
         page.wait_for_function("() => window.AOPViewer.map.isStyleLoaded()", timeout=15000)
         page.wait_for_timeout(800)
@@ -48,56 +50,64 @@ def main():
                 dragRotate: m.dragRotate && m.dragRotate.isEnabled(),
                 touchZoomRotate: m.touchZoomRotate && m.touchZoomRotate.isEnabled(),
                 touchPitch: m.touchPitch ? m.touchPitch.isEnabled() : null,
+                maxPitch: m.getMaxPitch(),
             };
         }""")
         check("dragRotate enabled (desktop right-click spin)", states["dragRotate"] is True, str(states["dragRotate"]))
-        check("touchZoomRotate enabled (two-finger spin)", states["touchZoomRotate"] is True, str(states["touchZoomRotate"]))
-        check("touchPitch DISABLED (pitch is button-only)", states["touchPitch"] is False, str(states["touchPitch"]))
+        check("touchZoomRotate enabled (two-finger spin/zoom)", states["touchZoomRotate"] is True, str(states["touchZoomRotate"]))
+        check("touchPitch ENABLED (two-finger drag tilts now)", states["touchPitch"] is True, str(states["touchPitch"]))
+        check("maxPitch at MapLibre default 60 (no raised ceiling)", abs((states["maxPitch"] or 0) - 60) < 0.01, str(states["maxPitch"]))
 
-        # ── 2. Behavioral: spin while tilted ──────────────────────────────
-        # Tilt the camera the way the 3D toggle does (pitch 60), instantly.
-        page.evaluate("() => window.AOPViewer.map.easeTo({ pitch: 58, bearing: -90, duration: 0 })")
-        page.wait_for_timeout(300)
-        before = page.evaluate("""() => {
-            const m = window.AOPViewer.map;
-            return { bearing: m.getBearing(), pitch: m.getPitch() };
-        }""")
-        check("camera is tilted before spin", before["pitch"] > 45, f"pitch={before['pitch']:.1f}")
-
-        # Drive a REAL right-button drag horizontally across the map canvas.
+        # ── 2. Behavioral: horizontal right-drag ROTATES the bearing ──────
+        page.evaluate("() => window.AOPViewer.map.easeTo({ pitch: 30, bearing: -90, duration: 0 })")
+        page.wait_for_timeout(250)
         box = page.locator("#map canvas").bounding_box()
         cx, cy = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
+
+        before = page.evaluate("() => ({ b: AOPViewer.map.getBearing(), p: AOPViewer.map.getPitch() })")
         page.mouse.move(cx, cy)
         page.mouse.down(button="right")
-        for dx in range(20, 261, 20):  # sweep right -> rotates bearing
+        for dx in range(40, 201, 40):  # sweep RIGHT -> bearing
             page.mouse.move(cx + dx, cy)
-            page.wait_for_timeout(10)
+            page.wait_for_timeout(15)
         page.mouse.up(button="right")
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(250)
+        midd = page.evaluate("() => ({ b: AOPViewer.map.getBearing(), p: AOPViewer.map.getPitch() })")
+        check("horizontal right-drag rotated the bearing", abs(midd["b"] - before["b"]) > 5,
+              f"Δbearing={abs(midd['b'] - before['b']):.1f}°")
 
-        after = page.evaluate("""() => {
-            const m = window.AOPViewer.map;
-            return { bearing: m.getBearing(), pitch: m.getPitch() };
-        }""")
-        d_bearing = abs(after["bearing"] - before["bearing"])
-        d_pitch = abs(after["pitch"] - before["pitch"])
-        check("right-drag SPUN the bearing while tilted", d_bearing > 5,
-              f"Δbearing={d_bearing:.1f}° ({before['bearing']:.1f}->{after['bearing']:.1f})")
-        check("pitch PRESERVED during spin (pitchWithRotate:false)", d_pitch < 5,
-              f"Δpitch={d_pitch:.1f}° ({before['pitch']:.1f}->{after['pitch']:.1f})")
+        # ── 3. Behavioral: vertical right-drag UP TILTS the pitch UPWARD (pitchWithRotate) ──
+        # Start near-flat and drag UP, so we observe the camera tilt INTO the 3D view
+        # (pitch climbing toward the 60° ceiling) — the headline feature — not a fall to
+        # the 0 floor. A drag DOWN flattens; a drag UP lays the camera back. (Witness 2026-06-15.)
+        page.evaluate("() => window.AOPViewer.map.easeTo({ pitch: 8, duration: 0 })")
+        page.wait_for_timeout(250)
+        p_before = page.evaluate("() => AOPViewer.map.getPitch()")
+        page.mouse.move(cx, cy)
+        page.mouse.down(button="right")
+        for dy in range(40, 201, 40):  # sweep UP -> pitch climbs toward the ceiling
+            page.mouse.move(cx, cy - dy)
+            page.wait_for_timeout(15)
+        page.mouse.up(button="right")
+        page.wait_for_timeout(250)
+        p_after = page.evaluate("() => AOPViewer.map.getPitch()")
+        check("vertical right-drag UP tilted the pitch UPWARD (pitchWithRotate)", p_after - p_before > 5,
+              f"pitch {p_before:.1f}->{p_after:.1f} (Δ={p_after - p_before:+.1f}°, ceiling 60)")
 
-        # ── 3. No console errors ──────────────────────────────────────────
-        # Filter known-ENVIRONMENTAL noise (not product defects, and provably not
-        # caused by this rotate change — the diff touches no shaders/sky/fog):
-        #   * tnmap.tn.gov / favicon — external tiles unreachable headless.
-        #   * "Could not compile fragment shader" — the sky/atmosphere shader
-        #     fails to compile under headless software WebGL (SwiftShader); it
-        #     throws regardless of whether rotation is enabled.
+        # ── 4. No product console errors (headless-environment noise filtered) ──
+        # Filtered as ENVIRONMENTAL (not product defects; the diff touches no
+        # fetch/source/shader code):
+        #   * tnmap.tn.gov / s3.amazonaws.com (elevation-tiles-prod) / favicon — external
+        #     tiles + DEM are unreachable/blocked headless, surfacing as "Failed to fetch".
+        #   * shader compile failures — the sky/atmosphere shader won't compile under
+        #     headless software WebGL (SwiftShader); it throws regardless of this change.
         def is_env(e):
             return ("tnmap.tn.gov" in e or "favicon" in e
+                    or "Failed to fetch" in e or "elevation-tiles-prod" in e
+                    or "s3.amazonaws.com" in e or "amazonaws" in e
                     or "compile fragment shader" in e or "compile vertex shader" in e)
         real_errors = [e for e in errors if not is_env(e)]
-        check("no product console errors (headless GL shader noise filtered)",
+        check("no product console errors (headless-env tile/shader noise filtered)",
               len(real_errors) == 0, "; ".join(real_errors[:3]))
 
         browser.close()

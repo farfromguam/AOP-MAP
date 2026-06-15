@@ -25,7 +25,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Trail Blazing" />
   <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
-  <link href="./css/viewer.css?v=v97" rel="stylesheet" />
+  <link href="./css/viewer.css?v=v99" rel="stylesheet" />
   <!-- iOS Safari-TAB rounded-corner fillets: set html.ios-browser BEFORE first paint
        so the .screen-corner divs round the map into Safari's black chrome bands. Only
        on an iOS device in a TAB — NOT the installed PWA (no bands; the device rounds the
@@ -233,7 +233,7 @@
          viewer_core.js folds it beside the collapsed bottom-left ⓘ ("ⓘ vNN",
          hidden when expanded) and also reads it into the expanded attribution body
          as "Made by Rock Warblers · vNN". Starts hidden; JS unhides on fold. -->
-    <span id="appVersion" hidden>v97</span>
+    <span id="appVersion" hidden>v99</span>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on iOS,
          where there is no programmatic install prompt). -->
@@ -281,12 +281,12 @@
   <!-- The ONE feature-to-text strategy (window.AOPFeatureDisplay) — drives the
        click popups, same module the live page + editors use. -->
   <script src="./js/feature_display.js"></script>
-  <script src="./js/viewer_core.js?v=v97"></script>
+  <script src="./js/viewer_core.js?v=v99"></script>
   <!-- Off-edge decorative band — the "printed neat-line" frame (paper mask +
        keyline + draped lettering + Rock Warblers corner marks), drawn as
        geolocated map layers on top of the core. Reads window.AOPViewer exposed by
        viewer_core.js; loads after it. No CSS — the band paints inline. -->
-  <script src="./js/viewer_band.js?v=v97"></script>
+  <script src="./js/viewer_band.js?v=v99"></script>
 
   <!-- PWA: "Install app" button + iOS hint. Hidden by default; on Chromium it
        shows once beforeinstallprompt fires and triggers the native prompt on
@@ -326,16 +326,56 @@
     })();
   </script>
 
-  <!-- PWA: register the service worker. Scoped to this directory. Failure is
-       non-fatal — the viewer runs fine without it, just without offline caching.
-       (The viewer's own assets join sw.js SHELL_ASSETS at the swap, slice 7.) -->
+  <!-- PWA: register the service worker + the background-update pipeline. Scoped to
+       this directory. Failure is non-fatal — the viewer runs fine without it, just
+       without offline caching. (The viewer's own assets join sw.js SHELL_ASSETS at
+       the swap, slice 7.)
+
+       The "didn't update" fix: an installed PWA keeps serving the cached build until
+       a NEW sw.js is fetched, installed, and takes control. We force that check three
+       ways — on load, every time the app returns to the foreground, and on the
+       bottom-left ⓘ tap (wired in viewer_core.js via window.AOPCheckForUpdate). When a
+       new build is found, sw.js (skipWaiting + clients.claim) activates it,
+       `controllerchange` fires, and the page reloads ONCE onto the new version. No new
+       build → every check is a silent no-op. -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch((err) => {
-          console.warn('[AOP] service worker registration failed:', err);
-        });
+      let swReg = null;
+
+      // A freshly-activated worker controls the page, but the page is still running
+      // the OLD code/CSS until it reloads. Reload ONCE so the new build's assets load.
+      // Guard with hadController so we only reload on a GENUINE update (a worker was
+      // already in control) — not the first install's clients.claim(), which would
+      // otherwise reload the very first visit for nothing. `reloading` blocks a loop.
+      const hadController = !!navigator.serviceWorker.controller;
+      let reloading = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloading || !hadController) return;
+        reloading = true;
+        window.location.reload();
       });
+
+      // Manual/background "get latest": re-fetch sw.js and compare. Changed bytes →
+      // install → skipWaiting → activate → controllerchange → reload (above).
+      // Unchanged → silent no-op (the ⓘ just expands as usual). Exposed for the ⓘ tap.
+      window.AOPCheckForUpdate = () => { if (swReg) swReg.update().catch(() => {}); };
+
+      window.addEventListener('load', () => {
+        // updateViaCache:'none' — never answer the sw.js script itself from the
+        // browser HTTP cache (GitHub Pages serves it max-age=600). That stale copy is
+        // the usual "didn't update" culprit; this makes every update() hit the network.
+        navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+          .then((reg) => { swReg = reg; reg.update().catch(() => {}); })
+          .catch((err) => console.warn('[AOP] service worker registration failed:', err));
+      });
+
+      // iOS PWAs resumed from the app switcher do NOT re-run `load`, so they never
+      // re-check for a new build on their own — the #1 "not updated" cause. Re-check
+      // whenever the app returns to the foreground (and on bfcache restore via pageshow).
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') window.AOPCheckForUpdate();
+      });
+      window.addEventListener('pageshow', () => window.AOPCheckForUpdate());
     }
   </script>
 </body>

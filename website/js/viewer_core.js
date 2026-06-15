@@ -65,10 +65,12 @@
     zoom: 14,
     bearing: -90,
     maxBounds: REGION_MAXBOUNDS,
-    // Spin is wanted back, but pitch stays button-only: false stops the rotate
-    // gesture (two-finger twist / right-click drag) from also tilting, so the
-    // only way to pitch is the 3D toggle. (See the handler block below.)
-    pitchWithRotate: false,
+    // Full 3D camera is back on (user: "enable the 3d features"). pitchWithRotate
+    // lets the rotate gesture (two-finger twist / right-click-drag) ALSO tilt — so
+    // one gesture both orbits and tilts the terrain instead of only spinning the
+    // bearing flat. Tilt range stays the MapLibre default (0–60°), matching where
+    // the 3D toggle eases to. (See the handler block below.)
+    pitchWithRotate: true,
     attributionControl: false
   });
 
@@ -83,17 +85,14 @@
   // replaces the constructor shim the band's old proof page used to fake.
   window.AOPViewer = { map, regionBounds: REGION_BOUNDS };
 
-  // Pinch-zoom + one-finger pan stay. SPIN is back on (user: "we used to be able
-  // to spin it around while it was tilted … we want to enable it"): two-finger
-  // twist on touch and right-click / ctrl-drag on desktop now rotate the bearing,
-  // so the tilted 3D view can be orbited. PITCH stays BUTTON-only — the 3D toggle
-  // eases to 60° and the zoom presets reset flat west-up — so stray fingers still
-  // can't accidentally tilt: the two-finger vertical-drag pitch gesture is
-  // disabled here, and `pitchWithRotate:false` (constructor) keeps the rotate
-  // gesture from sneaking in pitch. (rotate/zoom-rotate + dragRotate are left at
-  // their enabled defaults; earlier this block also killed rotate after a "maybe
-  // it's my fingers" accidental-tilt report — main.js:163 — now wanted back.)
-  if (map.touchPitch) map.touchPitch.disable();
+  // EVERY camera gesture is on now (user: "enable the 3d features"). Pinch-zoom +
+  // one-finger pan, two-finger twist / right-click-drag to rotate, AND two-finger
+  // vertical-drag to TILT (touchPitch) — paired with pitchWithRotate (constructor)
+  // so the rotate gesture tilts too. This reverses the earlier button-only-pitch
+  // lock (the "maybe it's my fingers" accidental-tilt report — main.js:163): the
+  // user asked for the full 3D camera back, so nothing is disabled here and every
+  // handler is left at its enabled default. The 3D toggle button stays as a one-tap
+  // jump to a 60° tilt, and the zoom presets still reset flat west-up.
 
   // Bottom-left ⓘ attribution (main.js:166). Two faces of the same version:
   //  - COLLAPSED: a small "v64" label sits beside the ⓘ (#appVersion, folded in
@@ -130,6 +129,22 @@
       versionEl.classList.add('attrib-version');
       versionEl.hidden = false;
       bottomLeft.appendChild(versionEl);
+    }
+
+    // Tapping the ⓘ doubles as "get the latest map": it quietly asks the service
+    // worker to check for a newer build (window.AOPCheckForUpdate, index.html). If
+    // there is one, the new worker takes control and the page reloads onto it — so
+    // the version beside the ⓘ ticks up. If nothing's new, this is a silent no-op
+    // and the ⓘ just expands to the attribution as before. This is the manual lever
+    // for installed PWAs that "didn't update" (see sw.js header + index.html).
+    // Delegated off the container so it survives the attrib button's own re-renders.
+    if (bottomLeft) {
+      bottomLeft.addEventListener('click', (e) => {
+        if (e.target.closest('.maplibregl-ctrl-attrib-button') &&
+            typeof window.AOPCheckForUpdate === 'function') {
+          window.AOPCheckForUpdate();
+        }
+      });
     }
   })();
 

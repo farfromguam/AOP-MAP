@@ -34,8 +34,41 @@ Headline state for the next session:
   130 file-based traces, Saturday segments still in the publish gate). DB left **UNTOUCHED**
   (160 features / 6 publish). Full diagnosis + recommended reconcile path + the exact staged
   copy → **2026-06-15 addendum on `tasks/20_deferred/data_integrity_publishability.md`**.
-- **Owed (external-blocked):** on-device pinch-zoom re-check after the 3D-spin re-enable; the
-  DB↔served reconcile above (the user directs when).
+- **Full 3D camera re-enabled — v98 (2026-06-15).** User: "enable the 3d features … it
+  seems we can only pivot around a center point." Reversed the button-only-pitch lock in
+  `viewer_core.js`: removed `touchPitch.disable()` and set `pitchWithRotate:true`. Every
+  camera gesture is now live (pan, pinch-zoom, two-finger/right-drag rotate,
+  two-finger/vertical-drag tilt); the 3D toggle still jumps to 60°. Tilt ceiling kept at the
+  MapLibre default 60° — the council Warden caught a first pass that also baked `maxPitch:80`
+  as unrequested scope; reverted, and the 80° horizon ceiling is **offered to the user as an
+  option, not done**. Cache bumped v97→v98 across sw.js + index.html (appVersion + 3× `?v=`);
+  the user folded their ⓘ-background-update fix into the same v98 (see next bullet), so one
+  bump serves both. Verified by observation 7/7 — `brain/output/verify_spin_while_tilted.py`
+  (touchPitch ENABLED, maxPitch 60, and a right-drag-UP that tilts pitch 8°→60° to the ceiling,
+  proving tilt-INTO-3D works rather than a fall to the 0 floor; blocked-tile "Failed to fetch"
+  filtered as headless-env noise). Council: Witness + Warden andons both resolved and
+  re-reviewed; Quartermaster clear. NOTE: rotate/tilt pivots around the viewport center for
+  mouse-drag (MapLibre default) and the finger-midpoint for two-finger touch; true
+  orbit-around-an-arbitrary-point would be a custom handler — not built.
+- **ⓘ background-update fix — v98 (2026-06-15).** User: "make the i button … do a reload in
+  the background for the pwa? it … 'not updated' often." Installed PWAs kept serving the
+  cached build; root cause is iOS PWAs resumed from the app switcher never re-running `load`,
+  plus GitHub Pages' max-age=600 on `sw.js`. Fix folds into v98 (no extra bump): in
+  `index.html`'s SW registration — `updateViaCache:'none'`, `reg.update()` on load + on
+  `visibilitychange`(visible) + `pageshow`, a `controllerchange`→reload-once guard, and a
+  `window.AOPCheckForUpdate()` lever; in `viewer_core.js` the bottom-left ⓘ tap now calls it
+  (delegated off `.maplibregl-ctrl-bottom-left`, fires on `.maplibregl-ctrl-attrib-button`).
+  Tapping ⓘ = silent "get latest" → reloads only if a new build exists; attribution expand
+  unchanged. Verified by observation 9/9 — `brain/output/verify_info_button_update.py`
+  (steady-state warm-SW reload; flaky single-thread-server fetches re-checked, not gated).
+  **Bumped v98→v99 (2026-06-15) at the user's request to test the update path on-device** —
+  5 stamps (sw.js VERSION + #appVersion + 3× `?v=`); re-verified 9/9 + `node --check`. The
+  test needs an OLD build already loaded: load v98, deploy v99, then tap ⓘ on the v98 client →
+  it pulls v99 and reloads (the version label ticks 98→99). Commit/push stays the user's.
+- **Owed (external-blocked):** on-device re-check of the full 3D camera (tilt + spin + pinch-
+  zoom) now that v98 enables gesture pitch; on-device confirm the ⓘ-tap/foreground update
+  actually pulls a fresh build past Fastly's ~600s edge TTL; the DB↔served reconcile above
+  (the user directs when).
 
 ## Where we are
 
