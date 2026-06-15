@@ -1063,10 +1063,7 @@
     // A search result becomes THE active item — it de-thrones any active event
     // selection so only one thing is ever highlighted for orientation, and it
     // clears the now-stale active calendar row (shared search-highlight source).
-    if (activeEventSessionId) {
-      activeEventSessionId = null;
-      if (eventScheduleConfig && eventScheduleData) renderEventSchedule(eventScheduleConfig, eventScheduleData);
-    }
+    dethroneActiveEvent();
     const highlight = map.getSource('search-highlight');
     if (highlight) {
       highlight.setData({
@@ -1077,6 +1074,29 @@
     }
     searchInput.value = match.name;
     clearSearchResults();
+  }
+
+  // De-throne the active event row: drop the selection and re-render the
+  // schedule so its active calendar row clears. Shared by gotoMatch (a search
+  // de-thrones an active event) and clearActiveSelection (clearing the search
+  // bar drops it).
+  function dethroneActiveEvent() {
+    if (!activeEventSessionId) return;
+    activeEventSessionId = null;
+    if (eventScheduleConfig && eventScheduleData) renderEventSchedule(eventScheduleConfig, eventScheduleData);
+  }
+
+  // Clearing the search bar drops the current selection: stop any in-flight
+  // pulse, empty the highlight overlay, and de-throne the active event row so
+  // nothing stays focused on the map. This is the ONE path that REMOVES the held
+  // highlight — every other path (search / event / POI) only REPLACES it. The
+  // user: "if the searchbar is cleared then the highlighted item also needs to be
+  // cleared. this defocuses it as well."
+  function clearActiveSelection() {
+    if (pulseRAF) { cancelAnimationFrame(pulseRAF); pulseRAF = null; }
+    const highlight = map.getSource('search-highlight');
+    if (highlight) highlight.setData({ type: 'FeatureCollection', features: [] });
+    dethroneActiveEvent();
   }
 
   // ── Event schedule + calendar (ported from main.js) ────────────────────
@@ -1331,7 +1351,7 @@
         + '<span>'
         + `<span class="calendar-time">${escapeHtml(props.window || '')}</span>`
         + `<span class="calendar-name">${escapeHtml(props.title || props.name || '')}</span>`
-        + `<span class="calendar-location">${escapeHtml(tag)} - ${escapeHtml(location)}</span>`
+        + `<span class="calendar-location">${escapeHtml(location)}</span>`
         + '</span></button></li>';
     }).join('');
     refreshEventScheduleSessionStates();
@@ -1480,8 +1500,11 @@
     return tabKey;
   }
 
-  // About panel render (ported from the index.html copy-data bootstrap). Only
-  // http(s) links are assigned so a hand-edited JSON link can't run script.
+  // About panel render (data/aop_about.json). Plain DOM, GL-independent. Only
+  // http(s) links are assigned and every text node uses textContent, so a
+  // hand-edited JSON link or paragraph can't run script. Structure: heading,
+  // intro (one welcome paragraph with an optional inline link), sections[]
+  // (each an optional subhead + paragraphs), rules (lead + bullet list), note.
   function renderAbout(about, panel) {
     panel.textContent = '';
     if (about.heading) {
@@ -1504,52 +1527,36 @@
       if (about.intro.tail) p.append(document.createTextNode(about.intro.tail));
       panel.append(p);
     }
-    if (Array.isArray(about.items) && about.items.length) {
-      const ul = document.createElement('ul');
-      ul.className = 'info-list';
-      about.items.forEach((item) => {
-        const li = document.createElement('li');
-        const label = document.createElement('span');
-        label.className = 'info-label';
-        label.textContent = item.label || '';
-        const body = document.createElement('span');
-        body.textContent = item.text || '';
-        li.append(label, body);
-        ul.append(li);
-      });
-      panel.append(ul);
-    }
-    const dm = about.driver_meeting;
-    if (dm) {
-      if (dm.heading) {
+    (Array.isArray(about.sections) ? about.sections : []).forEach((sec) => {
+      if (sec.heading) {
         const h = document.createElement('h3');
         h.className = 'info-subhead';
-        h.textContent = dm.heading;
+        h.textContent = sec.heading;
         panel.append(h);
       }
-      (Array.isArray(dm.paragraphs) ? dm.paragraphs : []).forEach((text) => {
+      (Array.isArray(sec.paragraphs) ? sec.paragraphs : []).forEach((text) => {
         const p = document.createElement('p');
         p.className = 'info-copy';
         p.textContent = text;
         panel.append(p);
       });
-      if (dm.rules) {
-        if (dm.rules.lead) {
-          const lead = document.createElement('p');
-          lead.className = 'info-copy';
-          lead.textContent = dm.rules.lead;
-          panel.append(lead);
-        }
-        if (Array.isArray(dm.rules.items) && dm.rules.items.length) {
-          const rules = document.createElement('ul');
-          rules.className = 'info-rules';
-          dm.rules.items.forEach((text) => {
-            const li = document.createElement('li');
-            li.textContent = text;
-            rules.append(li);
-          });
-          panel.append(rules);
-        }
+    });
+    if (about.rules) {
+      if (about.rules.lead) {
+        const lead = document.createElement('p');
+        lead.className = 'info-copy';
+        lead.textContent = about.rules.lead;
+        panel.append(lead);
+      }
+      if (Array.isArray(about.rules.items) && about.rules.items.length) {
+        const rules = document.createElement('ul');
+        rules.className = 'info-rules';
+        about.rules.items.forEach((text) => {
+          const li = document.createElement('li');
+          li.textContent = text;
+          rules.append(li);
+        });
+        panel.append(rules);
       }
     }
     if (about.note) {
@@ -1832,8 +1839,6 @@
         rows.push({
           name: d.name || '(unnamed)',
           blurb: d.blurb || '',
-          kind: d.kind || '',
-          status: d.status || '',
           revisitNote: d.revisit || '',
           feature
         });
@@ -1876,15 +1881,16 @@
         name.className = 'poi-row-name';
         name.textContent = row.name;
         btn.append(name);
-        const subtitle = document.createElement('span');
-        subtitle.className = 'poi-row-subtitle';
-        subtitle.textContent = row.blurb || `${row.kind} · ${row.status}`.trim();
-        btn.append(subtitle);
-        const meta = document.createElement('span');
-        meta.className = 'poi-row-meta';
-        if (row.kind) { const c = document.createElement('span'); c.textContent = row.kind; meta.append(c); }
-        if (row.status) { const c = document.createElement('span'); c.textContent = row.status; meta.append(c); }
-        btn.append(meta);
+        // Kind / Status are dev-artifact metadata, not visitor copy — the list
+        // shows only the human blurb, falling back to the revisit note. No meta
+        // chips. (User, 2026-06-14.) The editor dock still carries kind/status.
+        const subtitleText = row.blurb || row.revisitNote || '';
+        if (subtitleText) {
+          const subtitle = document.createElement('span');
+          subtitle.className = 'poi-row-subtitle';
+          subtitle.textContent = subtitleText;
+          btn.append(subtitle);
+        }
         btn.addEventListener('click', () => gotoPoi(row));
         groupEl.append(btn);
       }
@@ -2727,7 +2733,13 @@
 
   // Search input + dropdown (main.js:10327-10362). Session-persistence calls
   // dropped (no viewer session state in the clean core yet).
-  searchInput.addEventListener('input', () => { searchActive = -1; renderSearchResults(); });
+  searchInput.addEventListener('input', () => {
+    searchActive = -1;
+    // Emptying the field (backspace / select-all-delete) de-thrones the held
+    // highlight, just like Escape does.
+    if (!searchInput.value.trim()) clearActiveSelection();
+    renderSearchResults();
+  });
   searchInput.addEventListener('focus', renderSearchResults);
   searchInput.addEventListener('keydown', (event) => {
     if (event.key === 'ArrowDown') {
@@ -2744,6 +2756,7 @@
     } else if (event.key === 'Escape') {
       searchInput.value = '';
       clearSearchResults();
+      clearActiveSelection();
       searchInput.blur();
     }
   });

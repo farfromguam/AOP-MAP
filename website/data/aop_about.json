@@ -1,44 +1,47 @@
 {
-  "schema": "aop-about-v1",
+  "schema": "aop-about-v2",
   "updated_at": "2026-06-14",
-  "purpose": "Copy for the left-panel About tab. The viewer renders #aboutInfoPanel from this file (renderAbout in viewer_core.js) so the wording lives here as reviewable data instead of as inline HTML. Edit the text here, not in index.html. Source copy: brain/import/TBI.copy.",
+  "purpose": "Copy for the left-panel About tab. The viewer renders #aboutInfoPanel from this file (renderAbout in viewer_core.js) so the wording lives here as reviewable data instead of as inline HTML. Edit the text here, not in index.html. Structure: heading, intro (one welcome paragraph with an optional inline link), sections[] (each an optional subhead + paragraphs), rules (lead + bullet list), note. Source copy: brain/import/TBI.copy.",
   "heading": "About the Rock Warblers",
   "intro": {
-    "lead": "Welcome to the first event hosted by the Rock Warblers, our ",
+    "lead": "Welcome to our first event as the Rock Warblers, the ",
     "link": {
       "text": "Trail Blazing Invitational",
       "url": "https://www.facebook.com/events/adventure-offroad-park-nature-center/rock-warblers-trail-blazing-invitational/4541595172728436/"
     },
-    "tail": " at Adventure Off Road Park, Friday, June 19 through Sunday, June 21. Come join us for a weekend of fun, scaled adventure."
+    "tail": " at Adventure Off Road Park, Friday, June 19 through Sunday, June 21. Come hang out for a weekend of scaled adventure. All you have to bring is a good attitude."
   },
-  "items": [
-    { "label": "Mandatory skills", "text": "Good attitude." },
-    { "label": "Rigs", "text": "1/10 electric scale. 1.55″, 1.9″, and 2.2″ wheel classes. No dig, no rear steer. Five scale accessories minimum. No bashers." },
-    { "label": "The park", "text": "Adventure Off Road Park, South Pittsburg, TN — six hundred acres of private ridge. The pavilion is base camp: registration, driver meeting, hot dog dinner, awards, the 50/50 raffle, and the fire pit. Camping on-site, first come, first served." },
-    { "label": "The map", "text": "On-day reference built from GPS data and real terrain — the high-traffic hot spots and areas of interest around the park. Use it at the pavilion and out on each stage. Every line traces back to where it came from." },
-    { "label": "The crew", "text": "Rock Warblers — caw-craaawl! Kin to the Diamond-Billed Rock Pecker found only in Moab, Utah. Known for our bright blue shirts and ultimate scale builds. You'll find us mostly east of the Mississippi, with sightings in Canada, Pennsylvania, West Virginia, Michigan, and North Carolina. A rare breed has been spotted migrating between Europe and North America." }
-  ],
-  "driver_meeting": {
-    "heading": "Driver's Meeting",
-    "paragraphs": [
-      "Welcome, everyone, to the first event hosted by the Rock Warblers. You'll find us in the bright blue shirts, and we're so excited to have you here. The pavilion is home base for all the activities, and we meet there before each event. Several trails run off to the right of the pavilion, by the buggy entrance. Feel free to explore the Jeep entrance too, and document any fun trails on that side of the park. We'd love for everyone to run a GPS tracking app and share the areas you explored. We'll keep updating the map to show the hot spots and areas of interest around the park.",
-      "The C.O.W. is available throughout the day for your convenience. We've got batteries and basic necessities.",
-      "Trails are open to full-scale crawlers and bouncers this weekend, so keep your eyes and ears open and yield to the larger vehicles.",
-      "We're hosting a 50/50 raffle. Half goes to one lucky winner, and the other half goes to Appalachian RC for Kids. If you're not familiar with them, they're a West Virginia program that gives RC vehicles to kids under 12 who don't have one of their own. They're always at the BTC supporting the kids and helping fix RC cars that break down. Tickets are 5 for $10.",
-      "To kick things off, we'll set up the show and shine right out in front of the pavilion. After the show and shine, exploration begins. We've got a few challenges planned for today and tomorrow: the Warbler Peck and Pop Challenge, the Gravity Gauntlet, and PRO Line Before the Fire.",
-      "This evening, head back to the pavilion at 6pm for a hot dog dinner. Two hot dogs, chips, and a drink for $10. After dinner we'll run the PRO Line Before the Fire obstacle driving challenge, then head to the fire pit for s'mores.",
-      "On Sunday, we'll try our hand at GPS drawing during the Driver Doodles Sketchy Driving Challenge. At noon we wrap up with the awards ceremony, and then we clean, wrap, pack up, and head home."
-    ],
-    "rules": {
-      "lead": "Throughout the weekend, just remember:",
-      "items": [
-        "Scale recovery is highly encouraged.",
-        "Penalty points for gate touches, rollovers, and hogging.",
-        "Winching is free.",
-        "Trail repairs and cleanup earn karma points that cancel penalties.",
-        "And most importantly, have some fun."
+  "sections": [
+    {
+      "paragraphs": [
+        "We're the ones in the bright blue shirts. Kin to the Diamond-Billed Rock Pecker, found only in Moab, Utah, and known for our ultimate scale builds. caw-craaawl! You'll spot us mostly east of the Mississippi, with sightings up in Canada, Pennsylvania, West Virginia, Michigan, and North Carolina, and a rare breed migrating between Europe and North America."
+      ]
+    },
+    {
+      "heading": "The park & the map",
+      "paragraphs": [
+        "Adventure Off Road Park, South Pittsburg, TN: six hundred acres of private ridge, with the pavilion as base camp for registration, the driver's meeting, dinner, awards, and the fire pit. Camping on-site, first come, first served.",
+        "The map is your on-day reference, built from GPS data and real terrain to show the high-traffic hot spots and areas of interest around the park."
+      ]
+    },
+    {
+      "heading": "What to expect",
+      "paragraphs": [
+        "We meet at the pavilion before each event. Trails run off to the right by the buggy entrance, and the Jeep entrance is open to explore too. Run a GPS tracking app while you roam and share where you went, and we'll keep updating the map as the hot spots turn up.",
+        "Trails are open to full-scale crawlers and bouncers all weekend, so keep your eyes and ears open and yield to the bigger rigs. The C.O.W. is parked nearby through the day with batteries and basic necessities.",
+        "We're running a 50/50 raffle. Half goes to one lucky winner, half to Appalachian RC for Kids, a West Virginia program that gets RC rigs to kids under 12 who don't have one of their own. Tickets are 5 for $10."
       ]
     }
+  ],
+  "rules": {
+    "lead": "Throughout the weekend, just remember:",
+    "items": [
+      "Scale recovery is highly encouraged.",
+      "Penalty points for gate touches, rollovers, and hogging.",
+      "Winching is free.",
+      "Trail repairs and cleanup earn karma points that cancel penalties.",
+      "And most importantly, have some fun."
+    ]
   },
   "note": "Made by the Rock Warblers. See you at the pavilion.",
   "owed_work": [

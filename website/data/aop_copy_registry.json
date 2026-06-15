@@ -15,7 +15,7 @@
     {
       "id": "about",
       "label": "About tab",
-      "what": "The 'About the Rock Warblers' panel: event posture, format, rules, the park, the map, the crew.",
+      "what": "The 'About the Rock Warblers' panel: welcome, the crew, the park & the map, what to expect, and the weekend rules.",
       "surfaces": ["Left panel → About tab"],
       "root_files": ["website/data/aop_about.json"],
       "renderer": "about",
@@ -23,7 +23,7 @@
       "extraction": "data",
       "gaps_field": "owed_work",
       "review_priority": "high",
-      "note": "Rewritten 2026-06-14 from the event lead's real copy (brain/import/TBI.copy). Added a driver_meeting prose block (the welcome / 'what to expect' script + the weekend rules); dropped the placeholder Format / Trail buddies / Night crawl items. owed_work tracks the 600-acre reconcile and the unfilled Rock Warbler call."
+      "note": "Reworked into web copy 2026-06-14 (schema aop-about-v2): one welcome (good-attitude line folded in), a crew paragraph, two subhead sections (The park & the map, What to expect), and the weekend rules. Renderer generalized to heading/intro/sections[]/rules/note. Dropped the spoken driver_meeting transcript, the one-item 'Mandatory skills' row, and the rig spec (the event is open to whatever rigs people bring); times live in the Events tab. owed_work tracks the 600-acre reconcile."
     },
     {
       "id": "event_schedule",

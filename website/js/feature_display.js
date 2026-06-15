@@ -57,18 +57,20 @@
   }
 
   // The ONE renderer — identical contract to main.js poiPopupHtml: title, then a
-  // subtitle (blurb) OR the "Info needed — revisit" placeholder, then the
-  // Kind/Status/Source/Caveat meta list (each meta line only if present).
+  // subtitle (blurb) OR the "Info needed — revisit" placeholder, then a meta list
+  // that now carries only an author-facing Caveat (Kind/Status/Source dropped).
   function popupHtml(model) {
     const m = model || {};
     let s = `<p class="poi-popup-title">${esc(m.name)}</p>`;
     if (m.blurb) s += `<p class="poi-popup-subtitle">${esc(m.blurb)}</p>`;
     else if (m.revisit) s += `<p class="poi-popup-placeholder">Info needed — revisit. ${esc(m.revisit)}</p>`;
-    let meta = `<dt>Kind</dt><dd>${esc(m.kind || 'unknown')}</dd>`;
-    if (m.status) meta += `<dt>Status</dt><dd>${esc(m.status)}</dd>`;
-    if (m.source) meta += `<dt>Source</dt><dd>${esc(m.source)}</dd>`;
+    // Kind / Status / Source are provenance / dev-artifact metadata, not visitor
+    // copy — kept OFF the popover (user, 2026-06-14). The editor's identify dock
+    // still surfaces them for editing. Only an author-facing Caveat remains, and
+    // the meta list is dropped entirely when there's nothing to show.
+    let meta = '';
     if (m.caveat) meta += `<dt>Caveat</dt><dd>${esc(m.caveat)}</dd>`;
-    s += `<dl class="poi-popup-meta">${meta}</dl>`;
+    if (meta) s += `<dl class="poi-popup-meta">${meta}</dl>`;
     // A final, optional outbound link — last element of the card, after the
     // meta list. Rendered only when the feature carries link_url (data-driven).
     if (m.link) {

@@ -11,6 +11,73 @@ Short pointer for the next session. The durable record lives in the cards
 
 ## Latest (2026-06-14)
 
+**Kind/Status/Source off the user-facing POI surfaces — rides v92 (UNCOMMITTED).**
+User: *"we have kind and status as visible. we dont need those in the poi list. we
+dont even need them in the world popovers. in the world there is a third source. that
+also needs to go."* Three surfaces, one change: (1) `feature_display.js` `popupHtml`
+(the ONE shared popover renderer) dropped the `Kind`/`Status`/`Source` `<dt>/<dd>`
+lines — only an author-facing `Caveat` survives, and the meta `<dl>` is omitted when
+empty; (2) `viewer_core.js` `renderPoiTab` (reader list) dropped the kind/status chips
++ `kind · status` subtitle fallback (+ removed the now-dead row fields); (3) `main.js`
+`renderPoiTab` (editor list) same, keeping the "info needed — revisit" placeholder
+chip. `featureDisplay()` still returns the fields — the editor's identify dock keeps
+them for editing; only the visitor popover/list stop showing them. Rides the existing
+v90→v92 shell bump (no second bump). Verified by observation on `:8001` —
+`brain/output/verify_poi_no_kind_status_source.py` **9/9 PASS**, 0 console errors.
+Addendum on `tasks/12_field_schedule_editor/_done/normalize_feature_display.md`.
+
+**About tab reworked into web copy — v92 (UNCOMMITTED).** The user found the About
+tab "mixed up": the v78 TBI pass had stapled the spoken Driver's Meeting transcript
+onto the fact card (welcomed twice, repeated the spec + schedule). Reworked into
+website copy — `aop_about.json` schema `v1→v2`: one welcome (good-attitude line folded
+in), crew lore as prose, two subhead sections (**The park & the map**, **What to
+expect**), `rules` lifted top-level. **Dropped at the user's direction:** the one-item
+"Mandatory skills" row and the **rig spec entirely** (*"people can bring whatever RCs
+they want"* — open event), plus the "traces back" / "weekend fills in" lines.
+`renderAbout()` in `viewer_core.js` generalized from items[]/driver_meeting to
+`sections[]+rules` (same DOM + safe-link/textContent). Verified on live `:8001`:
+`verify_tbi_copy.py` rewritten, **18/18 About checks pass**, `tbi_about.png` shows the
+render, no new console errors. Manifest + copy_registry updated; scratch
+`about_preview.html` removed. Rides the shared `sw.js`/`#appVersion` **v92** bump (this
+task performed the v91→v92; the schedule-tag session below rides it — one bump).
+Addendum on `tasks/20_deferred/_done/rock_warblers_content_audit.md`. Council-cleared
+5/5 (witness·warden·quartermaster·mason·scribe) over the scoped diff —
+`brain/output/council/about_rework_v92_20260614.md`. (Pre-existing non-About tree state,
+not this task: the schedule `#firepit` anchor; the bronze fema-buildings tier alert.)
+
+**Schedule rows drop the raw #tag prefix — rides v92 (UNCOMMITTED).** Calendar rows
+read `#pavilion - Pavilion (base camp)` — the internal join-key tag printed in front
+of its own human name. User: *"I dont want to see #pavilion followed by pavilion.
+feels redundant."* Dropped the `${tag} - ` prefix from the `.calendar-location` span
+in **both** calendar renders (`viewer_core.js` `renderEventCalendar` + `main.js`'s
+editor copy); rows now show just `location_label`. UI-only, schedule data unchanged;
+the popup's labelled `Tag` diagnostic row left intact. Rides the existing v90→v92
+shell bump (no second bump). Verified by observation on `:8001` —
+`brain/output/verify_schedule_no_tag_prefix.py` **8/8 PASS**, 0 console errors.
+Addendum on `tasks/01_mvp/_done/event_schedule_layer.md`.
+
+**Search-clear de-thrones the held highlight — v91 (UNCOMMITTED).** Item 5 of the
+six-item batch made a selection HOLD until the next one replaced it, but nothing ever
+*removed* it. User: *"the app holds the highlight until something else takes it. -- if the
+searchbar is cleared then the highlighted item also needs to be cleared. this defocuses it
+as well."* New `clearActiveSelection()` in `viewer_core.js` (cancels the pulse, empties the
+`search-highlight` source, de-thrones `activeEventSessionId` + re-renders the schedule) is
+wired into both clear paths — the `input` listener when the field goes empty, and `Escape`.
+Verified by observation (`brain/output/verify_search_clear_dethrone.py` 8/8, 0 errors;
+regression `verify_label_border_persist_firepit.py` still 13/13). `sw.js`/`#appVersion`
+v90→v91. Addendum on `tasks/02_edit/_done/six_item_viewer_batch_20260614.md`.
+
+**S'mores moved to the firepit — rides v91 (UNCOMMITTED, separate session).** The v87
+batch tagged the PRO Line *race* to `#firepit` but left both "Fire + s'mores" sessions
+(`fri-fire`, `sat-fire`) at `#pavilion`, so the firepit POI showed the obstacle race but
+not the campfire. User: *"Smores should be at the firepit. what happened?"* Source
+(`brain/import/TBI.copy`) — they *"head to the fire pit for some smores"* — so both
+sessions retagged `#pavilion`→`#firepit` in `aop_event_schedule.json` (data-only; no JS).
+Rides the concurrent session's v90→v91 bump (re-keys `DATA_CACHE`; no second bump).
+Verified by observation on `:8001` — `brain/output/verify_smores_at_firepit.py` **12/12
+PASS**, 0 errors. Coord: `handoff/coord/smores-at-firepit.md`. Addendum (item 6) on
+`tasks/02_edit/_done/six_item_viewer_batch_20260614.md`.
+
 **Council made task-scoped (durable rule fix).** Multi-agent commingling was causing the
 council to be deferred / its clearance to go stale (`coord/five-item-review.md` +
 `six-item-viewer-batch.md` say so in their own words). Fixed: the council now reviews the

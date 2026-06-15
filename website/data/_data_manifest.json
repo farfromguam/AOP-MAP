@@ -1918,7 +1918,7 @@
     },
     {
       "file": "aop_about.json",
-      "bytes": 2310,
+      "bytes": 3257,
       "origin": "sidecar",
       "origin_note": "authored About copy",
       "client_layer": "About tab",
@@ -1929,7 +1929,8 @@
         "purpose",
         "heading",
         "intro",
-        "items",
+        "sections",
+        "rules",
         "note",
         "owed_work"
       ]

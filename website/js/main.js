@@ -1277,35 +1277,30 @@
           name.textContent = row.name;
           btn.append(name);
 
-          const subtitle = document.createElement('span');
-          subtitle.className = 'poi-row-subtitle';
-          if (row.blurb) {
-            subtitle.textContent = row.blurb;
-          } else if (row.revisitNote) {
-            subtitle.textContent = row.revisitNote;
-          } else {
-            subtitle.textContent = `${row.kind} · ${row.source}`;
+          // Kind / Status / Source are dev-artifact metadata, not visitor copy —
+          // the list shows only the human blurb, falling back to the revisit note.
+          // No kind/status chips. (User, 2026-06-14.) The editor's identify dock
+          // still carries kind/status/source for editing.
+          const subtitleText = row.blurb || row.revisitNote || '';
+          if (subtitleText) {
+            const subtitle = document.createElement('span');
+            subtitle.className = 'poi-row-subtitle';
+            subtitle.textContent = subtitleText;
+            btn.append(subtitle);
           }
-          btn.append(subtitle);
 
-          const meta = document.createElement('span');
-          meta.className = 'poi-row-meta';
-          const kindChip = document.createElement('span');
-          kindChip.textContent = row.kind;
-          meta.append(kindChip);
-          if (row.status) {
-            const statusChip = document.createElement('span');
-            statusChip.textContent = row.status;
-            meta.append(statusChip);
-          }
+          // The only meta chip kept is the editorial "info needed — revisit" flag
+          // (not kind/status); appended only when it applies, so no empty meta row.
           if (!row.blurb && row.revisitNote) {
+            const meta = document.createElement('span');
+            meta.className = 'poi-row-meta';
             const placeholderChip = document.createElement('span');
             placeholderChip.className = 'poi-placeholder-chip';
             placeholderChip.textContent = 'info needed — revisit';
             placeholderChip.title = row.revisitNote;
             meta.append(placeholderChip);
+            btn.append(meta);
           }
-          btn.append(meta);
 
           btn.addEventListener('click', () => gotoPoi(row));
           groupEl.append(btn);
@@ -1339,7 +1334,9 @@
     function poiPopupHtml(row) {
       // ONE renderer — window.AOPFeatureDisplay.popupHtml, the same the editors
       // use. The row already carries the normalized display fields (featureDisplay);
-      // map its revisitNote key onto the model's `revisit`.
+      // map its revisitNote key onto the model's `revisit`. (popupHtml no longer
+      // renders kind/status/source — they're passed only to keep this model the
+      // same uniform shape as the viewer_core callers that pass the whole model.)
       return window.AOPFeatureDisplay.popupHtml({
         name: row.name, kind: row.kind, blurb: row.blurb,
         status: row.status, source: row.source, caveat: row.caveat,
@@ -7083,7 +7080,7 @@
           + '<span>'
           + `<span class="calendar-time">${escapeHtml(props.window || '')}</span>`
           + `<span class="calendar-name">${escapeHtml(props.title || props.name || '')}</span>`
-          + `<span class="calendar-location">${escapeHtml(tag)} - ${escapeHtml(location)}</span>`
+          + `<span class="calendar-location">${escapeHtml(location)}</span>`
           + '</span></button></li>';
       }).join('');
       refreshEventScheduleSessionStates();

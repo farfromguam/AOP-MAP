@@ -121,3 +121,28 @@ tints the two active rows. Picked from a 4×4 spawn of style variations
   still raw reference context.
 - Do not promote these event features into publishable layers without a source
   register decision and AOP confirmation.
+
+## Addendum 2026-06-14 — drop the raw #tag from calendar rows (rides v92)
+
+Each schedule row's location read **`#pavilion - Pavilion (base camp)`** — the
+internal foreign-key tag printed in front of its own human name. User: *"I dont
+want to see #pavilion followed by pavilion. feels redundant."* The `#tag` is a
+join key (sessions → `locations{}`), not user-facing copy.
+
+Fix (UI-only, data unchanged): dropped the `${escapeHtml(tag)} - ` prefix from the
+`.calendar-location` span in **both** calendar renders — `viewer_core.js`
+`renderEventCalendar` (the live viewer) and `main.js`'s editor copy — leaving just
+`location` (`props.location_label`, e.g. "Pavilion (base camp)"). The `tag` local
+stays (still the fallback in `const location = props.location_label || tag`), so no
+dead variable. The popup's separate labelled `['Tag', location_tag]` diagnostic row
+(`viewer_core.js` `sessionPopupHtml`) is left intact on purpose — it's a labelled
+field, not "X followed by X".
+
+Shell-asset change to `viewer_core.js`, but it **rides the existing v90→v92 bump**
+(uncommitted; HEAD is v90, so v92 is unshipped — no second bump; a precached shell
+asset re-fetches when SHELL_CACHE keys to v92 on ship).
+
+Verified by observation on `:8001` — `brain/output/verify_schedule_no_tag_prefix.py`
+**8/8 PASS**, 0 console errors: no rendered `.calendar-location` contains a raw
+`#`, pavilion rows read "Pavilion (base camp)", firepit rows read "Firepit", row
+count == resolver session count.

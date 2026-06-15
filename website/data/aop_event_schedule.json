@@ -78,8 +78,8 @@
       "title": "Rock Hard Adventure Tour",
       "date_label": "Friday",
       "sort_order": 40,
-      "time_label": "Evening — meet at the pavilion",
-      "start_local": "19:00",
+      "time_label": "Evening",
+      "start_local": "18:00",
       "location_tag": "#pavilion"
     },
     {
@@ -89,7 +89,7 @@
       "sort_order": 50,
       "time_label": "Night",
       "start_local": "20:00",
-      "location_tag": "#pavilion"
+      "location_tag": "#firepit"
     },
     {
       "id": "sat-exploration",
@@ -104,7 +104,6 @@
       "title": "Registration + 50/50 raffle tickets",
       "date_label": "Saturday",
       "sort_order": 120,
-      "time_label": "8–10 AM",
       "start_local": "08:00",
       "location_tag": "#pavilion"
     },
@@ -169,7 +168,7 @@
       "sort_order": 190,
       "time_label": "Night",
       "start_local": "20:00",
-      "location_tag": "#pavilion"
+      "location_tag": "#firepit"
     },
     {
       "id": "sun-exploration",

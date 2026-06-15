@@ -1,5 +1,39 @@
 # Rock Warblers Content Audit
 
+> **Addendum — About tab reworked into web copy (v92, UNCOMMITTED). 2026-06-14.**
+> Follow-on to the v78 rewrite below. The user found the About tab "mixed up": the
+> v78 pass stapled the spoken **Driver's Meeting** transcript onto the fact card, so
+> it welcomed twice and the bottom half repeated the spec bullets + the schedule.
+> Reworked into website copy, schema `aop-about-v1 → v2`:
+> - One welcome (the duplicate "Welcome, everyone…" gone); the "good attitude" line
+>   folds into it. Crew lore is now a prose paragraph, not a one-item bullet.
+> - `items[]` (label:value list) + `driver_meeting` replaced by `sections[]`: a crew
+>   paragraph, then two subheads — **The park & the map** and **What to expect**
+>   (pavilion / GPS-share, yield-to-full-scale, the C.O.W., the 50/50). Times stay in
+>   the Events tab. `rules` lifted to a top-level block.
+> - **Dropped at the user's direction:** the one-item "Mandatory skills: Good
+>   attitude" row, and the **rig spec entirely** — *"people can bring whatever RCs
+>   they want"* (the event is open). Also cut "Every line traces back…" and a "the
+>   weekend fills in…" line that didn't read.
+> - `renderAbout()` in `viewer_core.js` generalized from items[]/driver_meeting to
+>   `sections[] + rules` (same DOM primitives, same http(s)-only link + textContent
+>   safety). Net simpler — one fewer branch.
+> - Verified by observation on live `:8001` — `verify_tbi_copy.py` rewritten to the
+>   new shape, **18/18 About checks pass** (`brain/output/tbi_about.png` shows the
+>   live render), no console errors from this change. The 2 non-About fails are
+>   pre-existing tree state, not this task: the schedule's new `#firepit` anchor and
+>   the bronze fema-buildings production-tier alert.
+> - `_data_manifest.json` (top_keys/bytes) + `aop_copy_registry.json` (note) updated;
+>   scratch `website/about_preview.html` created for the user's preview, then removed.
+>   **v91 → v92** (`sw.js` + `#appVersion`).
+> - **Council-cleared (5/5):** witness · warden · quartermaster · mason · scribe all
+>   `clear` over this task's scoped diff (witness re-ran the verifier live + read the
+>   shot; mason confirmed the renderer stays permissive + textContent/http(s)-safe;
+>   scribe confirmed the host voice). Receipt:
+>   `brain/output/council/about_rework_v92_20260614.md`.
+> - **Owed (user's git gate):** the commit. The 600-acre reconcile still owes
+>   (carried in `owed_work`).
+
 > **Shipped 2026-06-14 (v78, UNCOMMITTED — user's git gate; council-cleared,
 > core three: witness·warden·quartermaster all `clear`).** The gating external
 > truth arrived: the event lead supplied the real copy in `brain/import/TBI.copy`.

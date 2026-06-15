@@ -99,3 +99,41 @@ message, and the layer-specific empty-name fallbacks ("Cemetery"/"Building"/"Log
 S3 touched the shipped viewer (`index.html`, `js/main.js`) + `sw.js` SHELL_ASSETS → the user's
 **`VERSION`/`#appVersion` bump (v62→v63) + commit**. Done by the agent: SHELL_ASSETS now lists
 `feature_display.js`; `VERSION`/`#appVersion` left at v62 for the user. UNCOMMITTED.
+
+## Addendum 2026-06-14 — Kind/Status/Source off the user-facing surfaces (rides v92)
+
+S3 made the popover read the feature's REAL Kind/Status/Source. The user now wants
+those **off the visitor surfaces entirely** — they're provenance / dev-artifact
+metadata, not visitor copy. Verbatim: *"we have kind and status as visible. we dont
+need those in the poi list. we dont even need them in the world popovers. in the world
+there is a third source. that also needs to go."* (POI list: drop Kind+Status. World
+popover: drop Kind+Status **and** Source.)
+
+Done — three surfaces, one coherent change:
+- **`feature_display.js` `popupHtml`** (the ONE shared popover renderer, used by the
+  reader AND the editors): dropped the `Kind`/`Status`/`Source` `<dt>/<dd>` lines.
+  Only an author-facing `Caveat` may remain, and the `<dl class="poi-popup-meta">` is
+  omitted entirely when there's nothing to show (no empty list). `featureDisplay()`
+  still returns kind/status/source — the **editor's identify dock**
+  (`data_editor_map.js` `row('Kind'/'Status'/'Source')`, `panel.js`) keeps them for
+  editing; only the popover stops rendering them. One strategy preserved — no per-
+  surface branch.
+- **`viewer_core.js` `renderPoiTab`/`buildPoiGroups`** (reader POI list): dropped the
+  kind/status `.poi-row-meta` chips and the `kind · status` subtitle fallback; rows
+  show blurb → revisit note. Removed the now-unused `kind`/`status` from the local row
+  object (no dead fields).
+- **`main.js` `renderPoiTab`** (editor POI list, served by `data_sources.html`/
+  `old_index.html`): same — dropped the kind/status chips and the `kind · source`
+  subtitle fallback; **kept** the editorial "info needed — revisit" placeholder chip
+  (not kind/status). Both subtitle and meta spans now append only when they have
+  content, so removed chips leave no margin gaps.
+
+Shell-asset change (`feature_display.js`, `viewer_core.js` are precached) but **rides
+the existing uncommitted v90→v92 bump** — HEAD is v90, v92 unshipped, no second bump.
+
+Verified by observation on `:8001` — `brain/output/verify_poi_no_kind_status_source.py`
+**9/9 PASS**, 0 console errors: reader POI list has 0 kind/status chips and no
+`x · y` subtitle; the world popover opens with no Kind/Status/Source `<dt>` (only a
+`Caveat` line survives for a feature that carries one). Reader is live-verified; the
+`main.js` editor copy is the parallel change (`node --check` clean, mirrors the
+verified reader) served on the editor pages.

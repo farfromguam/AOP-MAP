@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Verify the TBI.copy rewrite landed in the live viewer (index.html on :8001).
 
-About tab (plain DOM, GL-independent): intro, 5 reference items, the new
-Driver's Meeting prose section (heading + 7 paragraphs + 5 rules), note.
+About tab (plain DOM, GL-independent): one welcome intro (good-attitude line),
+a crew paragraph, two subhead sections ("The park & the map", "What to expect"),
+a rules block (lead + 5 rules), and the note. The old label:value items list and
+the rig spec were removed (open event), so this asserts they're GONE.
 
 Schedule (GL-independent): run the SAME canonical transform the calendar and the
 map both consume -- window.AOPEventSchedule.eventScheduleToGeojson -- and assert
@@ -49,16 +51,20 @@ def main():
           return {
             h2: root.querySelector('h2')?.textContent || '',
             intro: root.querySelector('p.info-copy')?.textContent || '',
-            items: [...root.querySelectorAll('ul.info-list > li .info-label')].map(e => e.textContent),
-            subhead: root.querySelector('h3.info-subhead')?.textContent || '',
+            itemCount: root.querySelectorAll('ul.info-list > li').length,
+            subheads: [...root.querySelectorAll('h3.info-subhead')].map(e => e.textContent),
             copyCount: root.querySelectorAll('p.info-copy').length,
             rulesCount: root.querySelectorAll('ul.info-rules > li').length,
             note: root.querySelector('p.info-note')?.textContent || '',
             hasWelcome: txt.includes('bright blue shirts'), hasCOW: txt.includes('C.O.W.'),
             hasRaffle: txt.includes('Appalachian RC for Kids'), hasWinch: txt.includes('Winching is free'),
-            hasNoBashers: txt.includes('No bashers'), has22: txt.includes('2.2'),
+            hasGoodAttitude: txt.includes('good attitude'),
             hasCall: txt.includes('caw-craaawl'),
             noTrailBuddies: !/trail budd/i.test(txt),
+            noMandatory: !/mandatory/i.test(txt),
+            noRigSpec: !/wheel class/i.test(txt) && !/no bashers/i.test(txt),
+            noTracesLine: !txt.includes('traces back'),
+            noWeekendFills: !txt.includes('weekend fills in'),
           };
         }""")
 
@@ -104,17 +110,22 @@ def main():
     def chk(n, c, got=""): checks.append((n, bool(c), got))
 
     chk("about h2", about["h2"] == "About the Rock Warblers", about["h2"])
-    chk("about intro welcomes", about["intro"].startswith("Welcome to the first event"), about["intro"][:36])
-    chk("5 reference items", about["items"] == ["Mandatory skills","Rigs","The park","The map","The crew"], about["items"])
-    chk("driver-meeting subhead", about["subhead"] == "Driver's Meeting", about["subhead"])
-    chk("9 info-copy paras", about["copyCount"] == 9, about["copyCount"])
+    chk("about intro welcomes (new wording)", about["intro"].startswith("Welcome to our first event as the Rock Warblers"), about["intro"][:48])
+    chk("intro carries good-attitude line", about["hasGoodAttitude"])
+    chk("no label:value items list", about["itemCount"] == 0, about["itemCount"])
+    chk("two subheads: park&map, what-to-expect",
+        about["subheads"] == ["The park & the map", "What to expect"], about["subheads"])
+    chk("8 info-copy paras", about["copyCount"] == 8, about["copyCount"])
     chk("5 rules", about["rulesCount"] == 5, about["rulesCount"])
     chk("note present", "See you at the pavilion" in about["note"], about["note"])
     chk("welcome text", about["hasWelcome"]); chk("C.O.W. text", about["hasCOW"])
     chk("raffle/charity text", about["hasRaffle"]); chk("winching-free rule", about["hasWinch"])
-    chk("rigs: no bashers", about["hasNoBashers"]); chk("rigs: 2.2 class", about["has22"])
-    chk("trail buddies removed", about["noTrailBuddies"])
     chk("crew: Rock Warbler call (caw-craaawl)", about["hasCall"])
+    chk("trail buddies removed", about["noTrailBuddies"])
+    chk("mandatory-skills row removed", about["noMandatory"])
+    chk("rig spec removed (open event)", about["noRigSpec"])
+    chk("'traces back' line removed", about["noTracesLine"])
+    chk("'weekend fills in' line removed", about["noWeekendFills"])
 
     chk("transform title", xf["title"] == "Rock Warblers Trail Blazing Invitational", xf["title"])
     chk("transform status live", xf["status"] == "live", xf["status"])

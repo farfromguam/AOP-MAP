@@ -58,6 +58,20 @@ shipped on **v87** and **verified by observation** on `:8001` (13/13 + alert PAS
    waypoint coords). The Firepit waypoint in `aop_waypoints_traced.geojson` carries
    `location_tag:"#firepit"`.
 
+   **Follow-up (2026-06-14): s'mores moved to the firepit too.** Item 6 tagged the
+   PRO Line *race* to the firepit but left both **"Fire + s'mores"** sessions
+   (`fri-fire`, `sat-fire`) at `#pavilion` — so the firepit POI showed the obstacle
+   race but not the campfire. User: *"Smores should be at the firepit. what happened?"*
+   Source (`brain/import/TBI.copy`) is explicit — after the PRO Line challenge they
+   *"head to the fire pit for some smores"* — so both s'mores sessions are now
+   `location_tag` `#pavilion`→`#firepit`. Data-only change; no JS touched. The
+   concurrent `clear-search-defocus` session's `v90→v91` bump already re-keys
+   `DATA_CACHE`, so this rides that bump (no second version bump). Verified by
+   observation on `:8001` — `brain/output/verify_smores_at_firepit.py` **12/12 PASS**,
+   0 console errors (both s'mores sessions resolve to firepit coords, firepit anchor
+   renders, PRO Line regression holds, the Sat s'mores calendar row drives to the
+   firepit + becomes the active item).
+
 ## Verified by observation (`:8001`, Playwright)
 
 - `brain/output/verify_label_border_persist_firepit.py` → **13/13 PASS**, 0 console
@@ -114,3 +128,35 @@ After committing the six items, the user asked to actually rename the files (the
   landcover-opacity session (tree cover v88). Both UNCOMMITTED; the landcover session's
   `.council-cleared` is now stale (my rename changed the diff). The user separates at the
   gate. Coord: `handoff/coord/six-item-viewer-batch.md`.
+
+## Addendum — clearing the search bar de-thrones the held highlight (2026-06-14, v91)
+
+Item 5 made one selection HOLD until the next selection replaced it — but nothing
+ever *removed* the highlight. The user: *"the app holds the highlight until something
+else takes it. -- if the searchbar is cleared then the highlighted item also needs to
+be cleared. this defocuses it as well."*
+
+- **New `clearActiveSelection()` in `viewer_core.js`** (right after `gotoMatch`): the
+  ONE path that removes the held highlight — cancels any in-flight `pulseRAF`, empties
+  the `search-highlight` source, and de-thrones `activeEventSessionId` (re-rendering the
+  schedule so the active calendar row drops). Every other path still only *replaces* the
+  highlight; this is the only one that clears it.
+- **Wired into both clear paths.** The `input` listener calls it when the field goes
+  empty (backspace / select-all-delete); the `Escape` keydown calls it alongside the
+  existing value-clear + `blur()`. No blur on the typing path (yanking focus mid-edit
+  would be hostile) — Escape already defocuses the input.
+- **Shared `dethroneActiveEvent()` (no copy).** The de-throne block (`activeEventSessionId
+  = null` + `renderEventSchedule`) was extracted into one helper called by BOTH `gotoMatch`
+  (search de-thrones an active event) and `clearActiveSelection`, rather than copied — the
+  `activeEventSessionId = null` assignment now lives once. (The inverse SET path in
+  `gotoEventSession` is left untouched — a separate concern, not the flagged duplication.)
+- **Verified by observation** (`:8001`, `brain/output/verify_search_clear_dethrone.py`):
+  **8/8 PASS**, 0 console errors — search sets a highlight, backspace-to-empty clears it
+  (1→0), and Escape empties the input + clears the highlight + de-thrones the active event
+  row. Regression: `verify_label_border_persist_firepit.py` still **13/13** (the hold
+  model is intact). Re-verified after the dedup extraction (both still pass).
+  `sw.js`/`#appVersion` **v90→v91**. UNCOMMITTED (user's git gate).
+- **Council:** core-three over the scoped diff — Witness **clear** (re-ran both verifiers
+  live, 8/8 + 13/13), Warden **clear** (on the farm, git gate untouched), Quartermaster
+  **andon → resolved clear** (flagged the de-throne copy; fixed by the shared helper above,
+  re-reviewed clear). Receipt: `brain/output/council/search_clear_dethrone_20260614.md`.
