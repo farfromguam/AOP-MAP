@@ -65,10 +65,25 @@ Headline state for the next session:
   5 stamps (sw.js VERSION + #appVersion + 3× `?v=`); re-verified 9/9 + `node --check`. The
   test needs an OLD build already loaded: load v98, deploy v99, then tap ⓘ on the v98 client →
   it pulls v99 and reloads (the version label ticks 98→99). Commit/push stays the user's.
-- **Owed (external-blocked):** on-device re-check of the full 3D camera (tilt + spin + pinch-
-  zoom) now that v98 enables gesture pitch; on-device confirm the ⓘ-tap/foreground update
-  actually pulls a fresh build past Fastly's ~600s edge TTL; the DB↔served reconcile above
-  (the user directs when).
+- **3D-mode GATE for rotate/tilt — v100, uncommitted (2026-06-15).** User: "is it just in 3d
+  mode or everywhere? … in 2d modes we should not allow these rotations or tilts or finger modes."
+  Rotate + tilt are now 3D-ONLY. `viewer_core.js`: new `setCameraGesturesEnabled(on)` toggles
+  dragRotate + touchZoomRotate-rotation + touchPitch together (pan + pinch-zoom never gated);
+  called `false` at construction (2D opens locked) and wired into `setTerrainEnabled` — unlock on
+  3D-enter, re-lock on exit AND snap back to flat west-up (`easeTo pitch:0, bearing:VIEW_BEARING`)
+  so you can't get stranded rotated in a locked 2D. Verified by observation 7/7 —
+  `verify_spin_while_tilted.py` rewritten to the gate contract (2D: handlers disabled + a real
+  right-drag changes neither bearing nor pitch; 3D after the real button: handlers enabled +
+  auto-tilt). The 3D→2D exit re-lock is NOT re-driven headless (post-terrain-toggle render reliably
+  wedges SwiftShader, reproduced by the council Witness); it's the same `setCameraGesturesEnabled(false)`
+  observed as the 2D-load state, with the round-trip + snap-back owed on-device. **Bumped v99→v100**
+  at the user's request — 5 stamps (sw.js VERSION + #appVersion + 3× `?v=`). Council: full core-three
+  CLEAR (Witness reproduced the headless wedge & confirmed honest scoping; Warden ruled the bearing
+  snap-back a necessary companion, not scope creep; Quartermaster no-dup). Commit/push stays the user's.
+- **Owed (external-blocked):** on-device re-check of the full 3D camera, now 3D-MODE-GATED — confirm
+  2D stays locked (no stray rotate/tilt) and 3D allows tilt + the snap-flat on exit; on-device
+  confirm the ⓘ-tap/foreground update actually pulls a fresh build past Fastly's ~600s edge TTL;
+  the DB↔served reconcile above (the user directs when).
 
 ## Where we are
 

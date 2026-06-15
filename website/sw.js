@@ -43,7 +43,7 @@
 // so they self-heal via stale-while-revalidate whose refresh uses cache:'reload' to
 // bypass the browser HTTP cache; the ~600s Fastly edge TTL on the HTML is the one
 // floor we can't lower on GitHub Pages.
-const VERSION = 'v99'; // keep in sync with #appVersion in index.html
+const VERSION = 'v100'; // keep in sync with #appVersion in index.html
 const SHELL_CACHE = `aop-shell-${VERSION}`;
 const DATA_CACHE = `aop-data-${VERSION}`;
 const TILE_CACHE = 'aop-tiles'; // unversioned on purpose — see header note

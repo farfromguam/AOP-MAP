@@ -85,14 +85,29 @@
   // replaces the constructor shim the band's old proof page used to fake.
   window.AOPViewer = { map, regionBounds: REGION_BOUNDS };
 
-  // EVERY camera gesture is on now (user: "enable the 3d features"). Pinch-zoom +
-  // one-finger pan, two-finger twist / right-click-drag to rotate, AND two-finger
-  // vertical-drag to TILT (touchPitch) — paired with pitchWithRotate (constructor)
-  // so the rotate gesture tilts too. This reverses the earlier button-only-pitch
-  // lock (the "maybe it's my fingers" accidental-tilt report — main.js:163): the
-  // user asked for the full 3D camera back, so nothing is disabled here and every
-  // handler is left at its enabled default. The 3D toggle button stays as a one-tap
-  // jump to a 60° tilt, and the zoom presets still reset flat west-up.
+  // Camera-gesture gating: rotate + tilt are 3D-ONLY (user: "in 2d modes we should
+  // not allow these rotations or tilts or finger modes"). In the default 2D view the
+  // map is locked to pan + pinch-zoom; the 3D toggle (setTerrainEnabled) is the single
+  // switch that unlocks orbit/tilt, and returning to 2D re-locks AND snaps back to flat
+  // west-up so you can't get stuck rotated in a view you can no longer straighten. This
+  // is the prior known-good 2D state (pan+zoom only) that also dodges the "maybe it's my
+  // fingers" accidental-tilt — now unlockable instead of permanent. Pinch-zoom
+  // (touchZoomRotate's ZOOM) and one-finger pan (dragPan) are never gated — they work in
+  // both modes; only the ROTATION half of touchZoomRotate, dragRotate, and touchPitch are.
+  // pitchWithRotate (constructor) stays true so that WHEN unlocked, one right-/two-finger
+  // drag both orbits and tilts.
+  function setCameraGesturesEnabled(on) {
+    if (on) {
+      map.dragRotate.enable();
+      map.touchZoomRotate.enableRotation();
+      if (map.touchPitch) map.touchPitch.enable();
+    } else {
+      map.dragRotate.disable();
+      map.touchZoomRotate.disableRotation();
+      if (map.touchPitch) map.touchPitch.disable();
+    }
+  }
+  setCameraGesturesEnabled(false); // open 2D-locked; the 3D toggle unlocks rotate/tilt
 
   // Bottom-left ⓘ attribution (main.js:166). Two faces of the same version:
   //  - COLLAPSED: a small "v64" label sits beside the ⓘ (#appVersion, folded in
@@ -432,6 +447,9 @@
   }
   function setTerrainEnabled(enabled) {
     syncTerrainControl(enabled);
+    // Rotate/tilt gestures are unlocked only in 3D (see setCameraGesturesEnabled).
+    // Gate before the DEM-source guard so the lock holds even if terrain never loads.
+    setCameraGesturesEnabled(enabled);
     if (!map.getSource('aws-terrain-dem')) return;
     if (enabled) {
       map.setTerrain({ source: 'aws-terrain-dem', exaggeration: 1.4 });
@@ -440,7 +458,9 @@
     } else {
       map.setTerrain(null);
       if (map.setSky) map.setSky(undefined);
-      map.easeTo({ pitch: 0, duration: 600 });
+      // Snap back to flat west-up: with rotation now re-locked, leaving a rotated/
+      // tilted 2D map would strand the user crooked with no gesture to straighten it.
+      map.easeTo({ pitch: 0, bearing: VIEW_BEARING, duration: 600 });
     }
   }
 

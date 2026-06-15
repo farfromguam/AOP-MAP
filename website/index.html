@@ -25,7 +25,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Trail Blazing" />
   <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
-  <link href="./css/viewer.css?v=v99" rel="stylesheet" />
+  <link href="./css/viewer.css?v=v100" rel="stylesheet" />
   <!-- iOS Safari-TAB rounded-corner fillets: set html.ios-browser BEFORE first paint
        so the .screen-corner divs round the map into Safari's black chrome bands. Only
        on an iOS device in a TAB — NOT the installed PWA (no bands; the device rounds the
@@ -233,7 +233,7 @@
          viewer_core.js folds it beside the collapsed bottom-left ⓘ ("ⓘ vNN",
          hidden when expanded) and also reads it into the expanded attribution body
          as "Made by Rock Warblers · vNN". Starts hidden; JS unhides on fold. -->
-    <span id="appVersion" hidden>v99</span>
+    <span id="appVersion" hidden>v100</span>
 
     <!-- iOS Safari Add-to-Home-Screen steps (toggled by the install button on iOS,
          where there is no programmatic install prompt). -->
@@ -281,12 +281,12 @@
   <!-- The ONE feature-to-text strategy (window.AOPFeatureDisplay) — drives the
        click popups, same module the live page + editors use. -->
   <script src="./js/feature_display.js"></script>
-  <script src="./js/viewer_core.js?v=v99"></script>
+  <script src="./js/viewer_core.js?v=v100"></script>
   <!-- Off-edge decorative band — the "printed neat-line" frame (paper mask +
        keyline + draped lettering + Rock Warblers corner marks), drawn as
        geolocated map layers on top of the core. Reads window.AOPViewer exposed by
        viewer_core.js; loads after it. No CSS — the band paints inline. -->
-  <script src="./js/viewer_band.js?v=v99"></script>
+  <script src="./js/viewer_band.js?v=v100"></script>
 
   <!-- PWA: "Install app" button + iOS hint. Hidden by default; on Chromium it
        shows once beforeinstallprompt fires and triggers the native prompt on
